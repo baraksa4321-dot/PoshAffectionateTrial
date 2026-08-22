@@ -45,9 +45,10 @@ const labelCls =
 function ExerciseDetail() {
   const { exerciseId } = Route.useParams();
   const navigate = useNavigate();
-  const { exercises, history } = useGym();
+  const { exercises, history, userProfile } = useGym();
   const isNew = exerciseId === "new";
   const existing = exercises.find((e) => e.id === exerciseId);
+  const canManageLibrary = userProfile?.role === "coach" || userProfile?.role === "owner";
 
   const [editing, setEditing] = useState(isNew);
   const [draft, setDraft] = useState<Exercise>(existing ?? emptyExercise());
@@ -100,6 +101,7 @@ function ExerciseDetail() {
   const set = (patch: Partial<Exercise>) => setDraft({ ...draft, ...patch });
 
   const onSave = () => {
+    if (!canManageLibrary) return;
     const isOther = draft.muscleGroup === "אחר" || (draft.muscleGroups ?? []).includes("אחר");
     const customValue = isOther ? customMuscle.trim() : undefined;
     const finalMuscleGroup = isOther && customValue ? customValue : draft.muscleGroup;
@@ -113,6 +115,16 @@ function ExerciseDetail() {
     if (isNew) navigate({ to: "/exercises/$exerciseId", params: { exerciseId: draft.id } });
     else setEditing(false);
   };
+
+  if (isNew && !canManageLibrary) {
+    return (
+      <AppShell title="יצירת תרגילים זמינה למאמנים בלבד">
+        <p className="surface-card p-5 text-start text-muted-foreground">
+          אפשר לצפות בספריית התרגילים, אך רק מאמן או בעלים יכולים להוסיף ולערוך תרגילים.
+        </p>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell
@@ -132,7 +144,7 @@ function ExerciseDetail() {
           >
             <ArrowRight className="h-5 w-5" />
           </Link>
-          {editing ? (
+          {editing && canManageLibrary ? (
             <button
               type="button"
               onClick={onSave}
@@ -141,7 +153,7 @@ function ExerciseDetail() {
             >
               <Check className="h-5 w-5" strokeWidth={2.4} />
             </button>
-          ) : (
+          ) : canManageLibrary ? (
             <button
               type="button"
               onClick={() => {
@@ -153,7 +165,7 @@ function ExerciseDetail() {
             >
               <Pencil className="h-4 w-4" strokeWidth={2.2} />
             </button>
-          )}
+          ) : null}
         </div>
       }
     >

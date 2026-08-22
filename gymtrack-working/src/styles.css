@@ -379,7 +379,7 @@
 /* --- Surfaces --- */
 .surface-card {
   background-color: var(--surface);
-  border: 1px solid oklch(0.92 0.02 350);
+  border: 1px solid var(--border);
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-xsoft);
   transition:
@@ -389,7 +389,7 @@
 
 .surface-card-soft {
   background-color: var(--surface-2);
-  border: 1px solid oklch(0.92 0.02 350);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xl);
 }
 
@@ -410,8 +410,8 @@
 }
 
 .ink-card {
-  background: linear-gradient(155deg, oklch(0.55 0.16 350), oklch(0.45 0.15 350));
-  color: oklch(0.99 0.005 350);
+  background: linear-gradient(155deg, var(--primary), var(--rose));
+  color: var(--primary-foreground);
   border-radius: var(--radius-3xl);
   box-shadow: var(--shadow-ink);
   position: relative;
@@ -419,15 +419,15 @@
 }
 
 .ink-card-soft {
-  background: linear-gradient(155deg, oklch(0.95 0.03 350), oklch(0.98 0.01 350));
+  background: linear-gradient(155deg, var(--rose-soft), var(--surface));
   border-radius: var(--radius-3xl);
-  border: 1px solid oklch(0.9 0.03 350);
+  border: 1px solid var(--border);
 }
 
 .rose-card {
-  background: linear-gradient(155deg, oklch(0.95 0.035 350), oklch(0.98 0.015 350));
+  background: linear-gradient(155deg, var(--rose-soft), var(--surface));
   border-radius: var(--radius-2xl);
-  border: 1px solid oklch(0.9 0.04 350);
+  border: 1px solid var(--border);
 }
 
 /* --- Section labels --- */

@@ -10,6 +10,7 @@ import {
   Shield,
   Crown,
   User,
+  X,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { saveTheme, useAuthUser, useGym } from "../lib/gym-store";
@@ -50,6 +51,7 @@ export function AppShell({
       : "personal",
   );
   const [showThemeModal, setShowThemeModal] = useState(false);
+  const [themeError, setThemeError] = useState("");
   const theme = store.userProfile?.theme ?? DEFAULT_THEME;
 
   useEffect(() => {
@@ -92,6 +94,7 @@ export function AppShell({
           password,
           options: {
             emailRedirectTo: redirectTo,
+            data: { theme },
           },
         });
         if (error) throw error;
@@ -115,6 +118,8 @@ export function AppShell({
           throw error;
         }
       }
+      const { error: themeSaveError } = await supabase.auth.updateUser({ data: { theme } });
+      if (themeSaveError) throw themeSaveError;
       setShowAuthModal(false);
       setEmail("");
       setPassword("");
@@ -294,7 +299,7 @@ export function AppShell({
           }}
           ariaLabel="התחברות לחשבון"
         >
-          <div className="w-full max-w-sm rounded-3xl border border-white/80 bg-white p-6 shadow-2xl space-y-4">
+          <div className="w-full max-w-sm rounded-3xl border border-border/80 bg-card p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
                 <User className="h-5 w-5 text-primary" />
@@ -348,11 +353,15 @@ export function AppShell({
             <ThemeChooser
               value={theme}
               onChange={async (nextTheme) => {
+                setThemeError("");
                 const result = await saveTheme(nextTheme);
-                if (!result.success) setErrorMsg(result.error ?? "שמירת הפלטה נכשלה");
+                if (!result.success) setThemeError(result.error ?? "שמירת הפלטה נכשלה");
               }}
               compact
             />
+            {themeError ? (
+              <p className="text-xs font-semibold text-destructive">{themeError}</p>
+            ) : null}
 
             {isResettingPassword ? (
               <div className="space-y-3">
@@ -447,11 +456,18 @@ export function AppShell({
         >
           <ThemeChooser
             value={theme}
+            onClose={() => setShowThemeModal(false)}
             onChange={async (nextTheme) => {
+              setThemeError("");
               const result = await saveTheme(nextTheme);
-              if (!result.success) setErrorMsg(result.error ?? "שמירת הפלטה נכשלה");
+              if (!result.success) setThemeError(result.error ?? "שמירת הפלטה נכשלה");
             }}
           />
+          {themeError ? (
+            <p className="-mt-2 rounded-xl bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">
+              {themeError}
+            </p>
+          ) : null}
         </Overlay>
       )}
 
@@ -461,7 +477,7 @@ export function AppShell({
           className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3.5 sm:px-4"
           style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
         >
-          <div className="pointer-events-auto mx-auto flex max-w-md items-center justify-between rounded-[2rem] border border-white/70 bg-white/85 p-1.5 shadow-[0_12px_36px_oklch(0.22_0.02_145/0.12),0_2px_10px_oklch(0.22_0.02_145/0.05)] backdrop-blur-2xl">
+          <div className="pointer-events-auto mx-auto flex max-w-md items-center justify-between rounded-[2rem] border border-border/70 bg-card/85 p-1.5 shadow-[0_12px_36px_oklch(0.22_0.02_145/0.12),0_2px_10px_oklch(0.22_0.02_145/0.05)] backdrop-blur-2xl">
             {NAV.map(({ to, label, id, icon: Icon }) => (
               <Link
                 key={to}
@@ -489,10 +505,12 @@ function ThemeChooser({
   value,
   onChange,
   compact = false,
+  onClose,
 }: {
   value: ThemePalette;
   onChange: (theme: ThemePalette) => void | Promise<void>;
   compact?: boolean;
+  onClose?: () => void;
 }) {
   return (
     <section
@@ -501,11 +519,23 @@ function ThemeChooser({
       }`}
       aria-label="פלטת צבעים"
     >
-      <div className="mb-3">
-        <h2 className="font-display text-base font-bold text-ink">פלטת צבעים</h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          הבחירה משפיעה על כל המסכים, הכרטיסים והחלונות.
-        </p>
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-base font-bold text-ink">פלטת צבעים</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            הבחירה משפיעה על כל המסכים, הכרטיסים והחלונות.
+          </p>
+        </div>
+        {onClose ? (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="סגור בחירת פלטה"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-secondary text-muted-foreground hover:text-ink"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        ) : null}
       </div>
       <div className="grid grid-cols-3 gap-2">
         {THEME_PALETTES.map((palette) => (

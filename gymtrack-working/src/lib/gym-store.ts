@@ -1068,12 +1068,14 @@ export function saveUserProfile(profile: UserProfile) {
 export async function saveTheme(
   theme: ThemePalette,
 ): Promise<{ success: boolean; error?: string }> {
-  const profile = { ...(data.userProfile ?? { weight: 65 }), theme };
+  const previousProfile = data.userProfile;
+  const profile = { ...(previousProfile ?? { weight: 65 }), theme };
   set({ ...data, userProfile: profile });
 
   if (!currentUser?.id) return { success: true };
   const { error } = await supabase.auth.updateUser({ data: { theme } });
   if (error) {
+    set({ ...data, userProfile: previousProfile });
     return { success: false, error: error.message || "שמירת הפלטה נכשלה" };
   }
   return { success: true };
