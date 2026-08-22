@@ -12,7 +12,7 @@ import { useEffect } from "react";
 import "../styles.css";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "../components/AppShell";
-import { useAuthStatus } from "../lib/gym-store";
+import { useAuthStatus, useGym } from "../lib/gym-store";
 
 function NotFoundComponent() {
   return (
@@ -139,6 +139,8 @@ function ScrollToTop() {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const authStatus = useAuthStatus();
+  const { userProfile } = useGym();
+  const isProfileHydrating = authStatus === "authenticated" && userProfile?.role === undefined;
 
   useEffect(() => {
     document.documentElement.lang = "he";
@@ -151,13 +153,15 @@ function RootComponent() {
       <HeadContent />
       <ScrollToTop />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      {authStatus === "loading" ? (
+      {authStatus === "loading" || isProfileHydrating ? (
         <div
           className="flex min-h-[100dvh] items-center justify-center bg-background px-4"
           dir="rtl"
         >
           <div className="rounded-3xl border border-border/60 bg-white px-6 py-5 text-center shadow-sm">
-            <p className="text-sm font-semibold text-foreground">בודקת את החיבור המאובטח...</p>
+            <p className="text-sm font-semibold text-foreground">
+              {isProfileHydrating ? "טוענת את הרשאות החשבון..." : "בודקת את החיבור המאובטח..."}
+            </p>
           </div>
         </div>
       ) : authStatus === "unauthenticated" ? (

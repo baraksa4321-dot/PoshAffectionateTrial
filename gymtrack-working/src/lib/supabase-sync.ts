@@ -284,18 +284,18 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .maybeSingle();
     if (profileError) throw new Error(`Profile pull failed: ${profileError.message}`);
 
-    if (profile) {
-      nextData.userProfile = {
-        ...nextData.userProfile,
-        weight: profile.weight_kg
-          ? Number(profile.weight_kg)
-          : (nextData.userProfile?.weight ?? 65),
-        height: profile.height_cm ? Number(profile.height_cm) : nextData.userProfile?.height,
-        role: (profile.role as UserRole) || "client",
-        coachId: profile.coach_id || undefined,
-        todayRoutineEnabled: profile.today_routine_enabled ?? true,
-      };
+    if (!profile) throw new Error("Profile pull failed: authenticated user has no profile");
+    if (profile.role !== "owner" && profile.role !== "coach" && profile.role !== "client") {
+      throw new Error("Profile pull failed: authenticated user has an invalid role");
     }
+    nextData.userProfile = {
+      ...nextData.userProfile,
+      weight: profile.weight_kg ? Number(profile.weight_kg) : (nextData.userProfile?.weight ?? 65),
+      height: profile.height_cm ? Number(profile.height_cm) : nextData.userProfile?.height,
+      role: profile.role as UserRole,
+      coachId: profile.coach_id || undefined,
+      todayRoutineEnabled: profile.today_routine_enabled ?? true,
+    };
 
     const {
       data: { user: authUser },

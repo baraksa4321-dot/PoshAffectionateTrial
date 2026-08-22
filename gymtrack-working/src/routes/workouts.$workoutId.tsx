@@ -31,6 +31,16 @@ function Builder() {
   const [draft, setDraft] = useState<Workout>(existing ?? emptyWorkout());
   const [picker, setPicker] = useState(false);
 
+  if (userProfile?.role === undefined) {
+    return (
+      <AppShell title="אימון" kicker="בודקת הרשאות">
+        <div className="surface-card mt-4 rounded-3xl p-6 text-center text-sm text-muted-foreground">
+          טוענת את תפקיד החשבון המאומת...
+        </div>
+      </AppShell>
+    );
+  }
+
   if (!isNew && !existing) {
     return (
       <AppShell title="אימון לא נמצא">

@@ -692,9 +692,14 @@ function load() {
         currentUser = session?.user ? { id: session.user.id, email: session.user.email } : null;
         authResolved = true;
         authStatus = session?.user ? "authenticated" : "unauthenticated";
-        if (session?.user) resetDataIfCacheBelongsToAnotherUser(session.user.id);
+        if (session?.user) {
+          resetDataIfCacheBelongsToAnotherUser(session.user.id);
+          // handleUserLogin synchronously clears any cached role before its
+          // first await and then notifies React.
+          void handleUserLogin(session.user.id);
+          return;
+        }
         listeners.forEach((l) => l());
-        if (session?.user) void handleUserLogin(session.user.id);
       })
       .catch(() => {
         currentUser = null;
@@ -716,6 +721,7 @@ function load() {
         }
         resetDataIfCacheBelongsToAnotherUser(session.user.id);
         void handleUserLogin(session.user.id);
+        return;
       } else {
         // On sign-out, reset memory state to clean seed data
         hydrationGeneration += 1;

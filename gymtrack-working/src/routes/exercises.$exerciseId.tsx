@@ -62,6 +62,16 @@ function ExerciseDetail() {
   // Scroll reset on navigation is handled centrally in __root.tsx (ScrollToTop
   // subscribes to router.subscribe('onResolved')); no per-page effect needed.
 
+  if (userProfile?.role === undefined) {
+    return (
+      <AppShell title="תרגיל" kicker="בודקת הרשאות">
+        <div className="surface-card mt-4 rounded-3xl p-6 text-center text-sm text-muted-foreground">
+          טוענת את תפקיד החשבון המאומת...
+        </div>
+      </AppShell>
+    );
+  }
+
   if (!isNew && !existing) {
     return (
       <AppShell title="תרגיל לא נמצא">
