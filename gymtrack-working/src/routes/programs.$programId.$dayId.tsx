@@ -355,13 +355,12 @@ function DayBuilder() {
         ) : null}
       </div>
 
-      {picker ? (
-        <Overlay
-          open={picker}
-          onClose={() => setPicker(false)}
-          variant="bottom"
-          ariaLabel="בחירת תרגיל"
-        >
+      <Overlay
+        open={picker}
+        onClose={() => setPicker(false)}
+        variant="bottom"
+        ariaLabel="בחירת תרגיל"
+      >
           <div
             className="scale-in max-h-[85dvh] overflow-y-auto rounded-t-[2rem] border-t border-border/40 bg-card p-5 text-start shadow-2xl"
             onClick={(event) => event.stopPropagation()}
@@ -496,8 +495,7 @@ function DayBuilder() {
               </button>
             )}
           </div>
-        </Overlay>
-      ) : null}
+      </Overlay>
 
       <ConfirmSheet
         open={pendingDeleteDay}

@@ -184,13 +184,12 @@ function Builder() {
         </button>
       )}
 
-      {picker && (
-        <Overlay
-          open={picker}
-          onClose={() => setPicker(false)}
-          variant="bottom"
-          ariaLabel="בחירת תרגיל"
-        >
+      <Overlay
+        open={picker}
+        onClose={() => setPicker(false)}
+        variant="bottom"
+        ariaLabel="בחירת תרגיל"
+      >
           <div className="max-h-[75vh] overflow-y-auto rounded-t-3xl border-t border-border bg-card p-5 text-start">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">בחר תרגיל</h2>
@@ -225,8 +224,7 @@ function Builder() {
               )}
             </div>
           </div>
-        </Overlay>
-      )}
+      </Overlay>
     </AppShell>
   );
 }
