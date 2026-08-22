@@ -34,7 +34,7 @@ import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Stepper } from "@/components/Stepper";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Overlay } from "@/components/ui-app/Overlay";
 import {
   EmptyState,
   IconButton,
@@ -125,7 +125,8 @@ function computeSupersetLabels(items: WorkoutItem[]) {
 function DayBuilder() {
   const { programId, dayId } = Route.useParams();
   const navigate = useNavigate();
-  const { programs, workouts, exercises } = useGym();
+  const { programs, workouts, exercises, userProfile } = useGym();
+  const canManageProgram = userProfile?.role === "coach" || userProfile?.role === "owner";
   const program = programs.find((item) => item.id === programId);
   const existing = workouts.find((workout) => workout.id === dayId);
   const isNew = dayId === "new" || !dayId;
@@ -160,6 +161,15 @@ function DayBuilder() {
       </AppShell>
     );
   }
+  if (!canManageProgram) {
+    return (
+      <AppShell title="עריכת תוכניות זמינה למאמנים בלבד">
+        <p className="surface-card p-5 text-start text-muted-foreground">
+          אפשר לצפות בתוכנית שלך, אך רק מאמן או בעלים יכולים לערוך ימי אימון, תרגילים וסופר-סטים.
+        </p>
+      </AppShell>
+    );
+  }
 
   const labels = computeSupersetLabels(draft.items);
 
@@ -170,6 +180,7 @@ function DayBuilder() {
     }));
 
   const toggleSupersetWithPrev = (index: number) => {
+    if (!canManageProgram) return;
     setDraft((current) => {
       if (index <= 0) return current;
       const items = [...current.items];
@@ -187,6 +198,7 @@ function DayBuilder() {
   };
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!canManageProgram) return;
     if (!over || active.id === over.id) return;
     setDraft((current) => {
       const oldIndex = current.items.findIndex((item) => item.id === active.id);
@@ -198,7 +210,7 @@ function DayBuilder() {
   };
 
   const save = () => {
-    if (!draft.name.trim()) return;
+    if (!canManageProgram || !draft.name.trim()) return;
     saveWorkoutInProgram(program.id, { ...draft, name: draft.name.trim() });
     navigate({ to: "/programs/$programId", params: { programId: program.id } });
   };
@@ -213,6 +225,7 @@ function DayBuilder() {
   );
 
   const addExercise = (exerciseId: string) => {
+    if (!canManageProgram) return;
     setDraft((current) => ({ ...current, items: [...current.items, emptyItem(exerciseId)] }));
     setPicker(false);
     setPickerQuery("");
@@ -289,7 +302,7 @@ function DayBuilder() {
                   item={item}
                   exercise={ex}
                   supersetLabel={labels[item.id]}
-                  canSuperset={index > 0}
+                  canSuperset={canManageProgram && index > 0}
                   supersetActive={Boolean(
                     item.supersetId && item.supersetId === draft.items[index - 1]?.supersetId,
                   )}
@@ -355,18 +368,13 @@ function DayBuilder() {
         ) : null}
       </div>
 
-      <Sheet
+      <Overlay
         open={picker}
-        onOpenChange={(open) => {
-          if (!open) setPicker(false);
-        }}
+        onClose={() => setPicker(false)}
+        ariaLabel="בחירת תרגיל"
+        panelClassName="p-0"
       >
-        <SheetContent
-          side="bottom"
-          showClose={false}
-          dir="rtl"
-          className="mx-auto h-[min(88dvh,44rem)] w-full max-w-xl overflow-hidden rounded-t-[2rem] border-t border-border/40 p-0"
-        >
+        <div dir="rtl" className="h-[min(82dvh,44rem)]">
           <div className="flex h-full min-h-0 flex-col p-5 text-start">
             <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
             <div className="mb-3.5 flex items-center justify-between">
@@ -498,8 +506,8 @@ function DayBuilder() {
               </button>
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+      </Overlay>
 
       <ConfirmSheet
         open={pendingDeleteDay}
@@ -565,10 +573,13 @@ function SortableItem({
 
   const setRepType = (type: "fixed" | "range") => {
     if (type === "range") {
+      const min = Math.max(1, item.repMin ?? item.reps);
+      const max = Math.max(min, item.repMax ?? item.reps + 2);
       onPatch(item.id, {
         repType: "range",
-        repMin: item.repMin ?? item.reps,
-        repMax: item.repMax ?? item.reps + 2,
+        reps: min,
+        repMin: min,
+        repMax: max,
       });
     } else {
       onPatch(item.id, { repType: "fixed" });
@@ -686,22 +697,32 @@ function SortableItem({
             <Stepper
               label="מינימום"
               value={item.repMin ?? item.reps}
-              min={0}
-              onChange={(value) => onPatch(item.id, { repMin: value })}
+              min={1}
+              onChange={(value) => {
+                const min = Math.max(1, value);
+                onPatch(item.id, {
+                  reps: min,
+                  repMin: min,
+                  repMax: Math.max(min, item.repMax ?? min),
+                });
+              }}
             />
             <Stepper
               label="מקסימום"
               value={item.repMax ?? item.reps}
-              min={0}
-              onChange={(value) => onPatch(item.id, { repMax: value })}
+              min={1}
+              onChange={(value) => {
+                const min = Math.max(1, item.repMin ?? item.reps);
+                onPatch(item.id, { repMin: min, repMax: Math.max(min, value) });
+              }}
             />
           </div>
         ) : (
           <Stepper
             label="חזרות מטרה"
             value={item.reps}
-            min={0}
-            onChange={(value) => onPatch(item.id, { reps: value })}
+            min={1}
+            onChange={(value) => onPatch(item.id, { reps: Math.max(1, value) })}
           />
         )}
       </div>

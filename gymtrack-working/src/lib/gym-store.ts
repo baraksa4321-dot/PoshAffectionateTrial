@@ -740,7 +740,12 @@ async function handleUserLogin(userId: string) {
   };
   listeners.forEach((l) => l());
   const pulled = await pullSupabaseData(userId, data);
-  data = pulled;
+  if (!pulled.success) {
+    console.warn("[Initial Supabase Pull Warning]:", pulled.error);
+    listeners.forEach((l) => l());
+    return;
+  }
+  data = pulled.data;
   persist();
   // Push only after local state contains the user's cloud-backed data.
   const result = await syncLocalToSupabase(userId, data, currentUser?.email);

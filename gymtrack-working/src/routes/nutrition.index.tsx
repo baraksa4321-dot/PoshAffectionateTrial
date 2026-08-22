@@ -39,7 +39,6 @@ import {
   removeMealFood,
   renameMeal,
   saveNutritionTargets,
-  saveNutritionWater,
   todayKey,
   updateMealFood,
   useGym,
@@ -286,30 +285,6 @@ function NutritionLog() {
           <MacroPill label="פחמימה" value={totals.carbs} target={targets.carbs} unit="g" />
           <MacroPill label="שומן" value={totals.fat} target={targets.fat} unit="g" />
           <MacroPill label="סיבים" value={totals.fiber} target={targets.fiber || 25} unit="g" />
-        </div>
-      </div>
-
-      <div className="surface-card mt-3 flex items-center gap-3 p-3.5 text-start">
-        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-sky-50 text-sky-700">
-          <span className="text-lg">💧</span>
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
-            מים היום
-          </p>
-          <p className="mt-0.5 text-[13px] font-semibold tabular-nums text-ink">
-            {Math.round(day.waterMl ?? 0)} / {Math.round(day.waterTargetMl ?? 2500)} מ״ל
-          </p>
-        </div>
-        <div className="w-28">
-          <Stepper
-            label="כמות מים"
-            value={day.waterMl ?? 0}
-            step={250}
-            min={0}
-            suffix="מ״ל"
-            onChange={(value) => saveNutritionWater(date, value, day.waterTargetMl ?? 2500)}
-          />
         </div>
       </div>
 

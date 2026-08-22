@@ -3,7 +3,7 @@ import { ArrowRight, GripVertical, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Stepper } from "@/components/Stepper";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Overlay } from "@/components/ui-app/Overlay";
 import { deleteWorkout, emptyItem, emptyWorkout, saveWorkout, useGym } from "@/lib/gym-store";
 import type { Workout, WorkoutItem } from "@/lib/gym-types";
 
@@ -23,7 +23,8 @@ const field =
 function Builder() {
   const { workoutId } = Route.useParams();
   const navigate = useNavigate();
-  const { workouts, exercises } = useGym();
+  const { workouts, exercises, userProfile } = useGym();
+  const canManageProgram = userProfile?.role === "coach" || userProfile?.role === "owner";
   const isNew = workoutId === "new";
   const existing = workouts.find((w) => w.id === workoutId);
 
@@ -34,6 +35,15 @@ function Builder() {
     return (
       <AppShell title="אימון לא נמצא">
         <p className="surface-card p-5 text-muted-foreground text-start">אימון זה אינו קיים עוד.</p>
+      </AppShell>
+    );
+  }
+  if (!canManageProgram) {
+    return (
+      <AppShell title="עריכת אימונים זמינה למאמנים בלבד">
+        <p className="surface-card p-5 text-start text-muted-foreground">
+          אפשר לצפות באימונים שלך, אך רק מאמן או בעלים יכולים לשנות תוכנית או תרגילים.
+        </p>
       </AppShell>
     );
   }
@@ -255,21 +265,16 @@ function Builder() {
         </button>
       )}
 
-      <Sheet
+      <Overlay
         open={picker}
-        onOpenChange={(open) => {
-          if (!open) setPicker(false);
-        }}
+        onClose={() => setPicker(false)}
+        ariaLabel="בחירת תרגיל"
+        panelClassName="p-0"
       >
-        <SheetContent
-          side="bottom"
-          showClose={false}
-          dir="rtl"
-          className="mx-auto h-[min(88dvh,44rem)] w-full max-w-xl overflow-hidden rounded-t-3xl border-t border-border p-0"
-        >
+        <div dir="rtl" className="h-[min(82dvh,44rem)]">
           <div className="flex h-full min-h-0 flex-col p-5 text-start">
             <div className="mb-4 flex items-center justify-between">
-              <SheetTitle className="text-lg">בחר תרגיל</SheetTitle>
+              <h2 className="font-display text-lg font-semibold text-ink">בחר תרגיל</h2>
               <button
                 type="button"
                 aria-label="סגור"
@@ -301,8 +306,8 @@ function Builder() {
               )}
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+      </Overlay>
     </AppShell>
   );
 }

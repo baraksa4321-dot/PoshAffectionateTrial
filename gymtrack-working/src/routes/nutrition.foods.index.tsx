@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Apple, ArrowRight, Plus, Search } from "lucide-react";
+import { Apple, ArrowRight, Heart, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState, Pill, SectionHeader } from "@/components/ui-app/primitives";
-import { useGym } from "@/lib/gym-store";
+import { toggleFavoriteFood, useGym } from "@/lib/gym-store";
 
 export const Route = createFileRoute("/nutrition/foods/")({
   head: () => ({
@@ -13,20 +13,32 @@ export const Route = createFileRoute("/nutrition/foods/")({
 });
 
 function FoodLibrary() {
-  const { foods } = useGym();
+  const { foods, favoriteFoods } = useGym();
   const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("הכל");
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const categories = useMemo(
+    () =>
+      Array.from(new Set(foods.map((food) => food.category).filter(Boolean))).sort((a, b) =>
+        a.localeCompare(b, "he"),
+      ),
+    [foods],
+  );
+  const favoriteIds = useMemo(() => new Set(favoriteFoods), [favoriteFoods]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLocaleLowerCase();
     return foods
       .filter(
         (f) =>
-          !q ||
-          f.name.toLocaleLowerCase().includes(q) ||
-          (f.category ?? "").toLocaleLowerCase().includes(q),
+          (!q ||
+            f.name.toLocaleLowerCase().includes(q) ||
+            (f.category ?? "").toLocaleLowerCase().includes(q)) &&
+          (category === "הכל" || f.category === category) &&
+          (!favoritesOnly || favoriteIds.has(f.id)),
       )
       .sort((a, b) => a.name.localeCompare(b.name, "he"));
-  }, [foods, query]);
+  }, [category, favoriteIds, favoritesOnly, foods, query]);
 
   return (
     <AppShell
@@ -63,6 +75,47 @@ function FoodLibrary() {
         />
       </div>
 
+      <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
+        <button
+          type="button"
+          onClick={() => setFavoritesOnly((current) => !current)}
+          aria-pressed={favoritesOnly}
+          className={`press inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-[12px] font-semibold ${
+            favoritesOnly
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-muted-foreground"
+          }`}
+        >
+          <Heart className={`h-3.5 w-3.5 ${favoritesOnly ? "fill-current" : ""}`} />
+          מועדפים
+        </button>
+        <button
+          type="button"
+          onClick={() => setCategory("הכל")}
+          className={`press shrink-0 rounded-full px-3 py-2 text-[12px] font-semibold ${
+            category === "הכל"
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-muted-foreground"
+          }`}
+        >
+          הכל
+        </button>
+        {categories.map((item) => (
+          <button
+            type="button"
+            key={item}
+            onClick={() => setCategory(item)}
+            className={`press shrink-0 rounded-full px-3 py-2 text-[12px] font-semibold ${
+              category === item
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-muted-foreground"
+            }`}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+
       <SectionHeader
         className="mt-5"
         title={`${filtered.length} תוצאות`}
@@ -71,27 +124,44 @@ function FoodLibrary() {
 
       <div className="space-y-2">
         {filtered.slice(0, 80).map((food) => (
-          <Link
-            key={food.id}
-            to="/nutrition/foods/$foodId"
-            params={{ foodId: food.id }}
-            className="surface-card press block p-3.5"
-          >
-            <div className="flex items-center gap-3">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-sage-soft text-primary">
-                <Apple className="h-4 w-4" strokeWidth={1.8} />
+          <div key={food.id} className="surface-card flex items-center gap-2 p-3.5">
+            <Link
+              to="/nutrition/foods/$foodId"
+              params={{ foodId: food.id }}
+              className="press min-w-0 flex-1"
+            >
+              <div className="flex items-center gap-3">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-sage-soft text-primary">
+                  <Apple className="h-4 w-4" strokeWidth={1.8} />
+                </div>
+                <div className="min-w-0 flex-1 text-start">
+                  <p className="truncate font-display text-[14.5px] font-semibold text-ink">
+                    {food.name}
+                  </p>
+                  <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+                    {food.servingSize} · {food.calories} קלוריות · חלבון {food.protein}g · פחמימות{" "}
+                    {food.carbs}g · שומן {food.fat}g · סיבים {food.fiber ?? 0}g
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1 text-start">
-                <p className="truncate font-display text-[14.5px] font-semibold text-ink">
-                  {food.name}
-                </p>
-                <p className="mt-0.5 text-[11.5px] text-muted-foreground">
-                  {food.servingSize} · {food.calories} קלוריות · חלבון {food.protein}g · פחמימות{" "}
-                  {food.carbs}g · שומן {food.fat}g
-                </p>
-              </div>
-            </div>
-          </Link>
+            </Link>
+            <button
+              type="button"
+              onClick={() => toggleFavoriteFood(food.id)}
+              aria-label={
+                favoriteIds.has(food.id)
+                  ? `הסר ${food.name} מהמועדפים`
+                  : `הוסף ${food.name} למועדפים`
+              }
+              className={`press grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
+                favoriteIds.has(food.id)
+                  ? "bg-primary/10 text-primary"
+                  : "bg-secondary text-muted-foreground"
+              }`}
+            >
+              <Heart className={`h-4 w-4 ${favoriteIds.has(food.id) ? "fill-current" : ""}`} />
+            </button>
+          </div>
         ))}
       </div>
 

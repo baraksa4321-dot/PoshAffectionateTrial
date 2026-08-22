@@ -15,6 +15,8 @@ import {
 } from "./gym-types";
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "error" | "offline";
+export type PullResult =
+  { success: true; data: GymData } | { success: false; data: GymData; error: string };
 
 async function requireSuccessfulWrite(
   operation: PromiseLike<{ error: unknown }>,
@@ -220,16 +222,17 @@ export async function syncLocalToSupabase(
   }
 }
 
-export async function pullSupabaseData(userId: string, localState: GymData): Promise<GymData> {
+export async function pullSupabaseData(userId: string, localState: GymData): Promise<PullResult> {
   const nextData: GymData = { ...localState };
 
   try {
     // 1. Profile
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", userId)
       .maybeSingle();
+    if (profileError) throw new Error(`Profile pull failed: ${profileError.message}`);
 
     if (profile) {
       nextData.userProfile = {
@@ -245,11 +248,12 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 2. Fetch Coach Messages if Client
-    const { data: messages } = await supabase
+    const { data: messages, error: messagesError } = await supabase
       .from("coach_messages")
       .select("*")
       .eq("client_id", userId)
       .order("created_at", { ascending: false });
+    if (messagesError) throw new Error(`Messages pull failed: ${messagesError.message}`);
 
     if (messages && messages.length > 0) {
       nextData.coachMessages = messages.map((m) => ({
@@ -264,12 +268,14 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
 
     // 3. If Coach, fetch client links
     if (nextData.userProfile?.role === "coach") {
-      const { data: clientLinks } = await supabase
+      const { data: clientLinks, error: clientLinksError } = await supabase
         .from("coach_clients")
         .select(
           "id, client_id, created_at, profiles!coach_clients_client_id_fkey(email, full_name)",
         )
         .eq("coach_id", userId);
+      if (clientLinksError)
+        throw new Error(`Client links pull failed: ${clientLinksError.message}`);
 
       if (clientLinks) {
         nextData.clients = clientLinks.map((link) => ({
@@ -283,10 +289,12 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 4. Custom Exercises
-    const { data: dbCustomExercises } = await supabase
+    const { data: dbCustomExercises, error: customExercisesError } = await supabase
       .from("custom_exercises")
       .select("*")
       .eq("user_id", userId);
+    if (customExercisesError)
+      throw new Error(`Custom exercises pull failed: ${customExercisesError.message}`);
 
     if (dbCustomExercises && dbCustomExercises.length > 0) {
       const customMap = new Map(nextData.exercises.map((e) => [e.id, e]));
@@ -307,12 +315,17 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 5. Programs & Days
-    const { data: dbPrograms } = await supabase.from("programs").select("*").eq("user_id", userId);
+    const { data: dbPrograms, error: programsError } = await supabase
+      .from("programs")
+      .select("*")
+      .eq("user_id", userId);
+    if (programsError) throw new Error(`Programs pull failed: ${programsError.message}`);
 
-    const { data: dbProgramDays } = await supabase
+    const { data: dbProgramDays, error: programDaysError } = await supabase
       .from("program_days")
       .select("*")
       .eq("user_id", userId);
+    if (programDaysError) throw new Error(`Program days pull failed: ${programDaysError.message}`);
 
     if (dbPrograms && dbPrograms.length > 0) {
       const workoutsMap = new Map(nextData.workouts.map((w) => [w.id, w]));
@@ -348,11 +361,12 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 6. History Sessions
-    const { data: dbSessions } = await supabase
+    const { data: dbSessions, error: sessionsError } = await supabase
       .from("workout_sessions")
       .select("*")
       .eq("user_id", userId)
       .order("date", { ascending: false });
+    if (sessionsError) throw new Error(`Workout history pull failed: ${sessionsError.message}`);
 
     if (dbSessions && dbSessions.length > 0) {
       const historyList: HistorySession[] = dbSessions.map((row) => ({
@@ -371,11 +385,12 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 7. Body Weight Logs
-    const { data: dbBodyWeightLogs } = await supabase
+    const { data: dbBodyWeightLogs, error: bodyWeightError } = await supabase
       .from("body_weight_logs")
       .select("id, date, weight_kg")
       .eq("user_id", userId)
       .order("date", { ascending: false });
+    if (bodyWeightError) throw new Error(`Weight logs pull failed: ${bodyWeightError.message}`);
 
     if (dbBodyWeightLogs && dbBodyWeightLogs.length > 0) {
       nextData.bodyWeightLogs = dbBodyWeightLogs.map((row) => ({
@@ -386,10 +401,11 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 8. Custom Foods
-    const { data: dbCustomFoods } = await supabase
+    const { data: dbCustomFoods, error: customFoodsError } = await supabase
       .from("custom_foods")
       .select("*")
       .eq("user_id", userId);
+    if (customFoodsError) throw new Error(`Custom foods pull failed: ${customFoodsError.message}`);
 
     if (dbCustomFoods && dbCustomFoods.length > 0) {
       const foodMap = new Map(nextData.foods.map((f) => [f.id, f]));
@@ -413,10 +429,11 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 9. Nutrition Days
-    const { data: dbNutritionDays } = await supabase
+    const { data: dbNutritionDays, error: nutritionDaysError } = await supabase
       .from("nutrition_days")
       .select("*")
       .eq("user_id", userId);
+    if (nutritionDaysError) throw new Error(`Nutrition pull failed: ${nutritionDaysError.message}`);
 
     if (dbNutritionDays && dbNutritionDays.length > 0) {
       const daysList: NutritionDay[] = dbNutritionDays.map((row) => ({
@@ -431,19 +448,21 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 10. Food Favorites
-    const { data: dbFavs } = await supabase
+    const { data: dbFavs, error: favoritesError } = await supabase
       .from("food_favorites")
       .select("food_id")
       .eq("user_id", userId);
+    if (favoritesError) throw new Error(`Favorites pull failed: ${favoritesError.message}`);
 
     if (dbFavs) {
       nextData.favoriteFoods = dbFavs.map((f) => f.food_id);
     }
-  } catch (err) {
-    console.error("[Supabase Pull Error]:", err);
+    return { success: true, data: nextData };
+  } catch (err: unknown) {
+    const error = err instanceof Error && err.message ? err.message : "Cloud data pull failed";
+    console.error("[Supabase Pull Error]:", error);
+    return { success: false, data: localState, error };
   }
-
-  return nextData;
 }
 
 export async function pullClientDataForCoach(clientId: string): Promise<{

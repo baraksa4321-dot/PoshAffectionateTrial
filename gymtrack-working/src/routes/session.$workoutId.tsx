@@ -83,7 +83,8 @@ const ACTIVE_SESSION_KEY = (id: string) => `gymtrack.active_session.${id}`;
 function Session() {
   const { workoutId } = Route.useParams();
   const navigate = useNavigate();
-  const { workouts, exercises, history, programs } = useGym();
+  const { workouts, exercises, history, programs, userProfile } = useGym();
+  const canAddAdvancedSets = userProfile?.role === "coach" || userProfile?.role === "owner";
   const workout = workouts.find((w) => w.id === workoutId);
   const currentProgram = programs.find((program) => program.dayIds.includes(workoutId));
   const [cardExercise, setCardExercise] = useState<Exercise | null>(null);
@@ -514,26 +515,31 @@ function Session() {
                 >
                   + סט נוסף
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const lastSet = entry.sets[entry.sets.length - 1];
-                    const dropSet: LoggedSet = {
-                      reps: lastSet?.reps ?? entry.targetReps ?? 10,
-                      weight: Math.round((lastSet?.weight ?? prescribedWeight) * 0.8 * 2) / 2,
-                      done: false,
-                      targetReps: entry.targetReps,
-                      warmup: false,
-                      dropSet: true,
-                    };
-                    setEntries((prev) =>
-                      prev.map((e, idx) => (idx === ei ? { ...e, sets: [...e.sets, dropSet] } : e)),
-                    );
-                  }}
-                  className="press rounded-xl bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 border border-amber-200 hover:bg-amber-100 cursor-pointer"
-                >
-                  + דרופ סט
-                </button>
+                {canAddAdvancedSets ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!canAddAdvancedSets) return;
+                      const lastSet = entry.sets[entry.sets.length - 1];
+                      const dropSet: LoggedSet = {
+                        reps: lastSet?.reps ?? entry.targetReps ?? 10,
+                        weight: Math.round((lastSet?.weight ?? prescribedWeight) * 0.8 * 2) / 2,
+                        done: false,
+                        targetReps: entry.targetReps,
+                        warmup: false,
+                        dropSet: true,
+                      };
+                      setEntries((prev) =>
+                        prev.map((e, idx) =>
+                          idx === ei ? { ...e, sets: [...e.sets, dropSet] } : e,
+                        ),
+                      );
+                    }}
+                    className="press rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 hover:bg-amber-100 cursor-pointer"
+                  >
+                    + דרופ סט
+                  </button>
+                ) : null}
               </div>
             </article>
           );
