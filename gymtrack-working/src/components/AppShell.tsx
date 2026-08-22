@@ -58,6 +58,7 @@ export function AppShell({
 
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -135,6 +136,29 @@ export function AppShell({
       setSuccessMsg("מייל אימות מחדש נשלח בהצלחה לכתובת " + targetEmail + "!");
     } catch (err: unknown) {
       setErrorMsg(errorMessage(err, "שגיאה בשליחת מייל אימות מחדש"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!email.trim()) {
+      setErrorMsg("יש להזין כתובת אימייל כדי לקבל קישור לאיפוס סיסמה.");
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+    try {
+      const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo,
+      });
+      if (error) throw error;
+      setSuccessMsg("אם קיים חשבון עם כתובת זו, נשלח אליו קישור לאיפוס סיסמה.");
+    } catch (err: unknown) {
+      setErrorMsg(errorMessage(err, "שגיאה בשליחת קישור איפוס הסיסמה"));
     } finally {
       setLoading(false);
     }
@@ -241,7 +265,11 @@ export function AppShell({
               <div className="flex items-center gap-2">
                 <User className="h-5 w-5 text-primary" />
                 <h3 className="font-bold text-lg text-ink">
-                  {isSignUp ? "הרשמה ל-My Routine" : "התחברות ל-My Routine"}
+                  {isResettingPassword
+                    ? "איפוס סיסמה"
+                    : isSignUp
+                      ? "הרשמה ל-My Routine"
+                      : "התחברות ל-My Routine"}
                 </h3>
               </div>
               <button
@@ -283,50 +311,86 @@ export function AppShell({
               </div>
             )}
 
-            <form onSubmit={handleAuthSubmit} className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-muted-foreground mb-1">
-                  כתובת אימייל
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
-                  placeholder="name@example.com"
-                />
+            {isResettingPassword ? (
+              <div className="space-y-3">
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  הזיני את כתובת האימייל שלך ונשלח קישור מאובטח לאיפוס הסיסמה.
+                </p>
+                <button
+                  type="button"
+                  onClick={handlePasswordReset}
+                  disabled={loading}
+                  className="w-full rounded-2xl bg-primary py-2.5 text-sm font-bold text-white shadow-md hover:bg-primary/90 disabled:opacity-50 cursor-pointer"
+                >
+                  {loading ? "שולח..." : "שלח קישור איפוס"}
+                </button>
               </div>
+            ) : (
+              <form onSubmit={handleAuthSubmit} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-muted-foreground mb-1">
+                    כתובת אימייל
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
+                    placeholder="name@example.com"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-bold text-muted-foreground mb-1">סיסמה</label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
-                  placeholder="••••••••"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-muted-foreground mb-1">
+                    סיסמה
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
+                    placeholder="••••••••"
+                  />
+                </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-2xl bg-primary py-2.5 text-sm font-bold text-white shadow-md hover:bg-primary/90 disabled:opacity-50 cursor-pointer"
-              >
-                {loading ? "מעבד..." : isSignUp ? "צור חשבון" : "התחבר"}
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-2xl bg-primary py-2.5 text-sm font-bold text-white shadow-md hover:bg-primary/90 disabled:opacity-50 cursor-pointer"
+                >
+                  {loading ? "מעבד..." : isSignUp ? "צור חשבון" : "התחבר"}
+                </button>
+              </form>
+            )}
 
             <div className="text-center pt-2">
               <button
-                onClick={() => setIsSignUp(!isSignUp)}
+                onClick={() => {
+                  setIsResettingPassword(false);
+                  setIsSignUp(!isSignUp);
+                  setErrorMsg("");
+                  setSuccessMsg("");
+                }}
                 className="text-xs font-bold text-primary hover:underline cursor-pointer"
               >
                 {isSignUp ? "כבר יש לך חשבון? התחבר כאן" : "אין לך חשבון? הירשם כאן"}
               </button>
+              {!isSignUp && !isResettingPassword ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsResettingPassword(true);
+                    setErrorMsg("");
+                    setSuccessMsg("");
+                  }}
+                  className="mt-2 block w-full text-xs font-semibold text-muted-foreground hover:text-primary hover:underline cursor-pointer"
+                >
+                  שכחתי את הסיסמה
+                </button>
+              ) : null}
             </div>
           </div>
         </div>

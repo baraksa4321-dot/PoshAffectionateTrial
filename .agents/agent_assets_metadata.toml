@@ -14,3 +14,17 @@ mtime_ms = 1787382534223
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/ddaa29d7-5884-415f-90f8-e71bd2e8cee6/8e039673-7689-44e6-b7c3-a668dea39fe8"
 storage_version_token = "1787382539206800"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "zuye71bP24LwiMeipbZ-B"
+uri = "file://attached_assets/GymTrack-Production-Ready-Final-Updated.zip"
+type = "unspecified"
+title = "GymTrack Updated Source Archive"
+description = "Updated source and Supabase migrations with password-reset initiation, user-scoped cloud deletion, schema fixes, and the refreshed evidence-based audit report. Bundled .env.local is excluded."
+logical_id = "cd096c10-ffc7-4aab-b3f5-3d1e8a955008"
+content_hash = "sha256:e8afc5360ebadd0104d15b532130fd970fbb665af864f1446f76febf97356545"
+size = 347333
+mtime_ms = 1787382872650
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/cd096c10-ffc7-4aab-b3f5-3d1e8a955008/3f8b529e-9c88-411f-a0fc-5570f559afa9"
+storage_version_token = "1787382878027599"
+content_type = "application/octet-stream"
