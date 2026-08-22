@@ -1,0 +1,893 @@
+GymTrack — MASTER PASS: Complete All Missing Requirements
+
+יש עדיין הרבה דברים שכבר ביקשתי ולא הושלמו בפועל.
+
+אני רוצה שתעבור עכשיו על כל הדרישות במסמך הזה מהתחלה ועד הסוף, ותשווה אותן למימוש הקיים. אל תטפל רק בבעיה האחרונה שמצאת.
+
+המטרה היא להשלים את GymTrack כמוצר שלם ועקבי.
+
+אל תבנה מחדש את האפליקציה.
+אל תשנה Supabase/RLS/security ללא צורך אמיתי ומאומת.
+אל תסמן משימה כ־Done רק בגלל שהקוד נבנה.
+
+⸻
+
+1. Owner App — אתר נפרד באמת
+
+זה אחד הדברים החשובים ביותר.
+
+כאשר משתמש הוא owner, אני לא רוצה לראות את אפליקציית המתאמן עם עוד כמה כפתורים.
+
+אני רוצה Owner App אמיתי, עם חוויה ניהולית נפרדת.
+
+צריך להיות:
+
+* Owner Dashboard
+* Owner Navigation
+* ניהול מאמנים
+* ניהול מתאמנים
+* חיפוש מתאמנים
+* חיפוש מאמנים
+* צפייה בפרופילים
+* שינוי Role
+* שיוך מתאמן למאמן
+* החלפת מאמן
+* צפייה בתוכניות
+* צפייה באימונים
+* היסטוריית אימונים
+* מדידות
+* תזונה
+* משובים
+* בדיקות
+* הודעות/תקשורת
+* ניהול הנתונים הניהוליים הקיימים
+
+ה־Owner UI צריך להרגיש כמו מערכת ניהול נפרדת.
+
+⸻
+
+2. Coach App
+
+Coach צריך לקבל אתר/אפליקציה ייעודית משלו.
+
+צריך להיות:
+
+* Coach Dashboard
+* רשימת מתאמנים
+* חיפוש מתאמנים
+* פרופילי מתאמנים
+* תוכניות
+* יצירת ועריכת תוכניות
+* אימונים
+* היסטוריה
+* מדידות
+* תזונה
+* משובים
+* בדיקות
+* הודעות
+* מתכונים
+* תרגילים מותאמים
+* מזונות מותאמים
+* מעקב התקדמות
+
+Coach רואה רק מתאמנים שמשויכים אליו.
+
+⸻
+
+3. Client App
+
+Client מקבל את האפליקציה הרגילה של המתאמן.
+
+צריך להיות:
+
+* Home
+* Workout
+* תוכנית
+* Nutrition
+* Progress
+* Measurements
+* Workout History
+* Messages
+* Check-ins
+* Profile
+* Settings
+
+Client לא רואה:
+
+* Owner Dashboard
+* Owner navigation
+* ניהול משתמשים
+* שינוי Roles
+* מתאמנים אחרים
+* מידע של מתאמנים אחרים
+
+⸻
+
+4. Maya2003yos — CRITICAL
+
+maya2003yos לא אמורה להיות Owner.
+
+כרגע היא חוזרת להיות Owner לאחר התחברות.
+
+אל תיצור שום hardcode עבור Maya.
+
+בדוק בפועל:
+
+* Auth UID
+* profiles.role
+* is_owner()
+* role שמגיע ל־frontend
+* role שמוצג ב־UI
+
+אם ה־DB מחזיר owner, דווח על כך ואל תשנה אותו בלי אישור.
+
+אם ה־DB לא מחזיר owner אבל ה־UI מציג Owner — תקן את הבעיה.
+
+אסור ש־cache של משתמש קודם יגרום למשתמש אחר לקבל Owner.
+
+⸻
+
+5. PERSISTENCE — קריטי ביותר
+
+אני רוצה שכל דבר שאני כותבת או מעדכנת למתאמנים יישאר באמת.
+
+הזרימה הנדרשת היא:
+
+Edit → Save → Supabase → Refresh → עדיין קיים
+
+וגם:
+
+Edit → Save → Logout → Login → עדיין קיים
+
+זה חל על:
+
+* Profile
+* Weight
+* Height
+* RMR
+* TDEE
+* Coach assignment
+* Programs
+* Program days
+* Exercises
+* Sets
+* Weight
+* Rep Range
+* Rest
+* Notes
+* Workouts
+* Actual weight
+* Actual reps
+* Completed sets
+* RPE
+* Workout history
+* Nutrition
+* Meals
+* Foods
+* Quantities
+* Fiber
+* Progress
+* Measurements
+* Check-ins
+* Feedback
+* Messages
+* Recipes
+* Favorites
+* Custom exercises
+* Custom foods
+
+אם משהו נראה שמור אבל נעלם אחרי Refresh — זו תקלה.
+
+⸻
+
+6. NUTRITION — לבנות את זה כמו מערכת אמיתית
+
+זה אחד החלקים שהכי חשוב לי שתשלים.
+
+אני לא רוצה Nutrition שנראה כמו כמה כרטיסים עם מספרים.
+
+אני רוצה Nutrition System אמיתי.
+
+Daily Nutrition
+
+המשתמש צריך לראות:
+
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+
+עם יעדים והתקדמות.
+
+לא צריך Water tracking.
+
+אל תציג:
+
+* Water goal
+* Water card
+* Water progress
+
+⸻
+
+7. Nutrition — ערכים תזונתיים
+
+אני רוצה מסך/אזור ברור של Nutrition Values, שבו רואים את הערכים התזונתיים בצורה מסודרת.
+
+לכל מזון:
+
+* Calories
+* Protein
+* Carbohydrates
+* Fat
+* Fiber
+
+המערכת צריכה לחשב לפי הכמות.
+
+לדוגמה:
+
+אם מזון מוגדר ל־100g ומשנים ל־200g:
+
+כל הערכים צריכים להשתנות בהתאם:
+
+* Calories × 2
+* Protein × 2
+* Carbs × 2
+* Fat × 2
+* Fiber × 2
+
+לא רק הקלוריות.
+
+⸻
+
+8. Nutrition — ארוחות
+
+אני חייבת להיות מסוגלת לנהל ארוחות בצורה ברורה.
+
+צריך להיות:
+
+Breakfast
+
+* Add Food
+
+Lunch
+
+* Add Food
+
+Dinner
+
+* Add Food
+
+Snack
+
+* Add Food
+
+וכל ארוחה צריכה להציג את המזונות שבתוכה.
+
+צריך להיות אפשר:
+
+* Add Food
+* Remove Food
+* Change Quantity
+* Replace Food
+* Search Food
+* לבחור מנה
+* לשנות grams/quantity
+* לראות ערכים
+
+⸻
+
+9. Nutrition — Add Food חייב לעבוד
+
+הזרימה צריכה להיות:
+
+Meal → Add Food → Food Picker → Select Food → Quantity → Save
+
+ואז:
+
+המזון מופיע בתוך הארוחה.
+
+לא רק נפתח חלון.
+
+אני צריכה באמת להיות מסוגלת להוסיף אוכל.
+
+אפשר להוסיף כמה מזונות לאותה ארוחה.
+
+⸻
+
+10. Nutrition — Food Picker
+
+Food Picker חייב להיפתח מעל המסך, לא למטה.
+
+זה כולל:
+
+* Choose Food
+* Replace Food
+* Food Details
+* Quantity selector
+
+החלון צריך להיות:
+
+* Portal
+* מעל כל התוכן
+* עם overlay
+* scroll פנימי
+* mobile safe
+* RTL
+* Escape
+* X
+* outside click
+* reopen
+
+⸻
+
+11. Nutrition — Food Database
+
+כרגע יש בערך 488 foods בלבד.
+
+זה לא מספיק.
+
+אני רוצה להרחיב משמעותית את המאגר.
+
+לא רק עוד כמה פריטים.
+
+צריך מאגר גדול ושימושי שמכסה:
+
+Carbohydrates
+
+* White rice
+* Brown rice
+* Oats
+* Pasta
+* Bread
+* Whole wheat bread
+* Potato
+* Sweet potato
+* Couscous
+* Bulgur
+* Cereal
+* ועוד
+
+Proteins
+
+* Chicken breast
+* Chicken thighs
+* Turkey
+* Beef
+* Lean beef
+* Tuna
+* Salmon
+* White fish
+* Eggs
+* Egg whites
+* Greek yogurt
+* Cottage cheese
+* Protein powder
+* ועוד
+
+Fats
+
+* Olive oil
+* Avocado
+* Tahini
+* Peanut butter
+* Almonds
+* Walnuts
+* Cashews
+* Seeds
+* ועוד
+
+Vegetables
+
+מגוון גדול של:
+
+* Broccoli
+* Spinach
+* Lettuce
+* Tomato
+* Cucumber
+* Carrot
+* Pepper
+* Cauliflower
+* Zucchini
+* ועוד
+
+Fruits
+
+מגוון גדול של:
+
+* Apple
+* Pear
+* Banana
+* Orange
+* Berries
+* Strawberry
+* Blueberry
+* Mango
+* Pineapple
+* ועוד
+
+Legumes
+
+* Lentils
+* Chickpeas
+* Black beans
+* Kidney beans
+* ועוד
+
+⸻
+
+12. Nutrition Data Quality
+
+אסור להמציא ערכים תזונתיים ולהציג אותם כנתונים מוסמכים.
+
+אם משתמשים בנתונים חיצוניים, צריך מקור אמין ומתאים.
+
+אין:
+
+* fake foods
+* duplicate foods
+* placeholder foods
+* demo nutrition values
+
+כל Food צריך להיות עקבי מבחינת:
+
+* serving
+* calories
+* protein
+* carbs
+* fat
+* fiber
+
+⸻
+
+13. Nutrition Categories / Search / Filters
+
+צריך להיות קל למצוא מזון.
+
+צריך:
+
+* Search
+* Category
+* Macronutrient-related categories
+* Food details
+* Favorites
+* Recent foods, אם קיים במערכת
+* Custom foods
+
+המאגר צריך להיות מספיק גדול כדי שהחיפוש באמת יהיה שימושי.
+
+⸻
+
+14. Fiber — חובה
+
+Fiber הוא לא אופציונלי.
+
+כל מערכת התזונה צריכה לקחת Fiber בחשבון.
+
+צריך להציג Fiber ב:
+
+* Food details
+* Meal totals
+* Daily totals
+* Progress
+* Nutrition summary
+* Quantity calculations
+
+⸻
+
+15. Workout Exercise Card — מבנה חדש
+
+אני רוצה שהתרגיל באימון יוצג בצורה הבאה:
+
+Top
+
+Exercise Name
+
+לידו:
+
+Replace
+
+החלפה צריכה להציע חלופות מתאימות:
+
+* Machine
+* Cable
+* Dumbbell
+* Barbell
+* Bodyweight
+
+לפי התרגיל.
+
+בנוסף:
+
+Rest 90 sec
+
+⸻
+
+Planned
+
+מתחת:
+
+60 kg · 8–12 reps
+
+אלה הערכים המתוכננים.
+
+⸻
+
+Sets
+
+אחר כך:
+
+Set 1 ✓
+
+ומתחת/לצד:
+
+Actual Weight [60]
+
+Actual Reps [10]
+
+Actual values צריכים להיות מעט קטנים וקומפקטיים יותר מה־planned values.
+
+המבנה צריך להיות נקי וברור במיוחד במובייל.
+
+⸻
+
+16. Rep Range
+
+אני רוצה טווח חזרות אמיתי.
+
+לדוגמה:
+
+8–12 reps
+
+צריך להיות אפשר:
+
+* Fixed reps
+* Rep range
+* repMin
+* repMax
+
+ולשמור את הנתונים.
+
+לא להציג רק 8.
+
+לא להציג רק 12.
+
+לאפשר Save → Refresh → Logout → Login.
+
+⸻
+
+17. Client — אסור Drop Set / Super Set
+
+Client לא אמור להיות מסוגל להוסיף לעצמו:
+
+* Drop Set
+* Super Set
+
+האפשרות צריכה להיות זמינה רק ל־Coach/Owner בהתאם להרשאות.
+
+לא מספיק להסתיר כפתור.
+
+צריך לוודא שגם action/route/state לא מאפשרים ללקוח לבצע זאת.
+
+⸻
+
+18. Exercise Picker עדיין למטה
+
+זו תקלה שעדיין קיימת.
+
+כל Exercise Picker חייב להיפתח מעל המסך.
+
+במיוחד:
+
+* Add Exercise
+* Replace Exercise
+* Exercise Details
+
+לא להסתפק ב־“Radix Sheet קיים בקוד”.
+
+צריך לבדוק למה הוא עדיין נראה למטה.
+
+בדוק בפועל:
+
+* DOM
+* Portal
+* body
+* fixed
+* z-index
+* overflow
+* stacking context
+* transforms
+* parent containers
+* mobile viewport
+
+⸻
+
+19. Exercise Library — הרבה יותר מ־8
+
+כרגע היו בערך 8 תרגילים.
+
+זה לא מספיק.
+
+אני רוצה מאגר גדול מאוד עם כיסוי של:
+
+* Chest
+* Back
+* Shoulders
+* Biceps
+* Triceps
+* Quads
+* Hamstrings
+* Glutes
+* Calves
+* Core
+* Forearms
+* Traps
+* Lower Back
+
+ועם:
+
+* Barbell
+* Dumbbell
+* Cable
+* Machine
+* Bodyweight
+
+לא ליצור כפילויות.
+
+לא ליצור נתוני דמה מטעים.
+
+⸻
+
+20. Exercise Data
+
+בהתאם לסכמה הקיימת:
+
+* Name
+* Muscle group
+* Category
+* Equipment
+* Difficulty
+* Instructions
+* video_url כאשר יש מקור אמין
+* Alternatives
+
+צריך להיות:
+
+* Search
+* Filter
+* Muscle filter
+* Equipment filter
+
+⸻
+
+21. כל דבר שנפתח בלחיצה
+
+כל:
+
+* Modal
+* Dialog
+* Sheet
+* Picker
+* Popover
+* Confirmation
+* Select
+* Menu
+* Editing window
+
+צריך להיפתח מעל התוכן.
+
+לא למטה.
+
+זה כולל:
+
+* Nutrition
+* Food
+* Replace Food
+* Exercise
+* Replace Exercise
+* Exercise Details
+* Rest
+* Nutrition Targets
+* Shopping List
+* Measurements
+* Check-ins
+* Account
+* Coach Assignment
+* Confirmations
+
+⸻
+
+22. Buttons
+
+יש כרגע כפתורים שאי אפשר ללחוץ עליהם.
+
+צריך לבצע audit מלא.
+
+כל כפתור חייב:
+
+* להיות clickable
+* לא להיות מכוסה על ידי overlay בלתי נראה
+* לא להיות disabled בטעות
+* לבצע פעולה אמיתית
+* לא להיות placeholder
+
+בדוק במיוחד:
+
+* Nutrition
+* Add Food
+* Add Meal
+* Food Picker
+* Exercise Picker
+* Replace
+* Workout
+* Program
+* Coach
+* Owner
+
+⸻
+
+23. Mobile + RTL
+
+כל המערכת חייבת לעבוד ב:
+
+* Hebrew
+* RTL
+* Mobile
+
+במיוחד:
+
+* Nutrition
+* Food Picker
+* Exercise Picker
+* Workout Cards
+* Rep Range
+* Actual inputs
+* Owner App
+* Coach App
+
+⸻
+
+24. Security
+
+לא להחליש:
+
+* RLS
+* Supabase Auth
+* Role permissions
+* Coach/Client isolation
+* SECURITY DEFINER
+* RPC permissions
+
+אין service-role frontend.
+
+אין hardcoded users.
+
+אין Maya exception.
+
+⸻
+
+25. בדיקות אמיתיות
+
+אל תכתוב:
+
+VERIFIED
+
+רק כי:
+
+* build עבר
+* lint עבר
+* screenshot נראה טוב
+* הקוד נראה נכון
+
+הדוח חייב להפריד:
+
+VERIFIED
+
+בדיקה אמיתית בדפדפן.
+
+CODE VERIFIED
+
+אימות בקוד.
+
+NOT VERIFIED
+
+לא ניתן היה לבצע.
+
+במיוחד:
+
+* Maya role
+* Add Food
+* Meal persistence
+* Exercise Picker
+* Button clicks
+* Rep Range persistence
+* Owner/Coach/Client flows
+
+⸻
+
+26. Persistence QA
+
+בדוק שכל שינוי משמעותי עובר:
+
+Save → Refresh → Logout → Login
+
+במיוחד:
+
+Nutrition
+
+Add Food → Save → Refresh → Logout/Login
+
+Program
+
+Add Exercise → 8–12 → Weight → Rest → Save → Refresh → Logout/Login
+
+Workout
+
+Actual Weight → Actual Reps → ✓ → Complete → History → Refresh
+
+Profile
+
+Weight → Save → Refresh → Logout/Login
+
+⸻
+
+27. Database
+
+אל תשנה DB בלי צורך.
+
+לפני שינוי:
+
+* בדוק schema
+* בדוק existing fields
+* בדוק existing JSON structures
+* בדוק existing RPC
+* בדוק RLS
+
+אם אפשר לבצע את הדרישה באמצעות המבנה הקיים — השתמש בו.
+
+⸻
+
+28. Final Report
+
+בסיום:
+
+FIXED
+
+מה באמת תוקן.
+
+VERIFIED
+
+מה נבדק בפועל.
+
+CODE VERIFIED
+
+מה אומת בקוד בלבד.
+
+DATABASE
+
+מה השתנה, ואם לא השתנה — כתוב שלא השתנה.
+
+SECURITY
+
+מה נבדק.
+
+PERSISTENCE
+
+מה הוכח שנשמר.
+
+STILL MISSING
+
+מה עדיין חסר.
+
+MY NEXT TEST
+
+תן לי בדיקה אחת בלבד שאני צריכה לבצע.
+
+אל תיתן לי רשימה של 10 בדיקות.
+
+אני רוצה לעבוד איתך שלב־שלב:
+
+אתה אומר לי בדיקה אחת → אני בודקת → אני אומרת מה קרה → ואז עוברים לבדיקה הבאה.
+
+אל תכריז על Production Ready עד שהבעיות האמיתיות נבדקו בפועל.
