@@ -27,6 +27,7 @@ import {
   SecondaryButton,
   SectionHeader,
 } from "@/components/ui-app/primitives";
+import { Overlay } from "@/components/ui-app/Overlay";
 import {
   addFoodToMeal,
   addMeal,
@@ -402,9 +403,11 @@ function NutritionLog() {
 
       {/* "What Should I Eat Now?" Modal */}
       {showWhatToEat && (
-        <div
-          className="fade-in fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 backdrop-blur-sm p-4"
-          onClick={() => setShowWhatToEat(false)}
+        <Overlay
+          open={showWhatToEat}
+          onClose={() => setShowWhatToEat(false)}
+          variant="bottom"
+          ariaLabel="מה לאכול עכשיו"
         >
           <div
             className="w-full max-w-sm rounded-3xl border border-white/80 bg-white p-5 shadow-2xl space-y-3 text-start"
@@ -453,14 +456,16 @@ function NutritionLog() {
               ))}
             </div>
           </div>
-        </div>
+        </Overlay>
       )}
 
       {/* Automatic Shopping List Modal */}
       {showShoppingList && (
-        <div
-          className="fade-in fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 backdrop-blur-sm p-4"
-          onClick={() => setShowShoppingList(false)}
+        <Overlay
+          open={showShoppingList}
+          onClose={() => setShowShoppingList(false)}
+          variant="bottom"
+          ariaLabel="רשימת קניות אוטומטית"
         >
           <div
             className="w-full max-w-sm rounded-3xl border border-white/80 bg-white p-5 shadow-2xl space-y-3 text-start max-h-[80vh] overflow-y-auto"
@@ -513,15 +518,16 @@ function NutritionLog() {
               </div>
             )}
           </div>
-        </div>
+        </Overlay>
       )}
 
       {/* Picker bottom-sheet */}
       {pickerMealId ? (
-        <div
-          className="fade-in fixed inset-0 z-40 flex flex-col justify-end bg-foreground/30 backdrop-blur-sm"
-          onClick={() => setPickerMealId(null)}
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        <Overlay
+          open={Boolean(pickerMealId)}
+          onClose={() => setPickerMealId(null)}
+          variant="bottom"
+          ariaLabel="בחירת מאכל"
         >
           <div
             className="scale-in max-h-[88dvh] overflow-y-auto rounded-t-[2rem] border-t border-border/40 bg-card p-5 text-start shadow-2xl"
@@ -570,15 +576,16 @@ function NutritionLog() {
               ))}
             </div>
           </div>
-        </div>
+        </Overlay>
       ) : null}
 
       {/* Calorie-based replacement */}
       {substituteFor ? (
-        <div
-          className="fade-in fixed inset-0 z-40 flex flex-col justify-end bg-foreground/30 backdrop-blur-sm"
-          onClick={() => setSubstituteFor(null)}
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        <Overlay
+          open={Boolean(substituteFor)}
+          onClose={() => setSubstituteFor(null)}
+          variant="bottom"
+          ariaLabel="החלפת מאכל"
         >
           <div
             className="scale-in max-h-[88dvh] overflow-y-auto rounded-t-[2rem] border-t border-border/40 bg-card p-5 text-start shadow-2xl"
@@ -631,15 +638,16 @@ function NutritionLog() {
               ))}
             </div>
           </div>
-        </div>
+        </Overlay>
       ) : null}
 
       {/* Targets modal */}
       {showTargets ? (
-        <div
-          className="fade-in fixed inset-0 z-40 flex items-end justify-center bg-foreground/40 backdrop-blur-sm"
-          onClick={() => setShowTargets(false)}
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        <Overlay
+          open={showTargets}
+          onClose={() => setShowTargets(false)}
+          variant="bottom"
+          ariaLabel="יעדים תזונתיים"
         >
           <div
             className="scale-in max-h-[88dvh] w-full max-w-xl overflow-y-auto rounded-t-[2rem] border-t border-border/40 bg-card p-5 text-start shadow-2xl"
@@ -686,7 +694,7 @@ function NutritionLog() {
               <SecondaryButton onClick={() => setShowTargets(false)}>ביטול</SecondaryButton>
             </div>
           </div>
-        </div>
+        </Overlay>
       ) : null}
     </AppShell>
   );
