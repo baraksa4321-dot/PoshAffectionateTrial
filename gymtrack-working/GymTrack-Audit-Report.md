@@ -19,7 +19,8 @@ claimed from it.
 - The source contains Supabase calls for sign-up, sign-in, sign-out, session
   restoration, email confirmation resend, password recovery, profile loading,
   role loading, programs, program days, workout sessions, nutrition days,
-  favorites, custom foods, custom exercises, messages, and body-weight logs.
+  favorites, custom foods, custom exercises, messages, body-weight logs, and
+  nutrition `water_ml`/`water_target_ml` preservation.
 - The food module contains 488 parsed entries. Static checks found no duplicate
   parsed IDs or names and no missing fiber fields in the inspected dataset.
 - The source contains Hebrew/RTL layout and mobile-first responsive classes.

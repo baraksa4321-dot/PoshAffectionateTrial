@@ -168,6 +168,8 @@ export type NutritionDay = {
   id?: string;
   date: string; // YYYY-MM-DD
   meals: Meal[];
+  waterMl?: number;
+  waterTargetMl?: number;
 };
 
 export type NutritionTargets = {

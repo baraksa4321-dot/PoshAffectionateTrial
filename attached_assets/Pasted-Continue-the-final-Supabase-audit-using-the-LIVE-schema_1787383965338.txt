@@ -1,0 +1,68 @@
+Continue the final Supabase audit using the LIVE schema results already retrieved.
+
+Important correction:
+The nutrition_days table does NOT have a water column.
+The correct column is:
+
+nutrition_days.water_ml
+
+Therefore, any audit query referencing nd.water must be corrected to nd.water_ml.
+
+Do NOT create a new water column.
+Do NOT change the existing nutrition schema just because the audit query used the wrong column name.
+
+Now rerun the failed validation using the actual live schema.
+
+Use the existing live database as the source of truth.
+
+Do not recreate tables.
+Do not reset data.
+Do not delete user data.
+Do not disable RLS.
+Do not make broad anonymous permissions.
+Do not modify existing data unless a specific integrity problem is proven.
+
+After correcting the query, complete the remaining Supabase verification with the minimum number of read-only queries possible.
+
+Verify:
+
+1. All expected tables and columns.
+2. Foreign keys and important unique constraints.
+3. RLS enabled on all application tables.
+4. Existing RLS policies.
+5. SECURITY DEFINER functions and their execution permissions.
+6. Owner / Coach / Client isolation logic.
+7. Coach-to-client relationship protection.
+8. Role escalation protection.
+9. Nutrition data integrity, including fiber and water_ml.
+10. Programs and program days.
+11. Workout sessions and feedback.
+12. Body measurements.
+13. Custom foods and custom exercises.
+14. Favorites.
+15. Coach messages.
+16. Coach recipes.
+17. Public access limited to the intended foods and exercises SELECT behavior.
+
+IMPORTANT:
+Do not treat the existence of a table or policy as proof that the frontend feature works.
+Separate:
+
+* VERIFIED FROM LIVE DATABASE
+* VERIFIED FROM SOURCE
+* MISSING
+* NOT VERIFIED
+
+If you discover an actual database security or schema defect, explain it before changing it.
+
+If everything required by the existing architecture is already present, do NOT create unnecessary migrations.
+
+At the end give me one concise final status:
+
+* What is definitely correct
+* What was actually fixed
+* What is still missing
+* What still requires browser/manual testing
+* Whether the existing Supabase database is safe to connect to the current GymTrack application
+
+Do not claim production-ready unless the evidence supports it.
