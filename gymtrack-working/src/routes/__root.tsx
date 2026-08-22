@@ -149,11 +149,12 @@ function RootComponent() {
   const { userProfile } = useGym();
   const profileHydrationStatus = useProfileHydrationStatus();
   const profileHydrationError = useProfileHydrationError();
-  const isProfileHydrating =
-    authStatus === "authenticated" &&
-    (profileHydrationStatus === "loading" || userProfile?.role === undefined);
   const hasProfileHydrationError =
     authStatus === "authenticated" && profileHydrationStatus === "error";
+  const isProfileHydrating =
+    !hasProfileHydrationError &&
+    authStatus === "authenticated" &&
+    (profileHydrationStatus === "loading" || userProfile?.role === undefined);
 
   useEffect(() => {
     document.documentElement.lang = "he";
