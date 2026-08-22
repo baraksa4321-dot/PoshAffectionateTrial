@@ -247,6 +247,24 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       };
     }
 
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+    const authTheme = authUser?.user_metadata?.theme;
+    if (
+      authTheme === "pink" ||
+      authTheme === "blue" ||
+      authTheme === "beige" ||
+      authTheme === "green" ||
+      authTheme === "yellow" ||
+      authTheme === "black" ||
+      authTheme === "lavender" ||
+      authTheme === "peach" ||
+      authTheme === "mint"
+    ) {
+      nextData.userProfile = { ...(nextData.userProfile ?? { weight: 65 }), theme: authTheme };
+    }
+
     // 2. Fetch Coach Messages if Client
     const { data: messages, error: messagesError } = await supabase
       .from("coach_messages")

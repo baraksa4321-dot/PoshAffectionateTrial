@@ -16,6 +16,7 @@ import {
   type Program,
   type SavedRecipe,
   type UserProfile,
+  type ThemePalette,
   type WarmupSet,
   type Workout,
   type WorkoutItem,
@@ -1062,6 +1063,20 @@ export function saveUserProfile(profile: UserProfile) {
     logs.unshift({ id: uid(), date: today, weight: updatedWeight });
   }
   set({ ...data, userProfile: profile, bodyWeightLogs: logs });
+}
+
+export async function saveTheme(
+  theme: ThemePalette,
+): Promise<{ success: boolean; error?: string }> {
+  const profile = { ...(data.userProfile ?? { weight: 65 }), theme };
+  set({ ...data, userProfile: profile });
+
+  if (!currentUser?.id) return { success: true };
+  const { error } = await supabase.auth.updateUser({ data: { theme } });
+  if (error) {
+    return { success: false, error: error.message || "שמירת הפלטה נכשלה" };
+  }
+  return { success: true };
 }
 
 export function saveBodyWeight(weight: number, dateStr = todayKey()) {

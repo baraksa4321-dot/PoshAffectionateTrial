@@ -11,9 +11,11 @@ import {
   Crown,
   User,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
-import { useAuthUser, useGym } from "../lib/gym-store";
+import { useEffect, useState, type ReactNode } from "react";
+import { saveTheme, useAuthUser, useGym } from "../lib/gym-store";
 import { supabase } from "../lib/supabase";
+import { applyTheme, DEFAULT_THEME, THEME_PALETTES } from "../lib/theme";
+import type { ThemePalette } from "../lib/gym-types";
 import { Overlay } from "./ui-app/Overlay";
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -47,6 +49,12 @@ export function AppShell({
       ? "management"
       : "personal",
   );
+  const [showThemeModal, setShowThemeModal] = useState(false);
+  const theme = store.userProfile?.theme ?? DEFAULT_THEME;
+
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   // Client gets 3 tabs: בית | אימונים השבוע | תזונה
   // Coach/Owner gets 3 tabs in Personal mode, plus mode switcher to Coach Dashboard
@@ -238,6 +246,15 @@ export function AppShell({
                   <Cloud className="h-3.5 w-3.5 text-emerald-600 animate-pulse" />
                   <span className="max-w-[80px] truncate">{user.email?.split("@")[0]}</span>
                   <button
+                    type="button"
+                    onClick={() => setShowThemeModal(true)}
+                    title="בחירת פלטה"
+                    aria-label="בחירת פלטת צבעים"
+                    className="mr-0.5 text-emerald-600 hover:text-emerald-900 cursor-pointer"
+                  >
+                    ◉
+                  </button>
+                  <button
                     onClick={handleSignOut}
                     title="התנתק"
                     className="mr-0.5 text-emerald-600 hover:text-emerald-900 cursor-pointer"
@@ -328,6 +345,15 @@ export function AppShell({
               </div>
             )}
 
+            <ThemeChooser
+              value={theme}
+              onChange={async (nextTheme) => {
+                const result = await saveTheme(nextTheme);
+                if (!result.success) setErrorMsg(result.error ?? "שמירת הפלטה נכשלה");
+              }}
+              compact
+            />
+
             {isResettingPassword ? (
               <div className="space-y-3">
                 <p className="text-xs leading-relaxed text-muted-foreground">
@@ -413,6 +439,22 @@ export function AppShell({
         </Overlay>
       )}
 
+      {showThemeModal && (
+        <Overlay
+          open={showThemeModal}
+          onClose={() => setShowThemeModal(false)}
+          ariaLabel="בחירת פלטת צבעים"
+        >
+          <ThemeChooser
+            value={theme}
+            onChange={async (nextTheme) => {
+              const result = await saveTheme(nextTheme);
+              if (!result.success) setErrorMsg(result.error ?? "שמירת הפלטה נכשלה");
+            }}
+          />
+        </Overlay>
+      )}
+
       {!authOnly ? (
         <nav
           aria-label="ניווט ראשי"
@@ -440,5 +482,54 @@ export function AppShell({
         </nav>
       ) : null}
     </div>
+  );
+}
+
+function ThemeChooser({
+  value,
+  onChange,
+  compact = false,
+}: {
+  value: ThemePalette;
+  onChange: (theme: ThemePalette) => void | Promise<void>;
+  compact?: boolean;
+}) {
+  return (
+    <section
+      className={`rounded-2xl border border-border bg-secondary/70 p-3 text-start ${
+        compact ? "" : "w-full max-w-sm bg-background p-5 shadow-2xl"
+      }`}
+      aria-label="פלטת צבעים"
+    >
+      <div className="mb-3">
+        <h2 className="font-display text-base font-bold text-ink">פלטת צבעים</h2>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          הבחירה משפיעה על כל המסכים, הכרטיסים והחלונות.
+        </p>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {THEME_PALETTES.map((palette) => (
+          <button
+            key={palette.id}
+            type="button"
+            aria-pressed={value === palette.id}
+            title={palette.description}
+            onClick={() => void onChange(palette.id)}
+            className={`rounded-xl border p-2 text-start transition ${
+              value === palette.id
+                ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                : "border-border bg-background hover:border-primary/50"
+            }`}
+          >
+            <span
+              className="mb-1 block h-7 rounded-lg"
+              style={{ backgroundColor: palette.swatch }}
+              aria-hidden="true"
+            />
+            <span className="block text-[11px] font-bold text-ink">{palette.label}</span>
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }

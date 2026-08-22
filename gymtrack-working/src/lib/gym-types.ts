@@ -1,4 +1,6 @@
 export type UserRole = "owner" | "coach" | "client";
+export type ThemePalette =
+  "pink" | "blue" | "beige" | "green" | "yellow" | "black" | "lavender" | "peach" | "mint";
 
 export type ClientLink = {
   id: string;
@@ -258,6 +260,7 @@ export type UserProfile = {
   coachId?: string;
   foodPreferences?: FoodPreferences;
   todayRoutineEnabled?: boolean;
+  theme?: ThemePalette;
 };
 
 export type GymData = {
