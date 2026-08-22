@@ -1,0 +1,679 @@
+My Routine — Tasks #1–#23: Complete the Missing Work, Prove It, and Guide Us
+
+קיבלנו כבר את ה־Full Audit Report של Tasks #1–#23.
+
+אני לא רוצה עוד דוח שמספר לי מה קיים בקוד.
+
+אני רוצה שתשתמש בדוח הזה כ־MASTER CHECKLIST ותעבור עכשיו על כל Tasks #1–#23, מהראשון ועד האחרון, ותעשה שלושה דברים בצורה ברורה:
+
+1. מה אתה יכול לתקן בעצמך — תתקן בפועל.
+2. מה אתה יכול לבדוק בעצמך — תבדוק בפועל.
+3. מה אתה לא יכול לבצע בגלל שאין לך session / Supabase live / browser interaction — אל תטען שזה תוקן. במקום זה, תדריך אותי בדיוק מה אני צריכה לעשות, שלב־אחר־שלב, כדי שנוכל להשלים את האימות.
+
+חשוב מאוד — אין יותר “FIXED” בלי הוכחה
+
+אל תכתוב FIXED רק בגלל שהקוד נראה נכון.
+
+השתמש רק בסטטוסים:
+
+* FIXED — שינוי קוד שבוצע בפועל.
+* VERIFIED — נבדק בפועל בדפדפן / interaction אמיתי.
+* CODE VERIFIED — נבדק בקוד בלבד.
+* NOT VERIFIED — לא ניתן לבדוק בסביבה הנוכחית.
+* BROKEN — נבדק ונמצא שבור.
+* MISSING — הפיצ’ר עדיין חסר.
+
+אם אין לך אפשרות לבצע פעולה אמיתית, תגיד זאת במפורש.
+
+⸻
+
+1. לעבור מחדש על Tasks #1–#23
+
+קח את הדוח הקיים של Tasks #1–#23 ועבור עליו אחד־אחד.
+
+אל תדלג על Tasks שסומנו PARTIAL, MISSING או NOT VERIFIED.
+
+לכל Task בדוק:
+
+* מה הדרישה המקורית.
+* מה קיים כרגע.
+* מה באמת חסר.
+* מה אפשר לתקן בקוד.
+* מה דורש Supabase חי.
+* מה דורש משתמש אמיתי.
+* מה דורש בדיקת browser אמיתית.
+
+אם משהו שכבר “תוקן” עדיין לא עובד בפועל — אל תגן על המימוש הקיים. תקן אותו.
+
+⸻
+
+2. Owner / Coach / Client — זה קריטי
+
+צריך לוודא שהמערכת באמת מפרידה בין:
+
+Owner
+
+גישה לניהול משתמשים, Coaches, Clients, assignments וכל מה שהוגדר עבור Owner.
+
+Coach
+
+גישה רק למתאמנים המשויכים אליו.
+
+Client
+
+גישה רק לנתונים שלו.
+
+אסור ש־Client יוכל:
+
+* להגיע ל־Owner tools.
+* להגיע ל־Coach management.
+* לערוך משתמשים אחרים.
+* לשנות role.
+* ליצור לעצמו הרשאות Coach/Owner.
+* ליצור Drop Set / Superset אם הפעולה אמורה להיות Coach/Owner בלבד.
+* לגשת לנתוני Client אחר.
+
+אם route guard חסר — תקן אותו.
+
+אם action guard חסר — תקן אותו.
+
+אם state מאפשר פעולה שאסור לבצע — תקן אותו.
+
+אבל אל תשנה RLS או RPC רק כדי “לגרום לזה לעבוד”.
+
+⸻
+
+3. הבעיה עם mayayosfan234 / Maya
+
+יש לנו בעיה אמיתית שבה:
+
+mayayosfan234@gmail.com
+
+מופיע כ־Client במקום Owner.
+
+גם:
+
+maya2003yos
+
+כבר הוזכר בעבר בהקשר הזה.
+
+אל תשנה את ה־role לפי email.
+
+אל תוסיף exception.
+
+אל תעשה hardcode.
+
+במקום זאת:
+
+1. בדוק מה מקור ה־role ב־frontend.
+2. בדוק איך profiles.role נטען.
+3. בדוק האם יש mismatch בין Auth user לבין profile.
+4. בדוק האם יש hydration race או stale state.
+5. בדוק האם logout/login משאיר role ישן.
+6. אם אפשר לבדוק את Supabase החי — בדוק.
+7. אם אי אפשר — עצור כאן ודווח לי בדיוק מה אני צריכה לבדוק ב־Supabase.
+
+אל תשנה role של Maya אוטומטית.
+
+⸻
+
+4. Nutrition — להשלים באמת
+
+זה אחד הדברים החשובים ביותר.
+
+כרגע בדוח כתוב שיש:
+
+* Breakfast
+* Lunch
+* Dinner
+* Snack
+* Add
+* Remove
+* Replace
+* Quantity
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+
+אבל בפועל עדיין היו בעיות עם ה־+ והוספת מזון.
+
+אני רוצה לבדוק ולתקן את כל הזרימה:
+
+Meal → + → Food Picker → Search → Food → Quantity → Add → Meal
+
+צריך לעבוד בכל:
+
+* Breakfast
+* Lunch
+* Dinner
+* Snack
+
+צריך לוודא:
+
+* הכפתור באמת עובד.
+* ה־Picker באמת נפתח מעל התוכן.
+* לא נפתח למטה.
+* אפשר לבחור Food.
+* אפשר לשנות Quantity.
+* אפשר Add.
+* המזון מופיע בארוחה הנכונה.
+* Remove עובד.
+* Replace עובד.
+* הערכים מתעדכנים לפי הכמות.
+
+הערכים חייבים לכלול:
+
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+
+ואסור שיהיה Water UI.
+
+⸻
+
+5. Food Database — זה חייב להשתנות
+
+כרגע יש רק כ־488 מזונות.
+
+זה לא מספיק לדרישה שלנו.
+
+אני רוצה שתבדוק את מקור המזונות הקיים ותבנה הרחבה אמיתית של הספרייה, בלי duplicates ובלי נתונים מומצאים.
+
+והכי חשוב:
+
+ערכי התזונה צריכים להגיע ממקור אמין
+
+אני ביקשתי להשתמש באתר/מקור תזונתי אמין כדי לקחת ממנו:
+
+* מזונות
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+* Serving size
+
+אל תמציא ערכים.
+
+אל תציג נתונים שהמצאת כאילו הם נתונים מוסמכים.
+
+אם אתה צריך מקור חיצוני מסוים, תגיד לי בדיוק איזה מקור אתה צריך ואיך אני יכולה לספק לך אותו.
+
+אם יש כבר מקור שהוגדר בפרויקט — השתמש בו.
+
+אני רוצה גם:
+
+* provenance
+* source
+* serving basis
+* consistent units
+* stable IDs
+* duplicate prevention
+
+והמטרה היא לא רק “להוסיף עוד שורות”.
+
+אני רוצה Food Library שימושית באמת.
+
+⸻
+
+6. Food Picker
+
+הדוח אומר שה־Food Picker מוגבל ל־30 תוצאות.
+
+בדוק אם זה גורם לכך שמשתמשים לא מצליחים למצוא מזונות.
+
+צריך:
+
+* Search אמיתי.
+* Categories.
+* Favorites.
+* Custom foods.
+* Food details.
+* Replace.
+* Quantity.
+
+אל תסתיר מזונות רק בגלל limit שרירותי.
+
+אם pagination / search עדיף — השתמש בזה.
+
+⸻
+
+7. Exercise Library / Picker
+
+הבעיה הזו חזרה כמה פעמים.
+
+התרגיל עדיין נפתח למטה.
+
+אני רוצה שכל Exercise Picker / Exercise Editor / Replacement Picker / Program Exercise Picker:
+
+* ייפתח מעל התוכן.
+* ישתמש ב־Portal.
+* יהיה fixed ביחס ל־viewport.
+* יהיה scrollable פנימית.
+* יעבוד במובייל.
+* יעבוד ב־RTL.
+* יסגר עם X.
+* יסגר עם Escape.
+* יסגר בלחיצה מחוץ לחלון.
+* יחזיר focus בצורה תקינה.
+* לא יופיע כ־bottom sheet אם הדרישה היא Overlay.
+
+בדוק את כל המסלולים, לא רק אחד.
+
+⸻
+
+8. Workout Cards
+
+צריך לוודא שהכרטיסים ברורים ולא מבלבלים בין:
+
+Planned
+
+* Planned reps
+* Rep range
+* Planned weight
+* Rest
+
+לבין:
+
+Actual
+
+* Actual reps
+* Actual weight
+* Completed sets
+
+Rep ranges צריכים להישמר ולהיות מוצגים נכון.
+
+בנוסף:
+
+Client לא אמור לקבל אפשרות להוסיף לעצמו Drop Set / Superset אם זה מוגבל ל־Coach/Owner.
+
+צריך להגן על זה גם:
+
+* ב־UI
+* ב־state
+* ב־action handlers
+
+⸻
+
+9. Cardio
+
+מערכת Cardio כבר הוגדרה.
+
+צריך לוודא שהמימוש כולל:
+
+* Walking
+* Running
+* Treadmill
+* Cycling
+* Stationary Bike
+* Elliptical
+* Stair Climber
+* Swimming
+* Tennis
+* Basketball
+* Football
+* Hiking
+* Rowing
+* Jump Rope
+* HIIT
+* Aerobics
+* ועוד פעילויות נפוצות.
+
+Client יכול להוסיף לעצמו Cardio.
+
+צריך:
+
+Activity + Duration + Weight + Intensity/Speed/Incline כאשר רלוונטי.
+
+ואז:
+
+Estimated Calories Burned
+
+החישוב חייב להיות מבוסס ולא random.
+
+יש להציג אותו כ־Estimated.
+
+צריך persistence:
+
+Add → Save → Refresh
+
+וגם:
+
+Add → Save → Logout → Login
+
+אם אי אפשר לבדוק את זה בפועל — תגיד לי בדיוק מה לעשות.
+
+⸻
+
+10. Theme System
+
+מערכת הפלטות צריכה לעבוד בכל האפליקציה, לא רק במסך Login.
+
+כרגע יש palettes, אבל בפועל הצבע לא עובר למסכים שאחרי Login.
+
+צריך לתקן כך שהבחירה משפיעה על:
+
+* Login
+* Navigation
+* Dashboard
+* Cards
+* Buttons
+* Modals
+* Sheets
+* Forms
+* Nutrition
+* Workouts
+* Exercises
+* Profile
+* Settings
+* Owner
+* Coach
+* Client
+* Empty states
+* Alerts
+* Progress UI
+
+הפלטה צריכה להישמר אחרי:
+
+Refresh
+
+וגם:
+
+Logout → Login
+
+צריך להיות אפשר לבחור פלטות יפות בסגנון:
+
+* Pink
+* Blue
+* Beige
+* Green
+* Yellow
+* Black
+* ועוד
+
+אבל כולן צריכות להיות Pastel / Elegant / Modern, לא צבעים חזקים וזולים.
+
+⸻
+
+11. UI Design — לא רוצה יותר “AI-looking”
+
+העיצוב הנוכחי מרגיש בנאלי מדי ומרגיש כאילו נבנה על ידי AI.
+
+אני רוצה שתעשה Design Pass אמיתי.
+
+קח השראה מאפליקציות Fitness / Wellness / Nutrition מודרניות.
+
+העיצוב צריך להיות:
+
+* Modern
+* Clean
+* Premium
+* Minimal
+* Elegant
+* Consistent
+* Mobile-first
+
+לא צריך:
+
+* עיגול לכל דבר.
+* Card בתוך Card בתוך Card.
+* יותר מדי shadows.
+* יותר מדי borders.
+* יותר מדי pills.
+* כפתור לכל פעולה קטנה.
+
+אני רוצה hierarchy ברור.
+
+Spacing טוב.
+
+Typography טובה.
+
+Navigation ברורה.
+
+Actions ברורות.
+
+ה־UI צריך להרגיש כמו מוצר אמיתי ולא כמו prototype שנוצר אוטומטית.
+
+אל תשנה את כל האפליקציה מאפס.
+
+שפר את העיצוב הקיים בצורה עקבית.
+
+⸻
+
+12. Buttons
+
+יש עדיין כפתורים שלא עובדים.
+
+צריך לבצע audit אמיתי של:
+
+* Add
+* ●	
+* Save
+* Edit
+* Delete
+* Remove
+* Replace
+* Back
+* Close
+* Search
+* Confirm
+* Cancel
+* Favorite
+* Create
+* Assign
+* Send
+* Start Workout
+* Complete Workout
+* Add Cardio
+
+כל כפתור שנמצא ב־UI חייב:
+
+* לבצע פעולה אמיתית,
+* או לא להיות מוצג.
+
+אסור להשאיר כפתורי placeholder.
+
+⸻
+
+13. Persistence
+
+צריך לבדוק את כל הדברים החשובים:
+
+Save → Refresh
+
+Save → Logout → Login
+
+עבור:
+
+* Profile
+* Programs
+* Program Days
+* Exercises
+* Workouts
+* Workout History
+* Measurements
+* Nutrition
+* Meals
+* Food Quantity
+* Favorites
+* Custom Foods
+* Custom Exercises
+* Messages
+* Feedback
+* Recipes
+* Cardio
+* Theme
+
+אם פעולה לא נשמרת ב־Supabase בגלל schema חסר — אל תציג אותה כאילו נשמרה.
+
+⸻
+
+14. Supabase
+
+אין לשנות:
+
+* RLS
+* Roles
+* RPCs
+* SECURITY DEFINER
+* Permissions
+* Schema
+
+אלא אם בדיקה אמיתית מוכיחה שיש צורך.
+
+אם נדרש שינוי:
+
+עצור ודווח:
+
+1. מה חסר.
+2. למה צריך אותו.
+3. מה צריך לשנות.
+4. איך RLS יגן על זה.
+
+⸻
+
+15. Mobile + RTL
+
+בדוק:
+
+* Login
+* Dashboard
+* Nutrition
+* Food Picker
+* Exercise Picker
+* Workout
+* Cardio
+* Profile
+* Coach
+* Owner
+
+ב־mobile וב־RTL.
+
+שום Overlay לא צריך להיפתח מחוץ למסך.
+
+שום תוכן לא צריך להיחתך.
+
+⸻
+
+16. מה אתה צריך ממני
+
+זה החלק הכי חשוב.
+
+אל תגיד לי רק:
+
+“NOT VERIFIED”
+
+אני רוצה שתכתוב לי בדיוק מה אני צריכה לעשות.
+
+לדוגמה:
+
+“אני לא יכול לבדוק את Owner role בלי Supabase live. תפתחי Supabase → profiles → חפשי X → שלחי רק id/role/coach_id.”
+
+או:
+
+“אני לא יכול לבצע Login אינטראקטיבי. תתחברי כ־Client → פתחי Nutrition → לחצי + → … → תגידי לי מה קרה.”
+
+אם אתה צריך:
+
+* Screenshot
+* Supabase read-only result
+* Browser interaction
+* Test account
+* URL
+* migration status
+
+תגיד לי בדיוק.
+
+לעולם אל תבקש:
+
+* Password
+* Access token
+* Refresh token
+* Service-role key
+* Secrets
+
+⸻
+
+17. Final Report
+
+בסיום אל תיתן לי דוח כללי.
+
+תן טבלה/רשימה מסודרת:
+
+TASKS #1–#23
+
+לכל Task:
+
+Status:
+What was fixed:
+What was verified:
+What remains:
+What you need from me:
+
+ואז:
+
+FIXED
+
+רק דברים שבאמת תוקנו.
+
+VERIFIED
+
+רק דברים שנבדקו בפועל.
+
+CODE VERIFIED
+
+רק דברים שנבדקו בקוד.
+
+NOT VERIFIED
+
+דברים שלא ניתן לבדוק.
+
+BROKEN
+
+דברים שנבדקו ונמצאו שבורים.
+
+DATABASE
+
+כל שינוי או היעדר שינוי.
+
+SECURITY
+
+כל שינוי או היעדר שינוי.
+
+PERSISTENCE
+
+מה הוכח ומה לא.
+
+STILL MISSING
+
+רשימה אמיתית.
+
+WHAT I NEED TO DO
+
+הוראות מדויקות עבורי.
+
+ONE NEXT TEST
+
+רק בדיקה אחת, החשובה ביותר.
+
+⸻
+
+כלל סופי
+
+אני מעדיפה שתאמר:
+
+“אני לא יכול לבדוק את זה. הנה בדיוק מה שאת צריכה לעשות.”
+
+מאשר:
+
+“FIXED”
+
+כאשר בפועל לא בדקת.
+
+המטרה עכשיו היא לא לייצר עוד Task ולא עוד מסמך.
+
+המטרה היא להשלים באמת את My Routine, ואז להוכיח מה עובד ומה עדיין דורש ממני פעולה.
