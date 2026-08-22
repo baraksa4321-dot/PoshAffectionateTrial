@@ -17,7 +17,7 @@ import {
   type Workout,
 } from "./gym-types";
 
-export type SyncStatus = "idle" | "syncing" | "synced" | "error" | "offline";
+export type SyncStatus = "idle" | "syncing" | "pending" | "synced" | "error" | "offline";
 export type PullResult =
   { success: true; data: GymData } | { success: false; data: GymData; error: string };
 

@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 import { EVERYDAY_FOOD_DATABASE } from "./israeli-food-db";
 import { assertValidFoodNutrition, assertValidMealFood } from "./nutrition-integrity";
 import { supabase } from "./supabase";
-import { pullSupabaseData, syncLocalToSupabase } from "./supabase-sync";
+import { pullSupabaseData, syncLocalToSupabase, type SyncStatus } from "./supabase-sync";
 import {
   ADDITIONAL_EXERCISES,
   renameSeedExercise,
@@ -32,6 +32,7 @@ import {
 
 const KEY = "gymtrack.v1";
 const CACHED_USER_KEY = "gymtrack.v1.userId";
+const USER_CACHE_PREFIX = "gymtrack.v1.user.";
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -612,20 +613,70 @@ let profileHydrationStatus: "loading" | "ready" | "error" = "loading";
 let profileHydrationError = "";
 let authResolved = false;
 let hydrationGeneration = 0;
+let syncStatus: SyncStatus = "idle";
+let hasPendingCloudChanges = false;
+let syncInFlight: { userId: string; promise: Promise<void> } | null = null;
+let syncRetryTimer: ReturnType<typeof setTimeout> | null = null;
+let syncRetryAttempts = 0;
+let dataRevision = 0;
 const listeners = new Set<() => void>();
 
-function resetDataIfCacheBelongsToAnotherUser(userId: string) {
-  if (typeof window === "undefined") return;
+function notifyListeners() {
+  listeners.forEach((listener) => listener());
+}
+
+function browserIsOffline() {
+  return typeof navigator !== "undefined" && navigator.onLine === false;
+}
+
+function isNetworkFailure(message?: string) {
+  return (
+    browserIsOffline() ||
+    /failed to fetch|network(?:\s+error)?|load failed|fetch failed|offline|timed?\s*out/i.test(
+      message ?? "",
+    )
+  );
+}
+
+function userCacheKey(userId: string) {
+  return `${USER_CACHE_PREFIX}${userId}`;
+}
+
+function parseCachedData(raw: string | null): GymData | null {
+  if (!raw) return null;
   try {
-    const cachedUserId = window.localStorage.getItem(CACHED_USER_KEY);
-    // Caches created before this binding existed are treated as untrusted once
-    // a real session is present. Keeping them could expose one account's data
-    // while another account's cloud profile is loading.
-    if (cachedUserId !== userId) data = seed();
-    window.localStorage.setItem(CACHED_USER_KEY, userId);
+    return migrate({ ...seed(), ...(JSON.parse(raw) as Partial<GymData>) });
   } catch {
-    /* Local storage may be unavailable; cloud hydration still follows. */
+    return null;
   }
+}
+
+function loadCachedDataForUser(userId: string) {
+  if (typeof window === "undefined") return null;
+  try {
+    const userCache = parseCachedData(window.localStorage.getItem(userCacheKey(userId)));
+    if (userCache) return userCache;
+
+    // The previous shared cache does not embed a verifiable account owner, so
+    // it must never be migrated. Discarding it prevents a historical offline
+    // account switch from exposing one account's data to another account.
+    window.localStorage.removeItem(KEY);
+    window.localStorage.removeItem(CACHED_USER_KEY);
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function hasUsableOfflineCache(cachedData: GymData | null) {
+  const cachedRole = cachedData?.userProfile?.role;
+  return cachedRole === "owner" || cachedRole === "coach" || cachedRole === "client";
+}
+
+function resetDataForUser(userId: string) {
+  const cachedData = loadCachedDataForUser(userId);
+  data = cachedData ?? seed();
+  return cachedData;
 }
 
 /** Keep custom foods and saved meal snapshots, while removing retired seed items. */
@@ -699,15 +750,29 @@ function migrate(d: Partial<GymData>): GymData {
 function load() {
   if (hydrated || typeof window === "undefined") return;
   hydrated = true;
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    if (raw) data = migrate({ ...seed(), ...(JSON.parse(raw) as Partial<GymData>) });
-  } catch {
-    /* ignore */
-  }
 
   // Setup Supabase Auth state listener
   if (typeof window !== "undefined") {
+    window.addEventListener("offline", () => {
+      if (!currentUser) return;
+      syncStatus = "offline";
+      notifyListeners();
+    });
+    window.addEventListener("online", () => {
+      if (!currentUser) return;
+      if (syncRetryTimer) {
+        clearTimeout(syncRetryTimer);
+        syncRetryTimer = null;
+      }
+      syncRetryAttempts = 0;
+      if (hasPendingCloudChanges) {
+        void queueCloudSync();
+      } else {
+        syncStatus = "synced";
+        notifyListeners();
+      }
+    });
+
     supabase.auth
       .getSession()
       .then(({ data: { session }, error }) => {
@@ -728,13 +793,11 @@ function load() {
         authResolved = true;
         authStatus = session?.user ? "authenticated" : "unauthenticated";
         if (session?.user) {
-          resetDataIfCacheBelongsToAnotherUser(session.user.id);
-          // handleUserLogin synchronously clears any cached role before its
-          // first await and then notifies React.
-          void handleUserLogin(session.user.id);
+          const cachedData = resetDataForUser(session.user.id);
+          void handleUserLogin(session.user.id, cachedData);
           return;
         }
-        listeners.forEach((l) => l());
+        notifyListeners();
       })
       .catch(() => {
         currentUser = null;
@@ -761,80 +824,172 @@ function load() {
         if (prevUserId && prevUserId !== session.user.id) {
           data = seed();
         }
-        resetDataIfCacheBelongsToAnotherUser(session.user.id);
-        void handleUserLogin(session.user.id);
+        const cachedData = resetDataForUser(session.user.id);
+        void handleUserLogin(session.user.id, cachedData);
         return;
       } else {
         // On sign-out, reset memory state to clean seed data
         hydrationGeneration += 1;
         profileHydrationStatus = "loading";
         profileHydrationError = "";
+        syncStatus = "idle";
+        hasPendingCloudChanges = false;
+        syncRetryAttempts = 0;
+        if (syncRetryTimer) {
+          clearTimeout(syncRetryTimer);
+          syncRetryTimer = null;
+        }
         data = seed();
         try {
+          // Per-user caches remain available for the same account on a later
+          // offline return. Only obsolete shared-cache keys are discarded.
           window.localStorage.removeItem(KEY);
           window.localStorage.removeItem(CACHED_USER_KEY);
         } catch {
           /* ignore */
         }
-        listeners.forEach((l) => l());
+        notifyListeners();
       }
     });
   }
 }
 
-async function handleUserLogin(userId: string) {
+async function handleUserLogin(userId: string, cachedData = loadCachedDataForUser(userId)) {
   const generation = ++hydrationGeneration;
+  const trustedOfflineCache = hasUsableOfflineCache(cachedData);
+  if (cachedData && trustedOfflineCache && browserIsOffline()) {
+    data = cachedData;
+    profileHydrationStatus = "ready";
+    profileHydrationError = "";
+    hasPendingCloudChanges = true;
+    syncStatus = "offline";
+    notifyListeners();
+    return;
+  }
+
   // Read the signed-in user's data before writing anything. Uploading the
   // anonymous seed first can overwrite cloud state on a fresh device.
   // Do not let a previous user's cached role control the UI while this pull
   // is in flight. A missing or failed profile read leaves the role unknown.
-  const { role: _role, coachId: _coachId, ...profileWithoutAccess } = data.userProfile ?? {
-    weight: 65,
-  };
+  const {
+    role: _role,
+    coachId: _coachId,
+    ...profileWithoutAccess
+  } = data.userProfile ?? { weight: 65 };
   data = {
     ...data,
     userProfile: profileWithoutAccess,
   };
   profileHydrationStatus = "loading";
   profileHydrationError = "";
-  listeners.forEach((l) => l());
+  notifyListeners();
   const pulled = await pullSupabaseData(userId, data);
   if (generation !== hydrationGeneration || currentUser?.id !== userId) return;
   if (!pulled.success) {
     console.warn("[Initial Supabase Pull Warning]:", pulled.error);
+    if (cachedData && trustedOfflineCache && isNetworkFailure(pulled.error)) {
+      data = cachedData;
+      profileHydrationStatus = "ready";
+      profileHydrationError = "";
+      hasPendingCloudChanges = true;
+      syncStatus = "offline";
+      notifyListeners();
+      return;
+    }
     profileHydrationStatus = "error";
     profileHydrationError = pulled.error;
-    listeners.forEach((l) => l());
+    notifyListeners();
     return;
   }
   data = pulled.data;
   persist();
   profileHydrationStatus = "ready";
   profileHydrationError = "";
-  listeners.forEach((l) => l());
-  if (generation !== hydrationGeneration || currentUser?.id !== userId) return;
-  // Push only after local state contains the user's cloud-backed data.
-  const result = await syncLocalToSupabase(userId, data, currentUser?.email);
-  if (!result.success) {
-    console.warn("[Initial Supabase Sync Warning]:", result.error);
+  notifyListeners();
+}
+
+function scheduleCloudRetry(userId: string) {
+  if (
+    syncRetryTimer ||
+    syncRetryAttempts >= 4 ||
+    browserIsOffline() ||
+    currentUser?.id !== userId ||
+    !hasPendingCloudChanges
+  ) {
+    return;
   }
-  listeners.forEach((l) => l());
+  const delay = Math.min(30_000, 1_000 * 2 ** syncRetryAttempts);
+  syncRetryAttempts += 1;
+  syncRetryTimer = setTimeout(() => {
+    syncRetryTimer = null;
+    if (currentUser?.id === userId) void queueCloudSync();
+  }, delay);
+}
+
+function queueCloudSync() {
+  const user = currentUser;
+  if (!user || !hasPendingCloudChanges) return;
+  if (browserIsOffline()) {
+    syncStatus = "offline";
+    notifyListeners();
+    return;
+  }
+  if (syncInFlight) return;
+
+  const userId = user.id;
+  const userEmail = user.email;
+  const revisionAtStart = dataRevision;
+  const dataAtStart = data;
+  syncStatus = "syncing";
+  notifyListeners();
+
+  const promise = (async () => {
+    const result = await syncLocalToSupabase(userId, dataAtStart, userEmail);
+    if (currentUser?.id !== userId) return;
+
+    if (result.success) {
+      syncRetryAttempts = 0;
+      if (dataRevision === revisionAtStart) {
+        hasPendingCloudChanges = false;
+        syncStatus = "synced";
+      } else {
+        syncStatus = "pending";
+      }
+      return;
+    }
+
+    hasPendingCloudChanges = true;
+    syncStatus = isNetworkFailure(result.error) ? "offline" : "error";
+    console.warn("[Background Supabase Sync Warning]:", result.error);
+    if (!isNetworkFailure(result.error)) scheduleCloudRetry(userId);
+  })().finally(() => {
+    if (syncInFlight?.promise === promise) syncInFlight = null;
+    notifyListeners();
+    if (!currentUser || !hasPendingCloudChanges || browserIsOffline()) return;
+    if (currentUser.id !== userId || dataRevision !== revisionAtStart) {
+      void queueCloudSync();
+    }
+  });
+  syncInFlight = { userId, promise };
 }
 
 function persist() {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(data));
-    if (currentUser?.id) window.localStorage.setItem(CACHED_USER_KEY, currentUser.id);
+    if (currentUser?.id) {
+      window.localStorage.setItem(userCacheKey(currentUser.id), JSON.stringify(data));
+    }
   } catch {
     /* ignore */
   }
 
-  // Trigger async background push to Supabase if logged in
+  dataRevision += 1;
+  hasPendingCloudChanges = Boolean(currentUser?.id);
+
+  // Local writes are durable first. Cloud sync waits for a usable connection
+  // and retries automatically after the browser reports that it is back online.
   if (currentUser?.id) {
-    syncLocalToSupabase(currentUser.id, data).catch((e) =>
-      console.warn("[Background Supabase Sync Warning]:", e),
-    );
+    void queueCloudSync();
   }
 }
 
@@ -891,8 +1046,16 @@ export function useProfileHydrationError() {
   );
 }
 
+export function useCloudSyncStatus() {
+  return useSyncExternalStore(
+    subscribe,
+    () => syncStatus,
+    () => "idle" as const,
+  );
+}
+
 export function retryProfileHydration() {
-  if (currentUser?.id) void handleUserLogin(currentUser.id);
+  if (currentUser?.id) void handleUserLogin(currentUser.id, loadCachedDataForUser(currentUser.id));
 }
 
 export async function completeUserProfileName(

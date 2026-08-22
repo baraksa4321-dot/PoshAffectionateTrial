@@ -16,7 +16,6 @@ import {
   Award,
   MessageSquare,
   CheckCircle2,
-  Circle,
   Sparkles,
   Heart,
   Pencil,
@@ -47,6 +46,8 @@ import {
 import type { CardioLog } from "@/lib/gym-types";
 import { CARDIO_TYPES } from "@/lib/gym-types";
 import { genderText } from "@/lib/gender-copy";
+
+const DEFAULT_CARDIO_TYPE = CARDIO_TYPES[0] ?? "הליכה";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -97,18 +98,12 @@ function Dashboard() {
 
   const now = new Date();
 
-  // Routine Checklist, Weekly Weigh-In, and Monthly Check-In
-  const [routineChecklist, setRoutineChecklist] = useState<Record<string, boolean>>({
-    workout: false,
-    weighIn: false,
-  });
-
   const [showWeighInModal, setShowWeighInModal] = useState(false);
   const [weeklyWeightInput, setWeeklyWeightInput] = useState(String(userProfile?.weight ?? 65));
   const [checkInSuccessMsg, setCheckInSuccessMsg] = useState("");
   const [showCardioModal, setShowCardioModal] = useState(false);
   const [editingCardioId, setEditingCardioId] = useState<string | null>(null);
-  const [cardioType, setCardioType] = useState(CARDIO_TYPES[0]);
+  const [cardioType, setCardioType] = useState(DEFAULT_CARDIO_TYPE);
   const [cardioDuration, setCardioDuration] = useState("0");
   const [cardioSpeed, setCardioSpeed] = useState("0");
   const [cardioIncline, setCardioIncline] = useState("0");
@@ -166,10 +161,6 @@ function Dashboard() {
     ? programs.find((p) => p.dayIds.includes(nextWorkout.id))
     : undefined;
 
-  const toggleChecklistItem = (key: string) => {
-    setRoutineChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
   const latestCoachMsg = coachMessages && coachMessages.length > 0 ? coachMessages[0] : null;
   const latestMeasurement = bodyMeasurements?.[0];
   const gender = userProfile?.gender;
@@ -190,7 +181,7 @@ function Dashboard() {
 
   const resetCardioForm = () => {
     setEditingCardioId(null);
-    setCardioType(CARDIO_TYPES[0]);
+    setCardioType(DEFAULT_CARDIO_TYPE);
     setCardioDuration("0");
     setCardioSpeed("0");
     setCardioIncline("0");
@@ -352,47 +343,6 @@ function Dashboard() {
           {checkInSuccessMsg}
         </div>
       )}
-
-      {/* 2. Today's Routine Checklist */}
-      <section className="mt-5 text-start">
-        <SectionHeader title="הרוטינה של היום" subtitle="משימות יומיות לשמירה על רצף" />
-        <div className="space-y-2">
-          {[
-            { key: "workout", label: `אימון יומיומי: ${nextWorkout?.name || "מנוחה"}` },
-            {
-              key: "weighIn",
-              label: `שקילה שבועית (משקל נוכחי: ${userProfile?.weight ?? 65} ק"ג)`,
-            },
-          ].map(({ key, label }) => {
-            const isDone = routineChecklist[key] || false;
-
-            return (
-              <div
-                key={key}
-                onClick={() => {
-                  if (key === "weighIn") {
-                    setShowWeighInModal(true);
-                  } else {
-                    toggleChecklistItem(key);
-                  }
-                }}
-                className={`surface-card p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between text-xs ${
-                  isDone
-                    ? "bg-emerald-50/50 border-emerald-200 line-through opacity-70"
-                    : "bg-surface border-border/60 font-bold"
-                }`}
-              >
-                <span>{label}</span>
-                {isDone ? (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                ) : (
-                  <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
 
       {/* Weekly Weigh-In & Monthly Check-In Cards */}
       <section className="mt-5 text-start space-y-2.5">

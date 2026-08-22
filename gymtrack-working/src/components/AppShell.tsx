@@ -2,6 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   Apple,
   Cloud,
+  CloudOff,
   Dumbbell,
   Home,
   LayoutGrid,
@@ -12,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { saveTheme, useAuthUser, useGym } from "../lib/gym-store";
+import { saveTheme, useAuthUser, useCloudSyncStatus, useGym } from "../lib/gym-store";
 import { supabase } from "../lib/supabase";
 import { applyTheme, DEFAULT_THEME, THEME_PALETTES } from "../lib/theme";
 import type { ThemePalette } from "../lib/gym-types";
@@ -48,6 +49,7 @@ export function AppShell({
 }) {
   const store = useGym();
   const user = useAuthUser();
+  const cloudSyncStatus = useCloudSyncStatus();
   const role = store.userProfile?.role;
   const isOwner = role === "owner";
   const isCoach = role === "coach" || isOwner;
@@ -66,6 +68,47 @@ export function AppShell({
   const [themeError, setThemeError] = useState("");
   const theme = store.userProfile?.theme ?? DEFAULT_THEME;
   const managementView = isCoach && (activeMode === "management" || isManagementRoute);
+  const syncNotice =
+    cloudSyncStatus === "offline"
+      ? {
+          text: "אין חיבור לאינטרנט — השינויים נשמרים במכשיר ויסתנכרנו אוטומטית כשהחיבור יחזור.",
+          tone: "border-amber-300/70 bg-amber-50 text-amber-950",
+        }
+      : cloudSyncStatus === "syncing"
+        ? {
+            text: "מסנכרנים את השינויים שלך לענן…",
+            tone: "border-primary/20 bg-primary/5 text-primary",
+          }
+        : cloudSyncStatus === "pending"
+          ? {
+              text: "השינויים נשמרו במכשיר וממתינים לסנכרון.",
+              tone: "border-primary/20 bg-primary/5 text-primary",
+            }
+          : cloudSyncStatus === "error"
+            ? {
+                text: "השינויים נשמרו במכשיר. ננסה לסנכרן אותם שוב כשיהיה חיבור יציב.",
+                tone: "border-destructive/20 bg-destructive/10 text-destructive",
+              }
+            : null;
+  const SyncIcon = cloudSyncStatus === "offline" ? CloudOff : Cloud;
+  const syncIconClass =
+    cloudSyncStatus === "offline"
+      ? "text-amber-700"
+      : cloudSyncStatus === "error"
+        ? "text-destructive"
+        : cloudSyncStatus === "syncing" || cloudSyncStatus === "pending"
+          ? "text-primary"
+          : "text-emerald-600";
+  const syncTitle =
+    cloudSyncStatus === "offline"
+      ? "אין חיבור לאינטרנט — השינויים נשמרים במכשיר"
+      : cloudSyncStatus === "syncing"
+        ? "מסנכרנים את השינויים לענן"
+        : cloudSyncStatus === "pending"
+          ? "שינויים ממתינים לסנכרון"
+          : cloudSyncStatus === "error"
+            ? "השינויים נשמרו במכשיר וננסה לסנכרן שוב"
+            : "הנתונים מסונכרנים";
 
   useEffect(() => {
     if (isManagementRoute) {
@@ -344,7 +387,12 @@ export function AppShell({
             <div className="flex shrink-0 items-center gap-2 pt-0.5">
               {user ? (
                 <div className="flex items-center gap-2 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-[12px] font-bold text-ink shadow-sm">
-                  <Cloud className="h-3.5 w-3.5 text-primary" />
+                  <SyncIcon
+                    className={`h-3.5 w-3.5 ${syncIconClass} ${
+                      cloudSyncStatus === "syncing" ? "animate-pulse" : ""
+                    }`}
+                    aria-hidden="true"
+                  />
                   <span className="max-w-[120px] truncate">
                     {store.userProfile?.fullName || "החשבון שלי"}
                   </span>
@@ -387,6 +435,22 @@ export function AppShell({
           paddingBottom: "calc(6.5rem + env(safe-area-inset-bottom))",
         }}
       >
+        {user && syncNotice ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className={`mb-4 flex items-start gap-2 rounded-2xl border px-3 py-2.5 text-xs font-semibold leading-relaxed ${syncNotice.tone}`}
+          >
+            <SyncIcon
+              className={`mt-0.5 h-4 w-4 shrink-0 ${syncIconClass} ${
+                cloudSyncStatus === "syncing" ? "animate-pulse" : ""
+              }`}
+              aria-hidden="true"
+            />
+            <span>{syncNotice.text}</span>
+          </div>
+        ) : null}
+        {user ? <span className="sr-only">{syncTitle}</span> : null}
         {!authOnly ? children : null}
       </main>
 

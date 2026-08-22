@@ -476,18 +476,6 @@ export function CoachDashboardPage({
     }
   };
 
-  // Remove Client
-  const handleRemoveClient = async (linkId: string) => {
-    if (!confirm("האם למחוק את המתאמן מלוח הבקרה שלך?")) return;
-
-    await supabase.from("coach_clients").delete().eq("id", linkId);
-    if (selectedClientId === clients.find((c) => c.id === linkId)?.client_id) {
-      setSelectedClientId(null);
-      setShowClientWorkspace(false);
-    }
-    loadCoachClients();
-  };
-
   // Create Program for Client
   const handleCreateClientProgram = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -750,6 +738,9 @@ export function CoachDashboardPage({
         (session) => Date.now() - new Date(session.date).getTime() <= 14 * 24 * 60 * 60 * 1000,
       ),
   );
+  const coachCount = allProfiles.filter((profile) => profile.role === "coach").length;
+  const clientCount = allProfiles.filter((profile) => profile.role === "client").length;
+  const ownerCount = allProfiles.filter((profile) => profile.role === "owner").length;
   const openClientFromOverview = (clientId: string) => {
     if (!workspacePage) {
       navigate({ to: "/coach/clients/$clientId", params: { clientId } });
@@ -767,21 +758,26 @@ export function CoachDashboardPage({
       kicker={clientsOnly ? "בניית תוכניות ותפריטים" : "לוח מודעות"}
       action={
         clientsOnly ? (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
-          >
-            <UserPlus className="h-3.5 w-3.5" />
-            <span>הוסף מתאמן</span>
-          </button>
+          <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-[11px] font-bold text-primary">
+            עדכון תוכניות
+          </span>
         ) : (
-          <Link
-            to="/coach/clients"
-            className="flex items-center gap-1 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-primary/90"
-          >
-            <Users className="h-3.5 w-3.5" />
-            <span>המתאמנים</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-[11px] font-bold text-primary shadow-xs transition-colors hover:bg-primary/10"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              <span>הוסף מתאמן</span>
+            </button>
+            <Link
+              to="/coach/clients"
+              className="flex items-center gap-1 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-primary/90"
+            >
+              <Users className="h-3.5 w-3.5" />
+              <span>המתאמנים</span>
+            </Link>
+          </div>
         )
       }
     >
@@ -912,6 +908,39 @@ export function CoachDashboardPage({
               )}
             </div>
           )}
+
+          {isOwner ? (
+            <section className="surface-card space-y-3 border-purple-200 bg-purple-50/50 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-700">
+                    מצב האפליקציה
+                  </p>
+                  <h3 className="mt-1 flex items-center gap-2 text-sm font-bold text-purple-950">
+                    <Crown className="h-4 w-4 text-purple-700" />
+                    תמונת מצב של החשבונות והצוות
+                  </h3>
+                </div>
+                <span className="rounded-full bg-purple-100 px-2.5 py-1 text-[10px] font-bold text-purple-800">
+                  {allProfiles.length} חשבונות
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="rounded-xl border border-purple-100 bg-white p-2.5">
+                  <span className="block text-[10px] text-muted-foreground">מאמנים</span>
+                  <strong className="mt-1 block text-base text-purple-950">{coachCount}</strong>
+                </div>
+                <div className="rounded-xl border border-purple-100 bg-white p-2.5">
+                  <span className="block text-[10px] text-muted-foreground">מתאמנים</span>
+                  <strong className="mt-1 block text-base text-purple-950">{clientCount}</strong>
+                </div>
+                <div className="rounded-xl border border-purple-100 bg-white p-2.5">
+                  <span className="block text-[10px] text-muted-foreground">בעלים</span>
+                  <strong className="mt-1 block text-base text-purple-950">{ownerCount}</strong>
+                </div>
+              </div>
+            </section>
+          ) : null}
         </section>
       ) : null}
 
@@ -1009,34 +1038,44 @@ export function CoachDashboardPage({
 
         {clientsOnly ? (
           <>
-            {/* Coach Header Banner */}
-            <div className="surface-card rounded-3xl border border-primary/15 bg-primary/5 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Dumbbell className="h-4 w-4" />
+            <section className="overflow-hidden rounded-[1.75rem] bg-ink p-5 text-primary-foreground shadow-sm">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-foreground/15">
+                    <Dumbbell className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-ink">בניית תוכניות ותפריטים</h3>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary-foreground/65">
+                      סביבת בנייה
+                    </p>
+                    <h3 className="mt-1 font-display text-lg font-extrabold">בונים עבור מתאמן</h3>
+                    <p className="mt-1 max-w-sm text-xs leading-relaxed text-primary-foreground/75">
                       {genderText(
                         gender,
-                        "בחרי מתאמן כדי לפתוח את סביבת העבודה שלו",
-                        "בחר מתאמן כדי לפתוח את סביבת העבודה שלו",
+                        "בחרי מתאמן כדי לבנות תוכנית אימונים, ימים, תרגילים ותפריט אישי.",
+                        "בחר מתאמן כדי לבנות תוכנית אימונים, ימים, תרגילים ותפריט אישי.",
                       )}
                     </p>
                   </div>
                 </div>
-                <span className="text-[11px] font-bold text-primary">{clients.length}</span>
+                <span className="shrink-0 rounded-full bg-primary-foreground/15 px-2.5 py-1 text-[11px] font-bold">
+                  {clients.length} מתאמנים
+                </span>
               </div>
-            </div>
+            </section>
 
             {/* Client Search & List */}
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between px-1">
-                <h3 className="font-bold text-sm text-ink flex items-center gap-1.5">
-                  <Users className="h-4 w-4 text-primary" /> כל המתאמנים
-                </h3>
+            <section className="space-y-3 rounded-3xl border border-border/70 bg-surface p-4 shadow-sm">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                    שלב 1
+                  </p>
+                  <h3 className="mt-1 flex items-center gap-1.5 font-bold text-sm text-ink">
+                    <Users className="h-4 w-4 text-primary" /> בחירת מתאמן
+                  </h3>
+                </div>
+                <span className="text-[11px] text-muted-foreground">תוכניות ותפריטים בלבד</span>
               </div>
 
               <div className="num-pill flex h-10 items-center gap-2 px-3">
@@ -1143,16 +1182,6 @@ export function CoachDashboardPage({
                           >
                             פתח וערוך
                           </Link>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveClient(c.id);
-                            }}
-                            className="p-1.5 text-muted-foreground hover:text-red-600 rounded-lg transition-colors cursor-pointer"
-                            title="הסר מתאמן"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
                           <ChevronLeft
                             className={`h-5 w-5 text-muted-foreground transition-transform ${
                               isSelected ? "-rotate-90 text-primary" : ""
@@ -1164,7 +1193,7 @@ export function CoachDashboardPage({
                   })}
                 </div>
               )}
-            </div>
+            </section>
           </>
         ) : null}
 

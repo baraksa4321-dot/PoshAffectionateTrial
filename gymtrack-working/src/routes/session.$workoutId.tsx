@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createPortal } from "react-dom";
 import {
   Check,
   ChevronLeft,
@@ -140,15 +141,18 @@ function Session() {
         done: false,
         warmup: true,
       }));
-      const working: LoggedSet[] = Array.from({ length: item.sets }, (_, i) => ({
-        reps: last?.sets[i]?.reps ?? item.workingSets?.[i]?.reps ?? targetReps,
-        weight: prescribedWeight,
-        done: false,
-        targetReps,
-        targetRepMax,
-        warmup: false,
-        dropSet: item.workingSets?.[i]?.dropSet || item.dropSetConfig?.enabled,
-      }));
+      const working: LoggedSet[] = Array.from({ length: item.sets }, (_, i) => {
+        const dropSet = item.workingSets?.[i]?.dropSet ?? item.dropSetConfig?.enabled;
+        return {
+          reps: last?.sets[i]?.reps ?? item.workingSets?.[i]?.reps ?? targetReps,
+          weight: prescribedWeight,
+          done: false,
+          targetReps,
+          warmup: false,
+          ...(targetRepMax !== undefined ? { targetRepMax } : {}),
+          ...(dropSet !== undefined ? { dropSet } : {}),
+        };
+      });
       return {
         exerciseId: item.exerciseId,
         exerciseName: ex?.name ?? "תרגיל שהוסר",
@@ -303,22 +307,27 @@ function Session() {
       id: uid(),
       workoutId: workout.id,
       workoutName: workout.name,
-      programName: currentProgram?.name,
+      ...(currentProgram?.name ? { programName: currentProgram.name } : {}),
       date: new Date().toISOString(),
       durationSec: Math.round((Date.now() - startedAt) / 1000),
       entries: entries.map((e, index) => ({
         ...e,
         sets: e.sets.filter((s) => s.done),
-        feedback:
-          exerciseFeedback[index]?.rating || exerciseFeedback[index]?.notes.trim()
+          ...(exerciseFeedback[index]?.rating || exerciseFeedback[index]?.notes.trim()
             ? {
-                rating: exerciseFeedback[index]?.rating,
-                notes: exerciseFeedback[index]?.notes.trim() || undefined,
+                feedback: {
+                  ...(exerciseFeedback[index]?.rating
+                    ? { rating: exerciseFeedback[index].rating }
+                    : {}),
+                  ...(exerciseFeedback[index]?.notes.trim()
+                    ? { notes: exerciseFeedback[index].notes.trim() }
+                    : {}),
+                },
               }
-            : undefined,
+            : {}),
       })),
       difficultyRating,
-      discomfortNotes: discomfortNotes.trim() || undefined,
+      ...(discomfortNotes.trim() ? { discomfortNotes: discomfortNotes.trim() } : {}),
     });
     clearSavedSession();
     setShowFeedbackModal(false);
@@ -775,106 +784,115 @@ function Session() {
         </Overlay>
       )}
 
-      {/* Always-available compact, draggable Rest Timer */}
-      <div
-        className="fixed z-40"
-        style={{
-          bottom: "calc(5.5rem + env(safe-area-inset-bottom))",
-          right: "max(1rem, env(safe-area-inset-right))",
-        }}
-      >
-        <div
-          className={`ink-card select-none ${
-            restExpanded
-              ? "w-48 rounded-2xl p-2.5"
-              : "grid h-16 w-16 place-items-center rounded-full"
-          }`}
-          style={{
-            transform: `translate(${restOffset.x}px, ${restOffset.y}px)`,
-            touchAction: "none",
-          }}
-          onPointerDown={handleRestPointerDown}
-          onPointerMove={handleRestPointerMove}
-          onPointerUp={handleRestPointerUp}
-          onPointerCancel={handleRestPointerUp}
-          onClick={() => {
-            if (restDraggedRef.current) {
-              restDraggedRef.current = false;
-              return;
-            }
-            if (rest > 0) {
-              setRestPaused((paused) => !paused);
-            } else {
-              setRestExpanded((expanded) => !expanded);
-            }
-          }}
-          role="button"
-          tabIndex={0}
-          aria-label={
-            rest > 0 ? (restPaused ? "המשך טיימר מנוחה" : "עצור טיימר מנוחה") : "פתח טיימר מנוחה"
-          }
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              if (rest > 0) {
-                setRestPaused((paused) => !paused);
-              } else {
-                setRestExpanded((expanded) => !expanded);
-              }
-            }
-          }}
-        >
-          {restExpanded ? (
-            <div className="flex items-center gap-2">
-              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/15">
-                <Timer className="h-4 w-4 text-primary-foreground" />
+      {/* Portal the timer to body so page-entry transforms and scrolling can never hide it. */}
+      {typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="fixed z-[60]"
+              style={{
+                bottom: "calc(5.5rem + env(safe-area-inset-bottom))",
+                right: "max(1rem, env(safe-area-inset-right))",
+              }}
+            >
+              <div
+                className={`ink-card select-none ${
+                  restExpanded
+                    ? "w-48 rounded-2xl p-2.5"
+                    : "grid h-16 w-16 place-items-center rounded-full"
+                }`}
+                style={{
+                  transform: `translate(${restOffset.x}px, ${restOffset.y}px)`,
+                  touchAction: "none",
+                }}
+                onPointerDown={handleRestPointerDown}
+                onPointerMove={handleRestPointerMove}
+                onPointerUp={handleRestPointerUp}
+                onPointerCancel={handleRestPointerUp}
+                onClick={() => {
+                  if (restDraggedRef.current) {
+                    restDraggedRef.current = false;
+                    return;
+                  }
+                  if (rest > 0) {
+                    setRestPaused((paused) => !paused);
+                  } else {
+                    setRestExpanded((expanded) => !expanded);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label={
+                  rest > 0
+                    ? restPaused
+                      ? "המשך טיימר מנוחה"
+                      : "עצור טיימר מנוחה"
+                    : "פתח טיימר מנוחה"
+                }
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    if (rest > 0) {
+                      setRestPaused((paused) => !paused);
+                    } else {
+                      setRestExpanded((expanded) => !expanded);
+                    }
+                  }
+                }}
+              >
+                {restExpanded ? (
+                  <div className="flex items-center gap-2">
+                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/15">
+                      <Timer className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                    <div className="min-w-0 flex-1 text-start">
+                      <p className="text-[9px] font-semibold tracking-[0.14em] text-primary-foreground/80 uppercase">
+                        זמן מנוחה
+                      </p>
+                      <p className="font-display text-[17px] font-semibold tabular-nums text-primary-foreground">
+                        {rest > 0
+                          ? `${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, "0")}`
+                          : "מוכן"}
+                      </p>
+                    </div>
+                    {rest <= 0 ? (
+                      <div className="flex items-center gap-1">
+                        {[30, 60, 90].map((seconds) => (
+                          <button
+                            key={seconds}
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setRest(seconds);
+                              setRestPaused(false);
+                              setRestExpanded(false);
+                            }}
+                            className="press rounded-lg bg-white/15 px-1.5 py-1 text-[10px] font-bold text-primary-foreground hover:bg-white/25"
+                          >
+                            {seconds}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="rounded-lg bg-white/15 px-2 py-1 text-[10px] font-bold text-primary-foreground/80">
+                        {restPaused ? "מושהה" : "פעיל"}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <Timer className="mx-auto h-4 w-4 text-primary-foreground/80" />
+                    <p className="mt-0.5 font-display text-[12px] font-bold tabular-nums text-primary-foreground">
+                      {rest > 0
+                        ? `${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, "0")}`
+                        : "טיימר"}
+                    </p>
+                  </div>
+                )}
               </div>
-              <div className="min-w-0 flex-1 text-start">
-                <p className="text-[9px] font-semibold tracking-[0.14em] text-primary-foreground/80 uppercase">
-                  זמן מנוחה
-                </p>
-                <p className="font-display text-[17px] font-semibold tabular-nums text-primary-foreground">
-                  {rest > 0
-                    ? `${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, "0")}`
-                    : "מוכן"}
-                </p>
-              </div>
-              {rest <= 0 ? (
-                <div className="flex items-center gap-1">
-                  {[30, 60, 90].map((seconds) => (
-                    <button
-                      key={seconds}
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setRest(seconds);
-                        setRestPaused(false);
-                        setRestExpanded(false);
-                      }}
-                      className="press rounded-lg bg-white/15 px-1.5 py-1 text-[10px] font-bold text-primary-foreground hover:bg-white/25"
-                    >
-                      {seconds}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <span className="rounded-lg bg-white/15 px-2 py-1 text-[10px] font-bold text-primary-foreground/80">
-                  {restPaused ? "מושהה" : "פעיל"}
-                </span>
-              )}
-            </div>
-          ) : (
-            <div className="text-center">
-              <Timer className="mx-auto h-4 w-4 text-primary-foreground/80" />
-              <p className="mt-0.5 font-display text-[12px] font-bold tabular-nums text-primary-foreground">
-                {rest > 0
-                  ? `${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, "0")}`
-                  : "טיימר"}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
+            </div>,
+            document.body,
+          )
+        : null}
 
       {/* Replace Exercise Modal */}
       {replacingIndex !== null ? (
