@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { Apple, Cloud, Dumbbell, Home, LayoutGrid, LogIn, LogOut, User, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { saveTheme, useAuthUser, useGym } from "../lib/gym-store";
@@ -31,28 +31,41 @@ export function AppShell({
   const role = store.userProfile?.role;
   const isOwner = role === "owner";
   const isCoach = role === "coach" || isOwner;
+  const location = useLocation();
+  const isManagementRoute =
+    location.pathname.startsWith("/coach") || location.pathname.startsWith("/exercises");
 
   const [activeMode, setActiveMode] = useState<"personal" | "management">(
-    typeof window !== "undefined" && window.location.pathname.startsWith("/coach")
+    typeof window !== "undefined" &&
+      (window.location.pathname.startsWith("/coach") ||
+        window.location.pathname.startsWith("/exercises"))
       ? "management"
       : "personal",
   );
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [themeError, setThemeError] = useState("");
   const theme = store.userProfile?.theme ?? DEFAULT_THEME;
+  const managementView = isCoach && (activeMode === "management" || isManagementRoute);
+
+  useEffect(() => {
+    if (isManagementRoute) setActiveMode("management");
+  }, [isManagementRoute]);
 
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
 
-  const NAV = [
-    { to: "/", label: "בית", id: "home", icon: Home },
-    { to: "/programs", label: "אימונים", id: "programs", icon: LayoutGrid },
-    ...(isCoach && activeMode === "management"
-      ? [{ to: "/exercises", label: "תרגילים", id: "exercises", icon: Dumbbell }]
-      : []),
-    { to: "/nutrition", label: "תזונה", id: "nutrition", icon: Apple },
-  ];
+  const NAV = managementView
+    ? [
+        { to: "/coach", label: "מרכז ניהול", id: "coach", icon: User },
+        { to: "/programs", label: "תוכניות", id: "programs", icon: LayoutGrid },
+        { to: "/exercises", label: "תרגילים", id: "exercises", icon: Dumbbell },
+      ]
+    : [
+        { to: "/", label: "היום שלי", id: "home", icon: Home },
+        { to: "/programs", label: "האימונים שלי", id: "programs", icon: LayoutGrid },
+        { to: "/nutrition", label: "התזונה שלי", id: "nutrition", icon: Apple },
+      ];
 
   const [showAuthModal, setShowAuthModal] = useState(authOnly);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -219,6 +232,30 @@ export function AppShell({
                   {isOwner ? "בעלים" : "מאמן"}
                 </Link>
               </div>
+            </div>
+          ) : null}
+          {isCoach ? (
+            <div
+              className={`mb-3 flex items-center justify-between border-b px-1 pb-2 ${
+                managementView ? "border-ink/20 text-ink" : "border-primary/20 text-primary"
+              }`}
+            >
+              <div className="text-start">
+                <p className="text-[10px] font-bold tracking-[0.16em] uppercase">
+                  {managementView ? (isOwner ? "מרחב בעלים" : "מרחב מאמן") : "מרחב אישי"}
+                </p>
+                <p className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+                  {managementView
+                    ? "ניהול מתאמנים, תוכניות וספריית תרגילים"
+                    : "האימונים, התזונה וההתקדמות שלך"}
+                </p>
+              </div>
+              <span
+                aria-hidden="true"
+                className={`h-2.5 w-2.5 rounded-full ${
+                  managementView ? (isOwner ? "bg-ink" : "bg-primary") : "bg-sage"
+                }`}
+              />
             </div>
           ) : null}
           <div className="flex items-start gap-3">
