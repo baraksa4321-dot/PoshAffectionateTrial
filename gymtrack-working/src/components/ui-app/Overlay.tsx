@@ -24,6 +24,7 @@ export function Overlay({
   ariaLabel?: string;
 }) {
   const [mounted, setMounted] = useState(false);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
 
@@ -78,6 +79,16 @@ export function Overlay({
         first.focus();
       }
     };
+    const visualViewport = window.visualViewport;
+    const updateKeyboardOffset = () => {
+      if (!visualViewport) return;
+      setKeyboardOffset(
+        Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop),
+      );
+    };
+    updateKeyboardOffset();
+    visualViewport?.addEventListener("resize", updateKeyboardOffset);
+    visualViewport?.addEventListener("scroll", updateKeyboardOffset);
     window.addEventListener("keydown", onKeyDown);
     const focusFrame = window.requestAnimationFrame(() => {
       const firstFocusable = panelRef.current?.querySelector<HTMLElement>(focusableSelector);
@@ -86,7 +97,10 @@ export function Overlay({
 
     return () => {
       window.removeEventListener("keydown", onKeyDown);
+      visualViewport?.removeEventListener("resize", updateKeyboardOffset);
+      visualViewport?.removeEventListener("scroll", updateKeyboardOffset);
       window.cancelAnimationFrame(focusFrame);
+      setKeyboardOffset(0);
       scrollLockCount = Math.max(0, scrollLockCount - 1);
       if (scrollLockCount === 0) {
         document.body.style.overflow = previousBodyOverflow;
@@ -104,6 +118,7 @@ export function Overlay({
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel}
+      data-keyboard-open={keyboardOffset > 0 ? "true" : undefined}
       className={`fixed inset-0 z-[100] flex ${
         isBottom ? "items-end justify-center" : "items-center justify-center"
       } bg-foreground/40 p-4 backdrop-blur-sm ${className}`}
@@ -117,6 +132,10 @@ export function Overlay({
       <div
         ref={panelRef}
         tabIndex={-1}
+        style={{
+          maxHeight: `calc(100dvh - ${keyboardOffset}px - ${isBottom ? "1rem" : "2rem"})`,
+          marginBottom: isBottom ? keyboardOffset : 0,
+        }}
         className={`w-full ${
           isBottom
             ? "max-h-[calc(100dvh-1rem)] max-w-xl rounded-t-[2rem] pb-[max(1.25rem,env(safe-area-inset-bottom))]"

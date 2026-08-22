@@ -1,17 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import {
-  Apple,
-  Cloud,
-  Dumbbell,
-  Home,
-  LayoutGrid,
-  LogIn,
-  LogOut,
-  Shield,
-  Crown,
-  User,
-  X,
-} from "lucide-react";
+import { Apple, Cloud, Dumbbell, Home, LayoutGrid, LogIn, LogOut, User, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { saveTheme, useAuthUser, useGym } from "../lib/gym-store";
 import { supabase } from "../lib/supabase";
@@ -196,6 +184,43 @@ export function AppShell({
         style={{ paddingTop: "max(0.6rem, env(safe-area-inset-top))" }}
       >
         <div className="mx-auto w-full max-w-md px-5 pb-3.5 pt-1">
+          {isCoach ? (
+            <div className="mb-3 flex items-center justify-between border-b border-border/50 pb-2">
+              <span className="text-[11px] font-bold text-muted-foreground">מצב עבודה</span>
+              <div
+                className="flex items-center gap-0.5 border border-border bg-surface-2 p-0.5"
+                role="group"
+                aria-label="בחירת מצב עבודה"
+              >
+                <Link
+                  to="/"
+                  onClick={() => setActiveMode("personal")}
+                  aria-current={activeMode === "personal" ? "page" : undefined}
+                  className={`min-w-20 px-3 py-1.5 text-center text-[11px] font-bold transition-colors ${
+                    activeMode === "personal"
+                      ? "bg-surface text-ink shadow-sm"
+                      : "text-muted-foreground hover:text-ink"
+                  }`}
+                >
+                  אישי
+                </Link>
+                <Link
+                  to="/coach"
+                  onClick={() => setActiveMode("management")}
+                  aria-current={activeMode === "management" ? "page" : undefined}
+                  className={`min-w-20 px-3 py-1.5 text-center text-[11px] font-bold transition-colors ${
+                    activeMode === "management"
+                      ? isOwner
+                        ? "bg-ink text-primary-foreground"
+                        : "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-ink"
+                  }`}
+                >
+                  {isOwner ? "בעלים" : "מאמן"}
+                </Link>
+              </div>
+            </div>
+          ) : null}
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1 text-start">
               {kicker ? (
@@ -213,40 +238,6 @@ export function AppShell({
               ) : null}
             </div>
             <div className="flex shrink-0 items-center gap-2 pt-0.5">
-              {isCoach ? (
-                <div className="flex items-center rounded-sm bg-surface-2 p-0.5 border border-border">
-                  <Link
-                    to="/"
-                    onClick={() => setActiveMode("personal")}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-sm transition-colors ${
-                      activeMode === "personal"
-                        ? "bg-surface text-ink shadow-sm border border-border/50"
-                        : "text-muted-foreground hover:text-ink"
-                    }`}
-                  >
-                    אישי
-                  </Link>
-                  <Link
-                    to="/coach"
-                    onClick={() => setActiveMode("management")}
-                    className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-sm transition-colors ${
-                      activeMode === "management"
-                        ? isOwner
-                          ? "bg-ink text-primary-foreground shadow-sm"
-                          : "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-ink"
-                    }`}
-                  >
-                    {isOwner ? (
-                      <Crown className="h-3.5 w-3.5" />
-                    ) : (
-                      <Shield className="h-3.5 w-3.5" />
-                    )}
-                    <span>{isOwner ? "בעלים" : "מאמן"}</span>
-                  </Link>
-                </div>
-              ) : null}
-
               {user ? (
                 <div className="flex items-center gap-2 rounded-sm bg-surface-2 px-3 py-1.5 text-[12px] font-bold text-ink border border-border shadow-sm">
                   <Cloud className="h-3.5 w-3.5 text-primary" />

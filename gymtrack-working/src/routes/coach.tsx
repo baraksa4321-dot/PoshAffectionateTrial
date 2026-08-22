@@ -18,6 +18,7 @@ import {
   UserCog,
   ArrowRightLeft,
   Activity,
+  X,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "../components/AppShell";
@@ -62,6 +63,7 @@ function CoachDashboardPage() {
   const [allProfiles, setAllProfiles] = useState<ProfileRow[]>([]);
   const [clientSearch, setClientSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [showClientWorkspace, setShowClientWorkspace] = useState(false);
   const [clientDetails, setClientDetails] = useState<ClientDetails | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [managementError, setManagementError] = useState("");
@@ -278,6 +280,7 @@ function CoachDashboardPage() {
     await supabase.from("coach_clients").delete().eq("id", linkId);
     if (selectedClientId === clients.find((c) => c.id === linkId)?.client_id) {
       setSelectedClientId(null);
+      setShowClientWorkspace(false);
     }
     loadCoachClients();
   };
@@ -614,6 +617,7 @@ function CoachDashboardPage() {
                     key={c.id}
                     onClick={() => {
                       setSelectedClientId(isSelected ? null : c.client_id);
+                      setShowClientWorkspace(!isSelected);
                       setEditingProgramId(null);
                       setEditingDayId(null);
                     }}
@@ -658,389 +662,417 @@ function CoachDashboardPage() {
         </div>
 
         {/* Selected Client Full Coach Workspace */}
-        {selectedClientId && (
-          <div className="space-y-4 pt-2 border-t border-border/40">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-base text-ink flex items-center gap-2">
-                <span>תיק מתאמן:</span>
-                <span className="text-primary font-extrabold">
-                  {selectedClientInfo?.profiles?.full_name || selectedClientInfo?.profiles?.email}
-                </span>
-              </h3>
-            </div>
-
-            {loadingDetails ? (
-              <div className="surface-card p-6 text-center text-xs text-muted-foreground animate-pulse">
-                טוען נתוני מתאמן מ-Supabase...
+        {selectedClientId && showClientWorkspace && (
+          <Overlay
+            open={showClientWorkspace}
+            onClose={() => {
+              setShowClientWorkspace(false);
+              setSelectedClientId(null);
+              setEditingProgramId(null);
+              setEditingDayId(null);
+            }}
+            ariaLabel="תיק מתאמנת"
+          >
+            <div className="w-full max-w-2xl space-y-4 rounded-md bg-background p-4 shadow-2xl sm:p-6">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-base text-ink flex items-center gap-2">
+                  <span>תיק מתאמן:</span>
+                  <span className="text-primary font-extrabold">
+                    {selectedClientInfo?.profiles?.full_name || selectedClientInfo?.profiles?.email}
+                  </span>
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowClientWorkspace(false);
+                    setSelectedClientId(null);
+                    setEditingProgramId(null);
+                    setEditingDayId(null);
+                  }}
+                  aria-label="סגור תיק מתאמנת"
+                  className="grid h-9 w-9 place-items-center border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-ink"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Send Coach Message Panel */}
-                <div className="surface-card p-4 rounded-2xl space-y-2.5 border border-primary/20 bg-primary/5">
-                  <h4 className="font-bold text-xs text-primary flex items-center gap-1.5">
-                    <MessageSquare className="h-4 w-4" /> שליחת הודעת חיזוק / הנחיה למתאמן
-                  </h4>
 
-                  {msgSentNotice && (
-                    <p className="text-xs font-bold text-emerald-700 bg-emerald-50 p-2 rounded-xl border border-emerald-200">
-                      {msgSentNotice}
-                    </p>
-                  )}
-
-                  <form onSubmit={handleSendCoachMessage} className="flex gap-2">
-                    <input
-                      type="text"
-                      required
-                      value={coachMsgText}
-                      onChange={(e) => setCoachMsgText(e.target.value)}
-                      placeholder="הקלידי הודעה שתופיע במסך הבית של המתאמן..."
-                      className="flex-1 rounded-xl border border-border bg-white px-3 py-1.5 text-xs outline-none focus:border-primary"
-                    />
-                    <button
-                      type="submit"
-                      className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-xs cursor-pointer hover:bg-primary/90"
-                    >
-                      שלח
-                    </button>
-                  </form>
+              {loadingDetails ? (
+                <div className="surface-card p-6 text-center text-xs text-muted-foreground animate-pulse">
+                  טוען נתוני מתאמן מ-Supabase...
                 </div>
-
-                {/* Client Programs & Full Exercise Prescription Builder */}
-                <div className="surface-card p-4 rounded-2xl space-y-3">
-                  <div className="flex items-center justify-between border-b pb-2">
-                    <h4 className="font-bold text-sm text-ink flex items-center gap-1.5">
-                      <Dumbbell className="h-4 w-4 text-primary" /> בונה התוכניות והאימונים למתאמן
+              ) : (
+                <div className="space-y-4">
+                  {/* Send Coach Message Panel */}
+                  <div className="surface-card p-4 rounded-2xl space-y-2.5 border border-primary/20 bg-primary/5">
+                    <h4 className="font-bold text-xs text-primary flex items-center gap-1.5">
+                      <MessageSquare className="h-4 w-4" /> שליחת הודעת חיזוק / הנחיה למתאמן
                     </h4>
-                  </div>
 
-                  <form onSubmit={handleCreateClientProgram} className="flex gap-2">
-                    <input
-                      type="text"
-                      required
-                      value={newProgramName}
-                      onChange={(e) => setNewProgramName(e.target.value)}
-                      placeholder="שם תוכנית אימון חדשה..."
-                      className="flex-1 rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
-                    />
-                    <button
-                      type="submit"
-                      className="flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-primary/90 cursor-pointer"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      <span>צור</span>
-                    </button>
-                  </form>
+                    {msgSentNotice && (
+                      <p className="text-xs font-bold text-emerald-700 bg-emerald-50 p-2 rounded-xl border border-emerald-200">
+                        {msgSentNotice}
+                      </p>
+                    )}
 
-                  <div className="space-y-3 pt-2">
-                    {clientDetails?.programs?.map((prog: Program) => {
-                      const isProgActive = editingProgramId === prog.id;
-                      const progDays = clientDetails?.workouts?.filter((w: Workout) =>
-                        prog.dayIds?.includes(w.id),
-                      );
-
-                      return (
-                        <div
-                          key={prog.id}
-                          className="rounded-2xl border border-border/70 p-3 space-y-2.5 bg-muted/20"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-sm text-ink">{prog.name}</span>
-                            <button
-                              onClick={() => setEditingProgramId(isProgActive ? null : prog.id)}
-                              className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
-                            >
-                              <Edit2 className="h-3 w-3" />
-                              <span>{isProgActive ? "סגור עריכה" : "נהל ימי אימון"}</span>
-                            </button>
-                          </div>
-
-                          {isProgActive && (
-                            <div className="space-y-3 pt-2 border-t border-border/40">
-                              <form onSubmit={handleAddProgramDay} className="flex gap-2">
-                                <input
-                                  type="text"
-                                  required
-                                  value={newDayName}
-                                  onChange={(e) => setNewDayName(e.target.value)}
-                                  placeholder="שם יום אימון (למשל: A - פלג גוף עליון)..."
-                                  className="flex-1 rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
-                                />
-                                <button
-                                  type="submit"
-                                  className="rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 cursor-pointer"
-                                >
-                                  + יום
-                                </button>
-                              </form>
-
-                              <div className="space-y-2">
-                                {progDays?.map((dayItem: Workout) => {
-                                  const isDayActive = editingDayId === dayItem.id;
-
-                                  return (
-                                    <div
-                                      key={dayItem.id}
-                                      className="rounded-xl bg-white p-3 border border-border/60 space-y-2"
-                                    >
-                                      <div className="flex items-center justify-between">
-                                        <span className="font-bold text-xs text-ink">
-                                          {dayItem.name} ({dayItem.items?.length || 0} תרגילים)
-                                        </span>
-                                        <button
-                                          onClick={() =>
-                                            setEditingDayId(isDayActive ? null : dayItem.id)
-                                          }
-                                          className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
-                                        >
-                                          {isDayActive ? "סגור" : "+ שייך תרגיל מותאם"}
-                                        </button>
-                                      </div>
-
-                                      {dayItem.items?.length > 0 && (
-                                        <div className="space-y-1.5 pt-1">
-                                          {dayItem.items.map((exItem: WorkoutItem) => {
-                                            const exMeta = store.exercises.find(
-                                              (e) => e.id === exItem.exerciseId,
-                                            );
-
-                                            return (
-                                              <div
-                                                key={exItem.id}
-                                                className="flex items-center justify-between rounded-lg bg-secondary/50 p-2 text-xs"
-                                              >
-                                                <div>
-                                                  <span className="font-bold text-ink">
-                                                    {exMeta?.name || "תרגיל"}
-                                                  </span>
-                                                  <span className="text-muted-foreground mr-1">
-                                                    · {exItem.targetWeight || exItem.weight} ק"ג ·{" "}
-                                                    {exItem.sets}×{exItem.repMin || exItem.reps}
-                                                    {exItem.repMax ? `-${exItem.repMax}` : ""}
-                                                  </span>
-                                                </div>
-                                                <button
-                                                  onClick={() =>
-                                                    handleRemoveExerciseFromDay(
-                                                      dayItem.id,
-                                                      exItem.id,
-                                                    )
-                                                  }
-                                                  className="text-muted-foreground hover:text-red-600 p-1 cursor-pointer"
-                                                >
-                                                  <Trash2 className="h-3.5 w-3.5" />
-                                                </button>
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-                                      )}
-
-                                      {isDayActive && (
-                                        <form
-                                          onSubmit={handleAddExerciseToDay}
-                                          className="pt-2 border-t border-border/40 space-y-2 text-xs"
-                                        >
-                                          <div>
-                                            <label className="block text-[10px] font-bold text-muted-foreground mb-1">
-                                              בחר תרגיל מספרייה
-                                            </label>
-                                            <select
-                                              required
-                                              value={selectedExId}
-                                              onChange={(e) => setSelectedExId(e.target.value)}
-                                              className="w-full rounded-lg border border-border px-2 py-1.5 text-xs outline-none"
-                                            >
-                                              <option value="">-- בחר תרגיל --</option>
-                                              {store.exercises.map((e) => (
-                                                <option key={e.id} value={e.id}>
-                                                  {e.name} ({e.muscleGroup})
-                                                </option>
-                                              ))}
-                                            </select>
-                                          </div>
-
-                                          <div className="grid grid-cols-4 gap-1.5">
-                                            <div>
-                                              <label className="block text-[9px] font-bold text-muted-foreground">
-                                                משקל יעד (kg)
-                                              </label>
-                                              <input
-                                                type="number"
-                                                value={targetWeight}
-                                                onChange={(e) =>
-                                                  setTargetWeight(Number(e.target.value))
-                                                }
-                                                className="w-full rounded-md border p-1 text-center"
-                                              />
-                                            </div>
-                                            <div>
-                                              <label className="block text-[9px] font-bold text-muted-foreground">
-                                                סטים
-                                              </label>
-                                              <input
-                                                type="number"
-                                                value={setsCount}
-                                                onChange={(e) =>
-                                                  setSetsCount(Number(e.target.value))
-                                                }
-                                                className="w-full rounded-md border p-1 text-center"
-                                              />
-                                            </div>
-                                            <div>
-                                              <label className="block text-[9px] font-bold text-muted-foreground">
-                                                חזרות מינ'
-                                              </label>
-                                              <input
-                                                type="number"
-                                                value={repMin}
-                                                onChange={(e) => setRepMin(Number(e.target.value))}
-                                                className="w-full rounded-md border p-1 text-center"
-                                              />
-                                            </div>
-                                            <div>
-                                              <label className="block text-[9px] font-bold text-muted-foreground">
-                                                חזרות מקס'
-                                              </label>
-                                              <input
-                                                type="number"
-                                                value={repMax}
-                                                onChange={(e) => setRepMax(Number(e.target.value))}
-                                                className="w-full rounded-md border p-1 text-center"
-                                              />
-                                            </div>
-                                          </div>
-
-                                          <button
-                                            type="submit"
-                                            className="w-full rounded-lg bg-primary py-1.5 font-bold text-white shadow-xs cursor-pointer"
-                                          >
-                                            שמור תרגיל ליום אימון
-                                          </button>
-                                        </form>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Client Nutrition Targets Editor */}
-                <div className="surface-card p-4 rounded-2xl space-y-3">
-                  <div className="flex items-center justify-between border-b pb-2">
-                    <h4 className="font-bold text-sm text-ink flex items-center gap-1.5">
-                      <Apple className="h-4 w-4 text-primary" /> יעד קלורי ותזונה למתאמן
-                    </h4>
-                    <button
-                      onClick={() => setEditingNutrition(!editingNutrition)}
-                      className="text-primary text-xs font-bold hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <Edit2 className="h-3 w-3" />
-                      <span>{editingNutrition ? "ביטול" : "ערוך יעדים"}</span>
-                    </button>
-                  </div>
-
-                  {editingNutrition ? (
-                    <div className="space-y-3 pt-1">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-[10px] font-bold text-muted-foreground mb-1">
-                            קלוריות (kcal)
-                          </label>
-                          <input
-                            type="number"
-                            value={calTarget}
-                            onChange={(e) => setCalTarget(Number(e.target.value))}
-                            className="w-full rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-muted-foreground mb-1">
-                            חלבון (g)
-                          </label>
-                          <input
-                            type="number"
-                            value={protTarget}
-                            onChange={(e) => setProtTarget(Number(e.target.value))}
-                            className="w-full rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
-                          />
-                        </div>
-                      </div>
+                    <form onSubmit={handleSendCoachMessage} className="flex gap-2">
+                      <input
+                        type="text"
+                        required
+                        value={coachMsgText}
+                        onChange={(e) => setCoachMsgText(e.target.value)}
+                        placeholder="הקלידי הודעה שתופיע במסך הבית של המתאמן..."
+                        className="flex-1 rounded-xl border border-border bg-white px-3 py-1.5 text-xs outline-none focus:border-primary"
+                      />
                       <button
-                        onClick={handleSaveNutritionTargets}
-                        className="w-full rounded-xl bg-primary py-2 text-xs font-bold text-white shadow-xs hover:bg-primary/90 cursor-pointer flex items-center justify-center gap-1"
+                        type="submit"
+                        className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-xs cursor-pointer hover:bg-primary/90"
                       >
-                        <Save className="h-3.5 w-3.5" />
-                        <span>שמור יעד מותאם למתאמן</span>
+                        שלח
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Client Programs & Full Exercise Prescription Builder */}
+                  <div className="surface-card p-4 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <h4 className="font-bold text-sm text-ink flex items-center gap-1.5">
+                        <Dumbbell className="h-4 w-4 text-primary" /> בונה התוכניות והאימונים למתאמן
+                      </h4>
+                    </div>
+
+                    <form onSubmit={handleCreateClientProgram} className="flex gap-2">
+                      <input
+                        type="text"
+                        required
+                        value={newProgramName}
+                        onChange={(e) => setNewProgramName(e.target.value)}
+                        placeholder="שם תוכנית אימון חדשה..."
+                        className="flex-1 rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
+                      />
+                      <button
+                        type="submit"
+                        className="flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-primary/90 cursor-pointer"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>צור</span>
+                      </button>
+                    </form>
+
+                    <div className="space-y-3 pt-2">
+                      {clientDetails?.programs?.map((prog: Program) => {
+                        const isProgActive = editingProgramId === prog.id;
+                        const progDays = clientDetails?.workouts?.filter((w: Workout) =>
+                          prog.dayIds?.includes(w.id),
+                        );
+
+                        return (
+                          <div
+                            key={prog.id}
+                            className="rounded-2xl border border-border/70 p-3 space-y-2.5 bg-muted/20"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-sm text-ink">{prog.name}</span>
+                              <button
+                                onClick={() => setEditingProgramId(isProgActive ? null : prog.id)}
+                                className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                              >
+                                <Edit2 className="h-3 w-3" />
+                                <span>{isProgActive ? "סגור עריכה" : "נהל ימי אימון"}</span>
+                              </button>
+                            </div>
+
+                            {isProgActive && (
+                              <div className="space-y-3 pt-2 border-t border-border/40">
+                                <form onSubmit={handleAddProgramDay} className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    required
+                                    value={newDayName}
+                                    onChange={(e) => setNewDayName(e.target.value)}
+                                    placeholder="שם יום אימון (למשל: A - פלג גוף עליון)..."
+                                    className="flex-1 rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
+                                  />
+                                  <button
+                                    type="submit"
+                                    className="rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 cursor-pointer"
+                                  >
+                                    + יום
+                                  </button>
+                                </form>
+
+                                <div className="space-y-2">
+                                  {progDays?.map((dayItem: Workout) => {
+                                    const isDayActive = editingDayId === dayItem.id;
+
+                                    return (
+                                      <div
+                                        key={dayItem.id}
+                                        className="rounded-xl bg-white p-3 border border-border/60 space-y-2"
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <span className="font-bold text-xs text-ink">
+                                            {dayItem.name} ({dayItem.items?.length || 0} תרגילים)
+                                          </span>
+                                          <button
+                                            onClick={() =>
+                                              setEditingDayId(isDayActive ? null : dayItem.id)
+                                            }
+                                            className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
+                                          >
+                                            {isDayActive ? "סגור" : "+ שייך תרגיל מותאם"}
+                                          </button>
+                                        </div>
+
+                                        {dayItem.items?.length > 0 && (
+                                          <div className="space-y-1.5 pt-1">
+                                            {dayItem.items.map((exItem: WorkoutItem) => {
+                                              const exMeta = store.exercises.find(
+                                                (e) => e.id === exItem.exerciseId,
+                                              );
+
+                                              return (
+                                                <div
+                                                  key={exItem.id}
+                                                  className="flex items-center justify-between rounded-lg bg-secondary/50 p-2 text-xs"
+                                                >
+                                                  <div>
+                                                    <span className="font-bold text-ink">
+                                                      {exMeta?.name || "תרגיל"}
+                                                    </span>
+                                                    <span className="text-muted-foreground mr-1">
+                                                      · {exItem.targetWeight || exItem.weight} ק"ג ·{" "}
+                                                      {exItem.sets}×{exItem.repMin || exItem.reps}
+                                                      {exItem.repMax ? `-${exItem.repMax}` : ""}
+                                                    </span>
+                                                  </div>
+                                                  <button
+                                                    onClick={() =>
+                                                      handleRemoveExerciseFromDay(
+                                                        dayItem.id,
+                                                        exItem.id,
+                                                      )
+                                                    }
+                                                    className="text-muted-foreground hover:text-red-600 p-1 cursor-pointer"
+                                                  >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                  </button>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+
+                                        {isDayActive && (
+                                          <form
+                                            onSubmit={handleAddExerciseToDay}
+                                            className="pt-2 border-t border-border/40 space-y-2 text-xs"
+                                          >
+                                            <div>
+                                              <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                                                בחר תרגיל מספרייה
+                                              </label>
+                                              <select
+                                                required
+                                                value={selectedExId}
+                                                onChange={(e) => setSelectedExId(e.target.value)}
+                                                className="w-full rounded-lg border border-border px-2 py-1.5 text-xs outline-none"
+                                              >
+                                                <option value="">-- בחר תרגיל --</option>
+                                                {store.exercises.map((e) => (
+                                                  <option key={e.id} value={e.id}>
+                                                    {e.name} ({e.muscleGroup})
+                                                  </option>
+                                                ))}
+                                              </select>
+                                            </div>
+
+                                            <div className="grid grid-cols-4 gap-1.5">
+                                              <div>
+                                                <label className="block text-[9px] font-bold text-muted-foreground">
+                                                  משקל יעד (kg)
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  value={targetWeight}
+                                                  onChange={(e) =>
+                                                    setTargetWeight(Number(e.target.value))
+                                                  }
+                                                  className="w-full rounded-md border p-1 text-center"
+                                                />
+                                              </div>
+                                              <div>
+                                                <label className="block text-[9px] font-bold text-muted-foreground">
+                                                  סטים
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  value={setsCount}
+                                                  onChange={(e) =>
+                                                    setSetsCount(Number(e.target.value))
+                                                  }
+                                                  className="w-full rounded-md border p-1 text-center"
+                                                />
+                                              </div>
+                                              <div>
+                                                <label className="block text-[9px] font-bold text-muted-foreground">
+                                                  חזרות מינ'
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  value={repMin}
+                                                  onChange={(e) =>
+                                                    setRepMin(Number(e.target.value))
+                                                  }
+                                                  className="w-full rounded-md border p-1 text-center"
+                                                />
+                                              </div>
+                                              <div>
+                                                <label className="block text-[9px] font-bold text-muted-foreground">
+                                                  חזרות מקס'
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  value={repMax}
+                                                  onChange={(e) =>
+                                                    setRepMax(Number(e.target.value))
+                                                  }
+                                                  className="w-full rounded-md border p-1 text-center"
+                                                />
+                                              </div>
+                                            </div>
+
+                                            <button
+                                              type="submit"
+                                              className="w-full rounded-lg bg-primary py-1.5 font-bold text-white shadow-xs cursor-pointer"
+                                            >
+                                              שמור תרגיל ליום אימון
+                                            </button>
+                                          </form>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Client Nutrition Targets Editor */}
+                  <div className="surface-card p-4 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <h4 className="font-bold text-sm text-ink flex items-center gap-1.5">
+                        <Apple className="h-4 w-4 text-primary" /> יעד קלורי ותזונה למתאמן
+                      </h4>
+                      <button
+                        onClick={() => setEditingNutrition(!editingNutrition)}
+                        className="text-primary text-xs font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit2 className="h-3 w-3" />
+                        <span>{editingNutrition ? "ביטול" : "ערוך יעדים"}</span>
                       </button>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2 text-center text-xs">
-                      <div className="rounded-xl bg-primary/5 p-2 border border-primary/10">
-                        <span className="block text-[10px] text-muted-foreground">קלוריות</span>
-                        <span className="font-bold text-ink">
-                          {clientDetails?.nutritionDays?.[0]?.target_calories || 2000} kcal
-                        </span>
-                      </div>
-                      <div className="rounded-xl bg-emerald-50 p-2 border border-emerald-100">
-                        <span className="block text-[10px] text-emerald-600">ימי מעקב</span>
-                        <span className="font-bold text-emerald-800">
-                          {clientDetails?.nutritionDays?.length || 0} ימים
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
 
-                {/* Read-only Client Cardio History */}
-                <div className="surface-card p-4 rounded-2xl space-y-3">
-                  <div className="flex items-center justify-between border-b pb-2">
-                    <h4 className="font-bold text-sm text-ink flex items-center gap-1.5">
-                      <Activity className="h-4 w-4 text-primary" /> היסטוריית אירובי
-                    </h4>
-                    <span className="text-[11px] text-muted-foreground">
-                      {clientDetails?.cardioLogs?.length || 0} אימונים
-                    </span>
-                  </div>
-                  {clientDetails?.cardioLogs?.length ? (
-                    <div className="space-y-2">
-                      {clientDetails.cardioLogs.map((log) => (
-                        <div
-                          key={log.id}
-                          className="flex items-center justify-between rounded-xl bg-secondary/40 px-3 py-2 text-xs"
-                        >
+                    {editingNutrition ? (
+                      <div className="space-y-3 pt-1">
+                        <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <p className="font-bold text-ink">{log.type}</p>
-                            <p className="text-muted-foreground">
-                              {new Date(`${log.date}T00:00:00`).toLocaleDateString("he-IL")} ·{" "}
-                              {log.durationMin} דקות
-                            </p>
+                            <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                              קלוריות (kcal)
+                            </label>
+                            <input
+                              type="number"
+                              value={calTarget}
+                              onChange={(e) => setCalTarget(Number(e.target.value))}
+                              className="w-full rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
+                            />
                           </div>
-                          <div className="text-left">
-                            <p className="font-bold text-primary">{log.calories} קל׳</p>
-                            {log.distanceKm ? (
-                              <p className="text-[11px] text-muted-foreground">
-                                {log.distanceKm} ק״מ
-                              </p>
-                            ) : null}
+                          <div>
+                            <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                              חלבון (g)
+                            </label>
+                            <input
+                              type="number"
+                              value={protTarget}
+                              onChange={(e) => setProtTarget(Number(e.target.value))}
+                              className="w-full rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
+                            />
                           </div>
                         </div>
-                      ))}
+                        <button
+                          onClick={handleSaveNutritionTargets}
+                          className="w-full rounded-xl bg-primary py-2 text-xs font-bold text-white shadow-xs hover:bg-primary/90 cursor-pointer flex items-center justify-center gap-1"
+                        >
+                          <Save className="h-3.5 w-3.5" />
+                          <span>שמור יעד מותאם למתאמן</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                        <div className="rounded-xl bg-primary/5 p-2 border border-primary/10">
+                          <span className="block text-[10px] text-muted-foreground">קלוריות</span>
+                          <span className="font-bold text-ink">
+                            {clientDetails?.nutritionDays?.[0]?.target_calories || 2000} kcal
+                          </span>
+                        </div>
+                        <div className="rounded-xl bg-emerald-50 p-2 border border-emerald-100">
+                          <span className="block text-[10px] text-emerald-600">ימי מעקב</span>
+                          <span className="font-bold text-emerald-800">
+                            {clientDetails?.nutritionDays?.length || 0} ימים
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Read-only Client Cardio History */}
+                  <div className="surface-card p-4 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <h4 className="font-bold text-sm text-ink flex items-center gap-1.5">
+                        <Activity className="h-4 w-4 text-primary" /> היסטוריית אירובי
+                      </h4>
+                      <span className="text-[11px] text-muted-foreground">
+                        {clientDetails?.cardioLogs?.length || 0} אימונים
+                      </span>
                     </div>
-                  ) : (
-                    <p className="py-2 text-center text-xs text-muted-foreground">
-                      עדיין לא נרשמו אימוני אירובי.
-                    </p>
-                  )}
+                    {clientDetails?.cardioLogs?.length ? (
+                      <div className="space-y-2">
+                        {clientDetails.cardioLogs.map((log) => (
+                          <div
+                            key={log.id}
+                            className="flex items-center justify-between rounded-xl bg-secondary/40 px-3 py-2 text-xs"
+                          >
+                            <div>
+                              <p className="font-bold text-ink">{log.type}</p>
+                              <p className="text-muted-foreground">
+                                {new Date(`${log.date}T00:00:00`).toLocaleDateString("he-IL")} ·{" "}
+                                {log.durationMin} דקות
+                              </p>
+                            </div>
+                            <div className="text-left">
+                              <p className="font-bold text-primary">{log.calories} קל׳</p>
+                              {log.distanceKm ? (
+                                <p className="text-[11px] text-muted-foreground">
+                                  {log.distanceKm} ק״מ
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="py-2 text-center text-xs text-muted-foreground">
+                        עדיין לא נרשמו אימוני אירובי.
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </Overlay>
         )}
 
         {/* Add Client Modal */}
