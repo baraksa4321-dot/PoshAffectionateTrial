@@ -70,3 +70,17 @@ mtime_ms = 1787384071673
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/4b5e0533-0287-4d33-9656-19fb13d6e66e/c36206f2-8b30-4b05-86af-a6be28289756"
 storage_version_token = "1787384077613963"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "sM_WDI5ZC7tU1bQjhZRPe"
+uri = "file://attached_assets/GymTrack-Final-Real-World-QA.zip"
+type = "unspecified"
+title = "GymTrack Final Real-World QA"
+description = "Current GymTrack source archive with corrected water_ml sync, security migrations, recovery flow, final QA report, and no private credentials."
+logical_id = "f323ca02-cfa9-499a-aa11-25e6ac7c12ea"
+content_hash = "sha256:b57ea85692b2c90d4da776557016c4cd60a2d5466cf6888435427f9103b4c363"
+size = 348986
+mtime_ms = 1787384235909
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/f323ca02-cfa9-499a-aa11-25e6ac7c12ea/9c3b47f3-d289-4dae-ab4f-fe9bfca4174c"
+storage_version_token = "1787384241395064"
+content_type = "application/octet-stream"
