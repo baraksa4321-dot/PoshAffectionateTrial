@@ -358,6 +358,13 @@ function load() {
 async function handleUserLogin(userId: string) {
   // Read the signed-in user's data before writing anything. Uploading the
   // anonymous seed first can overwrite cloud state on a fresh device.
+  // Do not let a previous user's cached role control the UI while this pull
+  // is in flight. A missing or failed profile read safely renders as client.
+  data = {
+    ...data,
+    userProfile: { ...data.userProfile, role: undefined, coachId: undefined },
+  };
+  listeners.forEach((l) => l());
   const pulled = await pullSupabaseData(userId, data);
   data = pulled;
   persist();
