@@ -1,0 +1,727 @@
+GymTrack / My Routine — DEFINITIVE CODEBASE AUDIT
+
+You have been given ONE ZIP archive containing the current GymTrack / My Routine project.
+
+Your first responsibility is NOT to modify the project.
+
+Your first responsibility is to determine, with evidence from the actual code, exactly what exists, what works, what is incomplete, what is broken, and what is missing.
+
+Do not trust previous AI reports.
+Do not assume a feature exists because there is a UI screen for it.
+Do not assume something works because a function exists.
+Do not assume Supabase persistence works because Supabase is configured.
+
+Inspect the actual implementation.
+
+⸻
+
+1. SOURCE OF TRUTH
+
+The ZIP you received is the only source of truth.
+
+Inspect the complete project:
+
+* src/
+* components
+* pages
+* routes
+* hooks
+* stores
+* services
+* Supabase client
+* Supabase synchronization
+* TypeScript types
+* SQL/migrations
+* configuration
+* package.json
+* environment handling
+* assets
+* tests
+* build configuration
+
+First determine the actual architecture.
+
+⸻
+
+2. CREATE A DEFINITIVE FEATURE MATRIX
+
+For EVERY feature below, classify it as exactly one of:
+
+✅ COMPLETE
+
+The feature is implemented end-to-end and the code supports the expected behavior.
+
+🟡 PARTIAL
+
+Some of the feature exists, but important functionality is missing or incomplete.
+
+🔴 BROKEN
+
+The feature exists but has a functional bug or incorrect implementation.
+
+⚫ MISSING
+
+There is no real implementation.
+
+⚪ NOT VERIFIABLE
+
+The code exists but the available environment prevents verification.
+
+Do NOT use vague language such as “looks good”, “appears complete”, or “should work”.
+
+For every non-complete item, explain exactly what is missing or wrong.
+
+⸻
+
+3. AUTHENTICATION MATRIX
+
+Check individually:
+
+* Signup
+* Login
+* Logout
+* Session restoration
+* Refresh persistence
+* Email confirmation
+* Resend confirmation
+* Password reset
+* Authentication redirects
+* Profile loading
+* Role loading
+* Session expiration
+* User switching
+* Logout state cleanup
+
+For each one answer:
+
+Implemented?
+Connected to Supabase?
+Persistent?
+Security issue?
+Status?
+
+⸻
+
+4. ROLE SYSTEM
+
+Check all three database roles:
+
+* Owner
+* Coach
+* Client
+
+Verify separately:
+
+Owner
+
+* owner permissions
+* owner dashboard
+* user management
+* role changes
+* coach management
+* client management
+* assignment management
+
+Coach
+
+* coach dashboard
+* assigned clients
+* client profiles
+* programs
+* workouts
+* nutrition
+* measurements
+* feedback
+* messages
+* recipes
+
+Client
+
+* personal dashboard
+* own profile
+* own programs
+* own workouts
+* own nutrition
+* own measurements
+* own feedback
+* coach communication
+
+Also verify the distinction between:
+
+database role
+
+and
+
+UI/interface mode
+
+A Coach or Owner must not need to change their database role simply to use personal functionality.
+
+⸻
+
+5. SECURITY / PRIVILEGE ESCALATION
+
+Inspect the actual Supabase SQL and frontend authorization.
+
+Verify:
+
+* RLS
+* policies
+* WITH CHECK
+* SECURITY DEFINER functions
+* role update protection
+* coach/client isolation
+* owner permissions
+* anonymous access
+* authenticated access
+
+Explicitly verify these functions if present:
+
+* change_user_role
+* assign_client_to_coach
+* is_owner
+* is_coach_of
+* lookup_client_id_by_email
+* handle_new_user
+* prevent_role_self_update
+
+Search the entire repository for:
+
+* service-role keys
+* private API keys
+* passwords
+* secrets
+* hardcoded credentials
+
+Report every security concern.
+
+⸻
+
+6. PROFILE SYSTEM
+
+Check:
+
+* name
+* email
+* profile image
+* weight
+* height
+* RMR
+* TDEE
+* nutrition preferences
+* daily routine preference
+* next check date
+* role
+* coach assignment
+
+Verify who can edit each field.
+
+Verify that a user cannot edit another user’s private profile.
+
+⸻
+
+7. COACH / CLIENT RELATIONSHIP
+
+Check the complete relationship flow:
+
+* create assignment
+* remove assignment
+* change coach
+* assigned-client list
+* coach access
+* client visibility
+* owner visibility
+* database persistence
+* RLS isolation
+
+Specifically test for:
+
+* coach accessing unrelated client
+* client accessing another client
+* coach modifying another coach’s client
+* self-assignment
+* invalid relationships
+
+⸻
+
+8. PROGRAM SYSTEM
+
+Check:
+
+* create program
+* edit program
+* delete program
+* activate/deactivate
+* program days
+* day ordering
+* exercise ordering
+* sets
+* reps
+* rep ranges
+* weights
+* rest
+* notes
+* assigned client
+* persistence
+* refresh
+* logout/login
+
+Verify program relationships and foreign keys.
+
+⸻
+
+9. WORKOUT SYSTEM
+
+Check:
+
+* today’s workout
+* workout player
+* start workout
+* working sets
+* set completion
+* reps
+* weight
+* rep ranges
+* rest timer
+* RPE
+* difficulty
+* discomfort notes
+* workout completion
+* workout history
+* persistence
+* coach history visibility
+
+Do not mark workout history COMPLETE merely because a history page exists.
+
+⸻
+
+10. EXERCISE SYSTEM
+
+Check:
+
+* exercise library
+* search
+* exercise details
+* muscle group
+* category
+* equipment
+* difficulty
+* instructions
+* video URL
+* missing-video state
+* approved alternatives
+* exercise replacement
+
+Verify whether alternatives are actually restricted to approved alternatives.
+
+⸻
+
+11. NUTRITION SYSTEM
+
+This is a major audit area.
+
+Check:
+
+* food search
+* food details
+* serving size
+* quantity
+* meals
+* daily nutrition
+* daily totals
+* progress
+* favorites
+* custom foods
+* food replacement
+* persistence
+
+Every food must support:
+
+* calories
+* protein
+* carbohydrates
+* fat
+* dietary fiber
+
+Fiber must be included in ALL relevant calculations.
+
+When quantity changes, verify that ALL five values update correctly.
+
+⸻
+
+12. FOOD DATABASE QUALITY
+
+Inspect the actual food database.
+
+Check:
+
+* number of foods
+* duplicate names
+* duplicate/near-duplicate products
+* categories
+* aliases
+* English names
+* nutritional completeness
+* fiber completeness
+* negative values
+* unrealistic values
+* serving units
+
+The database should prioritize foods people actually eat day-to-day in Israel.
+
+Examples:
+
+* eggs
+* cottage cheese
+* yogurt
+* protein yogurt
+* tuna
+* chicken breast
+* beef
+* salmon
+* pita
+* bread
+* rice
+* pasta
+* potatoes
+* sweet potatoes
+* oats
+* couscous
+* bulgur
+* hummus
+* tahini
+* peanut butter
+* olive oil
+* avocado
+* vegetables
+* fruit
+* legumes
+* rice cakes
+* rice paper / דפי אורז
+* common snacks
+* common dairy products
+
+Avoid unnecessary duplication such as dozens of almost-identical rice entries.
+
+The goal is a practical food database, not a huge database full of irrelevant variations.
+
+Do NOT invent nutritional values and call them verified.
+
+⸻
+
+13. CUSTOM FOOD
+
+Check:
+
+* create
+* edit
+* delete
+* calories
+* protein
+* carbs
+* fat
+* fiber
+* serving
+* persistence
+* ownership
+* RLS
+
+⸻
+
+14. FAVORITES
+
+Check:
+
+* add favorite
+* remove favorite
+* persistence
+* duplicate prevention
+* user isolation
+* RLS
+
+⸻
+
+15. CUSTOM EXERCISES
+
+Check:
+
+* create
+* edit
+* delete
+* persistence
+* ownership
+* coach/client permissions
+* RLS
+* search/display
+
+⸻
+
+16. MEASUREMENTS
+
+Check:
+
+* create measurement
+* edit if supported
+* date
+* weight
+* history
+* progress
+* persistence
+* client privacy
+* coach visibility
+* owner visibility
+
+⸻
+
+17. FEEDBACK
+
+Check:
+
+* client submission
+* coach visibility
+* history
+* difficulty
+* RPE
+* discomfort
+* persistence
+* privacy
+
+⸻
+
+18. MESSAGES
+
+Check:
+
+* coach → assigned client
+* client → coach if supported
+* message persistence
+* conversation loading
+* user isolation
+* unauthorized conversation access
+
+⸻
+
+19. RECIPES
+
+Check:
+
+* coach recipe creation
+* edit
+* delete
+* persistence
+* ownership
+* client visibility
+* other-coach isolation
+
+⸻
+
+20. CLIENT PERFORMANCE VIDEOS
+
+Determine whether this feature actually exists.
+
+Do NOT assume exercises.video_url is a client performance video system.
+
+Clearly distinguish:
+
+Exercise demonstration video
+
+from
+
+Client performance video
+
+If client performance videos are required but absent, report:
+
+MISSING — no real client performance video implementation found
+
+If implemented, explain exactly where and how.
+
+⸻
+
+21. DAILY ROUTINE
+
+Check:
+
+* today’s routine
+* today_routine_enabled
+* correct current-day program
+* assigned program
+* persistence
+* user isolation
+
+⸻
+
+22. UI / UX AUDIT
+
+Inspect every route and screen.
+
+Find:
+
+* dead buttons
+* buttons without handlers
+* fake buttons
+* placeholder text
+* TODOs
+* unfinished screens
+* broken navigation
+* broken back navigation
+* missing empty states
+* missing loading states
+* missing error states
+* incorrect success feedback
+* modal bugs
+* sheet bugs
+* mobile scrolling problems
+* horizontal overflow
+* RTL problems
+* Hebrew text problems
+* broken icons/arrows
+* inaccessible controls
+* inconsistent terminology
+
+Every visible element should have a purpose.
+
+⸻
+
+23. MOBILE / RTL
+
+Inspect the application specifically at mobile widths around:
+
+* 375px
+* 390px
+* 430px
+
+Check:
+
+* navigation
+* forms
+* modals
+* sheets
+* search
+* workout player
+* nutrition
+* tables/lists
+* buttons
+* touch targets
+* scrolling
+* RTL alignment
+
+⸻
+
+24. DATA PERSISTENCE
+
+For every important feature determine whether data survives:
+
+1. save
+2. refresh
+3. logout
+4. login again
+
+Mark each feature separately.
+
+Do not assume persistence simply because a Supabase call exists.
+
+⸻
+
+25. BUILD / CODE QUALITY
+
+Inspect:
+
+* TypeScript errors
+* unused code
+* obvious runtime errors
+* broken imports
+* broken routes
+* missing dependencies
+* console errors
+* error handling
+* loading states
+* async race conditions
+
+Run available commands such as:
+
+* npm install
+* npm run lint
+* npm run build
+
+If a command cannot run, report:
+
+NOT VERIFIED — reason
+
+Never claim that a command passed if it was not actually executed.
+
+⸻
+
+26. FINAL REPORT — NO VAGUE ANSWERS
+
+After the audit, produce a table:
+
+Feature	Status	Evidence	Missing/Broken	Priority
+
+Use the exact statuses:
+
+* COMPLETE
+* PARTIAL
+* BROKEN
+* MISSING
+* NOT VERIFIABLE
+
+Then provide:
+
+A. What definitely works
+
+B. What definitely does NOT work
+
+C. What is partially implemented
+
+D. What is missing completely
+
+E. Security issues
+
+F. Database/Supabase issues
+
+G. UI/UX issues
+
+H. Mobile/RTL issues
+
+I. Build/test issues
+
+J. Exact list of changes required to reach production readiness
+
+⸻
+
+IMPORTANT
+
+Do NOT give me a generic AI review.
+
+Do NOT say:
+
+* “looks good”
+* “appears complete”
+* “should work”
+* “probably works”
+* “production ready”
+
+unless you have actual evidence from the code.
+
+I need a definitive answer about the ZIP I provided.
+
+After the complete audit, if there are issues, FIX THEM IN THE ACTUAL CODE.
+
+Then run the available validation commands again.
+
+Finally create:
+
+GymTrack-Production-Ready-Final.zip
+
+The ZIP must contain the actual updated source code.
+
+The final response must clearly distinguish:
+
+VERIFIED
+from
+NOT VERIFIED
+from
+MISSING
+from
+FIXED
+
+The goal is to eliminate every loose end and leave us with a codebase where we know exactly what exists, exactly what is missing, and exactly what was fixed.
