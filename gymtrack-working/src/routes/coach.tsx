@@ -22,7 +22,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "../components/AppShell";
 import { Overlay } from "../components/ui-app/Overlay";
-import { uid, useGym } from "../lib/gym-store";
+import { uid, useAuthUser, useGym } from "../lib/gym-store";
 import { pullClientDataForCoach } from "../lib/supabase-sync";
 import { supabase } from "../lib/supabase";
 import type { Program, UserRole, Workout, WorkoutItem } from "../lib/gym-types";
@@ -53,6 +53,7 @@ export const Route = createFileRoute("/coach")({
 
 function CoachDashboardPage() {
   const store = useGym();
+  const authUser = useAuthUser();
   const role = store.userProfile?.role;
   const isOwner = role === "owner";
   const isCoach = role === "coach" || isOwner;
@@ -64,6 +65,8 @@ function CoachDashboardPage() {
   const [clientDetails, setClientDetails] = useState<ClientDetails | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [managementError, setManagementError] = useState("");
+  const [roleChangeUserId, setRoleChangeUserId] = useState<string | null>(null);
+  const [roleChangeNotice, setRoleChangeNotice] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMsg, setInviteMsg] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -133,17 +136,18 @@ function CoachDashboardPage() {
     }
   }, [isOwner]);
 
-  const loadAllProfilesForOwner = useCallback(async () => {
-    if (!isOwner) return;
+  const loadAllProfilesForOwner = useCallback(async (): Promise<boolean> => {
+    if (!isOwner) return false;
     setManagementError("");
     const { data, error } = await supabase.from("profiles").select("*");
     if (error) {
       setManagementError(`טעינת משתמשי המערכת נכשלה: ${error.message}`);
-      return;
+      return false;
     }
     if (data) {
       setAllProfiles(data as unknown as ProfileRow[]);
     }
+    return true;
   }, [isOwner]);
 
   useEffect(() => {
@@ -174,19 +178,31 @@ function CoachDashboardPage() {
     };
   }, [applyClientDetails, selectedClientId]);
 
-  // OWNER RPC: Promote or Demote Role
-  const handleOwnerChangeRole = async (targetUserId: string, newRole: "coach" | "client") => {
+  // OWNER RPC: change a target user's role. The database function remains the
+  // only authority for role changes; this UI never writes profiles.role.
+  const handleOwnerChangeRole = async (
+    targetUserId: string,
+    newRole: "coach" | "client",
+  ): Promise<void> => {
+    setRoleChangeUserId(targetUserId);
+    setRoleChangeNotice("");
+    setManagementError("");
     try {
-      const { error } = await supabase.rpc("change_user_role", {
+      const { data, error } = await supabase.rpc("change_user_role", {
         target_user_id: targetUserId,
         new_role: newRole,
       });
 
       if (error) throw error;
-      loadAllProfilesForOwner();
-      alert(`תפקיד המשתמש עודכן בהצלחה ל-${newRole === "coach" ? "מאמן" : "מתאמן"}`);
+      if (data !== true) throw new Error("ה־RPC לא אישר את שינוי התפקיד");
+
+      const refreshed = await loadAllProfilesForOwner();
+      if (!refreshed) return;
+      setRoleChangeNotice(`תפקיד המשתמש עודכן בהצלחה ל-${newRole === "coach" ? "מאמן" : "מתאמן"}`);
     } catch (err: unknown) {
-      alert(errorMessage(err, "שגיאה בשינוי תפקיד"));
+      setManagementError(`שינוי התפקיד נכשל: ${errorMessage(err, "שגיאה בשינוי תפקיד")}`);
+    } finally {
+      setRoleChangeUserId(null);
     }
   };
 
@@ -461,38 +477,65 @@ function CoachDashboardPage() {
             <div className="space-y-2 pt-1">
               <p className="text-xs text-purple-900 font-semibold">משתמשים והרשאות תפקיד:</p>
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                {allProfiles.map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex items-center justify-between rounded-xl bg-white p-2.5 text-xs border border-purple-100"
-                  >
-                    <div>
-                      <span className="font-bold text-ink">{p.full_name || p.email}</span>
-                      <span className="text-muted-foreground mr-1">({p.role || "client"})</span>
-                    </div>
+                {allProfiles.map((p) => {
+                  const isCurrentUser = p.id === authUser?.id;
+                  const canChangeRole =
+                    p.role === "owner" || p.role === "coach" || p.role === "client";
+                  const isChanging = roleChangeUserId === p.id;
 
-                    {p.role !== "owner" && (
-                      <div className="flex items-center gap-1">
-                        {p.role === "client" ? (
-                          <button
-                            onClick={() => handleOwnerChangeRole(p.id, "coach")}
-                            className="rounded-lg bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-800 hover:bg-amber-200 cursor-pointer"
-                          >
-                            הפוך למאמן
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleOwnerChangeRole(p.id, "client")}
-                            className="rounded-lg bg-gray-100 px-2 py-1 text-[11px] font-bold text-gray-700 hover:bg-gray-200 cursor-pointer"
-                          >
-                            הסר הרשאת מאמן
-                          </button>
-                        )}
+                  return (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between rounded-xl bg-white p-2.5 text-xs border border-purple-100"
+                    >
+                      <div className="min-w-0">
+                        <span className="font-bold text-ink">{p.full_name || p.email}</span>
+                        <span className="text-muted-foreground mr-1">
+                          (
+                          {p.role === "owner"
+                            ? "בעלים"
+                            : p.role === "coach"
+                              ? "מאמן"
+                              : p.role === "client"
+                                ? "מתאמן"
+                                : "לא ידוע"}
+                          )
+                        </span>
                       </div>
-                    )}
-                  </div>
-                ))}
+
+                      <select
+                        aria-label={`שינוי תפקיד עבור ${p.email || p.full_name || p.id}`}
+                        value={p.role || ""}
+                        disabled={isCurrentUser || !canChangeRole || isChanging}
+                        onChange={(event) => {
+                          const nextRole = event.target.value;
+                          if (nextRole === "coach" || nextRole === "client") {
+                            void handleOwnerChangeRole(p.id, nextRole);
+                          }
+                        }}
+                        className="max-w-28 rounded-lg border border-purple-200 bg-white px-2 py-1 text-[11px] font-bold text-purple-900 outline-none focus:border-purple-500 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <option value="" disabled>
+                          לא ידוע
+                        </option>
+                        <option value="owner">בעלים</option>
+                        <option value="coach">מאמן</option>
+                        <option value="client">מתאמן</option>
+                      </select>
+                    </div>
+                  );
+                })}
               </div>
+              {roleChangeNotice ? (
+                <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-2 text-xs font-semibold text-emerald-700">
+                  {roleChangeNotice}
+                </p>
+              ) : null}
+              {authUser ? (
+                <p className="text-[11px] text-purple-800">
+                  ניתן לשנות תפקידים של משתמשים אחרים בלבד; שינוי התפקיד עובר דרך RPC מאובטח.
+                </p>
+              ) : null}
             </div>
           </div>
         )}
