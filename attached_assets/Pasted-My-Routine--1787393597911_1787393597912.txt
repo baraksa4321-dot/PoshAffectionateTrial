@@ -1,0 +1,131 @@
+My Routine — תיקון תקיעה ב־“טוענת את הרשאות החשבון…”
+
+כרגע האתר תקוע על:
+
+“טוענת את הרשאות החשבון…”
+
+התקלה הופיעה לאחר השינויים האחרונים ב־Owner/role hydration.
+
+המשימה
+
+מצא את הסיבה המדויקת לכך שה־role hydration לא מסתיים, ותקן את ה־auth/profile loading flow בלי לשנות את Supabase schema, RLS, RPCs או roles.
+
+חובה לבדוק
+
+עקוב אחרי כל השרשרת:
+
+1. supabase.auth.getSession()
+2. supabase.auth.getUser()
+3. טעינת profiles
+4. profiles.role
+5. עדכון ה־auth/profile store
+6. root auth gate
+7. AppShell
+8. route rendering
+
+מצא איפה ה־Promise או ה־state נשארים pending.
+
+חשוב
+
+אל תפתור את זה באמצעות:
+
+* role = "client" אוטומטי
+* timeout שממציא Role
+* email-based role
+* localStorage role
+* hardcoded Owner
+* חריגה עבור Maya
+* עקיפת RLS
+* שינוי DB
+
+אם אין profile או שאין role תקין, המערכת צריכה להגיע למצב שגיאה ברור או מסך התחברות/גישה נדחית — לא להיתקע לנצח ב־loading.
+
+טיפול בשגיאות
+
+כל אחד מהשלבים הבאים חייב להסתיים ב־success או error:
+
+* Auth session
+* User
+* Profile
+* Role
+
+אם Supabase מחזיר שגיאה, הצג הודעת שגיאה ברורה ואפשרות Retry/Sign out במקום loading אינסופי.
+
+Race conditions
+
+ודא ש־hydration ישן לא יכול לעדכן את ה־state אחרי:
+
+* logout
+* login של משתמש אחר
+* session change
+* refresh
+
+אבל גם אל תגרום ל־root להמתין לנצח ל־hydration שנכשל.
+
+בדוק במיוחד
+
+האם התיקון האחרון שבו:
+
+root אינו מרנדר routes עד שיש role מאומת
+
+יצר deadlock שבו:
+
+* root מחכה ל־role
+* role hydration מחכה ל־root
+* ולכן אף אחד מהם לא מתקדם.
+
+אם קיים deadlock כזה — תקן את סדר הזרימה.
+
+בדיקות
+
+לאחר התיקון:
+
+* npm run build
+* npm run lint
+* Prettier
+* git diff --check
+* restart Preview
+
+בדוק לפחות:
+
+* כניסה למסך Login ללא session
+* טעינת האפליקציה לאחר Refresh
+* התנהגות כאשר Profile קיים
+* התנהגות כאשר Profile/Role לא נטען
+* /coach ללא session לא חושף תוכן
+
+אל תטען שבדקת Login אמיתי או Supabase חי אם אין session אמיתי.
+
+דוח חובה
+
+בסיום דווח:
+
+FIXED
+
+מה גרם ל־loading להיתקע ומה תוקן.
+
+CODE VERIFIED
+
+מה אומת בקוד ובבדיקות.
+
+BROWSER VERIFIED
+
+רק מה שנבדק בפועל ב־Preview.
+
+NOT VERIFIED
+
+מה דורש חשבון אמיתי.
+
+DATABASE
+
+האם בוצע שינוי. במקרה הזה אין לבצע שינוי.
+
+SECURITY
+
+ודא שלא הוחלשה שום הגנה.
+
+PERSISTENCE
+
+ציין מה נבדק ומה לא.
+
+אל תסמן את המשימה כהצלחה רק כי build עבר. המטרה היא שהאפליקציה תצא בפועל מ־“טוענת את הרשאות החשבון…” ותגיע למסך הנכון.

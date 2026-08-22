@@ -12,7 +12,14 @@ import { useEffect } from "react";
 import "../styles.css";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "../components/AppShell";
-import { useAuthStatus, useGym } from "../lib/gym-store";
+import {
+  retryProfileHydration,
+  useAuthStatus,
+  useGym,
+  useProfileHydrationError,
+  useProfileHydrationStatus,
+} from "../lib/gym-store";
+import { supabase } from "../lib/supabase";
 
 function NotFoundComponent() {
   return (
@@ -140,7 +147,13 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const authStatus = useAuthStatus();
   const { userProfile } = useGym();
-  const isProfileHydrating = authStatus === "authenticated" && userProfile?.role === undefined;
+  const profileHydrationStatus = useProfileHydrationStatus();
+  const profileHydrationError = useProfileHydrationError();
+  const isProfileHydrating =
+    authStatus === "authenticated" &&
+    (profileHydrationStatus === "loading" || userProfile?.role === undefined);
+  const hasProfileHydrationError =
+    authStatus === "authenticated" && profileHydrationStatus === "error";
 
   useEffect(() => {
     document.documentElement.lang = "he";
@@ -162,6 +175,34 @@ function RootComponent() {
             <p className="text-sm font-semibold text-foreground">
               {isProfileHydrating ? "טוענת את הרשאות החשבון..." : "בודקת את החיבור המאובטח..."}
             </p>
+          </div>
+        </div>
+      ) : hasProfileHydrationError ? (
+        <div
+          className="flex min-h-[100dvh] items-center justify-center bg-background px-4"
+          dir="rtl"
+        >
+          <div className="max-w-md rounded-3xl border border-destructive/20 bg-white px-6 py-6 text-center shadow-sm">
+            <h1 className="text-lg font-bold text-foreground">לא ניתן לטעון את הרשאות החשבון</h1>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              {profileHydrationError || "פרטי המשתמש לא נטענו מ-Supabase."}
+            </p>
+            <div className="mt-5 flex justify-center gap-2">
+              <button
+                type="button"
+                onClick={retryProfileHydration}
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+              >
+                נסי שוב
+              </button>
+              <button
+                type="button"
+                onClick={() => void supabase.auth.signOut()}
+                className="rounded-xl border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground"
+              >
+                התנתקי
+              </button>
+            </div>
           </div>
         </div>
       ) : authStatus === "unauthenticated" ? (

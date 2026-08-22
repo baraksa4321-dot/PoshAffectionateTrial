@@ -600,6 +600,8 @@ let data: GymData = seed();
 let hydrated = false;
 let currentUser: { id: string; email?: string } | null = null;
 let authStatus: "loading" | "authenticated" | "unauthenticated" = "loading";
+let profileHydrationStatus: "loading" | "ready" | "error" = "loading";
+let profileHydrationError = "";
 let authResolved = false;
 let hydrationGeneration = 0;
 const listeners = new Set<() => void>();
@@ -686,6 +688,8 @@ function load() {
         if (error) {
           currentUser = null;
           authStatus = "unauthenticated";
+          profileHydrationStatus = "error";
+          profileHydrationError = error.message;
           listeners.forEach((l) => l());
           return;
         }
@@ -704,6 +708,8 @@ function load() {
       .catch(() => {
         currentUser = null;
         authStatus = "unauthenticated";
+        profileHydrationStatus = "error";
+        profileHydrationError = "לא ניתן לאמת את חיבור Supabase";
         listeners.forEach((l) => l());
       });
 
@@ -725,6 +731,8 @@ function load() {
       } else {
         // On sign-out, reset memory state to clean seed data
         hydrationGeneration += 1;
+        profileHydrationStatus = "loading";
+        profileHydrationError = "";
         data = seed();
         try {
           window.localStorage.removeItem(KEY);
@@ -748,16 +756,23 @@ async function handleUserLogin(userId: string) {
     ...data,
     userProfile: { ...data.userProfile, role: undefined, coachId: undefined },
   };
+  profileHydrationStatus = "loading";
+  profileHydrationError = "";
   listeners.forEach((l) => l());
   const pulled = await pullSupabaseData(userId, data);
   if (generation !== hydrationGeneration || currentUser?.id !== userId) return;
   if (!pulled.success) {
     console.warn("[Initial Supabase Pull Warning]:", pulled.error);
+    profileHydrationStatus = "error";
+    profileHydrationError = pulled.error;
     listeners.forEach((l) => l());
     return;
   }
   data = pulled.data;
   persist();
+  profileHydrationStatus = "ready";
+  profileHydrationError = "";
+  listeners.forEach((l) => l());
   if (generation !== hydrationGeneration || currentUser?.id !== userId) return;
   // Push only after local state contains the user's cloud-backed data.
   const result = await syncLocalToSupabase(userId, data, currentUser?.email);
@@ -819,6 +834,26 @@ export function useAuthStatus() {
     () => authStatus,
     () => "loading" as const,
   );
+}
+
+export function useProfileHydrationStatus() {
+  return useSyncExternalStore(
+    subscribe,
+    () => profileHydrationStatus,
+    () => "loading" as const,
+  );
+}
+
+export function useProfileHydrationError() {
+  return useSyncExternalStore(
+    subscribe,
+    () => profileHydrationError,
+    () => "",
+  );
+}
+
+export function retryProfileHydration() {
+  if (currentUser?.id) void handleUserLogin(currentUser.id);
 }
 
 /* ---------- rep helpers ---------- */
