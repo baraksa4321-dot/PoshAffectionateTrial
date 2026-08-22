@@ -3,7 +3,7 @@ import { ArrowRight, GripVertical, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Stepper } from "@/components/Stepper";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { deleteWorkout, emptyItem, emptyWorkout, saveWorkout, useGym } from "@/lib/gym-store";
 import type { Workout, WorkoutItem } from "@/lib/gym-types";
 
@@ -43,6 +43,28 @@ function Builder() {
     setDraft({
       ...draft,
       items: draft.items.map((i) => (i.id === id ? { ...i, ...patch } : i)),
+    });
+  const setRepType = (item: WorkoutItem, repType: "fixed" | "range") => {
+    if (repType === "range") {
+      patchItem(item.id, {
+        repType,
+        repMin: item.repMin ?? item.reps,
+        repMax: item.repMax ?? item.reps + 2,
+      });
+      return;
+    }
+
+    patchItem(item.id, { repType });
+  };
+  const setRepMin = (item: WorkoutItem, repMin: number) =>
+    patchItem(item.id, {
+      repMin,
+      ...(repMin > (item.repMax ?? item.reps) ? { repMax: repMin } : {}),
+    });
+  const setRepMax = (item: WorkoutItem, repMax: number) =>
+    patchItem(item.id, {
+      repMax,
+      ...(repMax < (item.repMin ?? item.reps) ? { repMin: repMax } : {}),
     });
   const move = (index: number, dir: -1 | 1) => {
     const items = [...draft.items];
@@ -124,12 +146,6 @@ function Builder() {
                 onChange={(v) => patchItem(item.id, { sets: v })}
               />
               <Stepper
-                label="חזרות"
-                value={item.reps}
-                min={1}
-                onChange={(v) => patchItem(item.id, { reps: v })}
-              />
-              <Stepper
                 label="משקל"
                 value={item.weight}
                 step={2.5}
@@ -143,6 +159,61 @@ function Builder() {
                 suffix="ש׳"
                 onChange={(v) => patchItem(item.id, { rest: v })}
               />
+            </div>
+
+            <div className="mt-3">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+                  סוג חזרות
+                </p>
+                <div className="flex rounded-2xl bg-secondary p-0.5 text-[11px] font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setRepType(item, "fixed")}
+                    className={`rounded-xl px-3 py-1.5 active:scale-95 ${
+                      item.repType !== "range"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    קבוע
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRepType(item, "range")}
+                    className={`rounded-xl px-3 py-1.5 active:scale-95 ${
+                      item.repType === "range"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    טווח
+                  </button>
+                </div>
+              </div>
+              {item.repType === "range" ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <Stepper
+                    label="מינימום"
+                    value={item.repMin ?? item.reps}
+                    min={1}
+                    onChange={(v) => setRepMin(item, v)}
+                  />
+                  <Stepper
+                    label="מקסימום"
+                    value={item.repMax ?? item.reps}
+                    min={1}
+                    onChange={(v) => setRepMax(item, v)}
+                  />
+                </div>
+              ) : (
+                <Stepper
+                  label="חזרות"
+                  value={item.reps}
+                  min={1}
+                  onChange={(v) => patchItem(item.id, { reps: v })}
+                />
+              )}
             </div>
 
             <input
@@ -196,40 +267,40 @@ function Builder() {
           dir="rtl"
           className="mx-auto h-[min(88dvh,44rem)] w-full max-w-xl overflow-hidden rounded-t-3xl border-t border-border p-0"
         >
-        <div className="flex h-full min-h-0 flex-col p-5 text-start">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">בחר תרגיל</h2>
-            <button
-              type="button"
-              aria-label="סגור"
-              onClick={() => setPicker(false)}
-              className="grid h-10 w-10 place-items-center rounded-xl bg-secondary"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pb-6">
-            {exercises.map((e) => (
+          <div className="flex h-full min-h-0 flex-col p-5 text-start">
+            <div className="mb-4 flex items-center justify-between">
+              <SheetTitle className="text-lg">בחר תרגיל</SheetTitle>
               <button
-                key={e.id}
                 type="button"
-                onClick={() => {
-                  setDraft({ ...draft, items: [...draft.items, emptyItem(e.id)] });
-                  setPicker(false);
-                }}
-                className="w-full rounded-xl bg-secondary p-4 text-start active:scale-[0.99]"
+                aria-label="סגור"
+                onClick={() => setPicker(false)}
+                className="grid h-10 w-10 place-items-center rounded-xl bg-secondary"
               >
-                <p className="font-semibold text-foreground">{e.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {e.muscleGroup} · {e.equipment}
-                </p>
+                <X className="h-5 w-5" />
               </button>
-            ))}
-            {exercises.length === 0 && (
-              <p className="text-sm text-muted-foreground">הוסף תרגילים לספרייה קודם לכן.</p>
-            )}
+            </div>
+            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pb-6">
+              {exercises.map((e) => (
+                <button
+                  key={e.id}
+                  type="button"
+                  onClick={() => {
+                    setDraft({ ...draft, items: [...draft.items, emptyItem(e.id)] });
+                    setPicker(false);
+                  }}
+                  className="w-full rounded-xl bg-secondary p-4 text-start active:scale-[0.99]"
+                >
+                  <p className="font-semibold text-foreground">{e.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {e.muscleGroup} · {e.equipment}
+                  </p>
+                </button>
+              ))}
+              {exercises.length === 0 && (
+                <p className="text-sm text-muted-foreground">הוסף תרגילים לספרייה קודם לכן.</p>
+              )}
+            </div>
           </div>
-        </div>
         </SheetContent>
       </Sheet>
     </AppShell>

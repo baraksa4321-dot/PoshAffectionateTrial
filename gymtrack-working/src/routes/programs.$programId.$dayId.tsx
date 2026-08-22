@@ -367,139 +367,137 @@ function DayBuilder() {
           dir="rtl"
           className="mx-auto h-[min(88dvh,44rem)] w-full max-w-xl overflow-hidden rounded-t-[2rem] border-t border-border/40 p-0"
         >
-        <div
-          className="flex h-full min-h-0 flex-col p-5 text-start"
-        >
-          <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
-          <div className="mb-3.5 flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-semibold tracking-[0.14em] text-primary uppercase">
-                ספריית תרגילים
-              </p>
-              <h2 className="mt-1 font-display text-[20px] font-semibold text-ink">
-                בחרי תרגיל להוספה
-              </h2>
+          <div className="flex h-full min-h-0 flex-col p-5 text-start">
+            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
+            <div className="mb-3.5 flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-semibold tracking-[0.14em] text-primary uppercase">
+                  ספריית תרגילים
+                </p>
+                <h2 className="mt-1 font-display text-[20px] font-semibold text-ink">
+                  בחרי תרגיל להוספה
+                </h2>
+              </div>
+              <IconButton onClick={() => setPicker(false)} aria-label="סגור">
+                <X className="h-5 w-5" />
+              </IconButton>
             </div>
-            <IconButton onClick={() => setPicker(false)} aria-label="סגור">
-              <X className="h-5 w-5" />
-            </IconButton>
-          </div>
 
-          <div className="num-pill flex h-12 items-center gap-2 px-3">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <input
-              value={pickerQuery}
-              onChange={(event) => setPickerQuery(event.target.value)}
-              placeholder="חפש לפי שם, ציוד או שריר..."
-              className="w-full bg-transparent text-[14px] outline-none"
-            />
-          </div>
+            <div className="num-pill flex h-12 items-center gap-2 px-3">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <input
+                value={pickerQuery}
+                onChange={(event) => setPickerQuery(event.target.value)}
+                placeholder="חפש לפי שם, ציוד או שריר..."
+                className="w-full bg-transparent text-[14px] outline-none"
+              />
+            </div>
 
-          <div className="mt-3 space-y-2">
-            <div
-              className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1"
-              dir="rtl"
-              aria-label="סינון לפי קבוצת שרירים"
-            >
-              <ChipButton active={pickerGroup === "הכל"} onClick={() => setPickerGroup("הכל")}>
-                הכל
-              </ChipButton>
-              {MUSCLE_GROUPS.map((group) => (
-                <ChipButton
-                  key={group}
-                  active={pickerGroup === group}
-                  onClick={() => setPickerGroup(group)}
-                >
-                  {group}
+            <div className="mt-3 space-y-2">
+              <div
+                className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1"
+                dir="rtl"
+                aria-label="סינון לפי קבוצת שרירים"
+              >
+                <ChipButton active={pickerGroup === "הכל"} onClick={() => setPickerGroup("הכל")}>
+                  הכל
                 </ChipButton>
-              ))}
-            </div>
-            <div
-              className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1"
-              dir="rtl"
-              aria-label="סינון לפי ציוד"
-            >
-              <ChipButton
-                active={pickerEquipment === "הכל"}
-                onClick={() => setPickerEquipment("הכל")}
+                {MUSCLE_GROUPS.map((group) => (
+                  <ChipButton
+                    key={group}
+                    active={pickerGroup === group}
+                    onClick={() => setPickerGroup(group)}
+                  >
+                    {group}
+                  </ChipButton>
+                ))}
+              </div>
+              <div
+                className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1"
+                dir="rtl"
+                aria-label="סינון לפי ציוד"
               >
-                הכל
-              </ChipButton>
-              {EQUIPMENT.map((equipment) => (
                 <ChipButton
-                  key={equipment}
-                  active={pickerEquipment === equipment}
-                  onClick={() => setPickerEquipment(equipment)}
+                  active={pickerEquipment === "הכל"}
+                  onClick={() => setPickerEquipment("הכל")}
                 >
-                  {equipment}
+                  הכל
                 </ChipButton>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-3.5 min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain">
-            {pickerExercises.map((exercise) => (
-              <button
-                type="button"
-                key={exercise.id}
-                onClick={() => addExercise(exercise.id)}
-                className="press flex w-full items-center justify-between gap-3 rounded-2xl border border-border/40 bg-secondary px-3.5 py-3 text-start"
-              >
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/70 text-primary">
-                  <Dumbbell className="h-4 w-4" strokeWidth={1.8} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-semibold text-ink">{exercise.name}</p>
-                  <p className="text-[11.5px] text-muted-foreground">{exercise.muscleGroup}</p>
-                </div>
-                <span className="num-pill shrink-0 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
-                  {exercise.equipment}
-                </span>
-              </button>
-            ))}
-            {pickerExercises.length === 0 ? (
-              <p className="rounded-2xl bg-secondary p-4 text-[13px] text-muted-foreground">
-                לא נמצאו תרגילים מתאימים לחיפוש.
-              </p>
-            ) : null}
-          </div>
-
-          {creatingExercise ? (
-            <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
-              <label
-                className="text-[11px] font-semibold tracking-[0.14em] text-primary uppercase"
-                htmlFor="new-picker-exercise"
-              >
-                תרגיל חדש
-              </label>
-              <div className="mt-2 flex gap-2">
-                <input
-                  id="new-picker-exercise"
-                  autoFocus
-                  value={newExerciseName}
-                  onChange={(event) => setNewExerciseName(event.target.value)}
-                  placeholder="שם התרגיל"
-                  className="min-w-0 flex-1 rounded-2xl border border-border bg-card px-3 py-3 text-[14px] outline-none focus:border-primary"
-                />
-                <button
-                  type="button"
-                  onClick={createAndAddExercise}
-                  className="press shrink-0 rounded-2xl bg-primary px-4 text-[14px] font-semibold text-primary-foreground"
-                >
-                  הוסף
-                </button>
+                {EQUIPMENT.map((equipment) => (
+                  <ChipButton
+                    key={equipment}
+                    active={pickerEquipment === equipment}
+                    onClick={() => setPickerEquipment(equipment)}
+                  >
+                    {equipment}
+                  </ChipButton>
+                ))}
               </div>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setCreatingExercise(true)}
-              className="press mt-4 w-full rounded-2xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-[13.5px] font-semibold text-primary"
-            >
-              + צור תרגיל חדש בספרייה
-            </button>
-          )}
-        </div>
+
+            <div className="mt-3.5 min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain">
+              {pickerExercises.map((exercise) => (
+                <button
+                  type="button"
+                  key={exercise.id}
+                  onClick={() => addExercise(exercise.id)}
+                  className="press flex w-full items-center justify-between gap-3 rounded-2xl border border-border/40 bg-secondary px-3.5 py-3 text-start"
+                >
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/70 text-primary">
+                    <Dumbbell className="h-4 w-4" strokeWidth={1.8} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] font-semibold text-ink">{exercise.name}</p>
+                    <p className="text-[11.5px] text-muted-foreground">{exercise.muscleGroup}</p>
+                  </div>
+                  <span className="num-pill shrink-0 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                    {exercise.equipment}
+                  </span>
+                </button>
+              ))}
+              {pickerExercises.length === 0 ? (
+                <p className="rounded-2xl bg-secondary p-4 text-[13px] text-muted-foreground">
+                  לא נמצאו תרגילים מתאימים לחיפוש.
+                </p>
+              ) : null}
+            </div>
+
+            {creatingExercise ? (
+              <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                <label
+                  className="text-[11px] font-semibold tracking-[0.14em] text-primary uppercase"
+                  htmlFor="new-picker-exercise"
+                >
+                  תרגיל חדש
+                </label>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    id="new-picker-exercise"
+                    autoFocus
+                    value={newExerciseName}
+                    onChange={(event) => setNewExerciseName(event.target.value)}
+                    placeholder="שם התרגיל"
+                    className="min-w-0 flex-1 rounded-2xl border border-border bg-card px-3 py-3 text-[14px] outline-none focus:border-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={createAndAddExercise}
+                    className="press shrink-0 rounded-2xl bg-primary px-4 text-[14px] font-semibold text-primary-foreground"
+                  >
+                    הוסף
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setCreatingExercise(true)}
+                className="press mt-4 w-full rounded-2xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-[13.5px] font-semibold text-primary"
+              >
+                + צור תרגיל חדש בספרייה
+              </button>
+            )}
+          </div>
         </SheetContent>
       </Sheet>
 
