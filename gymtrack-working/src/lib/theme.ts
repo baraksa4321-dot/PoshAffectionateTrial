@@ -6,15 +6,15 @@ export const THEME_PALETTES: Array<{
   description: string;
   swatch: string;
 }> = [
-  { id: "pink", label: "ורוד", description: "ורוד פודרה וברי רגוע", swatch: "#b64480" },
-  { id: "blue", label: "כחול", description: "כחול שמיים נקי", swatch: "#4779a8" },
-  { id: "beige", label: "בז׳", description: "קרם, חול וחום רך", swatch: "#a67b57" },
-  { id: "green", label: "ירוק", description: "מרווה טבעית ועדינה", swatch: "#4f816f" },
-  { id: "yellow", label: "צהוב", description: "חמנייה חמימה ופסטלית", swatch: "#a47a28" },
-  { id: "black", label: "שחור", description: "כהה, אלגנטי ונעים לעין", swatch: "#b89a72" },
-  { id: "lavender", label: "לבנדר", description: "סגול מעושן ורך", swatch: "#7b68a6" },
-  { id: "peach", label: "אפרסק", description: "אפרסק בהיר וחמים", swatch: "#b86458" },
-  { id: "mint", label: "מנטה", description: "מנטה מרעננת ונקייה", swatch: "#3d8b7b" },
+  { id: "pink", label: "ורוד", description: "ורוד אבטיח קיצי", swatch: "#e9789f" },
+  { id: "blue", label: "כחול", description: "כחול שמיים בהיר", swatch: "#65a9dc" },
+  { id: "beige", label: "חול", description: "חול ים ווניל רך", swatch: "#c69a65" },
+  { id: "green", label: "ירוק", description: "ירוק מלון רענן", swatch: "#65ad91" },
+  { id: "yellow", label: "צהוב", description: "לימון שמשי ועדין", swatch: "#d8ad4c" },
+  { id: "black", label: "לילה", description: "שמיים כהים עם נגיעת קיץ", swatch: "#8d7a9f" },
+  { id: "lavender", label: "לבנדר", description: "לבנדר פרחוני בהיר", swatch: "#9c88d0" },
+  { id: "peach", label: "אפרסק", description: "אפרסק קורן", swatch: "#ed967e" },
+  { id: "mint", label: "מנטה", description: "מנטה קרירה ומרעננת", swatch: "#58bca6" },
 ];
 
 export const DEFAULT_THEME: ThemePalette = "pink";
