@@ -568,17 +568,19 @@ function Session() {
                 <Award className="h-6 w-6" />
               </div>
               <h3 className="font-display text-lg font-bold text-ink">אימון מצוין! איך הרגשת?</h3>
-              <p className="text-xs text-muted-foreground">המשוב ישודר ישירות ללוח המאמן שלך</p>
+              <p className="text-xs text-muted-foreground">המשוב יישמר בהיסטוריית האימון שלך</p>
             </div>
 
             <div className="space-y-2">
               <label className="block text-xs font-bold text-muted-foreground">דרגת קושי</label>
               <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: "easy", label: "קל מדי", icon: Smile, color: "text-emerald-600" },
-                  { id: "appropriate", label: "מדויק", icon: Meh, color: "text-primary" },
-                  { id: "difficult", label: "קשה מדי", icon: Frown, color: "text-rose-600" },
-                ] as const).map(({ id, label, icon: Icon, color }) => (
+                {(
+                  [
+                    { id: "easy", label: "קל מדי", icon: Smile, color: "text-emerald-600" },
+                    { id: "appropriate", label: "מדויק", icon: Meh, color: "text-primary" },
+                    { id: "difficult", label: "קשה מדי", icon: Frown, color: "text-rose-600" },
+                  ] as const
+                ).map(({ id, label, icon: Icon, color }) => (
                   <button
                     key={id}
                     onClick={() => setDifficultyRating(id)}

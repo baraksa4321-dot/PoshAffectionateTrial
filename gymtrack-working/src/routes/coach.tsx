@@ -23,7 +23,27 @@ import { AppShell } from "../components/AppShell";
 import { uid, useGym } from "../lib/gym-store";
 import { pullClientDataForCoach } from "../lib/supabase-sync";
 import { supabase } from "../lib/supabase";
-import type { WorkoutItem } from "../lib/gym-types";
+import type { Program, UserRole, Workout, WorkoutItem } from "../lib/gym-types";
+
+type CoachClientRow = {
+  id: string;
+  client_id: string;
+  created_at: string;
+  profiles?: { email?: string | null; full_name?: string | null; weight_kg?: number | null } | null;
+};
+
+type ProfileRow = {
+  id: string;
+  email?: string | null;
+  full_name?: string | null;
+  role?: UserRole | null;
+};
+
+type ClientDetails = Awaited<ReturnType<typeof pullClientDataForCoach>>;
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
 
 export const Route = createFileRoute("/coach")({
   component: CoachDashboardPage,
@@ -35,11 +55,11 @@ function CoachDashboardPage() {
   const isOwner = role === "owner";
   const isCoach = role === "coach" || isOwner;
 
-  const [clients, setClients] = useState<any[]>(store.clients || []);
-  const [allProfiles, setAllProfiles] = useState<any[]>([]);
+  const [clients, setClients] = useState<CoachClientRow[]>([]);
+  const [allProfiles, setAllProfiles] = useState<ProfileRow[]>([]);
   const [clientSearch, setClientSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  const [clientDetails, setClientDetails] = useState<any>(null);
+  const [clientDetails, setClientDetails] = useState<ClientDetails | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMsg, setInviteMsg] = useState("");
@@ -87,7 +107,7 @@ function CoachDashboardPage() {
       .eq("coach_id", user.id);
 
     if (data) {
-      setClients(data);
+      setClients(data as unknown as CoachClientRow[]);
     }
   };
 
@@ -95,7 +115,7 @@ function CoachDashboardPage() {
     if (!isOwner) return;
     const { data } = await supabase.from("profiles").select("*");
     if (data) {
-      setAllProfiles(data);
+      setAllProfiles(data as unknown as ProfileRow[]);
     }
   };
 
@@ -132,8 +152,8 @@ function CoachDashboardPage() {
       if (error) throw error;
       loadAllProfilesForOwner();
       alert(`תפקיד המשתמש עודכן בהצלחה ל-${newRole === "coach" ? "מאמן" : "מתאמן"}`);
-    } catch (err: any) {
-      alert(err?.message || "שגיאה בשינוי תפקיד");
+    } catch (err: unknown) {
+      alert(errorMessage(err, "שגיאה בשינוי תפקיד"));
     }
   };
 
@@ -197,8 +217,8 @@ function CoachDashboardPage() {
       setInviteEmail("");
       setShowAddModal(false);
       loadCoachClients();
-    } catch (err: any) {
-      setInviteMsg(err?.message || "אירעה שגיאה בשיוך המתאמן");
+    } catch (err: unknown) {
+      setInviteMsg(errorMessage(err, "אירעה שגיאה בשיוך המתאמן"));
     }
   };
 
@@ -258,7 +278,7 @@ function CoachDashboardPage() {
     e.preventDefault();
     if (!selectedClientId || !editingDayId || !selectedExId) return;
 
-    const currentDay = clientDetails?.workouts?.find((w: any) => w.id === editingDayId);
+    const currentDay = clientDetails?.workouts?.find((w) => w.id === editingDayId);
     if (!currentDay) return;
 
     const newWorkoutItem: WorkoutItem = {
@@ -307,10 +327,10 @@ function CoachDashboardPage() {
 
   // Delete exercise from day
   const handleRemoveExerciseFromDay = async (dayId: string, itemId: string) => {
-    const currentDay = clientDetails?.workouts?.find((w: any) => w.id === dayId);
+    const currentDay = clientDetails?.workouts?.find((w) => w.id === dayId);
     if (!currentDay) return;
 
-    const updatedItems = currentDay.items.filter((i: any) => i.id !== itemId);
+    const updatedItems = currentDay.items.filter((item) => item.id !== itemId);
 
     const { error } = await supabase
       .from("program_days")
@@ -652,9 +672,9 @@ function CoachDashboardPage() {
                   </form>
 
                   <div className="space-y-3 pt-2">
-                    {clientDetails?.programs?.map((prog: any) => {
+                    {clientDetails?.programs?.map((prog: Program) => {
                       const isProgActive = editingProgramId === prog.id;
-                      const progDays = clientDetails?.workouts?.filter((w: any) =>
+                      const progDays = clientDetails?.workouts?.filter((w: Workout) =>
                         prog.dayIds?.includes(w.id),
                       );
 
@@ -694,7 +714,7 @@ function CoachDashboardPage() {
                               </form>
 
                               <div className="space-y-2">
-                                {progDays?.map((dayItem: any) => {
+                                {progDays?.map((dayItem: Workout) => {
                                   const isDayActive = editingDayId === dayItem.id;
 
                                   return (
@@ -718,7 +738,7 @@ function CoachDashboardPage() {
 
                                       {dayItem.items?.length > 0 && (
                                         <div className="space-y-1.5 pt-1">
-                                          {dayItem.items.map((exItem: any) => {
+                                          {dayItem.items.map((exItem: WorkoutItem) => {
                                             const exMeta = store.exercises.find(
                                               (e) => e.id === exItem.exerciseId,
                                             );

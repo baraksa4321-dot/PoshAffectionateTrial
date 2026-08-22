@@ -337,12 +337,16 @@ function load() {
 }
 
 async function handleUserLogin(userId: string) {
-  // First, upload any local data to Supabase
-  await syncLocalToSupabase(userId, data);
-  // Then pull latest merged state from Supabase
+  // Read the signed-in user's data before writing anything. Uploading the
+  // anonymous seed first can overwrite cloud state on a fresh device.
   const pulled = await pullSupabaseData(userId, data);
   data = pulled;
   persist();
+  // Push only after local state contains the user's cloud-backed data.
+  const result = await syncLocalToSupabase(userId, data);
+  if (!result.success) {
+    console.warn("[Initial Supabase Sync Warning]:", result.error);
+  }
   listeners.forEach((l) => l());
 }
 

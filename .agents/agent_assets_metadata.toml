@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "hxwiKpbhBmQWaFuxS-KZ5"
+uri = "file://attached_assets/GymTrack-Production-Ready-Final.zip"
+type = "unspecified"
+title = "GymTrack Production-Ready Final"
+description = "Updated GymTrack source with an evidence-based audit report, schema fixes, and no .env.local file in the archive."
+logical_id = "ddaa29d7-5884-415f-90f8-e71bd2e8cee6"
+content_hash = "sha256:f23016d6560ee509b6445b4fd2b0df7a614d2f08de007c65a3669cd67b680bd0"
+size = 346059
+mtime_ms = 1787382534223
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/ddaa29d7-5884-415f-90f8-e71bd2e8cee6/8e039673-7689-44e6-b7c3-a668dea39fe8"
+storage_version_token = "1787382539206800"
+content_type = "application/octet-stream"

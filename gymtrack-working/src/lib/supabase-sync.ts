@@ -16,6 +16,20 @@ import {
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "error" | "offline";
 
+async function requireSuccessfulWrite(
+  operation: PromiseLike<{ error: unknown }>,
+  label: string,
+): Promise<void> {
+  const { error } = await operation;
+  if (error) {
+    const message =
+      typeof error === "object" && error !== null && "message" in error
+        ? String(error.message)
+        : "Unknown database error";
+    throw new Error(`${label}: ${message}`);
+  }
+}
+
 export async function syncLocalToSupabase(
   userId: string,
   localData: GymData,
@@ -25,18 +39,21 @@ export async function syncLocalToSupabase(
     // 1. Profile
     if (localData.userProfile || userEmail) {
       const p = localData.userProfile ?? { weight: 65 };
-      await supabase.from("profiles").upsert(
-        {
-          id: userId,
-          email: userEmail || undefined,
-          weight_kg: p.weight,
-          height_cm: p.height,
-          role: p.role || "client",
-          coach_id: p.coachId || null,
-          today_routine_enabled: p.todayRoutineEnabled ?? true,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "id" },
+      await requireSuccessfulWrite(
+        supabase.from("profiles").upsert(
+          {
+            id: userId,
+            email: userEmail || undefined,
+            weight_kg: p.weight,
+            height_cm: p.height,
+            role: p.role || "client",
+            coach_id: p.coachId || null,
+            today_routine_enabled: p.todayRoutineEnabled ?? true,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" },
+        ),
+        "Profile sync",
       );
     }
 
@@ -66,7 +83,10 @@ export async function syncLocalToSupabase(
         instructions: e.instructions,
         updated_at: new Date().toISOString(),
       }));
-      await supabase.from("custom_exercises").upsert(payload, { onConflict: "id" });
+      await requireSuccessfulWrite(
+        supabase.from("custom_exercises").upsert(payload, { onConflict: "id" }),
+        "Custom exercises sync",
+      );
     }
 
     // 3. Programs & Program Days
@@ -78,7 +98,10 @@ export async function syncLocalToSupabase(
         description: p.notes,
         updated_at: new Date().toISOString(),
       }));
-      await supabase.from("programs").upsert(programPayload, { onConflict: "id" });
+      await requireSuccessfulWrite(
+        supabase.from("programs").upsert(programPayload, { onConflict: "id" }),
+        "Programs sync",
+      );
 
       for (const p of localData.programs) {
         const days = p.dayIds
@@ -95,7 +118,10 @@ export async function syncLocalToSupabase(
             sort_order: index,
             updated_at: new Date().toISOString(),
           }));
-          await supabase.from("program_days").upsert(dayPayload, { onConflict: "id" });
+          await requireSuccessfulWrite(
+            supabase.from("program_days").upsert(dayPayload, { onConflict: "id" }),
+            "Program days sync",
+          );
         }
       }
     }
@@ -115,7 +141,10 @@ export async function syncLocalToSupabase(
         difficulty_rating: s.difficultyRating,
         discomfort_notes: s.discomfortNotes,
       }));
-      await supabase.from("workout_sessions").upsert(historyPayload, { onConflict: "id" });
+      await requireSuccessfulWrite(
+        supabase.from("workout_sessions").upsert(historyPayload, { onConflict: "id" }),
+        "Workout history sync",
+      );
     }
 
     // 4b. Body Weight Logs (Historical Dated Weigh-Ins)
@@ -126,9 +155,10 @@ export async function syncLocalToSupabase(
         weight_kg: log.weight,
         updated_at: new Date().toISOString(),
       }));
-      await supabase
-        .from("body_measurements")
-        .upsert(weighInPayload, { onConflict: "user_id,date" });
+      await requireSuccessfulWrite(
+        supabase.from("body_weight_logs").upsert(weighInPayload, { onConflict: "user_id,date" }),
+        "Body weight log sync",
+      );
     }
 
     // 5. Custom Foods
@@ -152,7 +182,10 @@ export async function syncLocalToSupabase(
         fiber: f.fiber ?? 0,
         updated_at: new Date().toISOString(),
       }));
-      await supabase.from("custom_foods").upsert(customFoodPayload, { onConflict: "id" });
+      await requireSuccessfulWrite(
+        supabase.from("custom_foods").upsert(customFoodPayload, { onConflict: "id" }),
+        "Custom foods sync",
+      );
     }
 
     // 6. Nutrition Days
@@ -165,7 +198,10 @@ export async function syncLocalToSupabase(
         meals: nd.meals,
         updated_at: new Date().toISOString(),
       }));
-      await supabase.from("nutrition_days").upsert(nutritionPayload, { onConflict: "id" });
+      await requireSuccessfulWrite(
+        supabase.from("nutrition_days").upsert(nutritionPayload, { onConflict: "id" }),
+        "Nutrition log sync",
+      );
     }
 
     // 7. Food Favorites
@@ -174,13 +210,19 @@ export async function syncLocalToSupabase(
         user_id: userId,
         food_id: foodId,
       }));
-      await supabase.from("food_favorites").upsert(favPayload, { onConflict: "user_id,food_id" });
+      await requireSuccessfulWrite(
+        supabase.from("food_favorites").upsert(favPayload, { onConflict: "user_id,food_id" }),
+        "Favorites sync",
+      );
     }
 
     return { success: true };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[Supabase Sync Error]:", err);
-    return { success: false, error: err?.message || "Cloud sync failed" };
+    return {
+      success: false,
+      error: err instanceof Error && err.message ? err.message : "Cloud sync failed",
+    };
   }
 }
 
@@ -236,7 +278,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         .eq("coach_id", userId);
 
       if (clientLinks) {
-        nextData.clients = clientLinks.map((link: any) => ({
+        nextData.clients = clientLinks.map((link) => ({
           id: link.id,
           clientId: link.client_id,
           clientEmail: link.profiles?.email || undefined,
@@ -334,7 +376,22 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       nextData.history = historyList;
     }
 
-    // 7. Custom Foods
+    // 7. Body Weight Logs
+    const { data: dbBodyWeightLogs } = await supabase
+      .from("body_weight_logs")
+      .select("id, date, weight_kg")
+      .eq("user_id", userId)
+      .order("date", { ascending: false });
+
+    if (dbBodyWeightLogs && dbBodyWeightLogs.length > 0) {
+      nextData.bodyWeightLogs = dbBodyWeightLogs.map((row) => ({
+        id: row.id,
+        date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
+        weight: Number(row.weight_kg),
+      }));
+    }
+
+    // 8. Custom Foods
     const { data: dbCustomFoods } = await supabase
       .from("custom_foods")
       .select("*")
@@ -361,7 +418,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       nextData.foods = Array.from(foodMap.values());
     }
 
-    // 8. Nutrition Days
+    // 9. Nutrition Days
     const { data: dbNutritionDays } = await supabase
       .from("nutrition_days")
       .select("*")
@@ -376,7 +433,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       nextData.nutritionDays = daysList;
     }
 
-    // 9. Food Favorites
+    // 10. Food Favorites
     const { data: dbFavs } = await supabase
       .from("food_favorites")
       .select("food_id")
