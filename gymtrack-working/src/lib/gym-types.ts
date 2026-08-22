@@ -170,6 +170,8 @@ export type NutritionDay = {
   id?: string;
   date: string; // YYYY-MM-DD
   meals: Meal[];
+  /** Meals prescribed by a coach; kept separate from the client's actual log. */
+  plannedMeals?: Meal[];
   waterMl?: number;
   waterTargetMl?: number;
 };

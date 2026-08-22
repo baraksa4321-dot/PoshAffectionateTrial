@@ -262,6 +262,7 @@ export async function syncLocalToSupabase(
         updated_at: new Date().toISOString(),
         ...(nd.waterMl === undefined ? {} : { water_ml: nd.waterMl }),
         ...(nd.waterTargetMl === undefined ? {} : { water_target_ml: nd.waterTargetMl }),
+        ...(nd.plannedMeals === undefined ? {} : { planned_meals: nd.plannedMeals }),
       }));
       await requireSuccessfulWrite(
         supabase.from("nutrition_days").upsert(nutritionPayload, { onConflict: "id" }),
@@ -561,6 +562,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         id: row.id,
         date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
         meals: row.meals || [],
+        plannedMeals: row.planned_meals || [],
         waterMl: row.water_ml === null ? undefined : Number(row.water_ml ?? 0),
         waterTargetMl:
           row.water_target_ml === null ? undefined : Number(row.water_target_ml ?? 2500),
@@ -662,6 +664,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       id: row.id,
       date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
       meals: row.meals || [],
+      plannedMeals: row.planned_meals || [],
     }));
 
     const historyList: HistorySession[] = (dbSessions || []).map((row) => ({

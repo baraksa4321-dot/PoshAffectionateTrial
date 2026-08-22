@@ -23,10 +23,10 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "../components/AppShell";
 import { Overlay } from "../components/ui-app/Overlay";
-import { uid, useAuthUser, useGym } from "../lib/gym-store";
+import { mealFoodFromLibrary, todayKey, uid, useAuthUser, useGym } from "../lib/gym-store";
 import { pullClientDataForCoach } from "../lib/supabase-sync";
 import { supabase } from "../lib/supabase";
-import type { Program, UserRole, Workout, WorkoutItem } from "../lib/gym-types";
+import type { Meal, MealFood, Program, UserRole, Workout, WorkoutItem } from "../lib/gym-types";
 
 type CoachClientRow = {
   id: string;
@@ -108,6 +108,12 @@ function CoachDashboardPage() {
   const [editingNutrition, setEditingNutrition] = useState(false);
   const [calTarget, setCalTarget] = useState(2000);
   const [protTarget, setProtTarget] = useState(140);
+  const [menuDate, setMenuDate] = useState(todayKey());
+  const [plannedMeals, setPlannedMeals] = useState<Meal[]>([]);
+  const [menuFoodMealId, setMenuFoodMealId] = useState<string | null>(null);
+  const [menuFoodId, setMenuFoodId] = useState("");
+  const [menuFoodQuantity, setMenuFoodQuantity] = useState(1);
+  const [menuNotice, setMenuNotice] = useState("");
 
   const loadCoachClients = useCallback(async () => {
     setManagementError("");
@@ -179,6 +185,22 @@ function CoachDashboardPage() {
       active = false;
     };
   }, [applyClientDetails, selectedClientId]);
+
+  useEffect(() => {
+    const day = clientDetails?.nutritionDays?.find((item) => item.date === menuDate);
+    setPlannedMeals(
+      day?.plannedMeals?.length
+        ? day.plannedMeals
+        : [
+            { id: uid(), name: "ארוחת בוקר", foods: [] },
+            { id: uid(), name: "ארוחת צהריים", foods: [] },
+            { id: uid(), name: "ארוחת ערב", foods: [] },
+          ],
+    );
+    setMenuFoodMealId(null);
+    setMenuFoodId("");
+    setMenuNotice("");
+  }, [clientDetails, menuDate]);
 
   // OWNER RPC: change a target user's role. The database function remains the
   // only authority for role changes; this UI never writes profiles.role.
@@ -412,6 +434,61 @@ function CoachDashboardPage() {
       const refreshed = await pullClientDataForCoach(selectedClientId);
       applyClientDetails(refreshed);
     }
+  };
+
+  const addPlannedMeal = () => {
+    setPlannedMeals((current) => [
+      ...current,
+      { id: uid(), name: `ארוחה ${current.length + 1}`, foods: [] },
+    ]);
+  };
+
+  const addPlannedFood = (mealId: string) => {
+    const food = store.foods.find((item) => item.id === menuFoodId);
+    if (!food || menuFoodQuantity <= 0) return;
+    const plannedFood: MealFood = {
+      ...mealFoodFromLibrary(food),
+      quantity: menuFoodQuantity,
+    };
+    setPlannedMeals((current) =>
+      current.map((meal) =>
+        meal.id === mealId ? { ...meal, foods: [...meal.foods, plannedFood] } : meal,
+      ),
+    );
+    setMenuFoodMealId(null);
+    setMenuFoodId("");
+    setMenuFoodQuantity(1);
+  };
+
+  const removePlannedFood = (mealId: string, foodId: string) => {
+    setPlannedMeals((current) =>
+      current.map((meal) =>
+        meal.id === mealId
+          ? { ...meal, foods: meal.foods.filter((food) => food.id !== foodId) }
+          : meal,
+      ),
+    );
+  };
+
+  const savePlannedMenu = async () => {
+    if (!selectedClientId || plannedMeals.length === 0) return;
+    const existingDay = clientDetails?.nutritionDays?.find((item) => item.date === menuDate);
+    const { error } = await supabase.from("nutrition_days").upsert({
+      id: `${selectedClientId}_${menuDate}`,
+      user_id: selectedClientId,
+      date: menuDate,
+      meals: existingDay?.meals ?? [],
+      planned_meals: plannedMeals,
+      target_calories: existingDay ? undefined : calTarget,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) {
+      setMenuNotice(`שמירת התפריט נכשלה: ${error.message}`);
+      return;
+    }
+    setMenuNotice("התפריט נשמר ויופיע למתאמן במסך התזונה האישי.");
+    const refreshed = await pullClientDataForCoach(selectedClientId);
+    applyClientDetails(refreshed);
   };
 
   if (role === undefined) {
@@ -959,6 +1036,154 @@ function CoachDashboardPage() {
                         );
                       })}
                     </div>
+                  </div>
+
+                  {/* Coach-prescribed menu builder */}
+                  <div className="surface-card space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
+                    <div className="flex items-start justify-between gap-3 border-b border-emerald-200/70 pb-2">
+                      <div>
+                        <h4 className="flex items-center gap-1.5 text-sm font-bold text-ink">
+                          <Apple className="h-4 w-4 text-emerald-700" /> בניית תפריט למתאמן
+                        </h4>
+                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                          התפריט נשמר בנפרד מהיומן בפועל ויופיע למתאמן כמתווה יומי.
+                        </p>
+                      </div>
+                      <input
+                        type="date"
+                        value={menuDate}
+                        onChange={(event) => setMenuDate(event.target.value)}
+                        className="rounded-lg border border-emerald-200 bg-white px-2 py-1.5 text-[11px] outline-none focus:border-emerald-500"
+                        aria-label="תאריך התפריט"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      {plannedMeals.map((meal) => (
+                        <div
+                          key={meal.id}
+                          className="rounded-xl border border-emerald-200/70 bg-white p-3"
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              value={meal.name}
+                              onChange={(event) =>
+                                setPlannedMeals((current) =>
+                                  current.map((item) =>
+                                    item.id === meal.id
+                                      ? { ...item, name: event.target.value }
+                                      : item,
+                                  ),
+                                )
+                              }
+                              className="min-w-0 flex-1 bg-transparent text-xs font-bold text-ink outline-none"
+                              aria-label="שם הארוחה"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setMenuFoodMealId(menuFoodMealId === meal.id ? null : meal.id)
+                              }
+                              className="rounded-lg bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800 hover:bg-emerald-200"
+                            >
+                              + מאכל
+                            </button>
+                          </div>
+
+                          {meal.foods.length > 0 ? (
+                            <div className="mt-2 space-y-1">
+                              {meal.foods.map((food) => (
+                                <div
+                                  key={food.id}
+                                  className="flex items-center justify-between rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[11px]"
+                                >
+                                  <span className="truncate font-semibold text-ink">
+                                    {food.name} · כמות {food.quantity}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removePlannedFood(meal.id, food.id)}
+                                    className="ms-2 shrink-0 text-muted-foreground hover:text-destructive"
+                                    aria-label={`הסר ${food.name}`}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="mt-2 text-[11px] text-muted-foreground">
+                              אין מאכלים בארוחה עדיין.
+                            </p>
+                          )}
+
+                          {menuFoodMealId === meal.id ? (
+                            <div className="mt-2 grid grid-cols-[1fr_auto_auto] gap-1.5 border-t border-emerald-100 pt-2">
+                              <select
+                                value={menuFoodId}
+                                onChange={(event) => setMenuFoodId(event.target.value)}
+                                className="min-w-0 rounded-lg border border-border bg-white px-2 py-1.5 text-[11px] outline-none"
+                                aria-label="בחירת מאכל לתפריט"
+                              >
+                                <option value="">בחרי מאכל</option>
+                                {store.foods.map((food) => (
+                                  <option key={food.id} value={food.id}>
+                                    {food.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <input
+                                type="number"
+                                min="0.25"
+                                step="0.25"
+                                value={menuFoodQuantity}
+                                onChange={(event) =>
+                                  setMenuFoodQuantity(Number(event.target.value))
+                                }
+                                className="w-16 rounded-lg border border-border px-1.5 py-1.5 text-center text-[11px] outline-none"
+                                aria-label="כמות המאכל"
+                              />
+                              <button
+                                type="button"
+                                disabled={!menuFoodId}
+                                onClick={() => addPlannedFood(meal.id)}
+                                className="rounded-lg bg-emerald-700 px-2.5 py-1.5 text-[11px] font-bold text-white disabled:opacity-40"
+                              >
+                                הוסיפי
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={addPlannedMeal}
+                        className="flex-1 rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-50"
+                      >
+                        + הוסיפי ארוחה
+                      </button>
+                      <button
+                        type="button"
+                        onClick={savePlannedMenu}
+                        className="flex-1 rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800"
+                      >
+                        שמרי תפריט
+                      </button>
+                    </div>
+                    {menuNotice ? (
+                      <p
+                        className={`rounded-lg border p-2 text-[11px] font-semibold ${
+                          menuNotice.includes("נכשל")
+                            ? "border-destructive/20 bg-destructive/10 text-destructive"
+                            : "border-emerald-200 bg-emerald-100 text-emerald-800"
+                        }`}
+                      >
+                        {menuNotice}
+                      </p>
+                    ) : null}
                   </div>
 
                   {/* Client Nutrition Targets Editor */}
