@@ -102,8 +102,8 @@ BEGIN
   IF new_role NOT IN ('coach', 'client') THEN
     RAISE EXCEPTION 'Invalid role specified.';
   END IF;
-  IF target_user_id = auth.uid() THEN
-    RAISE EXCEPTION 'The current Owner cannot change their own role.';
+  IF EXISTS (SELECT 1 FROM public.profiles WHERE id = target_user_id AND role = 'owner') THEN
+    RAISE EXCEPTION 'The Owner role cannot be changed by this function.';
   END IF;
 
   UPDATE public.profiles
