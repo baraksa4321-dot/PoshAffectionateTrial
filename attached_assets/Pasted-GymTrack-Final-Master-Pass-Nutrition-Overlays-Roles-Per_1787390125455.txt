@@ -1,0 +1,997 @@
+GymTrack — Final Master Pass: Nutrition, Overlays, Roles, Persistence & Theme Palettes
+
+אני רוצה לבצע עכשיו מעבר סופי ומקיף על GymTrack.
+
+המטרה היא לא עוד תיקון נקודתי, אלא לסגור את כל הפערים שכבר זוהו בשיחות ובמשימות הקודמות ולהביא את האפליקציה למצב עקבי, שמיש ומוכן ל־QA אמיתי.
+
+כלל עליון
+
+עבוד על בסיס הקוד הקיים.
+
+אל תבנה מחדש את האפליקציה.
+
+אל תיצור ארכיטקטורה מקבילה.
+
+אל תשנה Supabase, RLS, migrations, RPCs, SECURITY DEFINER, roles או permissions ללא צורך אמיתי ומאומת.
+
+לפני שינוי כל דבר, בדוק מה כבר קיים ומה כבר מומש.
+
+אל תסמן משהו כ־FIXED רק מפני שהקוד נראה נכון.
+
+יש להפריד תמיד בין:
+
+* VERIFIED — נבדק בפועל בדפדפן.
+* CODE VERIFIED — אומת בקוד בלבד.
+* NOT VERIFIED — לא ניתן לבדוק בפועל.
+
+⸻
+
+1. Owner / Coach / Client — הפרדה אמיתית
+
+Owner
+
+Owner צריך לקבל Owner App אמיתי ונפרד מבחינת חוויית המוצר:
+
+* Owner Dashboard
+* Owner Navigation
+* ניהול מאמנים
+* ניהול מתאמנים
+* חיפוש מתאמנים
+* חיפוש מאמנים
+* צפייה בפרופילים
+* שיוך מתאמן למאמן
+* החלפת מאמן
+* שינוי Role
+* צפייה בתוכניות
+* צפייה באימונים
+* היסטוריית אימונים
+* מדידות
+* תזונה
+* משובים ובדיקות
+* הודעות
+* ניהול הפונקציות הניהוליות הקיימות
+
+זה צריך להרגיש כמו מערכת Owner נפרדת, ולא כמו Client App עם עוד כמה כפתורים.
+
+Coach
+
+Coach צריך לקבל Coach App מלא:
+
+* Coach Dashboard
+* Clients
+* Profiles
+* Programs
+* Workouts
+* History
+* Measurements
+* Nutrition
+* Feedback
+* Check-ins
+* Messages
+* Recipes
+* Custom exercises
+* Custom foods
+* Progress
+
+Coach יכול לראות ולנהל רק מתאמנים שמשויכים אליו.
+
+Client
+
+Client צריך לקבל Client App רגיל:
+
+* Home
+* Workout
+* Program
+* Nutrition
+* Progress
+* Measurements
+* Workout History
+* Coach Messages
+* Check-ins
+* Profile
+* Settings
+
+Client לא יכול לראות:
+
+* Owner Dashboard
+* Owner Navigation
+* ניהול משתמשים
+* שינוי Roles
+* מתאמנים אחרים
+* נתונים של מתאמנים אחרים
+* פעולות Owner
+* פעולות Coach שאינן מיועדות ללקוח
+
+⸻
+
+2. Maya2003yos — קריטי
+
+maya2003yos לא אמורה להיות Owner.
+
+כרגע היא עדיין חוזרת ומוצגת כ־Owner.
+
+יש לבדוק את המקור האמיתי:
+
+* Auth user ID
+* profiles.role
+* is_owner()
+* role שהאפליקציה מקבלת
+* role שה־UI מציג
+
+אסור ליצור שום hardcode עבור Maya.
+
+אסור:
+
+* email exception
+* username exception
+* localStorage role
+* demo role
+* fallback ל־owner
+
+אם Supabase מחזיר owner בפועל — אל תשנה אותו אוטומטית.
+
+דווח בדיוק מה Supabase מחזיר.
+
+אם Supabase לא מחזיר owner אבל ה־UI מציג owner — תקן את מקור הבעיה.
+
+בנוסף יש לוודא ש־cached role של משתמש קודם לעולם לא עובר למשתמש הנוכחי.
+
+⸻
+
+3. Persistence — חייב לעבוד באמת
+
+כל דבר שאני או המאמן מעדכנים עבור מתאמן חייב להישמר.
+
+המסלול הנדרש:
+
+Edit → Save → Supabase → Refresh → Data remains
+
+וגם:
+
+Edit → Save → Logout → Login → Data remains
+
+זה חל על:
+
+* Profile
+* Weight
+* Height
+* RMR
+* TDEE
+* Coach assignment
+* Programs
+* Program days
+* Exercises
+* Sets
+* Planned weight
+* Rep range
+* Rest
+* Notes
+* Workout actual values
+* Completed sets
+* RPE
+* History
+* Nutrition
+* Meals
+* Food quantities
+* Measurements
+* Feedback
+* Messages
+* Recipes
+* Favorites
+* Custom foods
+* Custom exercises
+
+אסור להציג פעולה כהצלחה אם Supabase לא שמר אותה.
+
+אסור להסתמך על React state או localStorage כשכבת persistence ראשית.
+
+⸻
+
+4. Rep Range — עדיין לא תקין
+
+החזרות חייבות להיות טווח אמיתי.
+
+לדוגמה:
+
+8–12 reps
+
+יש לתמוך ב:
+
+* Fixed reps
+* Rep range
+* repType
+* repMin
+* repMax
+
+ה־UI צריך להציג את הטווח בצורה ברורה.
+
+לא להציג רק 8.
+
+לא להציג רק 12.
+
+יש לבדוק שהטווח נשמר לאחר:
+
+* Save
+* Refresh
+* Logout
+* Login
+
+אם המודל הקיים כבר שומר את הערכים בתוך JSON — להשתמש בו ולא ליצור DB columns חדשים.
+
+⸻
+
+5. Workout Exercise Card — עיצוב חדש
+
+אני רוצה שהתרגיל באימון יוצג בצורה הבאה:
+
+Header
+
+Exercise Name
+
+לידו:
+
+Replace / החלפה
+
+החלפה צריכה להציע חלופות מתאימות לפי:
+
+* Muscle group
+* Equipment
+* Exercise category
+* Supported alternatives
+
+לדוגמה:
+
+* Machine
+* Cable
+* Dumbbell
+* Barbell
+* Bodyweight
+
+Rest
+
+להציג:
+
+Rest 90 sec
+
+Planned values
+
+להציג בצורה בולטת:
+
+60 kg · 8–12 reps
+
+Sets
+
+אחר כך:
+
+Set 1 ✓
+
+ומתחת או ליד:
+
+Actual weight [60]
+
+Actual reps [10]
+
+Actual Weight ו־Actual Reps צריכים להיות מעט קטנים וקומפקטיים יותר מה־planned values.
+
+ה־UI צריך להיות ברור מאוד למתאמן בזמן אימון, במיוחד במובייל וב־RTL.
+
+⸻
+
+6. Client לא יכול ליצור Drop Set / Superset
+
+Client לא אמור לקבל אפשרות ליצור לעצמו:
+
+* Drop Set
+* Superset
+
+צריך להסיר את הפעולות מה־Client UI.
+
+אבל לא להסתפק בהסתרה ויזואלית.
+
+יש להוסיף גם guard ברמת action/state כך ש־Client לא יוכל להפעיל את הפעולה דרך route או state manipulation.
+
+Coach/Owner יכולים להשתמש בפונקציות הללו במקומות שבהם המערכת כבר תומכת בכך.
+
+⸻
+
+7. Exercise Picker — עדיין למטה
+
+זו עדיין בעיה פתוחה.
+
+Exercise Picker עדיין נפתח למטה במקום מעל התוכן.
+
+זה לא נחשב מתוקן.
+
+יש לתקן את השורש, לא להוסיף עוד z-index.
+
+ה־Picker חייב:
+
+* Portal ל־document.body
+* להיות מעל כל תוכן העמוד
+* לא להיות מושפע מ־parent overflow
+* לא להיות bottom sheet אם הוא אמור להיות picker/dialog
+* להיות viewport-safe
+* לתמוך ב־RTL
+* לתמוך במובייל
+* לכלול internal scrolling
+* X
+* Escape
+* outside click
+* reopen
+* focus management
+
+יש לבדוק את כל המסלולים:
+
+* Program → Add Exercise
+* Workout → Add Exercise
+* Replace Exercise
+* Exercise Details
+
+וגם את כל שאר ה־Pickers.
+
+לא מספיק לבדוק Login Overlay.
+
+⸻
+
+8. כל ה־Overlays
+
+יש לבצע audit לכל דבר שנפתח בלחיצה:
+
+* Choose Food
+* Replace Food
+* Choose Exercise
+* Replace Exercise
+* Exercise Details
+* Rest settings
+* Nutrition targets
+* Shopping list
+* Check-ins
+* Measurements
+* Confirmations
+* Account dialogs
+* Coach assignment
+* Profile editors
+* Settings
+* Menus
+* Selects
+* Popovers
+* Sheets
+* Dialogs
+
+כל אחד צריך להיפתח מעל התוכן ולא להיזרק לתחתית ה־page.
+
+רשימות ארוכות צריכות לגלול בתוך החלון.
+
+⸻
+
+9. Nutrition — זה אחד הדברים המרכזיים שעדיין חסרים
+
+מערכת התזונה עדיין לא הושלמה.
+
+כרגע מאגר המזונות עדיין בערך 488 מזונות.
+
+זה לא מספיק.
+
+אני רוצה מאגר מזון משמעותי ורחב, לא 488 פריטים בלבד.
+
+יש להרחיב את המאגר באמצעות מקור הנתונים הקיים/מאושר של האפליקציה, ובמידת האפשר להשתמש במקור המזון שביקשתי בעבר כדי להביא משם מזונות וערכים תזונתיים אמיתיים.
+
+אל תמציא ערכים תזונתיים.
+
+אל תכניס נתוני demo כאילו הם מוסמכים.
+
+אל תיצור כפילויות.
+
+אם יש באתר/מקור הנתונים שהוגדר עבור הפרויקט מאגר מזון עם ערכים תזונתיים, יש להשתמש בו כמקור לנתוני המזון במקום להמציא נתונים ידנית.
+
+צריך לבדוק:
+
+* שם המזון
+* serving size
+* calories
+* protein
+* carbs
+* fat
+* fiber
+
+ולשמור על עקביות יחידות.
+
+⸻
+
+10. Nutrition Values — האתר צריך להיות מקור לנתונים
+
+החלק הזה חשוב במיוחד.
+
+הערכים התזונתיים באתר עדיין לא מעודכנים כפי שביקשתי.
+
+צריך לבדוק את מערכת הערכים ולוודא שהמזונות והערכים מגיעים מהמקור התזונתי המתאים של הפרויקט.
+
+אין להסתפק בכך שה־UI מציג שדות:
+
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+
+הערכים עצמם צריכים להיות נתונים אמיתיים ועקביים.
+
+כאשר המקור מאפשר זאת, יש להשתמש בנתוני המזון מהאתר/מקור שהוגדר עבור המערכת.
+
+אין להציג מספרים מומצאים.
+
+אם לא ניתן לגשת למקור הנתונים בפועל, אל תטען שהנתונים עודכנו ממנו. דווח על החסימה.
+
+⸻
+
+11. Nutrition — Meal Management
+
+אני צריכה דרך אמיתית להוסיף דברים לארוחות.
+
+הלקוח צריך להיות מסוגל:
+
+* לבחור ארוחה
+* להוסיף מזון
+* לחפש מזון
+* לבחור מזון
+* להוסיף כמות
+* לשנות כמות
+* להסיר מזון
+* להחליף מזון
+* לראות את המזון בתוך הארוחה
+* לראות סיכום הארוחה
+* לראות סיכום יומי
+
+לא מספיק שיש Food Library.
+
+צריך להיות אפשרי ממש להוסיף מזון לארוחה.
+
+⸻
+
+12. Nutrition — No Water
+
+אין צורך ב־Water UI בתזונה.
+
+להסיר:
+
+* Water cards
+* Water progress
+* Water inputs
+* Water targets
+* Water tracking UI
+
+אל תוסיף Water מחדש.
+
+אם קיימים שדות DB ישנים שאינם בשימוש, אין צורך למחוק אותם ללא צורך.
+
+⸻
+
+13. Nutrition Values
+
+כל מזון חייב לכלול:
+
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+
+Fiber הוא חובה.
+
+כאשר הכמות משתנה, כל הערכים צריכים להשתנות בהתאם:
+
+Calories / Protein / Carbs / Fat / Fiber
+
+לדוגמה, אם הכמות מוכפלת — הערכים צריכים להיות מחושבים בהתאם.
+
+צריך להציג:
+
+Meal total
+
+Calories
+Protein
+Carbs
+Fat
+Fiber
+
+Daily total
+
+Calories
+Protein
+Carbs
+Fat
+Fiber
+
+⸻
+
+14. Nutrition Targets / Value Page
+
+אני רוצה שהמסך של הערכים התזונתיים יהיה שימושי ואמיתי.
+
+הוא צריך להציג בצורה ברורה:
+
+* Daily Calories
+* Protein target
+* Carbohydrate target
+* Fat target
+* Fiber target
+
+ולהציג:
+
+* consumed
+* remaining
+* progress
+
+אין להכניס Water.
+
+המסך צריך להיות ברור במובייל ובעברית/RTL.
+
+⸻
+
+15. Food Library — הרחבה משמעותית
+
+לא להישאר עם 488 מזונות.
+
+יש להרחיב בצורה משמעותית לפי קטגוריות.
+
+Carbohydrates
+
+* White rice
+* Brown rice
+* Oats
+* White bread
+* Whole wheat bread
+* Pasta
+* Potato
+* Sweet potato
+* Couscous
+* Bulgur
+* ועוד
+
+Proteins
+
+* Chicken breast
+* Eggs
+* Tuna
+* Greek yogurt
+* Protein powder
+* Low-fat cheeses
+* Beef
+* Turkey
+* Fish
+* ועוד
+
+Fats
+
+* Olive oil
+* Avocado
+* Tahini
+* Almonds
+* Walnuts
+* Peanut butter
+* ועוד
+
+Fiber-rich foods
+
+* Broccoli
+* Spinach
+* Lettuce
+* Lentils
+* Chickpeas
+* Beans
+* Apples
+* Pears
+* Berries
+* ועוד
+
+בנוסף יש להרחיב מעבר לדוגמאות הללו.
+
+המטרה היא מאגר אמיתי ושימושי למאמן.
+
+⸻
+
+16. Exercise Library — לא רק 8 תרגילים
+
+גם ספריית התרגילים צריכה להיות גדולה.
+
+יש לכלול מגוון משמעותי עבור:
+
+* Chest
+* Back
+* Shoulders
+* Biceps
+* Triceps
+* Quads
+* Hamstrings
+* Glutes
+* Calves
+* Core
+* Forearms
+* Traps
+* Lower Back
+
+ציוד:
+
+* Barbell
+* Dumbbell
+* Cable
+* Machine
+* Bodyweight
+
+לא מספיק תרגיל אחד או שניים לכל שריר.
+
+המאגר צריך לאפשר למאמן לבנות תוכניות רבות ושונות.
+
+אין כפילויות.
+
+אין placeholder records.
+
+⸻
+
+17. Exercise Data
+
+לכל תרגיל, בהתאם לסכמה הקיימת:
+
+* Name
+* Muscle group
+* Category
+* Equipment
+* Difficulty
+* Instructions
+* video_url כאשר יש מקור מתאים
+* Alternatives
+
+אין להמציא סרטונים.
+
+אין להכניס URL מזויף.
+
+אין להציג מידע מומצא כאילו הוא מקור אמיתי.
+
+⸻
+
+18. Favorites / Custom Foods / Custom Exercises
+
+יש להשלים:
+
+* Favorites
+* Custom foods
+* Custom exercises
+* Coach-created foods
+* Coach-created exercises
+
+עם בעלות נכונה.
+
+Client לא רואה מידע של משתמש אחר.
+
+Coach רואה רק מידע שמותר לו לראות.
+
+⸻
+
+19. Owner / Coach Management
+
+Owner צריך להיות מסוגל לנהל:
+
+* Coaches
+* Clients
+* Assignments
+* Roles
+* Profiles
+* Programs
+* Workouts
+* Progress
+* Nutrition
+* Measurements
+* Feedback
+* Messages
+
+Coach צריך להיות מסוגל לנהל רק את המתאמנים המשויכים אליו.
+
+⸻
+
+20. Persistence של דברים שהמאמן כותב
+
+זה קריטי.
+
+כאשר מאמן כותב עבור מתאמן:
+
+* תוכנית
+* הערות
+* משקל
+* חזרות
+* מנוחה
+* תזונה
+* מזון
+* משוב
+* Check-in
+* הודעה
+* מדידה
+
+זה חייב להישמר ב־Supabase.
+
+לא מספיק שזה נראה על המסך.
+
+צריך לוודא:
+
+Save → Refresh → עדיין שם
+
+וגם:
+
+Save → Logout → Login → עדיין שם
+
+אם משהו לא נשמר, לתקן את ה־save/sync/error handling.
+
+⸻
+
+21. Buttons
+
+יש כרגע כפתורים שלא ניתן ללחוץ עליהם או שלא מבצעים פעולה.
+
+צריך לבצע audit לכל הכפתורים המרכזיים.
+
+כל כפתור צריך:
+
+* לבצע את הפעולה שלו
+* להציג loading
+* להציג success/error
+* לא להיות dead button
+
+אם פונקציה לא קיימת — לא להציג כפתור כאילו היא עובדת.
+
+⸻
+
+22. Mobile + RTL
+
+כל הפיצ’רים צריכים לעבוד במובייל ובעברית/RTL.
+
+במיוחד:
+
+* Exercise Picker
+* Food Picker
+* Replace dialogs
+* Workout cards
+* Set inputs
+* Rep Range
+* Actual weight/reps
+* Nutrition
+* Meal editor
+* Owner App
+* Coach App
+* Navigation
+* Theme selector
+
+⸻
+
+23. Theme / Color Palette Selector
+
+אני רוצה להוסיף אפשרות לבחור פלטת צבעים שלמה, לא רק Accent Color אחד.
+
+הבחירה צריכה להיות זמינה במסך הרשמה/התחברות או מיד לאחר יצירת משתמש, ובנוסף נגישה בהגדרות.
+
+אני רוצה כמה פלטות Pastel יפות:
+
+Pink
+
+הפלטה הוורודה הקיימת.
+
+Blue
+
+כחולים פסטליים.
+
+Beige
+
+בז׳ / Cream / Sand בגוונים עדינים.
+
+Green
+
+ירוקים פסטליים.
+
+Yellow
+
+צהובים חמימים ופסטליים.
+
+Black
+
+פלטה כהה/שחורה אלגנטית, לא שחור צורח בלבד.
+
+בנוסף אפשר להוסיף עוד פלטות יפות, למשל:
+
+* Lavender
+* Peach
+* Mint
+* Rose
+* Soft Gray
+
+כל פלטה צריכה להיות מערכת צבעים מלאה, כלומר לא רק שינוי צבע כפתור אחד.
+
+היא צריכה להשפיע בצורה עקבית על:
+
+* Background
+* Cards
+* Primary buttons
+* Secondary buttons
+* Navigation
+* Headers
+* Borders
+* Inputs
+* Progress indicators
+* Sheets
+* Dialogs
+* Active states
+* Text contrast
+* Mobile navigation
+
+הצבעים צריכים להיות:
+
+* Pastel
+* יפים
+* רגועים
+* מודרניים
+* נגישים
+* עם contrast מספיק לקריאות
+
+הבחירה צריכה להישמר למשתמש.
+
+אחרי בחירת Theme:
+
+Select → Save → Refresh → Theme remains
+
+וגם:
+
+Select → Save → Logout → Login → Theme remains
+
+אין לשמור רק ב־React state.
+
+אם קיימת מערכת theme קיימת, להרחיב אותה במקום ליצור מערכת מקבילה.
+
+⸻
+
+24. Security
+
+אין להחליש:
+
+* RLS
+* Role protection
+* Coach/Client isolation
+* SECURITY DEFINER
+* RPC permissions
+* Supabase session
+
+אסור service-role בפרונט.
+
+אסור hardcoded roles.
+
+אסור Maya exception.
+
+אסור client-side role להיות source of truth במקום Supabase.
+
+⸻
+
+25. Database
+
+אל תשנה Database ללא צורך.
+
+לפני migration:
+
+בדוק את הסכמה הקיימת.
+
+אם אפשר לממש באמצעות המבנה הקיים — השתמש בו.
+
+אם שינוי DB באמת הכרחי:
+
+דווח לפני השינוי:
+
+1. מה חסר.
+2. למה הוא נדרש.
+3. איזה Table/Column/RPC/Policy משתנה.
+4. כיצד RLS מגן עליו.
+
+אין ליצור duplicate columns.
+
+אין ליצור duplicate tables.
+
+אין להסיר RLS.
+
+⸻
+
+26. QA
+
+לפני הכרזה על השלמה:
+
+VERIFIED
+
+רק דברים שבוצעו בפועל בדפדפן/מערכת חיה.
+
+CODE VERIFIED
+
+דברים שנבדקו בקוד בלבד.
+
+FIXED
+
+מה תוקן.
+
+DATABASE
+
+מה השתנה, ואם לא — לציין שלא השתנה.
+
+SECURITY
+
+מה נבדק.
+
+PERSISTENCE
+
+רק מה שבאמת הוכח לאחר Refresh ו־Logout/Login.
+
+STILL MISSING
+
+כל דבר שלא הצלחת לבדוק או שלא הושלם.
+
+אל תטען שהמערכת מוכנה לפרודקשן אם אין authenticated browser verification ו־live Supabase verification.
+
+⸻
+
+27. Final Manual Testing
+
+בסיום אל תיתן לי רשימה של עשר בדיקות.
+
+תן לי בדיקה אחת בלבד בכל פעם.
+
+אני אבצע אותה ואגיד לך מה קרה.
+
+רק לאחר מכן תיתן לי את הבדיקה הבאה.
+
+הבדיקה הראשונה צריכה להיות הבדיקה בעלת הסיכון הגבוה ביותר מבין הדברים שלא ניתן היה לאמת אוטומטית.
+
+⸻
+
+28. Final Requirement
+
+אל תסגור את המשימה רק כי:
+
+* build עבר
+* lint עבר
+* Preview נטען
+* הקוד נראה תקין
+
+המשימה נחשבת סגורה רק כאשר כל הפערים הבאים טופלו או סומנו בבירור כ־NOT VERIFIED:
+
+* Maya לא מוצגת כ־Owner ללא הצדקה אמיתית.
+* Owner / Coach / Client מופרדים.
+* Persistence עובד.
+* Rep Range עובד כ־8–12.
+* Exercise Picker נפתח מעל התוכן ולא למטה.
+* כל ה־Pickers וה־Dialogs עובדים.
+* Client לא יכול ליצור Drop Set / Superset.
+* Workout cards מציגים Planned מול Actual.
+* Meal management עובד.
+* אפשר להוסיף מזונות לארוחות.
+* Water UI לא קיים.
+* Nutrition values מעודכנים.
+* מקור הנתונים התזונתי משמש להבאת מזונות וערכים כאשר הוא זמין.
+* Food library גדולה משמעותית מ־488.
+* Exercise library גדולה משמעותית מ־8.
+* Fiber מחושב ומוצג.
+* Nutrition targets עובדים.
+* כפתורים מרכזיים עובדים.
+* Owner App אמיתי קיים.
+* Coach App אמיתי קיים.
+* Client App רגיל קיים.
+* Mobile ו־RTL עובדים.
+* Theme palettes קיימות.
+* יש פלטות Pink / Blue / Beige / Green / Yellow / Black ועוד פלטות Pastel.
+* Theme נשמר לאחר Refresh ו־Login מחדש.
+* אין שינוי אבטחה לא נחוץ.
+* אין hardcode למשתמשים.
+* אין נתוני demo שמוצגים כנתונים אמיתיים.
+
+בסיום, דוח קצר בלבד עם:
+
+FIXED
+VERIFIED
+CODE VERIFIED
+DATABASE
+SECURITY
+PERSISTENCE
+STILL MISSING
+NEXT TEST — בדיקה אחת בלבד
+
+אין להכריז על Production Ready אם עדיין קיימת בדיקה קריטית שלא בוצעה בפועל.
