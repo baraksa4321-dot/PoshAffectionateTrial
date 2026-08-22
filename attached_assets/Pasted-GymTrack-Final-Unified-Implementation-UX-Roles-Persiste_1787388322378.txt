@@ -1,0 +1,884 @@
+GymTrack — Final Unified Implementation, UX, Roles, Persistence & QA
+
+אני רוצה להשלים עכשיו את GymTrack כמוצר אמיתי, יציב ומוכן לשימוש.
+
+עבוד אך ורק על בסיס הקוד הקיים.
+
+אל תבנה את האפליקציה מחדש.
+
+אל תשנה Supabase, RLS, migrations, RPCs או security ללא צורך אמיתי ומאומת.
+
+לפני כל שינוי:
+
+1. בדוק מה כבר קיים.
+2. בדוק מה כבר עובד.
+3. בדוק מה חסר.
+4. בדוק מה כבר נשמר ב־Supabase.
+5. רק לאחר מכן בצע את השינוי המינימלי הנדרש.
+
+המטרה היא להשלים את GymTrack ולא ליצור מימוש מקביל.
+
+⸻
+
+1. הפרדה מלאה בין Owner / Coach / Client
+
+אני רוצה שלכל Role תהיה חוויית מוצר שונה וברורה.
+
+Owner
+
+כאשר המשתמש הוא owner, הוא צריך להיכנס ל־Owner App אמיתי ולא ל־Client App עם כמה הרשאות נוספות.
+
+צריך להיות:
+
+* Owner Dashboard
+* Owner Navigation
+* ניהול מאמנים
+* ניהול מתאמנים
+* חיפוש מתאמנים
+* חיפוש מאמנים
+* צפייה בפרופילים
+* שיוך מתאמן למאמן
+* החלפת מאמן
+* שינוי Role
+* צפייה בתוכניות
+* צפייה באימונים
+* צפייה בהיסטוריית אימונים
+* צפייה במדידות
+* צפייה בתזונה
+* צפייה במשובים ובדיקות
+* ניהול הפונקציות הניהוליות שכבר קיימות באפליקציה
+
+ה־Owner UI צריך להרגיש כמו מערכת ניהול נפרדת.
+
+לא Client App עם עוד כמה כפתורים.
+
+כאשר Role משתנה ל־Owner, המשתמש צריך לעבור ל־Owner App.
+
+⸻
+
+2. Coach App
+
+כאשר המשתמש הוא coach, הוא צריך לקבל Coach App מלא:
+
+* Coach Dashboard
+* רשימת המתאמנים שלו
+* חיפוש מתאמנים
+* פרופילי מתאמנים
+* תוכניות
+* אימונים
+* היסטוריית אימונים
+* מדידות
+* תזונה
+* משובים
+* בדיקות
+* הודעות
+* מתכונים
+* תרגילים מותאמים
+* מזונות מותאמים
+* ניהול תוכניות למתאמנים
+* מעקב אחר התקדמות
+
+Coach חייב לראות רק מתאמנים שמשויכים אליו.
+
+⸻
+
+3. Client App
+
+כאשר המשתמש הוא client, הוא צריך לקבל את האפליקציה הרגילה של המתאמן:
+
+* Home
+* אימון היום
+* תוכנית
+* תזונה
+* התקדמות
+* מדידות
+* היסטוריית אימונים
+* הודעות מהמאמן
+* בדיקות
+* פרופיל
+* הגדרות
+
+Client לעולם לא צריך לראות:
+
+* Owner Dashboard
+* Owner Navigation
+* ניהול משתמשים
+* שינוי Roles
+* מתאמנים אחרים
+* מידע של מתאמנים אחרים
+* מידע של Coach שאינו המאמן שלו
+
+⸻
+
+4. שינוי Role
+
+כאשר Owner משנה:
+
+Client → Coach
+
+המשתמש צריך לקבל Coach App לאחר שה־Role מתעדכן.
+
+כאשר:
+
+Coach → Client
+
+המשתמש צריך לקבל Client App.
+
+כאשר:
+
+User → Owner
+
+המשתמש צריך לקבל Owner App.
+
+ה־Role חייב להגיע מה־Supabase profile/session האמיתי.
+
+אסור להשתמש ב:
+
+* username hardcode
+* email hardcode
+* localStorage כ־source of truth
+* demo role
+* חריגים לפי משתמש
+* logic מיוחד עבור Maya או משתמש אחר
+
+⸻
+
+5. Maya2003yos — קריטי
+
+maya2003yos לא אמורה להיות Owner.
+
+כרגע לאחר התחברות היא מוצגת כ־Owner.
+
+לפני שינוי כלשהו:
+
+בדוק בפועל:
+
+* Auth user ID
+* profiles.role
+* profiles.coach_id
+* is_owner()
+* ה־Role שהאפליקציה מקבלת
+* ה־Role שה־UI מציג
+
+אם ה־DB באמת מחזיר owner:
+
+אל תשנה את ה־DB באופן אוטומטי.
+
+דווח:
+
+* מה הערך האמיתי
+* מאיפה הוא מגיע
+* למה הוא owner
+* האם מדובר בנתון DB או בבעיה בצד הלקוח
+
+אם ה־DB אינו owner אבל האפליקציה מציגה Owner:
+
+מצא את מקור הבעיה ותקן אותו.
+
+אסור ליצור שום logic מיוחד עבור Maya.
+
+⸻
+
+6. Persistence — הדבר הכי חשוב
+
+כל דבר שאני או Coach כותבים, עורכים או מעדכנים עבור מתאמן חייב להישמר באמת.
+
+הזרימה חייבת להיות:
+
+Edit → Save → Supabase → Refresh → עדיין קיים
+
+וגם:
+
+Edit → Save → Logout → Login → עדיין קיים
+
+Supabase צריך להיות מקור השמירה האמיתי.
+
+אסור להסתמך על:
+
+* React state בלבד
+* localStorage
+* mock data
+* demo data
+* נתונים זמניים
+
+אם המשתמש עורך נתון של מתאמן ולוחץ Save, הנתון חייב להיכתב ל־Supabase בהצלחה.
+
+אם Supabase מחזיר שגיאה:
+
+* אל תציג כאילו השמירה הצליחה
+* הצג שגיאה ברורה
+* שמור על הנתון הקיים
+* טפל בשגיאה בצורה נכונה
+
+⸻
+
+7. כל הנתונים שחייבים להיות Persistent
+
+Profile
+
+* שם
+* משקל
+* גובה
+* RMR
+* TDEE
+* העדפות
+* תמונה
+* תאריך בדיקה
+* Coach assignment
+
+Programs
+
+* תוכנית
+* ימי תוכנית
+* תרגילים
+* סדר
+* סטים
+* משקל
+* חזרות
+* Rep Range
+* מנוחה
+* הערות
+* תחליפי תרגילים
+
+Workouts
+
+* סטים
+* משקל בפועל
+* חזרות בפועל
+* השלמת סט
+* RPE
+* משך
+* הערות
+* היסטוריה
+
+Nutrition
+
+* מזון
+* כמות
+* קלוריות
+* חלבון
+* פחמימות
+* שומן
+* סיבים
+* מים
+* יומן יומי
+
+Progress
+
+* משקל
+* מדידות גוף
+* Check-ins
+* Feedback
+
+Communication
+
+* הודעות
+* תשובות
+* היסטוריית שיחה
+
+Custom Data
+
+* תרגילים מותאמים
+* מזונות מותאמים
+* מתכונים
+* מועדפים
+
+אם משהו נעלם לאחר Refresh או Logout/Login:
+
+זה באג שצריך לתקן.
+
+⸻
+
+8. Rep Range — חייב להיות טווח
+
+החזרות בתוכנית לא צריכות להיות רק מספר יחיד.
+
+אני רוצה לדוגמה:
+
+8–12 reps
+
+צריך לתמוך ב:
+
+* Fixed reps
+* Rep range
+* repMin
+* repMax
+
+הנתונים צריכים להישמר במבנה הקיים.
+
+אין צורך ליצור עמודות DB חדשות אם המבנה הקיים כבר תומך בזה.
+
+ה־UI צריך להציג:
+
+8–12 reps
+
+ולא רק:
+
+8 reps
+
+או:
+
+12 reps
+
+יש לוודא שהטווח נשמר לאחר:
+
+Save → Refresh → Logout → Login
+
+אם המשתמש מזין:
+
+8–12
+
+הערך חייב להישאר 8–12 בכל טעינה מחדש.
+
+⸻
+
+9. מבנה חדש להצגת תרגיל — חשוב מאוד
+
+אני רוצה לשנות את אופן הצגת התרגילים באימון.
+
+כל Exercise Card צריך להיות ברור, קומפקטי ומקצועי.
+
+חלק עליון
+
+להציג:
+
+שם התרגיל
+
+ולידו:
+
+החלפה
+
+כפתור ההחלפה צריך לאפשר לבחור חלופה מתאימה, לדוגמה:
+
+* Machine
+* Cable
+* Dumbbell
+* Barbell
+* Bodyweight
+
+לפי התרגיל והחלופות הנתמכות.
+
+בנוסף להציג:
+
+Rest 90 sec
+
+או זמן המנוחה הרלוונטי לתרגיל.
+
+⸻
+
+10. Planned Values
+
+מתחת לשורת הכותרת:
+
+60 kg · 8–12 reps
+
+הערכים המתוכננים צריכים להיות:
+
+* ברורים
+* בולטים
+* קלים לקריאה
+* מוצגים לפני נתוני הביצוע בפועל
+
+⸻
+
+11. Sets
+
+מתחת לערכים המתוכננים:
+
+Set 1 ✓
+
+ולצד/מתחת:
+
+Actual weight: [60]
+
+Actual reps: [10]
+
+Actual Weight ו־Actual Reps צריכים להיות מעט קטנים וקומפקטיים יותר מהערכים המתוכננים.
+
+המטרה היא שהמתאמן יראה מיד:
+
+מה אני אמור לעשות
+
+ואז:
+
+מה עשיתי בפועל
+
+⸻
+
+12. Exercise Card — מבנה ויזואלי
+
+המבנה הרצוי:
+
+Bench Press                         [Replace]
+Rest 90 sec
+60 kg · 8–12 reps
+Set 1                         ✓
+Actual weight     [60]
+Actual reps       [10]
+Set 2                         ✓
+Actual weight     [60]
+Actual reps       [9]
+Set 3                         ✓
+Actual weight     [60]
+Actual reps       [8]
+
+העיצוב צריך להיות:
+
+* נקי
+* מהיר להבנה
+* מותאם למובייל
+* RTL
+* נוח להזנה תוך כדי אימון
+* ללא עומס מיותר
+
+⸻
+
+13. Exercise Picker / Modals / Sheets
+
+כל דבר שנפתח בלחיצה חייב להיפתח מעל המסך.
+
+אסור שיופיע בתחתית ה־page או בתוך ה־flow של העמוד.
+
+זה כולל:
+
+* Choose Food
+* Replace Food
+* Choose Exercise
+* Replace Exercise
+* Exercise Details
+* Rest settings
+* Nutrition targets
+* Shopping list
+* Check-ins
+* Measurements
+* Confirmations
+* Account dialogs
+* Coach assignment
+* וכל Modal / Dialog / Sheet / Picker / Popover אחר
+
+הבעיה הזו כבר זוהתה בעבר ולכן צריך לבדוק אותה בפועל, לא רק בקוד.
+
+⸻
+
+14. התנהגות Overlay
+
+כל חלון שנפתח חייב:
+
+* להשתמש ב־Portal תקין
+* להיות מעל כל תוכן העמוד
+* לקבל z-index נכון
+* להציג overlay
+* למנוע clipping
+* לנעול scroll של הדף
+* לאפשר scroll פנימי לתוכן ארוך
+* לתמוך ב־Escape
+* לתמוך ב־click outside כאשר מתאים
+* לכלול X כאשר מתאים
+* להיסגר כראוי
+* להיפתח מחדש כראוי
+* לעבוד במובייל
+* לעבוד ב־RTL
+
+חשוב במיוחד:
+
+Food Picker ו־Exercise Picker חייבים להיפתח במרכז/Sheet תקין מעל המסך.
+
+לא למטה.
+
+לא בתוך ה־DOM flow של העמוד.
+
+⸻
+
+15. Exercise Library — להרחיב משמעותית
+
+כרגע יש מעט מדי תרגילים, בערך 8 בלבד.
+
+זה לא מספיק.
+
+אני רוצה מאגר תרגילים גדול ומשמעותי שיאפשר למאמן לבנות תוכניות אמיתיות.
+
+צריך הרבה תרגילים עבור:
+
+* Chest
+* Back
+* Shoulders
+* Biceps
+* Triceps
+* Quads
+* Hamstrings
+* Glutes
+* Calves
+* Core
+* Forearms
+* Traps
+* Lower Back
+
+צריך מגוון של:
+
+* Barbell
+* Dumbbell
+* Cable
+* Machine
+* Bodyweight
+
+לדוגמה בחזה:
+
+* Bench Press
+* Incline Bench Press
+* Decline Bench Press
+* Dumbbell Bench Press
+* Incline Dumbbell Press
+* Cable Fly
+* Low Cable Fly
+* Machine Chest Press
+* Pec Deck
+* Push Ups
+
+וכך גם לכל קבוצת שרירים.
+
+המטרה היא לא להגיע למספר שרירותי בלבד, אלא ליצור ספריית תרגילים שימושית ומגוונת.
+
+אל תכניס נתוני דמה שמוצגים כאילו הם נתונים מוסמכים.
+
+אין ליצור כפילויות.
+
+⸻
+
+16. נתוני תרגילים
+
+לכל תרגיל, בהתאם לסכמה הקיימת, צריך להיות במידת האפשר:
+
+* Name
+* Muscle group
+* Category
+* Equipment
+* Difficulty
+* Instructions
+* video_url כאשר יש מקור מתאים
+* Alternatives
+
+קודם בדוק את הסכמה הקיימת.
+
+אל תשנה את טבלת exercises אם אין צורך.
+
+אם ניתן להרחיב את הנתונים דרך המבנה הקיים — השתמש בו.
+
+המאגר צריך להיות:
+
+* ניתן לחיפוש
+* ניתן לסינון
+* מחולק לפי קבוצת שרירים
+* מחולק לפי ציוד
+* מתאים לבניית תוכניות
+
+⸻
+
+17. Nutrition
+
+כל Food חייב לתמוך ב:
+
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+
+Fiber הוא חובה.
+
+כאשר משנים כמות, כל הערכים צריכים להשתנות בהתאם:
+
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+
+Water צריך להישמר באמצעות השדות הקיימים ב־Supabase:
+
+* water_ml
+* water_target_ml
+
+אין ליצור שדות כפולים אם הם כבר קיימים.
+
+⸻
+
+18. Security
+
+אסור להחליש שום דבר באבטחה.
+
+שמור על:
+
+* RLS
+* Role protection
+* Coach/Client isolation
+* SECURITY DEFINER
+* RPC permissions
+* Supabase session
+* anon key בלבד בפרונט
+
+אסור לחשוף:
+
+* service-role
+* database credentials
+* private API keys
+* secrets
+
+Coach רואה רק את המתאמנים שלו.
+
+Client רואה רק את עצמו.
+
+Owner מקבל גישה בהתאם למדיניות הקיימת.
+
+⸻
+
+19. בדיקת Persistence אמיתית
+
+אני רוצה לבצע QA אמיתי עם משתמשים קיימים.
+
+Profile
+
+1. Coach משנה משקל של מתאמן.
+2. Save.
+3. Refresh.
+4. הערך עדיין קיים.
+5. Logout.
+6. Login.
+7. הערך עדיין קיים.
+
+Program
+
+1. הוסף תרגיל.
+2. הגדר 8–12.
+3. הגדר משקל.
+4. הגדר מנוחה.
+5. Save.
+6. Refresh.
+7. Logout/Login.
+8. הכול עדיין קיים.
+
+Workout
+
+1. בצע Set.
+2. סמן ✓.
+3. הזן משקל בפועל.
+4. הזן חזרות בפועל.
+5. Save/Complete.
+6. בדוק History.
+7. Refresh.
+8. הנתונים עדיין קיימים.
+
+Nutrition
+
+1. הוסף מזון.
+2. שנה כמות.
+3. בדוק Calories/Protein/Carbs/Fat/Fiber.
+4. Save.
+5. Refresh.
+6. Logout/Login.
+7. הכול עדיין קיים.
+
+אם פעולה לא שורדת Refresh או Login מחדש:
+
+תקן אותה.
+
+⸻
+
+20. QA של Roles
+
+Owner
+
+בדוק בפועל:
+
+* Login
+* Owner Dashboard
+* Owner navigation
+* Coaches
+* Clients
+* Search
+* Role management
+* Coach assignment
+* שינוי Client → Coach
+* שינוי Coach → Client
+
+Coach
+
+בדוק:
+
+* Login
+* Coach Dashboard
+* רק clients משויכים
+* Program management
+* Workout history
+* Nutrition
+* Measurements
+* Messages
+* Feedback
+* Recipes
+* Custom exercises
+* Custom foods
+
+Client
+
+בדוק:
+
+* Login
+* Client Dashboard
+* Workout
+* Nutrition
+* Progress
+* History
+* Coach communication
+* Profile
+* Settings
+
+⸻
+
+21. Mobile + RTL
+
+כל מה שתוקן צריך להיבדק גם במובייל.
+
+במיוחד:
+
+* Exercise Picker
+* Food Picker
+* Replace dialogs
+* Workout cards
+* Set input
+* Rep Range
+* Actual weight/reps
+* Navigation
+* Owner Dashboard
+* Coach Dashboard
+
+צריך לוודא:
+
+* אין חיתוך
+* אין גלילה אופקית לא רצויה
+* חלונות לא נפתחים למטה
+* כפתורים נגישים
+* שדות ניתנים להזנה
+* הטקסט לא נחתך
+* RTL תקין
+
+⸻
+
+22. כלל חשוב לגבי בדיקות
+
+אל תכתוב VERIFIED רק כי:
+
+* Build עבר
+* Lint עבר
+* הקוד נראה נכון
+
+יש להפריד בין:
+
+VERIFIED
+
+נבדק בפועל בדפדפן עם פעולה אמיתית.
+
+CODE VERIFIED
+
+נבדק בקוד בלבד.
+
+NOT VERIFIED
+
+לא ניתן היה לבדוק בפועל.
+
+אסור לטעון שבוצעה בדיקת:
+
+* click
+* login
+* persistence
+* role isolation
+* database behavior
+
+אם בפועל לא בוצעה פעולה אמיתית.
+
+⸻
+
+23. אל תשנה Database ללא צורך
+
+לפני כל שינוי Supabase:
+
+בדוק את הסכמה הקיימת.
+
+אם אין צורך בשינוי:
+
+אל תשנה Database.
+
+אם באמת נדרש שינוי:
+
+דווח לפני ביצוע:
+
+1. מה חסר.
+2. למה הוא נדרש.
+3. איזה Table/Column/RPC/Policy משתנה.
+4. כיצד RLS מגן עליו.
+5. האם ניתן לפתור זאת באמצעות המבנה הקיים במקום שינוי DB.
+
+אין ליצור:
+
+* טבלאות כפולות
+* עמודות כפולות
+* migrations כפולים
+* RPC כפולים
+
+⸻
+
+24. Final QA Report
+
+בסיום אני רוצה דוח קצר וברור:
+
+VERIFIED
+
+מה נבדק בפועל בדפדפן.
+
+CODE VERIFIED
+
+מה אומת בקוד.
+
+FIXED
+
+מה תוקן.
+
+DATABASE CHANGES
+
+מה השתנה במסד הנתונים.
+
+אם לא השתנה:
+
+No database changes.
+
+SECURITY
+
+מה נבדק.
+
+PERSISTENCE
+
+אילו נתונים הוכחו כשורדים:
+
+Save → Refresh
+
+וגם:
+
+Save → Logout → Login
+
+STILL MISSING
+
+מה עדיין חסר.
+
+NOT VERIFIED
+
+מה לא ניתן היה לבדוק בפועל.
+
+WHAT I NEED TO TEST
+
+בסוף הדוח תן לי בדיקה אחת בלבד.
+
+אני רוצה לעבוד שלב־שלב:
+
+אתה אומר לי בדיקה אחת → אני מבצעת → אני אומרת לך מה קרה → ורק אז עוברים לבדיקה הבאה.
+
+אל תיתן לי רשימה של 10 בדיקות בבת אחת.
+
+אל תכריז שהמערכת מוכנה לפרודקשן עד שהבדיקות האמיתיות עברו.
