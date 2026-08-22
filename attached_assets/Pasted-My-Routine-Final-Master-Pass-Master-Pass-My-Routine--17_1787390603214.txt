@@ -1,0 +1,796 @@
+My Routine — Final Master Pass
+
+אני רוצה לבצע עכשיו Master Pass מלא על My Routine, על בסיס הקוד הקיים בלבד.
+
+אל תבנה את האפליקציה מחדש.
+אל תחליף ארכיטקטורה שעובדת.
+אל תשנה Supabase, RLS, migrations, roles, RPCs או SECURITY DEFINER ללא צורך אמיתי, מאומת ומדווח מראש.
+
+חשוב במיוחד: מעבר למשימות החדשות של Theme, שינוי השם ואירובי, אני רוצה דוח מלא על כל הדברים שביקשתי בעבר. לא להניח שהם בוצעו רק כי הקוד קיים.
+
+⸻
+
+1. שינוי שם האפליקציה — GymTrack → My Routine
+
+שם המוצר הוא:
+
+My Routine
+
+יש להחליף את GymTrack ב־My Routine בכל מקום שבו הוא מוצג למשתמש.
+
+בדוק:
+
+* App name
+* Logo / Branding
+* Login
+* Navigation
+* Dashboard
+* Page titles
+* Browser title / document title
+* Metadata
+* Loading screens
+* Empty states
+* System messages
+* UI text
+* כל מקום נוסף שבו GymTrack מוצג למשתמש
+
+חפש גם מופעים של GymTrack בקוד וב־UI.
+
+אל תשנה שמות טבלאות, routes או מבני Supabase רק בגלל שינוי המיתוג.
+
+⸻
+
+2. Theme Palette — פלטות צבעים מלאות
+
+אני רוצה מערכת בחירת Theme אמיתית ב־My Routine.
+
+לא רק צבע אחד.
+
+המשתמש צריך להיות מסוגל לבחור פלטת צבעים מלאה.
+
+לדוגמה:
+
+* Pink / ורוד
+* Blue / כחול
+* Green / ירוק
+* Yellow / צהוב
+* Beige / בז’
+* Black / שחור
+* ועוד פלטות יפות
+
+הצבעים צריכים להיות Pastel, נעימים ומעוצבים, לא צבעים חזקים/צועקים.
+
+כל Theme צריך להיות פלטה שלמה ולא רק שינוי של צבע כפתור.
+
+הפלטה צריכה להשפיע באופן עקבי על:
+
+* Backgrounds
+* Cards
+* Navigation
+* Buttons
+* Borders
+* Inputs
+* Dialogs
+* Sheets
+* Highlights
+* Progress elements
+* Main accents
+
+צריך לשמור את בחירת ה־Theme למשתמש.
+
+הזרימה הרצויה:
+
+Select Theme → Save → Refresh → עדיין קיים
+
+וגם:
+
+Select Theme → Logout → Login → Theme עדיין קיים
+
+אם משתמש חדש נרשם, הוא צריך להיות מסוגל לבחור Theme.
+
+אם Theme כבר קיים במימוש הנוכחי, השתמש בו במקום ליצור מנגנון כפול.
+
+אם השמירה בענן מתבצעת באמצעות Auth metadata ולא profile column, זה בסדר כל עוד היא באמת נשמרת ומשוחזרת לאחר Login מחדש.
+
+אין להציג הצלחה אם השמירה נכשלה.
+
+⸻
+
+3. Owner / Coach / Client — כל מה שביקשתי קודם
+
+אני רוצה לבדוק מחדש את ההפרדה בין שלושת ה־Roles.
+
+Owner
+
+Owner צריך לקבל Owner App אמיתי, לא Client App עם עוד כמה כפתורים.
+
+צריך להיות:
+
+* Owner Dashboard
+* Owner Navigation
+* Coaches
+* Clients
+* Search
+* Profiles
+* Coach assignment
+* Change coach
+* Change role
+* Programs
+* Workouts
+* History
+* Measurements
+* Nutrition
+* Feedback
+* Messages
+* Recipes
+* Progress
+* כל פונקציות הניהול שכבר קיימות
+
+Coach
+
+Coach צריך לקבל Coach App מלא:
+
+* Coach Dashboard
+* Clients
+* Client profiles
+* Programs
+* Workouts
+* History
+* Measurements
+* Nutrition
+* Feedback
+* Check-ins
+* Messages
+* Recipes
+* Custom exercises
+* Custom foods
+* Progress
+
+Coach רואה רק מתאמנים שמשויכים אליו.
+
+Client
+
+Client צריך לקבל את האפליקציה הרגילה של המתאמן.
+
+Client לא צריך לראות:
+
+* Owner Dashboard
+* Owner Navigation
+* ניהול משתמשים
+* שינוי Roles
+* מתאמנים אחרים
+* מידע של מתאמנים אחרים
+* פעולות Coach/Owner
+
+⸻
+
+4. Maya2003yos — קריטי
+
+maya2003yos לא אמורה להיות Owner.
+
+היא כבר חזרה בעבר להופיע כ־Owner, ולכן צריך לבדוק את זה מחדש.
+
+אם יש חיבור חי ל־Supabase, בדוק בפועל:
+
+* Auth user ID
+* profiles.role
+* is_owner()
+* role שהאפליקציה מקבלת
+* role שה־UI מציג
+
+אם ה־DB באמת מחזיר owner:
+
+אל תשנה אותו אוטומטית.
+
+דווח על הערך האמיתי.
+
+אם ה־DB לא מחזיר owner אבל ה־UI מציג Owner:
+
+מצא ותקן את מקור הבעיה.
+
+אסור ליצור שום exception עבור Maya.
+
+אסור hardcode לפי:
+
+* username
+* email
+* user ID
+
+⸻
+
+5. Persistence — לבדוק את כל הדברים שביקשתי
+
+אני רוצה שכל דבר שאני או המאמן מעדכנים עבור מתאמן יישמר באמת.
+
+הזרימה היא:
+
+Edit → Save → Supabase → Refresh → עדיין קיים
+
+וגם:
+
+Edit → Save → Logout → Login → עדיין קיים
+
+בדוק את כל הקטגוריות:
+
+Profile
+
+* Name
+* Weight
+* Height
+* RMR
+* TDEE
+* Preferences
+* Photo
+* Check date
+* Coach assignment
+
+Programs
+
+* Program
+* Program days
+* Exercises
+* Order
+* Sets
+* Weight
+* Rep Range
+* Rest
+* Notes
+
+Workouts
+
+* Actual weight
+* Actual reps
+* Completed sets
+* RPE
+* Duration
+* Notes
+* History
+
+Nutrition
+
+* Foods
+* Meals
+* Quantities
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+* Favorites
+* Custom foods
+* Daily totals
+
+Progress
+
+* Weight
+* Body measurements
+* Check-ins
+* Feedback
+
+Communication
+
+* Messages
+* Replies
+* Conversation history
+
+Custom data
+
+* Custom exercises
+* Custom foods
+* Recipes
+* Favorites
+
+אם פעולה לא נשמרת אחרי Refresh או Login מחדש — זה באג שצריך לזהות ולתקן אם ניתן ללא שינוי schema.
+
+אם Supabase דוחה Save, אסור להציג למשתמש שהשמירה הצליחה.
+
+⸻
+
+6. Rep Range
+
+החזרות חייבות להיות טווח אמיתי.
+
+לדוגמה:
+
+8–12 reps
+
+צריך לתמוך ב:
+
+* Fixed reps
+* Rep range
+* repType
+* repMin
+* repMax
+
+ה־UI צריך להציג את הטווח ולא רק מספר יחיד.
+
+צריך לוודא שהוא שורד:
+
+Save → Refresh → Logout → Login
+
+⸻
+
+7. Workout Exercise Cards
+
+אני רוצה שהתרגיל יוצג בצורה הבאה:
+
+חלק עליון
+
+Exercise Name
+
+לידו:
+
+Replace
+
+עם אפשרות לבחור חלופה מתאימה:
+
+* Machine
+* Cable
+* Dumbbell
+* Barbell
+* Bodyweight
+
+בנוסף:
+
+Rest 90 sec
+
+Planned values
+
+מתחת:
+
+60 kg · 8–12 reps
+
+הערכים המתוכננים צריכים להיות ברורים ובולטים.
+
+Actual set
+
+לאחר מכן:
+
+Set 1 ✓
+
+ומתחת/ליד:
+
+Actual weight: [60]
+
+Actual reps: [10]
+
+ה־Actual inputs צריכים להיות מעט קטנים וקומפקטיים יותר מה־Planned values.
+
+העיצוב צריך להיות:
+
+* Mobile-friendly
+* RTL
+* ברור בזמן אימון
+* לא עמוס
+
+⸻
+
+8. Client — ללא Drop Set / Superset
+
+Client לא אמור להיות מסוגל להוסיף או לנהל:
+
+* Drop Set
+* Superset
+* Coach-only actions
+* Owner-only actions
+
+לא מספיק להסתיר את הכפתור.
+
+צריך להגן גם על הפעולה עצמה דרך UI/state/action guards.
+
+⸻
+
+9. Exercise Picker — עדיין בעיה
+
+ה־Exercise Picker עדיין נפתח למטה במקום מעל התוכן.
+
+צריך לתקן את שורש הבעיה.
+
+כל:
+
+* Choose Exercise
+* Replace Exercise
+* Add Exercise
+
+צריך להיפתח כ־Portal אמיתי מעל כל התוכן.
+
+לא פתרון של z-index בלבד.
+
+צריך:
+
+* Portal
+* Overlay
+* fixed viewport positioning
+* internal scrolling
+* Escape
+* outside click
+* X
+* scroll lock
+* reopen
+* Mobile
+* RTL
+
+אותו עיקרון צריך להיות עקבי בכל שאר ה־dialogs/pickers.
+
+⸻
+
+10. כל ה־Overlays
+
+בדוק את כל:
+
+* Choose Food
+* Replace Food
+* Choose Exercise
+* Replace Exercise
+* Exercise Details
+* Rest settings
+* Nutrition targets
+* Shopping list
+* Check-ins
+* Measurements
+* Confirmations
+* Account dialogs
+* Coach assignment
+* Sheets
+* Modals
+* Popovers
+* Pickers
+
+הם חייבים להיפתח מעל התוכן ולא להיזרק לתחתית ה־page.
+
+רשימות ארוכות צריכות לגלול בתוך החלון.
+
+⸻
+
+11. Nutrition — המאגר עדיין רק 488
+
+כרגע יש עדיין בערך 488 foods.
+
+זה לא מספיק.
+
+צריך להרחיב משמעותית את מאגר המזון.
+
+המאגר צריך לכלול מגוון גדול של:
+
+* Carbohydrates
+* Proteins
+* Fats
+* Fiber-rich foods
+* Fruits
+* Vegetables
+* Dairy
+* Meat
+* Fish
+* Grains
+* Legumes
+* Snacks
+* Israeli foods
+* International foods
+
+לא להוסיף כפילויות.
+
+לא להוסיף נתוני דמה כאילו הם נתונים מוסמכים.
+
+⸻
+
+12. Nutrition Values — חשוב במיוחד
+
+הערכים של אתר התזונה עדיין לא עודכנו כפי שביקשתי.
+
+צריך להשתמש במקור/אתר הנתונים התזונתיים שסוכם עבור הפרויקט כדי להביא מזונות וערכים תזונתיים אמיתיים.
+
+לא להמציא ערכים.
+
+לא להשאיר את מסך Nutrition Values עם הנתונים הישנים אם הם אמורים להתעדכן.
+
+לכל Food צריך להיות:
+
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+
+הנתונים צריכים להיות עקביים עם מקור הנתונים.
+
+אם המקור דורש גישה חיצונית או API, בדוק מה אפשר לבצע בפועל ואל תציג נתונים מומצאים.
+
+כאשר הכמות משתנה:
+
+Calories + Protein + Carbs + Fat + Fiber
+
+כולם צריכים להתעדכן בהתאם.
+
+⸻
+
+13. Nutrition — הוספת מזון לארוחות
+
+כרגע אין לי דרך נוחה להוסיף דברים לארוחות.
+
+צריך לאפשר:
+
+* Add Food
+* בחירת Meal
+* Search
+* Select Food
+* Quantity
+* Edit Quantity
+* Remove
+* Replace
+* Favorites
+* Custom Foods
+
+צריך להיות ברור לאיזו ארוחה המזון נוסף.
+
+צריך להציג:
+
+* Meal totals
+* Daily totals
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+
+⸻
+
+14. אין Water UI
+
+אני לא רוצה מים בתזונה.
+
+אין להציג:
+
+* Water card
+* Water target
+* Water progress
+* Water input
+* Water tracking
+
+הסר/אל תציג Water UI.
+
+⸻
+
+15. Exercise Library
+
+לא מספיק שיהיו 8 תרגילים.
+
+צריך מאגר גדול משמעותית עם:
+
+* Chest
+* Back
+* Shoulders
+* Biceps
+* Triceps
+* Quads
+* Hamstrings
+* Glutes
+* Calves
+* Core
+* Forearms
+* Traps
+* Lower Back
+
+ובציוד:
+
+* Barbell
+* Dumbbell
+* Cable
+* Machine
+* Bodyweight
+
+צריך הרבה וריאציות אמיתיות לכל קבוצת שרירים.
+
+אין ליצור כפילויות או נתוני דמה מטעים.
+
+⸻
+
+16. Cardio — לכל המשתמשים
+
+להוסיף Cardio Training מלא.
+
+במיוחד Client צריך להיות מסוגל להוסיף לעצמו אימון אירובי.
+
+פעילויות
+
+לפחות:
+
+* Walking
+* Running
+* Treadmill
+* Cycling
+* Stationary Bike
+* Elliptical
+* Stair Climber
+* Swimming
+* Tennis
+* Basketball
+* Football
+* Hiking
+* Rowing
+* Jump Rope
+* HIIT
+* Aerobics
+* ועוד סוגי אירובי נפוצים.
+
+Duration
+
+המשתמש בוחר:
+
+* 20 min
+* 30 min
+* 45 min
+* 60 min
+* או ערך מותאם.
+
+Calories
+
+המערכת צריכה לחשב:
+
+Estimated Calories Burned
+
+בהתבסס ככל שניתן על:
+
+* Activity type
+* Duration
+* User weight
+* Intensity / pace כאשר קיים
+
+אין להשתמש במספר אקראי.
+
+יש להציג את התוצאה כהערכה.
+
+Persistence
+
+האירובי צריך לשרוד:
+
+Add → Save → Refresh
+
+וגם:
+
+Add → Save → Logout → Login
+
+Coach צריך לראות אירובי של המתאמנים המשויכים אליו.
+
+Owner בהתאם להרשאות שלו.
+
+Client יכול להוסיף לעצמו.
+
+⸻
+
+17. Security
+
+אסור להחליש:
+
+* RLS
+* Role protection
+* Coach/Client isolation
+* SECURITY DEFINER
+* RPC permissions
+* Supabase session
+* Anon key בלבד בפרונט
+
+אסור service-role בפרונט.
+
+אסור גישה של Coach למתאמנים שאינם משויכים אליו.
+
+אסור Client לראות משתמשים אחרים.
+
+⸻
+
+18. בדיקת כל הכפתורים
+
+יש כרגע כפתורים שלא ניתן ללחוץ עליהם.
+
+צריך לעבור על האפליקציה ולבדוק:
+
+* Buttons
+* Navigation
+* Add
+* Save
+* Edit
+* Delete
+* Replace
+* Search
+* Confirm
+* Close
+* Back
+* Tabs
+* Pickers
+* Dropdowns
+
+אין להשאיר כפתור שנראה פעיל אבל לא עושה כלום.
+
+אם פעולה לא נתמכת — עדיף להציג אותה כ־disabled עם הסבר מתאים מאשר ככפתור פעיל שלא עובד.
+
+⸻
+
+19. דוח מלא — חובה
+
+אני רוצה שבסיום לא תגיד רק “בוצע”.
+
+תן דוח מסודר של כל הדרישות שביקשתי.
+
+FIXED
+
+מה באמת תוקן.
+
+VERIFIED
+
+מה נבדק בפועל בדפדפן עם אינטראקציה אמיתית.
+
+CODE VERIFIED
+
+מה אומת בקוד בלבד.
+
+NOT VERIFIED
+
+מה לא ניתן היה לבדוק בפועל.
+
+DATABASE CHANGES
+
+מה השתנה ב־Supabase.
+
+אם לא השתנה כלום — כתוב במפורש:
+
+No database changes.
+
+SECURITY
+
+מה נבדק לגבי Roles, RLS והרשאות.
+
+PERSISTENCE
+
+אילו נתונים באמת הוכחו כשורדים:
+
+Save → Refresh
+
+ו־
+
+Save → Logout → Login
+
+STILL MISSING
+
+רשימה ברורה של כל הדברים שעדיין לא בוצעו.
+
+אל תציג משהו כ־FIXED רק משום שקיים קוד עבורו.
+
+אל תציג משהו כ־VERIFIED אם לא בוצעה אינטראקציה אמיתית.
+
+⸻
+
+20. בדיקות אמיתיות
+
+הרץ:
+
+* npm run build
+* npm run lint
+* Prettier / formatting
+* Preview restart
+* Mobile
+* RTL
+
+אם יש אפשרות לבצע בדיקות דפדפן אינטראקטיביות — בצע אותן.
+
+אם אין אפשרות:
+
+אל תמציא תוצאות.
+
+⸻
+
+21. סדר עדיפויות
+
+אל תעבוד רק על Theme ותסיים.
+
+אני רוצה שכל הדרישות לעיל ייכנסו ל־audit אחד מסודר.
+
+אם משהו כבר קיים — אל תבנה אותו מחדש.
+
+אם משהו חלקי — השלם אותו.
+
+אם משהו חסר — טפל בו.
+
+אם משהו לא ניתן לאימות בגלל שאין Supabase חי או browser session אמיתי — סמן אותו NOT VERIFIED.
+
+ובסוף, אחרי הדוח, תן לי רק בדיקה ידנית אחת, את הבדיקה הכי חשובה שנשארה.
+
+אל תכריז על Production Ready עד שכל הבדיקות הקריטיות עברו בפועל.
