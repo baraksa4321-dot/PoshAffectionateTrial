@@ -76,6 +76,8 @@ function NutritionLog() {
   const [date, setDate] = useState(todayKey());
   const [pickerMealId, setPickerMealId] = useState<string | null>(null);
   const [pickerQuery, setPickerQuery] = useState("");
+  const [pickerFoodId, setPickerFoodId] = useState<string | null>(null);
+  const [pickerQuantity, setPickerQuantity] = useState(1);
   const [substituteFor, setSubstituteFor] = useState<{
     mealId: string;
     food: MealFood;
@@ -145,12 +147,25 @@ function NutritionLog() {
     return findFoodReplacements(gym.foods, substituteFor.food, substituteQuery).slice(0, 15);
   }, [gym.foods, substituteFor, substituteQuery]);
 
-  const addFromLibrary = (mealId: string, foodId: string) => {
-    const lib = gym.foods.find((f) => f.id === foodId);
-    if (!lib) return;
-    addFoodToMeal(date, mealId, mealFoodFromLibrary(lib));
+  const closeFoodPicker = () => {
     setPickerMealId(null);
+    setPickerFoodId(null);
+    setPickerQuantity(1);
     setPickerQuery("");
+  };
+
+  const openFoodPicker = (mealId: string) => {
+    setPickerMealId(mealId);
+    setPickerFoodId(null);
+    setPickerQuantity(1);
+    setPickerQuery("");
+  };
+
+  const addFromLibrary = (mealId: string, foodId: string, quantity: number) => {
+    const lib = gym.foods.find((f) => f.id === foodId);
+    if (!lib || quantity <= 0) return;
+    addFoodToMeal(date, mealId, { ...mealFoodFromLibrary(lib), quantity });
+    closeFoodPicker();
   };
 
   const applyCalorieReplacement = (
@@ -327,7 +342,7 @@ function NutritionLog() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setPickerMealId(meal.id)}
+                    onClick={() => openFoodPicker(meal.id)}
                     className="press grid h-9 w-9 place-items-center rounded-2xl bg-primary text-primary-foreground cursor-pointer"
                     aria-label="הוסף מאכל"
                   >
@@ -411,9 +426,10 @@ function NutritionLog() {
       {/* "What Should I Eat Now?" Modal */}
       {showWhatToEat && (
         <Overlay
+          open={showWhatToEat}
           onClose={() => setShowWhatToEat(false)}
           ariaLabel="מה לאכול עכשיו?"
-          position="center"
+          variant="center"
           panelClassName="contents"
           className="fade-in"
         >
@@ -496,9 +512,10 @@ function NutritionLog() {
       {/* Automatic Shopping List Modal */}
       {showShoppingList && (
         <Overlay
+          open={showShoppingList}
           onClose={() => setShowShoppingList(false)}
           ariaLabel="רשימת קניות"
-          position="center"
+          variant="center"
           panelClassName="contents"
           className="fade-in"
         >
@@ -559,8 +576,10 @@ function NutritionLog() {
       {/* Picker bottom-sheet */}
       {pickerMealId ? (
         <Overlay
-          onClose={() => setPickerMealId(null)}
+          open={Boolean(pickerMealId)}
+          onClose={closeFoodPicker}
           ariaLabel="ספריית מאכלים"
+          variant="bottom"
           panelClassName="contents"
           className="fade-in"
         >
@@ -578,7 +597,7 @@ function NutritionLog() {
                   ספריית מאכלים
                 </h2>
               </div>
-              <IconButton aria-label="סגור" onClick={() => setPickerMealId(null)}>
+              <IconButton aria-label="סגור" onClick={closeFoodPicker}>
                 <X className="h-5 w-5" />
               </IconButton>
             </div>
@@ -591,25 +610,73 @@ function NutritionLog() {
                 className="w-full bg-transparent text-[14px] outline-none"
               />
             </div>
-            <div className="space-y-2">
-              {filteredFoods.slice(0, 30).map((food) => (
-                <button
-                  key={food.id}
-                  type="button"
-                  onClick={() => addFromLibrary(pickerMealId, food.id)}
-                  className="press flex w-full items-center justify-between gap-3 rounded-2xl border border-border/30 bg-secondary px-3.5 py-3 text-start cursor-pointer"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] font-semibold text-ink">{food.name}</p>
-                    <p className="text-[11.5px] text-muted-foreground">
-                      {food.servingSize} · {food.calories} קלוריות · חלבון {food.protein}g · סיבים{" "}
-                      {food.fiber || 0}g
-                    </p>
+            {pickerFoodId ? (
+              (() => {
+                const selectedFood = gym.foods.find((food) => food.id === pickerFoodId);
+                if (!selectedFood) return null;
+                return (
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => setPickerFoodId(null)}
+                      className="text-[12px] font-semibold text-primary hover:underline"
+                    >
+                      חזרה לבחירת מאכל
+                    </button>
+                    <div className="rounded-2xl bg-secondary p-3.5">
+                      <p className="text-[15px] font-bold text-ink">{selectedFood.name}</p>
+                      <p className="mt-1 text-[11.5px] text-muted-foreground">
+                        {selectedFood.servingSize} למנה · {selectedFood.calories} קל׳ · חלבון{" "}
+                        {selectedFood.protein}ג׳ · פחמימות {selectedFood.carbs}ג׳ · שומן{" "}
+                        {selectedFood.fat}ג׳ · סיבים {selectedFood.fiber ?? 0}ג׳
+                      </p>
+                    </div>
+                    <Stepper
+                      label="כמות מנות"
+                      value={pickerQuantity}
+                      step={0.5}
+                      min={0.5}
+                      onChange={setPickerQuantity}
+                    />
+                    <div className="rounded-2xl bg-primary/10 px-3.5 py-3 text-[12px] text-ink">
+                      <p>
+                        סה״כ: {Math.round(selectedFood.calories * pickerQuantity)} קל׳ · חלבון{" "}
+                        {Math.round(selectedFood.protein * pickerQuantity)}ג׳ · פחמימות{" "}
+                        {Math.round(selectedFood.carbs * pickerQuantity)}ג׳ · שומן{" "}
+                        {Math.round(selectedFood.fat * pickerQuantity)}ג׳ · סיבים{" "}
+                        {Math.round((selectedFood.fiber ?? 0) * pickerQuantity)}ג׳
+                      </p>
+                    </div>
+                    <PrimaryButton
+                      className="w-full"
+                      onClick={() => addFromLibrary(pickerMealId, selectedFood.id, pickerQuantity)}
+                    >
+                      הוספה לארוחה
+                    </PrimaryButton>
                   </div>
-                  <ArrowLeft className="h-4 w-4 shrink-0 text-muted-foreground/60" />
-                </button>
-              ))}
-            </div>
+                );
+              })()
+            ) : (
+              <div className="space-y-2">
+                {filteredFoods.slice(0, 30).map((food) => (
+                  <button
+                    key={food.id}
+                    type="button"
+                    onClick={() => setPickerFoodId(food.id)}
+                    className="press flex w-full items-center justify-between gap-3 rounded-2xl border border-border/30 bg-secondary px-3.5 py-3 text-start cursor-pointer"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-semibold text-ink">{food.name}</p>
+                      <p className="text-[11.5px] text-muted-foreground">
+                        {food.servingSize} · {food.calories} קלוריות · חלבון {food.protein}g · סיבים{" "}
+                        {food.fiber || 0}g
+                      </p>
+                    </div>
+                    <ArrowLeft className="h-4 w-4 shrink-0 text-muted-foreground/60" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </Overlay>
       ) : null}
@@ -617,8 +684,10 @@ function NutritionLog() {
       {/* Calorie-based replacement */}
       {substituteFor ? (
         <Overlay
+          open={Boolean(substituteFor)}
           onClose={() => setSubstituteFor(null)}
           ariaLabel="החלפת מאכל"
+          variant="bottom"
           panelClassName="contents"
           className="fade-in"
         >
@@ -680,8 +749,10 @@ function NutritionLog() {
       {/* Targets modal */}
       {showTargets ? (
         <Overlay
+          open={showTargets}
           onClose={() => setShowTargets(false)}
           ariaLabel="יעדים יומיים"
+          variant="bottom"
           panelClassName="contents"
           className="fade-in"
         >

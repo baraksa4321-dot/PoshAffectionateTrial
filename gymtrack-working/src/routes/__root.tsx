@@ -82,7 +82,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "viewport",
         content: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1",
       },
-      { title: "הרוטינה שלי — אימונים ותזונה" },
+      { title: "My Routine — אימונים ותזונה" },
       {
         name: "description",
         content: "מעקב אימונים, תזונה, תרגילים ושיאים אישיים בעברית.",
@@ -90,9 +90,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "theme-color", content: "#567765" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "הרוטינה שלי" },
+      { name: "apple-mobile-web-app-title", content: "My Routine" },
       { property: "og:type", content: "website" },
-      { property: "og:title", content: "הרוטינה שלי — אימונים ותזונה" },
+      { property: "og:title", content: "My Routine — אימונים ותזונה" },
     ],
     links: [
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
