@@ -46,8 +46,6 @@ export async function syncLocalToSupabase(
             email: userEmail || undefined,
             weight_kg: p.weight,
             height_cm: p.height,
-            role: p.role || "client",
-            coach_id: p.coachId || null,
             today_routine_enabled: p.todayRoutineEnabled ?? true,
             updated_at: new Date().toISOString(),
           },

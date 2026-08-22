@@ -73,7 +73,8 @@ export function AppShell({
     setSuccessMsg("");
 
     try {
-      const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
+      const redirectTo =
+        typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
           email,

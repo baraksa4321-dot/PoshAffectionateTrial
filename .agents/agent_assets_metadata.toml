@@ -28,3 +28,17 @@ mtime_ms = 1787382872650
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/cd096c10-ffc7-4aab-b3f5-3d1e8a955008/3f8b529e-9c88-411f-a0fc-5570f559afa9"
 storage_version_token = "1787382878027599"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "A98u-4wBvplUdrHsnLgAy"
+uri = "file://attached_assets/GymTrack-Supabase-Secrets-Updated.zip"
+type = "unspecified"
+title = "GymTrack Supabase Secrets Update"
+description = "Updated source archive configured for Replit Supabase Secrets, with password recovery completion, security-hardening migration 11, and refreshed audit report. No local environment file is included."
+logical_id = "6ea4272f-507e-4dfe-b8cd-cc92ba5420f4"
+content_hash = "sha256:b075a3c4bd5426135e7ccee6f66fb9dc3e5e5a07ab44d81df984524adc71b09a"
+size = 350616
+mtime_ms = 1787383193554
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/6ea4272f-507e-4dfe-b8cd-cc92ba5420f4/89f4d718-27f7-45a4-8b51-f508b83bd015"
+storage_version_token = "1787383199027009"
+content_type = "application/octet-stream"
