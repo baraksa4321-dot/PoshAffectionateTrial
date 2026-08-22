@@ -748,9 +748,7 @@ export function CoachDashboardPage({
 
   return (
     <AppShell
-      title={clientsOnly ? "המתאמנים שלי" : "מרחב ניהול"}
-      subtitle={clientsOnly ? "חיפוש וכניסה לעבודה על מתאמן" : "תמונת מצב ופעולות מהירות"}
-      kicker={clientsOnly ? (isOwner ? "ניהול מתאמנים" : "לוח המאמן") : "לוח בקרה"}
+      title={clientsOnly ? "מתאמנים" : ""}
       action={
         clientsOnly ? (
           <button

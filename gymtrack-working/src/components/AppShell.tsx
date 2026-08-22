@@ -276,15 +276,11 @@ export function AppShell({
         style={{ paddingTop: "max(0.6rem, env(safe-area-inset-top))" }}
       >
         <div className="mx-auto w-full max-w-2xl px-4 pb-4 pt-1 sm:px-6">
-          <div className="mb-3 flex items-center justify-between border-b border-border/50 pb-2">
+          <div className="mb-3 flex items-center border-b border-border/50 pb-2">
             <BrandLogo />
-            <span className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
-              אימונים · תזונה · שגרה
-            </span>
           </div>
           {isCoach ? (
-            <div className="mb-3 flex items-center justify-between border-b border-border/50 pb-2">
-              <span className="text-[11px] font-bold text-muted-foreground">מצב עבודה</span>
+            <div className="mb-3 flex justify-end border-b border-border/50 pb-2">
               <div
                 className="flex items-center gap-0.5 rounded-full border border-border bg-surface-2 p-0.5"
                 role="group"
@@ -319,41 +315,12 @@ export function AppShell({
               </div>
             </div>
           ) : null}
-          {isCoach ? (
-            <div
-              className={`mb-3 flex items-center justify-between border-b px-1 pb-2 ${
-                managementView ? "border-ink/20 text-ink" : "border-primary/20 text-primary"
-              }`}
-            >
-              <div className="text-start">
-                <p className="text-[10px] font-bold tracking-[0.16em] uppercase">
-                  {managementView ? (isOwner ? "מרחב בעלים" : "מרחב מאמן") : "מרחב אישי"}
-                </p>
-              </div>
-              <span
-                aria-hidden="true"
-                className={`h-2.5 w-2.5 rounded-full ${
-                  managementView ? (isOwner ? "bg-ink" : "bg-primary") : "bg-sage"
-                }`}
-              />
-            </div>
-          ) : null}
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1 text-start">
-              {kicker ? (
-                <p className="mb-1 text-[10px] font-bold tracking-widest text-primary uppercase">
-                  {kicker}
-                </p>
-              ) : null}
               {title ? (
                 <h1 className="min-w-0 break-words font-display text-[clamp(18px,5vw,23px)] font-extrabold leading-snug tracking-tight text-ink">
                   {headerTitle}
                 </h1>
-              ) : null}
-              {subtitle ? (
-                <p className="mt-1 break-words text-[clamp(11px,3.2vw,13px)] leading-snug text-muted-foreground">
-                  {headerSubtitle}
-                </p>
               ) : null}
             </div>
             <div className="flex shrink-0 items-center gap-2 pt-0.5">
