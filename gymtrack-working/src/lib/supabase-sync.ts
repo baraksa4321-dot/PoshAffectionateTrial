@@ -30,29 +30,6 @@ async function requireSuccessfulWrite(
   }
 }
 
-async function deleteMissingOwnedRows(
-  table: string,
-  userId: string,
-  keyColumn: string,
-  localKeys: string[],
-  label: string,
-): Promise<void> {
-  const { data, error } = await supabase.from(table).select(keyColumn).eq("user_id", userId);
-  if (error) throw new Error(`${label} read: ${error.message}`);
-
-  const keep = new Set(localKeys);
-  const staleKeys = (data as Array<Record<string, unknown>>)
-    .map((row) => row[keyColumn])
-    .filter((value): value is string => typeof value === "string" && !keep.has(value));
-
-  for (const key of staleKeys) {
-    await requireSuccessfulWrite(
-      supabase.from(table).delete().eq("user_id", userId).eq(keyColumn, key),
-      `${label} delete`,
-    );
-  }
-}
-
 export async function syncLocalToSupabase(
   userId: string,
   localData: GymData,
@@ -111,13 +88,6 @@ export async function syncLocalToSupabase(
         "Custom exercises sync",
       );
     }
-    await deleteMissingOwnedRows(
-      "custom_exercises",
-      userId,
-      "id",
-      customExercises.map((exercise) => exercise.id),
-      "Custom exercises",
-    );
 
     // 3. Programs & Program Days
     if (localData.programs.length > 0) {
@@ -155,20 +125,6 @@ export async function syncLocalToSupabase(
         }
       }
     }
-    await deleteMissingOwnedRows(
-      "program_days",
-      userId,
-      "id",
-      localData.programs.flatMap((program) => program.dayIds),
-      "Program days",
-    );
-    await deleteMissingOwnedRows(
-      "programs",
-      userId,
-      "id",
-      localData.programs.map((program) => program.id),
-      "Programs",
-    );
 
     // 4. Workout Sessions / History (including difficulty rating & discomfort notes)
     if (localData.history.length > 0) {
@@ -190,13 +146,6 @@ export async function syncLocalToSupabase(
         "Workout history sync",
       );
     }
-    await deleteMissingOwnedRows(
-      "workout_sessions",
-      userId,
-      "id",
-      localData.history.map((session) => session.id),
-      "Workout history",
-    );
 
     // 4b. Body Weight Logs (Historical Dated Weigh-Ins)
     if (localData.bodyWeightLogs && localData.bodyWeightLogs.length > 0) {
@@ -211,13 +160,6 @@ export async function syncLocalToSupabase(
         "Body weight log sync",
       );
     }
-    await deleteMissingOwnedRows(
-      "body_weight_logs",
-      userId,
-      "date",
-      (localData.bodyWeightLogs ?? []).map((log) => log.date),
-      "Body weight logs",
-    );
 
     // 5. Custom Foods
     const seedFoodIds = new Set(ISRAELI_FOOD_DATABASE.map((f) => f.id));
@@ -245,13 +187,6 @@ export async function syncLocalToSupabase(
         "Custom foods sync",
       );
     }
-    await deleteMissingOwnedRows(
-      "custom_foods",
-      userId,
-      "id",
-      customFoods.map((food) => food.id),
-      "Custom foods",
-    );
 
     // 6. Nutrition Days
     if (localData.nutritionDays.length > 0) {
@@ -268,13 +203,6 @@ export async function syncLocalToSupabase(
         "Nutrition log sync",
       );
     }
-    await deleteMissingOwnedRows(
-      "nutrition_days",
-      userId,
-      "id",
-      localData.nutritionDays.map((day) => day.id ?? `${userId}_${day.date}`),
-      "Nutrition days",
-    );
 
     // 7. Food Favorites
     if (localData.favoriteFoods && localData.favoriteFoods.length > 0) {
@@ -287,13 +215,6 @@ export async function syncLocalToSupabase(
         "Favorites sync",
       );
     }
-    await deleteMissingOwnedRows(
-      "food_favorites",
-      userId,
-      "food_id",
-      localData.favoriteFoods ?? [],
-      "Favorites",
-    );
 
     return { success: true };
   } catch (err: unknown) {
