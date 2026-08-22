@@ -61,11 +61,11 @@ export const Route = createFileRoute("/")({
   component: Dashboard,
 });
 
-function formatHebrewDate(date: Date) {
+function formatNumericDate(date: Date) {
   return date.toLocaleDateString("he-IL", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   });
 }
 
@@ -247,7 +247,7 @@ function Dashboard() {
   };
 
   return (
-    <AppShell title={formatHebrewDate(now)} subtitle="אימונים ותזונה">
+    <AppShell title={formatNumericDate(now)} subtitle="">
       {/* Coach Message Banner */}
       {latestCoachMsg && (
         <div className="surface-card space-y-1.5 border-primary/20 bg-primary/5 p-4 text-start">

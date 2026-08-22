@@ -1,15 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-  ArrowLeft,
-  Calendar,
-  Copy,
-  Dumbbell,
-  Lightbulb,
-  Plus,
-  Sparkles,
-  Trash2,
-  X,
-} from "lucide-react";
+import { ArrowLeft, Calendar, Copy, Dumbbell, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
@@ -48,8 +38,8 @@ function ProgramsPage() {
   return (
     <AppShell
       kicker="תוכניות"
-      title="תוכניות אימון"
-      subtitle="בני תכניות שמתאימות בדיוק למטרות שלך"
+      title=""
+      subtitle=""
       action={
         isCoach ? (
           <IconButton

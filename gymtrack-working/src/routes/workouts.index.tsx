@@ -17,11 +17,5 @@ function Workouts() {
   useEffect(() => {
     navigate({ to: "/programs", replace: true });
   }, [navigate]);
-  return (
-    <AppShell title="תוכניות אימון" subtitle="מעביר אותך למתחם התוכניות...">
-      <div className="surface-card animate-pulse p-5 text-sm text-muted-foreground text-start">
-        טוען תוכניות אימון…
-      </div>
-    </AppShell>
-  );
+  return <AppShell title="" subtitle="" />;
 }

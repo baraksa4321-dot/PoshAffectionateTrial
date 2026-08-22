@@ -528,9 +528,9 @@ function CoachDashboardPage() {
 
   return (
     <AppShell
-      title={isOwner ? "ניהול מערכת ובעלים" : "לוח בקרה למאמן"}
-      subtitle="ניהול תוכניות אימון, תזונה, הרשאות ומעקב מתאמנים"
-      kicker={isOwner ? "בעלי הפלטפורמה" : "מאמן מוסמך"}
+      title={isOwner ? "ניהול בעלים" : "לוח מאמן"}
+      subtitle=""
+      kicker={isOwner ? "בעלים" : "מאמן"}
       action={
         <button
           onClick={() => setShowAddModal(true)}

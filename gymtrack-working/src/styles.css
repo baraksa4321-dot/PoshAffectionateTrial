@@ -56,7 +56,7 @@
   --radius: 0.7rem;
 
   /* Default — warm studio / coral and pistachio */
-  --background: oklch(0.975 0.018 72);
+  --background: #ffffff;
   --foreground: oklch(0.25 0.035 35);
   --surface: oklch(0.995 0.008 78);
   --surface-2: oklch(0.935 0.035 78);
@@ -100,7 +100,7 @@
 }
 
 :root[data-theme="pink"] {
-  --background: #f5f5dc;
+  --background: #ffffff;
   --foreground: #4a3135;
   --surface: #fffdf5;
   --surface-2: #f3e2d6;
@@ -125,6 +125,10 @@
   --gradient-start: #c9788a;
   --gradient-mid: #e29c9c;
   --gradient-end: #e6b8ae;
+}
+
+:root[data-theme="pink"] body {
+  background-image: none;
 }
 
 :root[data-theme="blue"] {
@@ -345,13 +349,7 @@
     overflow-x: clip;
     direction: rtl;
     text-align: start;
-    background-image:
-      radial-gradient(
-        circle at 100% 0%,
-        oklch(from var(--primary) l c h / 0.07),
-        transparent 28rem
-      ),
-      radial-gradient(circle at 0% 38%, oklch(from var(--sage) l c h / 0.06), transparent 24rem);
+    background-image: none;
     font-feature-settings:
       "kern" 1,
       "ss01" 1;
@@ -430,7 +428,12 @@
 }
 
 .ink-card {
-  background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-mid) 52%, var(--gradient-end) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--gradient-start) 0%,
+    var(--gradient-mid) 52%,
+    var(--gradient-end) 100%
+  );
   color: #fff;
   border-radius: var(--radius-2xl);
   box-shadow: 0 14px 30px oklch(0.2 0.03 35 / 0.16);
@@ -491,7 +494,12 @@
 .progress-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--gradient-start) 0%, var(--gradient-mid) 52%, var(--gradient-end) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--gradient-start) 0%,
+    var(--gradient-mid) 52%,
+    var(--gradient-end) 100%
+  );
   transform-origin: right center;
   transition: transform 500ms ease;
 }

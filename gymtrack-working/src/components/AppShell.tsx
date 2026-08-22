@@ -295,11 +295,6 @@ export function AppShell({
                 <p className="text-[10px] font-bold tracking-[0.16em] uppercase">
                   {managementView ? (isOwner ? "מרחב בעלים" : "מרחב מאמן") : "מרחב אישי"}
                 </p>
-                <p className="mt-0.5 text-[11px] font-medium text-muted-foreground">
-                  {managementView
-                    ? "ניהול מתאמנים, תוכניות וספריית תרגילים"
-                    : "האימונים, התזונה וההתקדמות שלך"}
-                </p>
               </div>
               <span
                 aria-hidden="true"
@@ -316,9 +311,11 @@ export function AppShell({
                   {kicker}
                 </p>
               ) : null}
-              <h1 className="truncate font-display text-[23px] font-extrabold leading-tight tracking-tight text-ink">
-                {title}
-              </h1>
+              {title ? (
+                <h1 className="truncate font-display text-[23px] font-extrabold leading-tight tracking-tight text-ink">
+                  {title}
+                </h1>
+              ) : null}
               {subtitle ? (
                 <p className="mt-1 truncate text-[13px] leading-snug text-muted-foreground">
                   {subtitle}
