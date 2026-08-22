@@ -15,6 +15,10 @@ import { useState, type ReactNode } from "react";
 import { useAuthUser, useGym } from "../lib/gym-store";
 import { supabase } from "../lib/supabase";
 
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 export function AppShell({
   title,
   subtitle,
@@ -102,8 +106,8 @@ export function AppShell({
       setEmail("");
       setPassword("");
       setPendingVerificationEmail(null);
-    } catch (err: any) {
-      setErrorMsg(err?.message || "אירעה שגיאה בחיבור ל-Supabase");
+    } catch (err: unknown) {
+      setErrorMsg(errorMessage(err, "אירעה שגיאה בחיבור ל-Supabase"));
     } finally {
       setLoading(false);
     }
@@ -129,8 +133,8 @@ export function AppShell({
 
       if (error) throw error;
       setSuccessMsg("מייל אימות מחדש נשלח בהצלחה לכתובת " + targetEmail + "!");
-    } catch (err: any) {
-      setErrorMsg(err?.message || "שגיאה בשליחת מייל אימות מחדש");
+    } catch (err: unknown) {
+      setErrorMsg(errorMessage(err, "שגיאה בשליחת מייל אימות מחדש"));
     } finally {
       setLoading(false);
     }

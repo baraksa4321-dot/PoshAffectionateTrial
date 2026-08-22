@@ -150,7 +150,7 @@ function Session() {
         sets: [...warmups, ...working],
       };
     });
-  }, [workoutId]);
+  }, [workout, exercises, history, workoutId]);
 
   const [entries, setEntries] = useState<HistoryEntry[]>(initial);
   const [startedAt] = useState(() => Date.now());
@@ -177,7 +177,18 @@ function Session() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [rest > 0, isPaused]);
+  }, [isPaused, rest]);
+
+  const labels = useMemo(() => supersetLabels(workout?.items ?? []), [workout?.items]);
+
+  const currentItem = replacingIndex !== null ? workout?.items[replacingIndex] : null;
+  const approvedIds = currentItem?.approvedAlternatives;
+  const allowedExercisesForReplace = useMemo(() => {
+    if (!approvedIds || approvedIds.length === 0) {
+      return [];
+    }
+    return exercises.filter((ex) => approvedIds.includes(ex.id));
+  }, [exercises, approvedIds]);
 
   if (!workout) {
     return (
@@ -188,8 +199,6 @@ function Session() {
       </AppShell>
     );
   }
-
-  const labels = supersetLabels(workout.items);
 
   const patchSet = (ei: number, si: number, patch: Partial<LoggedSet>) =>
     setEntries((prev) =>
@@ -259,16 +268,6 @@ function Session() {
   };
 
   const progress = totalSets ? (doneSets / totalSets) * 100 : 0;
-
-  const currentItem = replacingIndex !== null ? workout.items[replacingIndex] : null;
-  const approvedIds = currentItem?.approvedAlternatives;
-
-  const allowedExercisesForReplace = useMemo(() => {
-    if (!approvedIds || approvedIds.length === 0) {
-      return [];
-    }
-    return exercises.filter((ex) => approvedIds.includes(ex.id));
-  }, [exercises, approvedIds]);
 
   return (
     <AppShell
@@ -579,10 +578,10 @@ function Session() {
                   { id: "easy", label: "קל מדי", icon: Smile, color: "text-emerald-600" },
                   { id: "appropriate", label: "מדויק", icon: Meh, color: "text-primary" },
                   { id: "difficult", label: "קשה מדי", icon: Frown, color: "text-rose-600" },
-                ].map(({ id, label, icon: Icon, color }) => (
+                ] as const).map(({ id, label, icon: Icon, color }) => (
                   <button
                     key={id}
-                    onClick={() => setDifficultyRating(id as any)}
+                    onClick={() => setDifficultyRating(id)}
                     className={`p-2.5 rounded-2xl border text-center font-bold text-xs flex flex-col items-center gap-1 cursor-pointer transition-all ${
                       difficultyRating === id
                         ? "border-primary bg-primary/10 shadow-xs scale-105"

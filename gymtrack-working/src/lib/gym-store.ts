@@ -251,7 +251,7 @@ const seed = (): GymData => {
 
 let data: GymData = seed();
 let hydrated = false;
-let currentUser: any = null;
+let currentUser: { id: string } | null = null;
 const listeners = new Set<() => void>();
 
 /** Merge food database so saved data retains all Israeli supermarket items */
@@ -312,7 +312,7 @@ function load() {
       }
     });
 
-    supabase.auth.onAuthStateChange((event, session) => {
+    supabase.auth.onAuthStateChange((_event, session) => {
       const prevUserId = currentUser?.id;
       currentUser = session?.user || null;
 
@@ -955,6 +955,7 @@ export function findFoodReplacements(
         calculatedProtein: round1(food.protein * requiredQty),
         calculatedCarbs: round1(food.carbs * requiredQty),
         calculatedFat: round1(food.fat * requiredQty),
+        calculatedFiber: round1((food.fiber ?? 0) * requiredQty),
         score: Math.abs(food.calories - (current.calories ?? 0)),
       };
     })
