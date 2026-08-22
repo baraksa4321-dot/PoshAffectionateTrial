@@ -1,0 +1,980 @@
+My Routine — Master Product, UX, Theme & Role Verification Pass
+
+אני רוצה לבצע עכשיו בדיקת Master Pass אמיתית על כל My Routine ולסגור את כל הפערים שעדיין קיימים.
+
+חשוב מאוד:
+
+אל תבנה את האפליקציה מחדש.
+
+אל תיצור ארכיטקטורה מקבילה.
+
+אל תשנה Supabase, RLS, Roles, RPCs, migrations או SECURITY DEFINER ללא צורך אמיתי ומאומת.
+
+לפני כל שינוי בדוק מה כבר קיים, מה באמת עובד ומה עדיין לא עובד.
+
+ובעיקר — אל תסתפק ב־Build/Lint ובבדיקת קוד.
+
+אם משהו לא נבדק בפועל, כתוב במפורש:
+
+* VERIFIED — נבדק בפועל בדפדפן
+* CODE VERIFIED — אומת בקוד בלבד
+* NOT VERIFIED — לא ניתן היה לבדוק בפועל
+
+⸻
+
+1. קודם כל — דוח מצב מלא לפני תיקונים
+
+לפני שאתה ממשיך לערוך קוד, אני רוצה שתבצע Audit של כל הדרישות שכבר נתתי לאורך הפרויקט.
+
+תיצור רשימה מסודרת של:
+
+FIXED
+
+מה באמת תוקן.
+
+PARTIALLY FIXED
+
+מה קיים אבל לא הושלם.
+
+NOT FIXED
+
+מה עדיין לא בוצע.
+
+VERIFIED
+
+מה נבדק בפועל בדפדפן.
+
+CODE VERIFIED
+
+מה אומת בקוד בלבד.
+
+NOT VERIFIED
+
+מה לא ניתן היה לבדוק.
+
+אל תכתוב “done” רק כי הקוד קיים.
+
+אני רוצה לראות במפורש גם את הדברים שעדיין חסרים.
+
+⸻
+
+2. Theme / Color System — קריטי
+
+כרגע בחירת הצבע עובדת במסך Login אבל הצבע לא ממשיך לשאר האפליקציה.
+
+זה חייב להשתנות.
+
+כאשר משתמש בוחר Theme, הבחירה צריכה להשפיע על כל My Routine, לא רק על מסך ההתחברות.
+
+ה־Theme צריך לעבור לכל:
+
+* Login
+* Home
+* Dashboard
+* Navigation
+* Bottom navigation
+* Programs
+* Workouts
+* Exercise cards
+* Nutrition
+* Food screens
+* Progress
+* Measurements
+* Profile
+* Settings
+* Messages
+* Coach screens
+* Owner screens
+* Modals
+* Sheets
+* Pickers
+* Buttons
+* Inputs
+* Tabs
+* Progress indicators
+* Empty states
+* Loading states
+
+כל המערכת צריכה להשתמש ב־design tokens / CSS variables מרכזיים.
+
+לא ליצור צבעים hardcoded בכל מסך.
+
+⸻
+
+3. פלטות צבעים
+
+אני לא רוצה רק “צבע אחד”.
+
+אני רוצה פלטות שלמות, יפות ועדינות, בסגנון Pastel / Premium.
+
+לפחות:
+
+Pink
+
+ורודים פסטליים
+
+Blue
+
+כחולים פסטליים
+
+Beige
+
+בז’ / Sand / Cream
+
+Green
+
+ירוקים פסטליים / Sage
+
+Yellow
+
+צהוב עדין / Butter / Soft Gold
+
+Black
+
+שחור / Charcoal / Dark premium
+
+אפשר להוסיף פלטות נוספות אם הן באמת משתלבות טוב.
+
+כל Palette צריכה להגדיר לפחות:
+
+* Primary
+* Secondary
+* Background
+* Surface
+* Card
+* Text
+* Muted text
+* Border
+* Accent
+* Success
+* Warning
+* Error
+
+הצבעים צריכים להיות הרמוניים ולא צבעים חזקים וצעקניים.
+
+⸻
+
+4. Theme Persistence
+
+בחירת Theme צריכה להישמר.
+
+הזרימה:
+
+Choose Theme
+→ Save
+→ Refresh
+→ Theme עדיין קיים
+
+וגם:
+
+Choose Theme
+→ Save
+→ Logout
+→ Login
+→ Theme עדיין קיים
+
+ה־Theme של משתמש אחד לא יכול לדלוף למשתמש אחר.
+
+אם אין צורך ב־DB column חדש — אל תיצור.
+
+השתמש במנגנון הקיים והמאובטח של האפליקציה.
+
+⸻
+
+5. UI/UX — אני רוצה עיצוב חדש, לא “AI-looking”
+
+כרגע העיצוב מרגיש לי בנאלי מדי ומעוגל מדי, ובחלקים מסוימים נראה כמו UI שנוצר אוטומטית.
+
+אני רוצה לשדרג את העיצוב כך שירגיש כמו מוצר fitness אמיתי ומודרני.
+
+אפשר לקחת השראה מאפליקציות fitness / nutrition מודרניות, אבל לא להעתיק עיצוב של מוצר קיים.
+
+כיוון העיצוב:
+
+* Modern
+* Clean
+* Premium
+* Minimal
+* Human
+* Fitness-focused
+* Mobile-first
+* RTL-friendly
+
+אפליקציות fitness מודרניות נוטות להפריד היטב בין מידע לתפעול, להשתמש בהיררכיית typography חזקה, להשאיר whitespace, ולהציג בזמן אימון רק את המידע שבאמת צריך באותו רגע. זה הכיוון שאני רוצה. (Dribbble)
+
+⸻
+
+6. לא הכל צריך להיות עגול
+
+זה חשוב.
+
+אל תשים:
+
+* border-radius גדול לכל כרטיס
+* pill לכל כפתור
+* עיגול לכל section
+* כרטיס בתוך כרטיס בתוך כרטיס
+
+העיצוב צריך להשתמש ב־radius בצורה היררכית.
+
+לדוגמה:
+
+* Buttons — radius קטן/בינוני
+* Inputs — radius קטן/בינוני
+* Cards — radius עדין
+* Sections — לפעמים בכלל ללא radius
+* Bottom sheets — radius רק בפינות הרלוונטיות
+
+הממשק צריך להרגיש כמו מערכת מוצר מקצועית, לא אוסף של כרטיסיות.
+
+⸻
+
+7. Typography & Hierarchy
+
+צריך לשפר:
+
+* גודל כותרות
+* משקל טקסט
+* spacing
+* line-height
+* hierarchy בין primary/secondary information
+* מספרים חשובים
+* planned vs actual values
+* calories/macros
+* workout stats
+
+המספרים החשובים צריכים להיות ברורים.
+
+הטקסט המשני צריך להיות קטן ועדין יותר.
+
+לא כל דבר צריך להיות bold.
+
+⸻
+
+8. כל כפתור חייב לעבוד
+
+יש כרגע כמה כפתורים שלא עושים כלום.
+
+צריך לעבור על כל האפליקציה ולבדוק:
+
+* buttons
+* icon buttons
+* tabs
+* menu items
+* cards שאמורים להיות clickable
+* add buttons
+* save
+* edit
+* delete
+* replace
+* close
+* back
+* search
+* filter
+* favorite
+* add food
+* add exercise
+* add workout
+* add cardio
+
+אם כפתור מוצג למשתמש — הוא חייב לבצע פעולה אמיתית.
+
+אם פונקציה עדיין לא קיימת, אל תציג כפתור כאילו היא קיימת.
+
+אין placeholder actions.
+
+אין console.log במקום פעולה.
+
+אין פעולה שנראית כאילו הצליחה אם Supabase דחה את השמירה.
+
+⸻
+
+9. Exercise Picker — עדיין בעיה קריטית
+
+ה־Exercise Picker עדיין נפתח למטה.
+
+זה כבר תוקן לכאורה כמה פעמים, אבל בפועל עדיין לא נכון.
+
+אני רוצה לפתור את זה ברמת ה־UI האמיתית.
+
+כאשר לוחצים:
+
+Add Exercise
+
+או:
+
+Replace Exercise
+
+החלון חייב להיפתח מעל כל התוכן, ולא להיכנס ל־page flow ולא להופיע בתחתית העמוד.
+
+צריך לבדוק:
+
+* Portal
+* stacking context
+* z-index
+* parent overflow
+* position fixed
+* viewport bounds
+* overlay
+* scroll locking
+* internal scrolling
+* Escape
+* outside click
+* X
+* reopen
+* mobile
+* RTL
+
+אם יש parent עם transform / overflow / stacking context שמונע מה־Portal להתנהג נכון — מצא אותו ותקן את שורש הבעיה.
+
+לא לעשות עוד z-index: 99999 כטלאי בלי להבין את הבעיה.
+
+אותו דבר צריך לעבוד עבור:
+
+* Choose Exercise
+* Replace Exercise
+* Choose Food
+* Replace Food
+* Exercise Details
+* Confirmations
+* Settings dialogs
+* Account dialogs
+* Coach assignment
+* Owner dialogs
+
+⸻
+
+10. Exercise Card
+
+הצגת התרגילים צריכה להיות מסודרת כך:
+
+Header
+
+Exercise Name
+
+ולידו:
+
+Replace
+
+החלפה צריכה להציע חלופות מתאימות לפי:
+
+* Muscle group
+* Equipment
+* Exercise category
+* Supported alternatives
+
+לדוגמה:
+
+Machine
+Cable
+Dumbbell
+Barbell
+Bodyweight
+
+⸻
+
+Rest
+
+להציג:
+
+Rest 90 sec
+
+⸻
+
+Planned
+
+להציג בצורה בולטת:
+
+60 kg · 8–12 reps
+
+⸻
+
+Sets
+
+לדוגמה:
+
+Set 1 ✓
+
+ומתחת:
+
+Actual weight [60]
+
+Actual reps [10]
+
+Actual values צריכים להיות מעט קטנים יותר מה־planned values.
+
+ה־UI צריך להיות מאוד ברור בזמן אימון.
+
+⸻
+
+11. Rep Range
+
+Rep Range חייב להיות אמיתי.
+
+לדוגמה:
+
+8–12 reps
+
+ולא:
+
+8 reps
+
+או:
+
+12 reps
+
+צריך לתמוך ב:
+
+* Fixed
+* Range
+* repType
+* repMin
+* repMax
+
+צריך לשמור את הערך הקיים בלי ליצור DB columns מיותרים.
+
+והכי חשוב:
+
+בדוק שה־8–12 נשמר אחרי:
+
+Save
+→ Refresh
+→ Logout
+→ Login
+
+⸻
+
+12. Client — אסור Drop Set / Superset creation
+
+Client לא אמור להיות מסוגל ליצור לעצמו:
+
+* Drop Set
+* Superset
+
+גם אם הכפתור מוסתר, צריך להיות גם guard ברמת action/state.
+
+Client לא יכול לעקוף את זה דרך route או state manipulation.
+
+Coach/Owner יכולים לקבל את היכולות בהתאם לעיצוב ולמודל הקיים.
+
+⸻
+
+13. Nutrition — צריך להשלים את המערכת
+
+זה אחד הדברים החשובים ביותר.
+
+כרגע עדיין יש רק בערך:
+
+488 foods
+
+זה לא מספיק.
+
+אני רוצה להרחיב משמעותית את מאגר המזונות.
+
+⸻
+
+14. Nutrition Values — להשתמש במקור אמיתי
+
+הערכים התזונתיים לא צריכים להיות ערכים שהוזנו סתם.
+
+אני רוצה להשתמש במקור תזונתי אמין/מאגר נתונים מתאים כדי לבנות את המאגר.
+
+אם קיימת במערכת גישה למקור נתונים או לאתר שסיפקנו קודם, השתמש במקור הזה כדי לקבל:
+
+* Food name
+* Serving size
+* Calories
+* Protein
+* Carbohydrates
+* Fat
+* Fiber
+
+אל תמציא ערכים ותציג אותם כאילו הם מוסמכים.
+
+אם אין גישה ישירה למקור הנתונים, עצור ודווח על כך במקום להמציא נתונים.
+
+⸻
+
+15. Nutrition Values Page
+
+העמוד/המסך של ערכי התזונה צריך להיות אמיתי ומעודכן.
+
+הוא צריך להציג בצורה ברורה:
+
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+
+בהתאם לכמות/מנה.
+
+כאשר המשתמש משנה quantity:
+
+כל הערכים צריכים להשתנות בהתאם.
+
+לדוגמה:
+
+100g
+→ values
+
+200g
+→ values × 2
+
+ה־UI צריך להיות ברור ולא רק רשימת מספרים.
+
+⸻
+
+16. Meal Management
+
+אני עדיין צריכה דרך ברורה להוסיף דברים לארוחות.
+
+צריך להיות:
+
+Breakfast
+Lunch
+Dinner
+Snack
+
+ובתוך כל ארוחה:
+
+Add Food
+
+המשתמש צריך להיות מסוגל:
+
+* Search food
+* Choose food
+* Set quantity
+* Add
+* Edit quantity
+* Replace
+* Remove
+* Favorite
+
+והערכים היומיים צריכים להתעדכן מיד.
+
+⸻
+
+17. Nutrition Totals
+
+צריך להציג:
+
+Daily Calories
+
+Protein
+
+Carbs
+
+Fat
+
+Fiber
+
+ללא Water UI.
+
+אין להציג מים במערכת התזונה.
+
+⸻
+
+18. Food Library
+
+צריך להרחיב את המאגר משמעותית מעבר ל־488.
+
+צריך קטגוריות רחבות:
+
+* Proteins
+* Carbohydrates
+* Fats
+* Fruits
+* Vegetables
+* Dairy
+* Grains
+* Legumes
+* Snacks
+* Breakfast foods
+* Sauces
+* Common Israeli foods
+* International foods
+
+המאגר צריך להיות searchable/filterable.
+
+אין כפילויות.
+
+אין fake data.
+
+אין placeholder records.
+
+⸻
+
+19. Exercise Library
+
+גם התרגילים צריכים להיות רבים, לא רק בערך 8.
+
+צריך coverage משמעותי של:
+
+* Chest
+* Back
+* Shoulders
+* Biceps
+* Triceps
+* Quads
+* Hamstrings
+* Glutes
+* Calves
+* Core
+* Forearms
+* Traps
+* Lower Back
+
+עם:
+
+* Barbell
+* Dumbbell
+* Cable
+* Machine
+* Bodyweight
+
+⸻
+
+20. Owner — Maya
+
+maya2003yos לא אמורה להיות Owner.
+
+בנוסף, עכשיו אני רואה שגם:
+
+mayayosfan234
+
+כבר לא Owner.
+
+אני לא רוצה שתתקן את זה באמצעות hardcoded username/email.
+
+בדוק בפועל:
+
+* auth.uid()
+* profiles.role
+* is_owner()
+* profile hydration
+* UI role
+* session restoration
+
+אם ה־DB מחזיר owner — דווח על כך ואל תשנה אותו אוטומטית.
+
+אם ה־DB מחזיר משהו אחר וה־UI מציג Owner — מצא את הבאג.
+
+אין logic מיוחד עבור משתמשים ספציפיים.
+
+⸻
+
+21. Owner App
+
+Owner צריך לקבל מוצר נפרד באמת:
+
+* Owner Dashboard
+* Owner Navigation
+* Coaches
+* Clients
+* Search
+* Profiles
+* Assignments
+* Role management
+* Programs
+* Workouts
+* History
+* Measurements
+* Nutrition
+* Feedback
+* Messages
+* Recipes
+* Progress
+
+לא Client App עם עוד כמה buttons.
+
+⸻
+
+22. Coach App
+
+Coach צריך לקבל:
+
+* Coach Dashboard
+* Assigned clients
+* Client profiles
+* Programs
+* Workouts
+* History
+* Measurements
+* Nutrition
+* Feedback
+* Messages
+* Recipes
+* Custom exercises
+* Custom foods
+* Progress
+
+Coach רואה רק את המתאמנים שלו.
+
+⸻
+
+23. Client App
+
+Client צריך לקבל אפליקציה פשוטה ונקייה:
+
+* Home
+* Today’s workout
+* Program
+* Workout
+* Nutrition
+* Progress
+* Measurements
+* History
+* Messages
+* Check-ins
+* Profile
+* Settings
+* Cardio
+
+Client לא רואה:
+
+* Owner tools
+* User management
+* Role management
+* Other clients
+* Unauthorized coach functionality
+
+⸻
+
+24. Persistence
+
+זה עדיין אחד הדברים הקריטיים.
+
+כל דבר שאני או המאמן מעדכנים צריך להישמר באמת.
+
+צריך לעקוב אחרי:
+
+Save
+→ Supabase
+→ Refresh
+→ still exists
+
+וגם:
+
+Save
+→ Logout
+→ Login
+→ still exists
+
+זה כולל:
+
+* Profile
+* Programs
+* Workout
+* Rep Range
+* Sets
+* Actual values
+* Nutrition
+* Meals
+* Quantity
+* Favorites
+* Measurements
+* Feedback
+* Messages
+* Recipes
+* Custom foods
+* Custom exercises
+* Cardio
+* Theme
+* Assignments
+
+אם פעולה לא נשמרת — אל תסמן אותה כ־Fixed.
+
+⸻
+
+25. Cardio
+
+מערכת Cardio צריכה להישאר כחלק מהמוצר:
+
+Client יכול להוסיף:
+
+* Walking
+* Running
+* Treadmill
+* Cycling
+* Stationary Bike
+* Elliptical
+* Stair Climber
+* Swimming
+* Tennis
+* Basketball
+* Football
+* Hiking
+* Rowing
+* Jump Rope
+* HIIT
+* Aerobics
+* ועוד
+
+עם:
+
+* Duration
+* Intensity כאשר רלוונטי
+* Estimated calories burned
+
+החישוב צריך להיות מבוסס על הנתונים הזמינים ולא מספר אקראי.
+
+⸻
+
+26. No Water
+
+אין צורך ב־Water UI.
+
+אל תוסיף:
+
+* Water tracker
+* Water card
+* Water progress
+* Water input
+
+אם קיימים שרידים מהמערכת הישנה, הסר אותם מה־UI בהתאם למודל הקיים.
+
+⸻
+
+27. Mobile + RTL
+
+כל המערכת צריכה לעבוד:
+
+* Mobile
+* Desktop
+* RTL
+* Hebrew
+
+במיוחד:
+
+* Exercise Picker
+* Food Picker
+* Nutrition
+* Workout cards
+* Set inputs
+* Rep Range
+* Theme selector
+* Owner
+* Coach
+* Client
+* Cardio
+
+⸻
+
+28. Inspiration / Design Direction
+
+תשתמש כהשראה בעקרונות של אפליקציות fitness מודרניות:
+
+* clean dashboards
+* strong typography
+* clear hierarchy
+* minimal cards
+* contextual information
+* simple bottom navigation
+* clear CTA
+* workout screen optimized for active use
+* nutrition screen optimized for fast logging
+* progress displayed visually
+
+אבל אל תעתיק UI קיים.
+
+המטרה:
+
+My Routine צריך להרגיש כמו מוצר אמיתי שעבר Product Design מקצועי, ולא כמו prototype שנבנה על ידי AI.
+
+⸻
+
+29. Final Audit
+
+בסיום חובה לתת דוח מסודר:
+
+FIXED
+
+כל מה שבאמת תוקן.
+
+PARTIALLY FIXED
+
+מה עדיין חלקי.
+
+VERIFIED
+
+מה נבדק בפועל בדפדפן.
+
+CODE VERIFIED
+
+מה אומת בקוד בלבד.
+
+NOT VERIFIED
+
+מה לא ניתן היה לבדוק.
+
+DATABASE
+
+מה השתנה במסד.
+
+אם לא השתנה:
+
+“No database changes.”
+
+SECURITY
+
+מה נבדק לגבי:
+
+* RLS
+* roles
+* owner
+* coach isolation
+* client isolation
+* RPC
+* SECURITY DEFINER
+
+PERSISTENCE
+
+איזה מידע הוכח ששורד:
+
+Save → Refresh
+
+ו־
+
+Save → Logout → Login
+
+UI / UX
+
+מה השתנה בעיצוב.
+
+STILL MISSING
+
+רשימה מלאה של כל מה שעדיין לא בוצע.
+
+אל תסתיר פערים.
+
+NEXT TEST
+
+בסוף תן לי בדיקה אחת בלבד שאני צריכה לבצע.
+
+לא רשימה של 10 בדיקות.
+
+⸻
+
+30. כלל סיום
+
+אל תכתוב:
+
+“Production Ready”
+
+אלא אם באמת יש:
+
+* authenticated browser testing
+* live Supabase verification
+* role verification
+* persistence verification
+* mobile verification
+* RTL verification
+
+אם אין גישה לאחד מהדברים האלה, כתוב במפורש שהוא:
+
+NOT VERIFIED
+
+המטרה היא לא לסיים את הדוח.
+
+המטרה היא לסיים את My Routine באמת.

@@ -244,6 +244,7 @@ export type CardioLog = {
   date: string; // YYYY-MM-DD
   type: string;
   durationMin: number;
+  intensity?: "low" | "moderate" | "high";
   speed?: number; // km/h
   incline?: number; // %
   distanceKm?: number;
@@ -354,10 +355,16 @@ export const CARDIO_TYPES = [
   "הליכה",
   "ריצה",
   "אופני כושר",
+  "רכיבת אופניים",
   "אליפטיקל",
   "מדרגות (StairMaster)",
   "חתירה (Rowing)",
   "שחייה",
   "טניס",
+  "כדורסל",
+  "כדורגל",
+  "טיול רגלי (Hiking)",
+  "קפיצה בחבל",
   "אימון אינטרוולים (HIIT)",
+  "אירובי קבוצתי",
 ];

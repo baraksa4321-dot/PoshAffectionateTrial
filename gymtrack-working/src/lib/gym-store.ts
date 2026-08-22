@@ -1119,14 +1119,28 @@ export function calculateRmr(profile?: UserProfile) {
 export function saveCardioLog(log: Omit<CardioLog, "id">) {
   const entry: CardioLog = { id: uid(), ...log };
   set({ ...data, cardioLogs: [entry, ...(data.cardioLogs ?? [])] });
+  return entry;
+}
+
+export function updateCardioLog(log: CardioLog) {
+  const currentLogs = data.cardioLogs ?? [];
+  if (!currentLogs.some((entry) => entry.id === log.id)) {
+    throw new Error("Cardio entry not found");
+  }
+  set({ ...data, cardioLogs: currentLogs.map((entry) => (entry.id === log.id ? log : entry)) });
+}
+
+export function deleteCardioLog(id: string) {
+  set({ ...data, cardioLogs: (data.cardioLogs ?? []).filter((entry) => entry.id !== id) });
 }
 
 export function calculateCardioCalories(
   type: string,
   durationMin: number,
   weightKg = 65,
-  speedKmH = 8,
+  speedKmH = 0,
   inclinePct = 0,
+  intensity: CardioLog["intensity"] = "moderate",
 ): number {
   if (durationMin <= 0) return 0;
   let met = 5;
@@ -1138,15 +1152,30 @@ export function calculateCardioCalories(
     met = 3.8;
   } else if (type.includes("אופניים")) {
     met = 6.8;
+  } else if (type.includes("אליפטיקל")) {
+    met = 5.5;
   } else if (type.includes("מדרגות")) {
     met = 8.5;
+  } else if (type.includes("חתירה")) {
+    met = 7;
   } else if (type.includes("שחייה")) {
     met = 7;
+  } else if (type.includes("טניס")) {
+    met = 7.3;
+  } else if (type.includes("כדורסל") || type.includes("כדורגל")) {
+    met = 7;
+  } else if (type.includes("טיול")) {
+    met = 5.3;
+  } else if (type.includes("חבל")) {
+    met = 10;
   } else if (type.includes("HIIT")) {
     met = 9;
+  } else if (type.includes("אירובי")) {
+    met = 6.5;
   }
 
-  const calories = met * weightKg * (durationMin / 60);
+  const intensityMultiplier = intensity === "high" ? 1.15 : intensity === "low" ? 0.85 : 1;
+  const calories = met * intensityMultiplier * weightKg * (durationMin / 60);
   return Math.round(calories);
 }
 
