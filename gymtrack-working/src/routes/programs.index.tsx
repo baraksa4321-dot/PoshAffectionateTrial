@@ -52,25 +52,6 @@ function ProgramsPage() {
         ) : undefined
       }
     >
-      {/* Hero card */}
-      <section className="ink-card-soft relative overflow-hidden p-5 sm:p-6">
-        <div className="relative z-10 max-w-sm text-start">
-          <div className="flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-primary" strokeWidth={2.2} />
-            <p className="text-[10.5px] font-bold tracking-[0.16em] text-primary uppercase">
-              מרחב האימונים שלך
-            </p>
-          </div>
-          <h2 className="mt-2 font-display text-[1.5rem] font-bold leading-[1.15] text-ink">
-            הפכי כל אימון לפשוט וזמין לביצוע.
-          </h2>
-          <p className="mt-2 text-[12.5px] leading-relaxed text-muted-foreground">
-            בני תוכניות עבודה שמותאמות בדיוק לצרכים שלך — מסקוואטים ועד ימי אימון קצרים.
-          </p>
-        </div>
-        <div className="pointer-events-none absolute -bottom-12 -end-10 h-44 w-44 rounded-full bg-sage-soft/60 blur-2xl" />
-      </section>
-
       {/* Add new program input */}
       {adding ? (
         <div className="surface-card mt-4 p-4 text-start">
@@ -138,7 +119,7 @@ function ProgramsPage() {
                         params={{ programId: program.id }}
                         className="block"
                       >
-                        <p className="truncate font-display text-[16px] font-bold text-ink">
+                        <p className="break-words font-display text-[15px] leading-snug font-bold text-ink">
                           {program.name}
                         </p>
                         <p className="mt-0.5 text-[12.5px] font-medium text-muted-foreground">

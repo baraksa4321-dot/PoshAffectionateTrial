@@ -11,7 +11,6 @@ import {
   RefreshCw,
   RotateCcw,
   Search,
-  SkipForward,
   Timer,
   X,
   Sparkles,
@@ -36,6 +35,7 @@ import {
 import { lastPerformance, repLabel, saveSession, saveWorkout, uid, useGym } from "@/lib/gym-store";
 import { BODYWEIGHT_EXERCISES, replaceWithBodyweight } from "@/lib/bodyweight-exercises";
 import type { Exercise, HistoryEntry, LoggedSet, WorkoutItem } from "@/lib/gym-types";
+import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/session/$workoutId")({
   head: () => ({
@@ -85,11 +85,15 @@ function Session() {
   const { workoutId } = Route.useParams();
   const navigate = useNavigate();
   const { workouts, exercises, history, programs, userProfile } = useGym();
-  const canAddAdvancedSets = userProfile?.role === "coach" || userProfile?.role === "owner";
+  const gender = userProfile?.gender;
   const workout = workouts.find((w) => w.id === workoutId);
   const currentProgram = programs.find((program) => program.dayIds.includes(workoutId));
   const [cardExercise, setCardExercise] = useState<Exercise | null>(null);
   const [bodyweightNotice, setBodyweightNotice] = useState("");
+  const [isBodyweightMode, setIsBodyweightMode] = useState(() =>
+    Boolean(workout?.name.endsWith("· משקל גוף")),
+  );
+  const regularWorkoutSnapshot = useRef(workout);
 
   const [isPaused, setIsPaused] = useState(false);
 
@@ -98,6 +102,9 @@ function Session() {
     "appropriate",
   );
   const [discomfortNotes, setDiscomfortNotes] = useState("");
+  const [exerciseFeedback, setExerciseFeedback] = useState<
+    Record<number, { rating?: "easy" | "appropriate" | "difficult"; notes: string }>
+  >({});
 
   const [replacingIndex, setReplacingIndex] = useState<number | null>(null);
   const [replaceSearch, setReplaceSearch] = useState("");
@@ -162,6 +169,7 @@ function Session() {
   const [restPaused, setRestPaused] = useState(false);
   const [pendingExit, setPendingExit] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const previousRestRef = useRef(0);
 
   useEffect(() => {
     setEntries(initial);
@@ -183,6 +191,13 @@ function Session() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [isPaused, rest, restPaused]);
+
+  useEffect(() => {
+    if (previousRestRef.current > 0 && rest === 0 && typeof navigator !== "undefined") {
+      navigator.vibrate?.([120, 70, 120]);
+    }
+    previousRestRef.current = rest;
+  }, [rest]);
 
   const labels = useMemo(() => supersetLabels(workout?.items ?? []), [workout?.items]);
   const exerciseCatalog = useMemo(() => [...exercises, ...BODYWEIGHT_EXERCISES], [exercises]);
@@ -281,7 +296,17 @@ function Session() {
       programName: currentProgram?.name,
       date: new Date().toISOString(),
       durationSec: Math.round((Date.now() - startedAt) / 1000),
-      entries: entries.map((e) => ({ ...e, sets: e.sets.filter((s) => s.done) })),
+      entries: entries.map((e, index) => ({
+        ...e,
+        sets: e.sets.filter((s) => s.done),
+        feedback:
+          exerciseFeedback[index]?.rating || exerciseFeedback[index]?.notes.trim()
+            ? {
+                rating: exerciseFeedback[index]?.rating,
+                notes: exerciseFeedback[index]?.notes.trim() || undefined,
+              }
+            : undefined,
+      })),
       difficultyRating,
       discomfortNotes: discomfortNotes.trim() || undefined,
     });
@@ -291,7 +316,15 @@ function Session() {
   };
 
   const progress = totalSets ? (doneSets / totalSets) * 100 : 0;
-  const switchToBodyweight = () => {
+  const toggleBodyweightMode = () => {
+    if (isBodyweightMode) {
+      const regularWorkout = regularWorkoutSnapshot.current;
+      if (!regularWorkout) return;
+      saveWorkout(regularWorkout);
+      setIsBodyweightMode(false);
+      setBodyweightNotice("האימון חזר לגרסה הרגילה.");
+      return;
+    }
     const nextWorkout = {
       ...workout,
       name: workout.name.replace(/\s*·\s*משקל גוף$/, "") + " · משקל גוף",
@@ -301,8 +334,9 @@ function Session() {
       items: replaceWithBodyweight(workout.items, exerciseCatalog),
     };
     saveWorkout(nextWorkout);
+    setIsBodyweightMode(true);
     clearSavedSession();
-    setBodyweightNotice("האימון עודכן לגרסת משקל גוף לפי קבוצות השרירים.");
+    setBodyweightNotice("האימון עודכן לגרסת משקל גוף. אפשר לחזור בכל רגע.");
   };
 
   return (
@@ -332,7 +366,7 @@ function Session() {
       {/* Pause Banner */}
       {isPaused && (
         <div className="surface-card p-3 rounded-2xl bg-amber-50 text-amber-800 border border-amber-200 text-center font-bold text-xs mb-3">
-          ⏸ האימון מושהה כעת. חזרי מתי שנוח לך!
+          ⏸ האימון מושהה כעת. {genderText(gender, "חזרי", "חזור")} מתי שנוח לך!
         </div>
       )}
 
@@ -369,10 +403,10 @@ function Session() {
           </div>
           <button
             type="button"
-            onClick={switchToBodyweight}
+            onClick={toggleBodyweightMode}
             className="press shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-sm"
           >
-            עדכני לאימון משקל גוף
+            {isBodyweightMode ? "חזרה לאימון רגיל" : "עדכני לאימון משקל גוף"}
           </button>
         </div>
         {bodyweightNotice ? (
@@ -417,7 +451,7 @@ function Session() {
                     <button
                       type="button"
                       onClick={() => fullExercise && setCardExercise(fullExercise)}
-                      className="min-w-0 truncate text-start font-display text-[15.5px] font-semibold text-ink hover:text-primary cursor-pointer"
+                      className="min-w-0 break-words text-start font-display text-[15px] leading-snug font-semibold text-ink hover:text-primary cursor-pointer"
                     >
                       {entry.exerciseName}
                     </button>
@@ -450,9 +484,6 @@ function Session() {
               </div>
 
               <div className="mt-3 rounded-2xl border border-primary/15 bg-primary/5 px-3 py-2.5">
-                <p className="text-[10px] font-bold tracking-[0.14em] text-primary uppercase">
-                  מתוכנן
-                </p>
                 <p className="mt-1 font-display text-[16px] font-semibold tabular-nums text-ink">
                   {prescribedWeight} ק״ג
                   <span className="mx-1.5 text-muted-foreground">·</span>
@@ -497,7 +528,7 @@ function Session() {
                             {s.warmup ? "ח" : workingIndex}
                           </span>
                           <div className="min-w-0 flex-1 text-start">
-                            <p className="truncate text-[12.5px] font-semibold text-ink">
+                            <p className="break-words text-[12.5px] leading-snug font-semibold text-ink">
                               {s.dropSet ? "דרופ סט" : setLabel}
                               <span className="ms-1 text-[11px] font-normal text-muted-foreground">
                                 · יעד {s.targetReps}
@@ -540,52 +571,48 @@ function Session() {
                 </div>
               </div>
 
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const lastSet = entry.sets[entry.sets.length - 1];
-                    const newSet: LoggedSet = {
-                      reps: lastSet?.reps ?? entry.targetReps ?? 10,
-                      weight: lastSet?.weight ?? prescribedWeight,
-                      done: false,
-                      targetReps: entry.targetReps,
-                      targetRepMax: entry.targetRepMax,
-                      warmup: false,
-                    };
-                    setEntries((prev) =>
-                      prev.map((e, idx) => (idx === ei ? { ...e, sets: [...e.sets, newSet] } : e)),
-                    );
-                  }}
-                  className="press rounded-xl bg-secondary px-3 py-1.5 text-xs font-bold text-ink hover:bg-secondary/80 cursor-pointer"
-                >
-                  + סט נוסף
-                </button>
-                {canAddAdvancedSets ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!canAddAdvancedSets) return;
-                      const lastSet = entry.sets[entry.sets.length - 1];
-                      const dropSet: LoggedSet = {
-                        reps: lastSet?.reps ?? entry.targetReps ?? 10,
-                        weight: Math.round((lastSet?.weight ?? prescribedWeight) * 0.8 * 2) / 2,
-                        done: false,
-                        targetReps: entry.targetReps,
-                        warmup: false,
-                        dropSet: true,
-                      };
-                      setEntries((prev) =>
-                        prev.map((e, idx) =>
-                          idx === ei ? { ...e, sets: [...e.sets, dropSet] } : e,
-                        ),
-                      );
-                    }}
-                    className="press rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 hover:bg-amber-100 cursor-pointer"
-                  >
-                    + דרופ סט
-                  </button>
-                ) : null}
+              <div className="mt-3 rounded-2xl border border-border/60 bg-background p-3">
+                <p className="mb-2 text-[10px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
+                  איך היה התרגיל?
+                </p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {(
+                    [
+                      ["easy", "קל"],
+                      ["appropriate", "מתאים"],
+                      ["difficult", "כבד"],
+                    ] as const
+                  ).map(([rating, label]) => (
+                    <button
+                      key={rating}
+                      type="button"
+                      onClick={() =>
+                        setExerciseFeedback((current) => ({
+                          ...current,
+                          [ei]: { ...current[ei], rating, notes: current[ei]?.notes ?? "" },
+                        }))
+                      }
+                      className={`rounded-xl border px-2 py-2 text-[11px] font-bold ${
+                        exerciseFeedback[ei]?.rating === rating
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border/60 bg-secondary/40 text-muted-foreground"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  value={exerciseFeedback[ei]?.notes ?? ""}
+                  onChange={(event) =>
+                    setExerciseFeedback((current) => ({
+                      ...current,
+                      [ei]: { ...current[ei], notes: event.target.value },
+                    }))
+                  }
+                  placeholder="כאב, אי־נוחות או הערה למאמנת..."
+                  className="mt-2 min-h-14 w-full rounded-xl border border-border/60 bg-white p-2 text-[11px] text-ink outline-none focus:border-primary"
+                />
               </div>
             </article>
           );
@@ -710,71 +737,53 @@ function Session() {
         className="fixed inset-x-0 z-40 mx-auto max-w-xl px-4"
         style={{ bottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}
       >
-        <div className="ink-card flex items-center gap-2 p-3">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15">
+        <div
+          className="ink-card flex cursor-pointer items-center gap-2 rounded-2xl p-2.5"
+          onClick={() => rest > 0 && setRestPaused((paused) => !paused)}
+          role="button"
+          tabIndex={rest > 0 ? 0 : -1}
+          aria-label={restPaused ? "המשך טיימר מנוחה" : "עצור טיימר מנוחה"}
+          onKeyDown={(event) => {
+            if (rest > 0 && (event.key === "Enter" || event.key === " ")) {
+              event.preventDefault();
+              setRestPaused((paused) => !paused);
+            }
+          }}
+        >
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/15">
             <Timer className="h-4 w-4 text-primary-foreground" />
           </div>
           <div className="flex-1 min-w-0 text-start">
-            <p className="text-[10px] font-semibold tracking-[0.14em] text-primary-foreground/80 uppercase">
+            <p className="text-[9px] font-semibold tracking-[0.14em] text-primary-foreground/80 uppercase">
               זמן מנוחה
             </p>
-            <p className="font-display text-[20px] font-semibold tabular-nums text-primary-foreground">
+            <p className="font-display text-[17px] font-semibold tabular-nums text-primary-foreground">
               {rest > 0 ? `${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, "0")}` : "מוכן"}
             </p>
           </div>
 
-          <div className="flex items-center gap-1">
-            {rest > 0 ? (
-              <button
-                type="button"
-                onClick={() => setRestPaused((paused) => !paused)}
-                className="press rounded-xl bg-white/15 px-2.5 py-1.5 text-[12px] font-bold text-primary-foreground hover:bg-white/25 cursor-pointer"
-              >
-                {restPaused ? "המשך" : "עצור"}
-              </button>
-            ) : (
-              <>
-                {[30, 60, 90].map((seconds) => (
-                  <button
-                    key={seconds}
-                    type="button"
-                    onClick={() => {
-                      setRest(seconds);
-                      setRestPaused(false);
-                    }}
-                    className="press rounded-xl bg-white/15 px-2 py-1.5 text-[12px] font-bold text-primary-foreground hover:bg-white/25 cursor-pointer"
-                  >
-                    {seconds}ש׳
-                  </button>
-                ))}
-              </>
-            )}
-            <button
-              type="button"
-              onClick={() => setRest((r) => Math.max(0, r - 15))}
-              className="press rounded-xl bg-white/15 px-2.5 py-1.5 text-[12px] font-bold text-primary-foreground hover:bg-white/25 cursor-pointer"
-            >
-              -15ש׳
-            </button>
-            <button
-              type="button"
-              onClick={() => setRest((r) => r + 15)}
-              className="press rounded-xl bg-white/15 px-2.5 py-1.5 text-[12px] font-bold text-primary-foreground hover:bg-white/25 cursor-pointer"
-            >
-              +15ש׳
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setRest(0);
-                setRestPaused(false);
-              }}
-              className="press flex items-center gap-1 rounded-xl bg-white/20 px-3 py-1.5 text-[12px] font-bold text-primary-foreground hover:bg-white/30 cursor-pointer"
-            >
-              <SkipForward className="h-3.5 w-3.5 fill-current" />
-              <span>דילוג</span>
-            </button>
-          </div>
+          {rest <= 0 ? (
+            <div className="flex items-center gap-1">
+              {[30, 60, 90].map((seconds) => (
+                <button
+                  key={seconds}
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setRest(seconds);
+                    setRestPaused(false);
+                  }}
+                  className="press rounded-lg bg-white/15 px-2 py-1 text-[11px] font-bold text-primary-foreground hover:bg-white/25"
+                >
+                  {seconds}ש׳
+                </button>
+              ))}
+            </div>
+          ) : (
+            <span className="rounded-lg bg-white/15 px-2 py-1 text-[10px] font-bold text-primary-foreground/80">
+              {restPaused ? "מושהה" : "לחצי לעצירה"}
+            </span>
+          )}
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import { EVERYDAY_FOOD_DATABASE } from "./israeli-food-db";
 import { supabase } from "./supabase";
 import {
   type ClientLink,
+  type BodyMeasurement,
   type CardioLog,
   type CoachMessage,
   type Exercise,
@@ -25,6 +26,7 @@ export type CoachClientData = {
   nutritionDays: NutritionDay[];
   history: HistorySession[];
   cardioLogs: CardioLog[];
+  bodyMeasurements: BodyMeasurement[];
   profile?: UserProfile;
   error?: string;
 };
@@ -224,6 +226,34 @@ export async function syncLocalToSupabase(
       });
     }
 
+    // 4d. Monthly body measurements are coach-managed in Supabase.
+    if ((localData.bodyMeasurements ?? []).length > 0) {
+      const measurementPayload = localData.bodyMeasurements!.map((measurement) => ({
+        id: measurement.id,
+        user_id: userId,
+        date: measurement.date,
+        chest_cm: measurement.chestCm,
+        waist_cm: measurement.waistCm,
+        hips_cm: measurement.hipsCm,
+        biceps_cm: measurement.bicepsCm,
+        thighs_cm: measurement.thighsCm,
+        calves_cm: measurement.calvesCm,
+        neck_cm: measurement.neckCm,
+        body_fat_pct: measurement.bodyFatPct,
+        muscle_mass_kg: measurement.muscleMassKg,
+        notes: measurement.notes,
+      }));
+      await requireSuccessfulWrite(
+        supabase.from("body_measurements").upsert(measurementPayload, { onConflict: "id" }),
+        "Body measurements sync",
+      ).catch((error: unknown) => {
+        if (!isMissingTableInSchemaCache(error, "body_measurements")) throw error;
+        console.warn(
+          "[Optional body measurements sync skipped]: public.body_measurements is unavailable",
+        );
+      });
+    }
+
     // 5. Custom Foods
     const seedFoodIds = new Set(EVERYDAY_FOOD_DATABASE.map((f) => f.id));
     const customFoods = localData.foods.filter((f) => !seedFoodIds.has(f.id));
@@ -243,6 +273,9 @@ export async function syncLocalToSupabase(
         carbs: f.carbs,
         fat: f.fat,
         fiber: f.fiber ?? 0,
+        approval_status: f.approvalStatus ?? "pending",
+        approved_by: f.approvedBy,
+        approved_at: f.approvedAt,
         updated_at: new Date().toISOString(),
       }));
       await requireSuccessfulWrite(
@@ -416,8 +449,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     // 4. Custom Exercises
     const { data: dbCustomExercises, error: customExercisesError } = await supabase
       .from("custom_exercises")
-      .select("*")
-      .eq("user_id", userId);
+      .select("*");
     if (customExercisesError)
       throw new Error(`Custom exercises pull failed: ${customExercisesError.message}`);
 
@@ -530,6 +562,29 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       }));
     }
 
+    const { data: dbBodyMeasurements, error: measurementError } = await supabase
+      .from("body_measurements")
+      .select("*")
+      .eq("user_id", userId)
+      .order("date", { ascending: false });
+    if (measurementError && !isMissingTableInSchemaCache(measurementError, "body_measurements")) {
+      throw new Error(`Body measurements pull failed: ${measurementError.message}`);
+    }
+    nextData.bodyMeasurements = (dbBodyMeasurements ?? []).map((row): BodyMeasurement => ({
+      id: row.id,
+      date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
+      chestCm: row.chest_cm === null ? undefined : Number(row.chest_cm),
+      waistCm: row.waist_cm === null ? undefined : Number(row.waist_cm),
+      hipsCm: row.hips_cm === null ? undefined : Number(row.hips_cm),
+      bicepsCm: row.biceps_cm === null ? undefined : Number(row.biceps_cm),
+      thighsCm: row.thighs_cm === null ? undefined : Number(row.thighs_cm),
+      calvesCm: row.calves_cm === null ? undefined : Number(row.calves_cm),
+      neckCm: row.neck_cm === null ? undefined : Number(row.neck_cm),
+      bodyFatPct: row.body_fat_pct === null ? undefined : Number(row.body_fat_pct),
+      muscleMassKg: row.muscle_mass_kg === null ? undefined : Number(row.muscle_mass_kg),
+      notes: row.notes || undefined,
+    }));
+
     // 7b. Cardio Logs
     const { data: dbCardioLogs, error: cardioError } = await supabase
       .from("cardio_logs")
@@ -576,6 +631,10 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
           carbs: Number(row.carbs),
           fat: Number(row.fat),
           fiber: Number(row.fiber || 0),
+          ownerId: row.user_id || undefined,
+          approvalStatus: row.approval_status || "approved",
+          approvedBy: row.approved_by || undefined,
+          approvedAt: row.approved_at || undefined,
         };
         foodMap.set(row.id, foodItem);
       }
@@ -722,6 +781,28 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       distanceKm: row.distance_km === null ? undefined : Number(row.distance_km),
       calories: Number(row.calories),
     }));
+    const { data: dbBodyMeasurements, error: measurementError } = await supabase
+      .from("body_measurements")
+      .select("*")
+      .eq("user_id", clientId)
+      .order("date", { ascending: false });
+    if (measurementError && !isMissingTableInSchemaCache(measurementError, "body_measurements")) {
+      throw new Error(`Client body measurements pull failed: ${measurementError.message}`);
+    }
+    const bodyMeasurements: BodyMeasurement[] = (dbBodyMeasurements ?? []).map((row) => ({
+      id: row.id,
+      date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
+      chestCm: row.chest_cm === null ? undefined : Number(row.chest_cm),
+      waistCm: row.waist_cm === null ? undefined : Number(row.waist_cm),
+      hipsCm: row.hips_cm === null ? undefined : Number(row.hips_cm),
+      bicepsCm: row.biceps_cm === null ? undefined : Number(row.biceps_cm),
+      thighsCm: row.thighs_cm === null ? undefined : Number(row.thighs_cm),
+      calvesCm: row.calves_cm === null ? undefined : Number(row.calves_cm),
+      neckCm: row.neck_cm === null ? undefined : Number(row.neck_cm),
+      bodyFatPct: row.body_fat_pct === null ? undefined : Number(row.body_fat_pct),
+      muscleMassKg: row.muscle_mass_kg === null ? undefined : Number(row.muscle_mass_kg),
+      notes: row.notes || undefined,
+    }));
 
     return {
       programs: programsList,
@@ -729,6 +810,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       nutritionDays: nutritionList,
       history: historyList,
       cardioLogs: cardioList,
+      bodyMeasurements,
       profile: profile
         ? {
             weight: Number(profile.weight_kg || 65),
@@ -740,6 +822,14 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
   } catch (err: unknown) {
     const error = err instanceof Error && err.message ? err.message : "Client data pull failed";
     console.error("[Pull Client Data Error]:", error);
-    return { programs: [], workouts: [], nutritionDays: [], history: [], cardioLogs: [], error };
+    return {
+      programs: [],
+      workouts: [],
+      nutritionDays: [],
+      history: [],
+      cardioLogs: [],
+      bodyMeasurements: [],
+      error,
+    };
   }
 }

@@ -95,7 +95,11 @@ function FoodDetail() {
   const onSave = () => {
     if (!draft.name.trim()) return;
     try {
-      saveFood({ ...draft, name: draft.name.trim() });
+      saveFood({
+        ...draft,
+        name: draft.name.trim(),
+        approvalStatus: isNew ? "pending" : draft.approvalStatus,
+      });
       setSaveError("");
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "לא ניתן לשמור את המאכל.");

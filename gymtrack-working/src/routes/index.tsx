@@ -14,7 +14,6 @@ import {
   TrendingUp,
   Utensils,
   Droplets,
-  Ruler,
   Award,
   MessageSquare,
   CheckCircle2,
@@ -41,7 +40,6 @@ import {
   dayTotals,
   saveBodyWeight,
   saveCardioLog,
-  saveUserProfile,
   todayKey,
   updateCardioLog,
   deleteCardioLog,
@@ -49,6 +47,7 @@ import {
 } from "@/lib/gym-store";
 import type { CardioLog } from "@/lib/gym-types";
 import { CARDIO_TYPES } from "@/lib/gym-types";
+import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -69,6 +68,19 @@ function formatNumericDate(date: Date) {
   });
 }
 
+function cardioFieldVisibility(type: string) {
+  const isTreadmill = type.includes("הליכון") || type.includes("Treadmill");
+  const isRunning = type.includes("ריצה");
+  const isBike = type.includes("אופניים");
+  const isRowing = type.includes("חתירה");
+  const isSwimming = type.includes("שחייה");
+  return {
+    speed: isTreadmill || isRunning || isBike,
+    incline: isTreadmill,
+    distance: isTreadmill || isRunning || isBike || isRowing || isSwimming || type.includes("טיול"),
+  };
+}
+
 function Dashboard() {
   const navigate = useNavigate();
   const {
@@ -78,37 +90,29 @@ function Dashboard() {
     programs,
     nutritionDays,
     userProfile,
+    bodyMeasurements,
     cardioLogs,
     coachMessages,
   } = useGym();
 
   const now = new Date();
 
-  const [showMeasurementModal, setShowMeasurementModal] = useState(false);
-  const [waistCm, setWaistCm] = useState("72");
-  const [hipsCm, setHipsCm] = useState("95");
-
   // Routine Checklist, Weekly Weigh-In, and Monthly Check-In
   const [routineChecklist, setRoutineChecklist] = useState<Record<string, boolean>>({
     workout: false,
     weighIn: false,
-    nutrition: false,
   });
 
   const [showWeighInModal, setShowWeighInModal] = useState(false);
-  const [showMonthlyCheckInModal, setShowMonthlyCheckInModal] = useState(false);
   const [weeklyWeightInput, setWeeklyWeightInput] = useState(String(userProfile?.weight ?? 65));
-  const [checkInNotes, setCheckInNotes] = useState("");
   const [checkInSuccessMsg, setCheckInSuccessMsg] = useState("");
   const [showCardioModal, setShowCardioModal] = useState(false);
   const [editingCardioId, setEditingCardioId] = useState<string | null>(null);
   const [cardioType, setCardioType] = useState(CARDIO_TYPES[0]);
-  const [cardioDuration, setCardioDuration] = useState("30");
-  const [cardioIntensity, setCardioIntensity] =
-    useState<NonNullable<CardioLog["intensity"]>>("moderate");
-  const [cardioSpeed, setCardioSpeed] = useState("");
-  const [cardioIncline, setCardioIncline] = useState("");
-  const [cardioDistance, setCardioDistance] = useState("");
+  const [cardioDuration, setCardioDuration] = useState("0");
+  const [cardioSpeed, setCardioSpeed] = useState("0");
+  const [cardioIncline, setCardioIncline] = useState("0");
+  const [cardioDistance, setCardioDistance] = useState("0");
   const [cardioError, setCardioError] = useState("");
 
   const handleWeeklyWeighIn = () => {
@@ -119,16 +123,6 @@ function Dashboard() {
       setTimeout(() => setCheckInSuccessMsg(""), 3000);
     }
     setShowWeighInModal(false);
-  };
-
-  const handleMonthlyCheckInSave = () => {
-    saveUserProfile({
-      ...(userProfile ?? { weight: 65, height: 165, age: 26, gender: "female" }),
-      weight: parseFloat(weeklyWeightInput) || userProfile?.weight || 65,
-    });
-    setCheckInSuccessMsg("צ'ק-אין חודשי והיקפים נשמרו בהצלחה למאמן!");
-    setTimeout(() => setCheckInSuccessMsg(""), 3000);
-    setShowMonthlyCheckInModal(false);
   };
 
   // Weekly Activity calculation
@@ -176,16 +170,18 @@ function Dashboard() {
   };
 
   const latestCoachMsg = coachMessages && coachMessages.length > 0 ? coachMessages[0] : null;
+  const latestMeasurement = bodyMeasurements?.[0];
+  const gender = userProfile?.gender;
   const cardioDurationValue = Number(cardioDuration) || 0;
   const cardioSpeedValue = Number(cardioSpeed) || 0;
   const cardioInclineValue = Number(cardioIncline) || 0;
+  const cardioFields = cardioFieldVisibility(cardioType);
   const cardioCalories = calculateCardioCalories(
     cardioType,
     cardioDurationValue,
     userProfile?.weight ?? 65,
     cardioSpeedValue,
     cardioInclineValue,
-    cardioIntensity,
   );
   const cardioThisWeek = (cardioLogs ?? []).filter((entry) => new Date(entry.date) >= startOfWeek);
   const weeklyCardioMinutes = cardioThisWeek.reduce((sum, entry) => sum + entry.durationMin, 0);
@@ -194,11 +190,10 @@ function Dashboard() {
   const resetCardioForm = () => {
     setEditingCardioId(null);
     setCardioType(CARDIO_TYPES[0]);
-    setCardioDuration("30");
-    setCardioIntensity("moderate");
-    setCardioSpeed("");
-    setCardioIncline("");
-    setCardioDistance("");
+    setCardioDuration("0");
+    setCardioSpeed("0");
+    setCardioIncline("0");
+    setCardioDistance("0");
     setCardioError("");
   };
 
@@ -207,10 +202,9 @@ function Dashboard() {
       setEditingCardioId(entry.id);
       setCardioType(entry.type);
       setCardioDuration(String(entry.durationMin));
-      setCardioIntensity(entry.intensity ?? "moderate");
-      setCardioSpeed(entry.speed ? String(entry.speed) : "");
-      setCardioIncline(entry.incline ? String(entry.incline) : "");
-      setCardioDistance(entry.distanceKm ? String(entry.distanceKm) : "");
+      setCardioSpeed(entry.speed !== undefined ? String(entry.speed) : "0");
+      setCardioIncline(entry.incline !== undefined ? String(entry.incline) : "0");
+      setCardioDistance(entry.distanceKm !== undefined ? String(entry.distanceKm) : "0");
       setCardioError("");
     } else {
       resetCardioForm();
@@ -228,7 +222,6 @@ function Dashboard() {
       date: todayKey(),
       type: cardioType,
       durationMin: cardioDurationValue,
-      intensity: cardioIntensity,
       ...(cardioSpeedValue > 0 ? { speed: cardioSpeedValue } : {}),
       ...(cardioInclineValue > 0 ? { incline: cardioInclineValue } : {}),
       ...(Number(cardioDistance) > 0 ? { distanceKm: Number(cardioDistance) } : {}),
@@ -363,10 +356,6 @@ function Dashboard() {
               key: "weighIn",
               label: `שקילה שבועית (משקל נוכחי: ${userProfile?.weight ?? 65} ק"ג)`,
             },
-            {
-              key: "nutrition",
-              label: `תיעוד תזונה ביומן: ${Math.round(totalsToday.calories)} קל׳`,
-            },
           ].map(({ key, label }) => {
             const isDone = routineChecklist[key] || false;
 
@@ -411,19 +400,23 @@ function Dashboard() {
               <span>שקילה שבועית</span>
             </div>
             <p className="text-[11px] text-muted-foreground pt-0.5">
-              עדכון משקל בוקר: <strong className="text-ink">{userProfile?.weight ?? 65} ק"ג</strong>
+              {genderText(gender, "עדכון משקל בוקר", "עדכון משקל בוקר")}:{" "}
+              <strong className="text-ink">{userProfile?.weight ?? 65} ק"ג</strong>
             </p>
           </div>
 
-          <div
-            onClick={() => setShowMonthlyCheckInModal(true)}
-            className="surface-card cursor-pointer space-y-1 border-accent/60 bg-accent/25 p-3.5 transition-colors hover:bg-accent/40"
-          >
+          <div className="surface-card space-y-1 border-accent/60 bg-accent/25 p-3.5">
             <div className="flex items-center gap-1.5 text-xs font-bold text-accent-foreground">
               <Award className="h-4 w-4 text-accent-foreground" />
               <span>צ'ק-אין חודשי</span>
             </div>
-            <p className="pt-0.5 text-[11px] text-accent-foreground">היקפים ודיווח התקדמות</p>
+            <p className="pt-0.5 text-[11px] text-accent-foreground">
+              {genderText(
+                gender,
+                "היקפים, אחוז שומן ומסת שריר מתעדכנים על ידי המאמנת או הבעלים",
+                "היקפים, אחוז שומן ומסת שריר מתעדכנים על ידי המאמן או הבעלים",
+              )}
+            </p>
           </div>
         </div>
       </section>
@@ -442,6 +435,35 @@ function Dashboard() {
           <StatTile label="זמן אימון" value={`${totalDurationMin}m`} icon={Dumbbell} tone="cream" />
         </div>
       </section>
+
+      {latestMeasurement ? (
+        <section className="mt-5 text-start">
+          <SectionHeader
+            title="המדידות החודשיות שלי"
+            subtitle={genderText(
+              gender,
+              "תצוגה בלבד — מתעדכנות על ידי המאמנת או הבעלים",
+              "תצוגה בלבד — מתעדכנים על ידי המאמן או הבעלים",
+            )}
+          />
+          <div className="grid grid-cols-3 gap-2.5">
+            {[
+              ["מותניים", latestMeasurement.waistCm, "ס״מ"],
+              ["אחוז שומן", latestMeasurement.bodyFatPct, "%"],
+              ["מסת שריר", latestMeasurement.muscleMassKg, "ק״ג"],
+            ].map(([label, value, unit]) => (
+              <div key={label} className="surface-card p-3 text-center">
+                <span className="block text-[10px] font-semibold text-muted-foreground">
+                  {label}
+                </span>
+                <strong className="mt-1 block text-sm text-ink">
+                  {value !== undefined ? `${value} ${unit}` : "לא נמדד"}
+                </strong>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* Cardio */}
       <section className="mt-5 text-start">
@@ -641,7 +663,7 @@ function Dashboard() {
                   {editingCardioId ? "עריכת אימון אירובי" : "הוספת אימון אירובי"}
                 </h3>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                  הקלוריות הן אומדן לפי סוג פעילות, זמן, משקל ועצימות.
+                  הקלוריות הן אומדן לפי סוג הפעילות, הזמן, המהירות והשיפוע כשיש כאלה.
                 </p>
               </div>
               <button
@@ -683,58 +705,47 @@ function Dashboard() {
                     className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-semibold text-ink outline-none focus:border-primary"
                   />
                 </label>
-                <label className="grid gap-1.5 font-bold text-muted-foreground">
-                  עצימות
-                  <select
-                    value={cardioIntensity}
-                    onChange={(event) =>
-                      setCardioIntensity(event.target.value as NonNullable<CardioLog["intensity"]>)
-                    }
-                    className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-semibold text-ink outline-none focus:border-primary"
-                  >
-                    <option value="low">נמוכה</option>
-                    <option value="moderate">בינונית</option>
-                    <option value="high">גבוהה</option>
-                  </select>
-                </label>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <label className="grid gap-1.5 font-bold text-muted-foreground">
-                  מהירות
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={cardioSpeed}
-                    onChange={(event) => setCardioSpeed(event.target.value)}
-                    placeholder="אופ׳"
-                    className="h-11 min-w-0 rounded-xl border border-border bg-background px-2 text-sm font-semibold text-ink outline-none focus:border-primary"
-                  />
-                </label>
-                <label className="grid gap-1.5 font-bold text-muted-foreground">
-                  שיפוע %
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    value={cardioIncline}
-                    onChange={(event) => setCardioIncline(event.target.value)}
-                    placeholder="אופ׳"
-                    className="h-11 min-w-0 rounded-xl border border-border bg-background px-2 text-sm font-semibold text-ink outline-none focus:border-primary"
-                  />
-                </label>
-                <label className="grid gap-1.5 font-bold text-muted-foreground">
-                  מרחק ק״מ
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={cardioDistance}
-                    onChange={(event) => setCardioDistance(event.target.value)}
-                    placeholder="אופ׳"
-                    className="h-11 min-w-0 rounded-xl border border-border bg-background px-2 text-sm font-semibold text-ink outline-none focus:border-primary"
-                  />
-                </label>
+              <div className="grid grid-cols-2 gap-2">
+                {cardioFields.speed ? (
+                  <label className="grid gap-1.5 font-bold text-muted-foreground">
+                    מהירות קמ״ש
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={cardioSpeed}
+                      onChange={(event) => setCardioSpeed(event.target.value)}
+                      className="h-11 min-w-0 rounded-xl border border-border bg-background px-2 text-sm font-semibold text-ink outline-none focus:border-primary"
+                    />
+                  </label>
+                ) : null}
+                {cardioFields.incline ? (
+                  <label className="grid gap-1.5 font-bold text-muted-foreground">
+                    שיפוע %
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={cardioIncline}
+                      onChange={(event) => setCardioIncline(event.target.value)}
+                      className="h-11 min-w-0 rounded-xl border border-border bg-background px-2 text-sm font-semibold text-ink outline-none focus:border-primary"
+                    />
+                  </label>
+                ) : null}
+                {cardioFields.distance ? (
+                  <label className="grid gap-1.5 font-bold text-muted-foreground">
+                    מרחק ק״מ
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={cardioDistance}
+                      onChange={(event) => setCardioDistance(event.target.value)}
+                      className="h-11 min-w-0 rounded-xl border border-border bg-background px-2 text-sm font-semibold text-ink outline-none focus:border-primary"
+                    />
+                  </label>
+                ) : null}
               </div>
             </div>
 
@@ -753,136 +764,6 @@ function Dashboard() {
               className="h-11 w-full rounded-2xl bg-primary text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90"
             >
               {editingCardioId ? "שמור שינויים" : "שמור אימון אירובי"}
-            </button>
-          </div>
-        </Overlay>
-      )}
-
-      {/* Modal: Monthly Check-In */}
-      {showMonthlyCheckInModal && (
-        <Overlay
-          open={showMonthlyCheckInModal}
-          onClose={() => setShowMonthlyCheckInModal(false)}
-          ariaLabel="צ׳ק-אין חודשי"
-        >
-          <div
-            className="w-full max-w-sm space-y-3 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="flex items-center gap-2 text-base font-bold text-ink">
-                <Award className="h-5 w-5 text-primary" /> צ'ק-אין חודשי למאמן
-              </h3>
-              <button
-                onClick={() => setShowMonthlyCheckInModal(false)}
-                aria-label="סגירת צ׳ק-אין חודשי"
-                className="grid h-8 w-8 cursor-pointer place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-ink"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="space-y-2 text-xs">
-              <div>
-                <label className="block font-bold text-muted-foreground mb-1">
-                  היקף מותניים (ס"מ)
-                </label>
-                <input
-                  type="number"
-                  value={waistCm}
-                  onChange={(e) => setWaistCm(e.target.value)}
-                  className="w-full rounded-xl border border-border p-2 outline-none focus:border-primary"
-                />
-              </div>
-              <div>
-                <label className="block font-bold text-muted-foreground mb-1">
-                  היקף ירכיים (ס"מ)
-                </label>
-                <input
-                  type="number"
-                  value={hipsCm}
-                  onChange={(e) => setHipsCm(e.target.value)}
-                  className="w-full rounded-xl border border-border p-2 outline-none focus:border-primary"
-                />
-              </div>
-              <div>
-                <label className="block font-bold text-muted-foreground mb-1">
-                  הערות ודיווח התקדמות חודשי
-                </label>
-                <textarea
-                  value={checkInNotes}
-                  onChange={(e) => setCheckInNotes(e.target.value)}
-                  placeholder="איך הרגשת השודש? שינויים באנרגיה, בבגדים, או בתזונה..."
-                  className="w-full rounded-xl border border-border p-2 text-xs h-16 outline-none focus:border-primary"
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={handleMonthlyCheckInSave}
-              className="w-full cursor-pointer rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground shadow-md hover:bg-primary/90"
-            >
-              שלח צ'ק-אין חודשי למאמן
-            </button>
-          </div>
-        </Overlay>
-      )}
-
-      {/* Modal: Body Measurements */}
-      {showMeasurementModal && (
-        <Overlay
-          open={showMeasurementModal}
-          onClose={() => setShowMeasurementModal(false)}
-          variant="bottom"
-          ariaLabel="תיעוד היקפי גוף"
-        >
-          <div
-            className="w-full max-w-sm space-y-3 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="font-bold text-base text-ink flex items-center gap-2">
-                <Ruler className="h-5 w-5 text-rose-600" /> תיעוד היקפי גוף
-              </h3>
-              <button
-                onClick={() => setShowMeasurementModal(false)}
-                aria-label="סגירת תיעוד היקפים"
-                className="grid h-8 w-8 cursor-pointer place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-ink"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="space-y-2 text-xs">
-              <div>
-                <label className="block font-bold text-muted-foreground mb-1">
-                  היקף מותניים (ס״מ)
-                </label>
-                <input
-                  type="number"
-                  value={waistCm}
-                  onChange={(e) => setWaistCm(e.target.value)}
-                  className="w-full rounded-xl border border-border p-2"
-                />
-              </div>
-              <div>
-                <label className="block font-bold text-muted-foreground mb-1">
-                  היקף ירכיים (ס״מ)
-                </label>
-                <input
-                  type="number"
-                  value={hipsCm}
-                  onChange={(e) => setHipsCm(e.target.value)}
-                  className="w-full rounded-xl border border-border p-2"
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={() => setShowMeasurementModal(false)}
-              className="w-full cursor-pointer rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground shadow-md hover:bg-primary/90"
-            >
-              שמור היקפים
             </button>
           </div>
         </Overlay>

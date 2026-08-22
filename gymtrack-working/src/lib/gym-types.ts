@@ -113,6 +113,10 @@ export type HistoryEntry = {
   targetReps?: number;
   targetRepMax?: number;
   repType?: RepType;
+  feedback?: {
+    rating?: "easy" | "appropriate" | "difficult";
+    notes?: string;
+  };
 };
 
 export type HistorySession = {
@@ -143,6 +147,10 @@ export type FoodItem = {
   searchTerms?: string[];
   favorite?: boolean;
   approvedSubstitutes?: string[];
+  ownerId?: string;
+  approvalStatus?: "pending" | "approved" | "rejected";
+  approvedBy?: string;
+  approvedAt?: string;
 };
 
 export type MealFood = {
@@ -204,6 +212,10 @@ export type BodyMeasurement = {
   hipsCm?: number;
   bicepsCm?: number;
   thighsCm?: number;
+  calvesCm?: number;
+  neckCm?: number;
+  bodyFatPct?: number;
+  muscleMassKg?: number;
   notes?: string;
 };
 

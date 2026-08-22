@@ -173,8 +173,14 @@ export function SectionHeader({
       )}
     >
       <div className="min-w-0 text-start">
-        <h2 className="font-display text-[17px] font-extrabold tracking-tight text-ink">{title}</h2>
-        {subtitle ? <p className="mt-1 text-[13px] text-muted-foreground">{subtitle}</p> : null}
+        <h2 className="break-words font-display text-[clamp(15px,4.5vw,17px)] font-extrabold leading-snug tracking-tight text-ink">
+          {title}
+        </h2>
+        {subtitle ? (
+          <p className="mt-1 break-words text-[clamp(11px,3.2vw,13px)] leading-snug text-muted-foreground">
+            {subtitle}
+          </p>
+        ) : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
     </div>

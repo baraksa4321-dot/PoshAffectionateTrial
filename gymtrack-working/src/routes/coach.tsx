@@ -1,4 +1,4 @@
-import { Navigate, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, Navigate, createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Apple,
   Award,
@@ -37,7 +37,15 @@ import {
 } from "../lib/gym-store";
 import { pullClientDataForCoach } from "../lib/supabase-sync";
 import { supabase } from "../lib/supabase";
-import type { Meal, MealFood, Program, UserRole, Workout, WorkoutItem } from "../lib/gym-types";
+import type {
+  BodyMeasurement,
+  Meal,
+  MealFood,
+  Program,
+  UserRole,
+  Workout,
+  WorkoutItem,
+} from "../lib/gym-types";
 
 type CoachClientRow = {
   id: string;
@@ -139,6 +147,12 @@ export function CoachDashboardPage({
   const [overviewRows, setOverviewRows] = useState<
     Array<{ client: CoachClientRow; details: ClientDetails }>
   >([]);
+  const [editingMeasurements, setEditingMeasurements] = useState(false);
+  const [measurementDraft, setMeasurementDraft] = useState<BodyMeasurement>({
+    id: "",
+    date: todayKey(),
+  });
+  const [measurementNotice, setMeasurementNotice] = useState("");
 
   const loadCoachClients = useCallback(async () => {
     setManagementError("");
@@ -233,6 +247,7 @@ export function CoachDashboardPage({
         nutritionDays: store.nutritionDays,
         history: store.history,
         cardioLogs: store.cardioLogs ?? [],
+        bodyMeasurements: store.bodyMeasurements ?? [],
         profile: store.userProfile,
       });
       setLoadingDetails(false);
@@ -257,7 +272,82 @@ export function CoachDashboardPage({
     store.programs,
     store.userProfile,
     store.workouts,
+    store.bodyMeasurements,
   ]);
+
+  useEffect(() => {
+    const latest = clientDetails?.bodyMeasurements?.[0];
+    setMeasurementDraft(
+      latest
+        ? { ...latest }
+        : {
+            id: "",
+            date: todayKey(),
+          },
+    );
+    setEditingMeasurements(false);
+    setMeasurementNotice("");
+  }, [clientDetails]);
+
+  const saveClientMeasurements = async () => {
+    if (!selectedClientId || !isCoach) return;
+    const numeric = (value: number | undefined) =>
+      typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
+    const payload = {
+      user_id: selectedClientId,
+      date: measurementDraft.date || todayKey(),
+      chest_cm: numeric(measurementDraft.chestCm),
+      waist_cm: numeric(measurementDraft.waistCm),
+      hips_cm: numeric(measurementDraft.hipsCm),
+      biceps_cm: numeric(measurementDraft.bicepsCm),
+      thighs_cm: numeric(measurementDraft.thighsCm),
+      calves_cm: numeric(measurementDraft.calvesCm),
+      neck_cm: numeric(measurementDraft.neckCm),
+      body_fat_pct: numeric(measurementDraft.bodyFatPct),
+      muscle_mass_kg: numeric(measurementDraft.muscleMassKg),
+      notes: measurementDraft.notes?.trim() || null,
+    };
+    const { data, error } = await supabase
+      .from("body_measurements")
+      .upsert(
+        { ...(measurementDraft.id ? { id: measurementDraft.id } : {}), ...payload },
+        { onConflict: "user_id,date" },
+      )
+      .select("*")
+      .single();
+    if (error) {
+      setMeasurementNotice(`שמירת המדידות נכשלה: ${error.message}`);
+      return;
+    }
+    const saved: BodyMeasurement = {
+      id: data.id,
+      date: data.date,
+      chestCm: data.chest_cm ?? undefined,
+      waistCm: data.waist_cm ?? undefined,
+      hipsCm: data.hips_cm ?? undefined,
+      bicepsCm: data.biceps_cm ?? undefined,
+      thighsCm: data.thighs_cm ?? undefined,
+      calvesCm: data.calves_cm ?? undefined,
+      neckCm: data.neck_cm ?? undefined,
+      bodyFatPct: data.body_fat_pct ?? undefined,
+      muscleMassKg: data.muscle_mass_kg ?? undefined,
+      notes: data.notes ?? undefined,
+    };
+    setClientDetails((current) =>
+      current
+        ? {
+            ...current,
+            bodyMeasurements: [
+              saved,
+              ...(current.bodyMeasurements ?? []).filter((item) => item.date !== saved.date),
+            ],
+          }
+        : current,
+    );
+    setMeasurementDraft(saved);
+    setEditingMeasurements(false);
+    setMeasurementNotice("המדידות החודשיות נשמרו בהצלחה.");
+  };
 
   useEffect(() => {
     const day = clientDetails?.nutritionDays?.find((item) => item.date === menuDate);
@@ -768,7 +858,32 @@ export function CoachDashboardPage({
         </section>
       ) : null}
 
-      <div className={clientsOnly ? "space-y-5 text-start" : "hidden"}>
+      {!clientsOnly ? (
+        <section className="surface-card rounded-3xl border-2 border-primary/25 bg-primary/5 p-4 text-start shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
+              <Dumbbell className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="break-words font-display text-lg font-extrabold leading-snug text-ink">
+                בניית תוכנית אימונים ותפריט למתאמן
+              </h2>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                בחרי מתאמן כדי לערוך תוכניות, להוסיף תרגילים, לבנות תפריט מתוכנן ולהגדיר יעדים.
+              </p>
+              <Link
+                to="/coach/clients"
+                className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm hover:bg-primary/90"
+              >
+                פתיחת רשימת המתאמנים
+                <ChevronLeft className="ms-1 h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      <div className="space-y-5 text-start">
         {managementError ? (
           <div
             role="alert"
@@ -1104,6 +1219,120 @@ export function CoachDashboardPage({
                         שלח
                       </button>
                     </form>
+                  </div>
+
+                  {/* Coach-managed monthly measurements */}
+                  <div className="surface-card rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <div>
+                        <h4 className="font-bold text-sm text-ink">צ׳ק־אין ומדידות חודשיות</h4>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          המדידות נשמרות על ידי המאמנת או הבעלים בלבד
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditingMeasurements((value) => !value)}
+                        className="flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+                      >
+                        <Edit2 className="h-3 w-3" />
+                        {editingMeasurements ? "ביטול" : "עריכה"}
+                      </button>
+                    </div>
+                    {editingMeasurements ? (
+                      <>
+                        <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
+                          תאריך מדידה
+                          <input
+                            type="date"
+                            value={measurementDraft.date}
+                            onChange={(event) =>
+                              setMeasurementDraft((current) => ({
+                                ...current,
+                                date: event.target.value,
+                              }))
+                            }
+                            className="h-10 rounded-xl border border-border bg-white px-3 text-xs text-ink"
+                          />
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {(
+                            [
+                              ["chestCm", "חזה (ס״מ)"],
+                              ["waistCm", "מותניים (ס״מ)"],
+                              ["hipsCm", "ירכיים (ס״מ)"],
+                              ["bicepsCm", "זרוע / יד (ס״מ)"],
+                              ["thighsCm", "ירך (ס״מ)"],
+                              ["calvesCm", "שוק / תאומים (ס״מ)"],
+                              ["neckCm", "צוואר (ס״מ)"],
+                              ["bodyFatPct", "אחוז שומן (%)"],
+                              ["muscleMassKg", "מסת שריר (ק״ג)"],
+                            ] as const
+                          ).map(([field, label]) => (
+                            <label
+                              key={field}
+                              className="grid gap-1 text-[11px] font-bold text-muted-foreground"
+                            >
+                              {label}
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                value={measurementDraft[field] ?? ""}
+                                onChange={(event) =>
+                                  setMeasurementDraft((current) => ({
+                                    ...current,
+                                    [field]: event.target.value
+                                      ? Number(event.target.value)
+                                      : undefined,
+                                  }))
+                                }
+                                className="h-10 rounded-xl border border-border bg-white px-3 text-sm text-ink"
+                              />
+                            </label>
+                          ))}
+                        </div>
+                        <textarea
+                          value={measurementDraft.notes ?? ""}
+                          onChange={(event) =>
+                            setMeasurementDraft((current) => ({
+                              ...current,
+                              notes: event.target.value,
+                            }))
+                          }
+                          placeholder="הערות המאמנת לצ׳ק־אין..."
+                          className="min-h-16 w-full rounded-xl border border-border bg-white p-3 text-xs text-ink"
+                        />
+                        <button
+                          type="button"
+                          onClick={saveClientMeasurements}
+                          className="flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-primary text-xs font-bold text-white"
+                        >
+                          <Save className="h-3.5 w-3.5" /> שמירת מדידות חודשיות
+                        </button>
+                      </>
+                    ) : null}
+                    {measurementNotice ? (
+                      <p className="rounded-xl bg-emerald-50 p-2 text-xs font-semibold text-emerald-800">
+                        {measurementNotice}
+                      </p>
+                    ) : null}
+                    {!editingMeasurements ? (
+                      <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+                        {[
+                          ["מותניים", measurementDraft.waistCm, "ס״מ"],
+                          ["אחוז שומן", measurementDraft.bodyFatPct, "%"],
+                          ["מסת שריר", measurementDraft.muscleMassKg, "ק״ג"],
+                        ].map(([label, value, unit]) => (
+                          <div key={label} className="rounded-xl bg-secondary/50 p-2">
+                            <span className="block text-muted-foreground">{label}</span>
+                            <strong className="text-ink">
+                              {value !== undefined ? `${value} ${unit}` : "לא נמדד"}
+                            </strong>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
 
                   {/* Client Programs & Full Exercise Prescription Builder */}

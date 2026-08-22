@@ -764,11 +764,11 @@ function NutritionLog() {
           onClose={closeFoodPicker}
           ariaLabel="ספריית מאכלים"
           variant="bottom"
-          panelClassName="contents"
+          panelClassName="bg-transparent p-0 shadow-none overflow-visible"
           className="fade-in"
         >
           <div
-            className="scale-in max-h-[88dvh] overflow-y-auto rounded-t-[2rem] border-t border-border/40 bg-card p-5 text-start shadow-2xl"
+            className="scale-in max-h-[calc(100dvh-1rem)] min-h-[min(32rem,calc(100dvh-1rem))] overflow-y-auto rounded-t-[2rem] border-t border-border/40 bg-card p-5 text-start shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />

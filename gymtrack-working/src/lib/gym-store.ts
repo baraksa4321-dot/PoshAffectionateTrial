@@ -10,6 +10,7 @@ import {
 } from "./exercise-library";
 import {
   DEFAULT_MEALS,
+  type BodyMeasurement,
   type BodyWeightLog,
   type CardioLog,
   type Exercise,
@@ -686,6 +687,7 @@ function migrate(d: Partial<GymData>): GymData {
     bodyWeightLogs: d.bodyWeightLogs?.length
       ? d.bodyWeightLogs
       : [{ id: uid(), date: todayKey(), weight: d.userProfile?.weight ?? 65 }],
+    bodyMeasurements: d.bodyMeasurements ?? [],
     cardioLogs: d.cardioLogs ?? [],
     userProfile: d.userProfile ?? seed().userProfile,
   };
@@ -1160,6 +1162,14 @@ export function saveBodyWeight(weight: number, dateStr = todayKey()) {
   set({ ...data, bodyWeightLogs: logs, userProfile: profile });
 }
 
+export function saveBodyMeasurement(measurement: Omit<BodyMeasurement, "id">) {
+  const current = data.bodyMeasurements ?? [];
+  const entry: BodyMeasurement = { id: uid(), ...measurement };
+  const withoutSameDate = current.filter((item) => item.date !== measurement.date);
+  set({ ...data, bodyMeasurements: [entry, ...withoutSameDate] });
+  return entry;
+}
+
 /** RMR Calculation using Mifflin-St Jeor formula */
 export function calculateRmr(profile?: UserProfile) {
   const p = profile ?? data.userProfile ?? { weight: 65, height: 165, age: 26, gender: "female" };
@@ -1207,7 +1217,6 @@ export function calculateCardioCalories(
   weightKg = 65,
   speedKmH = 0,
   inclinePct = 0,
-  intensity: CardioLog["intensity"] = "moderate",
 ): number {
   if (durationMin <= 0) return 0;
   let met = 5;
@@ -1241,8 +1250,7 @@ export function calculateCardioCalories(
     met = 6.5;
   }
 
-  const intensityMultiplier = intensity === "high" ? 1.15 : intensity === "low" ? 0.85 : 1;
-  const calories = met * intensityMultiplier * weightKg * (durationMin / 60);
+  const calories = met * weightKg * (durationMin / 60);
   return Math.round(calories);
 }
 
