@@ -1,0 +1,1 @@
+- [Replit Preview routing](preview-routing.md) — browser Preview needs a registered root web artifact, not only a healthy standalone Vite workflow.

@@ -307,32 +307,31 @@ function load() {
 
   // Setup Supabase Auth state listener
   if (typeof window !== "undefined") {
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
+    supabase.auth
+      .getSession()
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          currentUser = null;
+          authStatus = "unauthenticated";
+          listeners.forEach((l) => l());
+          return;
+        }
+        currentUser = session?.user ? { id: session.user.id, email: session.user.email } : null;
+        authResolved = true;
+        authStatus = session?.user ? "authenticated" : "unauthenticated";
+        listeners.forEach((l) => l());
+        if (session?.user) void handleUserLogin(session.user.id);
+      })
+      .catch(() => {
         currentUser = null;
         authStatus = "unauthenticated";
         listeners.forEach((l) => l());
-        return;
-      }
-      currentUser = session?.user
-        ? { id: session.user.id, email: session.user.email }
-        : null;
-      authResolved = true;
-      authStatus = session?.user ? "authenticated" : "unauthenticated";
-      listeners.forEach((l) => l());
-      if (session?.user) void handleUserLogin(session.user.id);
-    }).catch(() => {
-      currentUser = null;
-      authStatus = "unauthenticated";
-      listeners.forEach((l) => l());
-    });
+      });
 
     supabase.auth.onAuthStateChange((_event, session) => {
       if (!authResolved && _event === "INITIAL_SESSION") return;
       const prevUserId = currentUser?.id;
-      currentUser = session?.user
-        ? { id: session.user.id, email: session.user.email }
-        : null;
+      currentUser = session?.user ? { id: session.user.id, email: session.user.email } : null;
       authResolved = true;
       authStatus = session?.user ? "authenticated" : "unauthenticated";
 

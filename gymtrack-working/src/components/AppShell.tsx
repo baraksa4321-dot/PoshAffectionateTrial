@@ -172,7 +172,14 @@ export function AppShell({
   };
 
   return (
-    <div className="min-h-[100dvh] w-full bg-background text-foreground" dir="rtl">
+    <div
+      className={
+        authOnly
+          ? "fixed inset-0 z-[100] min-h-[100dvh] w-full overflow-auto bg-background text-foreground"
+          : "min-h-[100dvh] w-full bg-background text-foreground"
+      }
+      dir="rtl"
+    >
       <header
         className="sticky top-0 z-30 border-b border-border/30 bg-background/85 backdrop-blur-xl"
         style={{ paddingTop: "max(0.6rem, env(safe-area-inset-top))" }}
@@ -399,30 +406,32 @@ export function AppShell({
         </div>
       )}
 
-      <nav
-        aria-label="ניווט ראשי"
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3.5 sm:px-4"
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-      >
-        <div className="pointer-events-auto mx-auto flex max-w-md items-center justify-between rounded-[2rem] border border-white/70 bg-white/85 p-1.5 shadow-[0_12px_36px_oklch(0.22_0.02_145/0.12),0_2px_10px_oklch(0.22_0.02_145/0.05)] backdrop-blur-2xl">
-          {NAV.map(({ to, label, id, icon: Icon }) => (
-            <Link
-              key={to}
-              to={to}
-              activeOptions={{ exact: to === "/" }}
-              data-testid={`link-nav-${id}`}
-              className="group relative flex min-h-[3.6rem] min-w-[3.4rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-[1.4rem] py-1 text-muted-foreground transition-all duration-200 data-[status=active]:bg-primary/12 data-[status=active]:text-primary hover:text-foreground"
-            >
-              <Icon
-                className="h-[21px] w-[21px] transition-transform duration-200 group-data-[status=active]:scale-110"
-                strokeWidth={2.2}
-              />
-              <span className="text-[10.5px] font-bold leading-none">{label}</span>
-              <span className="absolute -bottom-0.5 h-1 w-1 rounded-full bg-primary opacity-0 transition-opacity duration-200 group-data-[status=active]:opacity-100" />
-            </Link>
-          ))}
-        </div>
-      </nav>
+      {!authOnly ? (
+        <nav
+          aria-label="ניווט ראשי"
+          className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3.5 sm:px-4"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
+          <div className="pointer-events-auto mx-auto flex max-w-md items-center justify-between rounded-[2rem] border border-white/70 bg-white/85 p-1.5 shadow-[0_12px_36px_oklch(0.22_0.02_145/0.12),0_2px_10px_oklch(0.22_0.02_145/0.05)] backdrop-blur-2xl">
+            {NAV.map(({ to, label, id, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                activeOptions={{ exact: to === "/" }}
+                data-testid={`link-nav-${id}`}
+                className="group relative flex min-h-[3.6rem] min-w-[3.4rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-[1.4rem] py-1 text-muted-foreground transition-all duration-200 data-[status=active]:bg-primary/12 data-[status=active]:text-primary hover:text-foreground"
+              >
+                <Icon
+                  className="h-[21px] w-[21px] transition-transform duration-200 group-data-[status=active]:scale-110"
+                  strokeWidth={2.2}
+                />
+                <span className="text-[10.5px] font-bold leading-none">{label}</span>
+                <span className="absolute -bottom-0.5 h-1 w-1 rounded-full bg-primary opacity-0 transition-opacity duration-200 group-data-[status=active]:opacity-100" />
+              </Link>
+            ))}
+          </div>
+        </nav>
+      ) : null}
     </div>
   );
 }
