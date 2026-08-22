@@ -44,7 +44,6 @@ export function AppShell({
   const isOwner = role === "owner";
   const isCoach = role === "coach" || isOwner;
 
-  // Mode State for Coach / Owner: 'personal' (Client View) vs 'management' (Coach/Owner Dashboard)
   const [activeMode, setActiveMode] = useState<"personal" | "management">(
     typeof window !== "undefined" && window.location.pathname.startsWith("/coach")
       ? "management"
@@ -58,11 +57,9 @@ export function AppShell({
     applyTheme(theme);
   }, [theme]);
 
-  // Client gets 3 tabs: בית | אימונים השבוע | תזונה
-  // Coach/Owner gets 3 tabs in Personal mode, plus mode switcher to Coach Dashboard
   const NAV = [
     { to: "/", label: "בית", id: "home", icon: Home },
-    { to: "/programs", label: "אימונים השבוע", id: "programs", icon: LayoutGrid },
+    { to: "/programs", label: "אימונים", id: "programs", icon: LayoutGrid },
     ...(isCoach && activeMode === "management"
       ? [{ to: "/exercises", label: "תרגילים", id: "exercises", icon: Dumbbell }]
       : []),
@@ -195,18 +192,18 @@ export function AppShell({
       dir="rtl"
     >
       <header
-        className="sticky top-0 z-30 border-b border-border/30 bg-background/85 backdrop-blur-xl"
+        className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur-md"
         style={{ paddingTop: "max(0.6rem, env(safe-area-inset-top))" }}
       >
         <div className="mx-auto w-full max-w-md px-5 pb-3.5 pt-1">
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1 text-start">
               {kicker ? (
-                <p className="mb-1 text-[11px] font-bold tracking-[0.14em] text-primary uppercase">
+                <p className="mb-1 text-[10px] font-bold tracking-widest text-primary uppercase">
                   {kicker}
                 </p>
               ) : null}
-              <h1 className="truncate font-display text-[26px] font-extrabold leading-[1.1] tracking-tight text-ink">
+              <h1 className="truncate font-display text-[22px] font-bold leading-tight tracking-tight text-ink uppercase">
                 {title}
               </h1>
               {subtitle ? (
@@ -217,13 +214,13 @@ export function AppShell({
             </div>
             <div className="flex shrink-0 items-center gap-2 pt-0.5">
               {isCoach ? (
-                <div className="flex items-center rounded-full bg-secondary p-0.5 border border-border/60">
+                <div className="flex items-center rounded-sm bg-surface-2 p-0.5 border border-border">
                   <Link
                     to="/"
                     onClick={() => setActiveMode("personal")}
-                    className={`px-2 py-0.5 text-[11px] font-bold rounded-full transition-colors ${
+                    className={`px-3 py-1 text-[11px] font-bold rounded-sm transition-colors ${
                       activeMode === "personal"
-                        ? "bg-white text-ink shadow-xs"
+                        ? "bg-surface text-ink shadow-sm border border-border/50"
                         : "text-muted-foreground hover:text-ink"
                     }`}
                   >
@@ -232,37 +229,42 @@ export function AppShell({
                   <Link
                     to="/coach"
                     onClick={() => setActiveMode("management")}
-                    className={`flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-bold rounded-full transition-colors ${
+                    className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-sm transition-colors ${
                       activeMode === "management"
                         ? isOwner
-                          ? "bg-purple-600 text-white shadow-xs"
-                          : "bg-primary text-white shadow-xs"
+                          ? "bg-ink text-primary-foreground shadow-sm"
+                          : "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:text-ink"
                     }`}
                   >
-                    {isOwner ? <Crown className="h-3 w-3" /> : <Shield className="h-3 w-3" />}
+                    {isOwner ? (
+                      <Crown className="h-3.5 w-3.5" />
+                    ) : (
+                      <Shield className="h-3.5 w-3.5" />
+                    )}
                     <span>{isOwner ? "בעלים" : "מאמן"}</span>
                   </Link>
                 </div>
               ) : null}
 
               {user ? (
-                <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200/60 shadow-xs">
-                  <Cloud className="h-3.5 w-3.5 text-emerald-600 animate-pulse" />
+                <div className="flex items-center gap-2 rounded-sm bg-surface-2 px-3 py-1.5 text-[12px] font-bold text-ink border border-border shadow-sm">
+                  <Cloud className="h-3.5 w-3.5 text-primary" />
                   <span className="max-w-[80px] truncate">{user.email?.split("@")[0]}</span>
+                  <div className="h-3 w-px bg-border/80 mx-1" />
                   <button
                     type="button"
                     onClick={() => setShowThemeModal(true)}
                     title="בחירת פלטה"
                     aria-label="בחירת פלטת צבעים"
-                    className="mr-0.5 text-emerald-600 hover:text-emerald-900 cursor-pointer"
+                    className="text-muted-foreground hover:text-primary cursor-pointer transition-colors"
                   >
-                    ◉
+                    <div className="h-3.5 w-3.5 rounded-sm bg-primary border border-primary/20" />
                   </button>
                   <button
                     onClick={handleSignOut}
                     title="התנתק"
-                    className="mr-0.5 text-emerald-600 hover:text-emerald-900 cursor-pointer"
+                    className="text-muted-foreground hover:text-destructive cursor-pointer transition-colors"
                   >
                     <LogOut className="h-3.5 w-3.5" />
                   </button>
@@ -270,7 +272,7 @@ export function AppShell({
               ) : (
                 <button
                   onClick={() => setShowAuthModal(true)}
-                  className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 rounded-sm bg-primary px-4 py-1.5 text-[12px] font-bold text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer shadow-sm"
                 >
                   <LogIn className="h-3.5 w-3.5" />
                   <span>התחברות</span>
@@ -283,7 +285,7 @@ export function AppShell({
       </header>
 
       <main
-        className="page-enter mx-auto w-full max-w-md px-4 pb-8 pt-4 sm:px-5"
+        className="page-enter mx-auto w-full max-w-md px-4 pb-8 pt-6 sm:px-5"
         style={{
           paddingBottom: "calc(6.5rem + env(safe-area-inset-bottom))",
         }}
@@ -299,51 +301,49 @@ export function AppShell({
           }}
           ariaLabel="התחברות לחשבון"
         >
-          <div className="w-full max-w-sm rounded-3xl border border-border/80 bg-card p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b pb-3">
-              <div className="flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
-                <h3 className="font-bold text-lg text-ink">
-                  {isResettingPassword
-                    ? "איפוס סיסמה"
-                    : isSignUp
-                      ? "הרשמה ל-My Routine"
-                      : "התחברות ל-My Routine"}
+          <div className="w-full max-w-sm rounded-md border border-border bg-surface p-6 shadow-xl space-y-6">
+            <div className="flex items-center justify-between border-b border-border/60 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="grid h-8 w-8 place-items-center bg-secondary text-primary rounded-sm">
+                  <User className="h-4 w-4" />
+                </div>
+                <h3 className="font-display font-bold text-[18px] text-ink uppercase tracking-wide">
+                  {isResettingPassword ? "איפוס סיסמה" : isSignUp ? "הרשמה" : "התחברות"}
                 </h3>
               </div>
               <button
                 onClick={() => setShowAuthModal(false)}
-                className="text-muted-foreground hover:text-ink font-bold text-sm px-2 cursor-pointer"
+                className="grid h-8 w-8 place-items-center rounded-sm text-muted-foreground hover:bg-secondary hover:text-ink transition-colors cursor-pointer"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 
             {errorMsg && (
-              <div className="rounded-xl bg-red-50 p-3 text-xs text-red-600 font-semibold border border-red-200">
+              <div className="rounded-sm bg-destructive/10 p-3 text-[13px] text-destructive font-semibold border border-destructive/20">
                 {errorMsg}
               </div>
             )}
 
             {successMsg && (
-              <div className="rounded-xl bg-emerald-50 p-3 text-xs text-emerald-700 font-semibold border border-emerald-200">
+              <div className="rounded-sm bg-primary/10 p-3 text-[13px] text-primary font-semibold border border-primary/20">
                 {successMsg}
               </div>
             )}
 
             {pendingVerificationEmail && (
-              <div className="rounded-2xl bg-amber-50/80 p-3.5 border border-amber-200 text-amber-900 text-start space-y-2">
-                <p className="text-xs font-bold">
+              <div className="rounded-sm bg-accent/30 p-4 border border-border text-ink text-start space-y-3">
+                <p className="text-[13px] font-bold">
                   ממתין לאימות כתובת המייל ({pendingVerificationEmail})
                 </p>
-                <p className="text-[11px] text-amber-800 leading-relaxed">
+                <p className="text-[12px] text-muted-foreground leading-relaxed">
                   אם לא קיבלת את מייל האימות או שהקישור פג תוקף, לחצי כאן לשליחת קישור מחדש.
                 </p>
                 <button
                   type="button"
                   onClick={handleResendConfirmation}
                   disabled={loading}
-                  className="w-full rounded-xl bg-amber-600 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-amber-700 disabled:opacity-50 cursor-pointer"
+                  className="w-full rounded-sm bg-ink py-2 text-[13px] font-bold text-background shadow-sm hover:bg-ink/90 disabled:opacity-50 cursor-pointer transition-colors"
                 >
                   {loading ? "שולח..." : "שלח מייל אימות מחדש"}
                 </button>
@@ -360,27 +360,27 @@ export function AppShell({
               compact
             />
             {themeError ? (
-              <p className="text-xs font-semibold text-destructive">{themeError}</p>
+              <p className="text-[12px] font-semibold text-destructive">{themeError}</p>
             ) : null}
 
             {isResettingPassword ? (
-              <div className="space-y-3">
-                <p className="text-xs leading-relaxed text-muted-foreground">
+              <div className="space-y-4">
+                <p className="text-[13px] leading-relaxed text-muted-foreground">
                   הזיני את כתובת האימייל שלך ונשלח קישור מאובטח לאיפוס הסיסמה.
                 </p>
                 <button
                   type="button"
                   onClick={handlePasswordReset}
                   disabled={loading}
-                  className="w-full rounded-2xl bg-primary py-2.5 text-sm font-bold text-white shadow-md hover:bg-primary/90 disabled:opacity-50 cursor-pointer"
+                  className="w-full rounded-sm bg-primary py-3 text-[14px] font-bold uppercase tracking-wider text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50 cursor-pointer transition-colors"
                 >
                   {loading ? "שולח..." : "שלח קישור איפוס"}
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleAuthSubmit} className="space-y-3">
+              <form onSubmit={handleAuthSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-muted-foreground mb-1">
+                  <label className="block text-[12px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
                     כתובת אימייל
                   </label>
                   <input
@@ -388,13 +388,14 @@ export function AppShell({
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
+                    className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-[14px] outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                     placeholder="name@example.com"
+                    dir="ltr"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-muted-foreground mb-1">
+                  <label className="block text-[12px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
                     סיסמה
                   </label>
                   <input
@@ -403,22 +404,23 @@ export function AppShell({
                     minLength={6}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
+                    className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-[14px] outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                     placeholder="••••••••"
+                    dir="ltr"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-2xl bg-primary py-2.5 text-sm font-bold text-white shadow-md hover:bg-primary/90 disabled:opacity-50 cursor-pointer"
+                  className="w-full rounded-sm bg-primary py-3 text-[14px] font-bold uppercase tracking-wider text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50 cursor-pointer transition-colors mt-2"
                 >
                   {loading ? "מעבד..." : isSignUp ? "צור חשבון" : "התחבר"}
                 </button>
               </form>
             )}
 
-            <div className="text-center pt-2">
+            <div className="text-center pt-3 border-t border-border/60">
               <button
                 onClick={() => {
                   setIsResettingPassword(false);
@@ -426,7 +428,7 @@ export function AppShell({
                   setErrorMsg("");
                   setSuccessMsg("");
                 }}
-                className="text-xs font-bold text-primary hover:underline cursor-pointer"
+                className="text-[12px] font-bold text-primary hover:underline cursor-pointer"
               >
                 {isSignUp ? "כבר יש לך חשבון? התחבר כאן" : "אין לך חשבון? הירשם כאן"}
               </button>
@@ -438,7 +440,7 @@ export function AppShell({
                     setErrorMsg("");
                     setSuccessMsg("");
                   }}
-                  className="mt-2 block w-full text-xs font-semibold text-muted-foreground hover:text-primary hover:underline cursor-pointer"
+                  className="mt-3 block w-full text-[12px] font-semibold text-muted-foreground hover:text-primary hover:underline cursor-pointer"
                 >
                   שכחתי את הסיסמה
                 </button>
@@ -454,44 +456,45 @@ export function AppShell({
           onClose={() => setShowThemeModal(false)}
           ariaLabel="בחירת פלטת צבעים"
         >
-          <ThemeChooser
-            value={theme}
-            onClose={() => setShowThemeModal(false)}
-            onChange={async (nextTheme) => {
-              setThemeError("");
-              const result = await saveTheme(nextTheme);
-              if (!result.success) setThemeError(result.error ?? "שמירת הפלטה נכשלה");
-            }}
-          />
-          {themeError ? (
-            <p className="-mt-2 rounded-xl bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">
-              {themeError}
-            </p>
-          ) : null}
+          <div className="w-full max-w-sm">
+            <ThemeChooser
+              value={theme}
+              onClose={() => setShowThemeModal(false)}
+              onChange={async (nextTheme) => {
+                setThemeError("");
+                const result = await saveTheme(nextTheme);
+                if (!result.success) setThemeError(result.error ?? "שמירת הפלטה נכשלה");
+              }}
+            />
+            {themeError ? (
+              <p className="mt-3 rounded-sm bg-destructive/10 px-4 py-3 text-[13px] font-semibold text-destructive border border-destructive/20">
+                {themeError}
+              </p>
+            ) : null}
+          </div>
         </Overlay>
       )}
 
       {!authOnly ? (
-        <nav
-          aria-label="ניווט ראשי"
-          className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3.5 sm:px-4"
-          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-        >
-          <div className="pointer-events-auto mx-auto flex max-w-md items-center justify-between rounded-[2rem] border border-border/70 bg-card/85 p-1.5 shadow-[0_12px_36px_oklch(0.22_0.02_145/0.12),0_2px_10px_oklch(0.22_0.02_145/0.05)] backdrop-blur-2xl">
+        <nav aria-label="ניווט ראשי" className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
+          <div
+            className="pointer-events-auto mx-auto flex w-full max-w-md items-center justify-between border-t border-border bg-background/95 shadow-[0_-2px_10px_rgba(0,0,0,0.02)] backdrop-blur-xl"
+            style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
+          >
             {NAV.map(({ to, label, id, icon: Icon }) => (
               <Link
                 key={to}
                 to={to}
                 activeOptions={{ exact: to === "/" }}
                 data-testid={`link-nav-${id}`}
-                className="group relative flex min-h-[3.6rem] min-w-[3.4rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-[1.4rem] py-1 text-muted-foreground transition-all duration-200 data-[status=active]:bg-primary/12 data-[status=active]:text-primary hover:text-foreground"
+                className="group relative flex min-h-[4rem] flex-1 flex-col items-center justify-center gap-1.5 py-2 text-muted-foreground transition-colors data-[status=active]:text-primary hover:text-ink"
               >
+                <span className="absolute inset-x-0 top-0 h-[2px] bg-primary opacity-0 transition-opacity group-data-[status=active]:opacity-100" />
                 <Icon
-                  className="h-[21px] w-[21px] transition-transform duration-200 group-data-[status=active]:scale-110"
-                  strokeWidth={2.2}
+                  className="h-[20px] w-[20px] transition-transform group-active:scale-95"
+                  strokeWidth={2}
                 />
-                <span className="text-[10.5px] font-bold leading-none">{label}</span>
-                <span className="absolute -bottom-0.5 h-1 w-1 rounded-full bg-primary opacity-0 transition-opacity duration-200 group-data-[status=active]:opacity-100" />
+                <span className="text-[11px] font-bold tracking-wide">{label}</span>
               </Link>
             ))}
           </div>
@@ -514,16 +517,18 @@ function ThemeChooser({
 }) {
   return (
     <section
-      className={`rounded-2xl border border-border bg-secondary/70 p-3 text-start ${
-        compact ? "" : "w-full max-w-sm bg-background p-5 shadow-2xl"
+      className={`rounded-md border border-border bg-surface p-4 text-start ${
+        compact ? "" : "w-full shadow-xl"
       }`}
       aria-label="פלטת צבעים"
     >
-      <div className="mb-3 flex items-start justify-between gap-3">
+      <div className="mb-5 flex items-start justify-between gap-3 border-b border-border/50 pb-3">
         <div>
-          <h2 className="font-display text-base font-bold text-ink">פלטת צבעים</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            הבחירה משפיעה על כל המסכים, הכרטיסים והחלונות.
+          <h2 className="font-display text-[16px] font-bold text-ink uppercase tracking-wide">
+            פלטת צבעים
+          </h2>
+          <p className="mt-1 text-[12px] text-muted-foreground">
+            הבחירה משפיעה על כל המסכים והחלונות.
           </p>
         </div>
         {onClose ? (
@@ -531,13 +536,13 @@ function ThemeChooser({
             type="button"
             onClick={onClose}
             aria-label="סגור בחירת פלטה"
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-secondary text-muted-foreground hover:text-ink"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-sm bg-secondary text-muted-foreground hover:text-ink transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
         ) : null}
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {THEME_PALETTES.map((palette) => (
           <button
             key={palette.id}
@@ -545,18 +550,18 @@ function ThemeChooser({
             aria-pressed={value === palette.id}
             title={palette.description}
             onClick={() => void onChange(palette.id)}
-            className={`rounded-xl border p-2 text-start transition ${
+            className={`group relative flex items-center gap-3 overflow-hidden rounded-sm border p-2 text-start transition-all ${
               value === palette.id
-                ? "border-primary bg-primary/10 ring-2 ring-primary/30"
-                : "border-border bg-background hover:border-primary/50"
+                ? "border-primary bg-primary/5 ring-1 ring-primary"
+                : "border-border bg-background hover:border-primary/40"
             }`}
           >
             <span
-              className="mb-1 block h-7 rounded-lg"
+              className="block h-8 w-8 shrink-0 rounded-sm border border-border/50 shadow-sm transition-transform group-hover:scale-105 group-active:scale-95"
               style={{ backgroundColor: palette.swatch }}
               aria-hidden="true"
             />
-            <span className="block text-[11px] font-bold text-ink">{palette.label}</span>
+            <span className="block text-[13px] font-bold text-ink truncate">{palette.label}</span>
           </button>
         ))}
       </div>

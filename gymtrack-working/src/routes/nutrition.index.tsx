@@ -39,11 +39,13 @@ import {
   removeMealFood,
   renameMeal,
   saveNutritionTargets,
+  searchFoods,
   todayKey,
   updateMealFood,
   useGym,
 } from "@/lib/gym-store";
 import type { MealFood } from "@/lib/gym-types";
+import { nutritionSourceFor } from "@/lib/nutrition-integrity";
 
 export const Route = createFileRoute("/nutrition/")({
   head: () => ({
@@ -133,13 +135,7 @@ function NutritionLog() {
   }, [day.meals]);
 
   const filteredFoods = useMemo(() => {
-    const q = pickerQuery.trim().toLocaleLowerCase();
-    return gym.foods.filter(
-      (f) =>
-        !q ||
-        f.name.toLocaleLowerCase().includes(q) ||
-        (f.category ?? "").toLocaleLowerCase().includes(q),
-    );
+    return searchFoods(gym.foods, pickerQuery);
   }, [gym.foods, pickerQuery]);
 
   const replacements = useMemo(() => {
@@ -302,6 +298,9 @@ function NutritionLog() {
           <MacroPill label="סיבים" value={totals.fiber} target={targets.fiber || 25} unit="g" />
         </div>
       </div>
+      <p className="mt-2 border-s border-primary/35 px-3 text-[11px] leading-relaxed text-muted-foreground">
+        החישוב ביומן מתבסס על ערכי כל מאכל לפי מנת הייחוס שלו ומתרחב בדיוק לפי הכמות שנבחרה.
+      </p>
 
       {/* Meals */}
       <section className="mt-6">
@@ -606,7 +605,7 @@ function NutritionLog() {
               <input
                 value={pickerQuery}
                 onChange={(e) => setPickerQuery(e.target.value)}
-                placeholder="חפשי מוצר בסופרמרקט הישראלי..."
+                placeholder="חפשי מאכל, מותג או קטגוריה..."
                 className="w-full bg-transparent text-[14px] outline-none"
               />
             </div>
@@ -614,6 +613,7 @@ function NutritionLog() {
               (() => {
                 const selectedFood = gym.foods.find((food) => food.id === pickerFoodId);
                 if (!selectedFood) return null;
+                const source = nutritionSourceFor(selectedFood);
                 return (
                   <div className="space-y-3">
                     <button
@@ -629,6 +629,11 @@ function NutritionLog() {
                         {selectedFood.servingSize} למנה · {selectedFood.calories} קל׳ · חלבון{" "}
                         {selectedFood.protein}ג׳ · פחמימות {selectedFood.carbs}ג׳ · שומן{" "}
                         {selectedFood.fat}ג׳ · סיבים {selectedFood.fiber ?? 0}ג׳
+                      </p>
+                      <p
+                        className={`mt-1.5 text-[10.5px] font-semibold ${source.verified ? "text-primary" : "text-muted-foreground"}`}
+                      >
+                        {source.label}
                       </p>
                     </div>
                     <Stepper

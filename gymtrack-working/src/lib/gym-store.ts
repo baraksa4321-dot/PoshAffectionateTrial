@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { ISRAELI_FOOD_DATABASE } from "./israeli-food-db";
+import { assertValidFoodNutrition, assertValidMealFood } from "./nutrition-integrity";
 import { supabase } from "./supabase";
 import { pullSupabaseData, syncLocalToSupabase } from "./supabase-sync";
 import {
@@ -1227,6 +1228,7 @@ export function calculateCardioCalories(
 
 /* ---------- nutrition: food library ---------- */
 export function saveFood(food: FoodItem) {
+  assertValidFoodNutrition(food);
   const exists = data.foods.some((f) => f.id === food.id);
   set({
     ...data,
@@ -1349,6 +1351,7 @@ export function renameMeal(date: string, mealId: string, name: string) {
 }
 
 export function addFoodToMeal(date: string, mealId: string, food: MealFood) {
+  assertValidMealFood(food);
   withDay(date, (day) => ({
     ...day,
     meals: day.meals.map((m) => (m.id === mealId ? { ...m, foods: [...m.foods, food] } : m)),
@@ -1360,11 +1363,25 @@ export function addFoodToMeal(date: string, mealId: string, food: MealFood) {
   }
 }
 
-export function updateMealFood(date: string, mealId: string, food: MealFood) {
+export function updateMealFood(
+  date: string,
+  mealId: string,
+  patch: Pick<MealFood, "id"> & Partial<Omit<MealFood, "id">>,
+) {
   withDay(date, (day) => ({
     ...day,
     meals: day.meals.map((m) =>
-      m.id === mealId ? { ...m, foods: m.foods.map((f) => (f.id === food.id ? food : f)) } : m,
+      m.id === mealId
+        ? {
+            ...m,
+            foods: m.foods.map((food) => {
+              if (food.id !== patch.id) return food;
+              const next = { ...food, ...patch };
+              assertValidMealFood(next);
+              return next;
+            }),
+          }
+        : m,
     ),
   }));
 }
@@ -1405,7 +1422,7 @@ export function emptyMealFood(): MealFood {
 }
 
 export function mealFoodFromLibrary(food: FoodItem): MealFood {
-  return {
+  const mealFood = {
     id: uid(),
     foodId: food.id,
     name: food.name,
@@ -1415,9 +1432,11 @@ export function mealFoodFromLibrary(food: FoodItem): MealFood {
     protein: food.protein,
     carbs: food.carbs,
     fat: food.fat,
-    fiber: food.fiber,
-    notes: food.notes,
+    ...(food.fiber === undefined ? {} : { fiber: food.fiber }),
+    ...(food.notes === undefined ? {} : { notes: food.notes }),
   };
+  assertValidMealFood(mealFood);
+  return mealFood;
 }
 
 function normalizeSearch(s: string) {

@@ -1,12 +1,21 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Calendar, Copy, Dumbbell, Plus, Sparkles, Trash2, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Copy,
+  Dumbbell,
+  Lightbulb,
+  Plus,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
 import {
   EmptyState,
   IconButton,
-  Pill,
   PrimaryButton,
   SecondaryButton,
   SectionHeader,
@@ -210,7 +219,7 @@ function ProgramsPage() {
         <div className="mt-6">
           <div className="ink-card-soft flex items-center gap-3 p-4">
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/70">
-              <Pill className="bg-transparent">💡</Pill>
+              <Lightbulb className="h-4 w-4 text-primary" strokeWidth={1.8} />
             </div>
             <p className="text-start text-[12.5px] leading-relaxed text-muted-foreground">
               רוצה להתחיל מהר? שכפלי תכנית קיימת והתאימי אותה לשבוע הבא.

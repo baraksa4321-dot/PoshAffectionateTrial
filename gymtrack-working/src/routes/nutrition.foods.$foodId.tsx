@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { Stepper } from "@/components/Stepper";
 import { IconButton, PrimaryButton, SecondaryButton } from "@/components/ui-app/primitives";
 import { deleteFood, emptyFood, findFoodReplacements, saveFood, useGym } from "@/lib/gym-store";
+import { nutritionSourceFor } from "@/lib/nutrition-integrity";
 import type { FoodItem } from "@/lib/gym-types";
 
 type FoodSearch = {
@@ -45,6 +46,7 @@ function FoodDetail() {
   const [draft, setDraft] = useState<FoodItem>(existing ?? emptyFood());
   const [swapQuery, setSwapQuery] = useState("");
   const [showSwaps, setShowSwaps] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   // Scroll reset is handled centrally in __root.tsx (ScrollToTop subscribed to
   // router.subscribe('onResolved')); no per-page effect needed.
@@ -92,7 +94,13 @@ function FoodDetail() {
 
   const onSave = () => {
     if (!draft.name.trim()) return;
-    saveFood({ ...draft, name: draft.name.trim() });
+    try {
+      saveFood({ ...draft, name: draft.name.trim() });
+      setSaveError("");
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "לא ניתן לשמור את המאכל.");
+      return;
+    }
     if (isNew) {
       navigate({
         to: "/nutrition/foods/$foodId",
@@ -109,6 +117,8 @@ function FoodDetail() {
     deleteFood(existing.id);
     navigate({ to: "/nutrition/foods" });
   };
+
+  const source = nutritionSourceFor(draft);
 
   return (
     <AppShell
@@ -144,6 +154,11 @@ function FoodDetail() {
           </p>
           <p className="mt-1 text-[12.5px] text-muted-foreground">{draft.servingSize || "מנה 1"}</p>
         </div>
+      </div>
+
+      <div className="mt-3 border-s border-primary/30 bg-primary/5 px-3.5 py-3 text-start">
+        <p className="text-[11px] font-bold text-primary">{source.label}</p>
+        <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{source.detail}</p>
       </div>
 
       <div className="mt-4 space-y-3 text-start">
@@ -222,6 +237,14 @@ function FoodDetail() {
         </div>
 
         <div className="space-y-3 pt-2">
+          {saveError ? (
+            <p
+              role="alert"
+              className="border-s-2 border-destructive bg-destructive/5 px-3 py-2 text-xs font-semibold text-destructive"
+            >
+              {saveError}
+            </p>
+          ) : null}
           <PrimaryButton onClick={onSave} leading={<Check className="h-4 w-4" />}>
             שמור מאכל בספרייה
           </PrimaryButton>
