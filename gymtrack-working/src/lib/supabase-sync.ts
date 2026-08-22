@@ -29,14 +29,14 @@ export type CoachClientData = {
   error?: string;
 };
 
-function isMissingBodyWeightTableError(error: unknown): boolean {
+function isMissingTableInSchemaCache(error: unknown, tableName: string): boolean {
   const candidate = error as { code?: unknown; message?: unknown } | null;
   const code = typeof candidate?.code === "string" ? candidate.code : "";
   const message = error instanceof Error ? error.message : String(candidate?.message ?? error);
   return (
-    code === "PGRST205" ||
-    message.includes("public.body_weight_logs") ||
-    (message.includes("body_weight_logs") && message.includes("schema cache"))
+    (code === "PGRST205" && message.includes(tableName)) ||
+    message.includes(`public.${tableName}`) ||
+    (message.includes(tableName) && message.includes("schema cache"))
   );
 }
 
@@ -214,7 +214,7 @@ export async function syncLocalToSupabase(
         supabase.from("body_weight_logs").upsert(weighInPayload, { onConflict: "user_id,date" }),
         "Body weight log sync",
       ).catch((error: unknown) => {
-        if (isMissingBodyWeightTableError(error)) {
+        if (isMissingTableInSchemaCache(error, "body_weight_logs")) {
           console.warn(
             "[Optional body weight sync skipped]: public.body_weight_logs is unavailable",
           );
@@ -482,7 +482,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .select("id, date, weight_kg")
       .eq("user_id", userId)
       .order("date", { ascending: false });
-    if (bodyWeightError && !isMissingBodyWeightTableError(bodyWeightError)) {
+    if (bodyWeightError && !isMissingTableInSchemaCache(bodyWeightError, "body_weight_logs")) {
       throw new Error(`Weight logs pull failed: ${bodyWeightError.message}`);
     }
     if (bodyWeightError) {
@@ -503,7 +503,12 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .select("*")
       .eq("user_id", userId)
       .order("date", { ascending: false });
-    if (cardioError) throw new Error(`Cardio pull failed: ${cardioError.message}`);
+    if (cardioError && !isMissingTableInSchemaCache(cardioError, "cardio_logs")) {
+      throw new Error(`Cardio pull failed: ${cardioError.message}`);
+    }
+    if (cardioError) {
+      console.warn("[Optional cardio pull skipped]: public.cardio_logs is unavailable");
+    }
     nextData.cardioLogs = (dbCardioLogs ?? []).map((row): CardioLog => ({
       id: row.id,
       date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
