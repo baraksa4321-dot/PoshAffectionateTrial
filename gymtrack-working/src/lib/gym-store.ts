@@ -22,6 +22,7 @@ import {
 } from "./gym-types";
 
 const KEY = "gymtrack.v1";
+const CACHED_USER_KEY = "gymtrack.v1.userId";
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -601,6 +602,20 @@ let authStatus: "loading" | "authenticated" | "unauthenticated" = "loading";
 let authResolved = false;
 const listeners = new Set<() => void>();
 
+function resetDataIfCacheBelongsToAnotherUser(userId: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const cachedUserId = window.localStorage.getItem(CACHED_USER_KEY);
+    // Caches created before this binding existed are treated as untrusted once
+    // a real session is present. Keeping them could expose one account's data
+    // while another account's cloud profile is loading.
+    if (cachedUserId !== userId) data = seed();
+    window.localStorage.setItem(CACHED_USER_KEY, userId);
+  } catch {
+    /* Local storage may be unavailable; cloud hydration still follows. */
+  }
+}
+
 /** Merge food database so saved data retains all Israeli supermarket items */
 function mergeSeedFoods(existing: FoodItem[]): FoodItem[] {
   const byId = new Map(existing.map((f) => [f.id, f]));
@@ -613,6 +628,17 @@ function mergeSeedFoods(existing: FoodItem[]): FoodItem[] {
   return Array.from(byId.values());
 }
 
+/** Merge the maintained exercise library without overwriting a user's edits. */
+function mergeSeedExercises(existing: Exercise[]): Exercise[] {
+  const byId = new Map(existing.map((exercise) => [exercise.id, exercise]));
+  const byName = new Map(existing.map((exercise) => [exercise.name.toLocaleLowerCase(), exercise]));
+  for (const seedExercise of seed().exercises) {
+    if (byId.has(seedExercise.id) || byName.has(seedExercise.name.toLocaleLowerCase())) continue;
+    byId.set(seedExercise.id, seedExercise);
+  }
+  return Array.from(byId.values());
+}
+
 /** Ensure older saved data still works cleanly. */
 function migrate(d: Partial<GymData>): GymData {
   const workouts = d.workouts ?? [];
@@ -621,7 +647,7 @@ function migrate(d: Partial<GymData>): GymData {
     programs = [{ id: uid(), name: "תכנית אימונים", notes: "", dayIds: workouts.map((w) => w.id) }];
   }
   return {
-    exercises: d.exercises?.length ? d.exercises : seed().exercises,
+    exercises: mergeSeedExercises(d.exercises ?? []),
     workouts: workouts.length ? workouts : seed().workouts,
     programs: programs.length ? programs : seed().programs,
     history: d.history ?? [],
@@ -664,6 +690,7 @@ function load() {
         currentUser = session?.user ? { id: session.user.id, email: session.user.email } : null;
         authResolved = true;
         authStatus = session?.user ? "authenticated" : "unauthenticated";
+        if (session?.user) resetDataIfCacheBelongsToAnotherUser(session.user.id);
         listeners.forEach((l) => l());
         if (session?.user) void handleUserLogin(session.user.id);
       })
@@ -685,12 +712,14 @@ function load() {
         if (prevUserId && prevUserId !== session.user.id) {
           data = seed();
         }
+        resetDataIfCacheBelongsToAnotherUser(session.user.id);
         void handleUserLogin(session.user.id);
       } else {
         // On sign-out, reset memory state to clean seed data
         data = seed();
         try {
           window.localStorage.removeItem(KEY);
+          window.localStorage.removeItem(CACHED_USER_KEY);
         } catch {
           /* ignore */
         }
@@ -714,7 +743,7 @@ async function handleUserLogin(userId: string) {
   data = pulled;
   persist();
   // Push only after local state contains the user's cloud-backed data.
-  const result = await syncLocalToSupabase(userId, data);
+  const result = await syncLocalToSupabase(userId, data, currentUser?.email);
   if (!result.success) {
     console.warn("[Initial Supabase Sync Warning]:", result.error);
   }
@@ -725,6 +754,7 @@ function persist() {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(KEY, JSON.stringify(data));
+    if (currentUser?.id) window.localStorage.setItem(CACHED_USER_KEY, currentUser.id);
   } catch {
     /* ignore */
   }
@@ -1124,6 +1154,14 @@ export function emptyFood(): FoodItem {
 
 export function saveNutritionTargets(targets: NutritionTargets) {
   set({ ...data, nutritionTargets: targets });
+}
+
+export function saveNutritionWater(date: string, waterMl: number, waterTargetMl?: number) {
+  withDay(date, (day) => ({
+    ...day,
+    waterMl: Math.max(0, waterMl),
+    ...(waterTargetMl === undefined ? {} : { waterTargetMl: Math.max(0, waterTargetMl) }),
+  }));
 }
 
 /* ---------- recipes ---------- */

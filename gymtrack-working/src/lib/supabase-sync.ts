@@ -56,18 +56,12 @@ export async function syncLocalToSupabase(
     }
 
     // 2. Custom Exercises
-    const defaultExerciseIds = new Set([
-      "ex-bench",
-      "ex-squat",
-      "ex-row",
-      "ex-curl",
-      "ex-hipthrust",
-      "ex-plank",
-      "ex-ohp",
-      "ex-rdl",
-    ]);
-
-    const customExercises = localData.exercises.filter((e) => !defaultExerciseIds.has(e.id));
+    // Built-in exercises use stable `ex-` identifiers. Custom exercises use
+    // generated ids and are synced per user; this keeps an expanded library
+    // from being needlessly copied into each account.
+    const customExercises = localData.exercises.filter(
+      (exercise) => !exercise.id.startsWith("ex-"),
+    );
 
     if (customExercises.length > 0) {
       const payload = customExercises.map((e) => ({

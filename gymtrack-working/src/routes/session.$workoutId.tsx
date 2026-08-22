@@ -185,11 +185,25 @@ function Session() {
   const currentItem = replacingIndex !== null ? workout?.items[replacingIndex] : null;
   const approvedIds = currentItem?.approvedAlternatives;
   const allowedExercisesForReplace = useMemo(() => {
-    if (!approvedIds || approvedIds.length === 0) {
-      return [];
+    if (approvedIds && approvedIds.length > 0) {
+      return exercises.filter((exercise) => approvedIds.includes(exercise.id));
     }
-    return exercises.filter((ex) => approvedIds.includes(ex.id));
-  }, [exercises, approvedIds]);
+    const currentExercise = exercises.find((exercise) => exercise.id === currentItem?.exerciseId);
+    if (!currentExercise) return [];
+    return exercises
+      .filter(
+        (exercise) =>
+          exercise.id !== currentExercise.id &&
+          (exercise.muscleGroup === currentExercise.muscleGroup ||
+            exercise.muscleGroups?.includes(currentExercise.muscleGroup)),
+      )
+      .sort(
+        (a, b) =>
+          Number(a.equipment !== currentExercise.equipment) -
+          Number(b.equipment !== currentExercise.equipment),
+      )
+      .slice(0, 12);
+  }, [exercises, approvedIds, currentItem?.exerciseId]);
 
   if (!workout) {
     return (
@@ -364,10 +378,6 @@ function Session() {
                       {entry.exerciseName}
                     </button>
                   </div>
-                  <p className="mt-0.5 text-[12px] text-muted-foreground">
-                    יעד מאמן: <strong className="text-ink">{prescribedWeight} ק"ג</strong> ·{" "}
-                    {entry.targetSets ?? workingCount}× {targetLabel} חזרות
-                  </p>
                 </div>
 
                 <div className="flex items-center gap-1.5">
@@ -392,6 +402,17 @@ function Session() {
                 </div>
               </div>
 
+              <div className="mt-3 rounded-2xl border border-primary/15 bg-primary/5 px-3 py-2.5">
+                <p className="text-[10px] font-bold tracking-[0.14em] text-primary uppercase">
+                  מתוכנן
+                </p>
+                <p className="mt-1 font-display text-[16px] font-semibold tabular-nums text-ink">
+                  {prescribedWeight} ק״ג
+                  <span className="mx-1.5 text-muted-foreground">·</span>
+                  {entry.targetSets ?? workingCount} סטים × {targetLabel} חזרות
+                </p>
+              </div>
+
               {item?.techniqueNotes ? (
                 <div className="mt-2.5 rounded-2xl bg-primary/5 p-2.5 text-[12px] text-primary font-medium border border-primary/10 flex items-center gap-2">
                   <Sparkles className="h-4 w-4 shrink-0" />
@@ -399,68 +420,77 @@ function Session() {
                 </div>
               ) : null}
 
-              <div className="mt-3 space-y-2">
-                {entry.sets.map((s, si) => {
-                  const workingIndex = entry.sets.slice(0, si + 1).filter((x) => !x.warmup).length;
-                  return (
-                    <div
-                      key={si}
-                      className={`rounded-2xl border p-3 transition-all ${
-                        s.done
-                          ? "border-primary bg-primary/10 shadow-sm"
-                          : "border-border/60 bg-secondary/60"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`grid h-7 w-7 place-items-center rounded-lg text-[11px] font-bold ${
-                            s.done
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-primary/15 text-primary"
-                          }`}
-                        >
-                          {workingIndex}
-                        </span>
-                        <div className="min-w-0 flex-1 text-start">
-                          <p className="truncate text-[12.5px] font-semibold text-ink">
-                            {s.dropSet ? "Drop Set" : `סט ${workingIndex}`}
-                            <span className="ms-1 text-[11px] font-normal text-muted-foreground">
-                              · יעד {s.targetReps} {s.targetRepMax ? `-${s.targetRepMax}` : ""}
-                            </span>
-                          </p>
-                        </div>
+              <div className="mt-3">
+                <p className="mb-2 text-[10px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
+                  ביצוע בפועל
+                </p>
+                <div className="space-y-2">
+                  {entry.sets.map((s, si) => {
+                    const workingIndex = entry.sets
+                      .slice(0, si + 1)
+                      .filter((x) => !x.warmup).length;
+                    const setLabel = s.warmup ? "חימום" : `סט ${workingIndex}`;
+                    return (
+                      <div
+                        key={si}
+                        className={`rounded-2xl border p-3 transition-all ${
+                          s.done
+                            ? "border-primary bg-primary/10 shadow-sm"
+                            : "border-border/60 bg-secondary/60"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`grid h-7 w-7 place-items-center rounded-lg text-[11px] font-bold ${
+                              s.done
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-primary/15 text-primary"
+                            }`}
+                          >
+                            {s.warmup ? "ח" : workingIndex}
+                          </span>
+                          <div className="min-w-0 flex-1 text-start">
+                            <p className="truncate text-[12.5px] font-semibold text-ink">
+                              {s.dropSet ? "דרופ סט" : setLabel}
+                              <span className="ms-1 text-[11px] font-normal text-muted-foreground">
+                                · יעד {s.targetReps}
+                                {s.targetRepMax ? `–${s.targetRepMax}` : ""}
+                              </span>
+                            </p>
+                          </div>
 
-                        <button
-                          type="button"
-                          onClick={() => toggleSetDone(ei, si)}
-                          className={`press grid h-11 w-11 place-items-center rounded-2xl text-[13px] font-bold transition-colors cursor-pointer ${
-                            s.done
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-secondary text-muted-foreground hover:bg-secondary/80"
-                          }`}
-                          aria-label={s.done ? "בטל סיום סט" : "סמן סט כבוצע"}
-                        >
-                          <Check className="h-5 w-5" strokeWidth={2.6} />
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleSetDone(ei, si)}
+                            className={`press grid h-11 w-11 place-items-center rounded-2xl text-[13px] font-bold transition-colors cursor-pointer ${
+                              s.done
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                            }`}
+                            aria-label={s.done ? "בטל סיום סט" : "סמן סט כבוצע"}
+                          >
+                            <Check className="h-5 w-5" strokeWidth={2.6} />
+                          </button>
+                        </div>
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          <Stepper
+                            label="משקל בפועל"
+                            value={s.weight}
+                            step={2.5}
+                            suffix="ק״ג"
+                            onChange={(v) => patchSet(ei, si, { weight: v })}
+                          />
+                          <Stepper
+                            label="חזרות בפועל"
+                            value={s.reps}
+                            min={0}
+                            onChange={(v) => patchSet(ei, si, { reps: v })}
+                          />
+                        </div>
                       </div>
-                      <div className="mt-2 grid grid-cols-2 gap-2">
-                        <Stepper
-                          label="משקל בפועל"
-                          value={s.weight}
-                          step={2.5}
-                          suffix="ק״ג"
-                          onChange={(v) => patchSet(ei, si, { weight: v })}
-                        />
-                        <Stepper
-                          label="חזרות בפועל"
-                          value={s.reps}
-                          min={0}
-                          onChange={(v) => patchSet(ei, si, { reps: v })}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="mt-3 flex gap-2">
@@ -685,7 +715,7 @@ function Session() {
             <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
             <div className="flex items-center justify-between">
               <h2 className="font-display text-[18px] font-bold text-ink">
-                תרגיל חלופי מורשה למתאמן
+                {approvedIds?.length ? "תרגיל חלופי מאושר" : "חלופות מתאימות"}
               </h2>
               <IconButton aria-label="סגור" onClick={() => setReplacingIndex(null)} variant="ghost">
                 <X className="h-5 w-5" />
@@ -693,6 +723,11 @@ function Session() {
             </div>
 
             <div className="mt-4 space-y-2 pb-6">
+              {!approvedIds?.length ? (
+                <p className="rounded-xl bg-amber-50 px-3 py-2 text-[11.5px] leading-relaxed text-amber-900">
+                  לא הוגדרו חלופות מאושרות. מוצגות הצעות מאותה קבוצת שרירים, עם עדיפות לציוד דומה.
+                </p>
+              ) : null}
               {allowedExercisesForReplace.length > 0 ? (
                 allowedExercisesForReplace.map((ex) => (
                   <button
@@ -714,11 +749,8 @@ function Session() {
                 ))
               ) : (
                 <div className="p-6 text-center text-xs text-muted-foreground space-y-1">
-                  <p className="font-bold text-ink">אין תחליפים מורשים מוגדרים</p>
-                  <p>
-                    המאמן לא הגדיר תרגילים חלופיים מורשים עבור תרגיל זה. פני למאמן להוספת תחליפים
-                    מורשים.
-                  </p>
+                  <p className="font-bold text-ink">לא נמצאו חלופות מתאימות</p>
+                  <p>אין תרגיל מאושר או מאותה קבוצת שרירים בספרייה עבור תרגיל זה.</p>
                 </div>
               )}
             </div>

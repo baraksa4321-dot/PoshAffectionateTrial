@@ -478,38 +478,15 @@ function CoachDashboardPage() {
           </div>
         </div>
 
-        {/* Coach "Needs Attention" Panel */}
-        <div className="surface-card p-4 rounded-3xl bg-amber-50/70 border border-amber-200/80 space-y-2 text-start">
-          <div className="flex items-center justify-between">
-            <h4 className="font-bold text-xs text-amber-950 flex items-center gap-1.5">
-              <Shield className="h-4 w-4 text-amber-700" /> דורש תשומת לב (Needs Attention)
-            </h4>
-            <span className="text-[10px] font-bold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full">
-              2 התראות פעילות
-            </span>
-          </div>
-          <div className="space-y-1.5 text-xs">
-            <div className="rounded-xl bg-white p-2.5 border border-amber-200/60 flex items-center justify-between">
-              <div>
-                <span className="font-bold text-ink">נועה שחר:</span>
-                <span className="text-muted-foreground mr-1">
-                  דיווחה אי-נוחות בכתף בסט האחרון של הלחיצה
-                </span>
-              </div>
-              <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md">
-                כאב/אי נוחות
-              </span>
-            </div>
-            <div className="rounded-xl bg-white p-2.5 border border-amber-200/60 flex items-center justify-between">
-              <div>
-                <span className="font-bold text-ink">דניאל לוי:</span>
-                <span className="text-muted-foreground mr-1">
-                  עדכן שקילה שבועית חדשה (+0.8 ק"ג)
-                </span>
-              </div>
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                שקילה שבועית
-              </span>
+        <div className="surface-card rounded-3xl border border-primary/15 bg-primary/5 p-4 text-start">
+          <div className="flex items-start gap-2.5">
+            <Shield className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div>
+              <h4 className="text-xs font-bold text-ink">מעקב מתאמנים</h4>
+              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                בחרי מתאמן מהרשימה כדי לצפות בנתונים שהגישה אליהם מורשית, לעדכן תוכנית, להגדיר יעדים
+                ולשלוח הודעה. התראות אינן מוצגות כאן ללא נתונים אמיתיים מהחשבון.
+              </p>
             </div>
           </div>
         </div>

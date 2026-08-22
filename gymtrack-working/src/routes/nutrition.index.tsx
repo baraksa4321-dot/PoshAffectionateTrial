@@ -39,6 +39,7 @@ import {
   removeMealFood,
   renameMeal,
   saveNutritionTargets,
+  saveNutritionWater,
   todayKey,
   updateMealFood,
   useGym,
@@ -88,6 +89,7 @@ function NutritionLog() {
   const [showWhatToEat, setShowWhatToEat] = useState(false);
   const [showShoppingList, setShowShoppingList] = useState(false);
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+  const [suggestionMealId, setSuggestionMealId] = useState<string>("");
 
   const day = nutritionDay(gym, date);
   const totals = dayTotals(day);
@@ -236,7 +238,10 @@ function NutritionLog() {
       {/* Quick Action Tools: "What should I eat now?" & "Shopping List" */}
       <div className="grid grid-cols-2 gap-2 mt-3">
         <button
-          onClick={() => setShowWhatToEat(true)}
+          onClick={() => {
+            setSuggestionMealId(day.meals[0]?.id ?? "");
+            setShowWhatToEat(true);
+          }}
           className="surface-card p-3 rounded-2xl border border-primary/20 bg-primary/5 flex items-center gap-2 text-primary font-bold text-xs cursor-pointer hover:bg-primary/10 transition-colors"
         >
           <Sparkles className="h-4 w-4 shrink-0" />
@@ -281,6 +286,30 @@ function NutritionLog() {
           <MacroPill label="פחמימה" value={totals.carbs} target={targets.carbs} unit="g" />
           <MacroPill label="שומן" value={totals.fat} target={targets.fat} unit="g" />
           <MacroPill label="סיבים" value={totals.fiber} target={targets.fiber || 25} unit="g" />
+        </div>
+      </div>
+
+      <div className="surface-card mt-3 flex items-center gap-3 p-3.5 text-start">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-sky-50 text-sky-700">
+          <span className="text-lg">💧</span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
+            מים היום
+          </p>
+          <p className="mt-0.5 text-[13px] font-semibold tabular-nums text-ink">
+            {Math.round(day.waterMl ?? 0)} / {Math.round(day.waterTargetMl ?? 2500)} מ״ל
+          </p>
+        </div>
+        <div className="w-28">
+          <Stepper
+            label="כמות מים"
+            value={day.waterMl ?? 0}
+            step={250}
+            min={0}
+            suffix="מ״ל"
+            onChange={(value) => saveNutritionWater(date, value, day.waterTargetMl ?? 2500)}
+          />
         </div>
       </div>
 
@@ -344,8 +373,11 @@ function NutritionLog() {
                               {food.name}
                             </p>
                             <p className="mt-0.5 text-[11.5px] text-muted-foreground">
-                              {food.servingSize} · {Math.round(food.calories * food.quantity)}{" "}
-                              קלוריות
+                              {food.servingSize} · {Math.round(food.calories * food.quantity)} קל׳ ·{" "}
+                              {Math.round(food.protein * food.quantity)}ח׳ ·{" "}
+                              {Math.round(food.carbs * food.quantity)}פ׳ ·{" "}
+                              {Math.round(food.fat * food.quantity)}ש׳ · סיבים{" "}
+                              {Math.round((food.fiber ?? 0) * food.quantity)}ג׳
                             </p>
                           </div>
                           <button
@@ -440,11 +472,34 @@ function NutritionLog() {
             </div>
 
             <p className="text-xs font-bold text-muted-foreground">הצעות מובילות מהספרייה:</p>
+            {day.meals.length > 0 ? (
+              <label className="block text-[11.5px] font-semibold text-muted-foreground">
+                הוספה לארוחה
+                <select
+                  value={suggestionMealId}
+                  onChange={(event) => setSuggestionMealId(event.target.value)}
+                  className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2 text-[13px] text-ink outline-none focus:border-primary"
+                >
+                  {day.meals.map((meal) => (
+                    <option key={meal.id} value={meal.id}>
+                      {meal.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <div className="space-y-1.5 max-h-60 overflow-y-auto">
               {suggestedFoods.map(({ food }) => (
-                <div
+                <button
                   key={food.id}
-                  className="p-2.5 rounded-xl border border-border/60 bg-secondary/40 flex items-center justify-between text-xs"
+                  type="button"
+                  disabled={!suggestionMealId}
+                  onClick={() => {
+                    if (!suggestionMealId) return;
+                    addFoodToMeal(date, suggestionMealId, mealFoodFromLibrary(food));
+                    setShowWhatToEat(false);
+                  }}
+                  className="w-full p-2.5 rounded-xl border border-border/60 bg-secondary/40 flex items-center justify-between gap-2 text-start text-xs hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <div>
                     <p className="font-bold text-ink">{food.name}</p>
@@ -452,7 +507,10 @@ function NutritionLog() {
                       {food.servingSize} · {food.calories} קל' · {food.protein}g חלבון
                     </p>
                   </div>
-                </div>
+                  <span className="shrink-0 rounded-lg bg-primary/10 px-2 py-1 font-bold text-primary">
+                    הוספה
+                  </span>
+                </button>
               ))}
             </div>
           </div>
@@ -627,8 +685,9 @@ function NutritionLog() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[14px] font-semibold text-ink">{item.food.name}</p>
                     <p className="text-[11.5px] text-muted-foreground">
-                      {item.food.calories} קלוריות · חלבון {item.food.protein}g · סיבים{" "}
-                      {item.food.fiber || 0}g
+                      {item.calculatedCalories} קל׳ · חלבון {item.calculatedProtein}ג׳ · פחמימות{" "}
+                      {item.calculatedCarbs}ג׳ · שומן {item.calculatedFat}ג׳ · סיבים{" "}
+                      {item.calculatedFiber}ג׳
                     </p>
                   </div>
                   <span className="num-pill shrink-0 px-2.5 py-1 text-[11px] font-medium text-ink-soft">
@@ -680,6 +739,11 @@ function NutritionLog() {
                 label="שומן (g)"
                 value={targetsDraft.fat}
                 onChange={(v) => setTargetsDraft({ ...targetsDraft, fat: v })}
+              />
+              <TargetField
+                label="סיבים (g)"
+                value={targetsDraft.fiber}
+                onChange={(v) => setTargetsDraft({ ...targetsDraft, fiber: v })}
               />
             </div>
             <div className="mt-4 flex gap-2">
