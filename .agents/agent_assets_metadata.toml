@@ -56,3 +56,17 @@ mtime_ms = 1787383607122
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/048e081b-a211-43ec-8b60-969f36a95bd2/04154772-b1a6-43b5-9a69-6377b6f32475"
 storage_version_token = "1787383612383983"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "CR8ROf8TO3XNVgZjXP_ch"
+uri = "file://attached_assets/GymTrack-Final-Live-Audit-v2.zip"
+type = "unspecified"
+title = "GymTrack Final Live Audit v2"
+description = "Latest GymTrack source and migrations with corrected nutrition water_ml handling, password recovery, security hardening, refreshed audit report, and sanitized configuration."
+logical_id = "4b5e0533-0287-4d33-9656-19fb13d6e66e"
+content_hash = "sha256:9e8184c757f51bc5cb76c03cefe13cea0109f1810bd2309081fd50e780169d6a"
+size = 349709
+mtime_ms = 1787384071673
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/4b5e0533-0287-4d33-9656-19fb13d6e66e/c36206f2-8b30-4b05-86af-a6be28289756"
+storage_version_token = "1787384077613963"
+content_type = "application/octet-stream"
