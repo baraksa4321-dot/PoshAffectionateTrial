@@ -297,6 +297,9 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
 
   try {
     // 1. Profile
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("*")
@@ -304,7 +307,30 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .maybeSingle();
     if (profileError) throw new Error(`Profile pull failed: ${profileError.message}`);
 
-    if (!profile) throw new Error("Profile pull failed: authenticated user has no profile");
+    if (!profile) {
+      const { data: createdProfile, error: createProfileError } = await supabase
+        .from("profiles")
+        .upsert(
+          {
+            id: userId,
+            email: authUser?.email,
+            weight_kg: 65,
+            height_cm: 165,
+            today_routine_enabled: true,
+          },
+          { onConflict: "id" },
+        )
+        .select("*")
+        .single();
+      if (createProfileError || !createdProfile) {
+        throw new Error(
+          `Profile pull failed: could not create profile${
+            createProfileError?.message ? ` — ${createProfileError.message}` : ""
+          }`,
+        );
+      }
+      profile = createdProfile;
+    }
     if (profile.role !== "owner" && profile.role !== "coach" && profile.role !== "client") {
       throw new Error("Profile pull failed: authenticated user has an invalid role");
     }
@@ -312,15 +338,20 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       ...nextData.userProfile,
       weight: profile.weight_kg ? Number(profile.weight_kg) : (nextData.userProfile?.weight ?? 65),
       height: profile.height_cm ? Number(profile.height_cm) : nextData.userProfile?.height,
+      gender:
+        profile.gender === "male" || profile.gender === "female"
+          ? profile.gender
+          : nextData.userProfile?.gender,
       role: profile.role as UserRole,
       coachId: profile.coach_id || undefined,
       todayRoutineEnabled: profile.today_routine_enabled ?? true,
     };
 
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
     const authTheme = authUser?.user_metadata?.theme;
+    const authGender = authUser?.user_metadata?.gender;
+    if (authGender === "male" || authGender === "female") {
+      nextData.userProfile = { ...(nextData.userProfile ?? { weight: 65 }), gender: authGender };
+    }
     if (
       authTheme === "pink" ||
       authTheme === "blue" ||

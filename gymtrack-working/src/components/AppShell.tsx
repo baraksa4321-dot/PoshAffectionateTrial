@@ -134,6 +134,7 @@ export function AppShell({
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [gender, setGender] = useState<"female" | "male">("female");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -154,7 +155,7 @@ export function AppShell({
           password,
           options: {
             emailRedirectTo: redirectTo,
-            data: { theme },
+            data: { theme, gender },
           },
         });
         if (error) throw error;
@@ -178,7 +179,7 @@ export function AppShell({
           throw error;
         }
       }
-      const { error: themeSaveError } = await supabase.auth.updateUser({ data: { theme } });
+      const { error: themeSaveError } = await supabase.auth.updateUser({ data: { theme, gender } });
       if (themeSaveError) throw themeSaveError;
       setShowAuthModal(false);
       setEmail("");
@@ -496,6 +497,41 @@ export function AppShell({
                     dir="ltr"
                   />
                 </div>
+
+                {isSignUp ? (
+                  <fieldset>
+                    <legend className="block text-[12px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
+                      איך לפנות אלייך/אליך?
+                    </legend>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(
+                        [
+                          ["female", "אישה"],
+                          ["male", "גבר"],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <label
+                          key={value}
+                          className={`cursor-pointer rounded-xl border px-3 py-2.5 text-center text-sm font-semibold transition-colors ${
+                            gender === value
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border bg-background text-muted-foreground"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="gender"
+                            value={value}
+                            checked={gender === value}
+                            onChange={() => setGender(value)}
+                            className="sr-only"
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                ) : null}
 
                 <button
                   type="submit"

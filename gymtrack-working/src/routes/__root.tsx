@@ -100,6 +100,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-title", content: "My Routine" },
       { property: "og:type", content: "website" },
       { property: "og:title", content: "My Routine — אימונים ותזונה" },
+      { property: "og:site_name", content: "My Routine" },
+      {
+        property: "og:description",
+        content: "האימונים, התזונה והשגרה שלך במקום אחד.",
+      },
+      { property: "og:image", content: "/favicon.ico" },
+      { property: "og:image:alt", content: "הלוגו של My Routine" },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "My Routine — אימונים ותזונה" },
+      { name: "twitter:image", content: "/favicon.ico" },
     ],
     links: [
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
@@ -173,9 +183,12 @@ function RootComponent() {
           dir="rtl"
         >
           <div className="rounded-3xl border border-border/60 bg-white px-6 py-5 text-center shadow-sm">
-            <p className="text-sm font-semibold text-foreground">
-              {isProfileHydrating ? "טוענת את הרשאות החשבון..." : "בודקת את החיבור המאובטח..."}
-            </p>
+            <div
+              className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary"
+              aria-label="טוען"
+              role="status"
+            />
+            <p className="mt-3 text-sm font-semibold text-foreground">טוען את האתר...</p>
           </div>
         </div>
       ) : hasProfileHydrationError ? (
