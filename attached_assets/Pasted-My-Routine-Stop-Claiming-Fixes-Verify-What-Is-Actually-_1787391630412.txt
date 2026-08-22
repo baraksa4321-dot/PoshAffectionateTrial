@@ -1,0 +1,673 @@
+My Routine — Stop Claiming Fixes, Verify What Is Actually Possible
+
+אני רוצה שנפסיק את המעגל שבו אתה מדווח שדברים “תוקנו”, אבל בפועל אני נכנסת לאפליקציה ועדיין רואה את אותה בעיה.
+
+המטרה עכשיו היא לא עוד דוח יפה — אלא להבין פיזית מה עובד, מה לא עובד, מה אתה יכול לבדוק בעצמך, ומה אתה צריך ממני כדי לבדוק את מה שאתה לא יכול לבדוק.
+
+1. קודם כל — אל תטען שדבר תוקן אם לא ניתן לראות אותו בפועל
+
+עבור כל בעיה:
+
+* אם בדקת אותה בפועל בדפדפן — כתוב VERIFIED.
+* אם רק בדקת קוד — כתוב CODE VERIFIED.
+* אם אין לך אפשרות לבדוק — כתוב NOT VERIFIED.
+* אם אתה צריך ממני פעולה כדי לבדוק אותה — כתוב בדיוק מה אני צריכה לעשות.
+
+אל תכתוב “Fixed” רק בגלל שהקוד נראה נכון.
+
+⸻
+
+2. Maya / Owner — קריטי
+
+כרגע:
+
+mayayosfan234@gmail.com
+
+מופיעה כ־Client במקום Owner.
+
+אני לא רוצה שתשנה לה את התפקיד באופן עיוור.
+
+אני רוצה שתבדוק האם אתה יכול בפועל לגשת ל־Supabase ולראות:
+
+* Auth user ID
+* profiles.role
+* is_owner()
+* change_user_role()
+* coach assignment
+* מה ה־frontend מקבל לאחר login
+
+אם אין לך גישה ל־Supabase החי:
+
+אל תנסה לנחש.
+
+במקום זה תגיד לי בדיוק:
+
+1. מה אני צריכה לפתוח.
+2. איפה אני צריכה ללחוץ.
+3. איזה ערך אני צריכה לצלם/להעתיק לך.
+4. איזה SQL או בדיקה read-only אני צריכה לבצע, אם נדרש.
+5. מה אתה צריך ממני כדי לזהות למה החשבון מופיע כ־Client.
+
+אין לשנות Role אוטומטית.
+
+אין hardcode לפי email.
+
+⸻
+
+3. Food + Meals
+
+עדיין יש בעיות במערכת התזונה.
+
+אני צריכה שתבדוק את כל הזרימה:
+
+Meal → + → Food Picker → Food → Quantity → Add → Meal
+
+בפועל.
+
+אם אין לך אפשרות לבצע את זה כי אין session:
+
+תגיד לי בדיוק איך אני יכולה לבצע את הבדיקה בעצמי.
+
+בנוסף:
+
+* Breakfast
+* Lunch
+* Dinner
+* Snack
+
+כולם צריכים לאפשר הוספת מזון.
+
+צריך להיות אפשר:
+
+* Add food
+* Replace food
+* Change quantity
+* Remove food
+* לראות Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+
+אין Water UI.
+
+⸻
+
+4. Food Database
+
+עדיין מופיעים בערך 488 מזונות.
+
+זה לא מספיק.
+
+אני רוצה שתבדוק:
+
+* כמה foods באמת קיימים.
+* כמה מהם built-in.
+* כמה custom.
+* האם יש duplicates.
+* האם הנתונים אמיתיים.
+* האם חסרים קטגוריות ומזונות.
+
+ובעיקר:
+
+מקור הערכים התזונתיים
+
+אני רוצה שהמאגר יורחב באמצעות מקור תזונתי אמין/אתר תזונה מתאים, ולא באמצעות המצאת ערכים.
+
+לכל מזון צריך להיות:
+
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+
+והערכים צריכים להתאים למקור הנתונים.
+
+אם אתה לא יכול לגשת למקור החיצוני או להוריד ממנו נתונים בצורה אמינה:
+
+תגיד לי בדיוק מה אתה צריך ממני.
+
+אל תייצר מאות מזונות עם ערכים מומצאים רק כדי להגיע למספר גדול יותר.
+
+⸻
+
+5. Nutrition — UX
+
+אני רוצה שהמערכת תרגיש כמו מערכת תזונה אמיתית ולא כמו רשימת נתונים.
+
+צריך להיות ברור:
+
+* איזה Meal אני עורכת.
+* איזה מזון הוספתי.
+* כמה אכלתי.
+* כמה קלוריות קיבלתי.
+* כמה חלבון.
+* כמה פחמימות.
+* כמה שומן.
+* כמה סיבים.
+
+צריך להיות:
+
+* Daily totals
+* Meal totals
+* Food details
+* Quantity editing
+* Search
+* Categories
+* Favorites
+* Custom foods
+
+⸻
+
+6. Exercise Picker — עדיין נפתח למטה
+
+הבעיה עדיין קיימת.
+
+אני נכנסת ובוחרת תרגיל, והחלון/כרטיסיה עדיין נפתחים למטה במקום להופיע מעל התוכן.
+
+אל תסתפק בבדיקת הקוד.
+
+אם אין לך browser interaction אמיתי:
+
+תגיד לי זאת.
+
+אני רוצה שתבדוק את כל המסלולים:
+
+* Choose Exercise
+* Replace Exercise
+* Exercise Details
+* Program Exercise Picker
+* Workout Exercise Picker
+
+צריך:
+
+* Portal
+* overlay
+* מעל התוכן
+* viewport-safe
+* internal scrolling
+* X
+* Escape
+* outside click
+* reopen
+* mobile
+* RTL
+
+אם אחד מהם עדיין נפתח למטה — הוא לא נחשב Fixed.
+
+⸻
+
+7. Workout Exercise Card
+
+התרגיל צריך להיראות כך:
+
+Exercise Name
+
+לידו:
+
+Replace
+
+עם אפשרויות חלופיות מתאימות:
+
+* Machine
+* Cable
+* Dumbbell
+* Barbell
+* Bodyweight
+
+ואז:
+
+Rest 90 sec
+
+ואז הערכים המתוכננים:
+
+60 kg · 8–12 reps
+
+ואז:
+
+Set 1 ✓
+
+ומתחת/ליד:
+
+Actual weight
+Actual reps
+
+ה־Actual values צריכים להיות קטנים וקומפקטיים יותר מה־planned values.
+
+⸻
+
+8. Rep Range
+
+אני רוצה טווח אמיתי.
+
+לדוגמה:
+
+8–12 reps
+
+לא:
+
+8 reps
+
+ולא:
+
+12 reps
+
+צריך להיות:
+
+* repType
+* repMin
+* repMax
+
+וצריך להוכיח שהערך שורד:
+
+Save → Refresh
+
+ואם יש session:
+
+Save → Logout → Login.
+
+אם אין אפשרות לבצע את הבדיקה — כתוב לי בדיוק איך לבצע אותה.
+
+⸻
+
+9. Client Restrictions
+
+Client לא אמור להיות מסוגל להוסיף לעצמו:
+
+* Drop Set
+* Superset
+
+לא מספיק להסתיר כפתור.
+
+צריך לוודא שגם state/action guard לא מאפשר את הפעולה.
+
+בדוק:
+
+* UI
+* route
+* state action
+* direct URL
+* כל entry point אחר
+
+Coach/Owner יכולים להשתמש בפונקציונליות בהתאם למודל הקיים.
+
+⸻
+
+10. Exercise Library
+
+עדיין לא מספיק שיהיו רק מעט תרגילים.
+
+אני רוצה מאגר משמעותי עבור:
+
+* Chest
+* Back
+* Shoulders
+* Biceps
+* Triceps
+* Quads
+* Hamstrings
+* Glutes
+* Calves
+* Core
+* Forearms
+* Traps
+* Lower Back
+
+עם:
+
+* Barbell
+* Dumbbell
+* Cable
+* Machine
+* Bodyweight
+
+בלי duplicates.
+
+בלי records מומצאים שמוצגים כאילו הם authoritative.
+
+⸻
+
+11. Owner / Coach / Client
+
+אני רוצה באמת שלושה מוצרים שונים:
+
+Owner
+
+Owner App נפרד עם:
+
+* Dashboard
+* Coaches
+* Clients
+* Search
+* Profiles
+* Assign Coach
+* Change Role
+* Programs
+* Workouts
+* History
+* Measurements
+* Nutrition
+* Feedback
+* Messages
+* Management
+
+Coach
+
+Coach App עם:
+
+* Clients
+* Programs
+* Workouts
+* Nutrition
+* Measurements
+* Feedback
+* Messages
+* Recipes
+* Custom exercises
+* Custom foods
+* Progress
+
+Client
+
+Client App רגיל עם:
+
+* Home
+* Workout
+* Program
+* Nutrition
+* Progress
+* Measurements
+* History
+* Messages
+* Profile
+* Settings
+
+Client לא צריך לראות Owner tools.
+
+⸻
+
+12. Persistence
+
+אני רוצה תשובה אמיתית על השאלה:
+
+האם הדברים שאני כותבת עבור מתאמנים באמת נשמרים?
+
+צריך לבדוק:
+
+Profile
+Program
+Workout
+Nutrition
+Measurements
+Messages
+Feedback
+Recipes
+Favorites
+Custom foods
+Custom exercises
+History
+
+עבור כל אחד כתוב:
+
+VERIFIED
+
+או:
+
+CODE VERIFIED
+
+או:
+
+NOT VERIFIED
+
+ואם NOT VERIFIED — כתוב לי בדיוק מה אני צריכה לעשות כדי שנוכל לבדוק אותו.
+
+⸻
+
+13. Theme System
+
+מערכת הצבעים צריכה לעבוד בכל האפליקציה, לא רק במסך Login.
+
+המשתמש צריך לבחור פלטה כגון:
+
+* Pink
+* Blue
+* Beige
+* Green
+* Yellow
+* Black
+
+ועוד פלטות פסטל יפות.
+
+הבחירה צריכה להשפיע על:
+
+* Background
+* Cards
+* Buttons
+* Navigation
+* Inputs
+* Sheets
+* Dialogs
+* Dashboard
+* Nutrition
+* Workout
+* Profile
+* Owner
+* Coach
+* Client
+
+כל המערכת צריכה להרגיש כאילו היא משתמשת באותה פלטה.
+
+לא רק Login.
+
+הבחירה צריכה להישמר גם לאחר:
+
+Refresh
+
+Logout → Login
+
+אם אין לך דרך לבדוק persistence אמיתי, תגיד לי.
+
+⸻
+
+14. עיצוב
+
+אני לא רוצה שהאפליקציה תיראה כמו UI גנרי שנבנה על ידי AI.
+
+אני רוצה:
+
+* Modern
+* Clean
+* Premium
+* Minimal
+* Fitness-app feel
+* פחות עיגולים מיותרים
+* פחות cards בכל מקום
+* היררכיה ברורה
+* spacing טוב
+* typography טובה
+* buttons עם purpose ברור
+* פחות עומס ויזואלי
+
+אפשר לקחת השראה מאפליקציות fitness/nutrition מודרניות, אבל לא להעתיק עיצוב.
+
+כל כפתור צריך להיות שם מסיבה.
+
+⸻
+
+15. כפתורים
+
+יש עדיין כפתורים שלא עובדים.
+
+אני רוצה audit של:
+
+* Add
+* ●	
+* Save
+* Edit
+* Delete
+* Replace
+* Confirm
+* Cancel
+* Back
+* Search
+* Filters
+* Favorites
+* Navigation
+* Profile actions
+* Meal actions
+* Workout actions
+
+אם כפתור קיים אבל אין לו פעולה אמיתית:
+
+או לממש אותו,
+
+או להסיר אותו.
+
+לא להשאיר כפתורי placeholder.
+
+⸻
+
+16. Cardio
+
+מערכת אירובי צריכה להיות זמינה לכולם, כולל Client.
+
+המשתמש יכול:
+
+* Add Cardio Workout
+* לבחור פעילות
+* להכניס Duration
+* לקבל Estimated Calories Burned
+* Save
+* לראות History
+
+סוגי פעילות:
+
+* Walking
+* Running
+* Treadmill
+* Cycling
+* Stationary Bike
+* Elliptical
+* Stair Climber
+* Swimming
+* Tennis
+* Basketball
+* Football
+* Hiking
+* Rowing
+* Jump Rope
+* HIIT
+* Aerobics
+* ועוד.
+
+הקלוריות צריכות להיות חישוב מבוסס לפי פעילות + זמן + משקל + עצימות כאשר הנתונים קיימים.
+
+לא מספר אקראי.
+
+⸻
+
+17. שם המוצר
+
+שם המוצר למשתמש הוא:
+
+My Routine
+
+לא GymTrack.
+
+בדוק:
+
+* Login
+* Navigation
+* Dashboard
+* Titles
+* Browser title
+* Metadata
+* Loading
+* Empty states
+* Messages
+* Branding
+
+אין צורך לשנות שמות טבלאות או routes רק בגלל שינוי השם.
+
+⸻
+
+18. הכי חשוב — תדריך אותי במקום לנחש
+
+אם אתה נתקל במשהו שאתה לא יכול לבדוק בעצמך, אל תגיד רק:
+
+NOT VERIFIED
+
+אני רוצה:
+
+NOT VERIFIED — אני צריך ממך X.
+
+לדוגמה:
+
+אני לא יכול לבדוק את profiles.role של mayayosfan234@gmail.com כי אין לי Supabase live connection. כדי לבדוק את זה, תפתחי Supabase → Table Editor → profiles → מצאי את המשתמש → שלחי לי את הערך של role.
+
+או:
+
+אני לא יכול לבצע Login אינטראקטיבי ב־Preview. כדי לבדוק persistence, התחברי כ־Client, בצעי X, ואז שלחי לי Y.
+
+המטרה היא שאנחנו נעבוד יחד ולא שנקבל עוד דוח שבו חצי מהדברים “CODE VERIFIED” אבל בפועל עדיין שבורים.
+
+⸻
+
+19. Final Audit
+
+בסיום אני רוצה דוח מסודר בטבלה/סעיפים:
+
+FIXED
+
+מה באמת תוקן.
+
+VERIFIED
+
+מה נבדק בפועל בדפדפן.
+
+CODE VERIFIED
+
+מה אומת בקוד בלבד.
+
+NOT VERIFIED
+
+מה לא ניתן לבדוק.
+
+WHAT YOU NEED FROM ME
+
+בדיוק מה אתה צריך ממני עבור כל בדיקה חסרה.
+
+DATABASE
+
+מה השתנה, או:
+
+No database changes.
+
+SECURITY
+
+מה נבדק ומה לא ניתן לבדוק.
+
+PERSISTENCE
+
+מה הוכח ששורד Refresh / Logout → Login.
+
+STILL BROKEN
+
+רשימה של דברים שעדיין לא עובדים.
+
+REMAINING WORK
+
+רשימה של דברים שעדיין צריך לבצע.
+
+NEXT TEST
+
+תן לי בדיקה אחת בלבד שאני צריכה לבצע עכשיו.
+
+אל תכריז על Production Ready.
+
+אל תגיד “הכול תוקן” אם אין לך דרך להוכיח את זה.
+
+המטרה היא להגיע למצב שבו אני ואתה יודעים בדיוק:
+
+מה עובד, מה לא עובד, ומה צריך ממני כדי לסיים את מה שלא ניתן לבדוק מהצד שלך.
