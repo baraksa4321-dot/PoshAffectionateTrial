@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Navigate, createFileRoute } from "@tanstack/react-router";
 import {
   Apple,
   Award,
@@ -19,7 +19,7 @@ import {
   ArrowRightLeft,
   Activity,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "../components/AppShell";
 import { Overlay } from "../components/ui-app/Overlay";
 import { uid, useGym } from "../lib/gym-store";
@@ -53,7 +53,7 @@ export const Route = createFileRoute("/coach")({
 
 function CoachDashboardPage() {
   const store = useGym();
-  const role = store.userProfile?.role || "client";
+  const role = store.userProfile?.role;
   const isOwner = role === "owner";
   const isCoach = role === "coach" || isOwner;
 
@@ -63,9 +63,18 @@ function CoachDashboardPage() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [clientDetails, setClientDetails] = useState<ClientDetails | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [managementError, setManagementError] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMsg, setInviteMsg] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const applyClientDetails = useCallback((result: ClientDetails) => {
+    if (result.error) {
+      setClientDetails(null);
+      setManagementError(result.error);
+      return;
+    }
+    setClientDetails(result);
+  }, []);
 
   // Coach Message sender state
   const [coachMsgText, setCoachMsgText] = useState("");
@@ -95,31 +104,47 @@ function CoachDashboardPage() {
   const [calTarget, setCalTarget] = useState(2000);
   const [protTarget, setProtTarget] = useState(140);
 
-  const loadCoachClients = async () => {
+  const loadCoachClients = useCallback(async () => {
+    setManagementError("");
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setManagementError("לא ניתן לאמת את חשבון המאמן. נסי להתחבר מחדש.");
+      return;
+    }
 
-    const { data } = await supabase
+    let coachClientsQuery = supabase
       .from("coach_clients")
       .select(
         "id, client_id, created_at, profiles!coach_clients_client_id_fkey(email, full_name, weight_kg)",
-      )
-      .eq("coach_id", user.id);
+      );
+    if (!isOwner) {
+      coachClientsQuery = coachClientsQuery.eq("coach_id", user.id);
+    }
+    const { data, error } = await coachClientsQuery;
 
+    if (error) {
+      setManagementError(`טעינת המתאמנים נכשלה: ${error.message}`);
+      return;
+    }
     if (data) {
       setClients(data as unknown as CoachClientRow[]);
     }
-  };
+  }, [isOwner]);
 
-  const loadAllProfilesForOwner = async () => {
+  const loadAllProfilesForOwner = useCallback(async () => {
     if (!isOwner) return;
-    const { data } = await supabase.from("profiles").select("*");
+    setManagementError("");
+    const { data, error } = await supabase.from("profiles").select("*");
+    if (error) {
+      setManagementError(`טעינת משתמשי המערכת נכשלה: ${error.message}`);
+      return;
+    }
     if (data) {
       setAllProfiles(data as unknown as ProfileRow[]);
     }
-  };
+  }, [isOwner]);
 
   useEffect(() => {
     if (isCoach) {
@@ -128,7 +153,7 @@ function CoachDashboardPage() {
     if (isOwner) {
       loadAllProfilesForOwner();
     }
-  }, [isCoach, isOwner]);
+  }, [isCoach, isOwner, loadAllProfilesForOwner, loadCoachClients]);
 
   useEffect(() => {
     if (!selectedClientId) {
@@ -136,12 +161,18 @@ function CoachDashboardPage() {
       return;
     }
 
+    let active = true;
     setLoadingDetails(true);
+    setManagementError("");
     pullClientDataForCoach(selectedClientId).then((res) => {
-      setClientDetails(res);
+      if (!active) return;
+      applyClientDetails(res);
       setLoadingDetails(false);
     });
-  }, [selectedClientId]);
+    return () => {
+      active = false;
+    };
+  }, [applyClientDetails, selectedClientId]);
 
   // OWNER RPC: Promote or Demote Role
   const handleOwnerChangeRole = async (targetUserId: string, newRole: "coach" | "client") => {
@@ -250,7 +281,7 @@ function CoachDashboardPage() {
 
     if (!error) {
       setNewProgramName("");
-      pullClientDataForCoach(selectedClientId).then(setClientDetails);
+      pullClientDataForCoach(selectedClientId).then(applyClientDetails);
     }
   };
 
@@ -271,7 +302,7 @@ function CoachDashboardPage() {
 
     if (!error) {
       setNewDayName("");
-      pullClientDataForCoach(selectedClientId).then(setClientDetails);
+      pullClientDataForCoach(selectedClientId).then(applyClientDetails);
     }
   };
 
@@ -323,7 +354,7 @@ function CoachDashboardPage() {
       setSupersetGroup("");
       setDropSetEnabled(false);
       setApprovedAltIds([]);
-      pullClientDataForCoach(selectedClientId).then(setClientDetails);
+      pullClientDataForCoach(selectedClientId).then(applyClientDetails);
     }
   };
 
@@ -340,7 +371,7 @@ function CoachDashboardPage() {
       .eq("id", dayId);
 
     if (!error) {
-      pullClientDataForCoach(selectedClientId!).then(setClientDetails);
+      pullClientDataForCoach(selectedClientId!).then(applyClientDetails);
     }
   };
 
@@ -359,26 +390,25 @@ function CoachDashboardPage() {
 
     if (!error) {
       setEditingNutrition(false);
-      pullClientDataForCoach(selectedClientId).then(setClientDetails);
+      const refreshed = await pullClientDataForCoach(selectedClientId);
+      applyClientDetails(refreshed);
     }
   };
 
-  if (!isCoach) {
+  if (role === undefined) {
     return (
       <AppShell title="דשבורד מאמן" kicker="מאמנים וצוות מקצועי">
-        <div className="surface-card p-6 text-center space-y-4 rounded-3xl mt-4">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-            <Shield className="h-7 w-7" />
-          </div>
-          <h2 className="font-display text-xl font-bold text-ink">גישת מאמן מוגבלת</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            חשבונך מוגדר כחבר/מתאמן (Client). דשבורד זה מיועד למאמנים אישיים בלבד לניהול תוכניות
-            ותזונת מתאמנים.
+        <div className="surface-card mt-4 space-y-3 rounded-3xl p-6 text-center">
+          <h2 className="font-display text-xl font-bold text-ink">מאמתת הרשאות גישה...</h2>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            המסך ייפתח רק לאחר טעינת תפקיד החשבון המאומת.
           </p>
         </div>
       </AppShell>
     );
   }
+
+  if (!isCoach) return <Navigate to="/" replace />;
 
   const filteredClients = clients.filter((c) => {
     const emailStr = (c.profiles?.email || "").toLowerCase();
@@ -405,6 +435,14 @@ function CoachDashboardPage() {
       }
     >
       <div className="space-y-5 text-start">
+        {managementError ? (
+          <div
+            role="alert"
+            className="rounded-2xl border border-destructive/30 bg-destructive/10 p-3 text-sm font-semibold text-destructive"
+          >
+            טעינת נתוני הניהול נכשלה: {managementError}
+          </div>
+        ) : null}
         {/* Owner Management Section */}
         {isOwner && (
           <div className="surface-card p-5 rounded-3xl space-y-3 bg-purple-50/60 border border-purple-200">

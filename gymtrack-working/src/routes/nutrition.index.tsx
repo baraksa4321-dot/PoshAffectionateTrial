@@ -658,7 +658,18 @@ function NutritionLog() {
               })()
             ) : (
               <div className="space-y-2">
-                {filteredFoods.slice(0, 30).map((food) => (
+                <p
+                  className="px-1 text-[11.5px] font-semibold text-muted-foreground"
+                  aria-live="polite"
+                >
+                  נמצאו {filteredFoods.length} מאכלים
+                </p>
+                {filteredFoods.length === 0 ? (
+                  <p className="rounded-2xl border border-dashed border-border/70 p-4 text-center text-[13px] text-muted-foreground">
+                    לא נמצאו מאכלים מתאימים. נסי מונח אחר או קטגוריה אחרת.
+                  </p>
+                ) : null}
+                {filteredFoods.map((food) => (
                   <button
                     key={food.id}
                     type="button"

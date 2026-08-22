@@ -1,7 +1,7 @@
 kind = "web"
 previewPath = "/"
-title = "GymTrack"
-description = "Preview routing adapter for the existing GymTrack React and Vite application in gymtrack-working."
+title = "My Routine"
+description = "Preview routing adapter for the My Routine React and Vite application in gymtrack-working."
 version = "1.0.0"
 id = "artifacts/gymtrack-preview"
 router = "path"
@@ -15,9 +15,9 @@ localPort = 24878
 run = "cd ../../gymtrack-working && npm run dev -- --host 0.0.0.0 --port $PORT --strictPort"
 
 [services.production]
-build = [ "pnpm", "--filter", "@workspace/gymtrack-preview", "run", "build" ]
+build = [ "npm", "--prefix", "gymtrack-working", "run", "build" ]
 serve = "static"
-publicDir = "artifacts/gymtrack-preview/dist/public"
+publicDir = "gymtrack-working/.output/public"
 
 [[services.production.rewrites]]
 from = "/*"

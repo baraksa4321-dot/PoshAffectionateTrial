@@ -19,6 +19,16 @@ export type SyncStatus = "idle" | "syncing" | "synced" | "error" | "offline";
 export type PullResult =
   { success: true; data: GymData } | { success: false; data: GymData; error: string };
 
+export type CoachClientData = {
+  programs: Program[];
+  workouts: Workout[];
+  nutritionDays: NutritionDay[];
+  history: HistorySession[];
+  cardioLogs: CardioLog[];
+  profile?: UserProfile;
+  error?: string;
+};
+
 async function requireSuccessfulWrite(
   operation: PromiseLike<{ error: unknown }>,
   label: string,
@@ -324,14 +334,19 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       }));
     }
 
-    // 3. If Coach, fetch client links
-    if (nextData.userProfile?.role === "coach") {
-      const { data: clientLinks, error: clientLinksError } = await supabase
+    // 3. Coach sees only their links. Owner can hydrate all links under the
+    // existing owner policy; neither path infers a role from identity details.
+    const role = nextData.userProfile?.role;
+    if (role === "coach" || role === "owner") {
+      let clientLinksQuery = supabase
         .from("coach_clients")
         .select(
           "id, client_id, created_at, profiles!coach_clients_client_id_fkey(email, full_name)",
-        )
-        .eq("coach_id", userId);
+        );
+      if (role === "coach") {
+        clientLinksQuery = clientLinksQuery.eq("coach_id", userId);
+      }
+      const { data: clientLinks, error: clientLinksError } = await clientLinksQuery;
       if (clientLinksError)
         throw new Error(`Client links pull failed: ${clientLinksError.message}`);
 
@@ -542,47 +557,48 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
   }
 }
 
-export async function pullClientDataForCoach(clientId: string): Promise<{
-  programs: Program[];
-  workouts: Workout[];
-  nutritionDays: NutritionDay[];
-  history: HistorySession[];
-  cardioLogs: CardioLog[];
-  profile?: UserProfile;
-}> {
+export async function pullClientDataForCoach(clientId: string): Promise<CoachClientData> {
   try {
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", clientId)
       .maybeSingle();
+    if (profileError) throw new Error(`Client profile pull failed: ${profileError.message}`);
 
-    const { data: dbPrograms } = await supabase
+    const { data: dbPrograms, error: programsError } = await supabase
       .from("programs")
       .select("*")
       .eq("user_id", clientId);
+    if (programsError) throw new Error(`Client programs pull failed: ${programsError.message}`);
 
-    const { data: dbProgramDays } = await supabase
+    const { data: dbProgramDays, error: programDaysError } = await supabase
       .from("program_days")
       .select("*")
       .eq("user_id", clientId);
+    if (programDaysError)
+      throw new Error(`Client program days pull failed: ${programDaysError.message}`);
 
-    const { data: dbNutritionDays } = await supabase
+    const { data: dbNutritionDays, error: nutritionError } = await supabase
       .from("nutrition_days")
       .select("*")
       .eq("user_id", clientId);
+    if (nutritionError) throw new Error(`Client nutrition pull failed: ${nutritionError.message}`);
 
-    const { data: dbSessions } = await supabase
+    const { data: dbSessions, error: sessionsError } = await supabase
       .from("workout_sessions")
       .select("*")
       .eq("user_id", clientId)
       .order("date", { ascending: false });
+    if (sessionsError)
+      throw new Error(`Client workout history pull failed: ${sessionsError.message}`);
 
-    const { data: dbCardioLogs } = await supabase
+    const { data: dbCardioLogs, error: cardioError } = await supabase
       .from("cardio_logs")
       .select("*")
       .eq("user_id", clientId)
       .order("date", { ascending: false });
+    if (cardioError) throw new Error(`Client cardio pull failed: ${cardioError.message}`);
 
     const workoutsMap = new Map<string, Workout>();
     const programsList: Program[] = [];
@@ -655,8 +671,9 @@ export async function pullClientDataForCoach(clientId: string): Promise<{
           }
         : undefined,
     };
-  } catch (err) {
-    console.error("[Pull Client Data Error]:", err);
-    return { programs: [], workouts: [], nutritionDays: [], history: [], cardioLogs: [] };
+  } catch (err: unknown) {
+    const error = err instanceof Error && err.message ? err.message : "Client data pull failed";
+    console.error("[Pull Client Data Error]:", error);
+    return { programs: [], workouts: [], nutritionDays: [], history: [], cardioLogs: [], error };
   }
 }
