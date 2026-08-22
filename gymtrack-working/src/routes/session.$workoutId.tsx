@@ -33,7 +33,8 @@ import {
   SecondaryButton,
   SectionHeader,
 } from "@/components/ui-app/primitives";
-import { lastPerformance, repLabel, saveSession, uid, useGym } from "@/lib/gym-store";
+import { lastPerformance, repLabel, saveSession, saveWorkout, uid, useGym } from "@/lib/gym-store";
+import { BODYWEIGHT_EXERCISES, replaceWithBodyweight } from "@/lib/bodyweight-exercises";
 import type { Exercise, HistoryEntry, LoggedSet, WorkoutItem } from "@/lib/gym-types";
 
 export const Route = createFileRoute("/session/$workoutId")({
@@ -88,6 +89,7 @@ function Session() {
   const workout = workouts.find((w) => w.id === workoutId);
   const currentProgram = programs.find((program) => program.dayIds.includes(workoutId));
   const [cardExercise, setCardExercise] = useState<Exercise | null>(null);
+  const [bodyweightNotice, setBodyweightNotice] = useState("");
 
   const [isPaused, setIsPaused] = useState(false);
 
@@ -116,7 +118,7 @@ function Session() {
     }
 
     return workout.items.map((item) => {
-      const ex = exercises.find((e) => e.id === item.exerciseId);
+      const ex = [...exercises, ...BODYWEIGHT_EXERCISES].find((e) => e.id === item.exerciseId);
       const last = lastPerformance(history, item.exerciseId);
       const isRange = item.repType === "range";
 
@@ -182,6 +184,7 @@ function Session() {
   }, [isPaused, rest]);
 
   const labels = useMemo(() => supersetLabels(workout?.items ?? []), [workout?.items]);
+  const exerciseCatalog = useMemo(() => [...exercises, ...BODYWEIGHT_EXERCISES], [exercises]);
 
   const currentItem = replacingIndex !== null ? workout?.items[replacingIndex] : null;
   const approvedIds = currentItem?.approvedAlternatives;
@@ -189,9 +192,9 @@ function Session() {
     if (approvedIds && approvedIds.length > 0) {
       return exercises.filter((exercise) => approvedIds.includes(exercise.id));
     }
-    const currentExercise = exercises.find((exercise) => exercise.id === currentItem?.exerciseId);
+    const currentExercise = exerciseCatalog.find((exercise) => exercise.id === currentItem?.exerciseId);
     if (!currentExercise) return [];
-    return exercises
+    return exerciseCatalog
       .filter(
         (exercise) =>
           exercise.id !== currentExercise.id &&
@@ -204,7 +207,7 @@ function Session() {
           Number(b.equipment !== currentExercise.equipment),
       )
       .slice(0, 12);
-  }, [exercises, approvedIds, currentItem?.exerciseId]);
+  }, [exerciseCatalog, approvedIds, currentItem?.exerciseId]);
 
   if (!workout) {
     return (
@@ -344,7 +347,7 @@ function Session() {
           const item = workout.items[ei];
           const targetLabel = item ? repLabel(item) : String(entry.targetReps ?? "");
           const supersetLabel = labels[ei];
-          const fullExercise = exercises.find((e) => e.id === entry.exerciseId);
+          const fullExercise = exerciseCatalog.find((e) => e.id === entry.exerciseId);
           const workingCount = entry.sets.filter((s) => !s.warmup).length;
           const prescribedWeight = item?.targetWeight || item?.weight || 0;
 
