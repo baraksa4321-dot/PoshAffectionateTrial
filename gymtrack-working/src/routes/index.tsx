@@ -250,7 +250,7 @@ function Dashboard() {
     <AppShell title={formatHebrewDate(now)} subtitle="אימונים ותזונה">
       {/* Coach Message Banner */}
       {latestCoachMsg && (
-        <div className="surface-card p-4 rounded-3xl bg-linear-to-r from-primary/10 via-rose-50 to-primary/5 border border-primary/20 text-start space-y-1.5 shadow-xs">
+        <div className="surface-card space-y-1.5 border-primary/20 bg-primary/5 p-4 text-start">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5 font-bold text-xs text-primary">
               <MessageSquare className="h-4 w-4" /> הודעה מהמאמן שלך
@@ -266,15 +266,24 @@ function Dashboard() {
       )}
 
       {/* Consistency Banner */}
-      <div className="surface-card p-4 rounded-3xl bg-white border border-border/60 flex items-center justify-between text-start">
-        <div>
-          <div className="flex items-center gap-1.5 font-bold text-sm text-ink">
+      <div className="surface-card flex items-center justify-between gap-4 border-primary/20 bg-surface p-4 text-start">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 text-sm font-bold text-ink">
             <span>רצף אימונים שבועי</span>
-            <span className="text-xs text-primary">★</span>
+            <TrendingUp className="h-4 w-4 text-primary" aria-hidden="true" />
           </div>
-          <p className="text-xs text-muted-foreground">
-            מדד עקביות שבועי: <strong className="text-emerald-700">{consistencyScore}%</strong>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {thisWeek.length} מתוך {userProfile?.workoutsPerWeek || 4} אימונים השבוע
           </p>
+          <div className="progress-track mt-3" aria-label={`מדד עקביות ${consistencyScore}%`}>
+            <div className="progress-fill" style={{ width: `${consistencyScore}%` }} />
+          </div>
+        </div>
+        <div className="shrink-0 text-start">
+          <p className="font-display text-3xl font-extrabold leading-none tabular-nums text-primary">
+            {consistencyScore}%
+          </p>
+          <p className="mt-1 text-[10px] font-bold text-muted-foreground">עקביות</p>
         </div>
       </div>
 
@@ -282,7 +291,7 @@ function Dashboard() {
       {nextWorkout ? (
         <div className="ink-card p-5 text-start mt-4">
           <div className="flex items-center justify-between">
-            <span className="rounded-full bg-white/20 px-3 py-1 text-[11px] font-bold text-primary-foreground uppercase">
+            <span className="rounded-full bg-primary-foreground/15 px-3 py-1 text-[11px] font-bold text-primary-foreground">
               האימון הבא
             </span>
             <span className="text-[12px] text-primary-foreground/80 font-medium">
@@ -304,7 +313,7 @@ function Dashboard() {
                   params: { workoutId: nextWorkout.id },
                 })
               }
-              className="press inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-white px-4 text-[14px] font-bold text-ink shadow-sm cursor-pointer"
+              className="press inline-flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-background px-4 text-[14px] font-bold text-ink shadow-sm"
             >
               <Play className="h-4 w-4 fill-current text-primary" />
               התחל אימון עכשיו
@@ -315,7 +324,7 @@ function Dashboard() {
                 programId: nextProgram?.id ?? "p-default",
                 dayId: nextWorkout.id,
               }}
-              className="press grid h-11 w-11 place-items-center rounded-2xl bg-white/15 text-primary-foreground cursor-pointer"
+              className="press grid h-11 w-11 cursor-pointer place-items-center rounded-xl bg-primary-foreground/15 text-primary-foreground"
             >
               <ChevronLeft className="h-5 w-5" />
             </Link>
@@ -339,7 +348,8 @@ function Dashboard() {
       {/* Check-In Success Banner */}
       {checkInSuccessMsg && (
         <div className="surface-card p-3.5 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-start font-bold text-xs mt-3">
-          ✓ {checkInSuccessMsg}
+          <CheckCircle2 className="me-1 inline-block h-4 w-4 align-[-3px]" aria-hidden="true" />
+          {checkInSuccessMsg}
         </div>
       )}
 
@@ -373,7 +383,7 @@ function Dashboard() {
                 className={`surface-card p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between text-xs ${
                   isDone
                     ? "bg-emerald-50/50 border-emerald-200 line-through opacity-70"
-                    : "bg-white border-border/60 font-bold"
+                    : "bg-surface border-border/60 font-bold"
                 }`}
               >
                 <span>{label}</span>
@@ -394,7 +404,7 @@ function Dashboard() {
         <div className="grid grid-cols-2 gap-2.5">
           <div
             onClick={() => setShowWeighInModal(true)}
-            className="surface-card p-3.5 rounded-2xl border border-primary/20 bg-primary/5 space-y-1 cursor-pointer hover:bg-primary/10 transition-colors"
+            className="surface-card cursor-pointer space-y-1 border-primary/20 bg-primary/5 p-3.5 transition-colors hover:bg-primary/10"
           >
             <div className="flex items-center gap-1.5 font-bold text-xs text-primary">
               <Scale className="h-4 w-4" />
@@ -407,13 +417,13 @@ function Dashboard() {
 
           <div
             onClick={() => setShowMonthlyCheckInModal(true)}
-            className="surface-card p-3.5 rounded-2xl border border-purple-200 bg-purple-50/50 space-y-1 cursor-pointer hover:bg-purple-100/60 transition-colors"
+            className="surface-card cursor-pointer space-y-1 border-accent/60 bg-accent/25 p-3.5 transition-colors hover:bg-accent/40"
           >
-            <div className="flex items-center gap-1.5 font-bold text-xs text-purple-900">
-              <Award className="h-4 w-4 text-purple-700" />
+            <div className="flex items-center gap-1.5 text-xs font-bold text-accent-foreground">
+              <Award className="h-4 w-4 text-accent-foreground" />
               <span>צ'ק-אין חודשי</span>
             </div>
-            <p className="text-[11px] text-purple-800 pt-0.5">היקפים ודיווח התקדמות</p>
+            <p className="pt-0.5 text-[11px] text-accent-foreground">היקפים ודיווח התקדמות</p>
           </div>
         </div>
       </section>
@@ -528,25 +538,35 @@ function Dashboard() {
                 </span>
               </p>
             </div>
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/80 text-primary">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-surface/80 text-primary">
               <Utensils className="h-5 w-5" />
             </div>
           </div>
 
+          <div
+            className="progress-track mt-3 bg-primary/15"
+            aria-label={`צריכת קלוריות ${Math.round((totalsToday.calories / targetCals) * 100)}%`}
+          >
+            <div
+              className="progress-fill bg-primary"
+              style={{ width: `${Math.min(100, (totalsToday.calories / targetCals) * 100)}%` }}
+            />
+          </div>
+
           <div className="mt-3 grid grid-cols-3 gap-2">
-            <div className="rounded-xl bg-white/80 p-2.5 text-start">
+            <div className="rounded-xl bg-surface/80 p-2.5 text-start">
               <p className="text-[10px] font-bold text-muted-foreground uppercase">חלבון</p>
               <p className="font-display text-[15px] font-bold tabular-nums text-ink">
                 {Math.round(totalsToday.protein)}g
               </p>
             </div>
-            <div className="rounded-xl bg-white/80 p-2.5 text-start">
+            <div className="rounded-xl bg-surface/80 p-2.5 text-start">
               <p className="text-[10px] font-bold text-muted-foreground uppercase">פחמימות</p>
               <p className="font-display text-[15px] font-bold tabular-nums text-ink">
                 {Math.round(totalsToday.carbs)}g
               </p>
             </div>
-            <div className="rounded-xl bg-white/80 p-2.5 text-start">
+            <div className="rounded-xl bg-surface/80 p-2.5 text-start">
               <p className="text-[10px] font-bold text-muted-foreground uppercase">שומן</p>
               <p className="font-display text-[15px] font-bold tabular-nums text-ink">
                 {Math.round(totalsToday.fat)}g
@@ -564,7 +584,7 @@ function Dashboard() {
           ariaLabel="שקילה שבועית"
         >
           <div
-            className="w-full max-w-sm rounded-3xl border border-white/80 bg-white p-5 shadow-2xl space-y-3 text-start"
+            className="w-full max-w-sm space-y-3 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b pb-2">
@@ -573,9 +593,10 @@ function Dashboard() {
               </h3>
               <button
                 onClick={() => setShowWeighInModal(false)}
-                className="text-muted-foreground font-bold text-sm cursor-pointer"
+                aria-label="סגירת שקילה שבועית"
+                className="grid h-8 w-8 cursor-pointer place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-ink"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 
@@ -592,7 +613,7 @@ function Dashboard() {
 
             <button
               onClick={handleWeeklyWeighIn}
-              className="w-full rounded-2xl bg-primary py-2.5 text-xs font-bold text-white shadow-md cursor-pointer hover:bg-primary/90"
+              className="w-full cursor-pointer rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground shadow-md hover:bg-primary/90"
             >
               שמור שקילה שבועית
             </button>
@@ -745,18 +766,19 @@ function Dashboard() {
           ariaLabel="צ׳ק-אין חודשי"
         >
           <div
-            className="w-full max-w-sm rounded-3xl border border-white/80 bg-white p-5 shadow-2xl space-y-3 text-start"
+            className="w-full max-w-sm space-y-3 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="font-bold text-base text-purple-950 flex items-center gap-2">
-                <Award className="h-5 w-5 text-purple-700" /> צ'ק-אין חודשי למאמן
+              <h3 className="flex items-center gap-2 text-base font-bold text-ink">
+                <Award className="h-5 w-5 text-primary" /> צ'ק-אין חודשי למאמן
               </h3>
               <button
                 onClick={() => setShowMonthlyCheckInModal(false)}
-                className="text-muted-foreground font-bold text-sm cursor-pointer"
+                aria-label="סגירת צ׳ק-אין חודשי"
+                className="grid h-8 w-8 cursor-pointer place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-ink"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 
@@ -798,7 +820,7 @@ function Dashboard() {
 
             <button
               onClick={handleMonthlyCheckInSave}
-              className="w-full rounded-2xl bg-purple-700 py-2.5 text-xs font-bold text-white shadow-md cursor-pointer hover:bg-purple-800"
+              className="w-full cursor-pointer rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground shadow-md hover:bg-primary/90"
             >
               שלח צ'ק-אין חודשי למאמן
             </button>
@@ -815,7 +837,7 @@ function Dashboard() {
           ariaLabel="תיעוד היקפי גוף"
         >
           <div
-            className="w-full max-w-sm rounded-3xl border border-white/80 bg-white p-5 shadow-2xl space-y-3 text-start"
+            className="w-full max-w-sm space-y-3 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b pb-2">
@@ -824,9 +846,10 @@ function Dashboard() {
               </h3>
               <button
                 onClick={() => setShowMeasurementModal(false)}
-                className="text-muted-foreground font-bold text-sm cursor-pointer"
+                aria-label="סגירת תיעוד היקפים"
+                className="grid h-8 w-8 cursor-pointer place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-ink"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 
@@ -857,7 +880,7 @@ function Dashboard() {
 
             <button
               onClick={() => setShowMeasurementModal(false)}
-              className="w-full rounded-2xl bg-primary py-2.5 text-xs font-bold text-white shadow-md cursor-pointer"
+              className="w-full cursor-pointer rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground shadow-md hover:bg-primary/90"
             >
               שמור היקפים
             </button>

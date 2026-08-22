@@ -2,7 +2,7 @@ import { ChevronLeft } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-/** Flat card with sharp padding + crisp corners. */
+/** Primary content surface with a quiet lift and generous touch target. */
 export function Card({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={cn("surface-card px-4 py-4 text-foreground sm:px-5", className)} {...props}>
@@ -38,7 +38,7 @@ export function ListRow({
   const inner = (
     <div className="flex items-center gap-4">
       {leading ? (
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-secondary text-primary border border-border/50">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary border border-border/50">
           {leading}
         </div>
       ) : null}
@@ -112,7 +112,7 @@ export function Pill({
       onClick={onClick}
       data-active={active ? "true" : undefined}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-sm px-3 py-1 text-[12px] font-bold transition-all",
+        "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-bold transition-all",
         active ? "bg-primary text-primary-foreground border border-primary" : styles[variant],
         interactive &&
           "hover:bg-primary/10 hover:text-primary press active:scale-95 cursor-pointer",
@@ -142,7 +142,7 @@ export function IconButton({
     <button
       type="button"
       className={cn(
-        "grid h-10 w-10 shrink-0 place-items-center rounded-md transition-all active:scale-95 cursor-pointer",
+        "grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-all active:scale-95 cursor-pointer",
         styles[variant],
         className,
       )}
@@ -168,14 +168,12 @@ export function SectionHeader({
   return (
     <div
       className={cn(
-        "mb-4 flex items-end justify-between gap-4 border-b border-border/50 pb-2",
+        "mb-4 flex items-end justify-between gap-4 border-b border-border/50 pb-2.5",
         className,
       )}
     >
       <div className="min-w-0 text-start">
-        <h2 className="font-display text-[16px] font-bold tracking-tight text-ink uppercase">
-          {title}
-        </h2>
+        <h2 className="font-display text-[17px] font-extrabold tracking-tight text-ink">{title}</h2>
         {subtitle ? <p className="mt-1 text-[13px] text-muted-foreground">{subtitle}</p> : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
@@ -204,9 +202,17 @@ export function StatTile({
     ink: "text-ink",
   } as const;
   return (
-    <div className="surface-card flex flex-col gap-2 px-4 py-4 text-start border-t-2 border-t-primary/20">
+    <div
+      className={cn(
+        "surface-card flex min-h-[106px] flex-col gap-2 px-3.5 py-3.5 text-start",
+        tone === "sage" && "border-t-2 border-t-sage bg-sage-soft/40",
+        tone === "rose" && "border-t-2 border-t-rose bg-rose-soft/45",
+        tone === "cream" && "border-t-2 border-t-accent bg-cream/55",
+        tone === "ink" && "border-t-2 border-t-ink bg-surface",
+      )}
+    >
       <div className="flex items-center justify-between">
-        <p className="text-[12px] font-bold tracking-wide text-muted-foreground uppercase">
+        <p className="text-[11px] font-bold tracking-[0.08em] text-muted-foreground uppercase">
           {label}
         </p>
         {Icon ? <Icon className={cn("h-4 w-4", tones[tone])} strokeWidth={2} /> : null}
@@ -236,9 +242,9 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="mx-auto flex max-w-sm flex-col items-center px-6 py-12 text-center border border-dashed border-border/60 rounded-md bg-surface/50">
+    <div className="mx-auto flex max-w-sm flex-col items-center rounded-2xl border border-dashed border-border/60 bg-surface/50 px-6 py-12 text-center">
       {Icon ? (
-        <div className="grid h-12 w-12 place-items-center rounded-sm bg-secondary text-primary mb-4 border border-border/50">
+        <div className="mb-4 grid h-12 w-12 place-items-center rounded-2xl border border-border/50 bg-secondary text-primary">
           <Icon className="h-6 w-6" strokeWidth={1.5} />
         </div>
       ) : null}
@@ -268,7 +274,7 @@ export function PrimaryButton({
     <button
       type="button"
       className={cn(
-        "press inline-flex h-12 w-full items-center justify-center gap-2 rounded-sm bg-primary px-6 text-[14px] font-bold tracking-wide text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors cursor-pointer",
+        "primary-shadow press inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-[14px] font-bold tracking-wide text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors cursor-pointer",
         className,
       )}
       {...props}
@@ -295,7 +301,7 @@ export function SecondaryButton({
     <button
       type="button"
       className={cn(
-        "press inline-flex h-12 w-full items-center justify-center gap-2 rounded-sm bg-secondary px-6 text-[14px] font-bold tracking-wide text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50 transition-colors border border-border/50 cursor-pointer",
+        "press inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-secondary px-6 text-[14px] font-bold tracking-wide text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50 transition-colors border border-border/50 cursor-pointer",
         className,
       )}
       {...props}
@@ -324,7 +330,7 @@ export function LinkPill({
     <Comp
       href={href}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-sm bg-transparent px-2 py-1 text-[13px] font-bold text-primary hover:bg-primary/5 transition-colors cursor-pointer",
+        "inline-flex items-center gap-1.5 rounded-full bg-transparent px-2.5 py-1 text-[13px] font-bold text-primary hover:bg-primary/5 transition-colors cursor-pointer",
         className,
       )}
     >

@@ -193,15 +193,15 @@ export function AppShell({
       dir="rtl"
     >
       <header
-        className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur-md"
+        className="sticky top-0 z-30 border-b border-border/70 bg-background/90 shadow-[0_8px_24px_oklch(0.2_0.03_35_/_0.035)] backdrop-blur-xl"
         style={{ paddingTop: "max(0.6rem, env(safe-area-inset-top))" }}
       >
-        <div className="mx-auto w-full max-w-md px-5 pb-3.5 pt-1">
+        <div className="mx-auto w-full max-w-2xl px-4 pb-4 pt-1 sm:px-6">
           {isCoach ? (
             <div className="mb-3 flex items-center justify-between border-b border-border/50 pb-2">
               <span className="text-[11px] font-bold text-muted-foreground">מצב עבודה</span>
               <div
-                className="flex items-center gap-0.5 border border-border bg-surface-2 p-0.5"
+                className="flex items-center gap-0.5 rounded-full border border-border bg-surface-2 p-0.5"
                 role="group"
                 aria-label="בחירת מצב עבודה"
               >
@@ -209,7 +209,7 @@ export function AppShell({
                   to="/"
                   onClick={() => setActiveMode("personal")}
                   aria-current={activeMode === "personal" ? "page" : undefined}
-                  className={`min-w-20 px-3 py-1.5 text-center text-[11px] font-bold transition-colors ${
+                  className={`min-w-20 rounded-full px-3 py-1.5 text-center text-[11px] font-bold transition-colors ${
                     activeMode === "personal"
                       ? "bg-surface text-ink shadow-sm"
                       : "text-muted-foreground hover:text-ink"
@@ -221,7 +221,7 @@ export function AppShell({
                   to="/coach"
                   onClick={() => setActiveMode("management")}
                   aria-current={activeMode === "management" ? "page" : undefined}
-                  className={`min-w-20 px-3 py-1.5 text-center text-[11px] font-bold transition-colors ${
+                  className={`min-w-20 rounded-full px-3 py-1.5 text-center text-[11px] font-bold transition-colors ${
                     activeMode === "management"
                       ? isOwner
                         ? "bg-ink text-primary-foreground"
@@ -265,7 +265,7 @@ export function AppShell({
                   {kicker}
                 </p>
               ) : null}
-              <h1 className="truncate font-display text-[22px] font-bold leading-tight tracking-tight text-ink uppercase">
+              <h1 className="truncate font-display text-[23px] font-extrabold leading-tight tracking-tight text-ink">
                 {title}
               </h1>
               {subtitle ? (
@@ -276,7 +276,7 @@ export function AppShell({
             </div>
             <div className="flex shrink-0 items-center gap-2 pt-0.5">
               {user ? (
-                <div className="flex items-center gap-2 rounded-sm bg-surface-2 px-3 py-1.5 text-[12px] font-bold text-ink border border-border shadow-sm">
+                <div className="flex items-center gap-2 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-[12px] font-bold text-ink shadow-sm">
                   <Cloud className="h-3.5 w-3.5 text-primary" />
                   <span className="max-w-[80px] truncate">{user.email?.split("@")[0]}</span>
                   <div className="h-3 w-px bg-border/80 mx-1" />
@@ -285,14 +285,14 @@ export function AppShell({
                     onClick={() => setShowThemeModal(true)}
                     title="בחירת פלטה"
                     aria-label="בחירת פלטת צבעים"
-                    className="text-muted-foreground hover:text-primary cursor-pointer transition-colors"
+                    className="cursor-pointer text-muted-foreground transition-colors hover:text-primary"
                   >
                     <div className="h-3.5 w-3.5 rounded-sm bg-primary border border-primary/20" />
                   </button>
                   <button
                     onClick={handleSignOut}
                     title="התנתק"
-                    className="text-muted-foreground hover:text-destructive cursor-pointer transition-colors"
+                    className="cursor-pointer text-muted-foreground transition-colors hover:text-destructive"
                   >
                     <LogOut className="h-3.5 w-3.5" />
                   </button>
@@ -300,7 +300,7 @@ export function AppShell({
               ) : (
                 <button
                   onClick={() => setShowAuthModal(true)}
-                  className="flex items-center gap-1.5 rounded-sm bg-primary px-4 py-1.5 text-[12px] font-bold text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer shadow-sm"
+                  className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[12px] font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
                 >
                   <LogIn className="h-3.5 w-3.5" />
                   <span>התחברות</span>
@@ -313,7 +313,7 @@ export function AppShell({
       </header>
 
       <main
-        className="page-enter mx-auto w-full max-w-md px-4 pb-8 pt-6 sm:px-5"
+        className="page-enter mx-auto w-full max-w-2xl px-4 pb-8 pt-5 sm:px-6 sm:pt-7"
         style={{
           paddingBottom: "calc(6.5rem + env(safe-area-inset-bottom))",
         }}
@@ -329,10 +329,10 @@ export function AppShell({
           }}
           ariaLabel="התחברות לחשבון"
         >
-          <div className="w-full max-w-sm rounded-md border border-border bg-surface p-6 shadow-xl space-y-6">
+          <div className="w-full max-w-sm space-y-6 rounded-2xl border border-border bg-surface p-6 shadow-xl">
             <div className="flex items-center justify-between border-b border-border/60 pb-4">
               <div className="flex items-center gap-3">
-                <div className="grid h-8 w-8 place-items-center bg-secondary text-primary rounded-sm">
+                <div className="grid h-8 w-8 place-items-center rounded-xl bg-secondary text-primary">
                   <User className="h-4 w-4" />
                 </div>
                 <h3 className="font-display font-bold text-[18px] text-ink uppercase tracking-wide">
@@ -506,7 +506,7 @@ export function AppShell({
       {!authOnly ? (
         <nav aria-label="ניווט ראשי" className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
           <div
-            className="pointer-events-auto mx-auto flex w-full max-w-md items-center justify-between border-t border-border bg-background/95 shadow-[0_-2px_10px_rgba(0,0,0,0.02)] backdrop-blur-xl"
+            className="nav-shell pointer-events-auto mx-auto flex w-full max-w-2xl items-center justify-between border-t bg-background/95 backdrop-blur-xl"
             style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
           >
             {NAV.map(({ to, label, id, icon: Icon }) => (
@@ -545,7 +545,7 @@ function ThemeChooser({
 }) {
   return (
     <section
-      className={`rounded-md border border-border bg-surface p-4 text-start ${
+      className={`rounded-2xl border border-border bg-surface p-4 text-start ${
         compact ? "" : "w-full shadow-xl"
       }`}
       aria-label="פלטת צבעים"
