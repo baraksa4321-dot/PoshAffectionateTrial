@@ -593,3 +593,61 @@
 .hairline {
   border-color: var(--border);
 }
+
+/* Keep legacy utility colors inside the approved blush / ivory palette. */
+:root[data-theme="pink"] {
+  .text-emerald-600,
+  .text-emerald-700,
+  .text-emerald-800,
+  .text-emerald-900,
+  .text-purple-700,
+  .text-purple-800,
+  .text-purple-900,
+  .text-purple-950,
+  .text-rose-600,
+  .text-rose-700 {
+    color: var(--primary) !important;
+  }
+
+  .text-red-600,
+  .text-red-700,
+  .text-amber-700,
+  .text-amber-800,
+  .text-amber-900 {
+    color: var(--accent-foreground) !important;
+  }
+
+  .bg-emerald-50,
+  .bg-emerald-100,
+  .bg-emerald-200,
+  .bg-purple-50,
+  .bg-purple-100,
+  .bg-red-50,
+  .bg-amber-50,
+  .bg-amber-100,
+  .bg-rose-50 {
+    background-color: var(--cream) !important;
+  }
+
+  .bg-emerald-700,
+  .bg-emerald-800 {
+    background-color: var(--primary) !important;
+  }
+
+  .border-emerald-100,
+  .border-emerald-200,
+  .border-emerald-300,
+  .border-emerald-500,
+  .border-purple-100,
+  .border-purple-200,
+  .border-purple-500,
+  .border-red-200,
+  .border-amber-200,
+  .border-amber-300 {
+    border-color: var(--border) !important;
+  }
+
+  .ring-emerald-200 {
+    --tw-ring-color: var(--rose-soft) !important;
+  }
+}
