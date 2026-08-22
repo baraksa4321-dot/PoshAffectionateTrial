@@ -1,0 +1,540 @@
+My Routine — Critical User-Visible Fixes: Meals, Buttons & Owner Role
+
+יש כרגע כמה בעיות משתמש אמיתיות שעדיין לא נפתרו.
+
+אני רוצה שתטפל בהן עכשיו בפועל, ולא רק תבדוק שהקוד נראה תקין.
+
+אל תבנה מחדש את האפליקציה.
+
+אל תשנה Supabase / RLS / migrations / RPC / roles באופן אוטומטי.
+
+לפני שינוי כלשהו בדוק את המימוש הקיים ואת מקור הבעיה.
+
+⸻
+
+1. Nutrition — אי אפשר להוסיף אוכל לארוחה
+
+זו כרגע בעיה קריטית.
+
+במסך התזונה יש ארוחות, אבל כאשר אני לוחצת על ה־+ כדי להוסיף אוכל לארוחה — אני עדיין לא מצליחה להוסיף מזון בפועל.
+
+צריך לתקן את כל הזרימה:
+
+Meal → + → Choose Food → Select Food → Quantity → Add → Meal
+
+לדוגמה:
+
+Breakfast
+→ +
+→ בחירת מזון
+→ 2 ביצים
+→ Quantity
+→ Add
+
+והמזון חייב להופיע מיד בתוך הארוחה.
+
+צריך לעבוד עבור:
+
+* Breakfast
+* Lunch
+* Dinner
+* Snack
+
+⸻
+
+2. בדוק את כל כפתורי ה־+
+
+אני לא רוצה כפתור “+” שנראה פעיל אבל לא עושה כלום.
+
+עבור על כל כפתורי ה־Add / + במערכת ובדוק בפועל מה הם אמורים לעשות.
+
+במיוחד:
+
+* Add Food
+* Add Food to Meal
+* Add Exercise
+* Add Workout
+* Add Cardio
+* Add Set
+* Add Measurement
+* Add Check-in
+* Add Message
+* Add Recipe
+* Add Custom Food
+* Add Custom Exercise
+
+אם כפתור לא נדרש — להסיר אותו.
+
+אם הוא נדרש — הוא חייב לבצע פעולה אמיתית.
+
+⸻
+
+3. יש עדיין כפתורים מיותרים
+
+יש באפליקציה כפתורים ופעולות שלא באמת נחוצים או שלא מבצעים פעולה.
+
+אני רוצה Audit של כל המסכים.
+
+לכל button / icon button / action:
+
+1. מה הוא אמור לעשות?
+2. האם הוא באמת עובד?
+3. האם הוא נחוץ?
+4. האם הוא מוביל למקום הנכון?
+5. האם הוא רק placeholder?
+
+אם הוא placeholder או מיותר:
+
+להסיר אותו.
+
+אל תשאיר כפתור רק כדי שהמסך “יראה מלא”.
+
+⸻
+
+4. Nutrition — לא מספיק שה־Picker קיים
+
+הבעיה היא לא רק שהחלון נפתח.
+
+אני צריכה את כל ה־flow מקצה לקצה:
+
++ → Food Picker → Food → Quantity → Add → Meal → Daily Totals
+
+לאשר שהמזון באמת נכנס לנתוני הארוחה.
+
+אחרי הוספת מזון צריך לראות:
+
+* Food name
+* Quantity
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+
+והסיכום היומי צריך להתעדכן.
+
+⸻
+
+5. Quantity חייב לעבוד
+
+אם אני משנה כמות:
+
+100g → 200g
+
+הערכים צריכים להשתנות בהתאם:
+
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+
+לא מספיק לשנות רק את הטקסט.
+
+הערך המחושב צריך להישמר במודל הנתונים הקיים.
+
+⸻
+
+6. Persistence של הארוחות
+
+לאחר הוספת אוכל:
+
+Add → Save → Refresh
+
+המזון עדיין חייב להיות בארוחה.
+
+וגם:
+
+Add → Save → Logout → Login
+
+המזון עדיין חייב להיות בארוחה.
+
+אם השמירה נכשלת:
+
+אסור להציג כאילו היא הצליחה.
+
+צריך להציג שגיאה אמיתית וברורה.
+
+⸻
+
+7. MAYAYOSFAN234 — קריטי
+
+המשתמש:
+
+mayayosfan234@gmail.com
+
+כרגע מופיע כ־Client.
+
+לפי ההגדרה שלי הוא צריך להיות Owner.
+
+אבל:
+
+אסור לעשות hardcode לפי email.
+
+צריך לבדוק את מקור ה־Role האמיתי:
+
+* auth.uid()
+* profiles.id
+* profiles.email
+* profiles.role
+* is_owner()
+* profile hydration
+* session restore
+* UI role mapping
+
+אני רוצה שתמצא למה המשתמש הזה מקבל Client במקום Owner.
+
+אם Supabase מחזיר:
+
+role = client
+
+אל תשנה את ה־DB אוטומטית.
+
+דווח:
+
+* מה הערך האמיתי
+* מאיפה הוא מגיע
+* למה ה־UI מציג Client
+
+אם Supabase מחזיר:
+
+role = owner
+
+אבל ה־UI מציג Client:
+
+מצא ותקן את ה־hydration / state / routing bug.
+
+אם ה־DB אמור להיות Owner אבל בפועל אינו:
+
+אל תשנה אותו בשקט.
+
+דווח על ה־mismatch בצורה מפורשת לפני שינוי Role.
+
+אין ליצור תנאי מיוחד עבור mayayosfan234@gmail.com.
+
+⸻
+
+8. Maya / Owner regression
+
+בנוסף, כבר הייתה לנו בעיה שבה משתמש Owner השתנה או הופיע כ־Client/Owner בצורה לא עקבית.
+
+לכן בדוק גם:
+
+* maya2003yos
+* mayayosfan234
+
+אבל לא באמצעות hardcoded exceptions.
+
+המטרה היא למצוא את מקור הבעיה במערכת ה־Role עצמה.
+
+צריך להיות:
+
+Supabase authenticated profile role → application role → correct app
+
+ולא:
+
+email → guessed role
+
+⸻
+
+9. Owner App
+
+אם המשתמש הוא Owner אמיתי, הוא חייב לקבל את:
+
+* Owner Dashboard
+* Owner Navigation
+* Coaches
+* Clients
+* Search
+* Profiles
+* Assignments
+* Role management
+* Programs
+* Workouts
+* History
+* Measurements
+* Nutrition
+* Feedback
+* Messages
+* Progress
+
+לא Client App עם כמה כפתורים נוספים.
+
+⸻
+
+10. Client App
+
+Client לא צריך לראות:
+
+* Owner controls
+* Role management
+* User management
+* Coach assignment management
+* Other clients
+* Owner-only actions
+
+בנוסף, Client לא צריך לקבל פעולות אימון שלא הוגדרו עבורו.
+
+⸻
+
+11. Drop Set / Superset
+
+Client לא אמור להיות מסוגל ליצור:
+
+* Drop Set
+* Superset
+
+גם אם הכפתור מוסתר — הפעולה עצמה חייבת להיות חסומה.
+
+Coach / Owner יכולים לקבל את היכולת בהתאם למודל הקיים.
+
+⸻
+
+12. Exercise Picker
+
+הבעיה שה־Exercise Picker עדיין נפתח למטה חייבת להיפתר בפועל.
+
+לא מספיק להגיד:
+
+“Radix Portal קיים בקוד.”
+
+כאשר המשתמש לוחץ:
+
+Add Exercise
+
+ה־Picker חייב להופיע מעל המסך.
+
+אותו דבר:
+
+Replace Exercise
+
+הוא לא אמור להיכנס לזרימת העמוד או להיפתח בתחתית.
+
+בדוק את הבעיה האמיתית:
+
+* Portal
+* stacking context
+* parent overflow
+* transform
+* z-index
+* fixed positioning
+* viewport
+* overlay
+* internal scrolling
+
+אל תפתור את זה רק עם מספר z-index גדול.
+
+⸻
+
+13. Theme
+
+גם מערכת הצבעים עדיין חייבת להיות גלובלית.
+
+כאשר המשתמש בוחר Palette:
+
+* Pink
+* Blue
+* Beige
+* Green
+* Yellow
+* Black
+
+הצבע חייב להמשיך לכל האפליקציה, ולא להישאר רק במסך Login.
+
+הוא צריך להשפיע על:
+
+* Navigation
+* Dashboard
+* Cards
+* Buttons
+* Inputs
+* Workout
+* Nutrition
+* Profile
+* Settings
+* Coach
+* Owner
+* Modals
+* Pickers
+
+ולשרוד Refresh ו־Login מחדש.
+
+⸻
+
+14. אין Water UI
+
+Nutrition לא צריכה להציג Water.
+
+להסיר מה־UI:
+
+* Water card
+* Water progress
+* Water input
+* Water tracking
+
+⸻
+
+15. Nutrition Library
+
+עדיין יש בערך 488 foods.
+
+זה לא מספיק.
+
+צריך להרחיב את המאגר משמעותית.
+
+אבל:
+
+לא להמציא ערכים תזונתיים.
+
+יש להשתמש במקור נתונים אמין/מקור המזון שסופק לפרויקט.
+
+לכל Food:
+
+* Name
+* Serving
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+
+אם אין גישה למקור הנתונים — דווח על כך.
+
+אל תייצר מספרים אקראיים.
+
+⸻
+
+16. Nutrition Values
+
+העמוד של ערכי התזונה חייב להיות אמיתי ומעודכן.
+
+כאשר אני פותחת Food אני צריכה לראות בצורה ברורה:
+
+Calories
+Protein
+Carbs
+Fat
+Fiber
+
+והערכים חייבים להתחשב בכמות.
+
+⸻
+
+17. No fake completion
+
+אל תכתוב:
+
+“Fixed”
+
+רק כי:
+
+* Build passed
+* Lint passed
+* code compiles
+
+אם אני עדיין לא יכולה ללחוץ על + ולהוסיף אוכל — הבעיה לא Fixed.
+
+אם משתמש עדיין מקבל Client במקום Owner — הבעיה לא Fixed.
+
+אם Picker עדיין מופיע למטה — הבעיה לא Fixed.
+
+⸻
+
+18. בדיקות חובה
+
+אחרי התיקונים:
+
+Nutrition
+
+בדיקה אמיתית:
+
+1. Open Nutrition
+2. לחץ +
+3. בחר Food
+4. בחר Quantity
+5. Add
+6. ודא שהמזון מופיע בארוחה
+7. שנה Quantity
+8. ודא שהערכים משתנים
+9. Refresh
+10. ודא שהמזון עדיין קיים
+
+Role
+
+בדיקה אמיתית:
+
+1. Login עם mayayosfan234@gmail.com
+2. בדוק איזה App נטען
+3. בדוק Navigation
+4. בדוק Role
+5. בדוק Owner Dashboard
+
+אם אין אפשרות לבצע Login אמיתי בסביבה — כתוב NOT VERIFIED. אל תמציא תוצאה.
+
+⸻
+
+19. דוח סיום חובה
+
+בסוף אני רוצה דוח מסודר:
+
+FIXED
+
+רק דברים שבאמת תוקנו.
+
+PARTIALLY FIXED
+
+דברים שחלקם תוקנו.
+
+VERIFIED
+
+דברים שנבדקו בפועל בדפדפן.
+
+CODE VERIFIED
+
+דברים שאומתו רק בקוד.
+
+NOT VERIFIED
+
+דברים שלא ניתן היה לבדוק.
+
+DATABASE
+
+כל שינוי שבוצע במסד.
+
+SECURITY
+
+Role / RLS / Owner / Coach / Client.
+
+PERSISTENCE
+
+מה באמת הוכח ששורד Refresh ו־Logout/Login.
+
+STILL MISSING
+
+רשימה מלאה של כל מה שעוד לא עובד או לא הושלם.
+
+אל תסתיר בעיות.
+
+אל תכתוב “Production Ready” אם עדיין יש דברים מהותיים שלא נבדקו.
+
+⸻
+
+20. כלל חשוב
+
+אני לא רוצה עוד סבב שבו אתה אומר:
+
+“Build passed, therefore completed.”
+
+העדיפות עכשיו היא:
+
+User-visible functionality > Build/Lint
+
+אם כפתור לא עובד — מתקנים אותו.
+
+אם אוכל לא נכנס לארוחה — מתקנים את ה־flow.
+
+אם Role שגוי — מוצאים את מקור ה־Role.
+
+אם Picker נפתח למטה — פותרים את הבעיה האמיתית.
+
+רק לאחר מכן ממשיכים לשיפורי עיצוב או משימות משניות.
