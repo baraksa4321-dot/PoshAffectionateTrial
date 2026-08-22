@@ -1,0 +1,121 @@
+Required clarifications — do not skip these
+
+Before implementation, treat the following as explicit acceptance requirements:
+
+Maya2003yos
+
+* Do not hardcode any special behavior for Maya2003yos.
+* Do not automatically change Maya’s role.
+* First determine the actual authenticated user ID, profiles.role, and is_owner() result from the live Supabase environment if those checks are available.
+* If live verification is unavailable, report it as NOT VERIFIED rather than guessing.
+* If the database says Maya is owner, do not silently change the database. Report the discrepancy first.
+* If the database says Maya is not owner but the UI displays Owner, fix the client-side role hydration/routing issue.
+
+Workout Exercise Card — exact UX requirement
+
+The exercise display during a workout should be redesigned as follows:
+
+1. Exercise header
+    * Exercise name
+    * Replace / החלפה action
+    * Rest time, for example Rest 90 sec
+2. Planned values
+    * Clearly display planned weight and rep range.
+    * Example:
+        60 kg · 8–12 reps
+3. Sets
+    * Display each set clearly:
+        Set 1 ✓
+    * Provide actual weight input.
+    * Provide actual reps input.
+    * Actual weight/reps should be visually smaller and more compact than the planned values.
+4. Rep range
+    * Rep range must be a real range, not just a single number.
+    * Example: 8–12 reps
+    * Support fixed reps and range reps.
+    * Persist repType, repMin, and repMax.
+    * Verify that the displayed range survives Save → Refresh → Logout → Login.
+
+Exercise Library — quantity and coverage
+
+The exercise library must be expanded substantially.
+
+Do not stop at 8–10 exercises.
+
+Add a meaningful, broad library covering at minimum:
+
+* Chest
+* Back
+* Shoulders
+* Biceps
+* Triceps
+* Quads
+* Hamstrings
+* Glutes
+* Calves
+* Core
+* Forearms
+* Traps
+* Lower Back
+
+Include a useful mixture of:
+
+* Barbell
+* Dumbbell
+* Cable
+* Machine
+* Bodyweight
+
+Each exercise must use the existing exercise schema/data model.
+
+Do not create duplicate exercises.
+
+Do not invent video URLs or present fabricated exercise data as authoritative.
+
+Click-opened UI
+
+This requirement applies to ALL click-opened surfaces, not only Exercise Picker:
+
+* Choose Food
+* Replace Food
+* Choose Exercise
+* Replace Exercise
+* Exercise Details
+* Rest settings
+* Nutrition targets
+* Shopping list
+* Check-ins
+* Measurements
+* Confirmations
+* Account dialogs
+* Coach assignment
+* Owner management dialogs
+* Any other Modal / Dialog / Sheet / Picker / Popover
+
+Every such surface must render above the page content, with proper Portal/overlay behavior, internal scrolling, mobile support, RTL support, Escape, outside-click and close behavior.
+
+Do not consider this fixed based only on build/lint. If actual browser interaction is unavailable, explicitly mark it NOT VERIFIED.
+
+Persistence
+
+For every editable feature that the existing schema supports:
+
+Edit → Save → Supabase → Refresh → Logout → Login → data still exists
+
+Do not report persistence as verified unless the actual data was observed after the reload/re-login sequence.
+
+Final reporting
+
+The final report must separate:
+
+* VERIFIED — actually tested in the browser/live environment.
+* CODE VERIFIED — confirmed by source inspection only.
+* NOT VERIFIED — could not be tested.
+* FIXED — changes actually made.
+* DATABASE CHANGES — exact changes, or explicitly state none.
+* SECURITY — what was verified.
+* PERSISTENCE — exactly which flows survived real refresh/logout/login testing.
+* STILL MISSING — remaining work.
+* WHAT I NEED TO TEST — provide exactly one concrete manual test for me to perform next.
+
+Do not declare GymTrack production-ready unless the required authenticated browser and live Supabase checks have actually passed.
