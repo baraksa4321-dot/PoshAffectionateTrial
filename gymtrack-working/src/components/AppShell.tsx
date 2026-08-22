@@ -1,5 +1,16 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Apple, Cloud, Dumbbell, Home, LayoutGrid, LogIn, LogOut, User, X } from "lucide-react";
+import {
+  Apple,
+  Cloud,
+  Dumbbell,
+  Home,
+  LayoutGrid,
+  LogIn,
+  LogOut,
+  User,
+  Users,
+  X,
+} from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { saveTheme, useAuthUser, useGym } from "../lib/gym-store";
 import { supabase } from "../lib/supabase";
@@ -74,9 +85,9 @@ export function AppShell({
     ? [
         {
           to: "/coach",
-          label: "ניהול",
+          label: "מתאמנים",
           id: "coach",
-          icon: User,
+          icon: Users,
           onClick: () => setWorkspace("management"),
         },
         {

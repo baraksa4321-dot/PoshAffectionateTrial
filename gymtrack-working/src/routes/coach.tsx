@@ -597,9 +597,9 @@ function CoachDashboardPage() {
 
   return (
     <AppShell
-      title={isOwner ? "ניהול בעלים" : "לוח מאמן"}
+      title=""
       subtitle=""
-      kicker={isOwner ? "בעלים" : "מאמן"}
+      kicker=""
       action={
         <button
           onClick={() => setShowAddModal(true)}
