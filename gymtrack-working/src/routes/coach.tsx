@@ -616,6 +616,24 @@ export function CoachDashboardPage({ clientsOnly = false }: { clientsOnly?: bool
 
   const selectedClientInfo = clients.find((c) => c.client_id === selectedClientId);
   const menuFoodResults = searchFoods(store.foods, menuFoodQuery).slice(0, 24);
+  const needsPlan = overviewRows.filter((row) => row.details.programs.length === 0);
+  const needsExercises = overviewRows.filter(
+    (row) =>
+      row.details.programs.length > 0 &&
+      row.details.workouts.every((workout) => workout.items.length === 0),
+  );
+  const quietClients = overviewRows.filter(
+    (row) =>
+      !row.details.history.some(
+        (session) => Date.now() - new Date(session.date).getTime() <= 14 * 24 * 60 * 60 * 1000,
+      ),
+  );
+  const openClientFromOverview = (clientId: string) => {
+    setSelectedClientId(clientId);
+    setShowClientWorkspace(true);
+    setEditingProgramId(null);
+    setEditingDayId(null);
+  };
 
   return (
     <AppShell
@@ -632,7 +650,106 @@ export function CoachDashboardPage({ clientsOnly = false }: { clientsOnly?: bool
         </button>
       }
     >
-      <div className="space-y-5 text-start">
+      {!clientsOnly ? (
+        <section className="space-y-4 text-start">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
+              תמונת מצב
+            </p>
+            <h2 className="mt-1 font-display text-2xl font-extrabold text-ink">
+              מה דורש תשומת לב היום?
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              סיכום קצר של המתאמנים והפעולות שממתינות לך.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <div className="surface-card border-primary/25 bg-primary/5 p-3 text-start">
+              <p className="text-[11px] font-bold text-muted-foreground">מתאמנים</p>
+              <p className="mt-1 font-display text-2xl font-extrabold text-ink">{clients.length}</p>
+            </div>
+            <div className="surface-card border-accent/60 bg-accent/20 p-3 text-start">
+              <p className="text-[11px] font-bold text-muted-foreground">דורשים תכנית</p>
+              <p className="mt-1 font-display text-2xl font-extrabold text-ink">
+                {needsPlan.length}
+              </p>
+            </div>
+            <div className="surface-card border-border bg-surface-2 p-3 text-start">
+              <p className="text-[11px] font-bold text-muted-foreground">שקטים 14 יום</p>
+              <p className="mt-1 font-display text-2xl font-extrabold text-ink">
+                {quietClients.length}
+              </p>
+            </div>
+          </div>
+
+          {overviewRows.length === 0 ? (
+            <div className="surface-card p-4 text-sm text-muted-foreground">
+              {clients.length === 0
+                ? "עדיין אין מתאמנים משויכים. עברי ללשונית מתאמנים כדי להוסיף מתאמן."
+                : "טוענת את סיכום המתאמנים..."}
+            </div>
+          ) : (
+            <div className="surface-card space-y-3 p-4">
+              <h3 className="flex items-center gap-2 text-sm font-bold text-ink">
+                <Activity className="h-4 w-4 text-primary" />
+                פעולות שמומלץ לבדוק
+              </h3>
+              {needsPlan.length === 0 &&
+              needsExercises.length === 0 &&
+              quietClients.length === 0 ? (
+                <p className="rounded-xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">
+                  אין כרגע חריגים שדורשים טיפול.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {[...needsPlan, ...needsExercises, ...quietClients]
+                    .filter(
+                      (row, index, rows) =>
+                        rows.findIndex(
+                          (candidate) => candidate.client.client_id === row.client.client_id,
+                        ) === index,
+                    )
+                    .slice(0, 8)
+                    .map((row) => {
+                      const name =
+                        row.client.profiles?.full_name || row.client.profiles?.email || "מתאמן";
+                      const reason = needsPlan.some(
+                        (item) => item.client.client_id === row.client.client_id,
+                      )
+                        ? "אין עדיין תוכנית אימון"
+                        : needsExercises.some(
+                              (item) => item.client.client_id === row.client.client_id,
+                            )
+                          ? "התוכנית עדיין ללא תרגילים"
+                          : "לא נרשם אימון ב־14 הימים האחרונים";
+                      return (
+                        <button
+                          key={row.client.client_id}
+                          type="button"
+                          onClick={() => openClientFromOverview(row.client.client_id)}
+                          className="flex w-full items-center justify-between rounded-xl border border-border/70 bg-surface-2 p-3 text-start transition-colors hover:border-primary/60"
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate text-xs font-bold text-ink">
+                              {name}
+                            </span>
+                            <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                              {reason}
+                            </span>
+                          </span>
+                          <ChevronLeft className="h-4 w-4 shrink-0 text-primary" />
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      ) : null}
+
+      <div className={clientsOnly ? "space-y-5 text-start" : "hidden"}>
         {managementError ? (
           <div
             role="alert"
