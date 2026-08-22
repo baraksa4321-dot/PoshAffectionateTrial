@@ -1,0 +1,18 @@
+{
+  "short_name": "הרוטינה שלי",
+  "name": "הרוטינה שלי — מעקב אימונים ותזונה",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#f8f9f7",
+  "theme_color": "#567765",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "he",
+  "dir": "rtl"
+}

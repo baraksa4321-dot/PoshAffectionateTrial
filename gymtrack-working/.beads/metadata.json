@@ -1,0 +1,9 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "my_gym_muse_53_136db078",
+  "project_id": "c1c24bc0-7f37-4915-84a0-a29dbed59eb6",
+  "global_dolt_database": "beads_global",
+  "global_project_id": "00000000-0000-0000-0000-000000000000"
+}
