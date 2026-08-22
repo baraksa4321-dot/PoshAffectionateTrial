@@ -1,92 +1,49 @@
-# Foods import report — blocked pending authorized source
+# Foods import report
 
 **Report date:** 2026-08-22  
-**Requested reference source:** FoodsDictionary  
-**FoodsDictionary used as a direct source:** No  
-**Authorization or export supplied:** No
+**Reference source:** FoodsDictionary, for inspiration only
+**Imported source:** USDA FoodData Central SR Legacy Release 1 (2018-04)
 
-## Source decision
-
-The data owner confirmed that no authorized FoodsDictionary API access, export,
-or written permission is currently available. FoodsDictionary is therefore
-recorded as a requested reference only, not as a data source.
-
-No scraping, copying, substitution with another source, estimate, or inferred
-nutrition value was performed.
-
-## Baseline
+## Scope and outcome
 
 | Check | Result |
 | --- | ---: |
-| Local built-in food records (`ISRAELI_FOOD_DATABASE`) | 488 |
-| Local `f-israel-*` IDs | 488 |
-| Rows in `public.foods` | 488 |
-| Database rows with calories, protein, carbs, and fat | 488 |
-| Database rows with fiber | 488 |
-| Duplicate normalized names in `public.foods` | 0 |
+| Original local built-in records preserved | 488 |
+| New documented USDA records | 512 |
+| Local built-in catalog after import | **1,000** |
+| `public.foods` after additive synchronization | **1,000** |
 
-## Import result
+The original `f-israel-*` records were left unchanged. The new generic food
+records use separate `f-usda-sr-*` IDs, so the import is additive and safe to
+repeat.
 
-| Metric | Count |
-| --- | ---: |
-| Candidate records received from an authorized source | 0 |
-| Candidate records proposed | 0 |
-| New records added locally | 0 |
-| New records added to `public.foods` | 0 |
-| Existing records changed or deleted | 0 |
-| Duplicate candidates prevented | 0 |
-| Candidates rejected for missing or unreliable nutrition fields | 0 |
+## Source and nutrition data
 
-No food IDs, names, aliases, or nutritional values were changed. No schema,
-migration, RLS policy, permission, role, or RPC was changed.
+- Dataset page: <https://fdc.nal.usda.gov/download-datasets.html>
+- Download file: `FoodData_Central_sr_legacy_food_csv_2018-04.zip`
+- License: USDA FoodData Central data are public-domain U.S. government data.
+- Every imported row includes documented calories, protein, carbohydrates, fat,
+  and dietary fiber, with values stated **per 100 g**.
+- The source FoodData Central ID is retained in the local record note for
+  traceability.
 
-## Verification status
+No data was scraped or copied from FoodsDictionary, and no generic USDA food
+is presented as a Rami Levy SKU or as a branded Israeli product.
 
-### FIXED
+## Import safeguards
 
-- A source gate and this import report document why no unauthorised data was
-  introduced.
+1. Only candidates with all required macro and fiber values were included.
+2. New records are kept in a separate local expansion module and preserve the
+   existing 488-item catalog exactly.
+3. The database synchronization is versioned in
+   `supabase/migrations/13_foods_usda_expansion.sql`, is additive, and uses
+   stable IDs for repeatable imports. It performs no schema, RLS, role,
+   permission, or RPC change.
+4. The library's search now also considers English names and aliases; filtered
+   results are no longer limited to the first 80 items.
 
-### CODE VERIFIED
+## Verification
 
-- The local built-in list still contains 488 `f-israel-*` records.
-- The existing seed file still contains 488 inserts into `public.foods`.
-
-### DATABASE
-
-- `public.foods` contains 488 rows.
-- All 488 rows have the required core macro fields and fiber.
-- No normalized-name duplicates were found.
-
-### SOURCE
-
-- **BLOCKED:** no licensed FoodsDictionary export, API access, or written
-  permission was supplied.
-
-### PERSISTENCE
-
-- No new dataset exists to sync or persist. Existing food data was left
-  untouched.
-
-### NOT VERIFIED
-
-- Validation of new records, semantic duplicate review, Food Picker search,
-  adding a newly imported food to a meal, quantity recalculation, meal/day
-  totals, and refresh persistence cannot be tested until an authorized dataset
-  is supplied.
-
-## Resume requirements
-
-Provide one of the following before importing:
-
-1. A licensed FoodsDictionary CSV, XLSX, or JSON export that includes the
-   food name, category, serving/grams, calories, protein, carbohydrates, fat,
-   and fiber; or
-2. Documented permission plus the corresponding data export; or
-3. Authorized API access configured in Replit Secrets, without sharing the
-   secret value in chat.
-
-The next import must validate every candidate, preserve all current records and
-IDs, prevent duplicates by normalized name/aliases/English name and semantic
-review, update the local library and `public.foods` consistently, and replace
-the zero-count import section above with the actual results.
+- Local catalog count: 488 + 512 = **1,000**.
+- Supabase `public.foods` count after synchronization: **1,000**.
+- All added food records have complete macro and fiber values.

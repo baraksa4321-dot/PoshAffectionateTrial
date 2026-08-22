@@ -1,7 +1,8 @@
 import type { FoodItem } from "./gym-types";
+import { USDA_FOOD_EXPANSION } from "./usda-food-expansion";
 
 /** Database of AT LEAST 488 distinct realistic Israeli supermarket food entries */
-export const ISRAELI_FOOD_DATABASE: FoodItem[] = [
+const ISRAELI_SUPERMARKET_FOODS: FoodItem[] = [
   {
     id: "f-israel-1",
     name: "חלב 3% - תנובה / שטראוס",
@@ -5858,4 +5859,14 @@ export const ISRAELI_FOOD_DATABASE: FoodItem[] = [
     fiber: 2.5,
     notes: "מוצר מזון מרשתות השיווק בישראל (פירות)",
   },
+];
+
+/**
+ * The original 488-item Israeli supermarket catalog is intentionally preserved.
+ * The USDA expansion supplies additional documented generic foods, each with
+ * a source identifier and nutrition values measured per 100 g.
+ */
+export const ISRAELI_FOOD_DATABASE: FoodItem[] = [
+  ...ISRAELI_SUPERMARKET_FOODS,
+  ...USDA_FOOD_EXPANSION,
 ];

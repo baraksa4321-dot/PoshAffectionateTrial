@@ -3,7 +3,7 @@ import { Apple, ArrowRight, Heart, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState, Pill, SectionHeader } from "@/components/ui-app/primitives";
-import { toggleFavoriteFood, useGym } from "@/lib/gym-store";
+import { searchFoods, toggleFavoriteFood, useGym } from "@/lib/gym-store";
 
 export const Route = createFileRoute("/nutrition/foods/")({
   head: () => ({
@@ -27,13 +27,9 @@ function FoodLibrary() {
   const favoriteIds = useMemo(() => new Set(favoriteFoods), [favoriteFoods]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLocaleLowerCase();
-    return foods
+    return searchFoods(foods, query)
       .filter(
         (f) =>
-          (!q ||
-            f.name.toLocaleLowerCase().includes(q) ||
-            (f.category ?? "").toLocaleLowerCase().includes(q)) &&
           (category === "הכל" || f.category === category) &&
           (!favoritesOnly || favoriteIds.has(f.id)),
       )
@@ -123,7 +119,7 @@ function FoodLibrary() {
       />
 
       <div className="space-y-2">
-        {filtered.slice(0, 80).map((food) => (
+        {filtered.map((food) => (
           <div key={food.id} className="surface-card flex items-center gap-2 p-3.5">
             <Link
               to="/nutrition/foods/$foodId"
