@@ -214,7 +214,7 @@ function Dashboard() {
 
   const handleCardioSave = () => {
     if (!cardioType || cardioDurationValue <= 0) {
-      setCardioError("בחרי פעילות ומשך זמן גדול מאפס.");
+      setCardioError(genderText(gender, "בחרי פעילות ומשך זמן גדול מאפס.", "בחר פעילות ומשך זמן גדול מאפס."));
       return;
     }
 
@@ -232,7 +232,9 @@ function Dashboard() {
     else saveCardioLog(log);
 
     setCheckInSuccessMsg(
-      editingCardioId ? "אימון האירובי עודכן במכשיר זה." : "אימון אירובי נשמר במכשיר זה.",
+                editingCardioId
+                  ? genderText(gender, "אימון האירובי עודכן במכשיר זה.", "אימון האירובי עודכן במכשיר זה.")
+                  : genderText(gender, "אימון אירובי נשמר במכשיר זה.", "אימון אירובי נשמר במכשיר זה."),
     );
     setTimeout(() => setCheckInSuccessMsg(""), 3000);
     setShowCardioModal(false);
@@ -327,13 +329,17 @@ function Dashboard() {
         <Card className="text-start mt-4">
           <p className="font-display text-[16px] font-bold text-ink">אין תכניות אימון עדיין</p>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            צרי תכנית אימונים ראשונה כדי להתחיל להתאמן בחדר כושר.
+            {genderText(
+              gender,
+              "צרי תכנית אימונים ראשונה כדי להתחיל להתאמן בחדר כושר.",
+              "צור תכנית אימונים ראשונה כדי להתחיל להתאמן בחדר כושר.",
+            )}
           </p>
           <Link
             to="/programs"
             className="press mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-[13px] font-bold text-primary-foreground"
           >
-            <Plus className="h-4 w-4" /> צרי תכנית
+            <Plus className="h-4 w-4" /> {genderText(gender, "צרי תכנית", "צור תכנית")}
           </Link>
         </Card>
       )}
@@ -526,7 +532,11 @@ function Dashboard() {
             <div className="p-4">
               <p className="text-[13px] font-bold text-ink">עדיין לא תיעדת אירובי</p>
               <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                הוסיפי הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך ואומדן קלוריות.
+                {genderText(
+                  gender,
+                  "הוסיפי הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך ואומדן קלוריות.",
+                  "הוסף הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך ואומדן קלוריות.",
+                )}
               </p>
             </div>
           )}

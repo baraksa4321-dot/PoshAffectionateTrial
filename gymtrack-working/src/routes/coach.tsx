@@ -46,6 +46,7 @@ import type {
   Workout,
   WorkoutItem,
 } from "../lib/gym-types";
+import { genderText } from "../lib/gender-copy";
 
 type CoachClientRow = {
   id: string;
@@ -84,6 +85,7 @@ export function CoachDashboardPage({
   const navigate = useNavigate();
   const authUser = useAuthUser();
   const role = store.userProfile?.role;
+  const gender = store.userProfile?.gender;
   const isOwner = role === "owner";
   const isCoach = role === "coach" || isOwner;
 
@@ -970,7 +972,11 @@ export function CoachDashboardPage({
                   <div>
                     <h3 className="font-bold text-sm text-ink">בניית תוכניות ותפריטים</h3>
                     <p className="text-xs text-muted-foreground">
-                      בחרי מתאמן כדי לפתוח את סביבת העבודה שלו
+                      {genderText(
+                        gender,
+                        "בחרי מתאמן כדי לפתוח את סביבת העבודה שלו",
+                        "בחר מתאמן כדי לפתוח את סביבת העבודה שלו",
+                      )}
                     </p>
                   </div>
                 </div>
@@ -1042,7 +1048,11 @@ export function CoachDashboardPage({
                     onClick={() => setShowAddModal(true)}
                     className="text-primary font-bold hover:underline cursor-pointer"
                   >
-                    לחצי כאן להוספת מתאמן לפי אימייל
+                {genderText(
+                  gender,
+                  "לחצי כאן להוספת מתאמן לפי אימייל",
+                  "לחץ כאן להוספת מתאמן לפי אימייל",
+                )}
                   </button>
                 </div>
               ) : (
@@ -1633,7 +1643,11 @@ export function CoachDashboardPage({
                                   setMenuFoodQuery(event.target.value);
                                   setMenuFoodId("");
                                 }}
-                                placeholder="חפשי למשל: חזה עוף, אורז, ביצה..."
+                                placeholder={genderText(
+                                  gender,
+                                  "חפשי למשל: חזה עוף, אורז, ביצה...",
+                                  "חפש למשל: חזה עוף, אורז, ביצה...",
+                                )}
                                 className="w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-[13px] outline-none placeholder:text-muted-foreground focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                                 aria-describedby={`menu-food-help-${meal.id}`}
                                 autoComplete="off"
@@ -1642,7 +1656,11 @@ export function CoachDashboardPage({
                                 id={`menu-food-help-${meal.id}`}
                                 className="text-[10px] text-muted-foreground"
                               >
-                                בחרי מאכל מהרשימה כדי להוסיף אותו לארוחה.
+                    {genderText(
+                      gender,
+                      "בחרי מאכל מהרשימה כדי להוסיף אותו לארוחה.",
+                      "בחר מאכל מהרשימה כדי להוסיף אותו לארוחה.",
+                    )}
                               </p>
                               <div
                                 role="listbox"
@@ -1696,7 +1714,7 @@ export function CoachDashboardPage({
                                   onClick={() => addPlannedFood(meal.id)}
                                   className="rounded-lg bg-emerald-700 px-3 py-2 text-[12px] font-bold text-white disabled:opacity-40"
                                 >
-                                  הוסיפי לארוחה
+                                  {genderText(gender, "הוסיפי לארוחה", "הוסף לארוחה")}
                                 </button>
                               </div>
                             </div>
@@ -1711,14 +1729,14 @@ export function CoachDashboardPage({
                         onClick={addPlannedMeal}
                         className="flex-1 rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-50"
                       >
-                        + הוסיפי ארוחה
+                        + {genderText(gender, "הוסיפי ארוחה", "הוסף ארוחה")}
                       </button>
                       <button
                         type="button"
                         onClick={savePlannedMenu}
                         className="flex-1 rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800"
                       >
-                        שמרי תפריט
+                        {genderText(gender, "שמרי תפריט", "שמור תפריט")}
                       </button>
                     </div>
                     {menuNotice ? (

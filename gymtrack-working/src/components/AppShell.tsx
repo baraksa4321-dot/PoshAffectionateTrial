@@ -17,6 +17,8 @@ import { supabase } from "../lib/supabase";
 import { applyTheme, DEFAULT_THEME, THEME_PALETTES } from "../lib/theme";
 import type { ThemePalette } from "../lib/gym-types";
 import { Overlay } from "./ui-app/Overlay";
+import { BrandLogo } from "./BrandLogo";
+import { genderText } from "../lib/gender-copy";
 
 const WORKSPACE_KEY = "gymtrack.workspace";
 
@@ -48,6 +50,7 @@ export function AppShell({
   const role = store.userProfile?.role;
   const isOwner = role === "owner";
   const isCoach = role === "coach" || isOwner;
+  const profileGender = store.userProfile?.gender;
   const location = useLocation();
   const isManagementRoute = isManagementPath(location.pathname);
 
@@ -139,6 +142,19 @@ export function AppShell({
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
+  const headerTitle = authOnly ? genderText(gender, "ברוכה הבאה", "ברוך הבא") : title;
+  const headerSubtitle =
+    authOnly
+      ? genderText(
+          gender,
+          "התחברי כדי להמשיך לאימונים ולתזונה",
+          "התחבר כדי להמשיך לאימונים ולתזונה",
+        )
+      : subtitle;
+
+  useEffect(() => {
+    if (profileGender) setGender(profileGender);
+  }, [profileGender]);
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -260,6 +276,12 @@ export function AppShell({
         style={{ paddingTop: "max(0.6rem, env(safe-area-inset-top))" }}
       >
         <div className="mx-auto w-full max-w-2xl px-4 pb-4 pt-1 sm:px-6">
+          <div className="mb-3 flex items-center justify-between border-b border-border/50 pb-2">
+            <BrandLogo />
+            <span className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
+              אימונים · תזונה · שגרה
+            </span>
+          </div>
           {isCoach ? (
             <div className="mb-3 flex items-center justify-between border-b border-border/50 pb-2">
               <span className="text-[11px] font-bold text-muted-foreground">מצב עבודה</span>
@@ -325,12 +347,12 @@ export function AppShell({
               ) : null}
               {title ? (
                 <h1 className="min-w-0 break-words font-display text-[clamp(18px,5vw,23px)] font-extrabold leading-snug tracking-tight text-ink">
-                  {title}
+                  {headerTitle}
                 </h1>
               ) : null}
               {subtitle ? (
                 <p className="mt-1 break-words text-[clamp(11px,3.2vw,13px)] leading-snug text-muted-foreground">
-                  {subtitle}
+                  {headerSubtitle}
                 </p>
               ) : null}
             </div>
@@ -390,6 +412,9 @@ export function AppShell({
           ariaLabel="התחברות לחשבון"
         >
           <div className="w-full max-w-sm space-y-6 rounded-2xl border border-border bg-surface p-6 shadow-xl">
+            <div className="flex justify-center">
+              <BrandLogo compact />
+            </div>
             <div className="flex items-center justify-between border-b border-border/60 pb-4">
               <div className="flex items-center gap-3">
                 <div className="grid h-8 w-8 place-items-center rounded-xl bg-secondary text-primary">
@@ -425,7 +450,11 @@ export function AppShell({
                   ממתין לאימות כתובת המייל ({pendingVerificationEmail})
                 </p>
                 <p className="text-[12px] text-muted-foreground leading-relaxed">
-                  אם לא קיבלת את מייל האימות או שהקישור פג תוקף, לחצי כאן לשליחת קישור מחדש.
+                  {genderText(
+                    gender,
+                    "אם לא קיבלת את מייל האימות או שהקישור פג תוקף, לחצי כאן לשליחת קישור מחדש.",
+                    "אם לא קיבלת את מייל האימות או שהקישור פג תוקף, לחץ כאן לשליחת קישור מחדש.",
+                  )}
                 </p>
                 <button
                   type="button"
@@ -454,7 +483,11 @@ export function AppShell({
             {isResettingPassword ? (
               <div className="space-y-4">
                 <p className="text-[13px] leading-relaxed text-muted-foreground">
-                  הזיני את כתובת האימייל שלך ונשלח קישור מאובטח לאיפוס הסיסמה.
+                  {genderText(
+                    gender,
+                    "הזיני את כתובת האימייל שלך ונשלח קישור מאובטח לאיפוס הסיסמה.",
+                    "הזן את כתובת האימייל שלך ונשלח קישור מאובטח לאיפוס הסיסמה.",
+                  )}
                 </p>
                 <button
                   type="button"

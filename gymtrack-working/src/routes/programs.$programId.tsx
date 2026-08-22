@@ -25,6 +25,7 @@ import {
   PrimaryButton,
   SectionHeader,
 } from "@/components/ui-app/primitives";
+import { genderText } from "@/lib/gender-copy";
 import {
   deleteWorkout,
   duplicateWorkoutDay,
@@ -44,6 +45,7 @@ function ProgramDetail() {
   const navigate = useNavigate();
   const { programs, workouts, userProfile } = useGym();
   const role = userProfile?.role;
+  const gender = userProfile?.gender;
   const isCoach = role === "coach" || role === "owner";
   const program = programs.find((item) => item.id === programId);
   const [editing, setEditing] = useState(false);
@@ -159,8 +161,16 @@ function ProgramDetail() {
           title="ימי אימון"
           subtitle={
             isCoach
-              ? "גרורי כדי לסדר מחדש. לחצי על אימון כדי לפתוח או לערוך."
-              : "לחצי על יום אימון להצגת התרגילים או התחלת אימון"
+              ? genderText(
+                  gender,
+                  "גררי כדי לסדר מחדש. לחצי על אימון כדי לפתוח או לערוך.",
+                  "גרור כדי לסדר מחדש. לחץ על אימון כדי לפתוח או לערוך.",
+                )
+              : genderText(
+                  gender,
+                  "לחצי על יום אימון להצגת התרגילים או התחלת אימון",
+                  "לחץ על יום אימון להצגת התרגילים או התחלת אימון",
+                )
           }
           action={
             isCoach ? (
@@ -175,7 +185,7 @@ function ProgramDetail() {
                 className="press inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-3.5 text-[12.5px] font-semibold text-primary-foreground"
               >
                 <Plus className="h-3.5 w-3.5" strokeWidth={2.4} />
-                הוסיפי יום
+                {genderText(gender, "הוסיפי יום", "הוסף יום")}
               </button>
             ) : undefined
           }
@@ -200,7 +210,11 @@ function ProgramDetail() {
         ) : (
           <EmptyState
             title="עדיין אין ימי אימון"
-            description="הוסיפי את יום האימון הראשון שלך לתכנית ובני בתוכו תרגילים."
+            description={genderText(
+              gender,
+              "הוסיפי את יום האימון הראשון שלך לתכנית ובני בתוכו תרגילים.",
+              "הוסף את יום האימון הראשון שלך לתכנית ובנה בתוכו תרגילים.",
+            )}
             action={
               <button
                 type="button"
@@ -213,7 +227,7 @@ function ProgramDetail() {
                 className="press inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-[13.5px] font-semibold text-primary-foreground"
               >
                 <Plus className="h-4 w-4" strokeWidth={2.4} />
-                הוסיפי יום אימון
+                {genderText(gender, "הוסיפי יום אימון", "הוסף יום אימון")}
               </button>
             }
           />

@@ -11,6 +11,7 @@ import {
   SectionHeader,
 } from "@/components/ui-app/primitives";
 import { createProgram, deleteProgram, duplicateProgram, useGym } from "@/lib/gym-store";
+import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/programs/")({
   head: () => ({ meta: [{ title: "תוכניות אימון — הרוטינה שלי" }] }),
@@ -21,6 +22,7 @@ function ProgramsPage() {
   const { programs, workouts, userProfile } = useGym();
   const navigate = useNavigate();
   const role = userProfile?.role;
+  const gender = userProfile?.gender;
   const isCoach = role === "coach" || role === "owner";
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
@@ -81,7 +83,7 @@ function ProgramsPage() {
           />
           <div className="mt-3 flex gap-2">
             <PrimaryButton onClick={submit} disabled={!name.trim()}>
-              צרי תכנית
+              {genderText(gender, "צרי תכנית", "צור תכנית")}
             </PrimaryButton>
             <SecondaryButton
               onClick={() => {
@@ -170,8 +172,12 @@ function ProgramsPage() {
         ) : (
           <EmptyState
             icon={Dumbbell}
-            title="צרי קצב אימונים קבוע"
-            description="הוסיפי תכנית ראשונה ובני ימי אימון שמתאימים לשגרה שלך."
+            title={genderText(gender, "צרי קצב אימונים קבוע", "צור קצב אימונים קבוע")}
+            description={genderText(
+              gender,
+              "הוסיפי תכנית ראשונה ובני ימי אימון שמתאימים לשגרה שלך.",
+              "הוסף תכנית ראשונה ובנה ימי אימון שמתאימים לשגרה שלך.",
+            )}
             action={
               <button
                 type="button"

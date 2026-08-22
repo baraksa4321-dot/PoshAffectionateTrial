@@ -396,7 +396,9 @@ function Session() {
       <div className="surface-card border border-primary/20 bg-primary/5 p-3 text-start">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-bold text-ink">צריכה אימון משקל גוף?</p>
+            <p className="text-sm font-bold text-ink">
+              {genderText(gender, "צריכה אימון משקל גוף?", "צריך אימון משקל גוף?")}
+            </p>
             <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
               נחליף כל תרגיל בתרגיל משקל גוף שעובד על אותו שריר.
             </p>
@@ -781,7 +783,7 @@ function Session() {
             </div>
           ) : (
             <span className="rounded-lg bg-white/15 px-2 py-1 text-[10px] font-bold text-primary-foreground/80">
-              {restPaused ? "מושהה" : "לחצי לעצירה"}
+              {restPaused ? "מושהה" : genderText(gender, "לחצי לעצירה", "לחץ לעצירה")}
             </span>
           )}
         </div>
@@ -848,9 +850,13 @@ function Session() {
       <ConfirmSheet
         open={pendingExit}
         title="לצאת מהאימון?"
-        description="הסטים שתיעדת יישמרו רק אם לא תנקי אותם."
-        confirmLabel="צאי בלי לשמור"
-        cancelLabel="המשיכי באימון"
+        description={genderText(
+          gender,
+          "הסטים שתיעדת יישמרו רק אם לא תנקי אותם.",
+          "הסטים שתיעדת יישמרו רק אם לא תנקה אותם.",
+        )}
+        confirmLabel={genderText(gender, "צאי בלי לשמור", "צא בלי לשמור")}
+        cancelLabel={genderText(gender, "המשיכי באימון", "המשך באימון")}
         destructive
         onConfirm={() => {
           clearSavedSession();

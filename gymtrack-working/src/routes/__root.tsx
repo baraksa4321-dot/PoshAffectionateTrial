@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import "../styles.css";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "../components/AppShell";
+import { BrandLogo } from "../components/BrandLogo";
 import {
   retryProfileHydration,
   useAuthStatus,
@@ -20,6 +21,7 @@ import {
   useProfileHydrationStatus,
 } from "../lib/gym-store";
 import { supabase } from "../lib/supabase";
+import { genderText } from "../lib/gender-copy";
 
 function NotFoundComponent() {
   return (
@@ -157,15 +159,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         property: "og:description",
         content: "האימונים, התזונה והשגרה שלך במקום אחד.",
       },
-      { property: "og:image", content: "/favicon.ico" },
+      { property: "og:image", content: "/my-routine-share.png" },
       { property: "og:image:alt", content: "הלוגו של My Routine" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:image:width", content: "512" },
+      { property: "og:image:height", content: "512" },
+      { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "My Routine — אימונים ותזונה" },
-      { name: "twitter:image", content: "/favicon.ico" },
+      { name: "twitter:image", content: "/my-routine-share.png" },
     ],
     links: [
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
-      { rel: "apple-touch-icon", href: "/favicon.ico" },
+      { rel: "apple-touch-icon", href: "/my-routine-share.png" },
       { rel: "manifest", href: "/manifest.json" },
     ],
   }),
@@ -244,9 +248,9 @@ function RootComponent() {
             aria-label="My Routine נטען"
           >
             <LoadingIllustration variant={loadingVariant} />
-            <p className="mt-5 font-display text-xl font-bold tracking-tight text-ink">
-              My Routine
-            </p>
+            <div className="mt-5 flex justify-center">
+              <BrandLogo compact />
+            </div>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">
               {loadingVariant === 1
                 ? "מתכוננים לסט הבא"
@@ -287,7 +291,15 @@ function RootComponent() {
           </div>
         </div>
       ) : authStatus === "unauthenticated" ? (
-        <AppShell title="ברוכה הבאה" subtitle="התחברי כדי להמשיך לאימונים ולתזונה" authOnly>
+        <AppShell
+          title={genderText(userProfile?.gender, "ברוכה הבאה", "ברוך הבא")}
+          subtitle={genderText(
+            userProfile?.gender,
+            "התחברי כדי להמשיך לאימונים ולתזונה",
+            "התחבר כדי להמשיך לאימונים ולתזונה",
+          )}
+          authOnly
+        >
           <></>
         </AppShell>
       ) : (

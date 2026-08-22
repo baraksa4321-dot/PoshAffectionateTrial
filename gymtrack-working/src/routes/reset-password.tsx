@@ -42,12 +42,12 @@ function ResetPassword() {
       <section className="mx-auto w-full max-w-sm space-y-5 rounded-3xl border border-border bg-white p-6 shadow-lg">
         <div>
           <h1 className="font-display text-xl font-bold text-ink">בחירת סיסמה חדשה</h1>
-          <p className="mt-1 text-sm text-muted-foreground">הזיני סיסמה חדשה עבור החשבון שלך.</p>
+          <p className="mt-1 text-sm text-muted-foreground">יש להזין סיסמה חדשה עבור החשבון שלך.</p>
         </div>
 
         {isRecoverySession === false ? (
           <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
-            קישור האיפוס אינו תקף או שפג תוקפו. בקשי קישור חדש ממסך ההתחברות.
+            קישור האיפוס אינו תקף או שפג תוקפו. יש לבקש קישור חדש ממסך ההתחברות.
           </p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">

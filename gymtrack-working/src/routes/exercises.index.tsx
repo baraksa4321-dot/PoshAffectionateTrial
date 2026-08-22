@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { EmptyState, Pill, SectionHeader } from "@/components/ui-app/primitives";
 import { useGym } from "@/lib/gym-store";
 import { EQUIPMENT, MUSCLE_GROUPS } from "@/lib/gym-types";
+import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/exercises/")({
   head: () => ({
@@ -12,7 +13,7 @@ export const Route = createFileRoute("/exercises/")({
       { title: "ספריית תרגילים — הרוטינה שלי" },
       {
         name: "description",
-        content: "עייני, הוסיפי, ערכי ונהלי את תרגילי הכושר שלך בספרייה.",
+        content: "עיון, הוספה, עריכה וניהול של תרגילי כושר בספרייה.",
       },
       { property: "og:title", content: "ספריית תרגילים — הרוטינה שלי" },
     ],
@@ -24,6 +25,7 @@ function Library() {
   const { exercises, userProfile } = useGym();
   const navigate = useNavigate();
   const role = userProfile?.role;
+  const gender = userProfile?.gender;
   const isCoach = role === "coach" || role === "owner";
 
   useEffect(() => {
@@ -100,7 +102,11 @@ function Library() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="חפשי לפי שם תרגיל, ציוד או שריר..."
+          placeholder={genderText(
+            gender,
+            "חפשי לפי שם תרגיל, ציוד או שריר...",
+            "חפש לפי שם תרגיל, ציוד או שריר...",
+          )}
           className="w-full min-w-0 bg-transparent text-[14px] outline-none placeholder:text-muted-foreground"
         />
         <button
@@ -177,7 +183,11 @@ function Library() {
       <SectionHeader
         className="mt-5 text-start"
         title={`${list.length} תרגילים בספרייה`}
-        subtitle="לחצי על תרגיל לעריכה ופרטים"
+        subtitle={genderText(
+          gender,
+          "לחצי על תרגיל לעריכה ופרטים",
+          "לחץ על תרגיל לעריכה ופרטים",
+        )}
       />
 
       <div className="space-y-2.5">

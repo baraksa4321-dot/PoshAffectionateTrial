@@ -54,6 +54,7 @@ import {
   useGym,
 } from "@/lib/gym-store";
 import { BODYWEIGHT_EXERCISES } from "@/lib/bodyweight-exercises";
+import { genderText } from "@/lib/gender-copy";
 import {
   EQUIPMENT,
   MUSCLE_GROUPS,
@@ -127,6 +128,7 @@ function DayBuilder() {
   const { programId, dayId } = Route.useParams();
   const navigate = useNavigate();
   const { programs, workouts, exercises, userProfile } = useGym();
+  const gender = userProfile?.gender;
   const exerciseCatalog = [...exercises, ...BODYWEIGHT_EXERCISES];
   const canManageProgram = userProfile?.role === "coach" || userProfile?.role === "owner";
   const program = programs.find((item) => item.id === programId);
@@ -297,7 +299,11 @@ function DayBuilder() {
       <SectionHeader
         className="mt-6"
         title="תרגילים"
-        subtitle="גרורי לשינוי סדר, לחצי על כל תרגיל לעריכה"
+        subtitle={genderText(
+          gender,
+          "גררי לשינוי סדר, לחצי על כל תרגיל לעריכה",
+          "גרור לשינוי סדר, לחץ על כל תרגיל לעריכה",
+        )}
       />
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -336,8 +342,12 @@ function DayBuilder() {
       {draft.items.length === 0 ? (
         <EmptyState
           icon={Dumbbell}
-          title="הוסיפי תרגילים ליום האימון"
-          description="בחרי תרגילים מספריית התרגילים או צרי תרגיל חדש. ניתן לבנות סופר-סטים, דרופ-סטים וסטי חימום."
+          title={genderText(gender, "הוסיפי תרגילים ליום האימון", "הוסף תרגילים ליום האימון")}
+          description={genderText(
+            gender,
+            "בחרי תרגילים מספריית התרגילים או צרי תרגיל חדש. ניתן לבנות סופר-סטים, דרופ-סטים וסטי חימום.",
+            "בחר תרגילים מספריית התרגילים או צור תרגיל חדש. ניתן לבנות סופר-סטים, דרופ-סטים וסטי חימום.",
+          )}
           action={
             <button
               type="button"
@@ -345,7 +355,7 @@ function DayBuilder() {
               className="press inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-[13.5px] font-semibold text-primary-foreground"
             >
               <Plus className="h-4 w-4" strokeWidth={2.4} />
-              הוסיפי תרגיל ראשון
+              {genderText(gender, "הוסיפי תרגיל ראשון", "הוסף תרגיל ראשון")}
             </button>
           }
         />
@@ -357,7 +367,7 @@ function DayBuilder() {
           className="press mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/40 bg-primary/5 text-[14px] font-semibold text-primary"
         >
           <Plus className="h-4 w-4" strokeWidth={2.4} />
-          הוסיפי תרגיל
+          {genderText(gender, "הוסיפי תרגיל", "הוסף תרגיל")}
         </button>
       )}
 
@@ -396,7 +406,7 @@ function DayBuilder() {
                   ספריית תרגילים
                 </p>
                 <h2 className="mt-1 font-display text-[20px] font-semibold text-ink">
-                  בחרי תרגיל להוספה
+                  {genderText(gender, "בחרי תרגיל להוספה", "בחר תרגיל להוספה")}
                 </h2>
               </div>
               <IconButton onClick={() => setPicker(false)} aria-label="סגור">

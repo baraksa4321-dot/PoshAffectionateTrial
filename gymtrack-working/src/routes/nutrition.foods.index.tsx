@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { EmptyState, Pill, SectionHeader } from "@/components/ui-app/primitives";
 import { searchFoods, toggleFavoriteFood, useGym } from "@/lib/gym-store";
 import { nutritionSourceFor } from "@/lib/nutrition-integrity";
+import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/nutrition/foods/")({
   head: () => ({
@@ -14,7 +15,8 @@ export const Route = createFileRoute("/nutrition/foods/")({
 });
 
 function FoodLibrary() {
-  const { foods, favoriteFoods } = useGym();
+  const { foods, favoriteFoods, userProfile } = useGym();
+  const gender = userProfile?.gender;
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("הכל");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -67,7 +69,7 @@ function FoodLibrary() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="חפשי מאכל בספרייה..."
+          placeholder={genderText(gender, "חפשי מאכל בספרייה...", "חפש מאכל בספרייה...")}
           className="w-full min-w-0 bg-transparent text-[14px] outline-none placeholder:text-muted-foreground"
         />
       </div>
@@ -176,7 +178,11 @@ function FoodLibrary() {
         <EmptyState
           icon={Apple}
           title="לא נמצאו מאכלים"
-          description="לחצי על + כדי ליצור מאכל חדש."
+          description={genderText(
+            gender,
+            "לחצי על + כדי ליצור מאכל חדש.",
+            "לחץ על + כדי ליצור מאכל חדש.",
+          )}
           action={
             <Link
               to="/nutrition/foods/$foodId"

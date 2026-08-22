@@ -47,6 +47,7 @@ import {
 import type { MealFood } from "@/lib/gym-types";
 import { nutritionSourceFor } from "@/lib/nutrition-integrity";
 import { RECIPE_LIBRARY, type RecipeDefinition } from "@/lib/recipe-library";
+import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/nutrition/")({
   head: () => ({
@@ -76,6 +77,7 @@ function formatDayLabel(key: string) {
 
 function NutritionLog() {
   const gym = useGym();
+  const gender = gym.userProfile?.gender;
   const [date, setDate] = useState(todayKey());
   const [pickerMealId, setPickerMealId] = useState<string | null>(null);
   const [pickerQuery, setPickerQuery] = useState("");
@@ -500,7 +502,7 @@ function NutritionLog() {
               className="press inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-3.5 text-[12.5px] font-semibold text-primary-foreground cursor-pointer"
             >
               <Plus className="h-3.5 w-3.5" strokeWidth={2.4} />
-              הוסיפי ארוחה
+              {genderText(gender, "הוסיפי ארוחה", "הוסף ארוחה")}
             </button>
           }
         />
@@ -776,7 +778,7 @@ function NutritionLog() {
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <p className="text-[11px] font-semibold tracking-[0.14em] text-primary uppercase">
-                  הוסיפי מאכל
+                  {genderText(gender, "הוסיפי מאכל", "הוסף מאכל")}
                 </p>
                 <h2 className="mt-1 font-display text-[20px] font-semibold text-ink">
                   ספריית מאכלים
@@ -791,7 +793,11 @@ function NutritionLog() {
               <input
                 value={pickerQuery}
                 onChange={(e) => setPickerQuery(e.target.value)}
-                placeholder="חפשי מאכל, מותג או קטגוריה..."
+                placeholder={genderText(
+                  gender,
+                  "חפשי מאכל, מותג או קטגוריה...",
+                  "חפש מאכל, מותג או קטגוריה...",
+                )}
                 className="w-full bg-transparent text-[14px] outline-none"
               />
             </div>
@@ -923,7 +929,11 @@ function NutritionLog() {
               <input
                 value={substituteQuery}
                 onChange={(e) => setSubstituteQuery(e.target.value)}
-                placeholder="חפשי מאכל חלופי (למשל: תפוח אדמה)..."
+                placeholder={genderText(
+                  gender,
+                  "חפשי מאכל חלופי (למשל: תפוח אדמה)...",
+                  "חפש מאכל חלופי (למשל: תפוח אדמה)...",
+                )}
                 className="w-full bg-transparent text-[13px] outline-none"
               />
             </div>
@@ -976,7 +986,7 @@ function NutritionLog() {
               יעדים יומיים
             </p>
             <h2 className="mt-1 font-display text-[20px] font-semibold text-ink">
-              הגדירי יעדים תזונתיים
+              {genderText(gender, "הגדירי יעדים תזונתיים", "הגדר יעדים תזונתיים")}
             </h2>
             <div className="mt-4 grid grid-cols-2 gap-3">
               <TargetField

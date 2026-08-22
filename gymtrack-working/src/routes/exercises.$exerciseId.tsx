@@ -22,6 +22,7 @@ import {
   useGym,
 } from "@/lib/gym-store";
 import { EQUIPMENT, EXERCISE_CATEGORIES, MUSCLE_GROUPS, type Exercise } from "@/lib/gym-types";
+import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/exercises/$exerciseId")({
   head: () => ({
@@ -49,6 +50,7 @@ function ExerciseDetail() {
   const isNew = exerciseId === "new";
   const existing = exercises.find((e) => e.id === exerciseId);
   const canManageLibrary = userProfile?.role === "coach" || userProfile?.role === "owner";
+  const gender = userProfile?.gender;
 
   const [editing, setEditing] = useState(isNew);
   const [draft, setDraft] = useState<Exercise>(existing ?? emptyExercise());
@@ -288,7 +290,11 @@ function ExerciseDetail() {
           <div className="surface-card p-4">
             <label className={labelCls}>קבוצות שרירים עובדות</label>
             <p className="text-[11.5px] text-muted-foreground">
-              בחרי את כל קבוצות השרירים שהתרגיל מעסיק.
+              {genderText(
+                gender,
+                "בחרי את כל קבוצות השרירים שהתרגיל מעסיק.",
+                "בחר את כל קבוצות השרירים שהתרגיל מעסיק.",
+              )}
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {MUSCLE_GROUPS.map((m) => {
