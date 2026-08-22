@@ -11,6 +11,8 @@ import { useEffect } from "react";
 
 import "../styles.css";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { AppShell } from "../components/AppShell";
+import { useAuthStatus } from "../lib/gym-store";
 
 function NotFoundComponent() {
   return (
@@ -136,6 +138,7 @@ function ScrollToTop() {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const authStatus = useAuthStatus();
 
   useEffect(() => {
     document.documentElement.lang = "he";
@@ -148,7 +151,19 @@ function RootComponent() {
       <HeadContent />
       <ScrollToTop />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      {authStatus === "loading" ? (
+        <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4" dir="rtl">
+          <div className="rounded-3xl border border-border/60 bg-white px-6 py-5 text-center shadow-sm">
+            <p className="text-sm font-semibold text-foreground">בודקת את החיבור המאובטח...</p>
+          </div>
+        </div>
+      ) : authStatus === "unauthenticated" ? (
+        <AppShell title="ברוכה הבאה" subtitle="התחברי כדי להמשיך לאימונים ולתזונה" authOnly>
+          <></>
+        </AppShell>
+      ) : (
+        <Outlet />
+      )}
       <Scripts />
     </QueryClientProvider>
   );

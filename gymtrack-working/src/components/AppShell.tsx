@@ -24,12 +24,14 @@ export function AppShell({
   subtitle,
   kicker,
   action,
+  authOnly = false,
   children,
 }: {
   title: string;
   subtitle?: string | undefined;
   kicker?: string | undefined;
   action?: ReactNode | undefined;
+  authOnly?: boolean | undefined;
   children: ReactNode;
 }) {
   const store = useGym();
@@ -56,7 +58,7 @@ export function AppShell({
     { to: "/nutrition", label: "תזונה", id: "nutrition", icon: Apple },
   ];
 
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(authOnly);
   const [isSignUp, setIsSignUp] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -256,7 +258,7 @@ export function AppShell({
           paddingBottom: "calc(6.5rem + env(safe-area-inset-bottom))",
         }}
       >
-        {children}
+        {!authOnly ? children : null}
       </main>
 
       {showAuthModal && (

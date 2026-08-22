@@ -251,7 +251,9 @@ const seed = (): GymData => {
 
 let data: GymData = seed();
 let hydrated = false;
-let currentUser: { id: string } | null = null;
+let currentUser: { id: string; email?: string } | null = null;
+let authStatus: "loading" | "authenticated" | "unauthenticated" = "loading";
+let authResolved = false;
 const listeners = new Set<() => void>();
 
 /** Merge food database so saved data retains all Israeli supermarket items */
@@ -305,23 +307,41 @@ function load() {
 
   // Setup Supabase Auth state listener
   if (typeof window !== "undefined") {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        currentUser = session.user;
-        handleUserLogin(session.user.id);
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        currentUser = null;
+        authStatus = "unauthenticated";
+        listeners.forEach((l) => l());
+        return;
       }
+      currentUser = session?.user
+        ? { id: session.user.id, email: session.user.email }
+        : null;
+      authResolved = true;
+      authStatus = session?.user ? "authenticated" : "unauthenticated";
+      listeners.forEach((l) => l());
+      if (session?.user) void handleUserLogin(session.user.id);
+    }).catch(() => {
+      currentUser = null;
+      authStatus = "unauthenticated";
+      listeners.forEach((l) => l());
     });
 
     supabase.auth.onAuthStateChange((_event, session) => {
+      if (!authResolved && _event === "INITIAL_SESSION") return;
       const prevUserId = currentUser?.id;
-      currentUser = session?.user || null;
+      currentUser = session?.user
+        ? { id: session.user.id, email: session.user.email }
+        : null;
+      authResolved = true;
+      authStatus = session?.user ? "authenticated" : "unauthenticated";
 
       if (session?.user) {
         // If user changed, reset memory state first to avoid leaking previous user data
         if (prevUserId && prevUserId !== session.user.id) {
           data = seed();
         }
-        handleUserLogin(session.user.id);
+        void handleUserLogin(session.user.id);
       } else {
         // On sign-out, reset memory state to clean seed data
         data = seed();
@@ -393,6 +413,14 @@ export function useGym(): GymData {
 
 export function useAuthUser() {
   return currentUser;
+}
+
+export function useAuthStatus() {
+  return useSyncExternalStore(
+    subscribe,
+    () => authStatus,
+    () => "loading" as const,
+  );
 }
 
 /* ---------- rep helpers ---------- */
