@@ -29,6 +29,17 @@ export type CoachClientData = {
   error?: string;
 };
 
+function isMissingBodyWeightTableError(error: unknown): boolean {
+  const candidate = error as { code?: unknown; message?: unknown } | null;
+  const code = typeof candidate?.code === "string" ? candidate.code : "";
+  const message = error instanceof Error ? error.message : String(candidate?.message ?? error);
+  return (
+    code === "PGRST205" ||
+    message.includes("public.body_weight_logs") ||
+    (message.includes("body_weight_logs") && message.includes("schema cache"))
+  );
+}
+
 async function requireSuccessfulWrite(
   operation: PromiseLike<{ error: unknown }>,
   label: string,
@@ -202,7 +213,15 @@ export async function syncLocalToSupabase(
       await requireSuccessfulWrite(
         supabase.from("body_weight_logs").upsert(weighInPayload, { onConflict: "user_id,date" }),
         "Body weight log sync",
-      );
+      ).catch((error: unknown) => {
+        if (isMissingBodyWeightTableError(error)) {
+          console.warn(
+            "[Optional body weight sync skipped]: public.body_weight_logs is unavailable",
+          );
+          return;
+        }
+        throw error;
+      });
     }
 
     // 5. Custom Foods
@@ -463,7 +482,12 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .select("id, date, weight_kg")
       .eq("user_id", userId)
       .order("date", { ascending: false });
-    if (bodyWeightError) throw new Error(`Weight logs pull failed: ${bodyWeightError.message}`);
+    if (bodyWeightError && !isMissingBodyWeightTableError(bodyWeightError)) {
+      throw new Error(`Weight logs pull failed: ${bodyWeightError.message}`);
+    }
+    if (bodyWeightError) {
+      console.warn("[Optional body weight pull skipped]: public.body_weight_logs is unavailable");
+    }
 
     if (dbBodyWeightLogs && dbBodyWeightLogs.length > 0) {
       nextData.bodyWeightLogs = dbBodyWeightLogs.map((row) => ({
