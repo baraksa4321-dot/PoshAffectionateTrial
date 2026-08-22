@@ -1,2 +1,3 @@
 - [Replit Preview routing](preview-routing.md) — browser Preview needs a registered root web artifact, not only a healthy standalone Vite workflow.
 - [Optional activity-log schema drift](supabase-optional-logs.md) — the connected Supabase project lacks weight and cardio log tables; these must not block authenticated role hydration.
+- [Live role RPC safeguard](live-role-rpc-safeguard.md) — Owners may change another user’s role, never their own; preserve the approved live-only security guard.
