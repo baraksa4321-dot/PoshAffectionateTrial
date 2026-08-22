@@ -7,7 +7,7 @@ import {
   createRootRouteWithContext,
   useRouter,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import "../styles.css";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -77,6 +77,58 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           </a>
         </div>
       </div>
+    </div>
+  );
+}
+
+function LoadingIllustration({ variant }: { variant: number }) {
+  if (variant === 1) {
+    return (
+      <div className="loading-dumbbell" aria-hidden="true">
+        <div className="loading-weight loading-weight-left" />
+        <div className="loading-weight loading-weight-left-small" />
+        <div className="loading-bar" />
+        <div className="loading-grip" />
+        <div className="loading-weight loading-weight-right-small" />
+        <div className="loading-weight loading-weight-right" />
+      </div>
+    );
+  }
+
+  if (variant === 2) {
+    return (
+      <div className="loading-apple" aria-hidden="true">
+        <div className="loading-apple-leaf" />
+        <div className="loading-apple-stem" />
+        <div className="loading-apple-body" />
+        <div className="loading-apple-shine" />
+      </div>
+    );
+  }
+
+  if (variant === 3) {
+    return (
+      <div className="loading-bowl-wrap" aria-hidden="true">
+        <div className="loading-food loading-food-one" />
+        <div className="loading-food loading-food-two" />
+        <div className="loading-food loading-food-three" />
+        <div className="loading-spoon" />
+        <div className="loading-bowl">
+          <div className="loading-bowl-fill" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="loading-cup-wrap" aria-hidden="true">
+      <div className="loading-bubble loading-bubble-one" />
+      <div className="loading-bubble loading-bubble-two" />
+      <div className="loading-bubble loading-bubble-three" />
+      <div className="loading-cup">
+        <div className="loading-cup-fill" />
+      </div>
+      <div className="loading-cup-handle" />
     </div>
   );
 }
@@ -158,6 +210,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const authStatus = useAuthStatus();
   const { userProfile } = useGym();
+  const [loadingVariant, setLoadingVariant] = useState(0);
   const profileHydrationStatus = useProfileHydrationStatus();
   const profileHydrationError = useProfileHydrationError();
   const hasProfileHydrationError =
@@ -171,6 +224,7 @@ function RootComponent() {
     document.documentElement.lang = "he";
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
+    setLoadingVariant(Math.floor(Math.random() * 4));
   }, []);
 
   return (
@@ -189,19 +243,19 @@ function RootComponent() {
             aria-live="polite"
             aria-label="My Routine נטען"
           >
-            <div className="loading-cup-wrap" aria-hidden="true">
-              <div className="loading-bubble loading-bubble-one" />
-              <div className="loading-bubble loading-bubble-two" />
-              <div className="loading-bubble loading-bubble-three" />
-              <div className="loading-cup">
-                <div className="loading-cup-fill" />
-              </div>
-              <div className="loading-cup-handle" />
-            </div>
+            <LoadingIllustration variant={loadingVariant} />
             <p className="mt-5 font-display text-xl font-bold tracking-tight text-ink">
               My Routine
             </p>
-            <p className="mt-1 text-xs font-semibold text-muted-foreground">מכינים את השגרה שלך</p>
+            <p className="mt-1 text-xs font-semibold text-muted-foreground">
+              {loadingVariant === 1
+                ? "מתכוננים לסט הבא"
+                : loadingVariant === 2
+                  ? "מכינים משהו טעים"
+                  : loadingVariant === 3
+                    ? "מערבבים את השגרה שלך"
+                    : "ממלאים לך אנרגיה"}
+            </p>
           </div>
         </div>
       ) : hasProfileHydrationError ? (
