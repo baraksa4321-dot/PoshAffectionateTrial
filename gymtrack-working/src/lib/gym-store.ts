@@ -4,6 +4,11 @@ import { assertValidFoodNutrition, assertValidMealFood } from "./nutrition-integ
 import { supabase } from "./supabase";
 import { pullSupabaseData, syncLocalToSupabase } from "./supabase-sync";
 import {
+  ADDITIONAL_EXERCISES,
+  renameSeedExercise,
+  SEED_EXERCISE_NAME_MIGRATIONS,
+} from "./exercise-library";
+import {
   DEFAULT_MEALS,
   type BodyWeightLog,
   type CardioLog,
@@ -580,7 +585,7 @@ const seed = (): GymData => {
   ];
 
   return {
-    exercises: ex,
+    exercises: [...ex.map(renameSeedExercise), ...ADDITIONAL_EXERCISES],
     workouts,
     programs,
     history: [],
@@ -635,8 +640,16 @@ function mergeSeedFoods(existing: FoodItem[]): FoodItem[] {
 
 /** Merge the maintained exercise library without overwriting a user's edits. */
 function mergeSeedExercises(existing: Exercise[]): Exercise[] {
-  const byId = new Map(existing.map((exercise) => [exercise.id, exercise]));
-  const byName = new Map(existing.map((exercise) => [exercise.name.toLocaleLowerCase(), exercise]));
+  const migratedExisting = existing.map((exercise) => {
+    const migration = SEED_EXERCISE_NAME_MIGRATIONS[exercise.id];
+    return migration && exercise.name === migration.from
+      ? { ...exercise, name: migration.to }
+      : exercise;
+  });
+  const byId = new Map(migratedExisting.map((exercise) => [exercise.id, exercise]));
+  const byName = new Map(
+    migratedExisting.map((exercise) => [exercise.name.toLocaleLowerCase(), exercise]),
+  );
   for (const seedExercise of seed().exercises) {
     if (byId.has(seedExercise.id) || byName.has(seedExercise.name.toLocaleLowerCase())) continue;
     byId.set(seedExercise.id, seedExercise);
