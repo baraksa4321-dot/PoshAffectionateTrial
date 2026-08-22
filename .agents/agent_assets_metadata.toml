@@ -84,3 +84,31 @@ mtime_ms = 1787384235909
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/f323ca02-cfa9-499a-aa11-25e6ac7c12ea/9c3b47f3-d289-4dae-ab4f-fe9bfca4174c"
 storage_version_token = "1787384241395064"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "p0e7IA_VDD4cumejcQVYj"
+uri = "file://artifacts/my-routine-audit-copy.html"
+type = "text"
+title = "My Routine — Full Audit עם כפתור העתק הכול"
+description = "פותחים את הקובץ ולוחצים על העתק הכול כדי להעתיק את כל הדוח ללוח."
+logical_id = "248649b4-8b70-4493-be29-5e64608eacce"
+content_hash = "sha256:d996294c85de888d40d7666e3fb2edc1df94bb8729209e1409b96224248f5356"
+size = 14925
+mtime_ms = 1787392223147
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/248649b4-8b70-4493-be29-5e64608eacce/eb439035-960f-405f-bb25-bec9b2810055"
+storage_version_token = "1787392224598848"
+content_type = "text/html"
+
+[[outputs]]
+id = "LhIPN94LzJmaT8n0m5W9k"
+uri = "file://artifacts/my-routine-audit-copy.txt"
+type = "text"
+title = "My Routine — Full Audit כקובץ טקסט"
+description = "גרסת טקסט פשוטה של הדוח, נוחה להדבקה במסמך או בהודעה."
+logical_id = "fb332bdf-20df-43d0-af64-5230a4d0aa04"
+content_hash = "sha256:c2334e3b38c1cbdfab24fd4a900404fba7ccb137bea721db834b244ad2425878"
+size = 12768
+mtime_ms = 1787392223336
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/fb332bdf-20df-43d0-af64-5230a4d0aa04/d657f8f2-4f74-4657-b463-0689a7e7fb64"
+storage_version_token = "1787392225906083"
+content_type = "text/plain"
