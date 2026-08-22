@@ -20,6 +20,7 @@ import {
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Stepper } from "@/components/Stepper";
+import { Overlay } from "@/components/ui-app/Overlay";
 import {
   Card,
   IconButton,
@@ -27,7 +28,6 @@ import {
   SecondaryButton,
   SectionHeader,
 } from "@/components/ui-app/primitives";
-import { Overlay } from "@/components/ui-app/Overlay";
 import {
   addFoodToMeal,
   addMeal,
@@ -436,10 +436,11 @@ function NutritionLog() {
       {/* "What Should I Eat Now?" Modal */}
       {showWhatToEat && (
         <Overlay
-          open={showWhatToEat}
           onClose={() => setShowWhatToEat(false)}
-          variant="bottom"
-          ariaLabel="מה לאכול עכשיו"
+          ariaLabel="מה לאכול עכשיו?"
+          position="center"
+          panelClassName="contents"
+          className="fade-in"
         >
           <div
             className="w-full max-w-sm rounded-3xl border border-white/80 bg-white p-5 shadow-2xl space-y-3 text-start"
@@ -520,10 +521,11 @@ function NutritionLog() {
       {/* Automatic Shopping List Modal */}
       {showShoppingList && (
         <Overlay
-          open={showShoppingList}
           onClose={() => setShowShoppingList(false)}
-          variant="bottom"
-          ariaLabel="רשימת קניות אוטומטית"
+          ariaLabel="רשימת קניות"
+          position="center"
+          panelClassName="contents"
+          className="fade-in"
         >
           <div
             className="w-full max-w-sm rounded-3xl border border-white/80 bg-white p-5 shadow-2xl space-y-3 text-start max-h-[80vh] overflow-y-auto"
@@ -582,10 +584,10 @@ function NutritionLog() {
       {/* Picker bottom-sheet */}
       {pickerMealId ? (
         <Overlay
-          open={Boolean(pickerMealId)}
           onClose={() => setPickerMealId(null)}
-          variant="bottom"
-          ariaLabel="בחירת מאכל"
+          ariaLabel="ספריית מאכלים"
+          panelClassName="contents"
+          className="fade-in"
         >
           <div
             className="scale-in max-h-[88dvh] overflow-y-auto rounded-t-[2rem] border-t border-border/40 bg-card p-5 text-start shadow-2xl"
@@ -640,10 +642,10 @@ function NutritionLog() {
       {/* Calorie-based replacement */}
       {substituteFor ? (
         <Overlay
-          open={Boolean(substituteFor)}
           onClose={() => setSubstituteFor(null)}
-          variant="bottom"
           ariaLabel="החלפת מאכל"
+          panelClassName="contents"
+          className="fade-in"
         >
           <div
             className="scale-in max-h-[88dvh] overflow-y-auto rounded-t-[2rem] border-t border-border/40 bg-card p-5 text-start shadow-2xl"
@@ -703,10 +705,10 @@ function NutritionLog() {
       {/* Targets modal */}
       {showTargets ? (
         <Overlay
-          open={showTargets}
           onClose={() => setShowTargets(false)}
-          variant="bottom"
-          ariaLabel="יעדים תזונתיים"
+          ariaLabel="יעדים יומיים"
+          panelClassName="contents"
+          className="fade-in"
         >
           <div
             className="scale-in max-h-[88dvh] w-full max-w-xl overflow-y-auto rounded-t-[2rem] border-t border-border/40 bg-card p-5 text-start shadow-2xl"
