@@ -746,30 +746,40 @@ export function CoachDashboardPage({
 
   return (
     <AppShell
-      title=""
-      subtitle=""
-      kicker=""
+      title={clientsOnly ? "המתאמנים שלי" : "מרחב ניהול"}
+      subtitle={clientsOnly ? "חיפוש וכניסה לעבודה על מתאמן" : "תמונת מצב ופעולות מהירות"}
+      kicker={clientsOnly ? (isOwner ? "ניהול מתאמנים" : "לוח המאמן") : "לוח בקרה"}
       action={
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-1 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
-        >
-          <UserPlus className="h-3.5 w-3.5" />
-          <span>הוסף מתאמן</span>
-        </button>
+        clientsOnly ? (
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-1 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
+          >
+            <UserPlus className="h-3.5 w-3.5" />
+            <span>הוסף מתאמן</span>
+          </button>
+        ) : (
+          <Link
+            to="/coach/clients"
+            className="flex items-center gap-1 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-primary/90"
+          >
+            <Users className="h-3.5 w-3.5" />
+            <span>המתאמנים</span>
+          </Link>
+        )
       }
     >
       {!clientsOnly ? (
         <section className="space-y-4 text-start">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
-              תמונת מצב
+              לוח מודעות
             </p>
             <h2 className="mt-1 font-display text-2xl font-extrabold text-ink">
-              מה דורש תשומת לב היום?
+              מה חשוב לדעת היום?
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              סיכום קצר של המתאמנים והפעולות שממתינות לך.
+              עדכונים קצרים ופעולות שממתינות לך במרחב הניהול.
             </p>
           </div>
 
@@ -858,31 +868,6 @@ export function CoachDashboardPage({
         </section>
       ) : null}
 
-      {!clientsOnly ? (
-        <section className="surface-card rounded-3xl border-2 border-primary/25 bg-primary/5 p-4 text-start shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
-              <Dumbbell className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h2 className="break-words font-display text-lg font-extrabold leading-snug text-ink">
-                בניית תוכנית אימונים ותפריט למתאמן
-              </h2>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                בחרי מתאמן כדי לערוך תוכניות, להוסיף תרגילים, לבנות תפריט מתוכנן ולהגדיר יעדים.
-              </p>
-              <Link
-                to="/coach/clients"
-                className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm hover:bg-primary/90"
-              >
-                פתיחת רשימת המתאמנים
-                <ChevronLeft className="ms-1 h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-        </section>
-      ) : null}
-
       <div className="space-y-5 text-start">
         {managementError ? (
           <div
@@ -893,7 +878,7 @@ export function CoachDashboardPage({
           </div>
         ) : null}
         {/* Owner Management Section */}
-        {isOwner && (
+        {isOwner && clientsOnly && (
           <div className="surface-card p-5 rounded-3xl space-y-3 bg-purple-50/60 border border-purple-200">
             <div className="flex items-center justify-between border-b border-purple-200/60 pb-2">
               <div className="flex items-center gap-2">
@@ -973,163 +958,152 @@ export function CoachDashboardPage({
           </div>
         )}
 
-        {/* Coach Header Banner */}
-        <div className="surface-card p-5 rounded-3xl space-y-3 bg-linear-to-br from-rose-50/60 to-primary/5 border border-primary/15">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <Award className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-base text-ink">לוח מאמן פעיל</h3>
-                <p className="text-xs text-muted-foreground">
-                  {clients.length} מתאמנים רשומים תחת לוח זה
-                </p>
-              </div>
-            </div>
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
-              <UserCheck className="h-3 w-3" /> מחובר כמאמן
-            </span>
-          </div>
-        </div>
-
-        <div className="surface-card rounded-3xl border border-primary/15 bg-primary/5 p-4 text-start">
-          <div className="flex items-start gap-2.5">
-            <Shield className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <div>
-              <h4 className="text-xs font-bold text-ink">מעקב מתאמנים</h4>
-              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-                בחרי מתאמן מהרשימה כדי לצפות בנתונים שהגישה אליהם מורשית, לעדכן תוכנית, להגדיר יעדים
-                ולשלוח הודעה. התראות אינן מוצגות כאן ללא נתונים אמיתיים מהחשבון.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Client Search & List */}
-        <div className="space-y-2.5">
-          <div className="flex items-center justify-between px-1">
-            <h3 className="font-bold text-sm text-ink flex items-center gap-1.5">
-              <Users className="h-4 w-4 text-primary" /> כל המתאמנים
-            </h3>
-          </div>
-
-          <div className="num-pill flex h-10 items-center gap-2 px-3">
-            <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <label htmlFor="coach-client-search" className="sr-only">
-              חיפוש מתאמן
-            </label>
-            <input
-              id="coach-client-search"
-              type="text"
-              value={clientSearch}
-              onChange={(e) => setClientSearch(e.target.value)}
-              placeholder="חיפוש לפי שם או אימייל..."
-              className="w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground"
-              aria-label="חיפוש לפי שם או אימייל"
-            />
-          </div>
-
-          {authUser ? (
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedClientId(isSelfSelected ? null : authUser.id);
-                setShowClientWorkspace(!isSelfSelected);
-                setEditingProgramId(null);
-                setEditingDayId(null);
-              }}
-              aria-pressed={isSelfSelected}
-              className={`surface-card flex w-full items-center justify-between rounded-2xl border p-4 text-start transition-all ${
-                isSelfSelected
-                  ? "border-primary bg-primary/10 shadow-xs"
-                  : "border-primary/30 bg-primary/5 hover:border-primary/60"
-              }`}
-            >
-              <span className="flex min-w-0 items-center gap-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
-                  אני
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-bold text-ink">התכנית האישית שלי</span>
-                  <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                    בניית אימונים ותפריט עבורי
-                  </span>
-                </span>
-              </span>
-              <span className="shrink-0 text-xs font-bold text-primary">
-                {isSelfSelected ? "נבחר" : "פתיחה"}
-              </span>
-            </button>
-          ) : null}
-
-          {filteredClients.length === 0 ? (
-            <div className="surface-card p-6 text-center text-muted-foreground rounded-2xl text-xs space-y-2">
-              <p>לא נמצאו מתאמנים רשומים.</p>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="text-primary font-bold hover:underline cursor-pointer"
-              >
-                לחצי כאן להוספת מתאמן לפי אימייל
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-2.5">
-              {filteredClients.map((c) => {
-                const isSelected = c.client_id === selectedClientId;
-                const emailStr = c.profiles?.email || "מתאמן";
-                const nameStr = c.profiles?.full_name || emailStr.split("@")[0];
-
-                return (
-                  <div
-                    key={c.id}
-                    onClick={() => {
-                      if (!isSelected) {
-                        navigate({
-                          to: "/coach/clients/$clientId",
-                          params: { clientId: c.client_id },
-                        });
-                      }
-                    }}
-                    className={`surface-card p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                      isSelected
-                        ? "border-primary bg-primary/5 shadow-xs"
-                        : "border-border/60 hover:border-border"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary font-bold text-sm">
-                        {nameStr.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-sm text-ink">{nameStr}</h4>
-                        <p className="text-xs text-muted-foreground">{emailStr}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveClient(c.id);
-                        }}
-                        className="p-1.5 text-muted-foreground hover:text-red-600 rounded-lg transition-colors cursor-pointer"
-                        title="הסר מתאמן"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                      <ChevronLeft
-                        className={`h-5 w-5 text-muted-foreground transition-transform ${
-                          isSelected ? "-rotate-90 text-primary" : ""
-                        }`}
-                      />
-                    </div>
+        {clientsOnly ? (
+          <>
+            {/* Coach Header Banner */}
+            <div className="surface-card rounded-3xl border border-primary/15 bg-primary/5 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Dumbbell className="h-4 w-4" />
                   </div>
-                );
-              })}
+                  <div>
+                    <h3 className="font-bold text-sm text-ink">בניית תוכניות ותפריטים</h3>
+                    <p className="text-xs text-muted-foreground">
+                      בחרי מתאמן כדי לפתוח את סביבת העבודה שלו
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-bold text-primary">{clients.length}</span>
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Client Search & List */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between px-1">
+                <h3 className="font-bold text-sm text-ink flex items-center gap-1.5">
+                  <Users className="h-4 w-4 text-primary" /> כל המתאמנים
+                </h3>
+              </div>
+
+              <div className="num-pill flex h-10 items-center gap-2 px-3">
+                <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <label htmlFor="coach-client-search" className="sr-only">
+                  חיפוש מתאמן
+                </label>
+                <input
+                  id="coach-client-search"
+                  type="text"
+                  value={clientSearch}
+                  onChange={(e) => setClientSearch(e.target.value)}
+                  placeholder="חיפוש לפי שם או אימייל..."
+                  className="w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+                  aria-label="חיפוש לפי שם או אימייל"
+                />
+              </div>
+
+              {authUser && !clientsOnly ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedClientId(isSelfSelected ? null : authUser.id);
+                    setShowClientWorkspace(!isSelfSelected);
+                    setEditingProgramId(null);
+                    setEditingDayId(null);
+                  }}
+                  aria-pressed={isSelfSelected}
+                  className={`surface-card flex w-full items-center justify-between rounded-2xl border p-4 text-start transition-all ${
+                    isSelfSelected
+                      ? "border-primary bg-primary/10 shadow-xs"
+                      : "border-primary/30 bg-primary/5 hover:border-primary/60"
+                  }`}
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
+                      אני
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold text-ink">התכנית האישית שלי</span>
+                      <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                        בניית אימונים ותפריט עבורי
+                      </span>
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-xs font-bold text-primary">
+                    {isSelfSelected ? "נבחר" : "פתיחה"}
+                  </span>
+                </button>
+              ) : null}
+
+              {filteredClients.length === 0 ? (
+                <div className="surface-card p-6 text-center text-muted-foreground rounded-2xl text-xs space-y-2">
+                  <p>לא נמצאו מתאמנים רשומים.</p>
+                  <button
+                    onClick={() => setShowAddModal(true)}
+                    className="text-primary font-bold hover:underline cursor-pointer"
+                  >
+                    לחצי כאן להוספת מתאמן לפי אימייל
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-2.5">
+                  {filteredClients.map((c) => {
+                    const isSelected = c.client_id === selectedClientId;
+                    const emailStr = c.profiles?.email || "מתאמן";
+                    const nameStr = c.profiles?.full_name || emailStr.split("@")[0];
+
+                    return (
+                      <div
+                        key={c.id}
+                        onClick={() => {
+                          if (!isSelected) {
+                            navigate({
+                              to: "/coach/clients/$clientId",
+                              params: { clientId: c.client_id },
+                            });
+                          }
+                        }}
+                        className={`surface-card p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                          isSelected
+                            ? "border-primary bg-primary/5 shadow-xs"
+                            : "border-border/60 hover:border-border"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary font-bold text-sm">
+                            {nameStr.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-sm text-ink">{nameStr}</h4>
+                            <p className="text-xs text-muted-foreground">{emailStr}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveClient(c.id);
+                            }}
+                            className="p-1.5 text-muted-foreground hover:text-red-600 rounded-lg transition-colors cursor-pointer"
+                            title="הסר מתאמן"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                          <ChevronLeft
+                            className={`h-5 w-5 text-muted-foreground transition-transform ${
+                              isSelected ? "-rotate-90 text-primary" : ""
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </>
+        ) : null}
 
         {/* Selected Client Full Coach Workspace */}
         {selectedClientId && showClientWorkspace && (

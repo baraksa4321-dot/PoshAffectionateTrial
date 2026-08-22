@@ -174,6 +174,7 @@ function NutritionLog() {
     replacement: {
       food: (typeof gym.foods)[0];
       calculatedQuantity: number;
+      calculatedGrams: number | null;
     },
   ) => {
     const lib = replacement.food;
@@ -900,11 +901,18 @@ function NutritionLog() {
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <p className="text-[11px] font-semibold tracking-[0.14em] text-primary uppercase">
-                  החלף לי (התאמה קלורית)
+                  החלפת מזון לפי קלוריות
                 </p>
                 <h2 className="mt-1 font-display text-[20px] font-semibold text-ink">
                   {substituteFor.food.name}
                 </h2>
+                <p className="mt-1 text-[12px] text-muted-foreground">
+                  תקציב ההחלפה:
+                  <span className="ms-1 font-bold text-ink">
+                    {Math.round(substituteFor.food.calories * (substituteFor.food.quantity || 1))}{" "}
+                    קלוריות
+                  </span>
+                </p>
               </div>
               <IconButton aria-label="סגור" onClick={() => setSubstituteFor(null)}>
                 <X className="h-5 w-5" />
@@ -937,8 +945,10 @@ function NutritionLog() {
                       {item.calculatedFiber}ג׳
                     </p>
                   </div>
-                  <span className="num-pill shrink-0 px-2.5 py-1 text-[11px] font-medium text-ink-soft">
-                    {Math.round(item.calculatedQuantity * 10) / 10}×
+                  <span className="num-pill shrink-0 px-2.5 py-1 text-[11px] font-bold text-ink-soft">
+                    {item.calculatedGrams !== null
+                      ? `${Math.round(item.calculatedGrams)} גרם`
+                      : `${Math.round(item.calculatedQuantity * 10) / 10}× מנה`}
                   </span>
                 </button>
               ))}

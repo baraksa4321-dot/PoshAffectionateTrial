@@ -1517,9 +1517,11 @@ export function findFoodReplacements(
     })
     .map((food) => {
       const requiredQty = food.calories > 0 ? targetCal / food.calories : 1;
+      const servingGrams = parseServingGrams(food.servingSize);
       return {
         food,
         calculatedQuantity: round1(requiredQty),
+        calculatedGrams: servingGrams === null ? null : round1(servingGrams * requiredQty),
         calculatedCalories: Math.round(food.calories * requiredQty),
         calculatedProtein: round1(food.protein * requiredQty),
         calculatedCarbs: round1(food.carbs * requiredQty),
@@ -1529,6 +1531,13 @@ export function findFoodReplacements(
       };
     })
     .sort((a, b) => a.score - b.score || a.food.name.localeCompare(b.food.name));
+}
+
+function parseServingGrams(servingSize: string): number | null {
+  const match = servingSize.match(/(\d+(?:[.,]\d+)?)\s*(?:g|גרם)\b/i);
+  if (!match?.[1]) return null;
+  const grams = Number(match[1].replace(",", "."));
+  return Number.isFinite(grams) && grams > 0 ? grams : null;
 }
 
 export type MacroTotals = {
