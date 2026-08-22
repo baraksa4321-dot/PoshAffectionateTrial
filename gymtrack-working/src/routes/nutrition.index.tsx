@@ -96,6 +96,7 @@ function NutritionLog() {
   const [suggestionMealId, setSuggestionMealId] = useState<string>("");
   const [showRecipes, setShowRecipes] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<RecipeDefinition | null>(null);
+  const [recipeCategory, setRecipeCategory] = useState<RecipeDefinition["category"] | "הכל">("הכל");
 
   const day = nutritionDay(gym, date);
   const totals = dayTotals(day);
@@ -298,17 +299,25 @@ function NutritionLog() {
             <div className="flex gap-1.5 overflow-x-auto pb-2">
               {(["הכל", "עתיר חלבון", "דל שומן", "ארוחה קלה", "מתוק מאוזן"] as const).map(
                 (category) => (
-                  <span
+                  <button
                     key={category}
-                    className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-semibold text-muted-foreground"
+                    type="button"
+                    onClick={() => setRecipeCategory(category)}
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold transition-colors ${
+                      recipeCategory === category
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-muted-foreground"
+                    }`}
                   >
                     {category}
-                  </span>
+                  </button>
                 ),
               )}
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {RECIPE_LIBRARY.map((recipe) => (
+              {RECIPE_LIBRARY.filter(
+                (recipe) => recipeCategory === "הכל" || recipe.category === recipeCategory,
+              ).map((recipe) => (
                 <button
                   key={recipe.id}
                   type="button"

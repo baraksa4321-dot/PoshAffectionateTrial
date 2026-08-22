@@ -1,4 +1,4 @@
-import { Navigate, createFileRoute } from "@tanstack/react-router";
+import { Navigate, createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Apple,
   Award,
@@ -64,6 +64,15 @@ export const Route = createFileRoute("/coach")({
 });
 
 export function CoachDashboardPage({ clientsOnly = false }: { clientsOnly?: boolean }) {
+export function CoachDashboardPage({
+  clientsOnly = false,
+  workspacePage = false,
+  clientId,
+}: {
+  clientsOnly?: boolean;
+  workspacePage?: boolean;
+  clientId?: string;
+}) {
   const store = useGym();
   const authUser = useAuthUser();
   const role = store.userProfile?.role;

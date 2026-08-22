@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-type OverlayVariant = "center" | "bottom";
+type OverlayVariant = "center" | "bottom" | "full";
 
 let scrollLockCount = 0;
 let previousBodyOverflow = "";
@@ -112,6 +112,7 @@ export function Overlay({
   if (!open || !mounted || typeof document === "undefined") return null;
 
   const isBottom = variant === "bottom";
+    const isFull = variant === "full";
 
   return createPortal(
     <div
@@ -120,8 +121,8 @@ export function Overlay({
       aria-label={ariaLabel}
       data-keyboard-open={keyboardOffset > 0 ? "true" : undefined}
       className={`fixed inset-0 z-[100] flex ${
-        isBottom ? "items-end justify-center" : "items-center justify-center"
-      } bg-foreground/40 p-4 backdrop-blur-sm ${className}`}
+        isFull ? "items-stretch justify-center" : isBottom ? "items-end justify-center" : "items-center justify-center"
+      } ${isFull ? "bg-background p-0" : "bg-foreground/40 p-4 backdrop-blur-sm"} ${className}`}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -133,11 +134,13 @@ export function Overlay({
         ref={panelRef}
         tabIndex={-1}
         style={{
-          maxHeight: `calc(100dvh - ${keyboardOffset}px - ${isBottom ? "1rem" : "2rem"})`,
+          maxHeight: `calc(100dvh - ${keyboardOffset}px - ${isFull ? "0px" : isBottom ? "1rem" : "2rem"})`,
           marginBottom: isBottom ? keyboardOffset : 0,
         }}
         className={`w-full ${
-          isBottom
+          isFull
+            ? "h-full max-h-full max-w-none rounded-none"
+            : isBottom
             ? "max-h-[calc(100dvh-1rem)] max-w-xl rounded-t-[2rem] pb-[max(1.25rem,env(safe-area-inset-bottom))]"
             : "max-h-[calc(100dvh-2rem)] max-w-lg rounded-3xl"
         } overflow-y-auto overscroll-contain bg-card shadow-2xl ${panelClassName}`}
