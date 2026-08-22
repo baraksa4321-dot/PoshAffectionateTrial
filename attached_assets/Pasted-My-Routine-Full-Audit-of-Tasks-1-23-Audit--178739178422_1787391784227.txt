@@ -1,0 +1,784 @@
+My Routine — Full Audit of Tasks #1–#23
+
+אני רוצה לעצור לפני ביצוע תיקונים נוספים ולעשות Audit מלא של כל העבודה שנעשתה עד עכשיו.
+
+חשוב מאוד
+
+אל תבדוק רק את Task #20, #21, #22 או #23.
+
+אני רוצה שתעבור על כל המשימות מ־Task #1 ועד Task #23, כולל כל הדרישות, התיקונים, ההבטחות וה־follow-ups שהוגדרו לאורך הדרך.
+
+המטרה היא להבין בצורה חד־משמעית:
+
+* מה באמת הושלם.
+* מה באמת עובד.
+* מה תוקן בקוד אבל לא נבדק בפועל.
+* מה תוקן חלקית.
+* מה עדיין שבור.
+* מה בכלל לא בוצע.
+* אילו משימות חופפות.
+* אילו משימות עדיין פתוחות.
+* מה אתה מסוגל לתקן בעצמך.
+* מה אתה לא מסוגל לאמת.
+* ומה בדיוק אתה צריך ממני כדי שנוכל להשלים את הבדיקות.
+
+אל תכריז שהמערכת מוכנה.
+
+אל תכתוב “FIXED” רק כי קיים קוד שנראה מתאים.
+
+אם אין לך אפשרות לבצע פעולה אמיתית בדפדפן או מול Supabase חי, סמן זאת בבירור.
+
+⸻
+
+1. Audit מלא — Tasks #1–#23
+
+עבור על:
+
+Task #1 → Task #23
+
+לכל Task בדוק:
+
+* מה הייתה הדרישה המקורית.
+* מה בוצע בפועל.
+* אילו קבצים השתנו.
+* האם הדרישה קיימת בקוד.
+* האם היא עובדת בפועל.
+* האם היא נבדקה בדפדפן.
+* האם היא נבדקה עם משתמש מחובר.
+* האם היא נבדקה מול Supabase חי.
+* האם היא נשארה חלקית.
+* האם היא נשברה בעקבות Task מאוחר יותר.
+* האם היא חופפת למשימה אחרת.
+* האם היא עדיין דורשת פעולה.
+
+לכל משימה תן:
+
+FIXED / VERIFIED / CODE VERIFIED / PARTIAL / BROKEN / MISSING / NOT VERIFIED
+
+⸻
+
+2. טבלת Master מלאה
+
+אני רוצה טבלה אחת שמכסה את כל Tasks #1–#23.
+
+העמודות:
+
+Task	Requirement	Status	What exists	What was actually verified	What is still missing	What you need from me
+
+אל תדלג על משימות רק בגלל שהן ישנות.
+
+אם Task ישן כבר טופל על ידי Task חדש יותר — כתוב זאת.
+
+אם תיקון ישן נשבר בעקבות שינוי חדש — כתוב זאת.
+
+⸻
+
+3. Owner / Coach / Client
+
+בדוק מול כל הדרישות שהופיעו לאורך Tasks #1–#23.
+
+Owner
+
+צריך להיות מוצר נפרד:
+
+* Owner Dashboard
+* Owner Navigation
+* Coaches
+* Clients
+* Search
+* Profiles
+* Assignments
+* Role management
+* Programs
+* Workouts
+* History
+* Measurements
+* Nutrition
+* Feedback
+* Messages
+* Recipes
+* Progress
+
+Coach
+
+* Coach Dashboard
+* Assigned clients בלבד
+* Profiles
+* Programs
+* Workouts
+* History
+* Measurements
+* Nutrition
+* Feedback
+* Messages
+* Recipes
+* Custom exercises
+* Custom foods
+* Progress
+
+Client
+
+* Client Dashboard
+* Workout
+* Programs
+* Nutrition
+* Progress
+* Measurements
+* History
+* Messages
+* Profile
+* Settings
+
+Client לא אמור לקבל Owner tools או Coach management tools.
+
+⸻
+
+4. Maya / Owner — קריטי
+
+בדוק בנפרד:
+
+mayayosfan234@gmail.com
+
+ו־
+
+maya2003yos
+
+אני רוצה:
+
+* Auth ID
+* profiles.role
+* coach_id
+* is_owner()
+* frontend role
+* navigation
+* dashboard
+
+אל תשנה את התפקיד.
+
+אל תיצור hardcode.
+
+אם אין לך גישה ל־Supabase החי:
+
+כתוב לי בדיוק מה אני צריכה לפתוח ואיזה שדות להראות לך.
+
+⸻
+
+5. Persistence
+
+בדוק את כל מה שהובטח לאורך Tasks #1–#23:
+
+* Profile
+* Programs
+* Program days
+* Exercises
+* Rep range
+* Rest
+* Workouts
+* Actual weight
+* Actual reps
+* Sets
+* RPE
+* Workout history
+* Nutrition
+* Meals
+* Food quantity
+* Food totals
+* Fiber
+* Measurements
+* Feedback
+* Messages
+* Recipes
+* Favorites
+* Custom foods
+* Custom exercises
+* Cardio
+* Theme
+
+עבור כל אחד:
+
+Save → Refresh
+
+וגם:
+
+Save → Logout → Login
+
+אם לא ניתן לבצע את הבדיקה — NOT VERIFIED.
+
+⸻
+
+6. Nutrition — Audit מלא
+
+זה אחד הדברים הכי חשובים מבחינתי.
+
+בדוק את כל מה שביקשנו לאורך Tasks #1–#23:
+
+* Breakfast
+* Lunch
+* Dinner
+* Snack
+* Add food
+* Remove food
+* Replace food
+* Search
+* Quantity
+* Favorites
+* Custom food
+* Food details
+* Meal totals
+* Daily totals
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+
+אין Water UI.
+
+⸻
+
+7. Food Database
+
+כרגע עדיין מופיעים בערך 488 מזונות.
+
+זה לא מספיק.
+
+בדוק:
+
+* כמה מזונות קיימים באמת.
+* כמה built-in.
+* כמה custom.
+* כמה duplicates.
+* אילו קטגוריות קיימות.
+* אילו חסרות.
+* האם הערכים אמינים.
+* מאיפה מגיעים הערכים.
+
+אני לא רוצה ערכים מומצאים.
+
+אם יש צורך במקור חיצוני אמין:
+
+בדוק מה אפשר להשתמש בו.
+
+אם אתה לא יכול לגשת אליו, תגיד לי בדיוק מה אני צריכה לספק:
+
+* API
+* CSV
+* JSON
+* Dataset
+* קובץ
+* מקור אחר.
+
+⸻
+
+8. Exercise Library
+
+בדוק כמה תרגילים קיימים באמת.
+
+אני רוצה כיסוי רחב:
+
+* Chest
+* Back
+* Shoulders
+* Biceps
+* Triceps
+* Quads
+* Hamstrings
+* Glutes
+* Calves
+* Core
+* Forearms
+* Traps
+* Lower Back
+
+ציוד:
+
+* Barbell
+* Dumbbell
+* Cable
+* Machine
+* Bodyweight
+
+ללא duplicates וללא fake data.
+
+⸻
+
+9. Exercise Picker / Overlay
+
+זו עדיין בעיה שאני רואה בפועל.
+
+התרגיל עדיין נפתח למטה.
+
+אני רוצה שתמצא את כל המקומות שבהם Exercise Picker נפתח ותבדוק:
+
+* Portal
+* z-index
+* position
+* overflow
+* internal scroll
+* Escape
+* outside click
+* X
+* mobile
+* RTL
+* reopen
+
+אם הקוד נראה נכון אבל בפועל לא ניתן לאמת — סמן NOT VERIFIED.
+
+⸻
+
+10. Workout Card
+
+ה־Exercise Card צריך להיות:
+
+Exercise Name
+
+Replace
+
+Rest
+
+ואז:
+
+60 kg · 8–12 reps
+
+ואז:
+
+Set 1 ✓
+
+ומתחת:
+
+Actual Weight
+
+Actual Reps
+
+ה־Actual inputs צריכים להיות קומפקטיים יותר מה־planned values.
+
+⸻
+
+11. Rep Range
+
+חייב להיות:
+
+* Fixed reps
+* Range reps
+* repType
+* repMin
+* repMax
+
+לדוגמה:
+
+8–12 reps
+
+ולא רק 8 או 12.
+
+בדוק גם persistence.
+
+⸻
+
+12. Client Restrictions
+
+Client לא אמור להיות מסוגל ליצור:
+
+* Drop Set
+* Superset
+
+גם דרך:
+
+* UI
+* State
+* Action
+* URL ישיר
+* Route
+
+⸻
+
+13. Buttons
+
+עדיין יש כפתורים שלא עובדים.
+
+עשה audit לכל הכפתורים המרכזיים:
+
+* ●	
+* Add
+* Save
+* Edit
+* Delete
+* Replace
+* Confirm
+* Cancel
+* Back
+* Search
+* Filters
+* Favorites
+* Meal actions
+* Workout actions
+* Navigation
+* Profile actions
+
+סמן כל אחד:
+
+WORKING / BROKEN / PLACEHOLDER / NOT VERIFIED
+
+כפתור שלא עושה כלום צריך להיות מתוקן או מוסר.
+
+⸻
+
+14. Theme
+
+ה־Theme כרגע מופיע ב־Login אבל לא בהכרח ממשיך לכל המערכת.
+
+אני רוצה שה־Theme יחול על כל My Routine:
+
+* Login
+* Home
+* Navigation
+* Owner
+* Coach
+* Client
+* Nutrition
+* Workout
+* Programs
+* Profile
+* Settings
+* Dialogs
+* Sheets
+* Buttons
+* Inputs
+* Cards
+
+פלטות:
+
+* Pink
+* Blue
+* Beige
+* Green
+* Yellow
+* Black
+* ועוד Pastel palettes יפות.
+
+הבחירה צריכה להישמר.
+
+⸻
+
+15. עיצוב
+
+העיצוב כרגע מרגיש גנרי מדי.
+
+אני לא רוצה:
+
+* Card לכל דבר
+* Border radius מוגזם
+* כפתור עגול לכל פעולה
+* מראה של AI-generated template
+* עומס של אלמנטים
+
+אני רוצה:
+
+* Modern
+* Clean
+* Premium
+* Minimal
+* Fitness-focused
+* היררכיה טובה
+* Typography טובה
+* Spacing טוב
+* UI טבעי ולא עמוס
+
+אפשר לקחת השראה מאפליקציות Fitness/Nutrition מודרניות, אבל לא להעתיק.
+
+⸻
+
+16. Cardio
+
+בדוק את כל מה שהוגדר:
+
+Client, Coach ו־Owner לפי ההרשאות.
+
+Client צריך להיות מסוגל:
+
+Add Cardio Workout
+
+פעילויות:
+
+* Walking
+* Running
+* Treadmill
+* Cycling
+* Stationary Bike
+* Elliptical
+* Stair Climber
+* Swimming
+* Tennis
+* Basketball
+* Football
+* Hiking
+* Rowing
+* Jump Rope
+* HIIT
+* Aerobics
+* ועוד.
+
+המשתמש מכניס:
+
+Duration
+
+והמערכת מחשבת:
+
+Estimated Calories Burned
+
+בהתבסס ככל האפשר על:
+
+* Activity
+* Duration
+* Weight
+* Intensity
+
+לא מספר אקראי.
+
+הנתון צריך להישמר ולהופיע בהיסטוריה.
+
+⸻
+
+17. My Routine
+
+השם למשתמש צריך להיות:
+
+My Routine
+
+חפש את GymTrack בכל הקוד וב־UI.
+
+בדוק:
+
+* Login
+* Navigation
+* Dashboard
+* Browser title
+* Metadata
+* Loading
+* Empty states
+* Messages
+* Branding
+
+אל תשנה שמות DB או routes ללא צורך.
+
+⸻
+
+18. Mobile + RTL
+
+בדוק את כל מה שנוסף לאורך Tasks #1–#23:
+
+* Login
+* Theme
+* Nutrition
+* Food Picker
+* Exercise Picker
+* Workout
+* Programs
+* Owner
+* Coach
+* Client
+* Cardio
+* Dialogs
+* Sheets
+
+⸻
+
+19. Security
+
+בדוק:
+
+* RLS
+* Role protection
+* Coach isolation
+* Client isolation
+* Owner permissions
+* Session hydration
+* Direct route access
+* Drop/Superset restrictions
+
+אל תשנה:
+
+* RLS
+* RPC
+* SECURITY DEFINER
+* Roles
+* Permissions
+
+אלא אם נמצא mismatch אמיתי ומוכח.
+
+⸻
+
+20. Database
+
+אני רוצה לדעת בדיוק:
+
+מה השתנה בפועל
+
+* Tables
+* Columns
+* Migrations
+* RPCs
+* Policies
+* Roles
+* Functions
+
+אם לא השתנה:
+
+NO DATABASE CHANGES
+
+אם יש משהו שחסר:
+
+אל תשנה אותו אוטומטית.
+
+תסביר:
+
+1. מה חסר.
+2. למה צריך אותו.
+3. מה צריך לשנות.
+4. איך RLS יגן עליו.
+
+⸻
+
+21. Verification Rules
+
+אל תכתוב:
+
+VERIFIED
+
+רק בגלל:
+
+* Build עבר
+* Lint עבר
+* הקוד נראה נכון.
+
+VERIFIED = נבדק בפועל בדפדפן.
+
+CODE VERIFIED = אומת בקוד בלבד.
+
+NOT VERIFIED = לא ניתן לבדוק.
+
+זה חייב להיות עקבי בכל Tasks #1–#23.
+
+⸻
+
+22. What You Can / Cannot Do
+
+בסוף הדוח אני רוצה שתי רשימות ברורות.
+
+YOU CAN FIX
+
+דברים שאתה יכול לתקן בעצמך עכשיו.
+
+YOU CANNOT VERIFY
+
+דברים שדורשים ממני:
+
+* Login
+* חשבון Client
+* חשבון Coach
+* חשבון Owner
+* בדיקה אינטראקטיבית
+* Supabase live query
+* RLS test
+* persistence test
+
+ולכל דבר כזה:
+
+תן לי הוראות מדויקות צעד־אחר־צעד.
+
+אל תגיד רק “תבדקי”.
+
+תגיד לי בדיוק:
+
+1. לאן להיכנס.
+2. על מה ללחוץ.
+3. מה להכניס.
+4. מה אני אמורה לראות.
+5. מה לשלוח לך חזרה.
+
+⸻
+
+23. Final Master Report
+
+בסוף תן:
+
+TASKS #1–#23 STATUS
+
+סיכום לכל משימה.
+
+FIXED
+
+מה באמת תוקן.
+
+VERIFIED
+
+מה באמת נבדק בדפדפן.
+
+CODE VERIFIED
+
+מה אומת רק בקוד.
+
+PARTIAL
+
+מה קיים אבל לא שלם.
+
+BROKEN
+
+מה עדיין לא עובד.
+
+MISSING
+
+מה בכלל לא בוצע.
+
+DATABASE
+
+מה השתנה בפועל.
+
+SECURITY
+
+מה אומת ומה לא.
+
+PERSISTENCE
+
+מה הוכח ומה לא.
+
+STILL NEEDS WORK
+
+כל מה שעדיין חסר.
+
+WHAT I NEED FROM YOU
+
+בדיוק מה אתה צריך ממני.
+
+NEXT STEP
+
+בסוף תן לי רק פעולה אחת לבצע.
+
+⸻
+
+כלל סופי
+
+אני לא רוצה עוד סבב שבו אתה אומר לי:
+
+“הכול תוקן”
+
+ואני נכנסת לאפליקציה ומגלה שזה עדיין לא עובד.
+
+אם משהו תוקן בקוד אבל לא נבדק — תגיד:
+
+CODE VERIFIED — NOT BROWSER VERIFIED
+
+אם אתה לא יכול לבדוק משהו בגלל שאין לך session:
+
+תגיד לי בדיוק מה אני צריכה לעשות.
+
+אם אתה לא יכול לבצע שינוי בגלל שאין לך גישה:
+
+תגיד לי מה נדרש ממני.
+
+אני רוצה שנעבוד עכשיו בצורה מסודרת:
+
+Audit → Gap → Fix → Real Test → Result → Next Gap
+
+ולא לדלג על שלבים.
+
+הדוח חייב לכסות את כל Tasks #1–#23, ולא רק את המשימה האחרונה.
