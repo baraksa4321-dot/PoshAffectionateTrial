@@ -382,6 +382,7 @@ function DayBuilder() {
         open={picker}
         onClose={() => setPicker(false)}
         ariaLabel="בחירת תרגיל"
+        variant="bottom"
         panelClassName="p-0"
       >
         <div dir="rtl" className="h-[min(82dvh,44rem)]">
