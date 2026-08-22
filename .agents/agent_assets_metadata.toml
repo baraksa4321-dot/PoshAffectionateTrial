@@ -42,3 +42,17 @@ mtime_ms = 1787383193554
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/6ea4272f-507e-4dfe-b8cd-cc92ba5420f4/89f4d718-27f7-45a4-8b51-f508b83bd015"
 storage_version_token = "1787383199027009"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "-dVpzWK-5lSdj-DqpdEt0"
+uri = "file://attached_assets/GymTrack-Final-Live-Audit.zip"
+type = "unspecified"
+title = "GymTrack Final Live-Audit Source"
+description = "Final source archive with the definitive evidence-based report, password recovery completion, additive security migrations, and no local credentials."
+logical_id = "048e081b-a211-43ec-8b60-969f36a95bd2"
+content_hash = "sha256:814afb483f6de48786dcf866e8fe94e37af889c151ae5ccc2c8c1126eefcf33a"
+size = 349577
+mtime_ms = 1787383607122
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/048e081b-a211-43ec-8b60-969f36a95bd2/04154772-b1a6-43b5-9a69-6377b6f32475"
+storage_version_token = "1787383612383983"
+content_type = "application/octet-stream"
