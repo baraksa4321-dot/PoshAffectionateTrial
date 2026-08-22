@@ -74,16 +74,9 @@ export function AppShell({
     ? [
         {
           to: "/coach",
-          label: "מרכז ניהול",
+          label: "ניהול",
           id: "coach",
           icon: User,
-          onClick: () => setWorkspace("management"),
-        },
-        {
-          to: "/programs",
-          label: "תוכניות",
-          id: "programs",
-          icon: LayoutGrid,
           onClick: () => setWorkspace("management"),
         },
         {
