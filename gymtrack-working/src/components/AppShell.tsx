@@ -7,6 +7,12 @@ import { applyTheme, DEFAULT_THEME, THEME_PALETTES } from "../lib/theme";
 import type { ThemePalette } from "../lib/gym-types";
 import { Overlay } from "./ui-app/Overlay";
 
+const WORKSPACE_KEY = "gymtrack.workspace";
+
+function isManagementPath(pathname: string) {
+  return /(^|\/)(coach|exercises)(\/|$)/.test(pathname);
+}
+
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }
@@ -32,24 +38,33 @@ export function AppShell({
   const isOwner = role === "owner";
   const isCoach = role === "coach" || isOwner;
   const location = useLocation();
-  const isManagementRoute =
-    location.pathname.startsWith("/coach") || location.pathname.startsWith("/exercises");
+  const isManagementRoute = isManagementPath(location.pathname);
 
-  const [activeMode, setActiveMode] = useState<"personal" | "management">(
-    typeof window !== "undefined" &&
-      (window.location.pathname.startsWith("/coach") ||
-        window.location.pathname.startsWith("/exercises"))
+  const [activeMode, setActiveMode] = useState<"personal" | "management">(() => {
+    if (typeof window === "undefined") return "personal";
+    if (isManagementPath(window.location.pathname)) return "management";
+    return window.sessionStorage.getItem(WORKSPACE_KEY) === "management"
       ? "management"
-      : "personal",
-  );
+      : "personal";
+  });
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [themeError, setThemeError] = useState("");
   const theme = store.userProfile?.theme ?? DEFAULT_THEME;
   const managementView = isCoach && (activeMode === "management" || isManagementRoute);
 
   useEffect(() => {
-    if (isManagementRoute) setActiveMode("management");
+    if (isManagementRoute) {
+      setActiveMode("management");
+      window.sessionStorage.setItem(WORKSPACE_KEY, "management");
+    }
   }, [isManagementRoute]);
+
+  const setWorkspace = (workspace: "personal" | "management") => {
+    setActiveMode(workspace);
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(WORKSPACE_KEY, workspace);
+    }
+  };
 
   useEffect(() => {
     applyTheme(theme);
@@ -57,14 +72,50 @@ export function AppShell({
 
   const NAV = managementView
     ? [
-        { to: "/coach", label: "מרכז ניהול", id: "coach", icon: User },
-        { to: "/programs", label: "תוכניות", id: "programs", icon: LayoutGrid },
-        { to: "/exercises", label: "תרגילים", id: "exercises", icon: Dumbbell },
+        {
+          to: "/coach",
+          label: "מרכז ניהול",
+          id: "coach",
+          icon: User,
+          onClick: () => setWorkspace("management"),
+        },
+        {
+          to: "/programs",
+          label: "תוכניות",
+          id: "programs",
+          icon: LayoutGrid,
+          onClick: () => setWorkspace("management"),
+        },
+        {
+          to: "/exercises",
+          label: "תרגילים",
+          id: "exercises",
+          icon: Dumbbell,
+          onClick: () => setWorkspace("management"),
+        },
       ]
     : [
-        { to: "/", label: "היום שלי", id: "home", icon: Home },
-        { to: "/programs", label: "האימונים שלי", id: "programs", icon: LayoutGrid },
-        { to: "/nutrition", label: "התזונה שלי", id: "nutrition", icon: Apple },
+        {
+          to: "/",
+          label: "היום שלי",
+          id: "home",
+          icon: Home,
+          onClick: () => setWorkspace("personal"),
+        },
+        {
+          to: "/programs",
+          label: "האימונים שלי",
+          id: "programs",
+          icon: LayoutGrid,
+          onClick: () => setWorkspace("personal"),
+        },
+        {
+          to: "/nutrition",
+          label: "התזונה שלי",
+          id: "nutrition",
+          icon: Apple,
+          onClick: () => setWorkspace("personal"),
+        },
       ];
 
   const [showAuthModal, setShowAuthModal] = useState(authOnly);
@@ -207,7 +258,7 @@ export function AppShell({
               >
                 <Link
                   to="/"
-                  onClick={() => setActiveMode("personal")}
+                  onClick={() => setWorkspace("personal")}
                   aria-current={activeMode === "personal" ? "page" : undefined}
                   className={`min-w-20 rounded-full px-3 py-1.5 text-center text-[11px] font-bold transition-colors ${
                     activeMode === "personal"
@@ -219,7 +270,7 @@ export function AppShell({
                 </Link>
                 <Link
                   to="/coach"
-                  onClick={() => setActiveMode("management")}
+                  onClick={() => setWorkspace("management")}
                   aria-current={activeMode === "management" ? "page" : undefined}
                   className={`min-w-20 rounded-full px-3 py-1.5 text-center text-[11px] font-bold transition-colors ${
                     activeMode === "management"
@@ -509,10 +560,11 @@ export function AppShell({
             className="nav-shell pointer-events-auto mx-auto flex w-full max-w-2xl items-center justify-between border-t bg-background/95 backdrop-blur-xl"
             style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
           >
-            {NAV.map(({ to, label, id, icon: Icon }) => (
+            {NAV.map(({ to, label, id, icon: Icon, onClick }) => (
               <Link
                 key={to}
                 to={to}
+                onClick={onClick}
                 activeOptions={{ exact: to === "/" }}
                 data-testid={`link-nav-${id}`}
                 className="group relative flex min-h-[4rem] flex-1 flex-col items-center justify-center gap-1.5 py-2 text-muted-foreground transition-colors data-[status=active]:text-primary hover:text-ink"
