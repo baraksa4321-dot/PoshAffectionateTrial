@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, GripVertical, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { Overlay } from "@/components/ui-app/Overlay";
 import { Stepper } from "@/components/Stepper";
 import { deleteWorkout, emptyItem, emptyWorkout, saveWorkout, useGym } from "@/lib/gym-store";
 import type { Workout, WorkoutItem } from "@/lib/gym-types";
@@ -184,7 +185,12 @@ function Builder() {
       )}
 
       {picker && (
-        <div className="fixed inset-0 z-40 flex flex-col justify-end bg-background/70 backdrop-blur-sm">
+        <Overlay
+          open={picker}
+          onClose={() => setPicker(false)}
+          variant="bottom"
+          ariaLabel="בחירת תרגיל"
+        >
           <div className="max-h-[75vh] overflow-y-auto rounded-t-3xl border-t border-border bg-card p-5 text-start">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">בחר תרגיל</h2>
@@ -219,7 +225,7 @@ function Builder() {
               )}
             </div>
           </div>
-        </div>
+        </Overlay>
       )}
     </AppShell>
   );

@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { Overlay } from "@/components/ui-app/Overlay";
 import {
   Card,
   IconButton,
@@ -404,9 +405,10 @@ function Dashboard() {
 
       {/* Modal: Weekly Weigh-In */}
       {showWeighInModal && (
-        <div
-          className="fade-in fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-          onClick={() => setShowWeighInModal(false)}
+        <Overlay
+          open={showWeighInModal}
+          onClose={() => setShowWeighInModal(false)}
+          ariaLabel="שקילה שבועית"
         >
           <div
             className="w-full max-w-sm rounded-3xl border border-white/80 bg-white p-5 shadow-2xl space-y-3 text-start"
@@ -442,14 +444,15 @@ function Dashboard() {
               שמור שקילה שבועית
             </button>
           </div>
-        </div>
+        </Overlay>
       )}
 
       {/* Modal: Monthly Check-In */}
       {showMonthlyCheckInModal && (
-        <div
-          className="fade-in fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-          onClick={() => setShowMonthlyCheckInModal(false)}
+        <Overlay
+          open={showMonthlyCheckInModal}
+          onClose={() => setShowMonthlyCheckInModal(false)}
+          ariaLabel="צ׳ק-אין חודשי"
         >
           <div
             className="w-full max-w-sm rounded-3xl border border-white/80 bg-white p-5 shadow-2xl space-y-3 text-start"
@@ -510,14 +513,16 @@ function Dashboard() {
               שלח צ'ק-אין חודשי למאמן
             </button>
           </div>
-        </div>
+        </Overlay>
       )}
 
       {/* Modal: Body Measurements */}
       {showMeasurementModal && (
-        <div
-          className="fade-in fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm p-4"
-          onClick={() => setShowMeasurementModal(false)}
+        <Overlay
+          open={showMeasurementModal}
+          onClose={() => setShowMeasurementModal(false)}
+          variant="bottom"
+          ariaLabel="תיעוד היקפי גוף"
         >
           <div
             className="w-full max-w-sm rounded-3xl border border-white/80 bg-white p-5 shadow-2xl space-y-3 text-start"
@@ -567,7 +572,7 @@ function Dashboard() {
               שמור היקפים
             </button>
           </div>
-        </div>
+        </Overlay>
       )}
     </AppShell>
   );

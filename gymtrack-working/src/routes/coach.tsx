@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "../components/AppShell";
+import { Overlay } from "../components/ui-app/Overlay";
 import { uid, useGym } from "../lib/gym-store";
 import { pullClientDataForCoach } from "../lib/supabase-sync";
 import { supabase } from "../lib/supabase";
@@ -943,7 +944,11 @@ function CoachDashboardPage() {
 
         {/* Add Client Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <Overlay
+            open={showAddModal}
+            onClose={() => setShowAddModal(false)}
+            ariaLabel="שיוך מתאמן חדש"
+          >
             <div className="w-full max-w-sm rounded-3xl border border-white/80 bg-white p-6 shadow-2xl space-y-4">
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="font-bold text-base text-ink flex items-center gap-2">
@@ -992,7 +997,7 @@ function CoachDashboardPage() {
                 </button>
               </form>
             </div>
-          </div>
+          </Overlay>
         )}
       </div>
     </AppShell>

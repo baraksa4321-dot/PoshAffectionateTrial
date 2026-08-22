@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
-import { useEffect } from "react";
 
+import { Overlay } from "./Overlay";
 import { IconButton } from "./primitives";
 
 /**
@@ -28,35 +28,8 @@ export function ConfirmSheet({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  // Lock scroll while open so the page behind doesn't drift
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
-
-  // Close on ESC for desktop dev convenience
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onCancel]);
-
-  if (!open) return null;
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fade-in fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 backdrop-blur-sm"
-      onClick={onCancel}
-    >
+    <Overlay open={open} onClose={onCancel} variant="bottom" ariaLabel={title}>
       <div
         className="scale-in w-full max-w-xl overflow-y-auto rounded-t-[2rem] border-t border-border/40 bg-card p-5 text-start shadow-2xl"
         onClick={(e) => e.stopPropagation()}
@@ -117,6 +90,6 @@ export function ConfirmSheet({
           </button>
         </div>
       </div>
-    </div>
+    </Overlay>
   );
 }

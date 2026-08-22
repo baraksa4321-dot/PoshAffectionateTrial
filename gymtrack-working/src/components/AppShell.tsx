@@ -14,6 +14,7 @@ import {
 import { useState, type ReactNode } from "react";
 import { useAuthUser, useGym } from "../lib/gym-store";
 import { supabase } from "../lib/supabase";
+import { Overlay } from "./ui-app/Overlay";
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
@@ -269,7 +270,13 @@ export function AppShell({
       </main>
 
       {showAuthModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+        <Overlay
+          open={authOnly || showAuthModal}
+          onClose={() => {
+            if (!authOnly) setShowAuthModal(false);
+          }}
+          ariaLabel="התחברות לחשבון"
+        >
           <div className="w-full max-w-sm rounded-3xl border border-white/80 bg-white p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
@@ -403,7 +410,7 @@ export function AppShell({
               ) : null}
             </div>
           </div>
-        </div>
+        </Overlay>
       )}
 
       {!authOnly ? (

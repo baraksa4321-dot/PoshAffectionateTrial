@@ -25,6 +25,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Stepper } from "@/components/Stepper";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
+import { Overlay } from "@/components/ui-app/Overlay";
 import {
   IconButton,
   Pill,
@@ -520,9 +521,11 @@ function Session() {
 
       {/* Exercise Detail Sheet Modal */}
       {cardExercise ? (
-        <div
-          className="fade-in fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm p-4"
-          onClick={() => setCardExercise(null)}
+        <Overlay
+          open={Boolean(cardExercise)}
+          onClose={() => setCardExercise(null)}
+          variant="bottom"
+          ariaLabel="פרטי תרגיל"
         >
           <div
             className="w-full max-w-sm rounded-3xl border border-white/80 bg-white p-5 shadow-2xl space-y-3 text-start"
@@ -550,14 +553,15 @@ function Session() {
               )}
             </div>
           </div>
-        </div>
+        </Overlay>
       ) : null}
 
       {/* Post Workout Feedback Modal */}
       {showFeedbackModal && (
-        <div
-          className="fade-in fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-          onClick={() => setShowFeedbackModal(false)}
+        <Overlay
+          open={showFeedbackModal}
+          onClose={() => setShowFeedbackModal(false)}
+          ariaLabel="משוב על האימון"
         >
           <div
             className="w-full max-w-sm rounded-3xl border border-white/80 bg-white p-5 shadow-2xl space-y-4 text-start"
@@ -616,7 +620,7 @@ function Session() {
               אישור ושמירת אימון
             </button>
           </div>
-        </div>
+        </Overlay>
       )}
 
       {/* Floating Rest Timer Bar */}
@@ -668,10 +672,11 @@ function Session() {
 
       {/* Replace Exercise Modal */}
       {replacingIndex !== null ? (
-        <div
-          className="fade-in fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 backdrop-blur-sm"
-          onClick={() => setReplacingIndex(null)}
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        <Overlay
+          open={replacingIndex !== null}
+          onClose={() => setReplacingIndex(null)}
+          variant="bottom"
+          ariaLabel="בחירת תרגיל חלופי"
         >
           <div
             className="scale-in max-h-[85dvh] w-full max-w-xl overflow-y-auto rounded-t-[2rem] border-t border-border/40 bg-card p-5 text-start shadow-2xl"
@@ -718,7 +723,7 @@ function Session() {
               )}
             </div>
           </div>
-        </div>
+        </Overlay>
       ) : null}
 
       <ConfirmSheet

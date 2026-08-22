@@ -34,6 +34,7 @@ import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Stepper } from "@/components/Stepper";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
+import { Overlay } from "@/components/ui-app/Overlay";
 import {
   EmptyState,
   IconButton,
@@ -355,10 +356,11 @@ function DayBuilder() {
       </div>
 
       {picker ? (
-        <div
-          className="fade-in fixed inset-0 z-40 flex flex-col justify-end bg-foreground/30 backdrop-blur-sm"
-          onClick={() => setPicker(false)}
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        <Overlay
+          open={picker}
+          onClose={() => setPicker(false)}
+          variant="bottom"
+          ariaLabel="בחירת תרגיל"
         >
           <div
             className="scale-in max-h-[85dvh] overflow-y-auto rounded-t-[2rem] border-t border-border/40 bg-card p-5 text-start shadow-2xl"
@@ -494,7 +496,7 @@ function DayBuilder() {
               </button>
             )}
           </div>
-        </div>
+        </Overlay>
       ) : null}
 
       <ConfirmSheet

@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 type OverlayVariant = "center" | "bottom";
 
@@ -23,6 +23,12 @@ export function Overlay({
   className?: string;
   ariaLabel?: string;
 }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (!open || typeof document === "undefined") return;
 
@@ -46,7 +52,7 @@ export function Overlay({
     };
   }, [onClose, open]);
 
-  if (!open || typeof document === "undefined") return null;
+  if (!open || !mounted || typeof document === "undefined") return null;
 
   const isBottom = variant === "bottom";
 
