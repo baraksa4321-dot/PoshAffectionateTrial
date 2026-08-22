@@ -1,138 +1,113 @@
-# GymTrack — Definitive Live/Static Verification Report
+# GymTrack — Final Real-World QA Status
 
-Scope: the supplied GymTrack ZIP and the current source/migrations derived from
-it. Prior AI reports were not used as evidence.
+This report is based on the current GymTrack source, migrations, running
+Preview workflow, and the attached live-schema correction. It does not claim
+that source code is proof of live behavior.
 
-## VERIFIED LIVE
+## VERIFIED
 
-None. The current Replit Secrets are present, but this agent environment does
-not expose their values or a service-role/database-admin connection. The
-bundled ZIP key was stale and rejected by Supabase, so no live result is
-claimed from it.
-
-## VERIFIED STATIC
-
-- `src/lib/supabase.ts` reads only `import.meta.env.VITE_SUPABASE_URL` and
-  `import.meta.env.VITE_SUPABASE_ANON_KEY`; no Supabase value is hardcoded.
-- The source no longer contains `.env.local`; `.env.example` contains
-  placeholders only.
-- The source contains Supabase calls for sign-up, sign-in, sign-out, session
-  restoration, email confirmation resend, password recovery, profile loading,
-  role loading, programs, program days, workout sessions, nutrition days,
-  favorites, custom foods, custom exercises, messages, body-weight logs, and
-  nutrition `water_ml`/`water_target_ml` preservation.
-- The food module contains 488 parsed entries. Static checks found no duplicate
-  parsed IDs or names and no missing fiber fields in the inspected dataset.
-- The source contains Hebrew/RTL layout and mobile-first responsive classes.
-- SQL migrations define the existing Owner/Coach/Client model, RLS policies,
-  coach/client links, RPCs, workout feedback, recipes, messages, and
-  measurements.
+- The actual GymTrack Vite application starts in the `GymTrack Preview`
+  workflow on port 5173.
 - `npm run build` passes.
-- `npm run lint` passes with 0 errors and 7 non-blocking warnings.
+- `npm run lint` completes with 0 errors and 7 documented non-blocking
+  warnings.
+- The app reads Supabase only from `import.meta.env.VITE_SUPABASE_URL` and
+  `import.meta.env.VITE_SUPABASE_ANON_KEY`.
+- `.env.local` is absent from the source and final archive.
+- No service-role key or private-key material is present in the source or
+  archive.
+- The nutrition sync uses the confirmed existing columns `water_ml` and
+  `water_target_ml`; no `water` column was created.
+- The generated route tree includes `/reset-password`.
+- The final archive contains the actual source, migrations, and this report.
 
 ## FIXED
 
-- Removed the stale bundled `.env.local` override. Replit-managed Secrets are
-  now the only runtime configuration source.
-- Added `/reset-password`, including recovery-session detection and
-  `supabase.auth.updateUser({ password })`.
-- Recovery email redirects now target `/reset-password`.
-- Profile sync no longer writes server-owned `role` or `coach_id` fields.
-- Supabase write errors are surfaced instead of silently ignored.
-- Login hydration pulls cloud state before the first sync push.
-- Fixed body-weight persistence with `body_weight_logs` and its RLS policies.
-- Added workout-session difficulty/discomfort columns required by sync.
-- Fixed fiber calculation in food replacement results.
-- Removed the fixed demo-auth seed credentials; `08_demo_seed.sql` is now a
-  deliberate no-op.
-- Fixed the active-workout conditional-hook defect and blocking lint errors.
-- Rejected an unsafe full-replacement cloud-delete implementation rather than
-  risking deletion of existing data after a partial pull.
+- Removed the stale bundled Supabase configuration.
+- Added password recovery completion with `supabase.auth.updateUser`.
+- Updated recovery redirects to `/reset-password`.
+- Prevented ordinary profile sync from writing server-owned `role` and
+  `coach_id`.
+- Added explicit Supabase write-error handling.
+- Fixed login hydration ordering so cloud data is pulled before initial sync.
+- Added body-weight persistence support.
+- Added workout difficulty/discomfort columns required by sync.
+- Added `waterMl`/`waterTargetMl` mapping using the existing live-schema
+  `water_ml`/`water_target_ml` names.
+- Corrected fiber calculation in food replacement.
+- Removed fixed demo-auth credentials.
+- Fixed the active-workout conditional-hook issue.
+- Added additive Owner/Coach/Client and SECURITY DEFINER hardening migration
+  11.
+- Rejected unsafe automatic cloud deletion rather than risking deletion of
+  existing user data after a partial pull.
 
-## BROKEN
+## STILL BROKEN
 
-None confirmed by the final static build/lint checks. Live behavior remains
-unverified rather than being promoted to working based on source inspection.
+No new runtime defect was confirmed because interactive browser and
+authenticated role testing were not available. This is not a claim that all
+features work.
 
 ## MISSING
 
 - Recipe management UI and client-visible persistent recipe flow.
-- Client performance-video upload/storage/ownership/coach-review flow.
-- Full body-measurement entry UI beyond body weight.
+- Client performance-video storage, ownership, and coach-review flow.
+- Full body-measurement entry UI.
 - Client-to-coach message replies.
-- Coach review UI backed by the existing `client_feedback` table.
-- Transactional conflict-safe deletion synchronization.
-- Automated browser, mobile-width, accessibility, and Supabase integration
-  tests.
+- Coach feedback-review UI using `client_feedback`.
+- Transactional conflict-safe cloud deletion.
+- Automated browser, mobile, accessibility, and Supabase integration tests.
 
 ## NOT VERIFIED
 
-- Live schema, migration history, constraints, foreign keys, and indexes.
-- Whether migrations `01` through `11` are already applied in the existing
-  Supabase project.
-- Live RLS behavior for anonymous, Client, Coach, and Owner sessions.
-- Live `SECURITY DEFINER` function behavior and RPC execution grants.
-- Cross-client isolation, assigned-coach isolation, owner access, and role
-  escalation resistance.
-- Signup, email delivery, login, logout, session persistence, recovery email,
-  recovery redirect, profile/role hydration, and logout state clearing against
-  the current project.
-- Persistence after refresh/re-login for programs, workouts, nutrition,
-  favorites, custom records, measurements, feedback, and messages.
-- Hebrew search quality, everyday Israeli-food coverage, aliases, and
-  nutritional accuracy.
-- Frontend runtime console errors, dead buttons, modal scrolling, and all
-  mobile viewport behavior.
+- Owner, Coach, and Client UI flows with real accounts.
+- Live Supabase schema, migration history, foreign keys, constraints, indexes,
+  RLS policies, SECURITY DEFINER functions, and RPC grants.
+- Cross-client isolation, assigned-coach isolation, owner access, and
+  role-escalation resistance.
+- Signup, login, logout, session persistence, password recovery delivery,
+  recovery redirect, profile/role hydration, and logout cleanup against the
+  current project.
+- Persistence through refresh, logout, and re-login for all application data.
+- Browser console/network errors, dead buttons, modal scrolling, routes,
+  touch targets, and 375px/390px/430px mobile behavior.
+- Nutritional accuracy, aliases, and real-world food search quality.
 
-The previous direct probe using the ZIP’s bundled configuration returned
-`401 Invalid API key`; `body_weight_logs` was also not visible through that
-stale configuration. This is not evidence about the current Replit Secrets.
+The available live-schema correction confirms that nutrition water is named
+`nutrition_days.water_ml`. No live query result for the full schema or RLS
+matrix was available in this workspace, so no live verification claim is
+made.
 
-## DATABASE CHANGES
+## DATABASE
 
-No live database change was performed. No table was recreated, reset, replaced,
-or deleted, and no existing data was modified.
+No live database operation was performed. No existing data was deleted and no
+table was recreated or reset.
 
-The archive contains two additive migrations for review/application against
-the existing project only:
+The archive contains additive migrations:
 
-- `10_audit_fixes.sql`: creates `body_weight_logs`, adds its RLS policies, and
-  adds workout feedback columns.
-- `11_role_and_rpc_hardening.sql`: hardens existing SECURITY DEFINER
-  functions, validates Owner/Coach/Client relationships and RPC targets,
-  protects role/coach assignment fields, restricts coach messages to assigned
-  clients, and removes broad direct owner profile updates.
+- `10_audit_fixes.sql` — body-weight logs and workout feedback columns.
+- `11_role_and_rpc_hardening.sql` — fixed SECURITY DEFINER paths, restricted
+  RPC execution, validated role relationships/targets, protected role and
+  coach assignment fields, and restricted coach messages.
 
-Because the live migration history could not be read safely, neither migration
-is claimed as live-applied. Before applying either, compare it with the live
-schema and migration history in the existing project. Apply only statements
-that are genuinely absent.
+Compare these migrations with the existing project’s migration history before
+applying only statements that are genuinely absent.
 
-## SECURITY CHANGES
+## SECURITY
 
-- No service-role key is present in the frontend source or final ZIP.
-- No local environment file is present in the final source or ZIP.
-- Server-owned role and coach-assignment fields are no longer sent by normal
-  profile sync.
-- New migration 11 adds fixed `search_path` values to privileged functions,
-  restricts function execution grants, validates role relationships, prevents
-  invalid coach assignments, and limits coach messages to assigned clients.
-- Existing RLS architecture was preserved; no RLS bypass or replacement
-  database was introduced.
+- Replit-managed Supabase Secrets remain the only runtime configuration.
+- No service-role or private credential is used by the frontend.
+- Role and coach assignment fields are no longer written by normal profile
+  synchronization.
+- Existing RLS architecture was preserved and not disabled.
+- Migration 11 hardens privileged functions, RPC grants, relationship checks,
+  owner-only role operations, and assigned-coach messaging.
 
-## FINAL PRODUCTION BLOCKERS
+## FINAL STATUS
 
-1. From the existing Supabase project, verify migration history and schema
-   before applying only missing portions of migrations 10 and 11.
-2. Run authenticated matrix tests for anonymous, Client, Coach, and Owner
-   access to profiles, links, programs, days, sessions, nutrition, favorites,
-   custom data, measurements, feedback, messages, and recipes.
-3. Verify recovery email delivery, redirect configuration, and the new
-   password-update route.
-4. Complete the missing recipes, performance videos, body measurements, client
-   replies, and coach feedback-review flows if required by the product.
-5. Perform browser/mobile/accessibility testing and inspect runtime console
-   output.
+**READY FOR MANUAL QA**
 
-The application is not declared production-ready while these live checks
-remain unverified.
+The source builds, lints, starts, and is available in the GymTrack Preview
+workflow. It is not ready for deployment until authenticated Owner/Coach/Client
+Supabase tests, live migration comparison, and the remaining missing product
+features are resolved or explicitly accepted.

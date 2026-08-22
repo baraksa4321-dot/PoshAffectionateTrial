@@ -1,0 +1,472 @@
+GymTrack — Final Real-World QA & Launch Pass
+
+This is the FINAL QA and launch pass for the GymTrack / My Routine application.
+
+Treat the current project and its connected Replit Secrets as the source of truth.
+
+Do NOT create another general audit based only on source inspection.
+
+The application is already running in Preview.
+
+Your job now is to actually use the application, test it as all three roles, find every real problem, fix the code directly, and leave the project ready for final deployment.
+
+1. USE THE REAL APPLICATION
+
+Open the running GymTrack Preview and test the actual UI.
+
+Do not assume a feature works because its code exists.
+
+Do not assume a feature works because a previous AI report says it works.
+
+For every important feature:
+
+1. Open it.
+2. Click the relevant buttons.
+3. Enter realistic data.
+4. Save it.
+5. Refresh.
+6. Navigate away and return.
+7. Log out.
+8. Log back in.
+9. Verify the data is still correct.
+
+Fix any failure you discover.
+
+2. TEST ALL THREE ROLES
+
+Test the application separately as:
+
+* Owner
+* Coach
+* Client
+
+Verify that each role sees only the functionality and data it should see.
+
+Owner
+
+Verify:
+
+* Owner dashboard
+* User management
+* Coach management
+* Client management
+* Coach/client assignment
+* Role management
+* Owner-only functionality
+* Profiles
+* Programs
+* Workouts
+* Nutrition
+* Messages
+* Measurements
+* Feedback
+
+A Coach or Client must never see Owner functionality.
+
+Coach
+
+Verify:
+
+* Coach dashboard
+* Assigned clients
+* Client profiles
+* Client programs
+* Client workout history
+* Client measurements
+* Client nutrition
+* Client feedback
+* Coach messages
+* Recipes
+* Exercise management
+
+Verify that a Coach cannot access an unassigned client’s private data.
+
+Client
+
+Verify:
+
+* Client dashboard
+* Profile
+* Assigned coach
+* Workout program
+* Workout player
+* Workout history
+* Nutrition
+* Food search
+* Fiber tracking
+* Favorites
+* Custom foods
+* Custom exercises
+* Measurements
+* Feedback
+* Coach messages
+* Password recovery
+
+A Client must never see another client’s data or Owner/Coach administration tools.
+
+3. AUTHENTICATION
+
+Test:
+
+* Signup
+* Login
+* Logout
+* Refresh while logged in
+* Close/reopen the app
+* Login again
+* Password recovery
+* Password reset
+* Redirect after recovery
+
+Verify that Supabase authentication is the source of truth.
+
+Verify that logging out completely clears the previous user’s private application state.
+
+Then log in as another user and confirm that no previous user’s data appears.
+
+4. SUPABASE PERSISTENCE
+
+For each important feature, verify actual persistence through Supabase.
+
+Test:
+
+* Profile
+* Programs
+* Program days
+* Workout sessions
+* Workout history
+* Nutrition days
+* Food logs
+* Favorites
+* Custom foods
+* Custom exercises
+* Measurements
+* Feedback
+* Messages
+
+Do not treat localStorage as successful persistence.
+
+If a save fails, show the user an error instead of reporting success.
+
+5. NUTRITION
+
+This is especially important.
+
+Verify that every food correctly supports:
+
+* Calories
+* Protein
+* Carbohydrates
+* Fat
+* Dietary fiber
+
+Changing quantity must correctly update ALL five values.
+
+Verify:
+
+* Food search
+* Hebrew search
+* English aliases
+* Serving units
+* Gram conversions
+* Daily totals
+* Progress
+* Fiber totals
+* Favorites
+* Custom foods
+* Food replacement
+* “החלף לי”
+
+Include common everyday foods such as:
+
+* Rice
+* Pasta
+* Bread
+* Pita
+* Rice paper
+* Oats
+* Potatoes
+* Sweet potatoes
+* Chicken
+* Eggs
+* Tuna
+* Greek yogurt
+* Cottage cheese
+* Protein powder
+* Olive oil
+* Avocado
+* Tahini
+* Peanut butter
+* Almonds
+* Walnuts
+* Hummus
+* Lentils
+* Beans
+* Vegetables
+* Fruits
+
+Do not invent nutritional values.
+
+If the existing database contains verified values, preserve them.
+
+6. WORKOUTS
+
+Test:
+
+* Program creation
+* Program editing
+* Program days
+* Exercise ordering
+* Sets
+* Rep ranges
+* Weight
+* Rest
+* Notes
+* Active workout
+* Completing a workout
+* Workout history
+* RPE/difficulty
+* Discomfort feedback
+* Exercise replacement
+
+Exercise replacement must only show approved alternatives where that rule exists.
+
+Verify that workout data survives refresh and re-login.
+
+7. MEASUREMENTS
+
+Verify all measurement functionality that actually exists.
+
+Do not claim full body measurements work unless the UI and persistence actually support them.
+
+If something is present in the UI but does not work, fix it.
+
+If a feature is genuinely absent, report it clearly.
+
+8. MESSAGES AND FEEDBACK
+
+Test:
+
+* Coach → assigned Client message
+* Client viewing the message
+* Unauthorized Coach → Client attempt
+* Client feedback submission
+* Coach feedback viewing
+
+Do not allow cross-client access.
+
+Do not claim a message or feedback was sent unless Supabase confirms the write.
+
+9. SECURITY
+
+Do not weaken security.
+
+Verify:
+
+* RLS remains enabled.
+* Owner permissions remain Owner-only.
+* Coach permissions remain limited to assigned clients.
+* Client permissions remain limited to their own data.
+* Role escalation is impossible from the client.
+* coach_id cannot be arbitrarily changed by a Client.
+* Privileged RPCs remain protected.
+* SECURITY DEFINER functions remain hardened.
+* No service-role key is exposed.
+* No private Supabase credentials are placed in frontend code.
+
+Do NOT disable RLS to make something work.
+
+Do NOT create broad anonymous permissions.
+
+Do NOT replace secure RPCs with insecure frontend updates.
+
+10. UI / UX
+
+Test the real interface.
+
+Check:
+
+* Hebrew
+* RTL
+* Mobile layout
+* 375px
+* 390px
+* 430px
+* Desktop
+* Navigation
+* Back navigation
+* Modals
+* Sheets
+* Search overlays
+* Long lists
+* Loading states
+* Empty states
+* Error states
+* Success states
+* Disabled states
+* Form validation
+* Scrolling
+* Touch targets
+* Video areas
+
+Every visible button must have a real purpose.
+
+Every button must either work or be removed.
+
+Remove dead buttons, fake functionality, placeholder actions, TODO UI, and misleading text.
+
+Every visible word should accurately describe what the action does.
+
+11. CONSOLE AND RUNTIME
+
+While actually using the application:
+
+* Check browser console.
+* Check network failures.
+* Check Supabase errors.
+* Check failed requests.
+* Check React errors.
+* Check broken routes.
+* Check missing assets.
+* Check invalid states.
+
+Fix all errors caused by normal usage.
+
+Do not simply document an error that can be fixed.
+
+12. MISSING FEATURES
+
+Previous audits mentioned:
+
+* Recipes
+* Client performance videos
+* Full body measurements
+* Client-to-coach replies
+* Coach feedback review
+* Conflict-safe cloud deletion
+* Automated browser/mobile/accessibility tests
+
+Do NOT blindly build these just because they appeared in an old report.
+
+First determine whether each is actually part of the current application’s intended product and UI.
+
+If it is already implemented, test and fix it.
+
+If it is required by the current product, implement it properly.
+
+If it is not required for the current launch, leave it alone and clearly state that.
+
+Do not create unnecessary database changes.
+
+13. DATABASE
+
+Do NOT blindly run migrations 10 or 11.
+
+First compare them against the actual live schema.
+
+Apply only genuinely missing database changes.
+
+Never:
+
+* Drop existing tables
+* Recreate existing tables
+* Delete existing user data
+* Disable RLS
+* Replace working policies unnecessarily
+* Duplicate existing columns
+* Create duplicate tables
+
+If a migration is already applied, do not apply it again.
+
+14. BUILD AND VALIDATION
+
+After all fixes:
+
+Run:
+
+npm run build
+
+npm run lint
+
+Make sure:
+
+* Build succeeds.
+* Lint has zero errors.
+* No new warnings are introduced unnecessarily.
+* Preview starts successfully.
+
+15. FINAL ZIP
+
+After everything is finished:
+
+Create a NEW ZIP containing the final updated source code.
+
+The ZIP must:
+
+* Contain the actual latest source.
+* Contain all required migrations.
+* Contain the audit/report.
+* NOT contain .env.local.
+* NOT contain service-role keys.
+* NOT contain private credentials.
+* NOT contain unnecessary build/dependency directories.
+
+Verify the ZIP contents before finishing.
+
+16. FINAL REPORT
+
+Do NOT give another vague “production ready” statement.
+
+Give a concise final report with exactly these sections:
+
+VERIFIED
+
+Things you actually tested successfully.
+
+FIXED
+
+Things you found broken and actually fixed.
+
+STILL BROKEN
+
+Things that are genuinely broken after testing.
+
+MISSING
+
+Features that are genuinely absent.
+
+NOT VERIFIED
+
+Things that could not be tested.
+
+DATABASE
+
+Exactly what database changes were made, if any.
+
+SECURITY
+
+Exactly what security changes were made, if any.
+
+FINAL STATUS
+
+State one of:
+
+* READY FOR DEPLOYMENT
+* READY FOR MANUAL QA
+* NOT READY
+
+Do not say READY FOR DEPLOYMENT unless the real application was actually tested with Owner, Coach, and Client and the critical Supabase flows were verified.
+
+MOST IMPORTANT RULE
+
+Do not stop at analysis.
+
+Do not only write a report.
+
+Do not tell me what I should fix.
+
+YOU must fix the code directly.
+
+Then build it, lint it, run Preview, test it, and create the final updated ZIP.
+
+There must be no loose ends that can reasonably be fixed before launch.
