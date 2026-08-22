@@ -166,7 +166,7 @@ export function AppShell({
           email,
           password,
           options: {
-            emailRedirectTo: redirectTo,
+            ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
             data: {
               theme,
               gender,
@@ -229,7 +229,7 @@ export function AppShell({
         type: "signup",
         email: targetEmail,
         options: {
-          emailRedirectTo: redirectTo,
+          ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
         },
       });
 
@@ -258,9 +258,10 @@ export function AppShell({
     setSuccessMsg("");
     try {
       const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
-      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-        redirectTo,
-      });
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        normalizedEmail,
+        redirectTo ? { redirectTo } : {},
+      );
       if (error) throw error;
       setSuccessMsg("אם קיים חשבון עם כתובת זו, נשלח אליו קישור לאיפוס סיסמה.");
     } catch (err: unknown) {
@@ -455,14 +456,13 @@ export function AppShell({
               </div>
             )}
 
-            <ThemeChooser
+            <LoginThemeSelector
               value={theme}
               onChange={async (nextTheme) => {
                 setThemeError("");
                 const result = await saveTheme(nextTheme);
                 if (!result.success) setThemeError(result.error ?? "שמירת הפלטה נכשלה");
               }}
-              compact
             />
             {themeError ? (
               <p className="text-[12px] font-semibold text-destructive">{themeError}</p>
@@ -693,19 +693,15 @@ export function AppShell({
 function ThemeChooser({
   value,
   onChange,
-  compact = false,
   onClose,
 }: {
   value: ThemePalette;
   onChange: (theme: ThemePalette) => void | Promise<void>;
-  compact?: boolean;
   onClose?: () => void;
 }) {
   return (
     <section
-      className={`rounded-2xl border border-border bg-surface p-4 text-start ${
-        compact ? "" : "w-full shadow-xl"
-      }`}
+      className="w-full rounded-2xl border border-border bg-surface p-4 text-start shadow-xl"
       aria-label="פלטת צבעים"
     >
       <div className="mb-5 flex items-start justify-between gap-3 border-b border-border/50 pb-3">
@@ -752,5 +748,43 @@ function ThemeChooser({
         ))}
       </div>
     </section>
+  );
+}
+
+function LoginThemeSelector({
+  value,
+  onChange,
+}: {
+  value: ThemePalette;
+  onChange: (theme: ThemePalette) => void | Promise<void>;
+}) {
+  const activePalette = THEME_PALETTES.find((palette) => palette.id === value);
+
+  return (
+    <div className="flex items-center justify-between gap-3 border-y border-border/50 py-3 text-start">
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold text-muted-foreground">צבע ממשק</p>
+        <p className="mt-0.5 text-[10px] text-muted-foreground/80">אפשר לשנות גם אחרי ההתחברות</p>
+      </div>
+      <label className="flex shrink-0 items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-1.5 text-[11px] font-semibold text-ink transition-colors focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
+        <span
+          className="h-3 w-3 rounded-full border border-border/60"
+          style={{ backgroundColor: activePalette?.swatch ?? "currentColor" }}
+          aria-hidden="true"
+        />
+        <select
+          value={value}
+          onChange={(event) => void onChange(event.target.value as ThemePalette)}
+          aria-label="בחירת צבע ממשק"
+          className="max-w-28 appearance-none bg-transparent text-[11px] font-semibold outline-none"
+        >
+          {THEME_PALETTES.map((palette) => (
+            <option key={palette.id} value={palette.id}>
+              {palette.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
   );
 }
