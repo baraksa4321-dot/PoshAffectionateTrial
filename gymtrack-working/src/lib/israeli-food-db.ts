@@ -5870,3 +5870,68 @@ export const ISRAELI_FOOD_DATABASE: FoodItem[] = [
   ...ISRAELI_SUPERMARKET_FOODS,
   ...USDA_FOOD_EXPANSION,
 ];
+
+const EXCLUDED_EVERYDAY_CATEGORIES = new Set([
+  "גלידות",
+  "חטיפי חלבון",
+  "חטיפים",
+  "דגני בוקר",
+  "מוצרים קפואים",
+  "מזון מוכן",
+  "ממתיקים",
+  "משקאות",
+  "מתוקים",
+  "נקניקיות",
+  "נקניקים",
+  "סלטים מוכנים",
+  "שמנת",
+  "תוספות",
+  "תוספי תזונה",
+  "תחליפי בשר",
+  "רוטבים",
+  "מנות עיקריות",
+  "מעדנים",
+  "מעדני חלבון",
+]);
+
+const EXCLUDED_EVERYDAY_TERMS = [
+  "מילקי",
+  "דני",
+  "שוקולד",
+  "וניל",
+  "תות",
+  "אפרסק",
+  "קפה",
+  "כריות",
+  "קורנפלקס",
+  "צ׳יריוס",
+  "בייגלה",
+  "קרקר",
+  "שניצל מוכן",
+  "נקניק",
+  "סלמי",
+  "המבורגר קפוא",
+  "אצבעות דג",
+  "מיץ",
+  "ריבה",
+  "סוכר",
+  "עוג",
+  "גלידה",
+  "פיצה",
+  "חטיף",
+  "וופל",
+  "טבעול",
+];
+
+/**
+ * The picker should prioritize foods people actually build meals from.
+ * Keep this derived from the maintained local catalog so IDs and nutrition
+ * snapshots remain stable, while excluding English/import noise and highly
+ * processed or specialty entries.
+ */
+export const EVERYDAY_FOOD_DATABASE: FoodItem[] = ISRAELI_FOOD_DATABASE.filter(
+  (food) =>
+    !/[A-Za-z]/.test(food.name) &&
+    !EXCLUDED_EVERYDAY_CATEGORIES.has(food.category ?? "") &&
+    !EXCLUDED_EVERYDAY_TERMS.some((term) => food.name.includes(term)),
+);

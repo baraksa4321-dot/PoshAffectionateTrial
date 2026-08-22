@@ -23,7 +23,14 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "../components/AppShell";
 import { Overlay } from "../components/ui-app/Overlay";
-import { mealFoodFromLibrary, todayKey, uid, useAuthUser, useGym } from "../lib/gym-store";
+import {
+  mealFoodFromLibrary,
+  searchFoods,
+  todayKey,
+  uid,
+  useAuthUser,
+  useGym,
+} from "../lib/gym-store";
 import { pullClientDataForCoach } from "../lib/supabase-sync";
 import { supabase } from "../lib/supabase";
 import type { Meal, MealFood, Program, UserRole, Workout, WorkoutItem } from "../lib/gym-types";
@@ -112,6 +119,7 @@ function CoachDashboardPage() {
   const [plannedMeals, setPlannedMeals] = useState<Meal[]>([]);
   const [menuFoodMealId, setMenuFoodMealId] = useState<string | null>(null);
   const [menuFoodId, setMenuFoodId] = useState("");
+  const [menuFoodQuery, setMenuFoodQuery] = useState("");
   const [menuFoodQuantity, setMenuFoodQuantity] = useState(1);
   const [menuNotice, setMenuNotice] = useState("");
 
@@ -199,6 +207,7 @@ function CoachDashboardPage() {
     );
     setMenuFoodMealId(null);
     setMenuFoodId("");
+    setMenuFoodQuery("");
     setMenuNotice("");
   }, [clientDetails, menuDate]);
 
@@ -457,6 +466,7 @@ function CoachDashboardPage() {
     );
     setMenuFoodMealId(null);
     setMenuFoodId("");
+    setMenuFoodQuery("");
     setMenuFoodQuantity(1);
   };
 
@@ -514,6 +524,7 @@ function CoachDashboardPage() {
   });
 
   const selectedClientInfo = clients.find((c) => c.client_id === selectedClientId);
+  const menuFoodResults = searchFoods(store.foods, menuFoodQuery).slice(0, 24);
 
   return (
     <AppShell
@@ -1118,39 +1129,87 @@ function CoachDashboardPage() {
                           )}
 
                           {menuFoodMealId === meal.id ? (
-                            <div className="mt-2 grid grid-cols-[1fr_auto_auto] gap-1.5 border-t border-emerald-100 pt-2">
-                              <select
-                                value={menuFoodId}
-                                onChange={(event) => setMenuFoodId(event.target.value)}
-                                className="min-w-0 rounded-lg border border-border bg-white px-2 py-1.5 text-[11px] outline-none"
-                                aria-label="בחירת מאכל לתפריט"
+                            <div className="mt-2 space-y-2 border-t border-emerald-100 pt-2">
+                              <label
+                                className="block text-[11px] font-bold text-emerald-900"
+                                htmlFor={`menu-food-search-${meal.id}`}
                               >
-                                <option value="">בחרי מאכל</option>
-                                {store.foods.map((food) => (
-                                  <option key={food.id} value={food.id}>
-                                    {food.name}
-                                  </option>
-                                ))}
-                              </select>
+                                חיפוש במאגר המאכלים
+                              </label>
                               <input
-                                type="number"
-                                min="0.25"
-                                step="0.25"
-                                value={menuFoodQuantity}
-                                onChange={(event) =>
-                                  setMenuFoodQuantity(Number(event.target.value))
-                                }
-                                className="w-16 rounded-lg border border-border px-1.5 py-1.5 text-center text-[11px] outline-none"
-                                aria-label="כמות המאכל"
+                                id={`menu-food-search-${meal.id}`}
+                                type="search"
+                                value={menuFoodQuery}
+                                onChange={(event) => {
+                                  setMenuFoodQuery(event.target.value);
+                                  setMenuFoodId("");
+                                }}
+                                placeholder="חפשי למשל: חזה עוף, אורז, ביצה..."
+                                className="w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-[13px] outline-none placeholder:text-muted-foreground focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                aria-describedby={`menu-food-help-${meal.id}`}
+                                autoComplete="off"
                               />
-                              <button
-                                type="button"
-                                disabled={!menuFoodId}
-                                onClick={() => addPlannedFood(meal.id)}
-                                className="rounded-lg bg-emerald-700 px-2.5 py-1.5 text-[11px] font-bold text-white disabled:opacity-40"
+                              <p
+                                id={`menu-food-help-${meal.id}`}
+                                className="text-[10px] text-muted-foreground"
                               >
-                                הוסיפי
-                              </button>
+                                בחרי מאכל מהרשימה כדי להוסיף אותו לארוחה.
+                              </p>
+                              <div
+                                role="listbox"
+                                aria-label="תוצאות חיפוש מאכלים"
+                                className="max-h-44 space-y-1 overflow-y-auto rounded-lg border border-emerald-100 bg-emerald-50/50 p-1.5"
+                              >
+                                {menuFoodResults.length > 0 ? (
+                                  menuFoodResults.map((food) => (
+                                    <button
+                                      key={food.id}
+                                      type="button"
+                                      role="option"
+                                      aria-selected={menuFoodId === food.id}
+                                      onClick={() => setMenuFoodId(food.id)}
+                                      className={`flex w-full items-center justify-between rounded-md px-2.5 py-2 text-start text-[12px] transition-colors ${
+                                        menuFoodId === food.id
+                                          ? "bg-emerald-700 font-bold text-white"
+                                          : "bg-white font-semibold text-ink hover:bg-emerald-100"
+                                      }`}
+                                    >
+                                      <span className="truncate">{food.name}</span>
+                                      <span className="ms-2 shrink-0 text-[10px] opacity-70">
+                                        {food.calories} קל׳
+                                      </span>
+                                    </button>
+                                  ))
+                                ) : (
+                                  <p className="p-3 text-center text-[11px] text-muted-foreground">
+                                    לא נמצאו מאכלים. נסי מילה אחרת.
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex items-end gap-1.5">
+                                <label className="flex-1 text-[10px] font-bold text-muted-foreground">
+                                  כמות
+                                  <input
+                                    type="number"
+                                    min="0.25"
+                                    step="0.25"
+                                    value={menuFoodQuantity}
+                                    onChange={(event) =>
+                                      setMenuFoodQuantity(Number(event.target.value))
+                                    }
+                                    className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-center text-[12px] outline-none focus:border-emerald-500"
+                                    aria-label="כמות המאכל"
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  disabled={!menuFoodId || menuFoodQuantity <= 0}
+                                  onClick={() => addPlannedFood(meal.id)}
+                                  className="rounded-lg bg-emerald-700 px-3 py-2 text-[12px] font-bold text-white disabled:opacity-40"
+                                >
+                                  הוסיפי לארוחה
+                                </button>
+                              </div>
                             </div>
                           ) : null}
                         </div>

@@ -302,6 +302,64 @@ function NutritionLog() {
         החישוב ביומן מתבסס על ערכי כל מאכל לפי מנת הייחוס שלו ומתרחב בדיוק לפי הכמות שנבחרה.
       </p>
 
+      {day.plannedMeals && day.plannedMeals.length > 0 ? (
+        <section className="mt-6">
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <div>
+              <p className="section-kicker text-primary">תפריט מהמאמן</p>
+              <h2 className="mt-1 font-display text-xl font-extrabold text-ink">
+                התפריט המתוכנן שלך
+              </h2>
+            </div>
+            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
+              לצפייה
+            </span>
+          </div>
+          <div className="space-y-2.5">
+            {day.plannedMeals.map((meal) => {
+              const plannedTotals = foodTotals(meal.foods);
+              return (
+                <article
+                  key={meal.id}
+                  className="surface-card overflow-hidden border-primary/15 bg-primary/[0.035] p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="font-display text-[15px] font-bold text-ink">{meal.name}</h3>
+                    <span className="text-[11px] font-semibold text-primary">
+                      {Math.round(plannedTotals.calories)} קלוריות
+                    </span>
+                  </div>
+                  {meal.foods.length > 0 ? (
+                    <div className="mt-3 space-y-1.5">
+                      {meal.foods.map((food) => (
+                        <div
+                          key={food.id}
+                          className="flex items-center justify-between gap-2 rounded-xl bg-white/80 px-3 py-2 text-start"
+                        >
+                          <span className="min-w-0 truncate text-[13px] font-semibold text-ink">
+                            {food.name}
+                          </span>
+                          <span className="shrink-0 text-[11px] text-muted-foreground">
+                            × {food.quantity} · {Math.round(food.calories * food.quantity)} קל׳
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-[12px] text-muted-foreground">
+                      המאמן טרם הוסיף מאכלים.
+                    </p>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+          <p className="mt-2 border-s border-primary/35 px-3 text-[11px] leading-relaxed text-muted-foreground">
+            זהו המתווה שהמאמן הכין עבורך. אפשר לתעד את מה שאכלת בפועל באזור היומן למטה.
+          </p>
+        </section>
+      ) : null}
+
       {/* Meals */}
       <section className="mt-6">
         <SectionHeader

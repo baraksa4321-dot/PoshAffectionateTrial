@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * My Routine — editorial athletic design system
- * Warm studio neutrals, confident type, compact surfaces, clear progress cues
+ * My Routine — pastel fitness product design system
+ * Light lilac surfaces, soft pink accents, and confident purple/blue progress cues
  * Pure mobile-first Hebrew / true RTL
  */
 
@@ -94,6 +94,37 @@
   --border: oklch(0.86 0.035 60);
   --input: oklch(0.86 0.035 60);
   --ring: oklch(0.62 0.16 24);
+  --gradient-start: #b96b7f;
+  --gradient-mid: #d89598;
+  --gradient-end: #e8b7aa;
+}
+
+:root[data-theme="pink"] {
+  --background: #f5f5dc;
+  --foreground: #4a3135;
+  --surface: #fffdf5;
+  --surface-2: #f3e2d6;
+  --cream: #f8eee1;
+  --primary: #c9788a;
+  --primary-foreground: #fffaf1;
+  --secondary: #f0d5d0;
+  --secondary-foreground: #633d46;
+  --sage: #a9c7b3;
+  --sage-soft: #e4eee2;
+  --rose: #c9788a;
+  --rose-soft: #e29c9c;
+  --accent: #e6b8ae;
+  --accent-foreground: #56373b;
+  --ink: #3f2a30;
+  --ink-soft: #70565a;
+  --muted: #eee4d5;
+  --muted-foreground: #765f60;
+  --border: #dfc9bb;
+  --input: #dfc9bb;
+  --ring: #c9788a;
+  --gradient-start: #c9788a;
+  --gradient-mid: #e29c9c;
+  --gradient-end: #e6b8ae;
 }
 
 :root[data-theme="blue"] {
@@ -362,8 +393,8 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   box-shadow:
-    0 1px 1px oklch(0.2 0.03 35 / 0.025),
-    0 8px 24px oklch(0.2 0.03 35 / 0.035);
+    0 1px 1px oklch(0.25 0.04 275 / 0.025),
+    0 8px 24px oklch(0.25 0.04 275 / 0.055);
   transition:
     border-color 200ms ease,
     box-shadow 200ms ease,
@@ -399,8 +430,8 @@
 }
 
 .ink-card {
-  background: var(--ink);
-  color: var(--background);
+  background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-mid) 52%, var(--gradient-end) 100%);
+  color: #fff;
   border-radius: var(--radius-2xl);
   box-shadow: 0 14px 30px oklch(0.2 0.03 35 / 0.16);
   position: relative;
@@ -412,7 +443,7 @@
   inset: auto -3rem -4rem auto;
   width: 12rem;
   height: 12rem;
-  border: 1px solid oklch(from var(--accent) l c h / 0.23);
+  border: 1px solid rgb(255 255 255 / 0.22);
   border-radius: 999px;
   content: "";
   pointer-events: none;
@@ -425,7 +456,11 @@
 }
 
 .rose-card {
-  background: linear-gradient(135deg, oklch(from var(--rose-soft) l c h / 0.72), var(--cream));
+  background: linear-gradient(
+    135deg,
+    oklch(from var(--rose-soft) l c h / 0.78),
+    oklch(from var(--accent) l c h / 0.16)
+  );
   border-radius: var(--radius-xl);
   border: 1px solid var(--border);
   border-right: 3px solid var(--primary);
@@ -456,7 +491,7 @@
 .progress-fill {
   height: 100%;
   border-radius: inherit;
-  background: var(--primary);
+  background: linear-gradient(90deg, var(--gradient-start) 0%, var(--gradient-mid) 52%, var(--gradient-end) 100%);
   transform-origin: right center;
   transition: transform 500ms ease;
 }

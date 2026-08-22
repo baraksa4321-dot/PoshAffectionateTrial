@@ -215,19 +215,6 @@ function ProgramsPage() {
         )}
       </section>
 
-      {programs.length > 0 ? (
-        <div className="mt-6">
-          <div className="ink-card-soft flex items-center gap-3 p-4">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/70">
-              <Lightbulb className="h-4 w-4 text-primary" strokeWidth={1.8} />
-            </div>
-            <p className="text-start text-[12.5px] leading-relaxed text-muted-foreground">
-              רוצה להתחיל מהר? שכפלי תכנית קיימת והתאימי אותה לשבוע הבא.
-            </p>
-          </div>
-        </div>
-      ) : null}
-
       <ConfirmSheet
         open={pendingDelete !== null}
         title="למחוק את התכנית?"

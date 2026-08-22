@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { ISRAELI_FOOD_DATABASE } from "./israeli-food-db";
+import { EVERYDAY_FOOD_DATABASE } from "./israeli-food-db";
 import { assertValidFoodNutrition, assertValidMealFood } from "./nutrition-integrity";
 import { supabase } from "./supabase";
 import { pullSupabaseData, syncLocalToSupabase } from "./supabase-sync";
@@ -589,7 +589,7 @@ const seed = (): GymData => {
     workouts,
     programs,
     history: [],
-    foods: [...ISRAELI_FOOD_DATABASE],
+    foods: [...EVERYDAY_FOOD_DATABASE],
     nutritionDays: [],
     nutritionTargets: { calories: 2000, protein: 140, carbs: 200, fat: 65 },
     mealTemplate: [...DEFAULT_MEALS],
@@ -626,11 +626,18 @@ function resetDataIfCacheBelongsToAnotherUser(userId: string) {
   }
 }
 
-/** Merge food database so saved data retains all Israeli supermarket items */
+/** Keep custom foods and saved meal snapshots, while removing retired seed items. */
 function mergeSeedFoods(existing: FoodItem[]): FoodItem[] {
+  const everydayIds = new Set(EVERYDAY_FOOD_DATABASE.map((food) => food.id));
   const byId = new Map(existing.map((f) => [f.id, f]));
   const byName = new Map(existing.map((f) => [f.name.toLocaleLowerCase(), f]));
-  for (const seedFood of ISRAELI_FOOD_DATABASE) {
+  for (const [id, food] of byId) {
+    if ((id.startsWith("f-israel-") || id.startsWith("f-usda-")) && !everydayIds.has(id)) {
+      byId.delete(id);
+      byName.delete(food.name.toLocaleLowerCase());
+    }
+  }
+  for (const seedFood of EVERYDAY_FOOD_DATABASE) {
     if (byId.has(seedFood.id)) continue;
     if (byName.has(seedFood.name.toLocaleLowerCase())) continue;
     byId.set(seedFood.id, seedFood);
