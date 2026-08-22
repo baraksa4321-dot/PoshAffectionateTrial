@@ -88,7 +88,7 @@ export function AppShell({
     ? [
         {
           to: "/coach",
-          label: "בית",
+          label: isOwner ? "בעלים" : "בית",
           id: "management-home",
           icon: Home,
           onClick: () => setWorkspace("management"),
@@ -136,6 +136,7 @@ export function AppShell({
   const [isSignUp, setIsSignUp] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [gender, setGender] = useState<"female" | "male">("female");
   const [loading, setLoading] = useState(false);
@@ -143,14 +144,9 @@ export function AppShell({
   const [successMsg, setSuccessMsg] = useState("");
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
   const headerTitle = authOnly ? genderText(gender, "ברוכה הבאה", "ברוך הבא") : title;
-  const headerSubtitle =
-    authOnly
-      ? genderText(
-          gender,
-          "התחברי כדי להמשיך לאימונים ולתזונה",
-          "התחבר כדי להמשיך לאימונים ולתזונה",
-        )
-      : subtitle;
+  const headerSubtitle = authOnly
+    ? genderText(gender, "התחברי כדי להמשיך לאימונים ולתזונה", "התחבר כדי להמשיך לאימונים ולתזונה")
+    : subtitle;
 
   useEffect(() => {
     if (profileGender) setGender(profileGender);
@@ -171,7 +167,11 @@ export function AppShell({
           password,
           options: {
             emailRedirectTo: redirectTo,
-            data: { theme, gender },
+            data: {
+              theme,
+              gender,
+              ...(fullName.trim() ? { full_name: fullName.trim() } : {}),
+            },
           },
         });
         if (error) throw error;
@@ -195,10 +195,17 @@ export function AppShell({
           throw error;
         }
       }
-      const { error: themeSaveError } = await supabase.auth.updateUser({ data: { theme, gender } });
+      const { error: themeSaveError } = await supabase.auth.updateUser({
+        data: {
+          theme,
+          gender,
+          ...(isSignUp && fullName.trim() ? { full_name: fullName.trim() } : {}),
+        },
+      });
       if (themeSaveError) throw themeSaveError;
       setShowAuthModal(false);
       setEmail("");
+      setFullName("");
       setPassword("");
       setPendingVerificationEmail(null);
     } catch (err: unknown) {
@@ -236,8 +243,13 @@ export function AppShell({
   };
 
   const handlePasswordReset = async () => {
-    if (!email.trim()) {
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) {
       setErrorMsg("יש להזין כתובת אימייל כדי לקבל קישור לאיפוס סיסמה.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setErrorMsg("יש להזין כתובת אימייל תקינה.");
       return;
     }
 
@@ -246,7 +258,7 @@ export function AppShell({
     setSuccessMsg("");
     try {
       const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
         redirectTo,
       });
       if (error) throw error;
@@ -327,7 +339,10 @@ export function AppShell({
               {user ? (
                 <div className="flex items-center gap-2 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-[12px] font-bold text-ink shadow-sm">
                   <Cloud className="h-3.5 w-3.5 text-primary" />
-                  <span className="max-w-[80px] truncate">{user.email?.split("@")[0]}</span>
+                  <span className="max-w-[120px] truncate">
+                    {store.userProfile?.fullName ||
+                      (isOwner ? "בעלים" : isCoach ? "מאמן" : "מתאמן")}
+                  </span>
                   <div className="h-3 w-px bg-border/80 mx-1" />
                   <button
                     type="button"
@@ -391,12 +406,18 @@ export function AppShell({
                   {isResettingPassword ? "איפוס סיסמה" : isSignUp ? "הרשמה" : "התחברות"}
                 </h3>
               </div>
-              <button
-                onClick={() => setShowAuthModal(false)}
-                className="grid h-8 w-8 place-items-center rounded-sm text-muted-foreground hover:bg-secondary hover:text-ink transition-colors cursor-pointer"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              {!authOnly ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAuthModal(false)}
+                  aria-label="סגירת התחברות"
+                  className="grid h-8 w-8 place-items-center rounded-sm text-muted-foreground hover:bg-secondary hover:text-ink transition-colors cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              ) : (
+                <span className="h-8 w-8" aria-hidden="true" />
+              )}
             </div>
 
             {errorMsg && (
@@ -456,6 +477,21 @@ export function AppShell({
                     "הזן את כתובת האימייל שלך ונשלח קישור מאובטח לאיפוס הסיסמה.",
                   )}
                 </p>
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wide text-muted-foreground">
+                    כתובת אימייל
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                    className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
+                    placeholder="name@example.com"
+                    dir="ltr"
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={handlePasswordReset}
@@ -467,6 +503,22 @@ export function AppShell({
               </div>
             ) : (
               <form onSubmit={handleAuthSubmit} className="space-y-4">
+                {isSignUp ? (
+                  <div>
+                    <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wide text-muted-foreground">
+                      שם מלא
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      autoComplete="name"
+                      className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
+                      placeholder="השם שיוצג באפליקציה"
+                    />
+                  </div>
+                ) : null}
                 <div>
                   <label className="block text-[12px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
                     כתובת אימייל
@@ -476,6 +528,7 @@ export function AppShell({
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
                     className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-[14px] outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                     placeholder="name@example.com"
                     dir="ltr"
@@ -492,6 +545,7 @@ export function AppShell({
                     minLength={6}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete={isSignUp ? "new-password" : "current-password"}
                     className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-[14px] outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                     placeholder="••••••••"
                     dir="ltr"
@@ -545,15 +599,23 @@ export function AppShell({
 
             <div className="text-center pt-3 border-t border-border/60">
               <button
+                type="button"
                 onClick={() => {
-                  setIsResettingPassword(false);
-                  setIsSignUp(!isSignUp);
+                  if (isResettingPassword) {
+                    setIsResettingPassword(false);
+                  } else {
+                    setIsSignUp(!isSignUp);
+                  }
                   setErrorMsg("");
                   setSuccessMsg("");
                 }}
                 className="text-[12px] font-bold text-primary hover:underline cursor-pointer"
               >
-                {isSignUp ? "כבר יש לך חשבון? התחבר כאן" : "אין לך חשבון? הירשם כאן"}
+                {isResettingPassword
+                  ? "חזרה להתחברות"
+                  : isSignUp
+                    ? "כבר יש לך חשבון? התחבר כאן"
+                    : "אין לך חשבון? הירשם כאן"}
               </button>
               {!isSignUp && !isResettingPassword ? (
                 <button

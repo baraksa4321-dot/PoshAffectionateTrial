@@ -36,7 +36,11 @@ function FoodLibrary() {
           (category === "הכל" || f.category === category) &&
           (!favoritesOnly || favoriteIds.has(f.id)),
       )
-      .sort((a, b) => a.name.localeCompare(b.name, "he"));
+      .sort((a, b) => {
+        const commonOrder =
+          Number(b.id.startsWith("f-common-")) - Number(a.id.startsWith("f-common-"));
+        return commonOrder || a.name.localeCompare(b.name, "he");
+      });
   }, [category, favoriteIds, favoritesOnly, foods, query]);
 
   return (

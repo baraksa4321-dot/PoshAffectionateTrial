@@ -832,7 +832,7 @@ export function CoachDashboardPage({
                     .slice(0, 8)
                     .map((row) => {
                       const name =
-                        row.client.profiles?.full_name || row.client.profiles?.email || "מתאמן";
+                        row.client.profiles?.full_name || "מתאמן";
                       const reason = needsPlan.some(
                         (item) => item.client.client_id === row.client.client_id,
                       )
@@ -907,7 +907,16 @@ export function CoachDashboardPage({
                       className="flex items-center justify-between rounded-xl bg-white p-2.5 text-xs border border-purple-100"
                     >
                       <div className="min-w-0">
-                        <span className="font-bold text-ink">{p.full_name || p.email}</span>
+                        <span className="font-bold text-ink">
+                          {p.full_name ||
+                            (p.role === "owner"
+                              ? "בעלים"
+                              : p.role === "coach"
+                                ? "מאמן"
+                                : p.role === "client"
+                                  ? "מתאמן"
+                                  : "משתמש")}
+                        </span>
                         <span className="text-muted-foreground mr-1">
                           (
                           {p.role === "owner"
@@ -922,7 +931,16 @@ export function CoachDashboardPage({
                       </div>
 
                       <select
-                        aria-label={`שינוי תפקיד עבור ${p.email || p.full_name || p.id}`}
+                        aria-label={`שינוי תפקיד עבור ${
+                          p.full_name ||
+                          (p.role === "owner"
+                            ? "בעלים"
+                            : p.role === "coach"
+                              ? "מאמן"
+                              : p.role === "client"
+                                ? "מתאמן"
+                                : "משתמש")
+                        }`}
                         value={p.role || ""}
                         disabled={isCurrentUser || !canChangeRole || isChanging}
                         onChange={(event) => {
@@ -1057,8 +1075,7 @@ export function CoachDashboardPage({
                 <div className="grid grid-cols-1 gap-2.5">
                   {filteredClients.map((c) => {
                     const isSelected = c.client_id === selectedClientId;
-                    const emailStr = c.profiles?.email || "מתאמן";
-                    const nameStr = c.profiles?.full_name || emailStr.split("@")[0];
+                    const nameStr = c.profiles?.full_name || "מתאמן";
 
                     return (
                       <div
@@ -1083,7 +1100,6 @@ export function CoachDashboardPage({
                           </div>
                           <div>
                             <h4 className="font-bold text-sm text-ink">{nameStr}</h4>
-                            <p className="text-xs text-muted-foreground">{emailStr}</p>
                           </div>
                         </div>
 
@@ -1145,7 +1161,7 @@ export function CoachDashboardPage({
                     {isSelfSelected
                       ? "התכנית האישית שלי"
                       : selectedClientInfo?.profiles?.full_name ||
-                        selectedClientInfo?.profiles?.email}
+                        "מתאמן"}
                   </span>
                 </h3>
                 <button

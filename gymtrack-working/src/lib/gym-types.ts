@@ -266,6 +266,7 @@ export type CardioLog = {
 };
 
 export type UserProfile = {
+  fullName?: string;
   weight: number; // kg
   height?: number; // cm
   age?: number;
@@ -322,6 +323,15 @@ export const MUSCLE_GROUPS = [
   "ארבע ראשי",
   "המסטרינג",
   "תאומים",
+  "GLUTEUS MAXIMUS",
+  "GLUTEUS MEDIUS",
+  "GLUTEUS MINIMUS",
+  "HAMSTRINGS",
+  "QUADRICEPS",
+  "CALVES",
+  "OBLIQUES",
+  "UPPER ABS",
+  "CORE",
   "מקרבים",
   "מרחיקים",
   "כופפי הירך",

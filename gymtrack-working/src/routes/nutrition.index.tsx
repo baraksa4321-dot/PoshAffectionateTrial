@@ -141,7 +141,11 @@ function NutritionLog() {
   }, [day.meals]);
 
   const filteredFoods = useMemo(() => {
-    return searchFoods(gym.foods, pickerQuery);
+    return searchFoods(gym.foods, pickerQuery).sort((a, b) => {
+      const commonOrder =
+        Number(b.id.startsWith("f-common-")) - Number(a.id.startsWith("f-common-"));
+      return commonOrder || a.name.localeCompare(b.name, "he");
+    });
   }, [gym.foods, pickerQuery]);
 
   const replacements = useMemo(() => {

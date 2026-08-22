@@ -25,6 +25,7 @@ export function Overlay({
 }) {
   const [mounted, setMounted] = useState(false);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
 
@@ -81,10 +82,10 @@ export function Overlay({
     };
     const visualViewport = window.visualViewport;
     const updateKeyboardOffset = () => {
-      if (!visualViewport) return;
-      setKeyboardOffset(
-        Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop),
-      );
+      const visibleHeight = visualViewport?.height ?? window.innerHeight;
+      const offsetTop = visualViewport?.offsetTop ?? 0;
+      setViewportHeight(visibleHeight);
+      setKeyboardOffset(Math.max(0, window.innerHeight - visibleHeight - offsetTop));
     };
     updateKeyboardOffset();
     visualViewport?.addEventListener("resize", updateKeyboardOffset);
@@ -101,6 +102,7 @@ export function Overlay({
       visualViewport?.removeEventListener("scroll", updateKeyboardOffset);
       window.cancelAnimationFrame(focusFrame);
       setKeyboardOffset(0);
+      setViewportHeight(null);
       scrollLockCount = Math.max(0, scrollLockCount - 1);
       if (scrollLockCount === 0) {
         document.body.style.overflow = previousBodyOverflow;
@@ -113,6 +115,11 @@ export function Overlay({
 
   const isBottom = variant === "bottom";
   const isFull = variant === "full";
+  const panelBottomGap = isFull ? 0 : isBottom ? 16 : 32;
+  const panelMaxHeight =
+    viewportHeight === null
+      ? `calc(100dvh - ${keyboardOffset}px - ${panelBottomGap}px)`
+      : `${Math.max(0, viewportHeight - panelBottomGap)}px`;
 
   return createPortal(
     <div
@@ -138,7 +145,7 @@ export function Overlay({
         ref={panelRef}
         tabIndex={-1}
         style={{
-          maxHeight: `calc(100dvh - ${keyboardOffset}px - ${isFull ? "0px" : isBottom ? "1rem" : "2rem"})`,
+          maxHeight: panelMaxHeight,
           marginBottom: isBottom ? keyboardOffset : 0,
         }}
         className={`w-full ${

@@ -70,6 +70,7 @@ export async function syncLocalToSupabase(
           {
             id: userId,
             email: userEmail || undefined,
+            ...(p.fullName ? { full_name: p.fullName } : {}),
             weight_kg: p.weight,
             height_cm: p.height,
             today_routine_enabled: p.todayRoutineEnabled ?? true,
@@ -348,6 +349,9 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
           {
             id: userId,
             email: authUser?.email,
+            ...(authUser?.user_metadata?.full_name
+              ? { full_name: authUser.user_metadata.full_name }
+              : {}),
             weight_kg: 65,
             height_cm: 165,
             today_routine_enabled: true,
@@ -370,6 +374,11 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
     nextData.userProfile = {
       ...nextData.userProfile,
+      fullName:
+        profile.full_name ||
+        authUser?.user_metadata?.full_name ||
+        nextData.userProfile?.fullName ||
+        undefined,
       weight: profile.weight_kg ? Number(profile.weight_kg) : (nextData.userProfile?.weight ?? 65),
       height: profile.height_cm ? Number(profile.height_cm) : nextData.userProfile?.height,
       gender:
@@ -813,6 +822,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       bodyMeasurements,
       profile: profile
         ? {
+            fullName: profile.full_name || undefined,
             weight: Number(profile.weight_kg || 65),
             height: Number(profile.height_cm || 165),
             role: profile.role || "client",

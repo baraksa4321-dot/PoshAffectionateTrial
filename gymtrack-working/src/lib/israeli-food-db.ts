@@ -1,4 +1,5 @@
 import type { FoodItem } from "./gym-types";
+import { COMMON_FOODS } from "./common-foods";
 import { USDA_FOOD_EXPANSION } from "./usda-food-expansion";
 
 /** Database of AT LEAST 488 distinct realistic Israeli supermarket food entries */
@@ -5873,13 +5874,10 @@ export const ISRAELI_FOOD_DATABASE: FoodItem[] = [
 
 const EXCLUDED_EVERYDAY_CATEGORIES = new Set([
   "גלידות",
-  "חטיפי חלבון",
   "חטיפים",
   "דגני בוקר",
   "מוצרים קפואים",
   "מזון מוכן",
-  "ממתיקים",
-  "משקאות",
   "מתוקים",
   "נקניקיות",
   "נקניקים",
@@ -5888,10 +5886,8 @@ const EXCLUDED_EVERYDAY_CATEGORIES = new Set([
   "תוספות",
   "תוספי תזונה",
   "תחליפי בשר",
-  "רוטבים",
   "מנות עיקריות",
   "מעדנים",
-  "מעדני חלבון",
 ]);
 
 const EXCLUDED_EVERYDAY_TERMS = [
@@ -5914,13 +5910,13 @@ const EXCLUDED_EVERYDAY_TERMS = [
   "אצבעות דג",
   "מיץ",
   "ריבה",
-  "סוכר",
   "עוג",
   "גלידה",
   "פיצה",
   "חטיף",
   "וופל",
   "טבעול",
+  "אבוקדו היל",
 ];
 
 /**
@@ -5929,9 +5925,21 @@ const EXCLUDED_EVERYDAY_TERMS = [
  * snapshots remain stable, while excluding English/import noise and highly
  * processed or specialty entries.
  */
-export const EVERYDAY_FOOD_DATABASE: FoodItem[] = ISRAELI_FOOD_DATABASE.filter(
+const FILTERED_EVERYDAY_FOODS = ISRAELI_FOOD_DATABASE.filter(
   (food) =>
     !/[A-Za-z]/.test(food.name) &&
     !EXCLUDED_EVERYDAY_CATEGORIES.has(food.category ?? "") &&
     !EXCLUDED_EVERYDAY_TERMS.some((term) => food.name.includes(term)),
 );
+
+const existingEverydayNames = new Set(
+  FILTERED_EVERYDAY_FOODS.map((food) => food.name.trim().toLocaleLowerCase()),
+);
+
+/** Add a short, friendly layer on top of the detailed catalog for meal building. */
+export const EVERYDAY_FOOD_DATABASE: FoodItem[] = [
+  ...FILTERED_EVERYDAY_FOODS,
+  ...COMMON_FOODS.filter(
+    (food) => !existingEverydayNames.has(food.name.trim().toLocaleLowerCase()),
+  ),
+];

@@ -655,11 +655,13 @@ function mergeSeedExercises(existing: Exercise[]): Exercise[] {
       : exercise;
   });
   const byId = new Map(migratedExisting.map((exercise) => [exercise.id, exercise]));
-  const byName = new Map(
-    migratedExisting.map((exercise) => [exercise.name.toLocaleLowerCase(), exercise]),
-  );
   for (const seedExercise of seed().exercises) {
-    if (byId.has(seedExercise.id) || byName.has(seedExercise.name.toLocaleLowerCase())) continue;
+    const hasSameNameAndMuscle = migratedExisting.some(
+      (exercise) =>
+        exercise.name.toLocaleLowerCase() === seedExercise.name.toLocaleLowerCase() &&
+        exercise.muscleGroup.toLocaleLowerCase() === seedExercise.muscleGroup.toLocaleLowerCase(),
+    );
+    if (byId.has(seedExercise.id) || hasSameNameAndMuscle) continue;
     byId.set(seedExercise.id, seedExercise);
   }
   return Array.from(byId.values());
