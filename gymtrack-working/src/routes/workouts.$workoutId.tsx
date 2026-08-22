@@ -190,40 +190,40 @@ function Builder() {
         variant="bottom"
         ariaLabel="בחירת תרגיל"
       >
-          <div className="max-h-[75vh] overflow-y-auto rounded-t-3xl border-t border-border bg-card p-5 text-start">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">בחר תרגיל</h2>
-              <button
-                type="button"
-                aria-label="סגור"
-                onClick={() => setPicker(false)}
-                className="grid h-10 w-10 place-items-center rounded-xl bg-secondary"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="space-y-2 pb-6">
-              {exercises.map((e) => (
-                <button
-                  key={e.id}
-                  type="button"
-                  onClick={() => {
-                    setDraft({ ...draft, items: [...draft.items, emptyItem(e.id)] });
-                    setPicker(false);
-                  }}
-                  className="w-full rounded-xl bg-secondary p-4 text-start active:scale-[0.99]"
-                >
-                  <p className="font-semibold text-foreground">{e.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {e.muscleGroup} · {e.equipment}
-                  </p>
-                </button>
-              ))}
-              {exercises.length === 0 && (
-                <p className="text-sm text-muted-foreground">הוסף תרגילים לספרייה קודם לכן.</p>
-              )}
-            </div>
+        <div className="max-h-[75vh] overflow-y-auto rounded-t-3xl border-t border-border bg-card p-5 text-start">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">בחר תרגיל</h2>
+            <button
+              type="button"
+              aria-label="סגור"
+              onClick={() => setPicker(false)}
+              className="grid h-10 w-10 place-items-center rounded-xl bg-secondary"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
+          <div className="space-y-2 pb-6">
+            {exercises.map((e) => (
+              <button
+                key={e.id}
+                type="button"
+                onClick={() => {
+                  setDraft({ ...draft, items: [...draft.items, emptyItem(e.id)] });
+                  setPicker(false);
+                }}
+                className="w-full rounded-xl bg-secondary p-4 text-start active:scale-[0.99]"
+              >
+                <p className="font-semibold text-foreground">{e.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {e.muscleGroup} · {e.equipment}
+                </p>
+              </button>
+            ))}
+            {exercises.length === 0 && (
+              <p className="text-sm text-muted-foreground">הוסף תרגילים לספרייה קודם לכן.</p>
+            )}
+          </div>
+        </div>
       </Overlay>
     </AppShell>
   );
