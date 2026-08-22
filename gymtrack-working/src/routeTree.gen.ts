@@ -21,6 +21,7 @@ import { Route as ProgramsProgramIdRouteImport } from './routes/programs.$progra
 import { Route as SessionWorkoutIdRouteImport } from './routes/session.$workoutId'
 import { Route as WorkoutsIndexRouteImport } from './routes/workouts.index'
 import { Route as WorkoutsWorkoutIdRouteImport } from './routes/workouts.$workoutId'
+import { Route as CoachClientsClientIdRouteImport } from './routes/coach.clients.$clientId'
 import { Route as NutritionFoodsIndexRouteImport } from './routes/nutrition.foods.index'
 import { Route as NutritionFoodsFoodIdRouteImport } from './routes/nutrition.foods.$foodId'
 import { Route as ProgramsProgramIdDayIdRouteImport } from './routes/programs.$programId.$dayId'
@@ -85,6 +86,11 @@ const WorkoutsWorkoutIdRoute = WorkoutsWorkoutIdRouteImport.update({
   path: '/workouts/$workoutId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CoachClientsClientIdRoute = CoachClientsClientIdRouteImport.update({
+  id: '/$clientId',
+  path: '/$clientId',
+  getParentRoute: () => CoachClientsRoute,
+} as any)
 const NutritionFoodsIndexRoute = NutritionFoodsIndexRouteImport.update({
   id: '/nutrition/foods/',
   path: '/nutrition/foods/',
@@ -105,7 +111,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/coach': typeof CoachRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
-  '/coach/clients': typeof CoachClientsRoute
+  '/coach/clients': typeof CoachClientsRouteWithChildren
   '/exercises/$exerciseId': typeof ExercisesExerciseIdRoute
   '/programs/$programId': typeof ProgramsProgramIdRouteWithChildren
   '/session/$workoutId': typeof SessionWorkoutIdRoute
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/nutrition/': typeof NutritionIndexRoute
   '/programs/': typeof ProgramsIndexRoute
   '/workouts/': typeof WorkoutsIndexRoute
+  '/coach/clients/$clientId': typeof CoachClientsClientIdRoute
   '/nutrition/foods/$foodId': typeof NutritionFoodsFoodIdRoute
   '/programs/$programId/$dayId': typeof ProgramsProgramIdDayIdRoute
   '/nutrition/foods/': typeof NutritionFoodsIndexRoute
@@ -122,7 +129,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/coach': typeof CoachRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
-  '/coach/clients': typeof CoachClientsRoute
+  '/coach/clients': typeof CoachClientsRouteWithChildren
   '/exercises/$exerciseId': typeof ExercisesExerciseIdRoute
   '/programs/$programId': typeof ProgramsProgramIdRouteWithChildren
   '/session/$workoutId': typeof SessionWorkoutIdRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/nutrition': typeof NutritionIndexRoute
   '/programs': typeof ProgramsIndexRoute
   '/workouts': typeof WorkoutsIndexRoute
+  '/coach/clients/$clientId': typeof CoachClientsClientIdRoute
   '/nutrition/foods/$foodId': typeof NutritionFoodsFoodIdRoute
   '/programs/$programId/$dayId': typeof ProgramsProgramIdDayIdRoute
   '/nutrition/foods': typeof NutritionFoodsIndexRoute
@@ -140,7 +148,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/coach': typeof CoachRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
-  '/coach/clients': typeof CoachClientsRoute
+  '/coach/clients': typeof CoachClientsRouteWithChildren
   '/exercises/$exerciseId': typeof ExercisesExerciseIdRoute
   '/programs/$programId': typeof ProgramsProgramIdRouteWithChildren
   '/session/$workoutId': typeof SessionWorkoutIdRoute
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/nutrition/': typeof NutritionIndexRoute
   '/programs/': typeof ProgramsIndexRoute
   '/workouts/': typeof WorkoutsIndexRoute
+  '/coach/clients/$clientId': typeof CoachClientsClientIdRoute
   '/nutrition/foods/$foodId': typeof NutritionFoodsFoodIdRoute
   '/programs/$programId/$dayId': typeof ProgramsProgramIdDayIdRoute
   '/nutrition/foods/': typeof NutritionFoodsIndexRoute
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/nutrition/'
     | '/programs/'
     | '/workouts/'
+    | '/coach/clients/$clientId'
     | '/nutrition/foods/$foodId'
     | '/programs/$programId/$dayId'
     | '/nutrition/foods/'
@@ -185,6 +195,7 @@ export interface FileRouteTypes {
     | '/nutrition'
     | '/programs'
     | '/workouts'
+    | '/coach/clients/$clientId'
     | '/nutrition/foods/$foodId'
     | '/programs/$programId/$dayId'
     | '/nutrition/foods'
@@ -202,6 +213,7 @@ export interface FileRouteTypes {
     | '/nutrition/'
     | '/programs/'
     | '/workouts/'
+    | '/coach/clients/$clientId'
     | '/nutrition/foods/$foodId'
     | '/programs/$programId/$dayId'
     | '/nutrition/foods/'
@@ -309,6 +321,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkoutsWorkoutIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/coach/clients/$clientId': {
+      id: '/coach/clients/$clientId'
+      path: '/$clientId'
+      fullPath: '/coach/clients/$clientId'
+      preLoaderRoute: typeof CoachClientsClientIdRouteImport
+      parentRoute: typeof CoachClientsRoute
+    }
     '/nutrition/foods/': {
       id: '/nutrition/foods/'
       path: '/nutrition/foods'
@@ -333,12 +352,24 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface CoachClientsRouteChildren {
+  CoachClientsClientIdRoute: typeof CoachClientsClientIdRoute
+}
+
+const CoachClientsRouteChildren: CoachClientsRouteChildren = {
+  CoachClientsClientIdRoute: CoachClientsClientIdRoute,
+}
+
+const CoachClientsRouteWithChildren = CoachClientsRoute._addFileChildren(
+  CoachClientsRouteChildren,
+)
+
 interface CoachRouteChildren {
-  CoachClientsRoute: typeof CoachClientsRoute
+  CoachClientsRoute: typeof CoachClientsRouteWithChildren
 }
 
 const CoachRouteChildren: CoachRouteChildren = {
-  CoachClientsRoute: CoachClientsRoute,
+  CoachClientsRoute: CoachClientsRouteWithChildren,
 }
 
 const CoachRouteWithChildren = CoachRoute._addFileChildren(CoachRouteChildren)

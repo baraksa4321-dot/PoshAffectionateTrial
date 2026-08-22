@@ -63,7 +63,6 @@ export const Route = createFileRoute("/coach")({
   component: () => <CoachDashboardPage />,
 });
 
-export function CoachDashboardPage({ clientsOnly = false }: { clientsOnly?: boolean }) {
 export function CoachDashboardPage({
   clientsOnly = false,
   workspacePage = false,
@@ -74,6 +73,7 @@ export function CoachDashboardPage({
   clientId?: string;
 }) {
   const store = useGym();
+  const navigate = useNavigate();
   const authUser = useAuthUser();
   const role = store.userProfile?.role;
   const isOwner = role === "owner";
@@ -210,6 +210,12 @@ export function CoachDashboardPage({
       active = false;
     };
   }, [clients, clientsOnly]);
+
+  useEffect(() => {
+    if (!workspacePage || !clientId) return;
+    setSelectedClientId(clientId);
+    setShowClientWorkspace(true);
+  }, [workspacePage, clientId]);
 
   useEffect(() => {
     if (!selectedClientId) {
@@ -638,6 +644,10 @@ export function CoachDashboardPage({
       ),
   );
   const openClientFromOverview = (clientId: string) => {
+    if (!workspacePage) {
+      navigate({ to: "/coach/clients/$clientId", params: { clientId } });
+      return;
+    }
     setSelectedClientId(clientId);
     setShowClientWorkspace(true);
     setEditingProgramId(null);
@@ -959,10 +969,12 @@ export function CoachDashboardPage({
                   <div
                     key={c.id}
                     onClick={() => {
-                      setSelectedClientId(isSelected ? null : c.client_id);
-                      setShowClientWorkspace(!isSelected);
-                      setEditingProgramId(null);
-                      setEditingDayId(null);
+                      if (!isSelected) {
+                        navigate({
+                          to: "/coach/clients/$clientId",
+                          params: { clientId: c.client_id },
+                        });
+                      }
                     }}
                     className={`surface-card p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
                       isSelected
@@ -1009,14 +1021,25 @@ export function CoachDashboardPage({
           <Overlay
             open={showClientWorkspace}
             onClose={() => {
+              if (workspacePage) {
+                navigate({ to: "/coach/clients" });
+                return;
+              }
               setShowClientWorkspace(false);
               setSelectedClientId(null);
               setEditingProgramId(null);
               setEditingDayId(null);
             }}
-            ariaLabel="תכנית המתאמן"
+            ariaLabel="בניית תוכנית ותפריט למתאמן"
+            variant={workspacePage ? "full" : "center"}
+            className={workspacePage ? "bg-background" : ""}
+            panelClassName={workspacePage ? "bg-background" : ""}
           >
-            <div className="w-full max-w-2xl space-y-4 rounded-3xl bg-background p-4 shadow-2xl sm:p-6">
+            <div
+              className={`w-full space-y-4 bg-background p-4 sm:p-6 ${
+                workspacePage ? "mx-auto max-w-5xl pb-10" : "max-w-2xl rounded-3xl shadow-2xl"
+              }`}
+            >
               <div className="flex items-center justify-between border-b border-border/60 pb-3">
                 <h3 className="font-bold text-base text-ink flex items-center gap-2">
                   <Users className="h-5 w-5 text-primary" />
@@ -1031,6 +1054,10 @@ export function CoachDashboardPage({
                 <button
                   type="button"
                   onClick={() => {
+                    if (workspacePage) {
+                      navigate({ to: "/coach/clients" });
+                      return;
+                    }
                     setShowClientWorkspace(false);
                     setSelectedClientId(null);
                     setEditingProgramId(null);

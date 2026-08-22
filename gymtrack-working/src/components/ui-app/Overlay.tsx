@@ -112,7 +112,7 @@ export function Overlay({
   if (!open || !mounted || typeof document === "undefined") return null;
 
   const isBottom = variant === "bottom";
-    const isFull = variant === "full";
+  const isFull = variant === "full";
 
   return createPortal(
     <div
@@ -121,7 +121,11 @@ export function Overlay({
       aria-label={ariaLabel}
       data-keyboard-open={keyboardOffset > 0 ? "true" : undefined}
       className={`fixed inset-0 z-[100] flex ${
-        isFull ? "items-stretch justify-center" : isBottom ? "items-end justify-center" : "items-center justify-center"
+        isFull
+          ? "items-stretch justify-center"
+          : isBottom
+            ? "items-end justify-center"
+            : "items-center justify-center"
       } ${isFull ? "bg-background p-0" : "bg-foreground/40 p-4 backdrop-blur-sm"} ${className}`}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
@@ -141,8 +145,8 @@ export function Overlay({
           isFull
             ? "h-full max-h-full max-w-none rounded-none"
             : isBottom
-            ? "max-h-[calc(100dvh-1rem)] max-w-xl rounded-t-[2rem] pb-[max(1.25rem,env(safe-area-inset-bottom))]"
-            : "max-h-[calc(100dvh-2rem)] max-w-lg rounded-3xl"
+              ? "max-h-[calc(100dvh-1rem)] max-w-xl rounded-t-[2rem] pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+              : "max-h-[calc(100dvh-2rem)] max-w-lg rounded-3xl"
         } overflow-y-auto overscroll-contain bg-card shadow-2xl ${panelClassName}`}
         onMouseDown={(event) => event.stopPropagation()}
         onTouchStart={(event) => event.stopPropagation()}

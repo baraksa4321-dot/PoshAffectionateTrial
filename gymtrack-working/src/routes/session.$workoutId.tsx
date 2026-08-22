@@ -159,6 +159,7 @@ function Session() {
   const [entries, setEntries] = useState<HistoryEntry[]>(initial);
   const [startedAt] = useState(() => Date.now());
   const [rest, setRest] = useState(0);
+  const [restPaused, setRestPaused] = useState(false);
   const [pendingExit, setPendingExit] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -176,12 +177,12 @@ function Session() {
   }, [entries, workoutId]);
 
   useEffect(() => {
-    if (rest <= 0 || isPaused) return;
+    if (rest <= 0 || isPaused || restPaused) return;
     timerRef.current = setInterval(() => setRest((r) => Math.max(0, r - 1)), 1000);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPaused, rest]);
+  }, [isPaused, rest, restPaused]);
 
   const labels = useMemo(() => supersetLabels(workout?.items ?? []), [workout?.items]);
   const exerciseCatalog = useMemo(() => [...exercises, ...BODYWEIGHT_EXERCISES], [exercises]);
@@ -237,6 +238,7 @@ function Session() {
     if (isNowDone && !currentSet.warmup) {
       const restSec = workout.items[ei]?.rest ?? 60;
       setRest(restSec);
+      setRestPaused(false);
     }
   };
 
@@ -434,7 +436,10 @@ function Session() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setRest(item?.rest ?? 60)}
+                    onClick={() => {
+                      setRest(item?.rest ?? 60);
+                      setRestPaused(false);
+                    }}
                     className="press flex shrink-0 items-center gap-1 rounded-full bg-secondary px-3 py-2 text-[12px] font-semibold text-ink cursor-pointer"
                     aria-label="התחל מנוחה"
                   >
@@ -700,52 +705,78 @@ function Session() {
         </Overlay>
       )}
 
-      {/* Floating Rest Timer Bar */}
-      {rest > 0 ? (
-        <div
-          className="scale-in fixed inset-x-0 z-40 mx-auto max-w-xl px-4"
-          style={{ bottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}
-        >
-          <div className="ink-card flex items-center gap-2 p-3.5">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15">
-              <Timer className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <div className="flex-1 min-w-0 text-start">
-              <p className="text-[10px] font-semibold tracking-[0.14em] text-primary-foreground/80 uppercase">
-                זמן מנוחה
-              </p>
-              <p className="font-display text-[20px] font-semibold tabular-nums text-primary-foreground">
-                {Math.floor(rest / 60)}:{String(rest % 60).padStart(2, "0")}
-              </p>
-            </div>
+      {/* Always-available Rest Timer Bar */}
+      <div
+        className="fixed inset-x-0 z-40 mx-auto max-w-xl px-4"
+        style={{ bottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}
+      >
+        <div className="ink-card flex items-center gap-2 p-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15">
+            <Timer className="h-4 w-4 text-primary-foreground" />
+          </div>
+          <div className="flex-1 min-w-0 text-start">
+            <p className="text-[10px] font-semibold tracking-[0.14em] text-primary-foreground/80 uppercase">
+              זמן מנוחה
+            </p>
+            <p className="font-display text-[20px] font-semibold tabular-nums text-primary-foreground">
+              {rest > 0 ? `${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, "0")}` : "מוכן"}
+            </p>
+          </div>
 
-            <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1">
+            {rest > 0 ? (
               <button
                 type="button"
-                onClick={() => setRest((r) => Math.max(0, r - 15))}
+                onClick={() => setRestPaused((paused) => !paused)}
                 className="press rounded-xl bg-white/15 px-2.5 py-1.5 text-[12px] font-bold text-primary-foreground hover:bg-white/25 cursor-pointer"
               >
-                -15ש׳
+                {restPaused ? "המשך" : "עצור"}
               </button>
-              <button
-                type="button"
-                onClick={() => setRest((r) => r + 15)}
-                className="press rounded-xl bg-white/15 px-2.5 py-1.5 text-[12px] font-bold text-primary-foreground hover:bg-white/25 cursor-pointer"
-              >
-                +15ש׳
-              </button>
-              <button
-                type="button"
-                onClick={() => setRest(0)}
-                className="press flex items-center gap-1 rounded-xl bg-white/20 px-3 py-1.5 text-[12px] font-bold text-primary-foreground hover:bg-white/30 cursor-pointer"
-              >
-                <SkipForward className="h-3.5 w-3.5 fill-current" />
-                <span>דילוג</span>
-              </button>
-            </div>
+            ) : (
+              <>
+                {[30, 60, 90].map((seconds) => (
+                  <button
+                    key={seconds}
+                    type="button"
+                    onClick={() => {
+                      setRest(seconds);
+                      setRestPaused(false);
+                    }}
+                    className="press rounded-xl bg-white/15 px-2 py-1.5 text-[12px] font-bold text-primary-foreground hover:bg-white/25 cursor-pointer"
+                  >
+                    {seconds}ש׳
+                  </button>
+                ))}
+              </>
+            )}
+            <button
+              type="button"
+              onClick={() => setRest((r) => Math.max(0, r - 15))}
+              className="press rounded-xl bg-white/15 px-2.5 py-1.5 text-[12px] font-bold text-primary-foreground hover:bg-white/25 cursor-pointer"
+            >
+              -15ש׳
+            </button>
+            <button
+              type="button"
+              onClick={() => setRest((r) => r + 15)}
+              className="press rounded-xl bg-white/15 px-2.5 py-1.5 text-[12px] font-bold text-primary-foreground hover:bg-white/25 cursor-pointer"
+            >
+              +15ש׳
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setRest(0);
+                setRestPaused(false);
+              }}
+              className="press flex items-center gap-1 rounded-xl bg-white/20 px-3 py-1.5 text-[12px] font-bold text-primary-foreground hover:bg-white/30 cursor-pointer"
+            >
+              <SkipForward className="h-3.5 w-3.5 fill-current" />
+              <span>דילוג</span>
+            </button>
           </div>
         </div>
-      ) : null}
+      </div>
 
       {/* Replace Exercise Modal */}
       {replacingIndex !== null ? (
