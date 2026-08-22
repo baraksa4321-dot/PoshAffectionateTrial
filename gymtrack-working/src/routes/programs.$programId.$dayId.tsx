@@ -34,7 +34,7 @@ import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Stepper } from "@/components/Stepper";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
-import { Overlay } from "@/components/ui-app/Overlay";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   EmptyState,
   IconButton,
@@ -355,15 +355,20 @@ function DayBuilder() {
         ) : null}
       </div>
 
-      <Overlay
+      <Sheet
         open={picker}
-        onClose={() => setPicker(false)}
-        variant="bottom"
-        ariaLabel="בחירת תרגיל"
+        onOpenChange={(open) => {
+          if (!open) setPicker(false);
+        }}
       >
+        <SheetContent
+          side="bottom"
+          showClose={false}
+          dir="rtl"
+          className="mx-auto h-[min(88dvh,44rem)] w-full max-w-xl overflow-hidden rounded-t-[2rem] border-t border-border/40 p-0"
+        >
         <div
-          className="scale-in max-h-[85dvh] overflow-y-auto rounded-t-[2rem] border-t border-border/40 bg-card p-5 text-start shadow-2xl"
-          onClick={(event) => event.stopPropagation()}
+          className="flex h-full min-h-0 flex-col p-5 text-start"
         >
           <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
           <div className="mb-3.5 flex items-center justify-between">
@@ -432,7 +437,7 @@ function DayBuilder() {
             </div>
           </div>
 
-          <div className="mt-3.5 space-y-2">
+          <div className="mt-3.5 min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain">
             {pickerExercises.map((exercise) => (
               <button
                 type="button"
@@ -495,7 +500,8 @@ function DayBuilder() {
             </button>
           )}
         </div>
-      </Overlay>
+        </SheetContent>
+      </Sheet>
 
       <ConfirmSheet
         open={pendingDeleteDay}

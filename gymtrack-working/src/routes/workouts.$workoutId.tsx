@@ -2,8 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, GripVertical, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { Overlay } from "@/components/ui-app/Overlay";
 import { Stepper } from "@/components/Stepper";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { deleteWorkout, emptyItem, emptyWorkout, saveWorkout, useGym } from "@/lib/gym-store";
 import type { Workout, WorkoutItem } from "@/lib/gym-types";
 
@@ -184,13 +184,19 @@ function Builder() {
         </button>
       )}
 
-      <Overlay
+      <Sheet
         open={picker}
-        onClose={() => setPicker(false)}
-        variant="bottom"
-        ariaLabel="בחירת תרגיל"
+        onOpenChange={(open) => {
+          if (!open) setPicker(false);
+        }}
       >
-        <div className="max-h-[75vh] overflow-y-auto rounded-t-3xl border-t border-border bg-card p-5 text-start">
+        <SheetContent
+          side="bottom"
+          showClose={false}
+          dir="rtl"
+          className="mx-auto h-[min(88dvh,44rem)] w-full max-w-xl overflow-hidden rounded-t-3xl border-t border-border p-0"
+        >
+        <div className="flex h-full min-h-0 flex-col p-5 text-start">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">בחר תרגיל</h2>
             <button
@@ -202,7 +208,7 @@ function Builder() {
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="space-y-2 pb-6">
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pb-6">
             {exercises.map((e) => (
               <button
                 key={e.id}
@@ -224,7 +230,8 @@ function Builder() {
             )}
           </div>
         </div>
-      </Overlay>
+        </SheetContent>
+      </Sheet>
     </AppShell>
   );
 }
