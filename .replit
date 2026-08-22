@@ -18,10 +18,10 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "GymTrack Preview"
+args = "Start application"
 
 [[workflows.workflow]]
-name = "GymTrack Preview"
+name = "Start application"
 author = "agent"
 
 [[workflows.workflow.tasks]]
