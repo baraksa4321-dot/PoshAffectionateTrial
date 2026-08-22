@@ -300,13 +300,14 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser();
-    const { data: profile, error: profileError } = await supabase
+    const { data: profileRow, error: profileError } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", userId)
       .maybeSingle();
     if (profileError) throw new Error(`Profile pull failed: ${profileError.message}`);
 
+    let profile = profileRow;
     if (!profile) {
       const { data: createdProfile, error: createProfileError } = await supabase
         .from("profiles")
