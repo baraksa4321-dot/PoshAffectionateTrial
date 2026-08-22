@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CoachRouteImport } from './routes/coach'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as CoachClientsRouteImport } from './routes/coach.clients'
 import { Route as ExercisesIndexRouteImport } from './routes/exercises.index'
 import { Route as ExercisesExerciseIdRouteImport } from './routes/exercises.$exerciseId'
 import { Route as NutritionIndexRouteImport } from './routes/nutrition.index'
@@ -38,6 +39,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CoachClientsRoute = CoachClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
+  getParentRoute: () => CoachRoute,
 } as any)
 const ExercisesIndexRoute = ExercisesIndexRouteImport.update({
   id: '/exercises/',
@@ -97,8 +103,9 @@ const ProgramsProgramIdDayIdRoute = ProgramsProgramIdDayIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/coach': typeof CoachRoute
+  '/coach': typeof CoachRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
+  '/coach/clients': typeof CoachClientsRoute
   '/exercises/$exerciseId': typeof ExercisesExerciseIdRoute
   '/programs/$programId': typeof ProgramsProgramIdRouteWithChildren
   '/session/$workoutId': typeof SessionWorkoutIdRoute
@@ -113,8 +120,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/coach': typeof CoachRoute
+  '/coach': typeof CoachRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
+  '/coach/clients': typeof CoachClientsRoute
   '/exercises/$exerciseId': typeof ExercisesExerciseIdRoute
   '/programs/$programId': typeof ProgramsProgramIdRouteWithChildren
   '/session/$workoutId': typeof SessionWorkoutIdRoute
@@ -130,8 +138,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/coach': typeof CoachRoute
+  '/coach': typeof CoachRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
+  '/coach/clients': typeof CoachClientsRoute
   '/exercises/$exerciseId': typeof ExercisesExerciseIdRoute
   '/programs/$programId': typeof ProgramsProgramIdRouteWithChildren
   '/session/$workoutId': typeof SessionWorkoutIdRoute
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/'
     | '/coach'
     | '/reset-password'
+    | '/coach/clients'
     | '/exercises/$exerciseId'
     | '/programs/$programId'
     | '/session/$workoutId'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/'
     | '/coach'
     | '/reset-password'
+    | '/coach/clients'
     | '/exercises/$exerciseId'
     | '/programs/$programId'
     | '/session/$workoutId'
@@ -182,6 +193,7 @@ export interface FileRouteTypes {
     | '/'
     | '/coach'
     | '/reset-password'
+    | '/coach/clients'
     | '/exercises/$exerciseId'
     | '/programs/$programId'
     | '/session/$workoutId'
@@ -197,7 +209,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CoachRoute: typeof CoachRoute
+  CoachRoute: typeof CoachRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
   ExercisesExerciseIdRoute: typeof ExercisesExerciseIdRoute
   ProgramsProgramIdRoute: typeof ProgramsProgramIdRouteWithChildren
@@ -233,6 +245,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/coach/clients': {
+      id: '/coach/clients'
+      path: '/clients'
+      fullPath: '/coach/clients'
+      preLoaderRoute: typeof CoachClientsRouteImport
+      parentRoute: typeof CoachRoute
     }
     '/exercises/': {
       id: '/exercises/'
@@ -314,6 +333,16 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface CoachRouteChildren {
+  CoachClientsRoute: typeof CoachClientsRoute
+}
+
+const CoachRouteChildren: CoachRouteChildren = {
+  CoachClientsRoute: CoachClientsRoute,
+}
+
+const CoachRouteWithChildren = CoachRoute._addFileChildren(CoachRouteChildren)
+
 interface ProgramsProgramIdRouteChildren {
   ProgramsProgramIdDayIdRoute: typeof ProgramsProgramIdDayIdRoute
 }
@@ -327,7 +356,7 @@ const ProgramsProgramIdRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CoachRoute: CoachRoute,
+  CoachRoute: CoachRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
   ExercisesExerciseIdRoute: ExercisesExerciseIdRoute,
   ProgramsProgramIdRoute: ProgramsProgramIdRouteWithChildren,

@@ -60,10 +60,10 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export const Route = createFileRoute("/coach")({
-  component: CoachDashboardPage,
+  component: () => <CoachDashboardPage />,
 });
 
-function CoachDashboardPage() {
+export function CoachDashboardPage({ clientsOnly = false }: { clientsOnly?: boolean }) {
   const store = useGym();
   const authUser = useAuthUser();
   const role = store.userProfile?.role;
@@ -127,6 +127,9 @@ function CoachDashboardPage() {
   const [menuFoodQuantity, setMenuFoodQuantity] = useState(1);
   const [menuNotice, setMenuNotice] = useState("");
   const isSelfSelected = Boolean(authUser?.id && selectedClientId === authUser.id);
+  const [overviewRows, setOverviewRows] = useState<
+    Array<{ client: CoachClientRow; details: ClientDetails }>
+  >([]);
 
   const loadCoachClients = useCallback(async () => {
     setManagementError("");
@@ -179,6 +182,25 @@ function CoachDashboardPage() {
       loadAllProfilesForOwner();
     }
   }, [isCoach, isOwner, loadAllProfilesForOwner, loadCoachClients]);
+
+  useEffect(() => {
+    if (clientsOnly || clients.length === 0) {
+      setOverviewRows([]);
+      return;
+    }
+    let active = true;
+    Promise.all(
+      clients.map(async (client) => ({
+        client,
+        details: await pullClientDataForCoach(client.client_id),
+      })),
+    ).then((rows) => {
+      if (active) setOverviewRows(rows.filter((row) => !row.details.error));
+    });
+    return () => {
+      active = false;
+    };
+  }, [clients, clientsOnly]);
 
   useEffect(() => {
     if (!selectedClientId) {

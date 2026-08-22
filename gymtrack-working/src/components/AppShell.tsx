@@ -85,6 +85,13 @@ export function AppShell({
     ? [
         {
           to: "/coach",
+          label: "בית",
+          id: "management-home",
+          icon: Home,
+          onClick: () => setWorkspace("management"),
+        },
+        {
+          to: "/coach/clients",
           label: "מתאמנים",
           id: "coach",
           icon: Users,
@@ -566,7 +573,7 @@ export function AppShell({
                 key={to}
                 to={to}
                 onClick={onClick}
-                activeOptions={{ exact: to === "/" }}
+                activeOptions={{ exact: to === "/" || to === "/coach" }}
                 data-testid={`link-nav-${id}`}
                 className="group relative flex min-h-[4rem] flex-1 flex-col items-center justify-center gap-1.5 py-2 text-muted-foreground transition-colors data-[status=active]:text-primary hover:text-ink"
               >
