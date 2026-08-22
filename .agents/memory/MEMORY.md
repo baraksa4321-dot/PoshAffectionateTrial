@@ -1,1 +1,2 @@
 - [Replit Preview routing](preview-routing.md) — browser Preview needs a registered root web artifact, not only a healthy standalone Vite workflow.
+- [Optional activity-log schema drift](supabase-optional-logs.md) — the connected Supabase project lacks weight and cardio log tables; these must not block authenticated role hydration.
