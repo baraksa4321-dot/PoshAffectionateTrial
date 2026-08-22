@@ -23,19 +23,29 @@ export const Route = createFileRoute("/exercises/")({
 function Library() {
   const { exercises, userProfile } = useGym();
   const navigate = useNavigate();
-  const role = userProfile?.role || "client";
+  const role = userProfile?.role;
   const isCoach = role === "coach" || role === "owner";
 
   useEffect(() => {
-    if (userProfile && !isCoach) {
+    if (role && !isCoach) {
       navigate({ to: "/" });
     }
-  }, [userProfile, isCoach, navigate]);
+  }, [role, isCoach, navigate]);
 
   const [q, setQ] = useState("");
   const [group, setGroup] = useState("הכל");
   const [equipment, setEquipment] = useState("הכל");
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  if (role === undefined) {
+    return (
+      <AppShell title="ספריית תרגילים" kicker="בודקת הרשאות">
+        <div className="surface-card mt-4 rounded-3xl p-6 text-center text-sm text-muted-foreground">
+          טוענת את תפקיד החשבון המאומת...
+        </div>
+      </AppShell>
+    );
+  }
 
   if (!isCoach) {
     return (

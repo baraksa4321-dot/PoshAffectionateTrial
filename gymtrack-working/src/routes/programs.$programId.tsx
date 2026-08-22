@@ -43,7 +43,7 @@ function ProgramDetail() {
   const { programId } = Route.useParams();
   const navigate = useNavigate();
   const { programs, workouts, userProfile } = useGym();
-  const role = userProfile?.role || "client";
+  const role = userProfile?.role;
   const isCoach = role === "coach" || role === "owner";
   const program = programs.find((item) => item.id === programId);
   const [editing, setEditing] = useState(false);

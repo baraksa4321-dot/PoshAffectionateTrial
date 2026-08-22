@@ -143,6 +143,16 @@ function DayBuilder() {
     useSensor(PointerSensor),
   );
 
+  if (userProfile?.role === undefined) {
+    return (
+      <AppShell title="יום אימון" kicker="בודקת הרשאות">
+        <div className="surface-card mt-4 rounded-3xl p-6 text-center text-sm text-muted-foreground">
+          טוענת את תפקיד החשבון המאומת...
+        </div>
+      </AppShell>
+    );
+  }
+
   if (!program && !isNew) {
     return (
       <AppShell title="יום אימון לא נמצא">

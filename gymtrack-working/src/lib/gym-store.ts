@@ -601,6 +601,7 @@ let hydrated = false;
 let currentUser: { id: string; email?: string } | null = null;
 let authStatus: "loading" | "authenticated" | "unauthenticated" = "loading";
 let authResolved = false;
+let hydrationGeneration = 0;
 const listeners = new Set<() => void>();
 
 function resetDataIfCacheBelongsToAnotherUser(userId: string) {
@@ -717,6 +718,7 @@ function load() {
         void handleUserLogin(session.user.id);
       } else {
         // On sign-out, reset memory state to clean seed data
+        hydrationGeneration += 1;
         data = seed();
         try {
           window.localStorage.removeItem(KEY);
@@ -731,16 +733,18 @@ function load() {
 }
 
 async function handleUserLogin(userId: string) {
+  const generation = ++hydrationGeneration;
   // Read the signed-in user's data before writing anything. Uploading the
   // anonymous seed first can overwrite cloud state on a fresh device.
   // Do not let a previous user's cached role control the UI while this pull
-  // is in flight. A missing or failed profile read safely renders as client.
+  // is in flight. A missing or failed profile read leaves the role unknown.
   data = {
     ...data,
     userProfile: { ...data.userProfile, role: undefined, coachId: undefined },
   };
   listeners.forEach((l) => l());
   const pulled = await pullSupabaseData(userId, data);
+  if (generation !== hydrationGeneration || currentUser?.id !== userId) return;
   if (!pulled.success) {
     console.warn("[Initial Supabase Pull Warning]:", pulled.error);
     listeners.forEach((l) => l());
@@ -748,6 +752,7 @@ async function handleUserLogin(userId: string) {
   }
   data = pulled.data;
   persist();
+  if (generation !== hydrationGeneration || currentUser?.id !== userId) return;
   // Push only after local state contains the user's cloud-backed data.
   const result = await syncLocalToSupabase(userId, data, currentUser?.email);
   if (!result.success) {

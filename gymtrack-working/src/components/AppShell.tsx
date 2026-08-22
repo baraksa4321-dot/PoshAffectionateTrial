@@ -40,7 +40,7 @@ export function AppShell({
 }) {
   const store = useGym();
   const user = useAuthUser();
-  const role = store.userProfile?.role || "client";
+  const role = store.userProfile?.role;
   const isOwner = role === "owner";
   const isCoach = role === "coach" || isOwner;
 

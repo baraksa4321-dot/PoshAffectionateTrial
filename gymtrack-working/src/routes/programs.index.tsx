@@ -21,7 +21,7 @@ export const Route = createFileRoute("/programs/")({
 function ProgramsPage() {
   const { programs, workouts, userProfile } = useGym();
   const navigate = useNavigate();
-  const role = userProfile?.role || "client";
+  const role = userProfile?.role;
   const isCoach = role === "coach" || role === "owner";
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");

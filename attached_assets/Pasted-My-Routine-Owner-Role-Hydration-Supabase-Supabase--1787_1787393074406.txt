@@ -1,0 +1,128 @@
+My Routine — תיקון Owner Role Hydration לפי נתוני Supabase מאומתים
+
+יש לנו עכשיו נתוני Supabase מאומתים. אל תנחש ואל תשנה Roles במסד הנתונים.
+
+נתונים מאומתים
+
+ב־public.profiles:
+
+* maya2003yos@gmail.com → role = owner
+* mayayosfan234@gmail.com → role = owner
+* לשניהם coach_id = null
+
+בנוסף, auth.users.id תואם ל־profiles.id עבור שני החשבונות, והאימיילים תואמים.
+
+הפונקציות הבאות קיימות ב־Supabase:
+
+* is_owner()
+* is_coach_of()
+* change_user_role()
+* assign_client_to_coach()
+
+המשימה
+
+תקן את My Routine כך שה־role של המשתמש המחובר ייקבע אך ורק מה־authenticated Supabase user ומה־public.profiles.role המתאים לו.
+
+חובה
+
+1. לאחר Login, טען את supabase.auth.getUser() / session המאומת.
+2. השתמש ב־auth.user.id כדי למצוא את ה־profile המתאים.
+3. טען את profiles.role עבור אותו id.
+4. אל תשתמש ב־email כדי לקבוע Role.
+5. אל תשתמש ב־localStorage כ־source of truth עבור Role.
+6. Cache ישן לא יכול לדרוס Role חדש.
+7. לאחר logout יש לנקות role/profile state.
+8. לאחר login מחדש יש לבצע hydration מחדש מה־Supabase session.
+9. לאחר refresh יש לשחזר את ה־role האמיתי מה־Supabase.
+10. אם profile עדיין לא נטען — אל תניח Client. הצג loading/unknown state עד שה־hydration מסתיים.
+11. אם ה־role הוא owner, המשתמש חייב לקבל את Owner navigation וה־Owner routes.
+12. Client לא יכול לקבל Owner UI רק בגלל cache או state ישן.
+13. אל תוסיף שום exception עבור:
+
+* maya2003yos@gmail.com
+* mayayosfan234@gmail.com
+* או כל משתמש אחר.
+
+Route protection
+
+בדוק גם routes ישירים.
+
+משתמש Client לא אמור להיות מסוגל לפתוח Owner/Coach routes רק על ידי הכנסת URL ידנית.
+
+ה־UI וה־route guards צריכים להתבסס על ה־role ההידרטי האמיתי.
+
+אל תחליש RLS. ה־Supabase RLS נשאר שכבת האבטחה הסופית.
+
+חשוב מאוד
+
+אל תשנה:
+
+* profiles.role
+* RLS
+* migrations
+* RPCs
+* SECURITY DEFINER functions
+* permissions
+
+אין צורך בשינוי DB עבור הבעיה הזו — הנתונים כבר אומרים ששני החשבונות הם Owner.
+
+בדיקות שחובה לבצע בקוד
+
+בדוק את כל המקומות שבהם:
+
+* role נטען
+* profile נטען
+* auth session נטען
+* localStorage/cache נקרא
+* AppShell מחליט איזה navigation להציג
+* routes מבצעים authorization
+* logout מנקה state
+* refresh משחזר state
+
+חפש במיוחד race conditions שבהם:
+
+initial state → Client → async profile load → Owner
+
+או:
+
+old cached role → login → cached Client overrides Owner
+
+או:
+
+logout → login as Owner → previous Client state remains
+
+לאחר התיקון
+
+הרץ:
+
+* npm run build
+* npm run lint
+* Prettier
+* git diff --check
+* restart Preview
+
+בדוח הסיום הפרד במפורש בין:
+
+FIXED
+
+מה שתוקן בקוד.
+
+CODE VERIFIED
+
+מה שניתן לאמת מהקוד.
+
+BROWSER VERIFIED
+
+רק מה שבאמת נבדק אינטראקטיבית בדפדפן.
+
+NOT VERIFIED
+
+מה שלא ניתן לבדוק ללא session אמיתי.
+
+DATABASE
+
+ציין במפורש שלא בוצעו שינויי DB.
+
+אל תכתוב שה־Owner login עובד בפועל אם לא בוצעה התחברות אמיתית לחשבון Owner.
+
+המטרה היא לא “לסמן משימה כהושלמה”, אלא לתקן את מקור הבעיה כך שה־Owner role המאומת מ־Supabase יגיע בצורה אמינה עד ל־UI ול־routes.
