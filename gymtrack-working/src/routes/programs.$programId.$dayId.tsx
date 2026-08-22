@@ -53,6 +53,7 @@ import {
   uid,
   useGym,
 } from "@/lib/gym-store";
+import { BODYWEIGHT_EXERCISES } from "@/lib/bodyweight-exercises";
 import {
   EQUIPMENT,
   MUSCLE_GROUPS,
@@ -126,6 +127,7 @@ function DayBuilder() {
   const { programId, dayId } = Route.useParams();
   const navigate = useNavigate();
   const { programs, workouts, exercises, userProfile } = useGym();
+  const exerciseCatalog = [...exercises, ...BODYWEIGHT_EXERCISES];
   const canManageProgram = userProfile?.role === "coach" || userProfile?.role === "owner";
   const program = programs.find((item) => item.id === programId);
   const existing = workouts.find((workout) => workout.id === dayId);
@@ -305,7 +307,7 @@ function DayBuilder() {
         >
           <div className="space-y-3">
             {draft.items.map((item, index) => {
-              const ex = exercises.find((exercise) => exercise.id === item.exerciseId);
+              const ex = exerciseCatalog.find((exercise) => exercise.id === item.exerciseId);
               return (
                 <SortableItem
                   key={item.id}

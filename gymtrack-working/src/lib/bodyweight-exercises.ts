@@ -170,14 +170,18 @@ const BODYWEIGHT_BY_MUSCLE: Record<string, string> = {
 const normalized = (value: string) => value.trim().toLowerCase();
 
 export function bodyweightAlternativeFor(exercise: Exercise): Exercise {
-  const key = BODYWEIGHT_BY_MUSCLE[exercise.muscleGroup] ?? BODYWEIGHT_BY_MUSCLE[normalized(exercise.muscleGroup)];
+  const muscle = normalized(exercise.muscleGroup);
+  const exactKey = Object.keys(BODYWEIGHT_BY_MUSCLE).find((key) => normalized(key) === muscle);
+  const partialKey = Object.keys(BODYWEIGHT_BY_MUSCLE).find(
+    (key) => muscle.includes(normalized(key)) || normalized(key).includes(muscle),
+  );
+  const key =
+    BODYWEIGHT_BY_MUSCLE[exercise.muscleGroup] ??
+    BODYWEIGHT_BY_MUSCLE[exactKey ?? partialKey ?? ""];
   return BODYWEIGHT_EXERCISES.find((item) => item.id === key) ?? BODYWEIGHT_EXERCISES[0]!;
 }
 
-export function replaceWithBodyweight(
-  items: WorkoutItem[],
-  exercises: Exercise[],
-): WorkoutItem[] {
+export function replaceWithBodyweight(items: WorkoutItem[], exercises: Exercise[]): WorkoutItem[] {
   return items.map((item) => {
     const source = exercises.find((exercise) => exercise.id === item.exerciseId);
     if (!source) return item;

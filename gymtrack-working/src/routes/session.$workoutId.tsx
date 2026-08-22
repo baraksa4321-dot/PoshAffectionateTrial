@@ -192,7 +192,9 @@ function Session() {
     if (approvedIds && approvedIds.length > 0) {
       return exercises.filter((exercise) => approvedIds.includes(exercise.id));
     }
-    const currentExercise = exerciseCatalog.find((exercise) => exercise.id === currentItem?.exerciseId);
+    const currentExercise = exerciseCatalog.find(
+      (exercise) => exercise.id === currentItem?.exerciseId,
+    );
     if (!currentExercise) return [];
     return exerciseCatalog
       .filter(
@@ -207,7 +209,7 @@ function Session() {
           Number(b.equipment !== currentExercise.equipment),
       )
       .slice(0, 12);
-  }, [exerciseCatalog, approvedIds, currentItem?.exerciseId]);
+  }, [exerciseCatalog, exercises, approvedIds, currentItem?.exerciseId]);
 
   if (!workout) {
     return (
@@ -287,6 +289,19 @@ function Session() {
   };
 
   const progress = totalSets ? (doneSets / totalSets) * 100 : 0;
+  const switchToBodyweight = () => {
+    const nextWorkout = {
+      ...workout,
+      name: workout.name.replace(/\s*·\s*משקל גוף$/, "") + " · משקל גוף",
+      notes: workout.notes
+        ? `${workout.notes}\nגרסת משקל גוף — התרגילים מותאמים לפי קבוצת השרירים.`
+        : "גרסת משקל גוף — התרגילים מותאמים לפי קבוצת השרירים.",
+      items: replaceWithBodyweight(workout.items, exerciseCatalog),
+    };
+    saveWorkout(nextWorkout);
+    clearSavedSession();
+    setBodyweightNotice("האימון עודכן לגרסת משקל גוף לפי קבוצות השרירים.");
+  };
 
   return (
     <AppShell
@@ -340,6 +355,29 @@ function Session() {
             />
           </div>
         </div>
+      </div>
+
+      <div className="surface-card border border-primary/20 bg-primary/5 p-3 text-start">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-ink">צריכה אימון משקל גוף?</p>
+            <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+              נחליף כל תרגיל בתרגיל משקל גוף שעובד על אותו שריר.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={switchToBodyweight}
+            className="press shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-sm"
+          >
+            עדכני לאימון משקל גוף
+          </button>
+        </div>
+        {bodyweightNotice ? (
+          <p className="mt-2 rounded-lg bg-emerald-50 px-2.5 py-2 text-[11px] font-semibold text-emerald-800">
+            {bodyweightNotice}
+          </p>
+        ) : null}
       </div>
 
       <div className="mt-5 space-y-4">
