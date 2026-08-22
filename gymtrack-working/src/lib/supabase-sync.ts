@@ -629,7 +629,9 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       .select("*")
       .eq("user_id", clientId)
       .order("date", { ascending: false });
-    if (cardioError) throw new Error(`Client cardio pull failed: ${cardioError.message}`);
+    if (cardioError && !isMissingTableInSchemaCache(cardioError, "cardio_logs")) {
+      throw new Error(`Client cardio pull failed: ${cardioError.message}`);
+    }
 
     const workoutsMap = new Map<string, Workout>();
     const programsList: Program[] = [];

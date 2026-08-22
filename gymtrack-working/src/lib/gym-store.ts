@@ -1283,6 +1283,10 @@ export function saveNutritionWater(date: string, waterMl: number, waterTargetMl?
   }));
 }
 
+export function savePlannedMeals(date: string, plannedMeals: Meal[]) {
+  withDay(date, (day) => ({ ...day, plannedMeals }));
+}
+
 /* ---------- recipes ---------- */
 
 export function saveRecipe(name: string, foods: MealFood[]) {
