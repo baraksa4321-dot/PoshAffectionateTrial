@@ -46,6 +46,7 @@ import {
 } from "@/lib/gym-store";
 import type { MealFood } from "@/lib/gym-types";
 import { nutritionSourceFor } from "@/lib/nutrition-integrity";
+import { RECIPE_LIBRARY, type RecipeDefinition } from "@/lib/recipe-library";
 
 export const Route = createFileRoute("/nutrition/")({
   head: () => ({
@@ -93,6 +94,8 @@ function NutritionLog() {
   const [showShoppingList, setShowShoppingList] = useState(false);
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
   const [suggestionMealId, setSuggestionMealId] = useState<string>("");
+  const [showRecipes, setShowRecipes] = useState(false);
+  const [selectedRecipe, setSelectedRecipe] = useState<RecipeDefinition | null>(null);
 
   const day = nutritionDay(gym, date);
   const totals = dayTotals(day);
@@ -266,6 +269,121 @@ function NutritionLog() {
           <span>רשימת קניות</span>
         </button>
       </div>
+
+      {/* Secondary recipe library */}
+      <section className="mt-3 rounded-2xl border border-border/60 bg-card/70">
+        <button
+          type="button"
+          onClick={() => setShowRecipes((open) => !open)}
+          aria-expanded={showRecipes}
+          className="flex w-full items-center justify-between gap-3 p-3 text-start"
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <BookOpen className="h-4 w-4" />
+            </span>
+            <span>
+              <span className="block text-xs font-bold text-ink">מתכונים</span>
+              <span className="block text-[10px] text-muted-foreground">
+                רעיונות קלים עם ערכים תזונתיים
+              </span>
+            </span>
+          </span>
+          <span className="text-[11px] font-bold text-primary">
+            {showRecipes ? "סגירה" : `${RECIPE_LIBRARY.length} מתכונים`}
+          </span>
+        </button>
+        {showRecipes ? (
+          <div className="border-t border-border/50 px-3 pb-3 pt-2">
+            <div className="flex gap-1.5 overflow-x-auto pb-2">
+              {(["הכל", "עתיר חלבון", "דל שומן", "ארוחה קלה", "מתוק מאוזן"] as const).map(
+                (category) => (
+                  <span
+                    key={category}
+                    className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-semibold text-muted-foreground"
+                  >
+                    {category}
+                  </span>
+                ),
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {RECIPE_LIBRARY.map((recipe) => (
+                <button
+                  key={recipe.id}
+                  type="button"
+                  onClick={() => setSelectedRecipe(recipe)}
+                  className="rounded-xl border border-border/60 bg-white/60 p-2.5 text-start transition-colors hover:border-primary/50"
+                >
+                  <span className="block truncate text-xs font-bold text-ink">{recipe.name}</span>
+                  <span className="mt-1 block truncate text-[10px] text-muted-foreground">
+                    {recipe.category} · {recipe.nutrition.calories} קל׳
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      {selectedRecipe ? (
+        <Overlay
+          open={Boolean(selectedRecipe)}
+          onClose={() => setSelectedRecipe(null)}
+          variant="bottom"
+          ariaLabel={`מתכון ${selectedRecipe.name}`}
+        >
+          <div className="space-y-4 p-5 text-start" dir="rtl">
+            <div className="mx-auto h-1.5 w-12 rounded-full bg-border" />
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                  {selectedRecipe.category}
+                </p>
+                <h2 className="mt-1 font-display text-xl font-extrabold text-ink">
+                  {selectedRecipe.name}
+                </h2>
+              </div>
+              <IconButton aria-label="סגור מתכון" onClick={() => setSelectedRecipe(null)}>
+                <X className="h-5 w-5" />
+              </IconButton>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-xl bg-primary/10 p-2 text-center">
+                <span className="block text-[10px] text-muted-foreground">קלוריות</span>
+                <strong className="text-sm text-ink">{selectedRecipe.nutrition.calories}</strong>
+              </div>
+              <div className="rounded-xl bg-primary/10 p-2 text-center">
+                <span className="block text-[10px] text-muted-foreground">חלבון</span>
+                <strong className="text-sm text-ink">{selectedRecipe.nutrition.protein} ג׳</strong>
+              </div>
+              <div className="rounded-xl bg-primary/10 p-2 text-center">
+                <span className="block text-[10px] text-muted-foreground">שומן</span>
+                <strong className="text-sm text-ink">{selectedRecipe.nutrition.fat} ג׳</strong>
+              </div>
+            </div>
+            <div>
+              <h3 className="mb-1.5 text-xs font-bold text-ink">מצרכים</h3>
+              <ul className="list-disc space-y-1 pe-4 text-xs text-muted-foreground">
+                {selectedRecipe.ingredients.map((ingredient) => (
+                  <li key={ingredient}>{ingredient}</li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="mb-1.5 text-xs font-bold text-ink">הוראות הכנה</h3>
+              <ol className="list-decimal space-y-1 pe-4 text-xs leading-relaxed text-muted-foreground">
+                {selectedRecipe.instructions.map((instruction) => (
+                  <li key={instruction}>{instruction}</li>
+                ))}
+              </ol>
+            </div>
+            <p className="border-s-2 border-primary/30 ps-2 text-[10px] leading-relaxed text-muted-foreground">
+              הערכים הם אומדן למנה ויכולים להשתנות לפי המותג, הכמות ואופן ההכנה.
+            </p>
+          </div>
+        </Overlay>
+      ) : null}
 
       {/* Daily total */}
       <div className="rose-card mt-4 overflow-hidden p-5">
