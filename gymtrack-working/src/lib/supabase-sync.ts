@@ -2,6 +2,7 @@ import { ISRAELI_FOOD_DATABASE } from "./israeli-food-db";
 import { supabase } from "./supabase";
 import {
   type ClientLink,
+  type CardioLog,
   type CoachMessage,
   type Exercise,
   type FoodItem,
@@ -138,6 +139,45 @@ export async function syncLocalToSupabase(
       await requireSuccessfulWrite(
         supabase.from("workout_sessions").upsert(historyPayload, { onConflict: "id" }),
         "Workout history sync",
+      );
+    }
+
+    // 4c. Cardio Logs
+    // Reconcile deletions as well as upserts so local delete actions persist
+    // across devices. The user_id is always derived from the signed-in user.
+    const cardioPayload = (localData.cardioLogs ?? []).map((log) => ({
+      id: log.id,
+      user_id: userId,
+      date: log.date,
+      type: log.type,
+      duration_min: log.durationMin,
+      intensity: log.intensity,
+      speed_kmh: log.speed,
+      incline_pct: log.incline,
+      distance_km: log.distanceKm,
+      calories: log.calories,
+      updated_at: new Date().toISOString(),
+    }));
+    if (cardioPayload.length > 0) {
+      await requireSuccessfulWrite(
+        supabase.from("cardio_logs").upsert(cardioPayload, { onConflict: "id" }),
+        "Cardio logs sync",
+      );
+    }
+    const { data: remoteCardioLogs, error: remoteCardioError } = await supabase
+      .from("cardio_logs")
+      .select("id")
+      .eq("user_id", userId);
+    if (remoteCardioError)
+      throw new Error(`Cardio logs lookup failed: ${remoteCardioError.message}`);
+    const localCardioIds = new Set((localData.cardioLogs ?? []).map((log) => log.id));
+    const deletedCardioIds = (remoteCardioLogs ?? [])
+      .map((row) => row.id as string)
+      .filter((id) => !localCardioIds.has(id));
+    if (deletedCardioIds.length > 0) {
+      await requireSuccessfulWrite(
+        supabase.from("cardio_logs").delete().in("id", deletedCardioIds),
+        "Cardio logs deletion sync",
       );
     }
 
@@ -418,6 +458,25 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       }));
     }
 
+    // 7b. Cardio Logs
+    const { data: dbCardioLogs, error: cardioError } = await supabase
+      .from("cardio_logs")
+      .select("*")
+      .eq("user_id", userId)
+      .order("date", { ascending: false });
+    if (cardioError) throw new Error(`Cardio pull failed: ${cardioError.message}`);
+    nextData.cardioLogs = (dbCardioLogs ?? []).map((row): CardioLog => ({
+      id: row.id,
+      date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
+      type: row.type,
+      durationMin: Number(row.duration_min),
+      intensity: row.intensity || undefined,
+      speed: row.speed_kmh === null ? undefined : Number(row.speed_kmh),
+      incline: row.incline_pct === null ? undefined : Number(row.incline_pct),
+      distanceKm: row.distance_km === null ? undefined : Number(row.distance_km),
+      calories: Number(row.calories),
+    }));
+
     // 8. Custom Foods
     const { data: dbCustomFoods, error: customFoodsError } = await supabase
       .from("custom_foods")
@@ -488,6 +547,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<{
   workouts: Workout[];
   nutritionDays: NutritionDay[];
   history: HistorySession[];
+  cardioLogs: CardioLog[];
   profile?: UserProfile;
 }> {
   try {
@@ -514,6 +574,12 @@ export async function pullClientDataForCoach(clientId: string): Promise<{
 
     const { data: dbSessions } = await supabase
       .from("workout_sessions")
+      .select("*")
+      .eq("user_id", clientId)
+      .order("date", { ascending: false });
+
+    const { data: dbCardioLogs } = await supabase
+      .from("cardio_logs")
       .select("*")
       .eq("user_id", clientId)
       .order("date", { ascending: false });
@@ -563,12 +629,24 @@ export async function pullClientDataForCoach(clientId: string): Promise<{
       entries: row.entries || [],
       notes: row.notes || "",
     }));
+    const cardioList: CardioLog[] = (dbCardioLogs || []).map((row) => ({
+      id: row.id,
+      date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
+      type: row.type,
+      durationMin: Number(row.duration_min),
+      intensity: row.intensity || undefined,
+      speed: row.speed_kmh === null ? undefined : Number(row.speed_kmh),
+      incline: row.incline_pct === null ? undefined : Number(row.incline_pct),
+      distanceKm: row.distance_km === null ? undefined : Number(row.distance_km),
+      calories: Number(row.calories),
+    }));
 
     return {
       programs: programsList,
       workouts: Array.from(workoutsMap.values()),
       nutritionDays: nutritionList,
       history: historyList,
+      cardioLogs: cardioList,
       profile: profile
         ? {
             weight: Number(profile.weight_kg || 65),
@@ -579,6 +657,6 @@ export async function pullClientDataForCoach(clientId: string): Promise<{
     };
   } catch (err) {
     console.error("[Pull Client Data Error]:", err);
-    return { programs: [], workouts: [], nutritionDays: [], history: [] };
+    return { programs: [], workouts: [], nutritionDays: [], history: [], cardioLogs: [] };
   }
 }

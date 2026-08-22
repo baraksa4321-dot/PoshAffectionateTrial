@@ -17,6 +17,7 @@ import {
   Search,
   UserCog,
   ArrowRightLeft,
+  Activity,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "../components/AppShell";
@@ -912,6 +913,48 @@ function CoachDashboardPage() {
                         </span>
                       </div>
                     </div>
+                  )}
+                </div>
+
+                {/* Read-only Client Cardio History */}
+                <div className="surface-card p-4 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <h4 className="font-bold text-sm text-ink flex items-center gap-1.5">
+                      <Activity className="h-4 w-4 text-primary" /> היסטוריית אירובי
+                    </h4>
+                    <span className="text-[11px] text-muted-foreground">
+                      {clientDetails?.cardioLogs?.length || 0} אימונים
+                    </span>
+                  </div>
+                  {clientDetails?.cardioLogs?.length ? (
+                    <div className="space-y-2">
+                      {clientDetails.cardioLogs.map((log) => (
+                        <div
+                          key={log.id}
+                          className="flex items-center justify-between rounded-xl bg-secondary/40 px-3 py-2 text-xs"
+                        >
+                          <div>
+                            <p className="font-bold text-ink">{log.type}</p>
+                            <p className="text-muted-foreground">
+                              {new Date(`${log.date}T00:00:00`).toLocaleDateString("he-IL")} ·{" "}
+                              {log.durationMin} דקות
+                            </p>
+                          </div>
+                          <div className="text-left">
+                            <p className="font-bold text-primary">{log.calories} קל׳</p>
+                            {log.distanceKm ? (
+                              <p className="text-[11px] text-muted-foreground">
+                                {log.distanceKm} ק״מ
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="py-2 text-center text-xs text-muted-foreground">
+                      עדיין לא נרשמו אימוני אירובי.
+                    </p>
                   )}
                 </div>
               </div>
