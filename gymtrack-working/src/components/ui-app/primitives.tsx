@@ -198,7 +198,7 @@ export function StatTile({
   label: string;
   value: string;
   hint?: string;
-  icon?: ComponentType<{ className?: string }>;
+  icon?: ComponentType<{ className?: string; strokeWidth?: number }>;
   tone?: "sage" | "rose" | "cream" | "ink";
 }) {
   const tones = {
@@ -242,7 +242,7 @@ export function EmptyState({
   description,
   action,
 }: {
-  icon?: ComponentType<{ className?: string }>;
+  icon?: ComponentType<{ className?: string; strokeWidth?: number }>;
   title: string;
   description?: ReactNode;
   action?: ReactNode;

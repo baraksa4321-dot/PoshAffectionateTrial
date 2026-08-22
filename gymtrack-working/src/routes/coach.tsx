@@ -68,6 +68,11 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
+function profileDisplayName(profile?: { full_name?: string | null } | null): string {
+  const name = profile?.full_name?.trim();
+  return name || "שם לא הוגדר";
+}
+
 export const Route = createFileRoute("/coach")({
   component: () => <CoachDashboardPage />,
 });
@@ -96,6 +101,7 @@ export function CoachDashboardPage({
   const [showClientWorkspace, setShowClientWorkspace] = useState(false);
   const [clientDetails, setClientDetails] = useState<ClientDetails | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [clientDetailsError, setClientDetailsError] = useState("");
   const [managementError, setManagementError] = useState("");
   const [roleChangeUserId, setRoleChangeUserId] = useState<string | null>(null);
   const [roleChangeNotice, setRoleChangeNotice] = useState("");
@@ -105,9 +111,11 @@ export function CoachDashboardPage({
   const applyClientDetails = useCallback((result: ClientDetails) => {
     if (result.error) {
       setClientDetails(null);
+      setClientDetailsError(result.error);
       setManagementError(result.error);
       return;
     }
+    setClientDetailsError("");
     setClientDetails(result);
   }, []);
 
@@ -241,16 +249,18 @@ export function CoachDashboardPage({
 
     let active = true;
     setLoadingDetails(true);
+    setClientDetailsError("");
     setManagementError("");
     if (isSelfSelected) {
       setClientDetails({
         programs: store.programs,
         workouts: store.workouts,
         nutritionDays: store.nutritionDays,
+        nutritionTargets: store.nutritionTargets,
         history: store.history,
         cardioLogs: store.cardioLogs ?? [],
         bodyMeasurements: store.bodyMeasurements ?? [],
-        profile: store.userProfile,
+        ...(store.userProfile ? { profile: store.userProfile } : {}),
       });
       setLoadingDetails(false);
       return;
@@ -271,6 +281,7 @@ export function CoachDashboardPage({
     store.cardioLogs,
     store.history,
     store.nutritionDays,
+    store.nutritionTargets,
     store.programs,
     store.userProfile,
     store.workouts,
@@ -289,6 +300,10 @@ export function CoachDashboardPage({
     );
     setEditingMeasurements(false);
     setMeasurementNotice("");
+  }, [clientDetails]);
+
+  useEffect(() => {
+    setCalTarget(clientDetails?.nutritionTargets.calories ?? 2000);
   }, [clientDetails]);
 
   const saveClientMeasurements = async () => {
@@ -553,12 +568,12 @@ export function CoachDashboardPage({
       weight: targetWeight,
       rest: restSec,
       notes: "",
-      techniqueNotes: techNotes.trim() || undefined,
-      approvedAlternatives: approvedAltIds.length > 0 ? approvedAltIds : undefined,
-      supersetId: supersetGroup.trim() || undefined,
-      dropSetConfig: dropSetEnabled
-        ? { enabled: true, drops: dropSetCount, percentReduction: 20 }
-        : undefined,
+      ...(techNotes.trim() ? { techniqueNotes: techNotes.trim() } : {}),
+      ...(approvedAltIds.length > 0 ? { approvedAlternatives: approvedAltIds } : {}),
+      ...(supersetGroup.trim() ? { supersetId: supersetGroup.trim() } : {}),
+      ...(dropSetEnabled
+        ? { dropSetConfig: { enabled: true, drops: dropSetCount, percentReduction: 20 } }
+        : {}),
       workingSets: Array.from({ length: setsCount }, (_, i) => ({
         id: uid(),
         setNumber: i + 1,
@@ -687,7 +702,7 @@ export function CoachDashboardPage({
       date: menuDate,
       meals: existingDay?.meals ?? [],
       planned_meals: plannedMeals,
-      target_calories: existingDay ? undefined : calTarget,
+       ...(existingDay ? {} : { target_calories: calTarget }),
       updated_at: new Date().toISOString(),
     });
     if (error) {
@@ -747,8 +762,9 @@ export function CoachDashboardPage({
   };
 
   return (
-    <AppShell
-      title={clientsOnly ? "מתאמנים" : ""}
+      <AppShell
+      title={clientsOnly ? "מתאמנים" : "בית"}
+      kicker={clientsOnly ? "בניית תוכניות ותפריטים" : "לוח מודעות"}
       action={
         clientsOnly ? (
           <button
@@ -773,17 +789,19 @@ export function CoachDashboardPage({
         <section className="space-y-4 text-start">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
-              לוח מודעות
+              {isOwner ? "לוח מודעות לבעלים" : "לוח מודעות למאמן"}
             </p>
             <h2 className="mt-1 font-display text-2xl font-extrabold text-ink">
               מה חשוב לדעת היום?
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              עדכונים קצרים ופעולות שממתינות לך במרחב הניהול.
+              {isOwner
+                ? "תמונת מצב של המועדון, המשתמשים והפעולות שדורשות את תשומת ליבך."
+                : "עדכונים קצרים ופעולות שממתינות לך במרחב הניהול."}
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <div className="surface-card border-primary/25 bg-primary/5 p-3 text-start">
               <p className="text-[11px] font-bold text-muted-foreground">מתאמנים</p>
               <p className="mt-1 font-display text-2xl font-extrabold text-ink">{clients.length}</p>
@@ -799,6 +817,36 @@ export function CoachDashboardPage({
               <p className="mt-1 font-display text-2xl font-extrabold text-ink">
                 {quietClients.length}
               </p>
+            </div>
+            {isOwner ? (
+              <div className="surface-card border-purple-200 bg-purple-50/70 p-3 text-start">
+                <p className="text-[11px] font-bold text-purple-700">משתמשים</p>
+                <p className="mt-1 font-display text-2xl font-extrabold text-purple-950">
+                  {allProfiles.length}
+                </p>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="surface-card border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="flex items-center gap-2 text-sm font-bold text-ink">
+                  <Shield className="h-4 w-4 text-primary" />
+                  {isOwner ? "מרכז שליטה" : "מרכז הפעילות"}
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {isOwner
+                    ? "מכאן אפשר לעבור לרשימת המתאמנים, לפתוח סביבת עבודה ולנהל תפקידים."
+                    : "פתחי מתאמן כדי לערוך עבורו את תוכנית האימונים והתפריט המתוכנן."}
+                </p>
+              </div>
+              <Link
+                to="/coach/clients"
+                className="shrink-0 rounded-xl bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground shadow-sm"
+              >
+                לרשימת המתאמנים
+              </Link>
             </div>
           </div>
 
@@ -831,8 +879,7 @@ export function CoachDashboardPage({
                     )
                     .slice(0, 8)
                     .map((row) => {
-                      const name =
-                        row.client.profiles?.full_name || "מתאמן";
+                      const name = profileDisplayName(row.client.profiles);
                       const reason = needsPlan.some(
                         (item) => item.client.client_id === row.client.client_id,
                       )
@@ -878,13 +925,13 @@ export function CoachDashboardPage({
           </div>
         ) : null}
         {/* Owner Management Section */}
-        {isOwner && clientsOnly && (
+        {isOwner && !clientsOnly && (
           <div className="surface-card p-5 rounded-3xl space-y-3 bg-purple-50/60 border border-purple-200">
             <div className="flex items-center justify-between border-b border-purple-200/60 pb-2">
               <div className="flex items-center gap-2">
                 <Crown className="h-5 w-5 text-purple-700" />
                 <h3 className="font-bold text-sm text-purple-950">
-                  אזור ניהול בעלים (Owner Management)
+                  ניהול משתמשים והרשאות בעלים
                 </h3>
               </div>
               <span className="text-[11px] font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-full">
@@ -908,14 +955,7 @@ export function CoachDashboardPage({
                     >
                       <div className="min-w-0">
                         <span className="font-bold text-ink">
-                          {p.full_name ||
-                            (p.role === "owner"
-                              ? "בעלים"
-                              : p.role === "coach"
-                                ? "מאמן"
-                                : p.role === "client"
-                                  ? "מתאמן"
-                                  : "משתמש")}
+                          {profileDisplayName(p)}
                         </span>
                         <span className="text-muted-foreground mr-1">
                           (
@@ -931,16 +971,7 @@ export function CoachDashboardPage({
                       </div>
 
                       <select
-                        aria-label={`שינוי תפקיד עבור ${
-                          p.full_name ||
-                          (p.role === "owner"
-                            ? "בעלים"
-                            : p.role === "coach"
-                              ? "מאמן"
-                              : p.role === "client"
-                                ? "מתאמן"
-                                : "משתמש")
-                        }`}
+                        aria-label={`שינוי תפקיד עבור ${profileDisplayName(p)}`}
                         value={p.role || ""}
                         disabled={isCurrentUser || !canChangeRole || isChanging}
                         onChange={(event) => {
@@ -1075,7 +1106,7 @@ export function CoachDashboardPage({
                 <div className="grid grid-cols-1 gap-2.5">
                   {filteredClients.map((c) => {
                     const isSelected = c.client_id === selectedClientId;
-                    const nameStr = c.profiles?.full_name || "מתאמן";
+                    const nameStr = profileDisplayName(c.profiles);
 
                     return (
                       <div
@@ -1104,6 +1135,14 @@ export function CoachDashboardPage({
                         </div>
 
                         <div className="flex items-center gap-2">
+                          <Link
+                            to="/coach/clients/$clientId"
+                            params={{ clientId: c.client_id }}
+                            onClick={(event) => event.stopPropagation()}
+                            className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-primary/20"
+                          >
+                            פתח וערוך
+                          </Link>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1160,8 +1199,7 @@ export function CoachDashboardPage({
                   <span className="text-primary font-extrabold">
                     {isSelfSelected
                       ? "התכנית האישית שלי"
-                      : selectedClientInfo?.profiles?.full_name ||
-                        "מתאמן"}
+                        : profileDisplayName(selectedClientInfo?.profiles)}
                   </span>
                 </h3>
                 <button
@@ -1187,151 +1225,155 @@ export function CoachDashboardPage({
                 <div className="surface-card p-6 text-center text-xs text-muted-foreground animate-pulse">
                   טוען נתוני מתאמן מ-Supabase...
                 </div>
-              ) : (
+              ) : clientDetails ? (
                 <div className="space-y-4">
-                  {/* Send Coach Message Panel */}
-                  <div className="surface-card p-4 rounded-2xl space-y-2.5 border border-primary/20 bg-primary/5">
-                    <h4 className="font-bold text-xs text-primary flex items-center gap-1.5">
-                      <MessageSquare className="h-4 w-4" /> שליחת הודעת חיזוק / הנחיה למתאמן
-                    </h4>
+                  {!workspacePage ? (
+                    <>
+                      {/* Send Coach Message Panel */}
+                      <div className="surface-card p-4 rounded-2xl space-y-2.5 border border-primary/20 bg-primary/5">
+                        <h4 className="font-bold text-xs text-primary flex items-center gap-1.5">
+                          <MessageSquare className="h-4 w-4" /> שליחת הודעת חיזוק / הנחיה למתאמן
+                        </h4>
 
-                    {msgSentNotice && (
-                      <p className="text-xs font-bold text-emerald-700 bg-emerald-50 p-2 rounded-xl border border-emerald-200">
-                        {msgSentNotice}
-                      </p>
-                    )}
+                        {msgSentNotice && (
+                          <p className="text-xs font-bold text-emerald-700 bg-emerald-50 p-2 rounded-xl border border-emerald-200">
+                            {msgSentNotice}
+                          </p>
+                        )}
 
-                    <form onSubmit={handleSendCoachMessage} className="flex gap-2">
-                      <input
-                        type="text"
-                        required
-                        value={coachMsgText}
-                        onChange={(e) => setCoachMsgText(e.target.value)}
-                        placeholder="הקלידי הודעה שתופיע במסך הבית של המתאמן..."
-                        className="flex-1 rounded-xl border border-border bg-white px-3 py-1.5 text-xs outline-none focus:border-primary"
-                      />
-                      <button
-                        type="submit"
-                        className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-xs cursor-pointer hover:bg-primary/90"
-                      >
-                        שלח
-                      </button>
-                    </form>
-                  </div>
-
-                  {/* Coach-managed monthly measurements */}
-                  <div className="surface-card rounded-2xl p-4 space-y-3">
-                    <div className="flex items-center justify-between border-b pb-2">
-                      <div>
-                        <h4 className="font-bold text-sm text-ink">צ׳ק־אין ומדידות חודשיות</h4>
-                        <p className="mt-0.5 text-[11px] text-muted-foreground">
-                          המדידות נשמרות על ידי המאמנת או הבעלים בלבד
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setEditingMeasurements((value) => !value)}
-                        className="flex items-center gap-1 text-xs font-bold text-primary hover:underline"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                        {editingMeasurements ? "ביטול" : "עריכה"}
-                      </button>
-                    </div>
-                    {editingMeasurements ? (
-                      <>
-                        <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
-                          תאריך מדידה
+                        <form onSubmit={handleSendCoachMessage} className="flex gap-2">
                           <input
-                            type="date"
-                            value={measurementDraft.date}
-                            onChange={(event) =>
-                              setMeasurementDraft((current) => ({
-                                ...current,
-                                date: event.target.value,
-                              }))
-                            }
-                            className="h-10 rounded-xl border border-border bg-white px-3 text-xs text-ink"
+                            type="text"
+                            required
+                            value={coachMsgText}
+                            onChange={(e) => setCoachMsgText(e.target.value)}
+                            placeholder="הקלידי הודעה שתופיע במסך הבית של המתאמן..."
+                            className="flex-1 rounded-xl border border-border bg-white px-3 py-1.5 text-xs outline-none focus:border-primary"
                           />
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {(
-                            [
-                              ["chestCm", "חזה (ס״מ)"],
-                              ["waistCm", "מותניים (ס״מ)"],
-                              ["hipsCm", "ירכיים (ס״מ)"],
-                              ["bicepsCm", "זרוע / יד (ס״מ)"],
-                              ["thighsCm", "ירך (ס״מ)"],
-                              ["calvesCm", "שוק / תאומים (ס״מ)"],
-                              ["neckCm", "צוואר (ס״מ)"],
-                              ["bodyFatPct", "אחוז שומן (%)"],
-                              ["muscleMassKg", "מסת שריר (ק״ג)"],
-                            ] as const
-                          ).map(([field, label]) => (
-                            <label
-                              key={field}
-                              className="grid gap-1 text-[11px] font-bold text-muted-foreground"
-                            >
-                              {label}
+                          <button
+                            type="submit"
+                            className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-xs cursor-pointer hover:bg-primary/90"
+                          >
+                            שלח
+                          </button>
+                        </form>
+                      </div>
+
+                      {/* Coach-managed monthly measurements */}
+                      <div className="surface-card rounded-2xl p-4 space-y-3">
+                        <div className="flex items-center justify-between border-b pb-2">
+                          <div>
+                            <h4 className="font-bold text-sm text-ink">צ׳ק־אין ומדידות חודשיות</h4>
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">
+                              המדידות נשמרות על ידי המאמנת או הבעלים בלבד
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setEditingMeasurements((value) => !value)}
+                            className="flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+                          >
+                            <Edit2 className="h-3 w-3" />
+                            {editingMeasurements ? "ביטול" : "עריכה"}
+                          </button>
+                        </div>
+                        {editingMeasurements ? (
+                          <>
+                            <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
+                              תאריך מדידה
                               <input
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                value={measurementDraft[field] ?? ""}
+                                type="date"
+                                value={measurementDraft.date}
                                 onChange={(event) =>
                                   setMeasurementDraft((current) => ({
                                     ...current,
-                                    [field]: event.target.value
-                                      ? Number(event.target.value)
-                                      : undefined,
+                                    date: event.target.value,
                                   }))
                                 }
-                                className="h-10 rounded-xl border border-border bg-white px-3 text-sm text-ink"
+                                className="h-10 rounded-xl border border-border bg-white px-3 text-xs text-ink"
                               />
                             </label>
-                          ))}
-                        </div>
-                        <textarea
-                          value={measurementDraft.notes ?? ""}
-                          onChange={(event) =>
-                            setMeasurementDraft((current) => ({
-                              ...current,
-                              notes: event.target.value,
-                            }))
-                          }
-                          placeholder="הערות המאמנת לצ׳ק־אין..."
-                          className="min-h-16 w-full rounded-xl border border-border bg-white p-3 text-xs text-ink"
-                        />
-                        <button
-                          type="button"
-                          onClick={saveClientMeasurements}
-                          className="flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-primary text-xs font-bold text-white"
-                        >
-                          <Save className="h-3.5 w-3.5" /> שמירת מדידות חודשיות
-                        </button>
-                      </>
-                    ) : null}
-                    {measurementNotice ? (
-                      <p className="rounded-xl bg-emerald-50 p-2 text-xs font-semibold text-emerald-800">
-                        {measurementNotice}
-                      </p>
-                    ) : null}
-                    {!editingMeasurements ? (
-                      <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
-                        {[
-                          ["מותניים", measurementDraft.waistCm, "ס״מ"],
-                          ["אחוז שומן", measurementDraft.bodyFatPct, "%"],
-                          ["מסת שריר", measurementDraft.muscleMassKg, "ק״ג"],
-                        ].map(([label, value, unit]) => (
-                          <div key={label} className="rounded-xl bg-secondary/50 p-2">
-                            <span className="block text-muted-foreground">{label}</span>
-                            <strong className="text-ink">
-                              {value !== undefined ? `${value} ${unit}` : "לא נמדד"}
-                            </strong>
+                            <div className="grid grid-cols-2 gap-2">
+                              {(
+                                [
+                                  ["chestCm", "חזה (ס״מ)"],
+                                  ["waistCm", "מותניים (ס״מ)"],
+                                  ["hipsCm", "ירכיים (ס״מ)"],
+                                  ["bicepsCm", "זרוע / יד (ס״מ)"],
+                                  ["thighsCm", "ירך (ס״מ)"],
+                                  ["calvesCm", "שוק / תאומים (ס״מ)"],
+                                  ["neckCm", "צוואר (ס״מ)"],
+                                  ["bodyFatPct", "אחוז שומן (%)"],
+                                  ["muscleMassKg", "מסת שריר (ק״ג)"],
+                                ] as const
+                              ).map(([field, label]) => (
+                                <label
+                                  key={field}
+                                  className="grid gap-1 text-[11px] font-bold text-muted-foreground"
+                                >
+                                  {label}
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    value={measurementDraft[field] ?? ""}
+                                    onChange={(event) =>
+                                      setMeasurementDraft((current) => ({
+                                        ...current,
+                                        [field]: event.target.value
+                                          ? Number(event.target.value)
+                                          : undefined,
+                                      }))
+                                    }
+                                    className="h-10 rounded-xl border border-border bg-white px-3 text-sm text-ink"
+                                  />
+                                </label>
+                              ))}
+                            </div>
+                            <textarea
+                              value={measurementDraft.notes ?? ""}
+                              onChange={(event) =>
+                                setMeasurementDraft((current) => ({
+                                  ...current,
+                                  notes: event.target.value,
+                                }))
+                              }
+                              placeholder="הערות המאמנת לצ׳ק־אין..."
+                              className="min-h-16 w-full rounded-xl border border-border bg-white p-3 text-xs text-ink"
+                            />
+                            <button
+                              type="button"
+                              onClick={saveClientMeasurements}
+                              className="flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-primary text-xs font-bold text-white"
+                            >
+                              <Save className="h-3.5 w-3.5" /> שמירת מדידות חודשיות
+                            </button>
+                          </>
+                        ) : null}
+                        {measurementNotice ? (
+                          <p className="rounded-xl bg-emerald-50 p-2 text-xs font-semibold text-emerald-800">
+                            {measurementNotice}
+                          </p>
+                        ) : null}
+                        {!editingMeasurements ? (
+                          <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+                            {[
+                              ["מותניים", measurementDraft.waistCm, "ס״מ"],
+                              ["אחוז שומן", measurementDraft.bodyFatPct, "%"],
+                              ["מסת שריר", measurementDraft.muscleMassKg, "ק״ג"],
+                            ].map(([label, value, unit]) => (
+                              <div key={label} className="rounded-xl bg-secondary/50 p-2">
+                                <span className="block text-muted-foreground">{label}</span>
+                                <strong className="text-ink">
+                                  {value !== undefined ? `${value} ${unit}` : "לא נמדד"}
+                                </strong>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        ) : null}
                       </div>
-                    ) : null}
-                  </div>
+                    </>
+                  ) : null}
 
                   {/* Client Programs & Full Exercise Prescription Builder */}
                   <div className="surface-card p-4 rounded-2xl space-y-3">
@@ -1820,7 +1862,7 @@ export function CoachDashboardPage({
                         <div className="rounded-xl bg-primary/5 p-2 border border-primary/10">
                           <span className="block text-[10px] text-muted-foreground">קלוריות</span>
                           <span className="font-bold text-ink">
-                            {clientDetails?.nutritionDays?.[0]?.target_calories || 2000} kcal
+                            {clientDetails?.nutritionTargets.calories || 2000} kcal
                           </span>
                         </div>
                         <div className="rounded-xl bg-emerald-50 p-2 border border-emerald-100">
@@ -1833,47 +1875,73 @@ export function CoachDashboardPage({
                     )}
                   </div>
 
-                  {/* Read-only Client Cardio History */}
-                  <div className="surface-card p-4 rounded-2xl space-y-3">
-                    <div className="flex items-center justify-between border-b pb-2">
-                      <h4 className="font-bold text-sm text-ink flex items-center gap-1.5">
-                        <Activity className="h-4 w-4 text-primary" /> היסטוריית אירובי
-                      </h4>
-                      <span className="text-[11px] text-muted-foreground">
-                        {clientDetails?.cardioLogs?.length || 0} אימונים
-                      </span>
-                    </div>
-                    {clientDetails?.cardioLogs?.length ? (
-                      <div className="space-y-2">
-                        {clientDetails.cardioLogs.map((log) => (
-                          <div
-                            key={log.id}
-                            className="flex items-center justify-between rounded-xl bg-secondary/40 px-3 py-2 text-xs"
-                          >
-                            <div>
-                              <p className="font-bold text-ink">{log.type}</p>
-                              <p className="text-muted-foreground">
-                                {new Date(`${log.date}T00:00:00`).toLocaleDateString("he-IL")} ·{" "}
-                                {log.durationMin} דקות
-                              </p>
-                            </div>
-                            <div className="text-left">
-                              <p className="font-bold text-primary">{log.calories} קל׳</p>
-                              {log.distanceKm ? (
-                                <p className="text-[11px] text-muted-foreground">
-                                  {log.distanceKm} ק״מ
-                                </p>
-                              ) : null}
-                            </div>
-                          </div>
-                        ))}
+                  {!workspacePage ? (
+                    /* Read-only Client Cardio History */
+                    <div className="surface-card p-4 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between border-b pb-2">
+                        <h4 className="font-bold text-sm text-ink flex items-center gap-1.5">
+                          <Activity className="h-4 w-4 text-primary" /> היסטוריית אירובי
+                        </h4>
+                        <span className="text-[11px] text-muted-foreground">
+                          {clientDetails?.cardioLogs?.length || 0} אימונים
+                        </span>
                       </div>
-                    ) : (
-                      <p className="py-2 text-center text-xs text-muted-foreground">
-                        עדיין לא נרשמו אימוני אירובי.
-                      </p>
-                    )}
-                  </div>
+                      {clientDetails?.cardioLogs?.length ? (
+                        <div className="space-y-2">
+                          {clientDetails.cardioLogs.map((log) => (
+                            <div
+                              key={log.id}
+                              className="flex items-center justify-between rounded-xl bg-secondary/40 px-3 py-2 text-xs"
+                            >
+                              <div>
+                                <p className="font-bold text-ink">{log.type}</p>
+                                <p className="text-muted-foreground">
+                                  {new Date(`${log.date}T00:00:00`).toLocaleDateString("he-IL")} ·{" "}
+                                  {log.durationMin} דקות
+                                </p>
+                              </div>
+                              <div className="text-left">
+                                <p className="font-bold text-primary">{log.calories} קל׳</p>
+                                {log.distanceKm ? (
+                                  <p className="text-[11px] text-muted-foreground">
+                                    {log.distanceKm} ק״מ
+                                  </p>
+                                ) : null}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="py-2 text-center text-xs text-muted-foreground">
+                          עדיין לא נרשמו אימוני אירובי.
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div
+                  role="alert"
+                  className="surface-card space-y-3 rounded-2xl border border-destructive/25 bg-destructive/5 p-5 text-center"
+                >
+                  <h4 className="font-bold text-sm text-ink">לא ניתן לטעון את סביבת המתאמן</h4>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    {clientDetailsError || "אירעה שגיאה בטעינת התוכנית והתפריט."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!selectedClientId) return;
+                      setLoadingDetails(true);
+                      void pullClientDataForCoach(selectedClientId).then((result) => {
+                        applyClientDetails(result);
+                        setLoadingDetails(false);
+                      });
+                    }}
+                    className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground"
+                  >
+                    נסי שוב
+                  </button>
                 </div>
               )}
             </div>

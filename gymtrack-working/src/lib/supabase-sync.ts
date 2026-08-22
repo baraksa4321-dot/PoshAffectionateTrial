@@ -10,6 +10,7 @@ import {
   type GymData,
   type HistorySession,
   type NutritionDay,
+  type NutritionTargets,
   type Program,
   type UserProfile,
   type UserRole,
@@ -24,6 +25,7 @@ export type CoachClientData = {
   programs: Program[];
   workouts: Workout[];
   nutritionDays: NutritionDay[];
+  nutritionTargets: NutritionTargets;
   history: HistorySession[];
   cardioLogs: CardioLog[];
   bodyMeasurements: BodyMeasurement[];
@@ -69,10 +71,10 @@ export async function syncLocalToSupabase(
         supabase.from("profiles").upsert(
           {
             id: userId,
-            email: userEmail || undefined,
+            ...(userEmail ? { email: userEmail } : {}),
             ...(p.fullName ? { full_name: p.fullName } : {}),
             weight_kg: p.weight,
-            height_cm: p.height,
+            ...(p.height !== undefined ? { height_cm: p.height } : {}),
             today_routine_enabled: p.todayRoutineEnabled ?? true,
             updated_at: new Date().toISOString(),
           },
@@ -182,27 +184,42 @@ export async function syncLocalToSupabase(
       calories: log.calories,
       updated_at: new Date().toISOString(),
     }));
+    let cardioSchemaUnavailable = false;
     if (cardioPayload.length > 0) {
       await requireSuccessfulWrite(
         supabase.from("cardio_logs").upsert(cardioPayload, { onConflict: "id" }),
         "Cardio logs sync",
-      );
+      ).catch((error: unknown) => {
+        if (!isMissingTableInSchemaCache(error, "cardio_logs")) throw error;
+        cardioSchemaUnavailable = true;
+        console.warn("[Optional cardio sync skipped]: public.cardio_logs is unavailable");
+      });
     }
-    const { data: remoteCardioLogs, error: remoteCardioError } = await supabase
-      .from("cardio_logs")
-      .select("id")
-      .eq("user_id", userId);
-    if (remoteCardioError)
-      throw new Error(`Cardio logs lookup failed: ${remoteCardioError.message}`);
-    const localCardioIds = new Set((localData.cardioLogs ?? []).map((log) => log.id));
-    const deletedCardioIds = (remoteCardioLogs ?? [])
-      .map((row) => row.id as string)
-      .filter((id) => !localCardioIds.has(id));
-    if (deletedCardioIds.length > 0) {
-      await requireSuccessfulWrite(
-        supabase.from("cardio_logs").delete().in("id", deletedCardioIds),
-        "Cardio logs deletion sync",
-      );
+    if (!cardioSchemaUnavailable) {
+      const { data: remoteCardioLogs, error: remoteCardioError } = await supabase
+        .from("cardio_logs")
+        .select("id")
+        .eq("user_id", userId);
+      if (remoteCardioError) {
+        if (isMissingTableInSchemaCache(remoteCardioError, "cardio_logs")) {
+          cardioSchemaUnavailable = true;
+          console.warn("[Optional cardio sync skipped]: public.cardio_logs is unavailable");
+        } else {
+          throw new Error(`Cardio logs lookup failed: ${remoteCardioError.message}`);
+        }
+      }
+      if (!cardioSchemaUnavailable) {
+        const localCardioIds = new Set((localData.cardioLogs ?? []).map((log) => log.id));
+        const deletedCardioIds = (remoteCardioLogs ?? [])
+          .map((row) => row.id as string)
+          .filter((id) => !localCardioIds.has(id));
+        if (deletedCardioIds.length > 0) {
+          await requireSuccessfulWrite(
+            supabase.from("cardio_logs").delete().in("id", deletedCardioIds),
+            "Cardio logs deletion sync",
+          );
+        }
+      }
     }
 
     // 4b. Body Weight Logs (Historical Dated Weigh-Ins)
@@ -348,9 +365,10 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         .upsert(
           {
             id: userId,
-            email: authUser?.email,
-            ...(authUser?.user_metadata?.full_name
-              ? { full_name: authUser.user_metadata.full_name }
+             ...(authUser?.email ? { email: authUser.email } : {}),
+             ...(typeof authUser?.user_metadata?.["full_name"] === "string" &&
+             authUser.user_metadata["full_name"].trim()
+               ? { full_name: authUser.user_metadata["full_name"].trim() }
               : {}),
             weight_kg: 65,
             height_cm: 165,
@@ -372,23 +390,31 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (profile.role !== "owner" && profile.role !== "coach" && profile.role !== "client") {
       throw new Error("Profile pull failed: authenticated user has an invalid role");
     }
+    const authFullName =
+      typeof authUser?.user_metadata?.["full_name"] === "string"
+        ? authUser.user_metadata["full_name"].trim()
+        : "";
+    const profileName = profile.full_name?.trim() || authFullName || nextData.userProfile?.fullName;
+    const profileHeight = profile.height_cm
+      ? Number(profile.height_cm)
+      : nextData.userProfile?.height;
+    const profileGender =
+      profile.gender === "male" || profile.gender === "female"
+        ? profile.gender
+        : nextData.userProfile?.gender;
     nextData.userProfile = {
-      ...nextData.userProfile,
-      fullName:
-        profile.full_name ||
-        authUser?.user_metadata?.full_name ||
-        nextData.userProfile?.fullName ||
-        undefined,
+      ...(nextData.userProfile ?? { weight: 65 }),
+      ...(profileName ? { fullName: profileName } : {}),
       weight: profile.weight_kg ? Number(profile.weight_kg) : (nextData.userProfile?.weight ?? 65),
-      height: profile.height_cm ? Number(profile.height_cm) : nextData.userProfile?.height,
-      gender:
-        profile.gender === "male" || profile.gender === "female"
-          ? profile.gender
-          : nextData.userProfile?.gender,
+      ...(profileHeight !== undefined ? { height: profileHeight } : {}),
+      ...(profileGender ? { gender: profileGender } : {}),
       role: profile.role as UserRole,
-      coachId: profile.coach_id || undefined,
+      ...(profile.coach_id ? { coachId: profile.coach_id } : {}),
       todayRoutineEnabled: profile.today_routine_enabled ?? true,
     };
+    if (!profile.full_name?.trim() && authFullName) {
+      await supabase.from("profiles").update({ full_name: authFullName }).eq("id", userId);
+    }
 
     const authTheme = authUser?.user_metadata?.theme;
     const authGender = authUser?.user_metadata?.gender;
@@ -668,6 +694,15 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
           row.water_target_ml === null ? undefined : Number(row.water_target_ml ?? 2500),
       }));
       nextData.nutritionDays = daysList;
+      const calorieTargetRow = dbNutritionDays.find(
+        (row) => typeof row.target_calories === "number" && row.target_calories > 0,
+      );
+      if (calorieTargetRow?.target_calories) {
+        nextData.nutritionTargets = {
+          ...nextData.nutritionTargets,
+          calories: Number(calorieTargetRow.target_calories),
+        };
+      }
     }
 
     // 10. Food Favorites
@@ -768,6 +803,13 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       meals: row.meals || [],
       plannedMeals: row.planned_meals || [],
     }));
+    const nutritionTargets: NutritionTargets = {};
+    const clientTargetRow = (dbNutritionDays ?? []).find(
+      (row) => typeof row.target_calories === "number" && row.target_calories > 0,
+    );
+    if (clientTargetRow?.target_calories) {
+      nutritionTargets.calories = Number(clientTargetRow.target_calories);
+    }
 
     const historyList: HistorySession[] = (dbSessions || []).map((row) => ({
       id: row.id,
@@ -817,17 +859,20 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       programs: programsList,
       workouts: Array.from(workoutsMap.values()),
       nutritionDays: nutritionList,
+      nutritionTargets,
       history: historyList,
       cardioLogs: cardioList,
       bodyMeasurements,
-      profile: profile
+      ...(profile
         ? {
-            fullName: profile.full_name || undefined,
-            weight: Number(profile.weight_kg || 65),
-            height: Number(profile.height_cm || 165),
-            role: profile.role || "client",
+            profile: {
+              fullName: profile.full_name || undefined,
+              weight: Number(profile.weight_kg || 65),
+              height: Number(profile.height_cm || 165),
+              role: profile.role || "client",
+            },
           }
-        : undefined,
+        : {}),
     };
   } catch (err: unknown) {
     const error = err instanceof Error && err.message ? err.message : "Client data pull failed";
@@ -836,6 +881,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       programs: [],
       workouts: [],
       nutritionDays: [],
+      nutritionTargets: {},
       history: [],
       cardioLogs: [],
       bodyMeasurements: [],

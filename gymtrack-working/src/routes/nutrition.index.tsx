@@ -279,7 +279,7 @@ function NutritionLog() {
       </div>
 
       {/* Secondary recipe library */}
-      <section className="mt-3 rounded-2xl border border-border/60 bg-card/70">
+      <section className="mt-3 rounded-2xl border border-border/40 bg-secondary/20">
         <button
           type="button"
           onClick={() => setShowRecipes((open) => !open)}
@@ -287,17 +287,17 @@ function NutritionLog() {
           className="flex w-full items-center justify-between gap-3 p-3 text-start"
         >
           <span className="flex min-w-0 items-center gap-2">
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-              <BookOpen className="h-4 w-4" />
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-secondary text-muted-foreground">
+              <BookOpen className="h-3.5 w-3.5" />
             </span>
             <span>
-              <span className="block text-xs font-bold text-ink">מתכונים</span>
-              <span className="block text-[10px] text-muted-foreground">
-                רעיונות קלים עם ערכים תזונתיים
+              <span className="block text-[11px] font-bold text-muted-foreground">מתכונים</span>
+              <span className="block text-[10px] text-muted-foreground/80">
+                רעיונות קלים — לפתיחה לפי הצורך
               </span>
             </span>
           </span>
-          <span className="text-[11px] font-bold text-primary">
+          <span className="text-[10px] font-semibold text-muted-foreground">
             {showRecipes ? "סגירה" : `${RECIPE_LIBRARY.length} מתכונים`}
           </span>
         </button>
@@ -402,13 +402,13 @@ function NutritionLog() {
       ) : null}
 
       {/* Daily total */}
-      <div className="rose-card mt-4 overflow-hidden p-5">
+      <div className="surface-card mt-4 overflow-hidden border border-border/60 bg-secondary/25 p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="text-start">
-            <p className="text-[10.5px] font-semibold tracking-[0.16em] text-rose uppercase">
+            <p className="text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
               קלוריות היום
             </p>
-            <p className="mt-1 font-display text-[40px] font-semibold leading-none text-ink tabular-nums">
+            <p className="mt-1 font-display text-[30px] font-semibold leading-none text-ink tabular-nums">
               {Math.round(totals.calories)}
             </p>
             <p className="mt-1 text-[12.5px] text-muted-foreground">

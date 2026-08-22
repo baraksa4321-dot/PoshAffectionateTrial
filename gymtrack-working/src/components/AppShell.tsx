@@ -21,6 +21,7 @@ import { BrandLogo } from "./BrandLogo";
 import { genderText } from "../lib/gender-copy";
 
 const WORKSPACE_KEY = "gymtrack.workspace";
+const FULL_NAME_REQUIRED_ERROR = "יש להזין שם פרטי ושם משפחה כדי ליצור חשבון.";
 
 function isManagementPath(pathname: string) {
   return /(^|\/)(coach|exercises)(\/|$)/.test(pathname);
@@ -88,7 +89,7 @@ export function AppShell({
     ? [
         {
           to: "/coach",
-          label: isOwner ? "בעלים" : "בית",
+          label: "בית",
           id: "management-home",
           icon: Home,
           onClick: () => setWorkspace("management"),
@@ -162,6 +163,10 @@ export function AppShell({
       const redirectTo =
         typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
       if (isSignUp) {
+        const normalizedFullName = fullName.trim().replace(/\s+/g, " ");
+        if (normalizedFullName.split(" ").filter(Boolean).length < 2) {
+          throw new Error(FULL_NAME_REQUIRED_ERROR);
+        }
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -170,7 +175,7 @@ export function AppShell({
             data: {
               theme,
               gender,
-              ...(fullName.trim() ? { full_name: fullName.trim() } : {}),
+              full_name: normalizedFullName,
             },
           },
         });
@@ -199,7 +204,7 @@ export function AppShell({
         data: {
           theme,
           gender,
-          ...(isSignUp && fullName.trim() ? { full_name: fullName.trim() } : {}),
+          ...(isSignUp ? { full_name: fullName.trim().replace(/\s+/g, " ") } : {}),
         },
       });
       if (themeSaveError) throw themeSaveError;
@@ -341,8 +346,7 @@ export function AppShell({
                 <div className="flex items-center gap-2 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-[12px] font-bold text-ink shadow-sm">
                   <Cloud className="h-3.5 w-3.5 text-primary" />
                   <span className="max-w-[120px] truncate">
-                    {store.userProfile?.fullName ||
-                      (isOwner ? "בעלים" : isCoach ? "מאמן" : "מתאמן")}
+                    {store.userProfile?.fullName || "החשבון שלי"}
                   </span>
                   <div className="h-3 w-px bg-border/80 mx-1" />
                   <button
@@ -512,7 +516,16 @@ export function AppShell({
                       type="text"
                       required
                       value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
+                      onChange={(e) => {
+                        const nextName = e.target.value;
+                        setFullName(nextName);
+                        if (
+                          errorMsg === FULL_NAME_REQUIRED_ERROR &&
+                          nextName.trim().split(/\s+/).filter(Boolean).length >= 2
+                        ) {
+                          setErrorMsg("");
+                        }
+                      }}
                       autoComplete="name"
                       className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
                       placeholder="השם שיוצג באפליקציה"

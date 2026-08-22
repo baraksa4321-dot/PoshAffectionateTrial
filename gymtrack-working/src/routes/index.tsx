@@ -12,7 +12,6 @@ import {
   Plus,
   Scale,
   TrendingUp,
-  Utensils,
   Droplets,
   Award,
   MessageSquare,
@@ -89,6 +88,7 @@ function Dashboard() {
     history,
     programs,
     nutritionDays,
+    nutritionTargets,
     userProfile,
     bodyMeasurements,
     cardioLogs,
@@ -157,8 +157,9 @@ function Dashboard() {
   const totalsToday = nutritionToday
     ? dayTotals(nutritionToday)
     : { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
-  const targetCals = 2000;
+  const targetCals = nutritionTargets.calories || 2000;
   const remainingCals = Math.max(0, targetCals - totalsToday.calories);
+  const caloriePct = Math.min(100, Math.round((totalsToday.calories / targetCals) * 100));
 
   const nextWorkout = workouts[0];
   const nextProgram = nextWorkout
@@ -557,50 +558,53 @@ function Dashboard() {
             </Link>
           }
         />
-        <div className="rose-card p-4 text-start">
+        <div className="ink-card overflow-hidden p-5 text-start">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-bold tracking-wider text-primary uppercase">
+              <p className="text-[11px] font-bold tracking-wider text-primary-foreground/70 uppercase">
                 קלוריות שנצרכו
               </p>
-              <p className="mt-0.5 font-display text-[28px] font-bold tabular-nums text-ink">
+              <p className="mt-1 font-display text-[38px] font-extrabold leading-none tabular-nums text-primary-foreground">
                 {Math.round(totalsToday.calories)}{" "}
-                <span className="text-[14px] font-normal text-muted-foreground">
+                <span className="text-[15px] font-normal text-primary-foreground/70">
                   / {targetCals}
                 </span>
               </p>
+              <p className="mt-2 text-[12px] font-semibold text-primary-foreground/75">
+                {remainingCals > 0 ? `נותרו ${remainingCals} קלוריות להיום` : "הגעת ליעד הקלורי להיום"}
+              </p>
             </div>
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-surface/80 text-primary">
-              <Utensils className="h-5 w-5" />
+            <div className="grid h-16 w-16 place-items-center rounded-full border-4 border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground">
+              <span className="font-display text-lg font-extrabold tabular-nums">{caloriePct}%</span>
             </div>
           </div>
 
           <div
-            className="progress-track mt-3 bg-primary/15"
-            aria-label={`צריכת קלוריות ${Math.round((totalsToday.calories / targetCals) * 100)}%`}
+            className="progress-track mt-4 bg-primary-foreground/15"
+            aria-label={`צריכת קלוריות ${caloriePct}%`}
           >
             <div
-              className="progress-fill bg-primary"
-              style={{ width: `${Math.min(100, (totalsToday.calories / targetCals) * 100)}%` }}
+              className="h-full rounded-full bg-primary transition-all duration-500"
+              style={{ width: `${caloriePct}%` }}
             />
           </div>
 
           <div className="mt-3 grid grid-cols-3 gap-2">
-            <div className="rounded-xl bg-surface/80 p-2.5 text-start">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase">חלבון</p>
-              <p className="font-display text-[15px] font-bold tabular-nums text-ink">
+            <div className="rounded-xl bg-primary-foreground/10 p-2.5 text-start">
+              <p className="text-[10px] font-bold text-primary-foreground/65 uppercase">חלבון</p>
+              <p className="font-display text-[15px] font-bold tabular-nums text-primary-foreground">
                 {Math.round(totalsToday.protein)}g
               </p>
             </div>
-            <div className="rounded-xl bg-surface/80 p-2.5 text-start">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase">פחמימות</p>
-              <p className="font-display text-[15px] font-bold tabular-nums text-ink">
+            <div className="rounded-xl bg-primary-foreground/10 p-2.5 text-start">
+              <p className="text-[10px] font-bold text-primary-foreground/65 uppercase">פחמימות</p>
+              <p className="font-display text-[15px] font-bold tabular-nums text-primary-foreground">
                 {Math.round(totalsToday.carbs)}g
               </p>
             </div>
-            <div className="rounded-xl bg-surface/80 p-2.5 text-start">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase">שומן</p>
-              <p className="font-display text-[15px] font-bold tabular-nums text-ink">
+            <div className="rounded-xl bg-primary-foreground/10 p-2.5 text-start">
+              <p className="text-[10px] font-bold text-primary-foreground/65 uppercase">שומן</p>
+              <p className="font-display text-[15px] font-bold tabular-nums text-primary-foreground">
                 {Math.round(totalsToday.fat)}g
               </p>
             </div>

@@ -17,6 +17,7 @@ import {
   type FoodItem,
   type GymData,
   type HistorySession,
+  type Meal,
   type MealFood,
   type NutritionDay,
   type NutritionTargets,
@@ -535,8 +536,8 @@ const seed = (): GymData => {
       sets: s.sets,
       reps: s.reps,
       repType: s.repMin != null ? ("range" as const) : ("fixed" as const),
-      repMin: s.repMin,
-      repMax: s.repMax,
+      ...(s.repMin !== undefined ? { repMin: s.repMin } : {}),
+      ...(s.repMax !== undefined ? { repMax: s.repMax } : {}),
       weight: s.weight,
       rest: s.rest,
       notes: "",
@@ -545,7 +546,7 @@ const seed = (): GymData => {
         setNumber: setIdx + 1,
         weight: s.weight,
         reps: s.repMin ?? s.reps,
-        repMax: s.repMax,
+        ...(s.repMax !== undefined ? { repMax: s.repMax } : {}),
       })),
     })),
   });
@@ -691,7 +692,7 @@ function migrate(d: Partial<GymData>): GymData {
       : [{ id: uid(), date: todayKey(), weight: d.userProfile?.weight ?? 65 }],
     bodyMeasurements: d.bodyMeasurements ?? [],
     cardioLogs: d.cardioLogs ?? [],
-    userProfile: d.userProfile ?? seed().userProfile,
+    userProfile: d.userProfile ?? seed().userProfile ?? { weight: 65 },
   };
 }
 
@@ -718,7 +719,12 @@ function load() {
           listeners.forEach((l) => l());
           return;
         }
-        currentUser = session?.user ? { id: session.user.id, email: session.user.email } : null;
+        currentUser = session?.user
+          ? {
+              id: session.user.id,
+              ...(session.user.email ? { email: session.user.email } : {}),
+            }
+          : null;
         authResolved = true;
         authStatus = session?.user ? "authenticated" : "unauthenticated";
         if (session?.user) {
@@ -741,7 +747,12 @@ function load() {
     supabase.auth.onAuthStateChange((_event, session) => {
       if (!authResolved && _event === "INITIAL_SESSION") return;
       const prevUserId = currentUser?.id;
-      currentUser = session?.user ? { id: session.user.id, email: session.user.email } : null;
+      currentUser = session?.user
+        ? {
+            id: session.user.id,
+            ...(session.user.email ? { email: session.user.email } : {}),
+          }
+        : null;
       authResolved = true;
       authStatus = session?.user ? "authenticated" : "unauthenticated";
 
@@ -777,9 +788,12 @@ async function handleUserLogin(userId: string) {
   // anonymous seed first can overwrite cloud state on a fresh device.
   // Do not let a previous user's cached role control the UI while this pull
   // is in flight. A missing or failed profile read leaves the role unknown.
+  const { role: _role, coachId: _coachId, ...profileWithoutAccess } = data.userProfile ?? {
+    weight: 65,
+  };
   data = {
     ...data,
-    userProfile: { ...data.userProfile, role: undefined, coachId: undefined },
+    userProfile: profileWithoutAccess,
   };
   profileHydrationStatus = "loading";
   profileHydrationError = "";
@@ -879,6 +893,44 @@ export function useProfileHydrationError() {
 
 export function retryProfileHydration() {
   if (currentUser?.id) void handleUserLogin(currentUser.id);
+}
+
+export async function completeUserProfileName(
+  fullName: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const normalizedName = fullName.trim().replace(/\s+/g, " ");
+  if (normalizedName.split(" ").filter(Boolean).length < 2) {
+    return { success: false, error: "יש להזין שם פרטי ושם משפחה כדי להמשיך." };
+  }
+  if (!currentUser?.id) {
+    return { success: false, error: "פג תוקף ההתחברות. יש להתחבר מחדש." };
+  }
+
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({ full_name: normalizedName })
+    .eq("id", currentUser.id);
+  if (profileError) {
+    return { success: false, error: `לא ניתן לשמור את השם: ${profileError.message}` };
+  }
+
+  const { error: authError } = await supabase.auth.updateUser({
+    data: { full_name: normalizedName },
+  });
+  if (authError) {
+    console.warn("[Profile name metadata update skipped]:", authError.message);
+  }
+
+  data = {
+    ...data,
+    userProfile: {
+      ...(data.userProfile ?? { weight: 65 }),
+      fullName: normalizedName,
+    },
+  };
+  persist();
+  listeners.forEach((l) => l());
+  return { success: true };
 }
 
 /* ---------- rep helpers ---------- */
@@ -1146,7 +1198,10 @@ export async function saveTheme(
   if (!currentUser?.id) return { success: true };
   const { error } = await supabase.auth.updateUser({ data: { theme } });
   if (error) {
-    set({ ...data, userProfile: previousProfile });
+    set({
+      ...data,
+      ...(previousProfile ? { userProfile: previousProfile } : {}),
+    });
     return { success: false, error: error.message || "שמירת הפלטה נכשלה" };
   }
   return { success: true };

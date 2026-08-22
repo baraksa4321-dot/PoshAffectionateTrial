@@ -167,9 +167,19 @@ function Session() {
   const [startedAt] = useState(() => Date.now());
   const [rest, setRest] = useState(0);
   const [restPaused, setRestPaused] = useState(false);
+  const [restExpanded, setRestExpanded] = useState(false);
+  const [restOffset, setRestOffset] = useState({ x: 0, y: 0 });
   const [pendingExit, setPendingExit] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const previousRestRef = useRef(0);
+  const restDragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    offsetX: number;
+    offsetY: number;
+  } | null>(null);
+  const restDraggedRef = useRef(false);
 
   useEffect(() => {
     setEntries(initial);
@@ -337,6 +347,37 @@ function Session() {
     setIsBodyweightMode(true);
     clearSavedSession();
     setBodyweightNotice("האימון עודכן לגרסת משקל גוף. אפשר לחזור בכל רגע.");
+  };
+
+  const handleRestPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    restDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      offsetX: restOffset.x,
+      offsetY: restOffset.y,
+    };
+    restDraggedRef.current = false;
+  };
+
+  const handleRestPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = restDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const deltaX = event.clientX - drag.startX;
+    const deltaY = event.clientY - drag.startY;
+    if (Math.abs(deltaX) + Math.abs(deltaY) < 4) return;
+    restDraggedRef.current = true;
+    setRestOffset({
+      x: Math.max(-window.innerWidth + 96, Math.min(16, drag.offsetX + deltaX)),
+      y: Math.max(-window.innerHeight + 160, Math.min(160, drag.offsetY + deltaY)),
+    });
+  };
+
+  const handleRestPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (restDragRef.current?.pointerId === event.pointerId) {
+      restDragRef.current = null;
+    }
   };
 
   return (
@@ -734,57 +775,103 @@ function Session() {
         </Overlay>
       )}
 
-      {/* Always-available Rest Timer Bar */}
+      {/* Always-available compact, draggable Rest Timer */}
       <div
-        className="fixed inset-x-0 z-40 mx-auto max-w-xl px-4"
-        style={{ bottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}
+        className="fixed z-40"
+        style={{
+          bottom: "calc(5.5rem + env(safe-area-inset-bottom))",
+          right: "max(1rem, env(safe-area-inset-right))",
+        }}
       >
         <div
-          className="ink-card flex cursor-pointer items-center gap-2 rounded-2xl p-2.5"
-          onClick={() => rest > 0 && setRestPaused((paused) => !paused)}
-          role="button"
-          tabIndex={rest > 0 ? 0 : -1}
-          aria-label={restPaused ? "המשך טיימר מנוחה" : "עצור טיימר מנוחה"}
-          onKeyDown={(event) => {
-            if (rest > 0 && (event.key === "Enter" || event.key === " ")) {
-              event.preventDefault();
+          className={`ink-card select-none ${
+            restExpanded
+              ? "w-48 rounded-2xl p-2.5"
+              : "grid h-16 w-16 place-items-center rounded-full"
+          }`}
+          style={{
+            transform: `translate(${restOffset.x}px, ${restOffset.y}px)`,
+            touchAction: "none",
+          }}
+          onPointerDown={handleRestPointerDown}
+          onPointerMove={handleRestPointerMove}
+          onPointerUp={handleRestPointerUp}
+          onPointerCancel={handleRestPointerUp}
+          onClick={() => {
+            if (restDraggedRef.current) {
+              restDraggedRef.current = false;
+              return;
+            }
+            if (rest > 0) {
               setRestPaused((paused) => !paused);
+            } else {
+              setRestExpanded((expanded) => !expanded);
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label={
+            rest > 0 ? (restPaused ? "המשך טיימר מנוחה" : "עצור טיימר מנוחה") : "פתח טיימר מנוחה"
+          }
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              if (rest > 0) {
+                setRestPaused((paused) => !paused);
+              } else {
+                setRestExpanded((expanded) => !expanded);
+              }
             }
           }}
         >
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/15">
-            <Timer className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <div className="flex-1 min-w-0 text-start">
-            <p className="text-[9px] font-semibold tracking-[0.14em] text-primary-foreground/80 uppercase">
-              זמן מנוחה
-            </p>
-            <p className="font-display text-[17px] font-semibold tabular-nums text-primary-foreground">
-              {rest > 0 ? `${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, "0")}` : "מוכן"}
-            </p>
-          </div>
-
-          {rest <= 0 ? (
-            <div className="flex items-center gap-1">
-              {[30, 60, 90].map((seconds) => (
-                <button
-                  key={seconds}
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setRest(seconds);
-                    setRestPaused(false);
-                  }}
-                  className="press rounded-lg bg-white/15 px-2 py-1 text-[11px] font-bold text-primary-foreground hover:bg-white/25"
-                >
-                  {seconds}ש׳
-                </button>
-              ))}
+          {restExpanded ? (
+            <div className="flex items-center gap-2">
+              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/15">
+                <Timer className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <div className="min-w-0 flex-1 text-start">
+                <p className="text-[9px] font-semibold tracking-[0.14em] text-primary-foreground/80 uppercase">
+                  זמן מנוחה
+                </p>
+                <p className="font-display text-[17px] font-semibold tabular-nums text-primary-foreground">
+                  {rest > 0
+                    ? `${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, "0")}`
+                    : "מוכן"}
+                </p>
+              </div>
+              {rest <= 0 ? (
+                <div className="flex items-center gap-1">
+                  {[30, 60, 90].map((seconds) => (
+                    <button
+                      key={seconds}
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setRest(seconds);
+                        setRestPaused(false);
+                        setRestExpanded(false);
+                      }}
+                      className="press rounded-lg bg-white/15 px-1.5 py-1 text-[10px] font-bold text-primary-foreground hover:bg-white/25"
+                    >
+                      {seconds}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <span className="rounded-lg bg-white/15 px-2 py-1 text-[10px] font-bold text-primary-foreground/80">
+                  {restPaused ? "מושהה" : "פעיל"}
+                </span>
+              )}
             </div>
           ) : (
-            <span className="rounded-lg bg-white/15 px-2 py-1 text-[10px] font-bold text-primary-foreground/80">
-              {restPaused ? "מושהה" : genderText(gender, "לחצי לעצירה", "לחץ לעצירה")}
-            </span>
+            <div className="text-center">
+              <Timer className="mx-auto h-4 w-4 text-primary-foreground/80" />
+              <p className="mt-0.5 font-display text-[12px] font-bold tabular-nums text-primary-foreground">
+                {rest > 0
+                  ? `${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, "0")}`
+                  : "טיימר"}
+              </p>
+            </div>
           )}
         </div>
       </div>

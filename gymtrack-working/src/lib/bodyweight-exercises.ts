@@ -193,7 +193,6 @@ export function replaceWithBodyweight(items: WorkoutItem[], exercises: Exercise[
       targetWeight: 0,
       workingSets: item.workingSets?.map((set) => ({ ...set, weight: 0 })),
       warmups: item.warmups?.map((set) => ({ ...set, weight: 0 })),
-      approvedAlternatives: undefined,
     };
   });
 }
