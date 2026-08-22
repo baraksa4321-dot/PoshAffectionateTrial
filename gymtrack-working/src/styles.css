@@ -585,6 +585,407 @@
   }
 }
 
+.loading-cup-wrap {
+  position: relative;
+  width: 92px;
+  height: 88px;
+  margin: 0 auto;
+}
+
+.loading-dumbbell {
+  position: relative;
+  width: 118px;
+  height: 88px;
+  margin: 0 auto;
+  animation: loading-lift 1.7s ease-in-out infinite;
+}
+
+.loading-bar {
+  position: absolute;
+  top: 40px;
+  left: 20px;
+  width: 78px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--ink);
+}
+
+.loading-grip {
+  position: absolute;
+  top: 37px;
+  left: 48px;
+  width: 24px;
+  height: 15px;
+  border-radius: 5px;
+  background: var(--primary);
+}
+
+.loading-weight {
+  position: absolute;
+  top: 24px;
+  width: 14px;
+  height: 41px;
+  border: 3px solid var(--primary);
+  border-radius: 5px;
+  background: var(--rose-soft);
+}
+
+.loading-weight-left {
+  left: 9px;
+}
+
+.loading-weight-left-small {
+  left: 27px;
+  top: 31px;
+  height: 27px;
+  background: var(--secondary);
+}
+
+.loading-weight-right-small {
+  right: 27px;
+  top: 31px;
+  height: 27px;
+  background: var(--secondary);
+}
+
+.loading-weight-right {
+  right: 9px;
+}
+
+.loading-apple {
+  position: relative;
+  width: 92px;
+  height: 88px;
+  margin: 0 auto;
+  animation: loading-bounce 1.7s ease-in-out infinite;
+}
+
+.loading-apple-body {
+  position: absolute;
+  right: 14px;
+  bottom: 8px;
+  width: 60px;
+  height: 55px;
+  border: 3px solid var(--primary);
+  border-radius: 48% 52% 48% 50%;
+  background: var(--rose);
+  transform: rotate(-7deg);
+}
+
+.loading-apple-body::after {
+  position: absolute;
+  top: -3px;
+  left: 22px;
+  width: 17px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--rose);
+  content: "";
+}
+
+.loading-apple-stem {
+  position: absolute;
+  top: 14px;
+  left: 49px;
+  z-index: 1;
+  width: 5px;
+  height: 19px;
+  border-radius: 999px;
+  background: var(--ink);
+  transform: rotate(19deg);
+}
+
+.loading-apple-leaf {
+  position: absolute;
+  top: 11px;
+  left: 52px;
+  z-index: 2;
+  width: 25px;
+  height: 13px;
+  border-radius: 100% 0 100% 0;
+  background: var(--sage);
+  transform: rotate(-18deg);
+}
+
+.loading-apple-shine {
+  position: absolute;
+  right: 31px;
+  bottom: 37px;
+  z-index: 2;
+  width: 10px;
+  height: 17px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 65%);
+  transform: rotate(28deg);
+}
+
+.loading-bowl-wrap {
+  position: relative;
+  width: 112px;
+  height: 88px;
+  margin: 0 auto;
+}
+
+.loading-bowl {
+  position: absolute;
+  right: 18px;
+  bottom: 8px;
+  width: 76px;
+  height: 44px;
+  overflow: hidden;
+  border: 3px solid var(--primary);
+  border-radius: 8px 8px 34px 34px;
+  background: var(--secondary);
+}
+
+.loading-bowl::before {
+  position: absolute;
+  top: -8px;
+  left: -3px;
+  width: 76px;
+  height: 18px;
+  border: 3px solid var(--primary);
+  border-radius: 50%;
+  background: var(--cream);
+  content: "";
+}
+
+.loading-bowl-fill {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 35%;
+  background: var(--sage);
+  animation: loading-bowl-fill 1.7s ease-in-out infinite;
+}
+
+.loading-spoon {
+  position: absolute;
+  top: 7px;
+  left: 18px;
+  width: 6px;
+  height: 75px;
+  border-radius: 999px;
+  background: var(--ink);
+  transform: rotate(27deg);
+  transform-origin: bottom;
+  animation: loading-stir 1.7s ease-in-out infinite;
+}
+
+.loading-spoon::before {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  width: 16px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--ink);
+  content: "";
+}
+
+.loading-food {
+  position: absolute;
+  z-index: 2;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--rose);
+  animation: loading-food-pop 1.7s ease-in-out infinite;
+}
+
+.loading-food-one {
+  right: 43px;
+  top: 25px;
+}
+
+.loading-food-two {
+  right: 58px;
+  top: 37px;
+  width: 7px;
+  height: 7px;
+  background: var(--primary);
+  animation-delay: 0.25s;
+}
+
+.loading-food-three {
+  right: 30px;
+  top: 35px;
+  width: 6px;
+  height: 6px;
+  background: var(--sage);
+  animation-delay: 0.5s;
+}
+
+@keyframes loading-lift {
+  0%,
+  100% {
+    transform: translateY(5px) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-7px) rotate(3deg);
+  }
+}
+
+@keyframes loading-bounce {
+  0%,
+  100% {
+    transform: translateY(4px) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(-7px) rotate(4deg);
+  }
+}
+
+@keyframes loading-bowl-fill {
+  0%,
+  100% {
+    height: 30%;
+  }
+  50% {
+    height: 70%;
+  }
+}
+
+@keyframes loading-stir {
+  0%,
+  100% {
+    transform: rotate(20deg);
+  }
+  50% {
+    transform: rotate(42deg);
+  }
+}
+
+@keyframes loading-food-pop {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translateY(10px) scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1);
+  }
+}
+
+.loading-cup {
+  position: absolute;
+  right: 18px;
+  bottom: 7px;
+  width: 56px;
+  height: 55px;
+  overflow: hidden;
+  border: 3px solid var(--primary);
+  border-radius: 8px 8px 18px 18px;
+  background: color-mix(in srgb, var(--primary) 7%, white);
+  transform: rotate(-4deg);
+}
+
+.loading-cup::before {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  width: 60px;
+  height: 12px;
+  border: 3px solid var(--primary);
+  border-radius: 50%;
+  background: white;
+  content: "";
+}
+
+.loading-cup-fill {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 16%;
+  background: linear-gradient(180deg, var(--rose), var(--primary));
+  animation: loading-fill 1.8s ease-in-out infinite;
+}
+
+.loading-cup-handle {
+  position: absolute;
+  right: 4px;
+  bottom: 20px;
+  width: 22px;
+  height: 27px;
+  border: 3px solid var(--primary);
+  border-left: 0;
+  border-radius: 0 14px 14px 0;
+  transform: rotate(-4deg);
+}
+
+.loading-bubble {
+  position: absolute;
+  bottom: 48px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--primary);
+  opacity: 0;
+  animation: loading-bubble 1.8s ease-in infinite;
+}
+
+.loading-bubble-one {
+  right: 42px;
+}
+
+.loading-bubble-two {
+  right: 29px;
+  width: 5px;
+  height: 5px;
+  animation-delay: 0.55s;
+}
+
+.loading-bubble-three {
+  right: 52px;
+  width: 4px;
+  height: 4px;
+  animation-delay: 1s;
+}
+
+@keyframes loading-fill {
+  0%,
+  100% {
+    height: 16%;
+  }
+  50% {
+    height: 72%;
+  }
+}
+
+@keyframes loading-bubble {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.7);
+  }
+  35%,
+  70% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-cup-fill,
+  .loading-bubble,
+  .loading-dumbbell,
+  .loading-apple,
+  .loading-bowl-fill,
+  .loading-spoon,
+  .loading-food {
+    animation: none;
+  }
+
+  .loading-cup-fill {
+    height: 52%;
+  }
+}
+
 .page-enter {
   animation: fade-in 300ms ease both;
 }

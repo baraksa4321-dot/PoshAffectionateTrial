@@ -183,13 +183,25 @@ function RootComponent() {
           className="flex min-h-[100dvh] items-center justify-center bg-background px-4"
           dir="rtl"
         >
-          <div className="rounded-3xl border border-border/60 bg-white px-6 py-5 text-center shadow-sm">
-            <div
-              className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary"
-              aria-label="טוען"
-              role="status"
-            />
-            <p className="mt-3 text-sm font-semibold text-foreground">טוען את האתר...</p>
+          <div
+            className="loading-brand rounded-3xl border border-border/60 bg-white px-8 py-8 text-center shadow-sm"
+            role="status"
+            aria-live="polite"
+            aria-label="My Routine נטען"
+          >
+            <div className="loading-cup-wrap" aria-hidden="true">
+              <div className="loading-bubble loading-bubble-one" />
+              <div className="loading-bubble loading-bubble-two" />
+              <div className="loading-bubble loading-bubble-three" />
+              <div className="loading-cup">
+                <div className="loading-cup-fill" />
+              </div>
+              <div className="loading-cup-handle" />
+            </div>
+            <p className="mt-5 font-display text-xl font-bold tracking-tight text-ink">
+              My Routine
+            </p>
+            <p className="mt-1 text-xs font-semibold text-muted-foreground">מכינים את השגרה שלך</p>
           </div>
         </div>
       ) : hasProfileHydrationError ? (
