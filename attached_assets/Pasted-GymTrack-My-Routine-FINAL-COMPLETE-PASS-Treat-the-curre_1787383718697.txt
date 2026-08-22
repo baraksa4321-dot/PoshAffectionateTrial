@@ -1,0 +1,636 @@
+GymTrack / My Routine — FINAL COMPLETE PASS
+
+Treat the current project ZIP and the existing Replit project as the source of truth.
+
+The goal of this pass is simple:
+
+Finish the application as completely as safely possible, eliminate loose ends, validate everything that can actually be validated, and leave the project ready for Preview/QA.
+
+Do not create a new Supabase project.
+Do not reset, replace, or delete the existing database.
+Do not expose or print any secret values.
+Do not use service-role credentials in the frontend.
+
+Use the existing Replit Secrets:
+
+* VITE_SUPABASE_URL
+* VITE_SUPABASE_ANON_KEY
+
+Do not hardcode their values.
+
+⸻
+
+1. FIRST — AUDIT THE ACTUAL PROJECT
+
+Do not trust previous AI reports.
+
+Inspect the actual current source code, migrations, routes, components, Supabase integration, state management, and configuration.
+
+Determine what is:
+
+* VERIFIED
+* BROKEN
+* MISSING
+* PARTIAL
+* NOT VERIFIABLE
+
+Do not claim something works merely because code exists for it.
+
+⸻
+
+2. SUPABASE — USE THE EXISTING PROJECT
+
+Attempt a safe live connection using the current Replit Secrets.
+
+Do not modify the database until the current state is understood.
+
+Verify as much as the available credentials safely allow:
+
+* tables
+* columns
+* foreign keys
+* constraints
+* indexes
+* migration state
+* RLS enabled state
+* RLS policies
+* SECURITY DEFINER functions
+* RPC permissions
+* Owner / Coach / Client isolation
+* authentication behavior
+* existing data
+
+If live database-admin verification is impossible from this environment, clearly identify the exact technical limitation.
+
+Do not pretend that live Supabase behavior was verified if it was not.
+
+⸻
+
+3. SECURITY
+
+Preserve and strengthen the existing security architecture.
+
+There are three database roles:
+
+* Owner
+* Coach
+* Client
+
+Verify that:
+
+* Clients cannot promote themselves.
+* Coaches cannot promote themselves or other users.
+* Only Owners can change roles.
+* Only authorized Owners can assign clients to coaches.
+* Coaches can only access assigned clients.
+* Clients can only access their own private data.
+* Owners retain intended administrative access.
+* role cannot be changed through normal client profile updates.
+* coach_id cannot be manipulated by unauthorized users.
+* No private client data is publicly accessible.
+* No service-role/private key exists in frontend code.
+* RLS remains enabled.
+* SECURITY DEFINER functions use safe search paths.
+* Privileged RPCs are properly restricted.
+
+Do not weaken existing RLS.
+
+⸻
+
+4. AUTHENTICATION
+
+Verify and fix:
+
+* signup
+* login
+* logout
+* session persistence
+* refresh persistence
+* profile loading
+* role loading
+* password recovery
+* password reset
+* recovery redirect
+* logout cleanup
+
+After logout, no previous user’s private state may remain available to another user.
+
+Supabase authenticated session state must remain the source of truth.
+
+⸻
+
+5. OWNER / COACH / CLIENT
+
+Verify the application separately in all three roles.
+
+Owner
+
+Verify:
+
+* user management
+* coach management
+* client management
+* role changes
+* coach assignment
+* administrative access
+* history where supported
+
+Coach
+
+Verify:
+
+* assigned client list
+* client profiles
+* programs
+* workouts
+* workout history
+* measurements
+* nutrition
+* messages
+* feedback
+* recipes
+* custom client data
+
+Coach access must be limited to assigned clients.
+
+Client
+
+Verify:
+
+* personal dashboard
+* personal profile
+* assigned program
+* workouts
+* workout history
+* nutrition
+* measurements
+* favorites
+* custom foods
+* custom exercises
+* coach communication
+* feedback
+
+Clients must never see Owner functionality or another client’s private data.
+
+⸻
+
+6. PROGRAMS & WORKOUTS
+
+Verify and fix:
+
+* program creation
+* program editing
+* program days
+* program exercises
+* exercise ordering
+* sets
+* reps
+* rep ranges such as 8–10
+* weight
+* rest
+* notes
+* assigned programs
+* active workout
+* completed workout
+* workout history
+* RPE/difficulty
+* discomfort feedback
+* persistence after refresh
+* persistence after logout/login
+
+Fix any broken active-workout routes or React hook-order issues.
+
+Do not use localStorage as the primary database.
+
+⸻
+
+7. EXERCISES
+
+Verify:
+
+* exercise search
+* exercise details
+* muscle group
+* category
+* equipment
+* instructions
+* difficulty
+* video_url
+* mobile video behavior
+* empty state when no video exists
+* approved alternatives
+
+Exercise replacement must only show Coach-approved alternatives where that architecture exists.
+
+Do not expose unrelated custom exercises between users.
+
+⸻
+
+8. NUTRITION
+
+Dietary Fiber is mandatory.
+
+Verify that quantity changes correctly update:
+
+* calories
+* protein
+* carbohydrates
+* fat
+* fiber
+
+Verify:
+
+* nutrition days
+* logged foods
+* quantities
+* daily totals
+* progress
+* food details
+* food replacement
+* persistence
+
+Do not use invented nutritional values and present them as verified data.
+
+⸻
+
+9. FOOD DATABASE
+
+The food database should prioritize real everyday Israeli foods, not meaningless duplicate variations.
+
+Keep useful foods such as:
+
+* pita
+* white bread
+* whole wheat bread
+* rice
+* pasta
+* potatoes
+* sweet potatoes
+* couscous
+* bulgur
+* rice paper sheets
+* chicken breast
+* eggs
+* tuna
+* cottage cheese
+* Greek yogurt
+* protein powder
+* low-fat cheeses
+* hummus
+* tahini
+* olive oil
+* avocado
+* peanut butter
+* almonds
+* walnuts
+* vegetables
+* fruit
+* legumes
+
+Avoid creating dozens of unnecessary variations of essentially the same food.
+
+Verify:
+
+* unique names
+* categories
+* calories
+* protein
+* carbs
+* fat
+* fiber
+* reasonable serving units
+* quantity scaling
+* Hebrew search
+* practical aliases where supported
+* raw/cooked distinction where relevant
+
+Do not randomly inflate the database just to increase the food count.
+
+⸻
+
+10. CUSTOM DATA & FAVORITES
+
+Verify:
+
+* custom foods
+* custom exercises
+* favorites
+* ownership
+* persistence
+* cross-user isolation
+
+No user may access another user’s custom records.
+
+⸻
+
+11. MEASUREMENTS
+
+Verify and fix:
+
+* body weight
+* measurement history
+* dates
+* ownership
+* persistence
+
+If full body-measurement UI is genuinely missing, implement it only if the existing architecture supports it safely.
+
+Do not create duplicate tables unnecessarily.
+
+⸻
+
+12. MESSAGES
+
+Verify:
+
+* Coach → assigned Client messaging
+* Client visibility
+* conversation isolation
+* persistence
+* unauthorized access prevention
+
+If client-to-coach replies are missing and the current architecture supports them, implement them.
+
+⸻
+
+13. FEEDBACK
+
+Verify:
+
+* client feedback submission
+* workout difficulty/RPE
+* discomfort notes
+* history
+* coach visibility
+* assigned-client isolation
+
+If Coach feedback review is missing and the existing architecture supports it, complete it.
+
+⸻
+
+14. RECIPES
+
+Inspect the existing recipe architecture.
+
+If recipe functionality exists but is incomplete, finish it.
+
+Verify:
+
+* Coach ownership
+* persistence
+* client visibility
+* isolation between coaches
+
+Do not invent an unrelated recipe system.
+
+⸻
+
+15. CLIENT PERFORMANCE VIDEOS
+
+Inspect the current implementation first.
+
+If it already exists, complete it.
+
+If genuinely missing and required by the application architecture, implement it safely with:
+
+* proper storage
+* ownership
+* RLS
+* Coach access only to assigned clients
+* Client access only to own media
+
+Never make private client videos public simply because they have a URL.
+
+⸻
+
+16. UI / UX
+
+Perform a complete sweep.
+
+Every button must have a real purpose.
+
+Every visible word, label, icon, arrow, menu item, and action should have a reason.
+
+Remove:
+
+* dead buttons
+* fake buttons
+* placeholder functionality
+* misleading success messages
+* TODO UI
+* broken links
+* empty routes
+* unnecessary duplicate controls
+
+Verify:
+
+* loading states
+* empty states
+* error states
+* success feedback
+* disabled states
+* validation
+* modals
+* sheets
+* overlays
+* scrolling
+* navigation
+* back navigation
+* long lists
+* search
+* video areas
+
+⸻
+
+17. MOBILE + RTL
+
+The application is mobile-first.
+
+Test the actual UI at approximately:
+
+* 375px
+* 390px
+* 430px
+
+Verify:
+
+* no horizontal overflow
+* no broken fixed overlays
+* no document-scroll modal problems
+* touch targets
+* navigation
+* forms
+* search
+* cards
+* tables/lists
+* videos
+* Hebrew RTL alignment
+* mixed Hebrew/English text
+* icons and directional arrows
+
+⸻
+
+18. DATA PERSISTENCE
+
+Important user actions must survive:
+
+1. Save
+2. Refresh
+3. Logout
+4. Login again
+
+This includes:
+
+* profiles
+* programs
+* workouts
+* workout history
+* nutrition
+* favorites
+* custom foods
+* custom exercises
+* measurements
+* messages
+* feedback
+* coach/client relationships
+
+Do not silently report success when a Supabase write fails.
+
+Do not introduce unsafe automatic cloud deletion.
+
+⸻
+
+19. ERROR HANDLING
+
+Every important Supabase operation must correctly handle:
+
+* loading
+* success
+* failure
+* empty result
+
+A failed Supabase operation must never be presented to the user as successful.
+
+⸻
+
+20. BUILD & QUALITY
+
+Run:
+
+npm run build
+npm run lint
+
+Fix all actual errors.
+
+Warnings may remain only if they are genuinely non-blocking and documented.
+
+Also inspect for:
+
+* console errors
+* broken imports
+* broken routes
+* TypeScript problems
+* React hook violations
+* unused critical code
+* runtime crashes
+
+⸻
+
+21. DO NOT MAKE UNSAFE DATABASE CHANGES
+
+Do not:
+
+* disable RLS
+* replace existing RLS policies unnecessarily
+* recreate existing tables
+* reset the database
+* delete existing user data
+* expose tables publicly
+* add broad anon permissions
+* replace secure RPCs with insecure client updates
+
+If a migration is genuinely required:
+
+1. Identify exactly what is missing.
+2. Compare it with the live schema/migration state.
+3. Add only the required migration.
+4. Do not duplicate existing schema.
+5. Do not destroy existing data.
+
+⸻
+
+22. FINAL PREVIEW REQUIREMENT
+
+After all safe fixes and validations are complete:
+
+START THE APPLICATION AND MAKE THE WORKING PREVIEW AVAILABLE.
+
+The Preview must represent the actual current code, not a mock or separate implementation.
+
+Before declaring the Preview ready:
+
+* application starts
+* build succeeds
+* lint has no errors
+* routes load
+* no obvious runtime crash
+* authentication screens work
+* main Owner/Coach/Client interfaces load
+* mobile layout loads
+* Hebrew RTL loads
+* Supabase configuration is read from Replit Secrets
+* no secrets are exposed in the UI or source
+
+⸻
+
+23. FINAL REPORT
+
+Before finishing, provide exactly:
+
+VERIFIED
+
+Things actually verified from the current implementation or live environment.
+
+FIXED
+
+Actual defects you corrected.
+
+BROKEN
+
+Features that exist but still do not work.
+
+MISSING
+
+Features that genuinely do not exist.
+
+NOT VERIFIED
+
+Things that could not be tested.
+
+DATABASE CHANGES
+
+Exactly what database changes were made or proposed.
+
+SECURITY CHANGES
+
+Exactly what security changes were made.
+
+FINAL BLOCKERS
+
+Only genuine remaining blockers.
+
+PREVIEW
+
+Confirm that the application is running and the Preview is available.
+
+Do not say “production-ready” unless the evidence supports it.
+
+Do not hide limitations.
+
+Do not generate another report claiming success simply because the build passes.
+
+The final objective is:
+
+No loose ends. No fake functionality. No dead buttons. No misleading claims. No unnecessary database changes. No security regressions.
+
+Finish the safe implementation, validate everything possible, and then leave the project running in Preview.
