@@ -26,6 +26,7 @@ export function Overlay({
   const [mounted, setMounted] = useState(false);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+  const [viewportTop, setViewportTop] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
 
@@ -81,16 +82,30 @@ export function Overlay({
       }
     };
     const visualViewport = window.visualViewport;
+    const keepFocusedFieldVisible = () => {
+      const activeElement = document.activeElement;
+      if (!(activeElement instanceof HTMLElement) || !panelRef.current?.contains(activeElement)) {
+        return;
+      }
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          activeElement.scrollIntoView({ block: "center", behavior: "auto" });
+        });
+      });
+    };
     const updateKeyboardOffset = () => {
       const visibleHeight = visualViewport?.height ?? window.innerHeight;
       const offsetTop = visualViewport?.offsetTop ?? 0;
       setViewportHeight(visibleHeight);
+      setViewportTop(offsetTop);
       setKeyboardOffset(Math.max(0, window.innerHeight - visibleHeight - offsetTop));
+      if (visibleHeight < window.innerHeight) keepFocusedFieldVisible();
     };
     updateKeyboardOffset();
     visualViewport?.addEventListener("resize", updateKeyboardOffset);
     visualViewport?.addEventListener("scroll", updateKeyboardOffset);
     window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("focusin", keepFocusedFieldVisible);
     const focusFrame = window.requestAnimationFrame(() => {
       const firstFocusable = panelRef.current?.querySelector<HTMLElement>(focusableSelector);
       (firstFocusable ?? panelRef.current)?.focus();
@@ -98,11 +113,13 @@ export function Overlay({
 
     return () => {
       window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("focusin", keepFocusedFieldVisible);
       visualViewport?.removeEventListener("resize", updateKeyboardOffset);
       visualViewport?.removeEventListener("scroll", updateKeyboardOffset);
       window.cancelAnimationFrame(focusFrame);
       setKeyboardOffset(0);
       setViewportHeight(null);
+      setViewportTop(0);
       scrollLockCount = Math.max(0, scrollLockCount - 1);
       if (scrollLockCount === 0) {
         document.body.style.overflow = previousBodyOverflow;
@@ -134,6 +151,11 @@ export function Overlay({
             ? "items-end justify-center"
             : "items-center justify-center"
       } ${isFull ? "bg-background p-0" : "bg-foreground/40 p-4 backdrop-blur-sm"} ${className}`}
+      style={
+        viewportHeight !== null
+          ? { height: `${viewportHeight}px`, top: `${viewportTop}px` }
+          : undefined
+      }
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
