@@ -843,12 +843,24 @@ function ThemeChooser({
                 : "border-border bg-background hover:border-primary/40"
             }`}
           >
-            <span
-              className="block h-8 w-8 shrink-0 rounded-sm border border-border/50 shadow-sm transition-transform group-hover:scale-105 group-active:scale-95"
-              style={{ backgroundColor: palette.swatch }}
+            <div
+              className="flex h-12 w-14 shrink-0 flex-col overflow-hidden rounded-sm border border-border/60 bg-white shadow-sm transition-transform group-hover:scale-105 group-active:scale-95"
+              style={{ backgroundColor: palette.previewSurface }}
               aria-hidden="true"
-            />
-            <span className="block text-[13px] font-bold text-ink truncate">{palette.label}</span>
+            >
+              <span className="h-2.5" style={{ backgroundColor: palette.previewAccent }} />
+              <span className="mx-1.5 mt-1.5 h-1.5 rounded-full bg-[#111111]" />
+              <span
+                className="mx-1.5 mt-1 h-2.5 rounded-sm"
+                style={{ backgroundColor: palette.swatch, opacity: 0.65 }}
+              />
+            </div>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[13px] font-bold text-ink">{palette.label}</span>
+              <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                רקע בהיר · טקסט שחור
+              </span>
+            </span>
           </button>
         ))}
       </div>

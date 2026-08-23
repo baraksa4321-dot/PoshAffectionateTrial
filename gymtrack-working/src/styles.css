@@ -352,6 +352,60 @@
   color: var(--ink) !important;
 }
 
+/*
+ * Accessibility-first light mode:
+ * accent colors are for surfaces and actions; black is reserved for readable text.
+ */
+:root,
+:root[data-theme] {
+  --foreground: #111111;
+  --ink: #111111;
+  --ink-soft: #333333;
+  --muted-foreground: #444444;
+  --primary-foreground: #111111;
+  --secondary-foreground: #111111;
+  --accent-foreground: #111111;
+  --card-foreground: #111111;
+  --popover-foreground: #111111;
+}
+
+:root[data-theme="black"] {
+  --background: #ffffff;
+  --surface: #fafafa;
+  --surface-2: #f0eef0;
+  --cream: #f5f3f4;
+  --card: #fafafa;
+  --popover: #fafafa;
+  --primary: #d8cbd0;
+  --secondary: #eee9ec;
+  --rose: #d8cbd0;
+  --rose-soft: #f2edef;
+  --accent: #e6dfe2;
+  --muted: #f0eef0;
+  --border: #d3cbd0;
+  --input: #d3cbd0;
+  --ring: #b9aeb3;
+  --gradient-start: #f0e7ea;
+  --gradient-mid: #f7f3f4;
+  --gradient-end: #ffffff;
+}
+
+.ink-card {
+  background: var(--surface-2);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 22px oklch(0.2 0.03 35 / 0.08);
+}
+
+.ink-card::after {
+  border-color: oklch(from var(--primary) l c h / 0.35);
+}
+
+.bg-ink {
+  background-color: var(--primary) !important;
+  color: var(--ink) !important;
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
