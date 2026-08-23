@@ -29,6 +29,6 @@ export const DEFAULT_THEME: ThemePalette = "pink";
 
 export function applyTheme(theme: ThemePalette | undefined) {
   if (typeof document === "undefined") return;
-  document.documentElement.dataset.theme = theme || DEFAULT_THEME;
-  document.documentElement.style.colorScheme = theme === "black" ? "dark" : "light";
+  document.documentElement.dataset["theme"] = theme || DEFAULT_THEME;
+  document.documentElement.style.colorScheme = "light";
 }
