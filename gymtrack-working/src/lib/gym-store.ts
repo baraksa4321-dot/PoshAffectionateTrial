@@ -590,8 +590,10 @@ const seed = (): GymData => {
 
   return {
     exercises: [...ex.map(renameSeedExercise), ...ADDITIONAL_EXERCISES],
-    workouts,
-    programs,
+    // Exercises are a shared library. Personal workouts and programs must be
+    // created by an explicit user or coach action, never by initial hydration.
+    workouts: [],
+    programs: [],
     history: [],
     foods: [...EVERYDAY_FOOD_DATABASE],
     nutritionDays: [],
@@ -1618,6 +1620,7 @@ export function nutritionDay(d: GymData, date: string): NutritionDay {
 function withDay(date: string, updater: (day: NutritionDay) => NutritionDay) {
   const existing = data.nutritionDays.find((x) => x.date === date);
   const base: NutritionDay = existing ?? {
+    id: `${currentUser?.id ?? "local"}_${date}`,
     date,
     meals: data.mealTemplate.map((name) => ({ id: uid(), name, foods: [] })),
   };

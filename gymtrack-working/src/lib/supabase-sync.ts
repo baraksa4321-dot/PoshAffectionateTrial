@@ -158,6 +158,36 @@ export async function syncLocalToSupabase(
         }
       }
     }
+    const { data: remotePrograms, error: remoteProgramsError } = await supabase
+      .from("programs")
+      .select("id")
+      .eq("user_id", userId);
+    if (remoteProgramsError) throw new Error(`Programs deletion lookup failed: ${remoteProgramsError.message}`);
+    const localProgramIds = new Set(localData.programs.map((program) => program.id));
+    const deletedProgramIds = (remotePrograms ?? [])
+      .map((row) => row.id as string)
+      .filter((id) => !localProgramIds.has(id));
+    if (deletedProgramIds.length > 0) {
+      await requireSuccessfulWrite(
+        supabase.from("programs").delete().in("id", deletedProgramIds),
+        "Programs deletion sync",
+      );
+    }
+    const { data: remoteProgramDays, error: remoteProgramDaysError } = await supabase
+      .from("program_days")
+      .select("id")
+      .eq("user_id", userId);
+    if (remoteProgramDaysError) throw new Error(`Program days deletion lookup failed: ${remoteProgramDaysError.message}`);
+    const localProgramDayIds = new Set(localData.programs.flatMap((program) => program.dayIds));
+    const deletedProgramDayIds = (remoteProgramDays ?? [])
+      .map((row) => row.id as string)
+      .filter((id) => !localProgramDayIds.has(id));
+    if (deletedProgramDayIds.length > 0) {
+      await requireSuccessfulWrite(
+        supabase.from("program_days").delete().in("id", deletedProgramDayIds),
+        "Program days deletion sync",
+      );
+    }
 
     // 4. Workout Sessions / History (including difficulty rating & discomfort notes)
     if (localData.history.length > 0) {
@@ -177,6 +207,21 @@ export async function syncLocalToSupabase(
       await requireSuccessfulWrite(
         supabase.from("workout_sessions").upsert(historyPayload, { onConflict: "id" }),
         "Workout history sync",
+      );
+    }
+    const { data: remoteSessions, error: remoteSessionsError } = await supabase
+      .from("workout_sessions")
+      .select("id")
+      .eq("user_id", userId);
+    if (remoteSessionsError) throw new Error(`Workout history deletion lookup failed: ${remoteSessionsError.message}`);
+    const localSessionIds = new Set(localData.history.map((session) => session.id));
+    const deletedSessionIds = (remoteSessions ?? [])
+      .map((row) => row.id as string)
+      .filter((id) => !localSessionIds.has(id));
+    if (deletedSessionIds.length > 0) {
+      await requireSuccessfulWrite(
+        supabase.from("workout_sessions").delete().in("id", deletedSessionIds),
+        "Workout history deletion sync",
       );
     }
 
@@ -326,6 +371,21 @@ export async function syncLocalToSupabase(
         "Nutrition log sync",
       );
     }
+    const { data: remoteNutritionDays, error: remoteNutritionDaysError } = await supabase
+      .from("nutrition_days")
+      .select("id")
+      .eq("user_id", userId);
+    if (remoteNutritionDaysError) throw new Error(`Nutrition deletion lookup failed: ${remoteNutritionDaysError.message}`);
+    const localNutritionIds = new Set(localData.nutritionDays.map((day) => day.id).filter(Boolean));
+    const deletedNutritionIds = (remoteNutritionDays ?? [])
+      .map((row) => row.id as string)
+      .filter((id) => !localNutritionIds.has(id));
+    if (deletedNutritionIds.length > 0) {
+      await requireSuccessfulWrite(
+        supabase.from("nutrition_days").delete().in("id", deletedNutritionIds),
+        "Nutrition deletion sync",
+      );
+    }
 
     // 7. Food Favorites
     if (localData.favoriteFoods && localData.favoriteFoods.length > 0) {
@@ -336,6 +396,21 @@ export async function syncLocalToSupabase(
       await requireSuccessfulWrite(
         supabase.from("food_favorites").upsert(favPayload, { onConflict: "user_id,food_id" }),
         "Favorites sync",
+      );
+    }
+    const { data: remoteFavorites, error: remoteFavoritesError } = await supabase
+      .from("food_favorites")
+      .select("food_id")
+      .eq("user_id", userId);
+    if (remoteFavoritesError) throw new Error(`Favorites deletion lookup failed: ${remoteFavoritesError.message}`);
+    const localFavoriteIds = new Set(localData.favoriteFoods ?? []);
+    const deletedFavoriteIds = (remoteFavorites ?? [])
+      .map((row) => row.food_id as string)
+      .filter((id) => !localFavoriteIds.has(id));
+    if (deletedFavoriteIds.length > 0) {
+      await requireSuccessfulWrite(
+        supabase.from("food_favorites").delete().eq("user_id", userId).in("food_id", deletedFavoriteIds),
+        "Favorites deletion sync",
       );
     }
 
@@ -566,6 +641,9 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
 
       nextData.programs = programsList;
       nextData.workouts = Array.from(workoutsMap.values());
+    } else {
+      nextData.programs = [];
+      nextData.workouts = [];
     }
 
     // 6. History Sessions
@@ -590,6 +668,8 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         discomfortNotes: row.discomfort_notes,
       }));
       nextData.history = historyList;
+    } else {
+      nextData.history = [];
     }
 
     // 7. Body Weight Logs
@@ -611,6 +691,8 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         date: dateFromRecordedAt(row.recorded_at),
         weight: Number(row.weight_kg),
       }));
+    } else if (!bodyWeightError) {
+      nextData.bodyWeightLogs = [];
     }
 
     const { data: dbBodyMeasurements, error: measurementError } = await supabase
@@ -664,8 +746,14 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .eq("user_id", userId);
     if (customFoodsError) throw new Error(`Custom foods pull failed: ${customFoodsError.message}`);
 
+    const seedFoodIds = new Set(EVERYDAY_FOOD_DATABASE.map((food) => food.id));
+    const customFoodMap = new Map(
+      nextData.foods
+        .filter((food) => seedFoodIds.has(food.id) || food.ownerId !== userId)
+        .map((food) => [food.id, food]),
+    );
     if (dbCustomFoods && dbCustomFoods.length > 0) {
-      const foodMap = new Map(nextData.foods.map((f) => [f.id, f]));
+      const foodMap = customFoodMap;
       for (const row of dbCustomFoods) {
         const foodItem: FoodItem = {
           id: row.id,
@@ -687,6 +775,8 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         foodMap.set(row.id, foodItem);
       }
       nextData.foods = Array.from(foodMap.values());
+    } else {
+      nextData.foods = Array.from(customFoodMap.values());
     }
 
     // 9. Nutrition Days
@@ -713,6 +803,9 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
           calories: Number(calorieTargetRow.target_calories),
         };
       }
+    } else {
+      nextData.nutritionDays = [];
+      nextData.nutritionTargets = {};
     }
 
     // 10. Food Favorites
