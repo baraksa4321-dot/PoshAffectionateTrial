@@ -1,64 +1,31 @@
 .wood-accent-preview {
-  --wood-base: #f7f3eb;
-  --wood-fiber: rgba(116, 87, 56, 0.034);
-  --wood-fiber-faint: rgba(116, 87, 56, 0.018);
+  --wood-base: #fffdfb;
   min-height: 100vh;
-  background-color: var(--wood-base);
+  background-color: #fff;
   color: #252525;
 }
 
 /*
- * A restrained beech/oak surface: two near-invisible, slightly off-axis
- * fibers keep the material tactile without turning the page into a pattern.
- * Cards remain opaque warm white so Hebrew copy and pastel accents stay clear.
+ * The page remains warm white. The real parquet image is used once, as a
+ * contained, low-contrast material insert inside the existing routine card.
  */
 .wood-accent-preview .brand-screen {
-  background-color: var(--wood-base);
-  background-image:
-    repeating-linear-gradient(
-      91deg,
-      transparent 0,
-      transparent 17px,
-      var(--wood-fiber-faint) 17px,
-      var(--wood-fiber-faint) 18px,
-      transparent 18px,
-      transparent 43px
-    ),
-    repeating-linear-gradient(
-      88deg,
-      transparent 0,
-      transparent 31px,
-      var(--wood-fiber) 31px,
-      var(--wood-fiber) 32px,
-      transparent 32px,
-      transparent 79px
-    );
+  background-color: #fff;
+  background-image: none;
 }
 
 .wood-accent-preview .brand-topbar {
-  background-color: rgba(250, 247, 241, 0.96);
-  border-bottom-color: rgba(126, 104, 79, 0.16);
+  background-color: #fff;
+  border-bottom-color: #e5d9d9;
 }
 
 .wood-accent-preview .brand-page {
   position: relative;
 }
 
-.wood-accent-preview .brand-page::before {
-  position: absolute;
-  top: 0;
-  right: 18px;
-  width: 1px;
-  height: 24px;
-  background: rgba(126, 104, 79, 0.18);
-  content: "";
-  pointer-events: none;
-}
-
 .wood-accent-preview .brand-coach-note,
 .wood-accent-preview .brand-progress-card,
 .wood-accent-preview .brand-nutrition-card,
-.wood-accent-preview .brand-routine-card,
 .wood-accent-preview .brand-checkin-card,
 .wood-accent-preview .brand-metric,
 .wood-accent-preview .brand-last-card {
@@ -66,37 +33,109 @@
 }
 
 .wood-accent-preview .brand-coach-note {
-  background-color: rgba(251, 246, 242, 0.94);
+  background-color: #fff7f7;
 }
 
 .wood-accent-preview .brand-progress-card {
-  background-color: rgba(228, 237, 241, 0.96);
+  background-color: #f3e5e7;
 }
 
 .wood-accent-preview .brand-nutrition-card {
-  background-color: rgba(224, 237, 227, 0.96);
+  background-color: #f4e4e6;
 }
 
 .wood-accent-preview .brand-routine-card {
-  background-color: rgba(242, 235, 222, 0.96);
+  position: relative;
+  background-color: #f0e8e8;
+  background-image: url("/__mockup/images/soft-oak-parquet.jpg");
+  background-position: center;
+  background-size: cover;
+  background-blend-mode: normal;
+  border-color: #ded5cd;
+}
+
+.wood-accent-preview .gymtrack-mockup.brand-screen .brand-routine-card {
+  background-color: #f0e8e8;
+  background-image: url("/__mockup/images/soft-oak-parquet.jpg");
+  background-position: center;
+  background-size: cover;
+  background-blend-mode: normal;
+}
+
+.wood-accent-preview .brand-routine-card::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: rgba(255, 255, 255, .72);
+  content: "";
+  pointer-events: none;
+}
+
+.wood-accent-preview .brand-routine-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .wood-accent-preview .brand-weight-card {
-  background-color: rgba(241, 225, 223, 0.96);
+  background-color: #f2dfe1;
 }
 
 .wood-accent-preview .brand-measure-card {
-  background-color: rgba(228, 237, 241, 0.96);
+  background-color: #f3e5e7;
 }
 
 .wood-accent-preview .brand-metric {
-  border: 1px solid rgba(126, 104, 79, 0.12);
+  border: 1px solid #e4d0d2;
+  background-color: #f3e2e4;
+  color: #80505a;
 }
 
 .wood-accent-preview .brand-bottom-nav {
-  background-color: rgba(250, 247, 241, 0.97);
-  border-top-color: rgba(126, 104, 79, 0.16);
+  background-color: #fff;
+  border-top-color: #e5d9d9;
   box-shadow: 0 -4px 15px rgba(61, 48, 37, 0.03);
+}
+
+.wood-accent-preview .brand-workout-card {
+  background: #f2dfe1;
+  color: var(--gt-ink);
+}
+
+.wood-accent-preview .brand-workout-card h3 {
+  color: var(--gt-ink);
+}
+
+.wood-accent-preview .brand-workout-card p {
+  color: #795f63;
+}
+
+.wood-accent-preview .brand-workout-kicker,
+.wood-accent-preview .brand-workout-kicker svg {
+  color: var(--gt-coral-deep);
+}
+
+.wood-accent-preview .brand-mark {
+  border: 1px solid #d59aa3;
+  background: #f2dfe1;
+}
+
+.wood-accent-preview .brand-mark span {
+  border-color: var(--gt-coral-deep);
+}
+
+.wood-accent-preview .brand-primary-button,
+.wood-accent-preview .brand-dialog-save {
+  background: var(--gt-coral);
+  color: #fff;
+}
+
+.wood-accent-preview .brand-primary-button:hover,
+.wood-accent-preview .brand-dialog-save:hover {
+  background: var(--gt-coral-deep);
+}
+
+.wood-accent-preview .brand-dialog-backdrop {
+  background: rgba(242, 223, 225, .78);
 }
 
 @media (prefers-reduced-motion: reduce) {

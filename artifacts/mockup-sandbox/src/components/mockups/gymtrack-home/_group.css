@@ -2516,3 +2516,250 @@
   background: var(--gt-blush);
   color: var(--gt-coral-deep);
 }
+
+/* Final comparison rule: white canvas, pink-family surfaces, no dark panels. */
+.gymtrack-mockup.current-screen,
+.gymtrack-mockup.brand-screen {
+  background: #fff;
+}
+
+.gymtrack-mockup.current-screen .gt-topbar,
+.gymtrack-mockup.current-screen .gt-bottom-nav,
+.gymtrack-mockup.brand-screen .brand-topbar,
+.gymtrack-mockup.brand-screen .brand-bottom-nav {
+  background: #fff;
+}
+
+.gymtrack-mockup.current-screen .current-workout {
+  background: #e6aeb6;
+  color: var(--gt-ink);
+  box-shadow: 0 9px 18px rgba(166, 81, 97, .12);
+}
+
+.gymtrack-mockup.current-screen .current-workout h2,
+.gymtrack-mockup.current-screen .current-workout > p {
+  color: var(--gt-ink);
+}
+
+.gymtrack-mockup.current-screen .current-workout .current-tile-top {
+  color: #874956;
+}
+
+.gymtrack-mockup.brand-screen .brand-mark {
+  border: 1px solid #d59aa3;
+  background: #f2dfe1;
+}
+
+.gymtrack-mockup.brand-screen .brand-mark span {
+  border-color: var(--gt-coral-deep);
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-card {
+  background: #f2dfe1;
+  color: var(--gt-ink);
+  box-shadow: 0 9px 18px rgba(166, 81, 97, .12);
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-card h3 {
+  color: var(--gt-ink);
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-card p {
+  color: #795f63;
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-kicker,
+.gymtrack-mockup.brand-screen .brand-workout-kicker svg {
+  color: var(--gt-coral-deep);
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-rail {
+  border-left-color: #d59aa3;
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-rail::before {
+  background: var(--gt-coral-deep);
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-rail span,
+.gymtrack-mockup.brand-screen .brand-workout-rail b {
+  color: #8b5961;
+}
+
+.gymtrack-mockup.brand-screen .brand-primary-button,
+.gymtrack-mockup.brand-screen .brand-dialog-save {
+  background: var(--gt-coral);
+  color: #fff;
+}
+
+.gymtrack-mockup.brand-screen .brand-primary-button:hover,
+.gymtrack-mockup.brand-screen .brand-dialog-save:hover {
+  background: var(--gt-coral-deep);
+}
+
+.gymtrack-mockup.current-screen .current-dialog-backdrop,
+.gymtrack-mockup.brand-screen .brand-dialog-backdrop {
+  background: rgba(242, 223, 225, .78);
+}
+
+/* Comparison pass: each screen stays on one mineral-pink color family. */
+.gymtrack-mockup.current-screen {
+  --gt-canvas: #fffdfb;
+  --gt-blush: #f3dfe2;
+  --gt-petal: #fff7f8;
+  --gt-lilac: #f1e4e7;
+  --gt-lilac-deep: #8e5662;
+  --gt-sage: #ecd7da;
+  --gt-sage-deep: #82505b;
+  --gt-cream: #f8ecec;
+  --gt-coral: #c86d7c;
+  --gt-coral-deep: #a85263;
+  --gt-line: #e7dadd;
+  --gt-ink: #262324;
+  --gt-ink-soft: #70686a;
+  background: #fffdfb;
+}
+
+.gymtrack-mockup.current-screen .current-workout {
+  background: #c86d7c;
+}
+
+.gymtrack-mockup.current-screen .current-nutrition {
+  border-color: #e6cfd3;
+  background: #f8eaec;
+  color: #7f4b56;
+}
+
+.gymtrack-mockup.current-screen .current-nutrition .current-tile-top,
+.gymtrack-mockup.current-screen .current-nutrition > strong,
+.gymtrack-mockup.current-screen .current-protein-link {
+  color: #824e5a;
+}
+
+.gymtrack-mockup.current-screen .current-protein-link {
+  background: #fff8f8;
+}
+
+.gymtrack-mockup.current-screen .current-monthly {
+  border-color: #e6cfd3;
+  background: #f8eaec;
+  color: #7e4d57;
+}
+
+.gymtrack-mockup.current-screen .current-monthly span:last-child {
+  color: #7e4d57;
+}
+
+.gymtrack-mockup.current-screen .current-stat[data-tone="rose"],
+.gymtrack-mockup.current-screen .current-stat[data-tone="sage"],
+.gymtrack-mockup.current-screen .current-stat[data-tone="cream"] {
+  background: #f8eaec;
+}
+
+.gymtrack-mockup.current-screen .current-stat svg,
+.gymtrack-mockup.current-screen .current-cardio-icon {
+  color: #a85263;
+}
+
+.gymtrack-mockup.current-screen .current-cardio-icon {
+  background: #f3dfe2;
+}
+
+.gymtrack-mockup.brand-screen {
+  --gt-canvas: #fffdfb;
+  --gt-blush: #f2dfe1;
+  --gt-petal: #fff7f7;
+  --gt-lilac: #f0e3e5;
+  --gt-lilac-deep: #8a5360;
+  --gt-sage: #ecd7da;
+  --gt-sage-deep: #80505a;
+  --gt-cream: #f7e9e8;
+  --gt-coral: #c86c7b;
+  --gt-coral-deep: #a65161;
+  --gt-line: #e5d9d9;
+  --gt-ink: #282526;
+  --gt-ink-soft: #746b6c;
+  background: #fffdfb;
+}
+
+.gymtrack-mockup.brand-screen .brand-progress-card,
+.gymtrack-mockup.brand-screen .brand-measure-card {
+  border-color: #e4ced1;
+  background: #f3e5e7;
+}
+
+.gymtrack-mockup.brand-screen .brand-ring-track {
+  stroke: #e2c8cc;
+}
+
+.gymtrack-mockup.brand-screen .brand-progress-days {
+  border-top-color: rgba(166, 81, 97, .16);
+}
+
+.gymtrack-mockup.brand-screen .brand-progress-days span {
+  background: rgba(255,255,255,.74);
+}
+
+.gymtrack-mockup.brand-screen .brand-nutrition-card {
+  border-color: #e4cfd2;
+  background: #f4e4e6;
+}
+
+.gymtrack-mockup.brand-screen .brand-nutrition-icon,
+.gymtrack-mockup.brand-screen .brand-checkin-icon {
+  background: rgba(255,255,255,.64);
+  color: var(--gt-coral-deep);
+}
+
+.gymtrack-mockup.brand-screen .brand-nutrition-copy > strong,
+.gymtrack-mockup.brand-screen .brand-card-title,
+.gymtrack-mockup.brand-screen .brand-nutrition-percent {
+  color: #814c57;
+}
+
+.gymtrack-mockup.brand-screen .brand-nutrition-copy p {
+  color: #896b70;
+}
+
+.gymtrack-mockup.brand-screen .brand-nutrition-track {
+  background: rgba(166, 81, 97, .12);
+}
+
+.gymtrack-mockup.brand-screen .brand-nutrition-track span {
+  background: #a65161;
+}
+
+.gymtrack-mockup.brand-screen .brand-routine-card {
+  border-color: #e6d4d0;
+  background: #f7ebe8;
+}
+
+.gymtrack-mockup.brand-screen .brand-add-row input {
+  border-color: #e1cecb;
+}
+
+.gymtrack-mockup.brand-screen .brand-complete-count {
+  background: #f2dfe1;
+  color: #80505a;
+}
+
+.gymtrack-mockup.brand-screen .brand-measure-card .brand-link-label,
+.gymtrack-mockup.brand-screen .brand-measure-card .brand-checkin-icon {
+  color: var(--gt-coral-deep);
+}
+
+.gymtrack-mockup.brand-screen .metric-coral,
+.gymtrack-mockup.brand-screen .metric-lilac,
+.gymtrack-mockup.brand-screen .metric-sage {
+  background: #f3e2e4;
+  color: #80505a;
+}
+
+.gymtrack-mockup.brand-screen .brand-last-icon {
+  background: #fff7f7;
+  color: var(--gt-coral-deep);
+}
+
+.gymtrack-mockup.brand-screen .brand-last-calories {
+  color: var(--gt-coral-deep) !important;
+}

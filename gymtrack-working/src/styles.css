@@ -131,6 +131,25 @@
   background-image: none;
 }
 
+/* Normal palettes use dark ink for legibility, never dark surfaces. */
+:root[data-theme="pink"],
+:root[data-theme="blue"],
+:root[data-theme="beige"],
+:root[data-theme="green"],
+:root[data-theme="yellow"],
+:root[data-theme="lavender"],
+:root[data-theme="peach"],
+:root[data-theme="mint"],
+:root[data-theme="dark-brown"],
+:root[data-theme="light-brown"],
+:root[data-theme="cream"] {
+  --background: #ffffff;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --card-foreground: var(--ink);
+  --popover-foreground: var(--ink);
+}
+
 :root[data-theme="blue"] {
   --background: #ffffff;
   --foreground: oklch(0.22 0.05 250);
@@ -353,6 +372,139 @@
 }
 
 /*
+ * Expanded branded palettes.
+ * The app canvas stays white in every palette; the selected hue is expressed
+ * through surfaces, borders and actions rather than a multicolor dashboard.
+ */
+:root[data-theme="black"] {
+  --background: #ffffff;
+  --foreground: #151515;
+  --surface: #f8f8f8;
+  --surface-2: #e9e9eb;
+  --cream: #f2f2f3;
+  --card: #ffffff;
+  --card-foreground: #151515;
+  --popover: #ffffff;
+  --popover-foreground: #151515;
+  --primary: #171719;
+  --primary-foreground: #ffffff;
+  --secondary: #e8e8ea;
+  --secondary-foreground: #171719;
+  --rose: #46464a;
+  --rose-soft: #eeeeef;
+  --accent: #d7d7da;
+  --accent-foreground: #171719;
+  --ink: #151515;
+  --ink-soft: #4b4b4f;
+  --muted: #f1f1f2;
+  --muted-foreground: #55555a;
+  --border: #d5d5d8;
+  --input: #d5d5d8;
+  --ring: #171719;
+  --gradient-start: #171719;
+  --gradient-mid: #707075;
+  --gradient-end: #e4e4e6;
+}
+
+:root[data-theme="black"] .bg-white,
+:root[data-theme="black"] .bg-white\/60,
+:root[data-theme="black"] .bg-white\/70,
+:root[data-theme="black"] .bg-white\/80 {
+  background-color: #ffffff !important;
+  color: #151515 !important;
+}
+
+:root[data-theme="dark-brown"] {
+  --background: #ffffff;
+  --foreground: #30231f;
+  --surface: #fcfaf9;
+  --surface-2: #eaded9;
+  --cream: #f5eeea;
+  --card: #ffffff;
+  --card-foreground: #30231f;
+  --popover: #ffffff;
+  --popover-foreground: #30231f;
+  --primary: #5b4136;
+  --primary-foreground: #ffffff;
+  --secondary: #e6d7d0;
+  --secondary-foreground: #402d26;
+  --rose: #8d6252;
+  --rose-soft: #f0e4df;
+  --accent: #c6a99d;
+  --accent-foreground: #30231f;
+  --ink: #30231f;
+  --ink-soft: #6a5046;
+  --muted: #f5eeea;
+  --muted-foreground: #725b51;
+  --border: #d9c4ba;
+  --input: #d9c4ba;
+  --ring: #5b4136;
+  --gradient-start: #5b4136;
+  --gradient-mid: #a57f6d;
+  --gradient-end: #eaded9;
+}
+
+:root[data-theme="light-brown"] {
+  --background: #ffffff;
+  --foreground: #40332d;
+  --surface: #fdfbf9;
+  --surface-2: #eee3dc;
+  --cream: #f7f0eb;
+  --card: #ffffff;
+  --card-foreground: #40332d;
+  --popover: #ffffff;
+  --popover-foreground: #40332d;
+  --primary: #b58f76;
+  --primary-foreground: #ffffff;
+  --secondary: #eadbd1;
+  --secondary-foreground: #5c463a;
+  --rose: #a9785d;
+  --rose-soft: #f1e4dc;
+  --accent: #d8bca8;
+  --accent-foreground: #40332d;
+  --ink: #40332d;
+  --ink-soft: #735d50;
+  --muted: #f7f0eb;
+  --muted-foreground: #79675c;
+  --border: #ddc9bb;
+  --input: #ddc9bb;
+  --ring: #a9785d;
+  --gradient-start: #b58f76;
+  --gradient-mid: #d2b6a3;
+  --gradient-end: #eee3dc;
+}
+
+:root[data-theme="cream"] {
+  --background: #ffffff;
+  --foreground: #493d2d;
+  --surface: #fffdf8;
+  --surface-2: #f2e8d3;
+  --cream: #faf3e3;
+  --card: #ffffff;
+  --card-foreground: #493d2d;
+  --popover: #ffffff;
+  --popover-foreground: #493d2d;
+  --primary: #c9aa72;
+  --primary-foreground: #302818;
+  --secondary: #eee1c6;
+  --secondary-foreground: #5b492c;
+  --rose: #b89458;
+  --rose-soft: #f3e8cf;
+  --accent: #e2cca0;
+  --accent-foreground: #493d2d;
+  --ink: #493d2d;
+  --ink-soft: #77684e;
+  --muted: #faf3e3;
+  --muted-foreground: #796d57;
+  --border: #e3d1aa;
+  --input: #e3d1aa;
+  --ring: #b89458;
+  --gradient-start: #c9aa72;
+  --gradient-mid: #dfc99b;
+  --gradient-end: #f2e8d3;
+}
+
+/*
  * Accessibility-first light mode:
  * accent colors are for surfaces and actions; black is reserved for readable text.
  */
@@ -401,6 +553,59 @@ body,
 :root,
 :root[data-theme] {
   --background: #ffffff;
+}
+
+/*
+ * Night mode is a display preference, not a second product theme.
+ * The selected palette keeps its accent; only the canvas and neutral
+ * surfaces move to a soft charcoal range to reduce glare.
+ */
+:root.night-mode,
+:root.night-mode[data-theme] {
+  --background: #19191c;
+  --foreground: #f4f1f2;
+  --surface: #242427;
+  --surface-2: #2e2e32;
+  --cream: #303034;
+  --card: #242427;
+  --card-foreground: #f4f1f2;
+  --popover: #242427;
+  --popover-foreground: #f4f1f2;
+  --ink: #f4f1f2;
+  --ink-soft: #d0cdd0;
+  --muted: #2b2b2f;
+  --muted-foreground: #c0bcc1;
+  --secondary: #303034;
+  --secondary-foreground: #f4f1f2;
+  --accent-foreground: #f4f1f2;
+  --border: #48484d;
+  --input: #48484d;
+  --ring: var(--primary);
+}
+
+html.night-mode,
+html.night-mode body,
+html.night-mode #root {
+  background-color: #19191c !important;
+  background-image: none !important;
+  color: #f4f1f2;
+}
+
+html.night-mode .bg-white,
+html.night-mode .bg-white\/60,
+html.night-mode .bg-white\/70,
+html.night-mode .bg-white\/80 {
+  background-color: var(--surface) !important;
+  color: var(--ink) !important;
+}
+
+html.night-mode .bg-background {
+  background-color: var(--background) !important;
+}
+
+html.night-mode .text-black,
+html.night-mode .text-gray-900 {
+  color: var(--ink) !important;
 }
 
 .ink-card {

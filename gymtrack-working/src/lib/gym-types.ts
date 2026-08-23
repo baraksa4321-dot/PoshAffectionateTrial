@@ -1,6 +1,17 @@
 export type UserRole = "owner" | "coach" | "client";
 export type ThemePalette =
-  "pink" | "blue" | "beige" | "green" | "yellow" | "black" | "lavender" | "peach" | "mint";
+  | "pink"
+  | "blue"
+  | "beige"
+  | "green"
+  | "yellow"
+  | "black"
+  | "lavender"
+  | "peach"
+  | "mint"
+  | "dark-brown"
+  | "light-brown"
+  | "cream";
 
 export type ClientLink = {
   id: string;

@@ -10,19 +10,19 @@ export const THEME_PALETTES: Array<{
 }> = [
   {
     id: "pink",
-    label: "ורוד־ניוד",
-    description: "ורוד רך, ניוד ופסטל עדין",
+    label: "ורוד",
+    description: "ורוד רך עם וריאציות בהירות ועמוקות",
     swatch: "#d58a9b",
     previewSurface: "#fff7f9",
     previewAccent: "#e6a7b5",
   },
-  { id: "blue", label: "כחול רגוע", description: "כחול פסטלי ורגוע", swatch: "#9fc4d6", previewSurface: "#f4fbfe", previewAccent: "#b9dce9" },
-  { id: "beige", label: "ניטרלי חם", description: "קרם, אבן ומוקה", swatch: "#a78775", previewSurface: "#fcf8f4", previewAccent: "#d8c1b1" },
-  { id: "green", label: "מרווה", description: "ירוק מרווה טבעי", swatch: "#a9c3b2", previewSurface: "#f4faf6", previewAccent: "#c4dccb" },
-  { id: "black", label: "נייטרלי נקי", description: "רקע בהיר, שחור לקריאות וצבע ניטרלי", swatch: "#b9aeb3", previewSurface: "#f7f7f7", previewAccent: "#d8d0d4" },
-  { id: "lavender", label: "סגולה", description: "סגול לבנדר בהיר", swatch: "#9c88d0", previewSurface: "#faf8ff", previewAccent: "#d1c5ed" },
-  { id: "peach", label: "אפרסק", description: "אפרסק רך וחמים", swatch: "#ed967e", previewSurface: "#fff8f5", previewAccent: "#f5c0b0" },
-  { id: "mint", label: "מנטה", description: "מנטה בהירה", swatch: "#58bca6", previewSurface: "#f2fcf9", previewAccent: "#afe0d3" },
+  { id: "blue", label: "תכלת", description: "תכלת שקט עם וריאציות קרירות", swatch: "#8ebfd2", previewSurface: "#f5fbfd", previewAccent: "#b9dce8" },
+  { id: "lavender", label: "סגול", description: "סגול מעושן עם לילך בהיר", swatch: "#9782c3", previewSurface: "#faf8ff", previewAccent: "#d2c6e9" },
+  { id: "green", label: "ירוק", description: "ירוק מרווה עם גוונים טבעיים", swatch: "#8fb49f", previewSurface: "#f5faf7", previewAccent: "#c2d9ca" },
+  { id: "black", label: "שחור", description: "שחור, אפור ופחם על רקע לבן", swatch: "#171719", previewSurface: "#ffffff", previewAccent: "#dedde0" },
+  { id: "dark-brown", label: "חום כהה", description: "אספרסו, קקאו וגווני אדמה עמוקים", swatch: "#5b4136", previewSurface: "#fffdfb", previewAccent: "#c9b0a4" },
+  { id: "light-brown", label: "חום בהיר", description: "טאופ, עץ בהיר וחול חם", swatch: "#b58f76", previewSurface: "#fffdfb", previewAccent: "#e3d2c5" },
+  { id: "cream", label: "קרם", description: "קרם, שנהב וחמאה בהירה", swatch: "#c9aa72", previewSurface: "#fffefa", previewAccent: "#eee2c7" },
 ];
 
 export const DEFAULT_THEME: ThemePalette = "pink";
@@ -30,5 +30,10 @@ export const DEFAULT_THEME: ThemePalette = "pink";
 export function applyTheme(theme: ThemePalette | undefined) {
   if (typeof document === "undefined") return;
   document.documentElement.dataset["theme"] = theme || DEFAULT_THEME;
-  document.documentElement.style.colorScheme = "light";
+}
+
+export function applyNightMode(enabled: boolean) {
+  if (typeof document === "undefined") return;
+  document.documentElement.classList.toggle("night-mode", enabled);
+  document.documentElement.style.colorScheme = enabled ? "dark" : "light";
 }

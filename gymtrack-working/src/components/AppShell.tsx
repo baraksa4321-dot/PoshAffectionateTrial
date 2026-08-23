@@ -8,6 +8,8 @@ import {
   LayoutGrid,
   LogIn,
   LogOut,
+  Moon,
+  Sun,
   User,
   Users,
   X,
@@ -15,7 +17,7 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 import { saveTheme, useAuthUser, useCloudSyncStatus, useGym } from "../lib/gym-store";
 import { supabase } from "../lib/supabase";
-import { applyTheme, DEFAULT_THEME, THEME_PALETTES } from "../lib/theme";
+import { applyNightMode, applyTheme, DEFAULT_THEME, THEME_PALETTES } from "../lib/theme";
 import type { ThemePalette } from "../lib/gym-types";
 import { Overlay } from "./ui-app/Overlay";
 import { BrandLogo } from "./BrandLogo";
@@ -69,6 +71,10 @@ export function AppShell({
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [themeError, setThemeError] = useState("");
   const theme = store.userProfile?.theme ?? DEFAULT_THEME;
+  const [isNightMode, setIsNightMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("gymtrack.night-mode") === "true";
+  });
   const managementView = isCoach && (activeMode === "management" || isManagementRoute);
   const syncNotice =
     cloudSyncStatus === "offline"
@@ -124,6 +130,13 @@ export function AppShell({
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+
+  useEffect(() => {
+    applyNightMode(isNightMode);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("gymtrack.night-mode", String(isNightMode));
+    }
+  }, [isNightMode]);
 
   const NAV = managementView
     ? [
@@ -339,11 +352,25 @@ export function AppShell({
           }`}
         >
           <div
-            className={`flex items-center border-b border-border/50 ${
+            className={`flex items-center justify-between gap-3 border-b border-border/50 ${
               compactHeader ? "mb-1 pb-1" : "mb-3 pb-2"
             }`}
           >
             <BrandLogo />
+            <button
+              type="button"
+              onClick={() => setIsNightMode((enabled) => !enabled)}
+              aria-pressed={isNightMode}
+              aria-label={isNightMode ? "מעבר לתצוגת יום" : "מעבר לתצוגת לילה"}
+              title={isNightMode ? "תצוגת יום" : "תצוגת לילה"}
+              className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-border/70 bg-surface text-muted-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {isNightMode ? (
+                <Sun className="h-3.5 w-3.5" aria-hidden="true" />
+              ) : (
+                <Moon className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
+            </button>
           </div>
           {isCoach ? (
             <div
