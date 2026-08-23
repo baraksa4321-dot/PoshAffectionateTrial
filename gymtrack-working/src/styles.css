@@ -140,6 +140,7 @@
 :root[data-theme="lavender"],
 :root[data-theme="peach"],
 :root[data-theme="mint"],
+:root[data-theme="rose-gold"],
 :root[data-theme="dark-brown"],
 :root[data-theme="light-brown"],
 :root[data-theme="cream"] {
@@ -330,6 +331,38 @@
   --gradient-start: #58bca6;
   --gradient-mid: #9bd6c8;
   --gradient-end: #d9eee9;
+}
+
+:root[data-theme="rose-gold"] {
+  --background: #ffffff;
+  --foreground: #493538;
+  --surface: #fffaf8;
+  --surface-2: #f3dfd8;
+  --cream: #fbefeb;
+  --card: #ffffff;
+  --card-foreground: #493538;
+  --popover: #ffffff;
+  --popover-foreground: #493538;
+  --primary: #c98283;
+  --primary-foreground: #ffffff;
+  --secondary: #efd1ca;
+  --secondary-foreground: #633f43;
+  --sage: #c8ddd4;
+  --sage-soft: #edf6f1;
+  --rose: #c98283;
+  --rose-soft: #edbdb3;
+  --accent: #d9aa78;
+  --accent-foreground: #513b2f;
+  --ink: #493538;
+  --ink-soft: #765b5d;
+  --muted: #fbefeb;
+  --muted-foreground: #80666a;
+  --border: #e4bbb3;
+  --input: #e4bbb3;
+  --ring: #c98283;
+  --gradient-start: #c98283;
+  --gradient-mid: #dfaa9d;
+  --gradient-end: #f3d8c9;
 }
 
 :root[data-theme="black"] {
@@ -1650,8 +1683,8 @@ html.night-mode .nav-shell {
 }
 
 .loading-brand {
-  width: min(100%, 152px);
-  padding: 14px 12px 12px;
+  width: min(100%, 240px);
+  padding: 14px 0 12px;
   background: transparent;
   text-align: center;
 }
@@ -1659,8 +1692,8 @@ html.night-mode .nav-shell {
 .loading-micro-stage {
   position: relative;
   display: grid;
-  width: 58px;
-  height: 58px;
+  width: 150px;
+  height: 104px;
   place-items: center;
   margin: 0 auto;
   border: 0;
@@ -1682,8 +1715,8 @@ html.night-mode .nav-shell {
 
 .loading-dumbbell-svg {
   display: block;
-  width: 118px;
-  height: 72px;
+  width: 150px;
+  height: 104px;
   overflow: visible;
 }
 

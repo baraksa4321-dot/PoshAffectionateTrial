@@ -24,6 +24,7 @@ export const THEME_PALETTES: Array<{
   { id: "lavender", label: "לבנדר", description: "סגול מעושן עם לילך בהיר", swatch: "#9782c3", previewSurface: "#faf8ff", previewAccent: "#d2c6e9" },
   { id: "peach", label: "אפרסק", description: "אפרסק רך עם גוונים חמים", swatch: "#d69b7c", previewSurface: "#fff8f4", previewAccent: "#f0c7b1" },
   { id: "mint", label: "מנטה", description: "מנטה רענן עם גוונים קרירים", swatch: "#82b9a8", previewSurface: "#f4fbf8", previewAccent: "#bde2d5" },
+  { id: "rose-gold", label: "רוז גולד", description: "רוז גולד אלגנטי עם ורוד מאובק וזהב עדין", swatch: "#c98283", previewSurface: "#fff8f6", previewAccent: "#e8bbb0" },
   { id: "dark-brown", label: "חום כהה", description: "אספרסו, קקאו וגווני אדמה עמוקים", swatch: "#5b4136", previewSurface: "#fffdfb", previewAccent: "#c9b0a4" },
   { id: "light-brown", label: "חום בהיר", description: "טאופ, עץ בהיר וחול חם", swatch: "#b58f76", previewSurface: "#fffdfb", previewAccent: "#e3d2c5" },
   { id: "cream", label: "קרם", description: "קרם, שנהב וחמאה בהירה", swatch: "#c9aa72", previewSurface: "#fffefa", previewAccent: "#eee2c7" },

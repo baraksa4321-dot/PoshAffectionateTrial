@@ -9,6 +9,7 @@ export type ThemePalette =
   | "lavender"
   | "peach"
   | "mint"
+  | "rose-gold"
   | "dark-brown"
   | "light-brown"
   | "cream";
