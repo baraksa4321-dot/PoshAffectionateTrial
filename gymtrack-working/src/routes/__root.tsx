@@ -261,6 +261,17 @@ function LoadingIllustration({ variant }: { variant: number }) {
   );
 }
 
+const LOADING_MESSAGES = [
+  "מעמיסים אנרגיה, לא תירוצים",
+  "השרירים עוד לא יודעים, אבל הם בדרך",
+  "מסדרים את השגרה כמו מקצוענים",
+  "מכינים את הסט הבא. בלי דרמה",
+  "עוד רגע — גם המוט כבר מתחמם",
+  "מחברים בין כוח לאוכל טעים",
+  "הקפה לא חובה. ההתמדה כן",
+  "מרימים את היום לפני שמרימים משקולות",
+] as const;
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
@@ -334,6 +345,7 @@ function RootContent() {
   const authStatus = useAuthStatus();
   const { userProfile } = useGym();
   const [loadingVariant, setLoadingVariant] = useState(0);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const profileHydrationStatus = useProfileHydrationStatus();
   const profileHydrationError = useProfileHydrationError();
   const hasProfileHydrationError =
@@ -352,6 +364,16 @@ function RootContent() {
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
     setLoadingVariant(Math.floor(Math.random() * 4));
+    const illustrationTimer = window.setInterval(() => {
+      setLoadingVariant((current) => (current + 1) % 4);
+    }, 2400);
+    const messageTimer = window.setInterval(() => {
+      setLoadingMessageIndex((current) => (current + 1) % LOADING_MESSAGES.length);
+    }, 1800);
+    return () => {
+      window.clearInterval(illustrationTimer);
+      window.clearInterval(messageTimer);
+    };
   }, []);
 
   return (
@@ -361,28 +383,53 @@ function RootContent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       {authStatus === "loading" || isProfileHydrating ? (
         <div
-          className="flex min-h-[100dvh] items-center justify-center bg-background px-4"
+          className="loading-screen flex min-h-[100dvh] items-center justify-center bg-background px-4"
           dir="rtl"
         >
           <div
-            className="loading-brand rounded-3xl border border-border/60 bg-white px-8 py-8 text-center shadow-sm"
+            className="loading-stage"
             role="status"
             aria-live="polite"
             aria-label="My Routine נטען"
           >
-            <LoadingIllustration variant={loadingVariant} />
-            <div className="mt-5 flex justify-center">
-              <BrandLogo compact />
+            <div className="loading-orbit loading-orbit-one" aria-hidden="true" />
+            <div className="loading-orbit loading-orbit-two" aria-hidden="true" />
+            <div className="loading-spark loading-spark-one" aria-hidden="true">✦</div>
+            <div className="loading-spark loading-spark-two" aria-hidden="true">·</div>
+            <div className="loading-spark loading-spark-three" aria-hidden="true">✦</div>
+            <div className="loading-card">
+              <div className="loading-card-topline">
+                <span className="loading-live-dot" />
+                <span>השגרה שלך נטענת</span>
+                <span className="loading-topline-dots" aria-hidden="true">•••</span>
+              </div>
+              <div className="loading-illustration-frame">
+                <div className="loading-mini-pill loading-mini-pill-one" aria-hidden="true">סט</div>
+                <div className="loading-mini-pill loading-mini-pill-two" aria-hidden="true">+1</div>
+                <LoadingIllustration variant={loadingVariant} />
+              </div>
+              <div className="mt-4 flex justify-center">
+                <BrandLogo compact />
+              </div>
+              <p key={loadingMessageIndex} className="loading-witty-message">
+                {LOADING_MESSAGES[loadingMessageIndex]}
+              </p>
+              <div className="loading-status-line">
+                <span>מתאמים אימונים ותזונה</span>
+                <span className="loading-status-dots" aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              </div>
+              <div className="loading-progress" aria-hidden="true">
+                <span />
+              </div>
+              <div className="loading-card-footer">
+                <span>My Routine</span>
+                <span>קטן עלייך</span>
+              </div>
             </div>
-            <p className="mt-1 text-xs font-semibold text-muted-foreground">
-              {loadingVariant === 1
-                ? "מתכוננים לסט הבא"
-                : loadingVariant === 2
-                  ? "מכינים משהו טעים"
-                  : loadingVariant === 3
-                    ? "מערבבים את השגרה שלך"
-                    : "ממלאים לך אנרגיה"}
-            </p>
           </div>
         </div>
       ) : hasProfileHydrationError ? (
