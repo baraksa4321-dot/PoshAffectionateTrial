@@ -398,6 +398,7 @@ function RootContent() {
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
     setLoadingVariant(Math.floor(Math.random() * LOADING_ANIMATIONS.length));
+    setLoadingMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
     const illustrationTimer = window.setInterval(() => {
       setLoadingVariant((current) => (current + 1) % LOADING_ANIMATIONS.length);
     }, 1250);
