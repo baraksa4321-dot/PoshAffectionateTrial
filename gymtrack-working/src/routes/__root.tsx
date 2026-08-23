@@ -57,6 +57,7 @@ import {
 } from "../lib/gym-store";
 import { supabase } from "../lib/supabase";
 import { genderText } from "../lib/gender-copy";
+import { LOADING_MESSAGES } from "../lib/loading-copy";
 
 function CompleteProfileName() {
   const { userProfile } = useGym();
@@ -304,17 +305,6 @@ function LoadingIllustration({ variant }: { variant: number }) {
     </div>
   );
 }
-
-const LOADING_MESSAGES = [
-  "מעמיסים משקלים, לא תירוצים",
-  "האתר עולה. השרירים יכולים להירגע",
-  "עוד רגע — גם המוט קיבל עדכון",
-  "מחפשים את האימון. הוא לא ברח",
-  "מסנכרנים נתונים, בלי להמציא חזרות",
-  "נותנים לשרת להתאפס על עצמו",
-  "מרימים את המסך, לא את הקול",
-  "מסדרים את הסטים. בלי להפיל אותם",
-] as const;
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({

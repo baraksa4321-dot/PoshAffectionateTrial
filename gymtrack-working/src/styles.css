@@ -1725,6 +1725,18 @@ html.night-mode .nav-shell {
   animation: loading-message-in 300ms ease both;
 }
 
+.witty-note {
+  margin-top: 0.7rem;
+  border-inline-start: 2px solid color-mix(in srgb, var(--primary) 48%, transparent);
+  padding-inline: 0.75rem;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.55;
+  text-align: start;
+  animation: fade-in 260ms ease both;
+}
+
 .loading-clean-dots {
   display: flex;
   justify-content: center;

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { WittyNote } from "@/components/WittyNote";
 import { Stepper } from "@/components/Stepper";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
 import { Overlay } from "@/components/ui-app/Overlay";
@@ -37,6 +38,7 @@ import { lastPerformance, repLabel, saveSession, saveWorkout, uid, useGym } from
 import { BODYWEIGHT_EXERCISES, replaceWithBodyweight } from "@/lib/bodyweight-exercises";
 import type { Exercise, HistoryEntry, LoggedSet, WorkoutItem } from "@/lib/gym-types";
 import { genderText } from "@/lib/gender-copy";
+import { randomCopy, WORKOUT_WITTY_MESSAGES } from "@/lib/loading-copy";
 
 export const Route = createFileRoute("/session/$workoutId")({
   head: () => ({
@@ -109,6 +111,13 @@ function Session() {
 
   const [replacingIndex, setReplacingIndex] = useState<number | null>(null);
   const [replaceSearch, setReplaceSearch] = useState("");
+  const [wittyMessage, setWittyMessage] = useState("");
+  const [wittySlot, setWittySlot] = useState(0);
+
+  useEffect(() => {
+    setWittyMessage(randomCopy(WORKOUT_WITTY_MESSAGES));
+    setWittySlot(Math.floor(Math.random() * 3));
+  }, []);
 
   const initial = useMemo<HistoryEntry[]>(() => {
     if (!workout) return [];
@@ -522,6 +531,7 @@ function Session() {
           </div>
         </div>
       </div>
+      {wittyMessage && wittySlot === 0 ? <WittyNote>{wittyMessage}</WittyNote> : null}
 
       <div className="surface-card border border-primary/20 bg-primary/5 p-3 text-start">
         <div className="flex items-center justify-between gap-3">
@@ -547,6 +557,7 @@ function Session() {
           </p>
         ) : null}
       </div>
+      {wittyMessage && wittySlot === 1 ? <WittyNote>{wittyMessage}</WittyNote> : null}
 
       <div className="mt-5 space-y-4">
         {entries.map((entry, ei) => {
@@ -754,6 +765,7 @@ function Session() {
           );
         })}
       </div>
+      {wittyMessage && wittySlot === 2 ? <WittyNote>{wittyMessage}</WittyNote> : null}
 
       <div className="mt-6">
         <PrimaryButton

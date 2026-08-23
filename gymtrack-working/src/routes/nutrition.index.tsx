@@ -17,8 +17,9 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { WittyNote } from "@/components/WittyNote";
 import { Stepper } from "@/components/Stepper";
 import { Overlay } from "@/components/ui-app/Overlay";
 import {
@@ -48,6 +49,7 @@ import type { MealFood } from "@/lib/gym-types";
 import { nutritionSourceFor } from "@/lib/nutrition-integrity";
 import { RECIPE_LIBRARY, type RecipeDefinition } from "@/lib/recipe-library";
 import { genderText } from "@/lib/gender-copy";
+import { NUTRITION_WITTY_MESSAGES, randomCopy } from "@/lib/loading-copy";
 
 export const Route = createFileRoute("/nutrition/")({
   head: () => ({
@@ -99,6 +101,13 @@ function NutritionLog() {
   const [showRecipes, setShowRecipes] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<RecipeDefinition | null>(null);
   const [recipeCategory, setRecipeCategory] = useState<RecipeDefinition["category"] | "הכל">("הכל");
+  const [wittyMessage, setWittyMessage] = useState("");
+  const [wittySlot, setWittySlot] = useState(0);
+
+  useEffect(() => {
+    setWittyMessage(randomCopy(NUTRITION_WITTY_MESSAGES));
+    setWittySlot(Math.floor(Math.random() * 3));
+  }, []);
 
   const day = nutritionDay(gym, date);
   const totals = dayTotals(day);
@@ -438,6 +447,7 @@ function NutritionLog() {
       <p className="mt-2 border-s border-primary/35 px-3 text-[11px] leading-relaxed text-muted-foreground">
         החישוב ביומן מתבסס על ערכי כל מאכל לפי מנת הייחוס שלו ומתרחב בדיוק לפי הכמות שנבחרה.
       </p>
+      {wittyMessage && wittySlot === 0 ? <WittyNote>{wittyMessage}</WittyNote> : null}
 
       {day.plannedMeals && day.plannedMeals.length > 0 ? (
         <section className="order-1 mt-4">
@@ -496,6 +506,7 @@ function NutritionLog() {
           </p>
         </section>
       ) : null}
+      {wittyMessage && wittySlot === 1 ? <WittyNote>{wittyMessage}</WittyNote> : null}
 
       {/* Meals */}
       <section className="order-2 mt-4">
@@ -616,6 +627,7 @@ function NutritionLog() {
           })}
         </div>
       </section>
+      {wittyMessage && wittySlot === 2 ? <WittyNote>{wittyMessage}</WittyNote> : null}
 
       {/* "What Should I Eat Now?" Modal */}
       {showWhatToEat && (
