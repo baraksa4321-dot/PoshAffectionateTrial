@@ -177,6 +177,23 @@ function NutritionLog() {
     );
   }, [recipeCategory, recipeQuery]);
   const savedRecipes = gym.recipes ?? [];
+  const filteredSavedRecipes = useMemo(() => {
+    const query = recipeQuery.trim().toLocaleLowerCase();
+    return savedRecipes.filter((recipe) => {
+      const totals = foodTotals(recipe.foods);
+      return (
+        (!query ||
+          `${recipe.name} ${recipe.foods.map((food) => food.name).join(" ")}`
+            .toLocaleLowerCase()
+            .includes(query)) &&
+        (recipeCategory === "הכל" ||
+          (totals.protein >= totals.calories / 20 && recipeCategory === "עתיר חלבון") ||
+          (totals.fat <= 10 && recipeCategory === "דל שומן") ||
+          (totals.calories <= 350 && recipeCategory === "דל קלוריות") ||
+          (recipeCategory === "ארוחה קלה" && totals.calories <= 450))
+      );
+    });
+  }, [recipeCategory, recipeQuery, savedRecipes]);
 
   const addSelectedRecipeToLog = () => {
     if (!selectedRecipe) return;
@@ -458,7 +475,7 @@ function NutritionLog() {
             </div> : null}
             {showSavedRecipesOnly ? (
               <div className="space-y-2">
-                {savedRecipes.map((recipe) => (
+                 {filteredSavedRecipes.map((recipe) => (
                   <div key={recipe.id} className="rounded-xl border border-border/60 bg-white/60 p-2.5">
                     <div className="flex items-center gap-2">
                       <input
@@ -499,9 +516,11 @@ function NutritionLog() {
                     </p>
                   </div>
                 ))}
-                {savedRecipes.length === 0 ? (
+                 {filteredSavedRecipes.length === 0 ? (
                   <p className="py-3 text-center text-[11px] font-semibold text-muted-foreground">
-                    עדיין אין מתכונים אישיים שמורים.
+                     {savedRecipes.length === 0
+                       ? "עדיין אין מתכונים אישיים שמורים."
+                       : "לא נמצאו מתכונים אישיים לפי החיפוש והסינון."}
                   </p>
                 ) : null}
               </div>

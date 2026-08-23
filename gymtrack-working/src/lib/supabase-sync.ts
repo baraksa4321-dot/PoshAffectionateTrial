@@ -523,7 +523,10 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       authTheme === "peach" ||
       authTheme === "mint"
     ) {
-      nextData.userProfile = { ...(nextData.userProfile ?? { weight: 0 }), theme: authTheme };
+      nextData.userProfile = {
+        ...(nextData.userProfile ?? { weight: 0 }),
+        theme: authTheme === "mint" ? "pink" : authTheme,
+      };
     }
 
     // 2. Fetch Coach Messages if Client

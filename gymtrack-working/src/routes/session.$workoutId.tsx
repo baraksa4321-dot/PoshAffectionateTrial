@@ -216,6 +216,7 @@ function Session() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const previousRestRef = useRef(0);
   const restCompletionVibratedRef = useRef(false);
+  const vibrationAudioRef = useRef<AudioContext | null>(null);
   const restDragRef = useRef<{
     pointerId: number;
     startX: number;
@@ -257,7 +258,27 @@ function Session() {
       typeof navigator !== "undefined"
     ) {
       restCompletionVibratedRef.current = true;
+      // Vibration is not exposed by every iOS browser. Use both the native
+      // pattern and a short user-activated audio fallback when available.
       navigator.vibrate?.([180, 80, 180, 80, 320]);
+      const audioContext = vibrationAudioRef.current;
+      if (audioContext) {
+        try {
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          oscillator.frequency.value = 880;
+          gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.16, audioContext.currentTime + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.32);
+          oscillator.connect(gain);
+          gain.connect(audioContext.destination);
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.34);
+        } catch {
+          // Some browsers block audio even after a gesture; vibration remains
+          // the primary notification in those browsers.
+        }
+      }
     }
     previousRestRef.current = rest;
   }, [rest]);
@@ -314,6 +335,22 @@ function Session() {
     patchSet(ei, si, { done: isNowDone });
 
     if (isNowDone && !currentSet.warmup) {
+      if (typeof window !== "undefined" && !vibrationAudioRef.current) {
+        const AudioContextCtor =
+          window.AudioContext ||
+          (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext })
+            .webkitAudioContext;
+        if (AudioContextCtor) {
+          try {
+            vibrationAudioRef.current = new AudioContextCtor();
+            void vibrationAudioRef.current.resume();
+          } catch {
+            vibrationAudioRef.current = null;
+          }
+        }
+      } else {
+        void vibrationAudioRef.current?.resume();
+      }
       const restSec = workout.items[ei]?.rest ?? 60;
       setRest(restSec);
       setRestPaused(false);

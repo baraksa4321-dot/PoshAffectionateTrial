@@ -142,7 +142,6 @@
 :root[data-theme="yellow"],
 :root[data-theme="lavender"],
 :root[data-theme="peach"],
-:root[data-theme="mint"],
 :root[data-theme="rose-gold"],
 :root[data-theme="dark-brown"],
 :root[data-theme="light-brown"],
@@ -156,30 +155,30 @@
 
 :root[data-theme="blue"] {
   --background: #ffffff;
-  --foreground: #29444e;
-  --surface: #f7fcfb;
-  --surface-2: #d9edf0;
-  --cream: #edf8f5;
-  --primary: #86b8cf;
-  --primary-foreground: #203f4d;
-  --secondary: #d1e9eb;
-  --secondary-foreground: #2a555d;
-  --sage: #9fd0bd;
-  --sage-soft: #e5f5ee;
-  --rose: #8fbfce;
-  --rose-soft: #d8efeb;
-  --accent: #a9d7c4;
-  --accent-foreground: #285149;
-  --ink: #29444e;
-  --ink-soft: #57757b;
-  --muted: #edf8f5;
-  --muted-foreground: #5d7b80;
-  --border: #b8dadd;
-  --input: #b8dadd;
-  --ring: #78abbf;
-  --gradient-start: #86b8cf;
-  --gradient-mid: #a8d2d3;
-  --gradient-end: #dff2e9;
+  --foreground: #18384d;
+  --surface: #f7fbff;
+  --surface-2: #dceff9;
+  --cream: #edf7fd;
+  --primary: #3b82b5;
+  --primary-foreground: #ffffff;
+  --secondary: #c9e7f5;
+  --secondary-foreground: #184761;
+  --sage: #76b9d6;
+  --sage-soft: #e2f3fb;
+  --rose: #286a97;
+  --rose-soft: #d9edf8;
+  --accent: #8ccbe5;
+  --accent-foreground: #164660;
+  --ink: #18384d;
+  --ink-soft: #4b6e82;
+  --muted: #eef7fc;
+  --muted-foreground: #527287;
+  --border: #a9d2e6;
+  --input: #9fc9df;
+  --ring: #286a97;
+  --gradient-start: #286a97;
+  --gradient-mid: #56a4ca;
+  --gradient-end: #bfe5f5;
 }
 
 :root[data-theme="beige"] {
@@ -210,28 +209,28 @@
 
 :root[data-theme="green"] {
   --background: #ffffff;
-  --foreground: oklch(0.2 0.05 140);
-  --surface: oklch(0.99 0.01 140);
-  --surface-2: #dce9e0;
-  --cream: #edf4ef;
-  --primary: #a9c3b2;
-  --primary-foreground: #294338;
-  --secondary: #d7e5dc;
-  --secondary-foreground: #385445;
-  --rose: #91b19e;
-  --rose-soft: #dce9e0;
-  --accent: #c6d9cc;
-  --accent-foreground: #294338;
-  --ink: #2e4638;
-  --ink-soft: #5b7464;
-  --muted: #edf4ef;
-  --muted-foreground: #627a6b;
-  --border: #c2d5c8;
-  --input: #c2d5c8;
-  --ring: #8eae9a;
-  --gradient-start: #a9c3b2;
-  --gradient-mid: #c6d9cc;
-  --gradient-end: #e4eee7;
+  --foreground: #173f2d;
+  --surface: #f7fcf9;
+  --surface-2: #dcefe4;
+  --cream: #edf8f1;
+  --primary: #3f8a67;
+  --primary-foreground: #ffffff;
+  --secondary: #cce8d8;
+  --secondary-foreground: #1f5b3e;
+  --rose: #2e7051;
+  --rose-soft: #d9efe2;
+  --accent: #8fcdaa;
+  --accent-foreground: #1d573a;
+  --ink: #173f2d;
+  --ink-soft: #4d705d;
+  --muted: #eef8f2;
+  --muted-foreground: #567864;
+  --border: #add5bd;
+  --input: #a4cfb5;
+  --ring: #2e7051;
+  --gradient-start: #2e7051;
+  --gradient-mid: #5ca67d;
+  --gradient-end: #c5ead5;
 }
 
 :root[data-theme="yellow"] {
@@ -310,32 +309,6 @@
   --gradient-start: #ed967e;
   --gradient-mid: #f2b9a7;
   --gradient-end: #fae0d5;
-}
-
-:root[data-theme="mint"] {
-  --background: #ffffff;
-  --foreground: oklch(0.2 0.05 170);
-  --surface: oklch(0.99 0.01 170);
-  --surface-2: oklch(0.92 0.08 170);
-  --cream: oklch(0.955 0.065 165);
-  --primary: oklch(0.64 0.14 170);
-  --primary-foreground: oklch(0.99 0.01 170);
-  --secondary: oklch(0.9 0.05 170);
-  --secondary-foreground: oklch(0.25 0.08 170);
-  --rose: oklch(0.5 0.1 160);
-  --rose-soft: oklch(0.92 0.05 170);
-  --accent: oklch(0.88 0.06 170);
-  --accent-foreground: oklch(0.2 0.08 170);
-  --ink: oklch(0.18 0.04 170);
-  --ink-soft: oklch(0.35 0.04 170);
-  --muted: oklch(0.9 0.02 170);
-  --muted-foreground: oklch(0.45 0.03 170);
-  --border: oklch(0.85 0.04 170);
-  --input: oklch(0.85 0.04 170);
-  --ring: oklch(0.5 0.15 170);
-  --gradient-start: #58bca6;
-  --gradient-mid: #9bd6c8;
-  --gradient-end: #d9eee9;
 }
 
 :root[data-theme="rose-gold"] {
@@ -625,6 +598,18 @@ html.night-mode .bg-background {
   background-color: var(--background) !important;
 }
 
+/* Keep sticky chrome composited while iOS scrolls a focused search field
+ * into view above the keyboard. */
+.app-topbar {
+  isolation: isolate;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+html.night-mode .app-topbar {
+  box-shadow: 0 10px 26px rgb(0 0 0 / 0.34) !important;
+}
+
 html.night-mode .text-black,
 html.night-mode .text-gray-900 {
   color: var(--ink) !important;
@@ -775,7 +760,8 @@ html.night-mode .nav-shell {
   border-radius: 1.25rem;
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 78%),
-    var(--elevation-1);
+    var(--elevation-1),
+    0 14px 30px rgb(var(--shadow-color) / 6%);
   transition:
     border-color 200ms ease,
     box-shadow 200ms ease,
@@ -786,7 +772,7 @@ html.night-mode .nav-shell {
   background: linear-gradient(145deg, color-mix(in srgb, white 38%, var(--surface-2)), var(--surface-2));
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 52%), 0 7px 18px rgb(var(--shadow-color) / 5%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 52%), 0 9px 20px rgb(var(--shadow-color) / 8%);
 }
 
 .surface-cream {

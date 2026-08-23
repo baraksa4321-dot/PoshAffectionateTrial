@@ -8,7 +8,6 @@ export type ThemePalette =
   | "black"
   | "lavender"
   | "peach"
-  | "mint"
   | "rose-gold"
   | "dark-brown"
   | "light-brown"

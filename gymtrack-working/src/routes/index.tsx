@@ -126,7 +126,6 @@ function Dashboard() {
   const [cardioDistance, setCardioDistance] = useState("0");
   const [cardioError, setCardioError] = useState("");
   const [checklistInput, setChecklistInput] = useState("");
-  const [showChecklist, setShowChecklist] = useState(true);
 
   const handleWeeklyWeighIn = () => {
     const valW = parseFloat(weeklyWeightInput);
@@ -432,8 +431,7 @@ function Dashboard() {
         </Link>
       </div>
 
-      {showChecklist ? (
-        <section className="surface-card mt-3 p-2.5 text-start">
+      <section className="surface-card mt-3 p-3 text-start">
           <div className="flex items-center justify-between gap-2">
             <div>
               <h2 className="font-display text-[13px] font-extrabold text-ink">
@@ -443,16 +441,6 @@ function Dashboard() {
                 הוסיפי דברים שחשוב לזכור לפני שיוצאים לאימון.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setShowChecklist(false);
-              }}
-              aria-label="סגירת הצ׳ק־ליסט"
-              className="grid h-5 w-5 place-items-center rounded-md text-muted-foreground hover:bg-rose-50 hover:text-rose-700"
-            >
-              <X className="h-3 w-3" strokeWidth={2.5} />
-            </button>
           </div>
           <form
             className="mt-2 flex gap-1.5"
@@ -478,12 +466,15 @@ function Dashboard() {
           </form>
           <div className="mt-2 space-y-1">
             {(preExitChecklist ?? []).map((item) => (
-              <div key={item.id} className="flex items-center gap-1.5 rounded-lg bg-secondary/60 px-2 py-1">
+              <div
+                key={item.id}
+                className="flex min-h-12 items-center gap-2 rounded-xl bg-secondary/60 px-2.5 py-1.5 touch-manipulation"
+              >
                 <button
                   type="button"
                   onClick={() => toggleChecklistItem(item.id)}
                   aria-label={item.done ? `בטלי סימון של ${item.label}` : `סמני את ${item.label}`}
-                  className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border ${
+                  className={`press grid h-9 w-9 shrink-0 place-items-center rounded-xl border-2 transition-colors ${
                     item.done
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-border bg-background text-transparent"
@@ -491,9 +482,15 @@ function Dashboard() {
                 >
                   <Check className="h-3 w-3" />
                 </button>
-                <span className={`min-w-0 flex-1 text-[11px] ${item.done ? "text-muted-foreground line-through" : "text-ink"}`}>
+                <button
+                  type="button"
+                  onClick={() => toggleChecklistItem(item.id)}
+                  className={`min-h-9 min-w-0 flex-1 text-start text-[12px] ${
+                    item.done ? "text-muted-foreground line-through" : "text-ink"
+                  }`}
+                >
                   {item.label}
-                </span>
+                </button>
               </div>
             ))}
             {(preExitChecklist ?? []).length === 0 ? (
@@ -503,18 +500,6 @@ function Dashboard() {
             ) : null}
           </div>
         </section>
-      ) : null}
-      {!showChecklist ? (
-        <button
-          type="button"
-          onClick={() => setShowChecklist(true)}
-          aria-label="פתיחת הצ׳ק־ליסט"
-          title="פתיחת הצ׳ק־ליסט"
-          className="press fixed end-2 top-1/2 z-30 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full border border-primary/35 bg-background text-primary shadow-md"
-        >
-          <Plus className="h-4 w-4" strokeWidth={2.5} />
-        </button>
-      ) : null}
 
       {/* Check-In Success Banner */}
       {checkInSuccessMsg && (
