@@ -574,7 +574,7 @@ export function AppShell({
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
+                    autoComplete={isSignUp ? "email" : "username"}
                     inputMode="email"
                     className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
                     placeholder="name@example.com"
