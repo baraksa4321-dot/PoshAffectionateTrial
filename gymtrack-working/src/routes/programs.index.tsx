@@ -1,8 +1,20 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Calendar, Copy, Dumbbell, ExternalLink, Plus, Sparkles, Trash2, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Copy,
+  Dumbbell,
+  ExternalLink,
+  Music2,
+  Plus,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
+import { Overlay } from "@/components/ui-app/Overlay";
 import {
   EmptyState,
   IconButton,
@@ -20,16 +32,62 @@ export const Route = createFileRoute("/programs/")({
 
 const WORKOUT_PLAYLISTS = [
   {
-    label: "Spotify · Workout",
+    label: "Spotify · אימון",
     href: "https://open.spotify.com/playlist/37i9dQZF1DX70RN3TfWWJh",
     className: "bg-[#e8f7ed] text-[#137333] hover:bg-[#d4f0dc]",
   },
   {
-    label: "Apple Music · Pure Workout",
+    label: "Apple · אימון",
     href: "https://music.apple.com/gb/playlist/pure-workout/pl.ad0ee1557e3e4feba314fd70f7982766",
     className: "bg-[#fff0f2] text-[#c9364d] hover:bg-[#ffe1e6]",
   },
+  {
+    label: "Spotify · מזרחית",
+    href: "https://open.spotify.com/playlist/0SCBGl0HGDRkgg8YQmtCF4",
+    className: "bg-[#fff4df] text-[#a25b00] hover:bg-[#ffeac2]",
+  },
+  {
+    label: "Apple · מזרחית",
+    href: "https://music.apple.com/us/playlist/mizrahi/pl.b3dacbd3e4c64ddaaf4c882b35da8027",
+    className: "bg-[#fff4df] text-[#a25b00] hover:bg-[#ffeac2]",
+  },
+  {
+    label: "Spotify · Top ישראל",
+    href: "https://open.spotify.com/playlist/37i9dQZEVXbJ5J1TrbkAF9",
+    className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]",
+  },
+  {
+    label: "Apple · Top 100 ישראל",
+    href: "https://music.apple.com/il/playlist/top-100-israel/pl.0c9765e5330048af96c2336fa7bc3525?l=he",
+    className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]",
+  },
+  {
+    label: "Spotify · Taylor Swift",
+    href: "https://open.spotify.com/playlist/37i9dQZF1DX5KpP2LN299J",
+    className: "bg-[#f4edff] text-[#7047a8] hover:bg-[#eae0ff]",
+  },
+  {
+    label: "Apple · Taylor Swift",
+    href: "https://music.apple.com/us/playlist/taylor-swift-essentials/pl.3950454ced8c45a3b0cc693c2a7db97b",
+    className: "bg-[#f4edff] text-[#7047a8] hover:bg-[#eae0ff]",
+  },
+  {
+    label: "Spotify · ג׳אז",
+    href: "https://open.spotify.com/playlist/37i9dQZF1DX0SM0LYsmbMT",
+    className: "bg-[#eef6f4] text-[#28766a] hover:bg-[#dceeea]",
+  },
+  {
+    label: "Apple · ג׳אז",
+    href: "https://music.apple.com/us/playlist/jazz-in-spatial-audio/pl.efbd24628ff04ff3b5e416a6e237d753",
+    className: "bg-[#eef6f4] text-[#28766a] hover:bg-[#dceeea]",
+  },
 ] as const;
+
+function playlistStyle(label: string) {
+  const style = label.split(" · ")[1] ?? label;
+  if (style.startsWith("Top")) return "Top ישראל";
+  return style;
+}
 
 function ProgramsPage() {
   const { programs, workouts, userProfile } = useGym();
@@ -40,6 +98,8 @@ function ProgramsPage() {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+  const [showPlaylistMenu, setShowPlaylistMenu] = useState(false);
+  const [selectedPlaylistStyle, setSelectedPlaylistStyle] = useState<string | null>(null);
 
   const submit = () => {
     const value = name.trim();
@@ -112,7 +172,21 @@ function ProgramsPage() {
 
       {/* Programs list */}
       <section className="mt-6">
-        <SectionHeader title="התוכניות שלך" subtitle={`${programs.length} תוכניות פעילות`} />
+        <SectionHeader
+          title="התוכניות שלך"
+          subtitle={`${programs.length} תוכניות פעילות`}
+          action={
+            <button
+              type="button"
+              onClick={() => setShowPlaylistMenu(true)}
+              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 text-[10px] font-bold text-ink transition-colors hover:bg-primary/20"
+              aria-label="פתיחת פלייליסטים לפי אווירה"
+            >
+              <Music2 className="h-3.5 w-3.5 text-primary" />
+              אווירה
+            </button>
+          }
+        />
 
         {programs.length > 0 ? (
           <div className="space-y-3">
@@ -178,23 +252,6 @@ function ProgramsPage() {
                       {program.notes}
                     </p>
                   ) : null}
-                  <div className="mt-3 border-t border-border/50 pt-3">
-                    <p className="mb-2 text-[10px] font-bold text-muted-foreground">מוזיקה לאימון</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {WORKOUT_PLAYLISTS.map((playlist) => (
-                        <a
-                          key={playlist.href}
-                          href={playlist.href}
-                          target="_blank"
-                          rel="noreferrer"
-                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[10px] font-bold transition-colors ${playlist.className}`}
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                          {playlist.label}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
                 </article>
               );
             })}
@@ -221,6 +278,84 @@ function ProgramsPage() {
           />
         )}
       </section>
+
+      {showPlaylistMenu ? (
+        <Overlay
+          open={showPlaylistMenu}
+          onClose={() => {
+            setShowPlaylistMenu(false);
+            setSelectedPlaylistStyle(null);
+          }}
+          ariaLabel="פלייליסטים לפי אווירה"
+        >
+          <div className="w-full max-w-sm rounded-3xl border border-border bg-surface p-4 text-start shadow-xl">
+            <div className="mb-4 flex items-start justify-between gap-3 border-b border-border/60 pb-3">
+              <div>
+                <h2 className="font-display text-lg font-extrabold text-ink">מוזיקה לפי אווירה</h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  בחרי סגנון ופתחי את הפלייליסט בפלטפורמה המועדפת עלייך.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPlaylistMenu(false);
+                  setSelectedPlaylistStyle(null);
+                }}
+                aria-label="סגירת פלייליסטים"
+                className="grid h-8 w-8 place-items-center rounded-xl text-muted-foreground hover:bg-secondary"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {selectedPlaylistStyle ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlaylistStyle(null)}
+                  className="mb-3 text-xs font-bold text-primary hover:underline"
+                >
+                  ← חזרה לבחירת סגנון
+                </button>
+                <p className="mb-2 text-sm font-extrabold text-ink">
+                  {selectedPlaylistStyle}
+                </p>
+                <div className="grid gap-2">
+                  {WORKOUT_PLAYLISTS.filter(
+                    (playlist) => playlistStyle(playlist.label) === selectedPlaylistStyle,
+                  ).map((playlist) => (
+                    <a
+                      key={playlist.href}
+                      href={playlist.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`flex items-center justify-between rounded-2xl px-3 py-3 text-xs font-bold transition-colors ${playlist.className}`}
+                    >
+                      <span>{playlist.label.split(" · ")[0]}</span>
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {Array.from(
+                  new Set(WORKOUT_PLAYLISTS.map((playlist) => playlistStyle(playlist.label))),
+                ).map((style) => (
+                  <button
+                    key={style}
+                    type="button"
+                    onClick={() => setSelectedPlaylistStyle(style)}
+                    className="rounded-2xl border border-border bg-background px-3 py-3 text-start text-xs font-bold text-ink transition-colors hover:border-primary hover:bg-primary/5"
+                  >
+                    {style}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </Overlay>
+      ) : null}
 
       <ConfirmSheet
         open={pendingDelete !== null}

@@ -215,6 +215,7 @@ function Session() {
   const [showCompletionConfetti, setShowCompletionConfetti] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const previousRestRef = useRef(0);
+  const restCompletionVibratedRef = useRef(false);
   const restDragRef = useRef<{
     pointerId: number;
     startX: number;
@@ -246,8 +247,17 @@ function Session() {
   }, [isPaused, rest, restPaused]);
 
   useEffect(() => {
-    if (previousRestRef.current > 0 && rest === 0 && typeof navigator !== "undefined") {
-      navigator.vibrate?.([120, 70, 120]);
+    if (rest > 0) {
+      restCompletionVibratedRef.current = false;
+    }
+    if (
+      previousRestRef.current > 0 &&
+      rest === 0 &&
+      !restCompletionVibratedRef.current &&
+      typeof navigator !== "undefined"
+    ) {
+      restCompletionVibratedRef.current = true;
+      navigator.vibrate?.([180, 80, 180, 80, 320]);
     }
     previousRestRef.current = rest;
   }, [rest]);
