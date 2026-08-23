@@ -86,12 +86,7 @@ export function AppShell({
               text: "השינויים נשמרו במכשיר וממתינים לסנכרון.",
               tone: "border-primary/20 bg-primary/5 text-primary",
             }
-          : cloudSyncStatus === "error"
-            ? {
-                text: "השינויים נשמרו במכשיר. ננסה לסנכרן אותם שוב כשיהיה חיבור יציב.",
-                tone: "border-destructive/20 bg-destructive/10 text-destructive",
-              }
-            : null;
+          : null;
   const SyncIcon = cloudSyncStatus === "offline" ? CloudOff : Cloud;
   const syncIconClass =
     cloudSyncStatus === "offline"
