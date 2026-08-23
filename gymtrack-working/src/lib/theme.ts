@@ -36,4 +36,6 @@ export function applyNightMode(enabled: boolean) {
   if (typeof document === "undefined") return;
   document.documentElement.classList.toggle("night-mode", enabled);
   document.documentElement.style.colorScheme = enabled ? "dark" : "light";
+  const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  themeColor?.setAttribute("content", enabled ? "#19191c" : "#ffffff");
 }

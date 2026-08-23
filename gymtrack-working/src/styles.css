@@ -605,6 +605,17 @@ html.night-mode .text-gray-900 {
   color: var(--ink) !important;
 }
 
+/* Keep the app chrome as one continuous night-mode surface on mobile. */
+html.night-mode .app-topbar,
+html.night-mode .nav-shell {
+  background: #19191c !important;
+  background-color: #19191c !important;
+  border-color: #35353a !important;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .ink-card {
   background: var(--surface-2);
   color: var(--ink);
