@@ -112,3 +112,17 @@ mtime_ms = 1787392223336
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/fb332bdf-20df-43d0-af64-5230a4d0aa04/d657f8f2-4f74-4657-b463-0689a7e7fb64"
 storage_version_token = "1787392225906083"
 content_type = "text/plain"
+
+[[outputs]]
+id = "2OTS-n-U2k2bwnyr3AACI"
+uri = "file://GymTrack-updated.zip"
+type = "unspecified"
+title = "GymTrack — קוד מעודכן"
+description = "קובץ ZIP עם הקוד העדכני של My Routine / GymTrack, כולל קבצי המקור, נכסים, הגדרות, package-lock ומיגרציות Supabase. ללא node_modules, build זמני או סודות."
+logical_id = "324ce929-850e-4872-85b9-f535a48312c9"
+content_hash = "sha256:a56096d2ee808b7dbd2e51669989c6a3faba3c0e4d037986d61c5dce62e1454b"
+size = 441061
+mtime_ms = 1787468739543
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/324ce929-850e-4872-85b9-f535a48312c9/b84b780e-6364-4ede-b594-b6cbaed0d7dd"
+storage_version_token = "1787468748792178"
+content_type = "application/octet-stream"
