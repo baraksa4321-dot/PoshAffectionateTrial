@@ -765,7 +765,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       .from("cardio_logs")
       .select("*")
       .eq("user_id", clientId)
-      .order("date", { ascending: false });
+      .order("recorded_at", { ascending: false });
     if (cardioError && !isMissingTableInSchemaCache(cardioError, "cardio_logs")) {
       throw new Error(`Client cardio pull failed: ${cardioError.message}`);
     }
@@ -825,14 +825,11 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     }));
     const cardioList: CardioLog[] = (dbCardioLogs || []).map((row) => ({
       id: row.id,
-      date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
-      type: row.type,
-      durationMin: Number(row.duration_min),
+      date: dateFromRecordedAt(row.recorded_at),
+      type: row.activity_type,
+      durationMin: Number(row.duration_minutes),
       intensity: row.intensity || undefined,
-      speed: row.speed_kmh === null ? undefined : Number(row.speed_kmh),
-      incline: row.incline_pct === null ? undefined : Number(row.incline_pct),
-      distanceKm: row.distance_km === null ? undefined : Number(row.distance_km),
-      calories: Number(row.calories),
+      calories: Number(row.estimated_calories ?? 0),
     }));
     const { data: dbBodyMeasurements, error: measurementError } = await supabase
       .from("body_measurements")
