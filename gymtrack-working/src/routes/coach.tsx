@@ -1,4 +1,4 @@
-import { Link, Navigate, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, Navigate, Outlet, createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Apple,
   Award,
@@ -74,7 +74,7 @@ function profileDisplayName(profile?: { full_name?: string | null } | null): str
 }
 
 export const Route = createFileRoute("/coach")({
-  component: () => <CoachDashboardPage />,
+  component: () => <Outlet />,
 });
 
 export function CoachDashboardPage({
