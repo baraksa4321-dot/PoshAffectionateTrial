@@ -1,4 +1,4 @@
-import { ISRAELI_FOOD_DATABASE } from "./israeli-food-db";
+import { EVERYDAY_FOOD_DATABASE } from "./israeli-food-db";
 import { supabase } from "./supabase";
 import {
   type ClientLink,
@@ -249,8 +249,8 @@ export async function syncLocalToSupabase(
       });
     }
 
-    // 5. Custom Foods
-    const seedFoodIds = new Set(ISRAELI_FOOD_DATABASE.map((f) => f.id));
+    // 5. Custom Foods (seed = all built-in items including USDA expansion)
+    const seedFoodIds = new Set(EVERYDAY_FOOD_DATABASE.map((f) => f.id));
     const customFoods = localData.foods.filter((f) => !seedFoodIds.has(f.id));
 
     if (customFoods.length > 0) {
