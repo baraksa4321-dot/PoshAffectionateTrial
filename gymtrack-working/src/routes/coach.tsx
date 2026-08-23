@@ -828,8 +828,9 @@ export function CoachDashboardPage({
 
   return (
       <AppShell
-      title={clientsOnly ? "מתאמנים" : "ניהול"}
+      title={clientsOnly ? "מתאמנים" : ""}
       kicker={clientsOnly ? "בניית תוכניות ותפריטים" : "לוח מודעות"}
+      compactHeader
       action={
         clientsOnly ? (
           <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-[11px] font-bold text-primary">
