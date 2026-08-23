@@ -837,7 +837,7 @@ export function CoachDashboardPage({
             עדכון תוכניות
           </span>
         ) : (
-          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
             <button
               onClick={() => setShowAddModal(true)}
               className="flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-[11px] font-bold text-primary shadow-xs transition-colors hover:bg-primary/10"
@@ -845,13 +845,6 @@ export function CoachDashboardPage({
               <UserPlus className="h-3.5 w-3.5" />
               <span>הוסף מתאמן</span>
             </button>
-            <Link
-              to="/coach/clients"
-              className="flex items-center gap-1 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-primary/90"
-            >
-              <Users className="h-3.5 w-3.5" />
-              <span>המתאמנים</span>
-            </Link>
           </div>
         )
       }
@@ -872,27 +865,27 @@ export function CoachDashboardPage({
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-            <div className="surface-card border-primary/25 bg-primary/5 p-2.5 text-start">
+          <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
+            <div className="surface-card border-primary/25 bg-primary/5 p-1.5 text-start">
               <p className="text-[11px] font-bold text-muted-foreground">מתאמנים</p>
-              <p className="mt-0.5 font-display text-xl font-extrabold text-ink">{clients.length}</p>
+              <p className="mt-0.5 font-display text-lg font-extrabold text-ink">{clients.length}</p>
             </div>
-            <div className="surface-card border-accent/60 bg-accent/20 p-2.5 text-start">
+            <div className="surface-card border-accent/60 bg-accent/20 p-1.5 text-start">
               <p className="text-[11px] font-bold text-muted-foreground">דורשים תכנית</p>
-              <p className="mt-0.5 font-display text-xl font-extrabold text-ink">
+              <p className="mt-0.5 font-display text-lg font-extrabold text-ink">
                 {needsPlan.length}
               </p>
             </div>
-            <div className="surface-card border-border bg-surface-2 p-2.5 text-start">
+            <div className="surface-card border-border bg-surface-2 p-1.5 text-start">
               <p className="text-[11px] font-bold text-muted-foreground">שקטים 14 יום</p>
-              <p className="mt-0.5 font-display text-xl font-extrabold text-ink">
+              <p className="mt-0.5 font-display text-lg font-extrabold text-ink">
                 {quietClients.length}
               </p>
             </div>
             {isOwner ? (
-              <div className="surface-card border-purple-200 bg-purple-50/70 p-2.5 text-start">
+              <div className="surface-card border-purple-200 bg-purple-50/70 p-1.5 text-start">
                 <p className="text-[11px] font-bold text-purple-700">משתמשים</p>
-                <p className="mt-0.5 font-display text-xl font-extrabold text-purple-950">
+                <p className="mt-0.5 font-display text-lg font-extrabold text-purple-950">
                   {allProfiles.length}
                 </p>
               </div>
@@ -900,7 +893,7 @@ export function CoachDashboardPage({
           </div>
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <div className="surface-card border-primary/20 bg-primary/5 p-3">
+            <div className="surface-card border-primary/20 bg-primary/5 p-2">
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
@@ -908,7 +901,7 @@ export function CoachDashboardPage({
                   </p>
                   <h3 className="mt-1 text-sm font-bold text-ink">נרשמו היום</h3>
                 </div>
-                <span className="font-display text-2xl font-extrabold text-primary">
+                <span className="font-display text-xl font-extrabold text-primary">
                   {newTodayProfiles.length}
                 </span>
               </div>
@@ -929,7 +922,7 @@ export function CoachDashboardPage({
                 <p className="mt-2 text-[11px] text-muted-foreground">אין הרשמות חדשות היום.</p>
               )}
             </div>
-            <div className="surface-card border-amber-200 bg-amber-50/70 p-3">
+            <div className="surface-card border-amber-200 bg-amber-50/70 p-2">
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-700">
@@ -937,7 +930,7 @@ export function CoachDashboardPage({
                   </p>
                   <h3 className="mt-1 text-sm font-bold text-ink">אישורי הרשמה</h3>
                 </div>
-                <span className="font-display text-2xl font-extrabold text-amber-800">
+                <span className="font-display text-xl font-extrabold text-amber-800">
                   {isOwner ? pendingApprovals.length : 0}
                 </span>
               </div>
@@ -1118,10 +1111,14 @@ export function CoachDashboardPage({
                             >
                               <option value="">בחירת מאמן...</option>
                               {allProfiles
-                                .filter((candidate) => candidate.role === "coach")
+                                .filter(
+                                  (candidate) =>
+                                    candidate.role === "coach" ||
+                                    (candidate.id === authUser?.id && candidate.role === "owner"),
+                                )
                                 .map((coach) => (
                                   <option key={coach.id} value={coach.id}>
-                                    {profileDisplayName(coach)}
+                                    {coach.id === authUser?.id ? "אני (בעלים)" : profileDisplayName(coach)}
                                   </option>
                                 ))}
                             </select>

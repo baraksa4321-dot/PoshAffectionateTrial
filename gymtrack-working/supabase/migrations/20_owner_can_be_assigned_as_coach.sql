@@ -1,17 +1,4 @@
--- Require owner review for newly created client profiles.
--- Existing profiles remain approved so this migration is non-breaking.
-
-ALTER TABLE public.profiles
-  ADD COLUMN IF NOT EXISTS approval_status TEXT NOT NULL DEFAULT 'pending';
-
-ALTER TABLE public.profiles
-  DROP CONSTRAINT IF EXISTS check_profile_approval_status,
-  ADD CONSTRAINT check_profile_approval_status
-    CHECK (approval_status IN ('pending', 'approved', 'rejected'));
-
-UPDATE public.profiles
-SET approval_status = 'approved'
-WHERE approval_status IS NULL;
+-- The owner may also be selected as the responsible coach for a client.
 
 CREATE OR REPLACE FUNCTION public.approve_client_registration(
   target_client_id UUID,
@@ -41,7 +28,7 @@ BEGIN
     SELECT 1 FROM public.profiles
     WHERE id = assigned_coach_id AND role IN ('coach', 'owner')
   ) THEN
-    RAISE EXCEPTION 'The selected user is not a coach.';
+    RAISE EXCEPTION 'The selected user cannot be assigned as a coach.';
   END IF;
 
   IF length(trim(approved_full_name)) < 3
@@ -68,6 +55,3 @@ BEGIN
   RETURN TRUE;
 END;
 $$;
-
-REVOKE ALL ON FUNCTION public.approve_client_registration(UUID, TEXT, UUID) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.approve_client_registration(UUID, TEXT, UUID) TO authenticated;
