@@ -210,8 +210,35 @@ class RuntimeErrorBoundary extends Component<
   }
 }
 
+const LOADING_FOOD_ILLUSTRATIONS = [
+  { color: "#f3a24b", shell: "M75 12c23 0 37 16 37 39s-14 40-37 40S38 74 38 51 52 12 75 12z" },
+  { color: "#f3cf5b", shell: "M40 51c9-29 28-40 54-29 19 8 21 26 7 45-14 18-34 28-50 15-11-9-16-17-11-31z" },
+  { color: "#e56e72", shell: "M75 28c25 0 34 18 23 43-8 18-15 27-23 27S60 89 52 71C41 46 50 28 75 28z" },
+  { color: "#e77b75", shell: "M38 47h74c-4 30-17 45-37 45S42 77 38 47z" },
+  { color: "#e7bd59", shell: "M48 31c0-12 12-20 27-20s27 8 27 20v43c0 12-12 18-27 18s-27-6-27-18z" },
+  { color: "#ed9154", shell: "M51 28h48l-5 60c-1 7-11 9-19 9s-18-2-19-9z" },
+  { color: "#df786c", shell: "M59 29c-4-16 12-22 16-10 4-12 20-6 16 10 12 8 9 35-2 55-6 10-21 10-27 0-11-20-14-47-3-55z" },
+  { color: "#c99573", shell: "M38 48c0-23 17-37 37-37s37 14 37 37H91v39c0 8-6 12-16 12s-16-4-16-12V48z" },
+  { color: "#dca66c", shell: "M40 39c0-19 14-28 35-28s35 9 35 28v46c0 8-12 12-35 12S40 93 40 85z" },
+  { color: "#f1ca65", shell: "M39 39l36-24 36 24v48c-22 10-50 10-72 0z" },
+  { color: "#d993bd", shell: "M38 52c0-23 16-39 37-39s37 16 37 39-16 39-37 39-37-16-37-39z" },
+  { color: "#d99cba", shell: "M46 47h58l-6 43H52z" },
+  { color: "#d5a36d", shell: "M38 53c0-22 16-39 37-39s37 17 37 39-16 38-37 38-37-16-37-38z" },
+  { color: "#9d83c7", shell: "M75 21c-6-12 7-19 13-10-2 7-5 10-13 10zM55 40c-12 0-16 13-8 19-10 6-4 20 8 18-2 12 13 18 20 8 8 10 23 4 20-8 12 2 18-12 8-18 8-6 4-19-8-19-4-10-17-10-20 0-3-10-16-10-20 0z" },
+  { color: "#83b7a4", shell: "M43 28h64v49c0 13-14 20-32 20S43 90 43 77z" },
+  { color: "#d99a64", shell: "M39 48c0-19 16-32 36-32s36 13 36 32H39zM39 57h72v14H39zM45 76h60c-7 16-53 16-60 0z" },
+  { color: "#a97c66", shell: "M46 31h58v47c0 12-13 17-29 17S46 90 46 78zM104 43c23-2 23 27 0 25" },
+  { color: "#cf91a7", shell: "M48 30h54l-7 63H55zM61 30l8-17h12l8 17z" },
+  { color: "#d9899d", growth: true, shell: "M75 88c-25 0-39-14-35-31 2-9 9-15 18-16 3-16 16-26 30-22 10 3 16 12 15 22 10 1 17 9 17 19 0 17-17 28-45 28z" },
+  { color: "#c97f93", growth: true, shell: "M52 84c-10-9-11-22-2-31 5-5 11-7 17-6-2-13 7-26 20-27 13-1 23 9 22 22 10 4 15 14 12 24-5 17-36 30-69 18z" },
+  { color: "#e09b9a", growth: true, shell: "M75 90c-24 0-39-12-39-29 0-12 8-22 21-25 4-12 13-20 27-20s23 8 27 20c13 3 21 13 21 25 0 17-15 29-39 29z" },
+  { color: "#d9a39f", growth: true, shell: "M53 18c12-9 32-8 44 1 7 6 10 15 8 25 9 8 10 23 2 32-15 16-54 16-68 0-8-9-7-24 2-32-2-11 2-20 12-26z" },
+  { color: "#d98291", growth: true, shell: "M75 90c-7-17-29-18-35-36-6-17 10-30 24-22 5-16 17-23 28-18 10 4 14 14 12 24 15-5 29 9 23 25-6 17-29 17-52 27z" },
+  { color: "#8fc6b3", growth: true, shell: "M48 76c-11-17-4-34 13-39-1-16 11-27 25-24 12 3 18 14 15 25 17 4 23 22 13 35-13 17-50 20-66 3z" },
+] as const;
+
 function LoadingIllustration({ variant }: { variant: number }) {
-  const shape = variant % 12;
+  const shape = variant % 36;
   return (
     <div className="loading-micro-stage" aria-hidden="true">
       <svg className="loading-dumbbell-svg" viewBox="0 0 150 104" role="presentation">
@@ -330,12 +357,29 @@ function LoadingIllustration({ variant }: { variant: number }) {
             <path className="loading-food-detail" d="M43 48h64" />
             <circle className="loading-food-yolk" cx="75" cy="52" r="7" />
           </g>
-        ) : (
+        ) : shape === 11 ? (
           <g className="loading-food-motion">
             <path className="loading-food-shell" d="M75 16c10 0 16 10 16 20 16-9 29 4 25 19 12 4 13 20 0 25-1 14-17 17-25 8-9 12-27 12-34 0-12 9-27-3-22-17-12-7-5-22 8-22-4-14 8-24 21-17 0-8 4-16 11-16z" />
             <path className="loading-food-fill" fill="url(#loading-avocado)" d="M75 26c7 0 10 8 8 16 12-6 21 5 15 15 10 3 8 15-2 16-1 9-11 11-17 5-6 9-20 8-23-2-10 5-18-5-12-13-8-5-1-15 8-12-2-10 7-16 15-9 0-7 4-13 9-13z" />
             <path className="loading-food-detail" d="M75 35v42M54 51l12 8M96 51L84 59M54 72l12-7M96 72l-12-7" />
           </g>
+        ) : (
+          (() => {
+            const food = LOADING_FOOD_ILLUSTRATIONS[shape - 12]!;
+            return (
+              <g
+                className={`loading-food-motion ${food.growth ? "loading-growth-motion" : ""}`}
+                style={{ color: food.color }}
+              >
+                <path className="loading-food-generic-shell" d={food.shell} />
+                <path
+                  className={`loading-food-generic-fill ${food.growth ? "loading-growth-fill" : ""}`}
+                  d={food.shell}
+                />
+                <path className="loading-food-generic-detail" d="M58 35c-5 8-5 19-1 27M88 35c5 8 5 19 1 27" />
+              </g>
+            );
+          })()
         )}
       </svg>
     </div>
@@ -433,10 +477,10 @@ function RootContent() {
     document.documentElement.lang = "he";
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
-    setLoadingVariant(Math.floor(Math.random() * 12));
+    setLoadingVariant(Math.floor(Math.random() * 36));
     setLoadingMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
     const illustrationTimer = window.setInterval(() => {
-      setLoadingVariant((current) => (current + 1) % 12);
+      setLoadingVariant((current) => (current + 1) % 36);
     }, 2400);
     const messageTimer = window.setInterval(() => {
       setLoadingMessageIndex((current) => (current + 1) % LOADING_MESSAGES.length);

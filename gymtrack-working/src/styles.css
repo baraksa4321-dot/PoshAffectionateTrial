@@ -153,28 +153,30 @@
 
 :root[data-theme="blue"] {
   --background: #ffffff;
-  --foreground: oklch(0.22 0.05 250);
-  --surface: oklch(0.995 0.012 235);
-  --surface-2: #dcebf2;
-  --cream: #edf5f8;
-  --primary: #9fc4d6;
-  --primary-foreground: #243d4a;
-  --secondary: #d3e6ee;
-  --secondary-foreground: #294957;
-  --rose: #9fc4d6;
-  --rose-soft: #dcebf2;
-  --accent: #c2dce7;
-  --accent-foreground: #294957;
-  --ink: #263d49;
-  --ink-soft: #58717c;
-  --muted: #edf5f8;
-  --muted-foreground: #5f7883;
-  --border: #c0d9e4;
-  --input: #c0d9e4;
-  --ring: #86b3c9;
-  --gradient-start: #9fc4d6;
-  --gradient-mid: #c0dce8;
-  --gradient-end: #e3f0f4;
+  --foreground: #29444e;
+  --surface: #f7fcfb;
+  --surface-2: #d9edf0;
+  --cream: #edf8f5;
+  --primary: #86b8cf;
+  --primary-foreground: #203f4d;
+  --secondary: #d1e9eb;
+  --secondary-foreground: #2a555d;
+  --sage: #9fd0bd;
+  --sage-soft: #e5f5ee;
+  --rose: #8fbfce;
+  --rose-soft: #d8efeb;
+  --accent: #a9d7c4;
+  --accent-foreground: #285149;
+  --ink: #29444e;
+  --ink-soft: #57757b;
+  --muted: #edf8f5;
+  --muted-foreground: #5d7b80;
+  --border: #b8dadd;
+  --input: #b8dadd;
+  --ring: #78abbf;
+  --gradient-start: #86b8cf;
+  --gradient-mid: #a8d2d3;
+  --gradient-end: #dff2e9;
 }
 
 :root[data-theme="beige"] {
@@ -1653,6 +1655,8 @@ html.night-mode .nav-shell {
   .loading-drawing,
   .loading-object-motion,
   .loading-object-fill,
+  .loading-food-motion,
+  .loading-food-generic-fill,
   .loading-dumbbell-motion,
   .loading-dumbbell-fill,
   .loading-dumbbell-shadow,
@@ -1758,6 +1762,35 @@ html.night-mode .nav-shell {
   stroke-linecap: round;
   stroke-width: 2;
   opacity: 0.55;
+}
+
+.loading-food-motion {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: loading-dumbbell-motion 1.8s ease-in-out infinite;
+}
+
+.loading-food-generic-shell {
+  fill: color-mix(in srgb, currentColor 20%, var(--surface));
+  stroke: currentColor;
+  stroke-linejoin: round;
+  stroke-width: 2.7;
+}
+
+.loading-food-generic-fill {
+  fill: currentColor;
+  opacity: 0.82;
+  stroke: none;
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: loading-dumbbell-fill 2.5s ease-in-out infinite;
+}
+
+.loading-food-generic-detail {
+  fill: none;
+  stroke: color-mix(in srgb, white 65%, currentColor);
+  stroke-linecap: round;
+  stroke-width: 2.4;
 }
 
 .loading-dumbbell-shadow {
