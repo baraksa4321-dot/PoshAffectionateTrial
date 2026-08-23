@@ -11,8 +11,9 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { WittyNote } from "@/components/WittyNote";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
 import { Overlay } from "@/components/ui-app/Overlay";
 import {
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui-app/primitives";
 import { createProgram, deleteProgram, duplicateProgram, useGym } from "@/lib/gym-store";
 import { genderText } from "@/lib/gender-copy";
+import { WORKOUT_WITTY_MESSAGES } from "@/lib/loading-copy";
 
 export const Route = createFileRoute("/programs/")({
   head: () => ({ meta: [{ title: "תוכניות אימון — My Routine" }] }),
@@ -165,6 +167,28 @@ function playlistStyle(label: string) {
   return style;
 }
 
+function ProgramWittyNotes() {
+  const [notes, setNotes] = useState<string[]>([]);
+
+  useEffect(() => {
+    const pool = [...WORKOUT_WITTY_MESSAGES];
+    const selected: string[] = [];
+    while (selected.length < 3 && pool.length > 0) {
+      const index = Math.floor(Math.random() * pool.length);
+      selected.push(pool.splice(index, 1)[0]!);
+    }
+    setNotes(selected);
+  }, []);
+
+  return (
+    <div className="program-witty-notes" aria-label="הערות קטנות">
+      {notes.map((note) => (
+        <WittyNote key={note}>{note}</WittyNote>
+      ))}
+    </div>
+  );
+}
+
 function ProgramsPage() {
   const { programs, workouts, userProfile } = useGym();
   const navigate = useNavigate();
@@ -203,6 +227,8 @@ function ProgramsPage() {
         ) : undefined
       }
     >
+      <ProgramWittyNotes />
+
       {/* Add new program input */}
       {adding ? (
         <div className="surface-card mt-4 p-4 text-start">
