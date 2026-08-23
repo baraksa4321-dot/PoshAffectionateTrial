@@ -298,12 +298,17 @@ function LoadingIllustration({ variant }: { variant: number }) {
   return (
     <div className="loading-micro-stage" aria-hidden="true">
       <Drawing className={`loading-drawing ${animation.motion}`} size={42} strokeWidth={1.6} />
+      <span className="loading-signal">
+        <span />
+        <span />
+        <span />
+      </span>
     </div>
   );
 }
 
 const LOADING_MESSAGES = [
-  "מעמיסים אנרגיה, לא תירוצים",
+  "מעמיסים משקלים, לא תירוצים",
   "השרירים עוד לא יודעים, אבל הם בדרך",
   "מסדרים את השגרה כמו מקצוענים",
   "מכינים את הסט הבא. בלי דרמה",

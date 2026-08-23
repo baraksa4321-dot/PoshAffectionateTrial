@@ -360,19 +360,16 @@ function Dashboard() {
                 הוסיפי דברים שחשוב לזכור לפני שיוצאים לאימון.
               </p>
             </div>
-            <div className="flex items-center gap-1">
-              <Check className="h-4 w-4 text-primary" />
-              <button
-                type="button"
-                onClick={() => {
-                  setShowChecklist(false);
-                }}
-                aria-label="סגירת הצ׳ק־ליסט"
-                className="grid h-5 w-5 place-items-center rounded-md text-muted-foreground hover:bg-rose-50 hover:text-rose-700"
-              >
-                <X className="h-3 w-3" strokeWidth={2.5} />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setShowChecklist(false);
+              }}
+              aria-label="סגירת הצ׳ק־ליסט"
+              className="grid h-5 w-5 place-items-center rounded-md text-muted-foreground hover:bg-rose-50 hover:text-rose-700"
+            >
+              <X className="h-3 w-3" strokeWidth={2.5} />
+            </button>
           </div>
           <form
             className="mt-2 flex gap-1.5"
@@ -428,9 +425,11 @@ function Dashboard() {
         <button
           type="button"
           onClick={() => setShowChecklist(true)}
-          className="press mt-3 flex w-full items-center justify-center rounded-2xl border border-dashed border-primary/35 bg-primary/5 px-4 py-2.5 text-[11px] font-bold text-primary"
+          aria-label="פתיחת הצ׳ק־ליסט"
+          title="פתיחת הצ׳ק־ליסט"
+          className="press fixed end-2 top-1/2 z-30 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full border border-primary/35 bg-background text-primary shadow-md"
         >
-          הצגת הצ׳ק־ליסט מחדש
+          <Plus className="h-4 w-4" strokeWidth={2.5} />
         </button>
       ) : null}
 
