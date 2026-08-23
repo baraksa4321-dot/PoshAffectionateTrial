@@ -212,6 +212,7 @@ function Session() {
   const [restExpanded, setRestExpanded] = useState(false);
   const [restOffset, setRestOffset] = useState({ x: 0, y: 0 });
   const [pendingExit, setPendingExit] = useState(false);
+  const [showCompletionConfetti, setShowCompletionConfetti] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const previousRestRef = useRef(0);
   const restDragRef = useRef<{
@@ -341,6 +342,9 @@ function Session() {
   );
 
   const handleFinishConfirm = () => {
+    const allSetsCompleted =
+      entries.length > 0 &&
+      entries.every((entry) => entry.sets.length > 0 && entry.sets.every((set) => set.done));
     saveSession({
       id: uid(),
       workoutId: workout.id,
@@ -369,7 +373,12 @@ function Session() {
     });
     clearSavedSession();
     setShowFeedbackModal(false);
-    navigate({ to: "/programs" });
+    if (allSetsCompleted) {
+      setShowCompletionConfetti(true);
+      window.setTimeout(() => navigate({ to: "/programs" }), 1800);
+    } else {
+      navigate({ to: "/programs" });
+    }
   };
 
   const progress = totalSets ? (doneSets / totalSets) * 100 : 0;
@@ -451,6 +460,29 @@ function Session() {
         </div>
       }
     >
+      {showCompletionConfetti ? (
+        <div className="pointer-events-none fixed inset-0 z-[100] overflow-hidden" aria-live="polite">
+          <div className="absolute inset-x-0 top-[22%] text-center">
+            <div className="inline-flex rounded-2xl bg-white/95 px-5 py-3 text-lg font-extrabold text-ink shadow-xl">
+              כל הכבוד! האימון הושלם
+            </div>
+          </div>
+          {Array.from({ length: 42 }, (_, index) => (
+            <span
+              key={index}
+              className="confetti-piece"
+              style={{
+                left: `${(index * 37) % 101}%`,
+                animationDelay: `${(index % 9) * 35}ms`,
+                animationDuration: `${1200 + (index % 5) * 150}ms`,
+                backgroundColor: ["var(--primary)", "var(--rose)", "var(--accent)", "#111111"][index % 4],
+                transform: `rotate(${(index * 47) % 360}deg)`,
+              }}
+            />
+          ))}
+        </div>
+      ) : null}
+
       {/* Pause Banner */}
       {isPaused && (
         <div className="surface-card p-3 rounded-2xl bg-amber-50 text-amber-800 border border-amber-200 text-center font-bold text-xs mb-3">
