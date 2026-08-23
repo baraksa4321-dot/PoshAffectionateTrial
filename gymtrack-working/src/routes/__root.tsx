@@ -235,12 +235,12 @@ function LoadingIllustration({ variant }: { variant: number }) {
             <path className="loading-dumbbell-grip" d="M57 39h36v14H57z" />
             <g className="loading-dumbbell-plate">
               <rect x="17" y="19" width="25" height="54" rx="6" />
-              <rect className="loading-dumbbell-fill" x="17" y="19" width="25" height="54" />
+              <rect className="loading-dumbbell-fill" x="17" y="19" width="25" height="54" rx="6" />
               <path className="loading-dumbbell-highlight" d="M22 24v44" />
             </g>
             <g className="loading-dumbbell-plate">
               <rect x="108" y="19" width="25" height="54" rx="6" />
-              <rect className="loading-dumbbell-fill" x="108" y="19" width="25" height="54" />
+              <rect className="loading-dumbbell-fill" x="108" y="19" width="25" height="54" rx="6" />
               <path className="loading-dumbbell-highlight" d="M113 24v44" />
             </g>
             <path className="loading-dumbbell-cap" d="M11 29h7v34h-7zM133 29h7v34h-7z" />

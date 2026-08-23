@@ -1618,7 +1618,11 @@ html.night-mode .nav-shell {
 
   .loading-micro-icon,
   .loading-drawing,
-  .loading-fill-cup span,
+  .loading-object-motion,
+  .loading-object-fill,
+  .loading-dumbbell-motion,
+  .loading-dumbbell-fill,
+  .loading-dumbbell-shadow,
   .loading-micro-dot,
   .loading-clean-dots span,
   .loading-witty-message {
@@ -1689,6 +1693,40 @@ html.night-mode .nav-shell {
   animation: loading-dumbbell-motion 1.8s ease-in-out infinite;
 }
 
+.loading-object-motion {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: loading-dumbbell-motion 1.8s ease-in-out infinite;
+}
+
+.loading-object-shell {
+  fill: color-mix(in srgb, var(--surface) 86%, var(--primary));
+  stroke: var(--primary);
+  stroke-width: 2;
+}
+
+.loading-object-fill {
+  fill: url("#loading-metal");
+  stroke: none;
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: loading-dumbbell-fill 2.5s ease-in-out infinite;
+}
+
+.loading-object-lip {
+  fill: url("#loading-metal");
+  stroke: var(--primary);
+  stroke-width: 2;
+}
+
+.loading-object-highlight {
+  fill: none;
+  stroke: color-mix(in srgb, white 55%, var(--primary));
+  stroke-linecap: round;
+  stroke-width: 2;
+  opacity: 0.55;
+}
+
 .loading-dumbbell-shadow {
   fill: color-mix(in srgb, var(--ink) 14%, transparent);
   transform-box: fill-box;
@@ -1731,30 +1769,6 @@ html.night-mode .nav-shell {
   fill: url("#loading-metal");
   stroke: var(--primary);
   stroke-width: 2;
-}
-
-.loading-fill-cup {
-  position: absolute;
-  inset-inline-start: 50%;
-  bottom: 0;
-  width: 18px;
-  height: 10px;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--primary) 70%, transparent);
-  border-radius: 3px 3px 5px 5px;
-  background: color-mix(in srgb, var(--primary) 6%, transparent);
-  transform: translateX(-50%);
-}
-
-.loading-fill-cup span {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 18%;
-  border-radius: 2px 2px 4px 4px;
-  background: linear-gradient(180deg, var(--rose), var(--primary));
-  animation: loading-fill 1.8s ease-in-out infinite;
 }
 
 .loading-micro-dot,
