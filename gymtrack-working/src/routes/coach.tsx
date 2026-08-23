@@ -151,6 +151,9 @@ export function CoachDashboardPage({
   const [programQuery, setProgramQuery] = useState("");
   const [targetWeight, setTargetWeight] = useState(20);
   const [setsCount, setSetsCount] = useState(3);
+  const [setModes, setSetModes] = useState<
+    Array<"normal" | "warmup" | "drop" | "superset">
+  >(["normal", "normal", "normal"]);
   const [repMin, setRepMin] = useState(8);
   const [repMax, setRepMax] = useState(10);
   const [restSec, setRestSec] = useState(90);
@@ -614,10 +617,17 @@ export function CoachDashboardPage({
     const currentDay = clientDetails?.workouts?.find((w) => w.id === editingDayId);
     if (!currentDay) return;
 
+    const configuredModes = Array.from({ length: setsCount }, (_, index) => setModes[index] ?? "normal");
+    const warmupModeCount = configuredModes.filter((mode) => mode === "warmup").length;
+    const workingModeCount = configuredModes.length - warmupModeCount;
+    const hasDropSets = configuredModes.includes("drop");
+    const hasSupersetSets = configuredModes.includes("superset");
+    if (hasSupersetSets && !supersetPartnerId) return;
+
     const newWorkoutItem: WorkoutItem = {
       id: uid(),
       exerciseId: selectedExId,
-      sets: setsCount,
+      sets: workingModeCount,
       reps: repMin,
       repType: "range",
       repMin,
@@ -628,7 +638,7 @@ export function CoachDashboardPage({
       notes: "",
       ...(techNotes.trim() ? { techniqueNotes: techNotes.trim() } : {}),
       ...(approvedAltIds.length > 0 ? { approvedAlternatives: approvedAltIds } : {}),
-      ...(supersetGroup.trim()
+      ...(hasSupersetSets && supersetGroup.trim()
         ? {
             supersetId: supersetGroup.trim(),
             supersetPartnerId,
@@ -637,7 +647,7 @@ export function CoachDashboardPage({
             supersetRepsMax,
           }
         : {}),
-      ...(dropSetEnabled
+      ...(hasDropSets
         ? {
             dropSetConfig: {
               enabled: true,
@@ -648,16 +658,19 @@ export function CoachDashboardPage({
             },
           }
         : {}),
-      workingSets: Array.from({ length: setsCount }, (_, i) => ({
+      workingSets: configuredModes
+        .filter((mode) => mode !== "warmup")
+        .map((mode, i) => ({
         id: uid(),
         setNumber: i + 1,
-        weight: targetWeight,
+        weight: mode === "drop" ? Math.max(0, targetWeight * 0.8) : targetWeight,
         reps: repMin,
         repMax,
+        ...(mode === "drop" ? { dropSet: true } : {}),
       })),
-      ...(warmupEnabled
+      ...(warmupModeCount > 0
         ? {
-            warmups: Array.from({ length: warmupSetsCount }, (_, i) => ({
+            warmups: Array.from({ length: warmupModeCount }, (_, i) => ({
               id: uid(),
               weight: warmupWeight,
               reps: warmupReps,
@@ -668,7 +681,7 @@ export function CoachDashboardPage({
     };
 
     const partnerItem =
-      supersetGroup.trim() && supersetPartnerId
+      hasSupersetSets && supersetGroup.trim() && supersetPartnerId
         ? {
             ...newWorkoutItem,
             id: uid(),
@@ -688,6 +701,7 @@ export function CoachDashboardPage({
       setSupersetGroup("");
       setSupersetPartnerId("");
       setDropSetEnabled(false);
+      setSetModes(["normal", "normal", "normal"]);
        setApprovedAltIds([]);
       return;
     }
@@ -703,6 +717,7 @@ export function CoachDashboardPage({
       setSupersetGroup("");
       setSupersetPartnerId("");
       setDropSetEnabled(false);
+      setSetModes(["normal", "normal", "normal"]);
        setApprovedAltIds([]);
       pullClientDataForCoach(selectedClientId).then(applyClientDetails);
     }
@@ -2013,36 +2028,65 @@ export function CoachDashboardPage({
                                               </div>
                                             </div>
 
-                                            <div className="grid gap-2 sm:grid-cols-3">
-                                              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-900">
-                                                <input
-                                                  type="checkbox"
-                                                  checked={warmupEnabled}
-                                                  onChange={(event) => setWarmupEnabled(event.target.checked)}
-                                                  className="h-4 w-4 accent-amber-600"
-                                                />
-                                                <span>סט חימום</span>
-                                              </label>
-                                              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-[11px] font-bold text-primary">
-                                                <input
-                                                  type="checkbox"
-                                                  checked={dropSetEnabled}
-                                                  onChange={(event) => setDropSetEnabled(event.target.checked)}
-                                                  className="h-4 w-4 accent-primary"
-                                                />
-                                                <span>דרופ סט</span>
-                                              </label>
-                                              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-[11px] font-bold text-violet-900">
-                                                <input
-                                                  type="checkbox"
-                                                  checked={Boolean(supersetGroup)}
-                                                  onChange={(event) =>
-                                                    setSupersetGroup(event.target.checked ? "A" : "")
-                                                  }
-                                                  className="h-4 w-4 accent-violet-600"
-                                                />
-                                                <span>סופר סט</span>
-                                              </label>
+                                            <div className="rounded-2xl border border-border/60 bg-background p-2.5">
+                                              <p className="mb-2 text-[10px] font-bold text-muted-foreground">
+                                                סוג לכל סט
+                                              </p>
+                                              <div className="space-y-1.5">
+                                                {Array.from({ length: setsCount }, (_, index) => {
+                                                  const mode = setModes[index] ?? "normal";
+                                                  return (
+                                                    <div
+                                                      key={index}
+                                                      className="flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-white px-2 py-1.5"
+                                                    >
+                                                      <span className="text-[11px] font-bold text-ink">
+                                                        סט {index + 1}
+                                                      </span>
+                                                      <select
+                                                        value={mode}
+                                                        onChange={(event) => {
+                                                          const nextMode = event.target.value as
+                                                            | "normal"
+                                                            | "warmup"
+                                                            | "drop"
+                                                            | "superset";
+                                                          setSetModes((current) => {
+                                                            const next = Array.from(
+                                                              { length: setsCount },
+                                                              (_, itemIndex) =>
+                                                                current[itemIndex] ?? "normal",
+                                                            );
+                                                            next[index] = nextMode;
+                                                            return next;
+                                                          });
+                                                          setWarmupEnabled(
+                                                            nextMode === "warmup" ||
+                                                              setModes.some((item, itemIndex) =>
+                                                                itemIndex === index ? false : item === "warmup",
+                                                              ),
+                                                          );
+                                                          setDropSetEnabled(
+                                                            nextMode === "drop" ||
+                                                              setModes.some((item, itemIndex) =>
+                                                                itemIndex === index ? false : item === "drop",
+                                                              ),
+                                                          );
+                                                          if (nextMode === "superset" && !supersetGroup) {
+                                                            setSupersetGroup("A");
+                                                          }
+                                                        }}
+                                                        className="h-8 min-w-32 rounded-lg border border-border bg-white px-2 text-[11px] font-semibold text-ink"
+                                                      >
+                                                        <option value="normal">סט רגיל</option>
+                                                        <option value="warmup">סט חימום</option>
+                                                        <option value="drop">דרופ סט — הורדת משקל</option>
+                                                        <option value="superset">סופר סט — בלי מנוחה</option>
+                                                      </select>
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
                                             </div>
 
                                             <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
