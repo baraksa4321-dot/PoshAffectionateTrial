@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">MYroutine wordmark — variation 01</title>
+  <desc id="desc">A precise, Japanese-inspired premium wordmark with a mineral rose MY monogram and quiet routine lettering.</desc>
+  <rect width="1600" height="900" fill="#ffffff"/>
+
+  <!-- Quiet frame: inspired by a Japanese maker's seal, not a decorative icon. -->
+  <g transform="translate(310 332)">
+    <rect x="0" y="0" width="156" height="156" rx="20" fill="#D98A9D"/>
+    <rect x="16" y="16" width="124" height="124" rx="13" fill="none" stroke="#FFFFFF" stroke-opacity=".64" stroke-width="2"/>
+    <path d="M42 111V47h12l24 35 24-35h12v64h-13V69L79 99 55 69v42Z" fill="#FFFFFF"/>
+    <path d="M106 47h14L94 84v27H81V84L55 47h14l19 25Z" fill="#FFFFFF"/>
+  </g>
+
+  <g transform="translate(508 354)">
+    <text x="0" y="76" fill="#D98A9D" font-family="Arial, Helvetica, sans-serif" font-size="112" font-weight="800" letter-spacing="-8">MY</text>
+    <text x="175" y="76" fill="#1F1C1D" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="500" letter-spacing="-3">routine</text>
+    <rect x="2" y="116" width="515" height="2" fill="#E9D6DB"/>
+    <text x="2" y="159" fill="#8C777D" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="600" letter-spacing="4">YOUR RHYTHM, INTENTIONALLY</text>
+  </g>
+
+  <!-- Small material reference for a human-made, measured feel. -->
+  <circle cx="1254" cy="399" r="8" fill="#D98A9D"/>
+  <line x1="1254" y1="423" x2="1254" y2="479" stroke="#E9D6DB" stroke-width="2"/>
+</svg>
