@@ -108,6 +108,9 @@ export function CoachDashboardPage({
   const [managementError, setManagementError] = useState("");
   const [roleChangeUserId, setRoleChangeUserId] = useState<string | null>(null);
   const [roleChangeNotice, setRoleChangeNotice] = useState("");
+  const [approvalCoachByUser, setApprovalCoachByUser] = useState<Record<string, string>>({});
+  const [approvalUserId, setApprovalUserId] = useState<string | null>(null);
+  const [approvalNotice, setApprovalNotice] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMsg, setInviteMsg] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -416,6 +419,37 @@ export function CoachDashboardPage({
       setManagementError(`שינוי התפקיד נכשל: ${errorMessage(err, "שגיאה בשינוי תפקיד")}`);
     } finally {
       setRoleChangeUserId(null);
+    }
+  };
+
+  const handleApproveClient = async (profile: ProfileRow) => {
+    const assignedCoachId = approvalCoachByUser[profile.id] || "";
+    if (!assignedCoachId) {
+      setApprovalNotice("יש לבחור מאמן לפני אישור המתאמן.");
+      return;
+    }
+    const fullName = profile.full_name?.trim() || "";
+    if (fullName.split(/\s+/).filter(Boolean).length < 2) {
+      setApprovalNotice("יש להשלים שם פרטי ושם משפחה לפני האישור.");
+      return;
+    }
+
+    setApprovalUserId(profile.id);
+    setApprovalNotice("");
+    try {
+      const { data, error } = await supabase.rpc("approve_client_registration", {
+        target_client_id: profile.id,
+        approved_full_name: fullName,
+        assigned_coach_id: assignedCoachId,
+      });
+      if (error) throw error;
+      if (data !== true) throw new Error("האישור לא התקבל במסד הנתונים");
+      await Promise.all([loadAllProfilesForOwner(), loadCoachClients()]);
+      setApprovalNotice(`ההרשמה של ${fullName} אושרה והמתאמן שויך למאמן.`);
+    } catch (err: unknown) {
+      setApprovalNotice(`אישור ההרשמה נכשל: ${errorMessage(err, "שגיאה באישור")}`);
+    } finally {
+      setApprovalUserId(null);
     }
   };
 
@@ -1039,6 +1073,79 @@ export function CoachDashboardPage({
             </div>
 
             <div className="space-y-2 pt-1">
+                {pendingApprovals.length > 0 ? (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-bold text-amber-950">אישור מתאמנים חדשים</p>
+                      <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-900">
+                        {pendingApprovals.length} ממתינים
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[11px] leading-relaxed text-amber-900/75">
+                      בדקי את השם המלא ובחרי מאמן לפני שהחשבון נכנס למערכת.
+                    </p>
+                    <div className="mt-3 space-y-2">
+                      {pendingApprovals.map((profile) => (
+                        <div key={profile.id} className="rounded-xl border border-amber-200 bg-white p-2.5">
+                          <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                            שם מלא
+                            <input
+                              value={profile.full_name ?? ""}
+                              onChange={(event) =>
+                                setAllProfiles((current) =>
+                                  current.map((item) =>
+                                    item.id === profile.id
+                                      ? { ...item, full_name: event.target.value }
+                                      : item,
+                                  ),
+                                )
+                              }
+                              className="h-9 rounded-lg border border-border px-2 text-xs font-semibold text-ink outline-none focus:border-primary"
+                            />
+                          </label>
+                          <div className="mt-2 flex gap-2">
+                            <select
+                              value={approvalCoachByUser[profile.id] ?? ""}
+                              onChange={(event) =>
+                                setApprovalCoachByUser((current) => ({
+                                  ...current,
+                                  [profile.id]: event.target.value,
+                                }))
+                              }
+                              className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-white px-2 text-xs text-ink outline-none focus:border-primary"
+                              aria-label={`בחירת מאמן עבור ${profileDisplayName(profile)}`}
+                            >
+                              <option value="">בחירת מאמן...</option>
+                              {allProfiles
+                                .filter((candidate) => candidate.role === "coach")
+                                .map((coach) => (
+                                  <option key={coach.id} value={coach.id}>
+                                    {profileDisplayName(coach)}
+                                  </option>
+                                ))}
+                            </select>
+                            <button
+                              type="button"
+                              disabled={approvalUserId === profile.id}
+                              onClick={() => void handleApproveClient(profile)}
+                              className="h-9 shrink-0 rounded-lg bg-amber-700 px-3 text-[11px] font-bold text-white disabled:opacity-50"
+                            >
+                              {approvalUserId === profile.id ? "מאשר..." : "אישור"}
+                            </button>
+                          </div>
+                          <p className="mt-1 text-[10px] text-muted-foreground">
+                            {profile.email || "ללא אימייל מוצג"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    {approvalNotice ? (
+                      <p className="mt-2 rounded-lg bg-white p-2 text-[11px] font-semibold text-amber-950">
+                        {approvalNotice}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
               <p className="text-xs text-purple-900 font-semibold">משתמשים והרשאות תפקיד:</p>
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
                 {allProfiles.map((p) => {
