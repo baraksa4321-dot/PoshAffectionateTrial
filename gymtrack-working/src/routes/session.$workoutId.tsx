@@ -767,7 +767,7 @@ function Session() {
         <Overlay
           open={Boolean(cardExercise)}
           onClose={() => setCardExercise(null)}
-          variant="bottom"
+          variant="top"
           ariaLabel="פרטי תרגיל"
         >
           <div

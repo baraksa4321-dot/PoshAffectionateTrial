@@ -871,6 +871,8 @@ export function CoachDashboardPage({
   const addPlannedFood = (mealId: string) => {
     const food = store.foods.find((item) => item.id === menuFoodId);
     if (!food || menuFoodQuantity <= 0) return;
+    const scrollContainer = document.scrollingElement;
+    const scrollTop = scrollContainer?.scrollTop ?? window.scrollY;
     const plannedFood: MealFood = {
       ...mealFoodFromLibrary(food),
       quantity: menuFoodQuantity,
@@ -884,6 +886,9 @@ export function CoachDashboardPage({
     setMenuFoodId("");
     setMenuFoodQuery("");
     setMenuFoodQuantity(1);
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollTop, behavior: "auto" });
+    });
   };
 
   const removePlannedFood = (mealId: string, foodId: string) => {

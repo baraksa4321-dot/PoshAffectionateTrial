@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-type OverlayVariant = "center" | "bottom" | "full";
+type OverlayVariant = "center" | "bottom" | "top" | "full";
 
 let scrollLockCount = 0;
 let previousBodyOverflow = "";
@@ -131,6 +131,7 @@ export function Overlay({
   if (!open || !mounted || typeof document === "undefined") return null;
 
   const isBottom = variant === "bottom";
+  const isTop = variant === "top";
   const isFull = variant === "full";
   const panelBottomGap = isFull ? 0 : isBottom ? 16 : 32;
   const panelMaxHeight =
@@ -149,6 +150,8 @@ export function Overlay({
           ? "items-stretch justify-center"
           : isBottom
             ? "items-end justify-center"
+            : isTop
+              ? "items-start justify-center"
             : "items-center justify-center"
       } ${isFull ? "bg-background p-0" : "bg-foreground/40 p-4 backdrop-blur-sm"} ${className}`}
       style={
@@ -175,6 +178,8 @@ export function Overlay({
             ? "h-full max-h-full max-w-none rounded-none"
             : isBottom
               ? "max-h-[calc(100dvh-1rem)] max-w-xl rounded-t-[2rem] pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+              : isTop
+                ? "max-h-[calc(100dvh-2rem)] max-w-lg rounded-3xl"
               : "max-h-[calc(100dvh-2rem)] max-w-lg rounded-3xl"
         } overflow-y-auto overscroll-contain bg-card shadow-2xl ${panelClassName}`}
         onMouseDown={(event) => event.stopPropagation()}
