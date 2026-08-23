@@ -7,7 +7,7 @@ import {
   createRootRouteWithContext,
   useRouter,
 } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { Component, type ErrorInfo, type ReactNode, useEffect, useState } from "react";
 
 import "../styles.css";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -148,6 +148,67 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
+type RuntimeErrorBoundaryProps = {
+  children: ReactNode;
+};
+
+type RuntimeErrorBoundaryState = {
+  error: Error | null;
+};
+
+class RuntimeErrorBoundary extends Component<
+  RuntimeErrorBoundaryProps,
+  RuntimeErrorBoundaryState
+> {
+  override state: RuntimeErrorBoundaryState = { error: null };
+
+  static getDerivedStateFromError(error: Error): RuntimeErrorBoundaryState {
+    return { error };
+  }
+
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error(error, errorInfo);
+    reportLovableError(error, {
+      boundary: "application_runtime_boundary",
+      componentStack: errorInfo.componentStack ?? "",
+    });
+  }
+
+  override render() {
+    if (!this.state.error) return this.props.children;
+
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4" dir="rtl">
+        <div className="w-full max-w-md rounded-3xl border border-destructive/20 bg-white px-6 py-7 text-center shadow-sm">
+          <div className="flex justify-center">
+            <BrandLogo compact />
+          </div>
+          <h1 className="mt-5 text-lg font-bold text-foreground">העמוד לא נטען</h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            משהו השתבש בטעינת המסך. אפשר לנסות לטעון מחדש בלי לאבד את הנתונים
+            ששמורים במכשיר.
+          </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+            >
+              טעני מחדש
+            </button>
+            <a
+              href="/"
+              className="rounded-xl border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground"
+            >
+              חזרה לדף הבית
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
 function LoadingIllustration({ variant }: { variant: number }) {
   if (variant === 1) {
     return (
@@ -268,7 +329,7 @@ function ScrollToTop() {
   return null;
 }
 
-function RootComponent() {
+function RootContent() {
   const { queryClient } = Route.useRouteContext();
   const authStatus = useAuthStatus();
   const { userProfile } = useGym();
@@ -371,5 +432,13 @@ function RootComponent() {
       )}
       <Scripts />
     </QueryClientProvider>
+  );
+}
+
+function RootComponent() {
+  return (
+    <RuntimeErrorBoundary>
+      <RootContent />
+    </RuntimeErrorBoundary>
   );
 }
