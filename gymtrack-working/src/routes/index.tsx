@@ -274,24 +274,20 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* 1. Next / Today's Workout Focus Card */}
-      {nextWorkout ? (
-        <div className="ink-card p-5 text-start mt-4">
-          <div className="flex items-center justify-between">
-            <span className="rounded-full bg-primary-foreground/15 px-3 py-1 text-[11px] font-bold text-primary-foreground">
-              האימון הבא
-            </span>
-            <span className="text-[12px] text-primary-foreground/80 font-medium">
-              ~{nextWorkout.items.length * 12 + 15} דקות
-            </span>
-          </div>
-          <h2 className="mt-2 font-display text-[22px] font-bold leading-tight text-primary-foreground">
-            {nextWorkout.name}
-          </h2>
-          <p className="mt-0.5 text-[13px] text-primary-foreground/80">
-            {nextProgram?.name ?? "תכנית אימונים"} · {nextWorkout.items.length} תרגילים
-          </p>
-          <div className="mt-4 flex gap-2">
+      {/* 1. Daily workout + nutrition tiles */}
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {nextWorkout ? (
+          <div className="ink-card flex min-h-[150px] flex-col p-3 text-start">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[10px] font-bold text-primary-foreground/80">אימון יומי</span>
+              <Dumbbell className="h-4 w-4 text-primary-foreground/80" />
+            </div>
+            <h2 className="mt-2 line-clamp-2 font-display text-[17px] font-bold leading-tight text-primary-foreground">
+              {nextWorkout.name}
+            </h2>
+            <p className="mt-1 text-[10px] text-primary-foreground/75">
+              {nextWorkout.items.length} תרגילים · כ־{nextWorkout.items.length * 12 + 15} דק׳
+            </p>
             <button
               type="button"
               onClick={() =>
@@ -300,41 +296,46 @@ function Dashboard() {
                   params: { workoutId: nextWorkout.id },
                 })
               }
-              className="press inline-flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-background px-4 text-[14px] font-bold text-ink shadow-sm"
+              className="press mt-auto inline-flex h-9 cursor-pointer items-center justify-center gap-1 rounded-xl bg-background px-2 text-[11px] font-bold text-ink shadow-sm"
             >
-              <Play className="h-4 w-4 fill-current text-primary" />
-              התחל אימון עכשיו
+              <Play className="h-3.5 w-3.5 fill-current text-primary" />
+              התחלת אימון
             </button>
-            <Link
-              to="/programs/$programId/$dayId"
-              params={{
-                programId: nextProgram?.id ?? "p-default",
-                dayId: nextWorkout.id,
-              }}
-              className="press grid h-11 w-11 cursor-pointer place-items-center rounded-xl bg-primary-foreground/15 text-primary-foreground"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Link>
           </div>
-        </div>
-      ) : (
-        <Card className="text-start mt-4">
-          <p className="font-display text-[16px] font-bold text-ink">אין תכניות אימון עדיין</p>
-          <p className="mt-1 text-[13px] text-muted-foreground">
-            {genderText(
-              gender,
-              "צרי תכנית אימונים ראשונה כדי להתחיל להתאמן בחדר כושר.",
-              "צור תכנית אימונים ראשונה כדי להתחיל להתאמן בחדר כושר.",
-            )}
+        ) : (
+          <Card className="flex min-h-[150px] flex-col p-3 text-start">
+            <p className="font-display text-sm font-bold text-ink">אין אימון יומי</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">עדיין אין תכנית אימונים.</p>
+            <Link
+              to="/programs"
+              className="press mt-auto inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-primary px-2 text-[11px] font-bold text-primary-foreground"
+            >
+              <Plus className="h-3.5 w-3.5" /> יצירת תכנית
+            </Link>
+          </Card>
+        )}
+
+        <Link
+          to="/nutrition"
+          className="surface-card flex min-h-[150px] flex-col border-emerald-200/70 bg-emerald-50/45 p-3 text-start transition-colors hover:border-emerald-400"
+        >
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] font-bold text-emerald-700">תזונה יומית</span>
+            <Apple className="h-4 w-4 text-emerald-700" />
+          </div>
+          <p className="mt-2 font-display text-2xl font-extrabold leading-none text-emerald-950">
+            {totalsToday.calories}
+            <span className="ms-1 text-[10px] font-bold text-emerald-800/70">קק״ל</span>
           </p>
-          <Link
-            to="/programs"
-            className="press mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-[13px] font-bold text-primary-foreground"
-          >
-            <Plus className="h-4 w-4" /> {genderText(gender, "צרי תכנית", "צור תכנית")}
-          </Link>
-        </Card>
-      )}
+          <p className="mt-1 text-[10px] text-emerald-900/70">
+            מתוך {targetCals} · {Math.max(0, targetCals - totalsToday.calories)} נשארו
+          </p>
+          <div className="mt-auto flex items-center justify-between rounded-xl bg-white/70 px-2 py-1.5 text-[10px] font-bold text-emerald-900">
+            <span>{Math.round(totalsToday.protein)} גרם חלבון</span>
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </div>
+        </Link>
+      </div>
 
       {/* Check-In Success Banner */}
       {checkInSuccessMsg && (
