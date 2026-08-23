@@ -910,26 +910,26 @@ export function CoachDashboardPage({
           </section>
 
           <div className="grid grid-cols-2 gap-0.5 sm:grid-cols-4">
-            <div className="surface-card border-primary/25 bg-primary/5 p-0.5 text-start">
-              <p className="text-[10px] font-bold text-muted-foreground">מתאמנים</p>
-              <p className="mt-0.5 font-display text-base font-extrabold text-ink">{clients.length}</p>
+            <div className="surface-card flex items-center justify-between gap-1 border-primary/25 bg-primary/5 px-2 py-1.5 text-start">
+              <p className="truncate text-[10px] font-bold text-muted-foreground">מתאמנים</p>
+              <p className="font-display text-base font-extrabold leading-none text-ink">{clients.length}</p>
             </div>
-            <div className="surface-card border-accent/60 bg-accent/20 p-0.5 text-start">
-              <p className="text-[10px] font-bold text-muted-foreground">דורשים תכנית</p>
-              <p className="mt-0.5 font-display text-base font-extrabold text-ink">
+            <div className="surface-card flex items-center justify-between gap-1 border-accent/60 bg-accent/20 px-2 py-1.5 text-start">
+              <p className="truncate text-[10px] font-bold text-muted-foreground">דורשים תכנית</p>
+              <p className="font-display text-base font-extrabold leading-none text-ink">
                 {needsPlan.length}
               </p>
             </div>
-            <div className="surface-card border-border bg-surface-2 p-0.5 text-start">
-              <p className="text-[10px] font-bold text-muted-foreground">שקטים 14 יום</p>
-              <p className="mt-0.5 font-display text-base font-extrabold text-ink">
+            <div className="surface-card flex items-center justify-between gap-1 border-border bg-surface-2 px-2 py-1.5 text-start">
+              <p className="truncate text-[10px] font-bold text-muted-foreground">שקטים 14 יום</p>
+              <p className="font-display text-base font-extrabold leading-none text-ink">
                 {quietClients.length}
               </p>
             </div>
             {isOwner ? (
-              <div className="surface-card border-purple-200 bg-purple-50/70 p-0.5 text-start">
-                <p className="text-[10px] font-bold text-purple-700">משתמשים</p>
-                <p className="mt-0.5 font-display text-base font-extrabold text-purple-950">
+              <div className="surface-card flex items-center justify-between gap-1 border-purple-200 bg-purple-50/70 px-2 py-1.5 text-start">
+                <p className="truncate text-[10px] font-bold text-purple-700">משתמשים</p>
+                <p className="font-display text-base font-extrabold leading-none text-purple-950">
                   {allProfiles.length}
                 </p>
               </div>
@@ -937,15 +937,15 @@ export function CoachDashboardPage({
           </div>
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <div className="surface-card border-primary/20 bg-primary/5 p-2">
+            <div className="surface-card border-primary/20 bg-primary/5 px-2.5 py-1.5">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-primary">
                     פעילות חדשה
                   </p>
-                  <h3 className="mt-1 text-sm font-bold text-ink">נרשמו היום</h3>
+                  <h3 className="text-xs font-bold text-ink">נרשמו היום</h3>
                 </div>
-                <span className="font-display text-xl font-extrabold text-primary">
+                <span className="font-display text-lg font-extrabold leading-none text-primary">
                   {newTodayProfiles.length}
                 </span>
               </div>
@@ -963,22 +963,22 @@ export function CoachDashboardPage({
                   ))}
                 </div>
               ) : (
-                <p className="mt-2 text-[11px] text-muted-foreground">אין הרשמות חדשות היום.</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">אין הרשמות חדשות היום.</p>
               )}
             </div>
-            <div className="surface-card border-amber-200 bg-amber-50/70 p-2">
+            <div className="surface-card border-amber-200 bg-amber-50/70 px-2.5 py-1.5">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-700">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-amber-700">
                     דורש טיפול
                   </p>
-                  <h3 className="mt-1 text-sm font-bold text-ink">אישורי הרשמה</h3>
+                  <h3 className="text-xs font-bold text-ink">אישורי הרשמה</h3>
                 </div>
-                <span className="font-display text-xl font-extrabold text-amber-800">
+                <span className="font-display text-lg font-extrabold leading-none text-amber-800">
                   {isOwner ? pendingApprovals.length : 0}
                 </span>
               </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-amber-900/75">
+              <p className="mt-1 text-[10px] leading-snug text-amber-900/75">
                 {isOwner
                   ? pendingApprovals.length > 0
                     ? "יש מתאמנים שממתינים לאישור שם ושיוך למאמן."
