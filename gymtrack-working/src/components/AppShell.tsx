@@ -134,7 +134,7 @@ export function AppShell({
     ? [
         {
           to: "/coach",
-          label: "בית",
+          label: "לוח בקרה",
           id: "management-home",
           icon: Home,
           onClick: () => setWorkspace("management"),

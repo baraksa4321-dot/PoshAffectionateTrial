@@ -60,6 +60,9 @@ type ProfileRow = {
   email?: string | null;
   full_name?: string | null;
   role?: UserRole | null;
+  created_at?: string | null;
+  approval_status?: "pending" | "approved" | "rejected" | null;
+  coach_id?: string | null;
 };
 
 type ClientDetails = Awaited<ReturnType<typeof pullClientDataForCoach>>;
@@ -771,6 +774,13 @@ export function CoachDashboardPage({
   const coachCount = allProfiles.filter((profile) => profile.role === "coach").length;
   const clientCount = allProfiles.filter((profile) => profile.role === "client").length;
   const ownerCount = allProfiles.filter((profile) => profile.role === "owner").length;
+  const today = todayKey();
+  const newTodayProfiles = allProfiles.filter(
+    (profile) => profile.created_at?.slice(0, 10) === today,
+  );
+  const pendingApprovals = allProfiles.filter(
+    (profile) => profile.role === "client" && profile.approval_status === "pending",
+  );
   const openClientFromOverview = (clientId: string) => {
     if (!workspacePage) {
       navigate({ to: "/coach/clients/$clientId", params: { clientId } });
@@ -784,7 +794,7 @@ export function CoachDashboardPage({
 
   return (
       <AppShell
-      title={clientsOnly ? "מתאמנים" : "בית"}
+      title={clientsOnly ? "מתאמנים" : "לוח בקרה"}
       kicker={clientsOnly ? "בניית תוכניות ותפריטים" : "לוח מודעות"}
       action={
         clientsOnly ? (
@@ -827,52 +837,82 @@ export function CoachDashboardPage({
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <div className="surface-card border-primary/25 bg-primary/5 p-3 text-start">
+          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+            <div className="surface-card border-primary/25 bg-primary/5 p-2.5 text-start">
               <p className="text-[11px] font-bold text-muted-foreground">מתאמנים</p>
-              <p className="mt-1 font-display text-2xl font-extrabold text-ink">{clients.length}</p>
+              <p className="mt-0.5 font-display text-xl font-extrabold text-ink">{clients.length}</p>
             </div>
-            <div className="surface-card border-accent/60 bg-accent/20 p-3 text-start">
+            <div className="surface-card border-accent/60 bg-accent/20 p-2.5 text-start">
               <p className="text-[11px] font-bold text-muted-foreground">דורשים תכנית</p>
-              <p className="mt-1 font-display text-2xl font-extrabold text-ink">
+              <p className="mt-0.5 font-display text-xl font-extrabold text-ink">
                 {needsPlan.length}
               </p>
             </div>
-            <div className="surface-card border-border bg-surface-2 p-3 text-start">
+            <div className="surface-card border-border bg-surface-2 p-2.5 text-start">
               <p className="text-[11px] font-bold text-muted-foreground">שקטים 14 יום</p>
-              <p className="mt-1 font-display text-2xl font-extrabold text-ink">
+              <p className="mt-0.5 font-display text-xl font-extrabold text-ink">
                 {quietClients.length}
               </p>
             </div>
             {isOwner ? (
-              <div className="surface-card border-purple-200 bg-purple-50/70 p-3 text-start">
+              <div className="surface-card border-purple-200 bg-purple-50/70 p-2.5 text-start">
                 <p className="text-[11px] font-bold text-purple-700">משתמשים</p>
-                <p className="mt-1 font-display text-2xl font-extrabold text-purple-950">
+                <p className="mt-0.5 font-display text-xl font-extrabold text-purple-950">
                   {allProfiles.length}
                 </p>
               </div>
             ) : null}
           </div>
 
-          <div className="surface-card border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="flex items-center gap-2 text-sm font-bold text-ink">
-                  <Shield className="h-4 w-4 text-primary" />
-                  {isOwner ? "מרכז שליטה" : "מרכז הפעילות"}
-                </h3>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  {isOwner
-                    ? "מכאן אפשר לעבור לרשימת המתאמנים, לפתוח סביבת עבודה ולנהל תפקידים."
-                    : "פתחי מתאמן כדי לערוך עבורו את תוכנית האימונים והתפריט המתוכנן."}
-                </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="surface-card border-primary/20 bg-primary/5 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
+                    פעילות חדשה
+                  </p>
+                  <h3 className="mt-1 text-sm font-bold text-ink">נרשמו היום</h3>
+                </div>
+                <span className="font-display text-2xl font-extrabold text-primary">
+                  {newTodayProfiles.length}
+                </span>
               </div>
-              <Link
-                to="/coach/clients"
-                className="shrink-0 rounded-xl bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground shadow-sm"
-              >
-                לרשימת המתאמנים
-              </Link>
+              {newTodayProfiles.length > 0 ? (
+                <div className="mt-2 space-y-1">
+                  {newTodayProfiles.slice(0, 3).map((profile) => (
+                    <div key={profile.id} className="flex items-center justify-between text-[11px]">
+                      <span className="truncate font-semibold text-ink">
+                        {profileDisplayName(profile)}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {profile.role === "coach" ? "מאמן" : "מתאמן"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-[11px] text-muted-foreground">אין הרשמות חדשות היום.</p>
+              )}
+            </div>
+            <div className="surface-card border-amber-200 bg-amber-50/70 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-700">
+                    דורש טיפול
+                  </p>
+                  <h3 className="mt-1 text-sm font-bold text-ink">אישורי הרשמה</h3>
+                </div>
+                <span className="font-display text-2xl font-extrabold text-amber-800">
+                  {isOwner ? pendingApprovals.length : 0}
+                </span>
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-amber-900/75">
+                {isOwner
+                  ? pendingApprovals.length > 0
+                    ? "יש מתאמנים שממתינים לאישור שם ושיוך למאמן."
+                    : "אין כרגע הרשמות שממתינות לאישור."
+                  : "בעיות, חוסרים ומתאמנים שדורשים תשומת לב מופיעים כאן."}
+              </p>
             </div>
           </div>
 
