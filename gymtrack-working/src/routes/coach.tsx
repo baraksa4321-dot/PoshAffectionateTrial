@@ -157,10 +157,15 @@ export function CoachDashboardPage({
   const [warmupEnabled, setWarmupEnabled] = useState(false);
   const [warmupSetsCount, setWarmupSetsCount] = useState(1);
   const [warmupReps, setWarmupReps] = useState(10);
+  const [warmupRepsMax, setWarmupRepsMax] = useState(12);
   const [techNotes, setTechniqueNotes] = useState("");
   const [supersetGroup, setSupersetGroup] = useState("");
   const [dropSetEnabled, setDropSetEnabled] = useState(false);
   const [dropSetCount, setDropSetCount] = useState(1);
+  const [dropRepsMin, setDropRepsMin] = useState(10);
+  const [dropRepsMax, setDropRepsMax] = useState(12);
+  const [supersetRepsMin, setSupersetRepsMin] = useState(10);
+  const [supersetRepsMax, setSupersetRepsMax] = useState(12);
   const [approvedAltIds, setApprovedAltIds] = useState<string[]>([]);
 
   // Nutrition Prescription state
@@ -621,9 +626,23 @@ export function CoachDashboardPage({
       notes: "",
       ...(techNotes.trim() ? { techniqueNotes: techNotes.trim() } : {}),
       ...(approvedAltIds.length > 0 ? { approvedAlternatives: approvedAltIds } : {}),
-      ...(supersetGroup.trim() ? { supersetId: supersetGroup.trim() } : {}),
+      ...(supersetGroup.trim()
+        ? {
+            supersetId: supersetGroup.trim(),
+            supersetRepsMin,
+            supersetRepsMax,
+          }
+        : {}),
       ...(dropSetEnabled
-        ? { dropSetConfig: { enabled: true, drops: dropSetCount, percentReduction: 20 } }
+        ? {
+            dropSetConfig: {
+              enabled: true,
+              drops: dropSetCount,
+              repsMin: dropRepsMin,
+              repsMax: dropRepsMax,
+              percentReduction: 20,
+            },
+          }
         : {}),
       workingSets: Array.from({ length: setsCount }, (_, i) => ({
         id: uid(),
@@ -638,6 +657,7 @@ export function CoachDashboardPage({
               id: uid(),
               weight: 0,
               reps: warmupReps,
+              repsMax: warmupRepsMax,
             })),
           }
         : {}),
@@ -647,11 +667,11 @@ export function CoachDashboardPage({
 
     if (isSelfSelected) {
       saveWorkout({ ...currentDay, items: updatedItems });
-      setSelectedExId("");
+       setSelectedExId("");
       setTechniqueNotes("");
       setSupersetGroup("");
       setDropSetEnabled(false);
-      setApprovedAltIds([]);
+       setApprovedAltIds([]);
       return;
     }
 
@@ -665,7 +685,7 @@ export function CoachDashboardPage({
       setTechniqueNotes("");
       setSupersetGroup("");
       setDropSetEnabled(false);
-      setApprovedAltIds([]);
+       setApprovedAltIds([]);
       pullClientDataForCoach(selectedClientId).then(applyClientDetails);
     }
   };
@@ -1849,7 +1869,14 @@ export function CoachDashboardPage({
                                                       ) : null}
                                                       {exItem.supersetId ? (
                                                         <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-800">
-                                                          סופר סט {exItem.supersetId}
+                                                         סופר סט {exItem.supersetId} ·{" "}
+                                                         {exItem.supersetRepsMin || exItem.repMin || exItem.reps}-
+                                                         {exItem.supersetRepsMax || exItem.repMax || exItem.reps}
+                                                        </span>
+                                                      ) : null}
+                                                      {exItem.techniqueNotes ? (
+                                                        <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800">
+                                                          יש הערה למתאמן
                                                         </span>
                                                       ) : null}
                                                     </div>
@@ -2000,6 +2027,17 @@ export function CoachDashboardPage({
                                               </label>
                                             </div>
 
+                                            <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                              הערה למתאמן על התרגיל
+                                              <textarea
+                                                value={techNotes}
+                                                onChange={(event) => setTechniqueNotes(event.target.value)}
+                                                placeholder="למשל: לשמור על גב ישר ולבצע לאט..."
+                                                rows={2}
+                                                className="w-full resize-none rounded-lg border border-border bg-white px-2 py-1.5 text-xs font-normal text-ink outline-none focus:border-primary"
+                                              />
+                                            </label>
+
                                             {warmupEnabled || dropSetEnabled || supersetGroup ? (
                                               <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border/60 bg-background p-3">
                                                 {warmupEnabled ? (
@@ -2018,7 +2056,7 @@ export function CoachDashboardPage({
                                                       />
                                                     </label>
                                                     <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                      חזרות חימום
+                                                      חזרות חימום מינ'
                                                       <input
                                                         type="number"
                                                         min="1"
@@ -2029,33 +2067,99 @@ export function CoachDashboardPage({
                                                         className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
                                                       />
                                                     </label>
+                                                    <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                      חזרות חימום מקס'
+                                                      <input
+                                                        type="number"
+                                                        min={warmupReps}
+                                                        value={warmupRepsMax}
+                                                        onChange={(event) =>
+                                                          setWarmupRepsMax(Math.max(warmupReps, Number(event.target.value)))
+                                                        }
+                                                        className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
+                                                      />
+                                                    </label>
                                                   </>
                                                 ) : null}
                                                 {dropSetEnabled ? (
-                                                  <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                    מספר דרופים
-                                                    <input
-                                                      type="number"
-                                                      min="1"
-                                                      max="5"
-                                                      value={dropSetCount}
-                                                      onChange={(event) =>
-                                                        setDropSetCount(Math.max(1, Number(event.target.value)))
-                                                      }
-                                                      className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
-                                                    />
-                                                  </label>
+                                                  <>
+                                                    <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                      מספר דרופים
+                                                      <input
+                                                        type="number"
+                                                        min="1"
+                                                        max="5"
+                                                        value={dropSetCount}
+                                                        onChange={(event) =>
+                                                          setDropSetCount(Math.max(1, Number(event.target.value)))
+                                                        }
+                                                        className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
+                                                      />
+                                                    </label>
+                                                    <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                      חזרות דרופ סט
+                                                      <div className="grid grid-cols-2 gap-1">
+                                                        <input
+                                                          type="number"
+                                                          min="1"
+                                                          value={dropRepsMin}
+                                                          onChange={(event) =>
+                                                            setDropRepsMin(Math.max(1, Number(event.target.value)))
+                                                          }
+                                                          className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
+                                                          aria-label="חזרות דרופ סט מינימום"
+                                                        />
+                                                        <input
+                                                          type="number"
+                                                          min={dropRepsMin}
+                                                          value={dropRepsMax}
+                                                          onChange={(event) =>
+                                                            setDropRepsMax(Math.max(dropRepsMin, Number(event.target.value)))
+                                                          }
+                                                          className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
+                                                          aria-label="חזרות דרופ סט מקסימום"
+                                                        />
+                                                      </div>
+                                                    </label>
+                                                  </>
                                                 ) : null}
                                                 {supersetGroup ? (
-                                                  <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                    קבוצה
-                                                    <input
-                                                      value={supersetGroup}
-                                                      onChange={(event) => setSupersetGroup(event.target.value)}
-                                                      placeholder="A"
-                                                      className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
-                                                    />
-                                                  </label>
+                                                  <>
+                                                    <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                      קבוצה
+                                                      <input
+                                                        value={supersetGroup}
+                                                        onChange={(event) => setSupersetGroup(event.target.value)}
+                                                        placeholder="A"
+                                                        className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
+                                                      />
+                                                    </label>
+                                                    <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                      חזרות סופר סט
+                                                      <div className="grid grid-cols-2 gap-1">
+                                                        <input
+                                                          type="number"
+                                                          min="1"
+                                                          value={supersetRepsMin}
+                                                          onChange={(event) =>
+                                                            setSupersetRepsMin(Math.max(1, Number(event.target.value)))
+                                                          }
+                                                          className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
+                                                          aria-label="חזרות סופר סט מינימום"
+                                                        />
+                                                        <input
+                                                          type="number"
+                                                          min={supersetRepsMin}
+                                                          value={supersetRepsMax}
+                                                          onChange={(event) =>
+                                                            setSupersetRepsMax(Math.max(supersetRepsMin, Number(event.target.value)))
+                                                          }
+                                                          className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
+                                                          aria-label="חזרות סופר סט מקסימום"
+                                                        />
+                                                      </div>
+                                                    </label>
+                                                  </>
                                                 ) : null}
                                               </div>
                                             ) : null}

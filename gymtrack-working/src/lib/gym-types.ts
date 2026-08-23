@@ -13,6 +13,8 @@ export type ClientLink = {
 export type DropSetConfig = {
   enabled: boolean;
   drops: number;
+  repsMin?: number;
+  repsMax?: number;
   percentReduction?: number; // e.g. 20%
 };
 
@@ -45,6 +47,7 @@ export type WarmupSet = {
   id: string;
   weight: number;
   reps: number;
+  repsMax?: number;
 };
 
 export type WorkingSet = {
@@ -77,6 +80,8 @@ export type WorkoutItem = {
   rpe?: number | null;
   warmups?: WarmupSet[];
   supersetId?: string;
+  supersetRepsMin?: number;
+  supersetRepsMax?: number;
 };
 
 export type Workout = {
