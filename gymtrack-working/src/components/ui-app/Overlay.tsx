@@ -5,6 +5,8 @@ type OverlayVariant = "center" | "bottom" | "top" | "full";
 
 let scrollLockCount = 0;
 let previousBodyOverflow = "";
+let activeOverlayToken = 0;
+const openOverlayTokens: number[] = [];
 
 export function Overlay({
   open,
@@ -41,6 +43,8 @@ export function Overlay({
   useEffect(() => {
     if (!open || typeof document === "undefined") return;
 
+    const overlayToken = ++activeOverlayToken;
+    openOverlayTokens.push(overlayToken);
     const previousActiveElement =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (scrollLockCount === 0) {
@@ -54,6 +58,10 @@ export function Overlay({
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        // Only the topmost sheet should react. Without this guard, every
+        // mounted overlay receives the window event and nested pickers close
+        // their parent in the same keypress.
+        if (overlayToken !== activeOverlayToken) return;
         onCloseRef.current();
         return;
       }
@@ -121,6 +129,9 @@ export function Overlay({
       setViewportHeight(null);
       setViewportTop(0);
       scrollLockCount = Math.max(0, scrollLockCount - 1);
+      const tokenIndex = openOverlayTokens.indexOf(overlayToken);
+      if (tokenIndex !== -1) openOverlayTokens.splice(tokenIndex, 1);
+      activeOverlayToken = openOverlayTokens.at(-1) ?? 0;
       if (scrollLockCount === 0) {
         document.body.style.overflow = previousBodyOverflow;
       }
@@ -144,6 +155,8 @@ export function Overlay({
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel}
+      data-overlay-root="true"
+      data-overlay-variant={variant}
       data-keyboard-open={keyboardOffset > 0 ? "true" : undefined}
       className={`fixed inset-0 z-[100] flex ${
         isFull
@@ -169,6 +182,7 @@ export function Overlay({
       <div
         ref={panelRef}
         tabIndex={-1}
+        data-overlay-panel="true"
         style={{
           maxHeight: panelMaxHeight,
           marginBottom: isBottom ? keyboardOffset : 0,
