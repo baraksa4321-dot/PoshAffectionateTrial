@@ -23,20 +23,8 @@ const REQUIRED_MACROS = [
   ["fat", "שומן"],
 ] as const;
 
-/**
- * Classifies food values without overstating their provenance. USDA expansion
- * records can be traced to a specific FDC entry; legacy and user-created rows
- * remain usable but are clearly distinguished from that verified source.
- */
+/** Classifies food values without claiming an external nutrition-data source. */
 export function nutritionSourceFor(food: Pick<FoodItem, "id">): NutritionSource {
-  if (food.id.startsWith("f-usda-sr-")) {
-    return {
-      label: "מקור מאומת: USDA",
-      detail: "USDA FoodData Central · הערכים למאה גרם",
-      verified: true,
-    };
-  }
-
   if (food.id.startsWith("f-israel-")) {
     return {
       label: "קטלוג מקומי",
@@ -90,12 +78,11 @@ export function assertValidMealFood(record: MealFood): void {
 
 export function foodLibraryAudit(foods: FoodItem[]) {
   const invalid = foods.filter((food) => nutritionValidationIssues(food).length > 0);
-  const verified = foods.filter((food) => nutritionSourceFor(food).verified);
 
   return {
     total: foods.length,
-    verified: verified.length,
-    requiresLabelVerification: foods.length - verified.length,
+    verified: 0,
+    requiresLabelVerification: foods.length,
     invalid: invalid.length,
     duplicateIds: foods.length - new Set(foods.map((food) => food.id)).size,
   };

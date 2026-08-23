@@ -26,9 +26,38 @@ import { createProgram, deleteProgram, duplicateProgram, useGym } from "@/lib/gy
 import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/programs/")({
-  head: () => ({ meta: [{ title: "תוכניות אימון — הרוטינה שלי" }] }),
+  head: () => ({ meta: [{ title: "תוכניות אימון — My Routine" }] }),
   component: ProgramsPage,
 });
+
+const EXPANDED_PLAYLIST_STYLES = [
+  { style: "עברית רגועה", query: "מוזיקה עברית רגועה", className: "bg-[#fff0f5] text-[#a23b62] hover:bg-[#ffe2ec]" },
+  { style: "עברית אקוסטית", query: "מוזיקה עברית אקוסטית", className: "bg-[#fff6e8] text-[#99621d] hover:bg-[#ffebc9]" },
+  { style: "עברית נוסטלגית", query: "שירים ישראלים נוסטלגיים", className: "bg-[#f2efff] text-[#6552a4] hover:bg-[#e7e1ff]" },
+  { style: "מזרחית רגועה", query: "מזרחית רגועה", className: "bg-[#fff4df] text-[#a25b00] hover:bg-[#ffeac2]" },
+  { style: "מזרחית קצבית", query: "מזרחית קצבית", className: "bg-[#fff0dc] text-[#ad4e16] hover:bg-[#ffe0c0]" },
+  { style: "פופ ישראלי", query: "פופ ישראלי", className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]" },
+  { style: "רוק ישראלי", query: "רוק ישראלי", className: "bg-[#f0f0f0] text-[#333] hover:bg-[#e4e4e4]" },
+  { style: "טופ 2000", query: "Top 2000 hits", className: "bg-[#e8f7ed] text-[#137333] hover:bg-[#d4f0dc]" },
+  { style: "שנות ה־80", query: "80s hits", className: "bg-[#f7edff] text-[#7a3e9d] hover:bg-[#eedcff]" },
+  { style: "שנות ה־90", query: "90s hits", className: "bg-[#edf7ff] text-[#246386] hover:bg-[#dcefff]" },
+  { style: "להיטי שנות ה־2000", query: "2000s hits", className: "bg-[#fff4df] text-[#8b5a10] hover:bg-[#ffeac2]" },
+  { style: "פופ עולמי", query: "global pop hits", className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]" },
+  { style: "R&B", query: "R&B essentials", className: "bg-[#f5edff] text-[#7447a8] hover:bg-[#eae0ff]" },
+  { style: "היפ הופ", query: "hip hop workout", className: "bg-[#f0f0f0] text-[#222] hover:bg-[#e4e4e4]" },
+  { style: "EDM", query: "EDM workout", className: "bg-[#e9f8ff] text-[#16708f] hover:bg-[#d7f1fb]" },
+  { style: "האוס", query: "house music", className: "bg-[#edfff7] text-[#21765a] hover:bg-[#d9f7e9]" },
+  { style: "טכנו", query: "techno workout", className: "bg-[#ececf5] text-[#4c4c7a] hover:bg-[#dfdff0]" },
+  { style: "Deep House", query: "deep house", className: "bg-[#eaf6f5] text-[#28766a] hover:bg-[#d8eeeb]" },
+  { style: "רגאטון", query: "reggaeton hits", className: "bg-[#fff0e8] text-[#ae4d2e] hover:bg-[#ffe0d2]" },
+  { style: "לטיני", query: "latin hits", className: "bg-[#fff8dd] text-[#947014] hover:bg-[#fff0b8]" },
+  { style: "רוק קלאסי", query: "classic rock", className: "bg-[#f2f2f2] text-[#3b3b3b] hover:bg-[#e5e5e5]" },
+  { style: "אינדי", query: "indie essentials", className: "bg-[#eef5ff] text-[#3f639b] hover:bg-[#e0ebff]" },
+  { style: "Lo-fi", query: "lofi beats", className: "bg-[#f3f0ff] text-[#6855a0] hover:bg-[#e7e2ff]" },
+  { style: "לימודים וריכוז", query: "music for focus", className: "bg-[#eef8f5] text-[#397568] hover:bg-[#dceee9]" },
+  { style: "קלאסי", query: "classical essentials", className: "bg-[#faf4e8] text-[#806338] hover:bg-[#f2e8d4]" },
+  { style: "מדיטציה", query: "meditation music", className: "bg-[#edf8f2] text-[#4c8061] hover:bg-[#dcefe3]" },
+] as const;
 
 const WORKOUT_PLAYLISTS = [
   {
@@ -116,6 +145,18 @@ const WORKOUT_PLAYLISTS = [
     href: "https://open.spotify.com/artist/2LUB7PhWK2j2obgSTeD3GN",
     className: "bg-[#fff4df] text-[#a25b00] hover:bg-[#ffeac2]",
   },
+  ...EXPANDED_PLAYLIST_STYLES.flatMap(({ style, query, className }) => [
+    {
+      label: `Spotify · ${style}`,
+      href: `https://open.spotify.com/search/${encodeURIComponent(query)}`,
+      className,
+    },
+    {
+      label: `Apple Music · ${style}`,
+      href: `https://music.apple.com/us/search?term=${encodeURIComponent(query)}`,
+      className,
+    },
+  ]),
 ] as const;
 
 function playlistStyle(label: string) {

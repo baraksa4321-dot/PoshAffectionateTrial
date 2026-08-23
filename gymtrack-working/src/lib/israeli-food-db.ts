@@ -1,8 +1,7 @@
 import type { FoodItem } from "./gym-types";
 import { COMMON_FOODS } from "./common-foods";
-import { USDA_FOOD_EXPANSION } from "./usda-food-expansion";
 
-/** Database of AT LEAST 488 distinct realistic Israeli supermarket food entries */
+/** Catalog of 488 realistic Israeli supermarket food entries. */
 const ISRAELI_SUPERMARKET_FOODS: FoodItem[] = [
   {
     id: "f-israel-1",
@@ -5862,15 +5861,7 @@ const ISRAELI_SUPERMARKET_FOODS: FoodItem[] = [
   },
 ];
 
-/**
- * The original 488-item Israeli supermarket catalog is intentionally preserved.
- * The USDA expansion supplies additional documented generic foods, each with
- * a source identifier and nutrition values measured per 100 g.
- */
-export const ISRAELI_FOOD_DATABASE: FoodItem[] = [
-  ...ISRAELI_SUPERMARKET_FOODS,
-  ...USDA_FOOD_EXPANSION,
-];
+export const ISRAELI_FOOD_DATABASE: FoodItem[] = ISRAELI_SUPERMARKET_FOODS;
 
 const EXCLUDED_EVERYDAY_CATEGORIES = new Set([
   "גלידות",

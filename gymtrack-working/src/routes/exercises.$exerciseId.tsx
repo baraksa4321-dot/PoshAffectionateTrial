@@ -27,12 +27,12 @@ import { genderText } from "@/lib/gender-copy";
 export const Route = createFileRoute("/exercises/$exerciseId")({
   head: () => ({
     meta: [
-      { title: "פרטי תרגיל — הרוטינה שלי" },
+      { title: "פרטי תרגיל — My Routine" },
       {
         name: "description",
         content: "פרטי תרגיל: קבוצת שרירים, ציוד, הוראות ביצוע והערות אישיות.",
       },
-      { property: "og:title", content: "פרטי תרגיל — הרוטינה שלי" },
+      { property: "og:title", content: "פרטי תרגיל — My Routine" },
     ],
   }),
   component: ExerciseDetail,

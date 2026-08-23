@@ -41,12 +41,12 @@ import { genderText } from "@/lib/gender-copy";
 export const Route = createFileRoute("/session/$workoutId")({
   head: () => ({
     meta: [
-      { title: "אימון פעיל — הרוטינה שלי" },
+      { title: "אימון פעיל — My Routine" },
       {
         name: "description",
         content: "רשמי סטים, משקלים וחזרות בזמן אמת במהלך האימון.",
       },
-      { property: "og:title", content: "אימון פעיל — הרוטינה שלי" },
+      { property: "og:title", content: "אימון פעיל — My Routine" },
     ],
   }),
   component: Session,

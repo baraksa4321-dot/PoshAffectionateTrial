@@ -10,8 +10,8 @@ import type { Workout, WorkoutItem } from "@/lib/gym-types";
 export const Route = createFileRoute("/workouts/$workoutId")({
   head: () => ({
     meta: [
-      { title: "עורך אימון — הרוטינה שלי" },
-      { property: "og:title", content: "עורך אימון — הרוטינה שלי" },
+      { title: "עורך אימון — My Routine" },
+      { property: "og:title", content: "עורך אימון — My Routine" },
     ],
   }),
   component: Builder,

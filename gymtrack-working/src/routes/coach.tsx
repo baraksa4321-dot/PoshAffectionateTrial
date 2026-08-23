@@ -147,6 +147,7 @@ export function CoachDashboardPage({
 
   // Exercise Assignment Editor state
   const [selectedExId, setSelectedExId] = useState("");
+  const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [exerciseQuery, setExerciseQuery] = useState("");
   const [programQuery, setProgramQuery] = useState("");
   const [targetWeight, setTargetWeight] = useState(20);
@@ -1940,37 +1941,18 @@ export function CoachDashboardPage({
                                               <label className="block text-[10px] font-bold text-muted-foreground mb-1">
                                                 בחר תרגיל מספרייה
                                               </label>
-                                               <input
-                                                 type="search"
-                                                 value={exerciseQuery}
-                                                 onChange={(e) => setExerciseQuery(e.target.value)}
-                                                 placeholder="חיפוש לפי שם, שריר או ציוד..."
-                                                 className="mb-1.5 w-full rounded-lg border border-border bg-background px-2.5 py-2 text-xs outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/15"
-                                                 aria-label="חיפוש תרגיל לפי שם, שריר או ציוד"
-                                                 autoComplete="off"
-                                               />
-                                              <select
-                                                required
-                                                value={selectedExId}
-                                                onChange={(e) => setSelectedExId(e.target.value)}
-                                                className="w-full rounded-lg border border-border px-2 py-1.5 text-xs outline-none"
+                                              <button
+                                                type="button"
+                                                onClick={() => setShowExercisePicker(true)}
+                                                className="w-full flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 text-start"
                                               >
-                                                <option value="">-- בחר תרגיל --</option>
-                                                 {filteredExerciseOptions.length > 0 ? (
-                                                   filteredExerciseOptions.map((e) => (
-                                                     <option key={e.id} value={e.id}>
-                                                       {e.name} ({e.muscleGroup})
-                                                     </option>
-                                                   ))
-                                                 ) : (
-                                                   <option value="" disabled>
-                                                     לא נמצאו תרגילים
-                                                   </option>
-                                                 )}
-                                              </select>
-                                               <p className="mt-1 text-[10px] text-muted-foreground">
-                                                 {filteredExerciseOptions.length} תרגילים נמצאו
-                                               </p>
+                                                <span className={selectedExId ? "text-ink" : "text-muted-foreground"}>
+                                                  {selectedExId
+                                                    ? store.exercises.find((e) => e.id === selectedExId)?.name || "תרגיל נבחר"
+                                                    : "חיפוש ובחירת תרגיל..."}
+                                                </span>
+                                                <Search className="h-4 w-4 text-muted-foreground" />
+                                              </button>
                                             </div>
 
                                             <div className="grid grid-cols-4 gap-1.5">
@@ -2685,6 +2667,80 @@ export function CoachDashboardPage({
             </div>
           </Overlay>
         )}
+
+        <Overlay
+          open={showExercisePicker}
+          onClose={() => setShowExercisePicker(false)}
+          ariaLabel="בחירת תרגיל"
+          variant="bottom"
+          panelClassName="p-0"
+        >
+          <div dir="rtl" className="h-[min(82dvh,44rem)]">
+            <div className="flex h-full min-h-0 flex-col p-5 text-start">
+              <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
+              <div className="mb-3.5 flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold tracking-[0.14em] text-primary uppercase">
+                    ספריית תרגילים
+                  </p>
+                  <h2 className="mt-1 font-display text-[20px] font-semibold text-ink">
+                    {genderText(gender, "בחרי תרגיל", "בחר תרגיל")}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowExercisePicker(false)}
+                  className="grid h-9 w-9 place-items-center rounded-xl bg-secondary text-muted-foreground hover:text-ink cursor-pointer"
+                  aria-label="סגור"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="num-pill flex h-12 items-center gap-2 px-3">
+                <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+                <input
+                  value={exerciseQuery}
+                  onChange={(event) => setExerciseQuery(event.target.value)}
+                  placeholder="חפש לפי שם, ציוד או שריר..."
+                  className="w-full bg-transparent text-[14px] outline-none"
+                  autoFocus
+                />
+              </div>
+
+              <div className="mt-4 min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain">
+                {filteredExerciseOptions.map((exercise) => (
+                  <button
+                    type="button"
+                    key={exercise.id}
+                    onClick={() => {
+                      setSelectedExId(exercise.id);
+                      setExerciseQuery("");
+                      setShowExercisePicker(false);
+                    }}
+                    className="press flex w-full items-center justify-between gap-3 rounded-2xl border border-border/40 bg-secondary px-3.5 py-3 text-start hover:border-primary/50"
+                  >
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/70 text-primary">
+                      <Dumbbell className="h-4 w-4" strokeWidth={1.8} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-semibold text-ink">{exercise.name}</p>
+                      <p className="text-[11.5px] text-muted-foreground">{exercise.muscleGroup}</p>
+                    </div>
+                    <span className="num-pill shrink-0 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                      {exercise.equipment}
+                    </span>
+                  </button>
+                ))}
+                {filteredExerciseOptions.length === 0 ? (
+                  <p className="rounded-2xl bg-secondary p-4 text-[13px] text-muted-foreground">
+                    לא נמצאו תרגילים מתאימים לחיפוש.
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </Overlay>
       </div>
     </AppShell>
   );

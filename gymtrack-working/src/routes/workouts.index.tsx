@@ -5,8 +5,8 @@ import { AppShell } from "@/components/AppShell";
 export const Route = createFileRoute("/workouts/")({
   head: () => ({
     meta: [
-      { title: "האימונים שלי — הרוטינה שלי" },
-      { property: "og:title", content: "האימונים שלי — הרוטינה שלי" },
+      { title: "האימונים שלי — My Routine" },
+      { property: "og:title", content: "האימונים שלי — My Routine" },
     ],
   }),
   component: Workouts,

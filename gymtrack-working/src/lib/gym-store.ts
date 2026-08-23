@@ -1580,14 +1580,6 @@ export function saveNutritionTargets(targets: NutritionTargets) {
   set({ ...data, nutritionTargets: targets });
 }
 
-export function saveNutritionWater(date: string, waterMl: number, waterTargetMl?: number) {
-  withDay(date, (day) => ({
-    ...day,
-    waterMl: Math.max(0, waterMl),
-    ...(waterTargetMl === undefined ? {} : { waterTargetMl: Math.max(0, waterTargetMl) }),
-  }));
-}
-
 export function savePlannedMeals(date: string, plannedMeals: Meal[]) {
   withDay(date, (day) => ({ ...day, plannedMeals }));
 }

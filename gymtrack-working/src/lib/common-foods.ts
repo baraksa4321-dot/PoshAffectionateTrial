@@ -27,8 +27,8 @@ const makeFood = (
 
 /**
  * Short, everyday names for foods people commonly use when building a meal.
- * These are intentionally separate from the detailed supermarket/USDA catalog:
- * a picker should be friendly first, while the larger catalog remains available
+ * These are intentionally separate from the detailed local supermarket catalog:
+ * the picker stays friendly while the larger local catalog remains available
  * for searching and detailed tracking.
  */
 export const COMMON_FOODS: FoodItem[] = [

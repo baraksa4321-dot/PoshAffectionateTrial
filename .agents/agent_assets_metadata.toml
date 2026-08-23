@@ -117,14 +117,14 @@ content_type = "text/plain"
 id = "2OTS-n-U2k2bwnyr3AACI"
 uri = "file://GymTrack-updated.zip"
 type = "unspecified"
-title = "My Routine — ZIP מעודכן"
-description = "גרסה מעודכנת של My Routine עם תיקוני מצב לילה, צ׳ק־ליסט וסנכרון Body Weight ו־Cardio לפי סכמת Supabase הקיימת."
+title = "My Routine — ZIP מעודכן עם פלייליסטים"
+description = "גרסה מעודכנת עם 26 סגנונות מוזיקה חדשים, קישורי חיפוש נפרדים ל־Spotify ול־Apple Music לכל סגנון, וכל תיקוני המערכת הקודמים."
 logical_id = "324ce929-850e-4872-85b9-f535a48312c9"
-content_hash = "sha256:2758df9cab30c7b5b83ab6206b8071d7a546f1575b97141786fd65f0e86440f4"
-size = 443219
-mtime_ms = 1787472831139
-storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/324ce929-850e-4872-85b9-f535a48312c9/66a8325a-6e86-433c-9276-3135a8513923"
-storage_version_token = "1787472838147881"
+content_hash = "sha256:b0a56a4b250952a44a4f89819f823d00e5abacbe379a3c62b79f7d933e207e21"
+size = 431632
+mtime_ms = 1787473631482
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/324ce929-850e-4872-85b9-f535a48312c9/53cb13cb-0bf5-41dc-bf13-f3043356e131"
+storage_version_token = "1787473638694503"
 content_type = "application/octet-stream"
 
 [[outputs]]

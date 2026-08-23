@@ -10,12 +10,12 @@ import { genderText } from "@/lib/gender-copy";
 export const Route = createFileRoute("/exercises/")({
   head: () => ({
     meta: [
-      { title: "ספריית תרגילים — הרוטינה שלי" },
+      { title: "ספריית תרגילים — My Routine" },
       {
         name: "description",
         content: "עיון, הוספה, עריכה וניהול של תרגילי כושר בספרייה.",
       },
-      { property: "og:title", content: "ספריית תרגילים — הרוטינה שלי" },
+      { property: "og:title", content: "ספריית תרגילים — My Routine" },
     ],
   }),
   component: Library,

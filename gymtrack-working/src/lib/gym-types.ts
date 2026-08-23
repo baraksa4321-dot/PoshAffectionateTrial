@@ -206,8 +206,6 @@ export type NutritionDay = {
   meals: Meal[];
   /** Meals prescribed by a coach; kept separate from the client's actual log. */
   plannedMeals?: Meal[];
-  waterMl?: number;
-  waterTargetMl?: number;
 };
 
 export type NutritionTargets = {
@@ -248,8 +246,6 @@ export type BodyMeasurement = {
 export type ClientHabits = {
   id: string;
   date: string; // YYYY-MM-DD
-  waterMl: number;
-  waterTargetMl: number;
   steps: number;
   stepsTarget: number;
   weighInDone: boolean;
