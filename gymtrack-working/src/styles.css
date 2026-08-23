@@ -1676,6 +1676,63 @@ html.night-mode .nav-shell {
   line-height: 1;
 }
 
+.loading-dumbbell-svg {
+  display: block;
+  width: 118px;
+  height: 72px;
+  overflow: visible;
+}
+
+.loading-dumbbell-motion {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: loading-dumbbell-motion 1.8s ease-in-out infinite;
+}
+
+.loading-dumbbell-shadow {
+  fill: color-mix(in srgb, var(--ink) 14%, transparent);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: loading-dumbbell-shadow 1.8s ease-in-out infinite;
+}
+
+.loading-dumbbell-bar {
+  fill: var(--ink);
+}
+
+.loading-dumbbell-grip {
+  fill: url("#loading-metal");
+  opacity: 0.94;
+}
+
+.loading-dumbbell-plate {
+  fill: color-mix(in srgb, var(--surface) 86%, var(--primary));
+  stroke: var(--primary);
+  stroke-width: 2;
+}
+
+.loading-dumbbell-fill {
+  fill: url("#loading-metal");
+  stroke: none;
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: loading-dumbbell-fill 2.5s ease-in-out infinite;
+}
+
+.loading-dumbbell-highlight {
+  fill: none;
+  stroke: color-mix(in srgb, white 55%, var(--primary));
+  stroke-linecap: round;
+  stroke-width: 2;
+  opacity: 0.55;
+}
+
+.loading-dumbbell-cap {
+  fill: url("#loading-metal");
+  stroke: var(--primary);
+  stroke-width: 2;
+}
+
 .loading-fill-cup {
   position: absolute;
   inset-inline-start: 50%;
@@ -1808,6 +1865,22 @@ html.night-mode .nav-shell {
 @keyframes loading-micro-shimmer {
   0%, 100% { opacity: 0.55; filter: saturate(0.8); transform: scale(0.94); }
   50% { opacity: 1; filter: saturate(1.35); transform: scale(1.06); }
+}
+
+@keyframes loading-dumbbell-motion {
+  0%, 100% { transform: translateY(2px) rotate(-3deg); }
+  50% { transform: translateY(-4px) rotate(3deg); }
+}
+
+@keyframes loading-dumbbell-shadow {
+  0%, 100% { transform: scaleX(0.92); opacity: 0.45; }
+  50% { transform: scaleX(1.04); opacity: 0.24; }
+}
+
+@keyframes loading-dumbbell-fill {
+  0%, 100% { transform: scaleY(0.08); }
+  55% { transform: scaleY(1); }
+  78% { transform: scaleY(0.8); }
 }
 
 @keyframes loading-micro-dot-one {
