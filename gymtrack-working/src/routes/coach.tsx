@@ -132,11 +132,15 @@ export function CoachDashboardPage({
   // Exercise Assignment Editor state
   const [selectedExId, setSelectedExId] = useState("");
   const [exerciseQuery, setExerciseQuery] = useState("");
+  const [programQuery, setProgramQuery] = useState("");
   const [targetWeight, setTargetWeight] = useState(20);
   const [setsCount, setSetsCount] = useState(3);
   const [repMin, setRepMin] = useState(8);
   const [repMax, setRepMax] = useState(10);
   const [restSec, setRestSec] = useState(90);
+  const [warmupEnabled, setWarmupEnabled] = useState(false);
+  const [warmupSetsCount, setWarmupSetsCount] = useState(1);
+  const [warmupReps, setWarmupReps] = useState(10);
   const [techNotes, setTechniqueNotes] = useState("");
   const [supersetGroup, setSupersetGroup] = useState("");
   const [dropSetEnabled, setDropSetEnabled] = useState(false);
@@ -570,6 +574,15 @@ export function CoachDashboardPage({
         reps: repMin,
         repMax,
       })),
+      ...(warmupEnabled
+        ? {
+            warmups: Array.from({ length: warmupSetsCount }, (_, i) => ({
+              id: uid(),
+              weight: 0,
+              reps: warmupReps,
+            })),
+          }
+        : {}),
     };
 
     const updatedItems = [...currentDay.items, newWorkoutItem];
@@ -735,6 +748,13 @@ export function CoachDashboardPage({
         .some((value) => value.toLocaleLowerCase().includes(query)),
     );
   }, [exerciseQuery, store.exercises]);
+  const filteredPrograms = useMemo(() => {
+    const query = programQuery.trim().toLocaleLowerCase();
+    if (!query) return clientDetails?.programs ?? [];
+    return (clientDetails?.programs ?? []).filter((program) =>
+      program.name.toLocaleLowerCase().includes(query),
+    );
+  }, [clientDetails?.programs, programQuery]);
   const menuFoodResults = searchFoods(store.foods, menuFoodQuery).slice(0, 24);
   const needsPlan = overviewRows.filter((row) => row.details.programs.length === 0);
   const needsExercises = overviewRows.filter(
@@ -1516,8 +1536,20 @@ export function CoachDashboardPage({
                       </button>
                     </form>
 
+                    <div className="num-pill flex h-11 items-center gap-2 px-3">
+                      <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <input
+                        type="search"
+                        value={programQuery}
+                        onChange={(event) => setProgramQuery(event.target.value)}
+                        placeholder="חיפוש תוכנית אימון..."
+                        className="w-full min-w-0 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
+                        aria-label="חיפוש תוכנית אימון"
+                      />
+                    </div>
+
                     <div className="space-y-3 pt-2">
-                      {clientDetails?.programs?.map((prog: Program) => {
+                      {filteredPrograms.map((prog: Program) => {
                         const isProgActive = editingProgramId === prog.id;
                         const progDays = clientDetails?.workouts?.filter((w: Workout) =>
                           prog.dayIds?.includes(w.id),
@@ -1526,21 +1558,34 @@ export function CoachDashboardPage({
                         return (
                           <div
                             key={prog.id}
-                            className="rounded-2xl border border-border/70 p-3 space-y-2.5 bg-muted/20"
+                            className={`surface-card overflow-hidden border p-0 transition-colors ${
+                              isProgActive
+                                ? "border-primary/50 bg-primary/[0.03]"
+                                : "border-border/60 hover:border-primary/30"
+                            }`}
                           >
-                            <div className="flex items-center justify-between">
-                              <span className="font-bold text-sm text-ink">{prog.name}</span>
+                            <div className="flex items-center justify-between gap-3 p-3.5">
+                              <div className="min-w-0 text-start">
+                                <span className="block truncate font-display text-[15px] font-semibold text-ink">
+                                  {prog.name}
+                                </span>
+                                <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                                  {progDays?.length || 0} ימי אימון ·{" "}
+                                  {progDays?.reduce((total, day) => total + day.items.length, 0) || 0} תרגילים
+                                </span>
+                              </div>
                               <button
+                                type="button"
                                 onClick={() => setEditingProgramId(isProgActive ? null : prog.id)}
-                                className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                                className="shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-[11px] font-bold text-primary hover:bg-primary/20"
                               >
                                 <Edit2 className="h-3 w-3" />
-                                <span>{isProgActive ? "סגור עריכה" : "נהל ימי אימון"}</span>
+                                <span>{isProgActive ? "סגירה" : "עריכה"}</span>
                               </button>
                             </div>
 
                             {isProgActive && (
-                              <div className="space-y-3 pt-2 border-t border-border/40">
+                              <div className="space-y-3 border-t border-border/50 bg-secondary/20 p-3.5">
                                 <form onSubmit={handleAddProgramDay} className="flex gap-2">
                                   <input
                                     type="text"
@@ -1565,10 +1610,10 @@ export function CoachDashboardPage({
                                     return (
                                       <div
                                         key={dayItem.id}
-                                        className="rounded-xl bg-white p-3 border border-border/60 space-y-2"
+                                       className="rounded-2xl border border-border/60 bg-background p-3.5 shadow-sm"
                                       >
                                         <div className="flex items-center justify-between">
-                                          <span className="font-bold text-xs text-ink">
+                                          <span className="font-bold text-[13px] text-ink">
                                             {dayItem.name} ({dayItem.items?.length || 0} תרגילים)
                                           </span>
                                           <button
@@ -1602,6 +1647,23 @@ export function CoachDashboardPage({
                                                       {exItem.sets}×{exItem.repMin || exItem.reps}
                                                       {exItem.repMax ? `-${exItem.repMax}` : ""}
                                                     </span>
+                                                    <div className="mt-1 flex flex-wrap gap-1">
+                                                      {exItem.warmups?.length ? (
+                                                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                                                          חימום ×{exItem.warmups.length}
+                                                        </span>
+                                                      ) : null}
+                                                      {exItem.dropSetConfig?.enabled ? (
+                                                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                                                          דרופ סט ×{exItem.dropSetConfig.drops}
+                                                        </span>
+                                                      ) : null}
+                                                      {exItem.supersetId ? (
+                                                        <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-800">
+                                                          סופר סט {exItem.supersetId}
+                                                        </span>
+                                                      ) : null}
+                                                    </div>
                                                   </div>
                                                   <button
                                                     onClick={() =>
@@ -1716,6 +1778,98 @@ export function CoachDashboardPage({
                                                 />
                                               </div>
                                             </div>
+
+                                            <div className="grid gap-2 sm:grid-cols-3">
+                                              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-900">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={warmupEnabled}
+                                                  onChange={(event) => setWarmupEnabled(event.target.checked)}
+                                                  className="h-4 w-4 accent-amber-600"
+                                                />
+                                                <span>סט חימום</span>
+                                              </label>
+                                              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-[11px] font-bold text-primary">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={dropSetEnabled}
+                                                  onChange={(event) => setDropSetEnabled(event.target.checked)}
+                                                  className="h-4 w-4 accent-primary"
+                                                />
+                                                <span>דרופ סט</span>
+                                              </label>
+                                              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-[11px] font-bold text-violet-900">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={Boolean(supersetGroup)}
+                                                  onChange={(event) =>
+                                                    setSupersetGroup(event.target.checked ? "A" : "")
+                                                  }
+                                                  className="h-4 w-4 accent-violet-600"
+                                                />
+                                                <span>סופר סט</span>
+                                              </label>
+                                            </div>
+
+                                            {warmupEnabled || dropSetEnabled || supersetGroup ? (
+                                              <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border/60 bg-background p-3">
+                                                {warmupEnabled ? (
+                                                  <>
+                                                    <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                      מספר סטי חימום
+                                                      <input
+                                                        type="number"
+                                                        min="1"
+                                                        max="5"
+                                                        value={warmupSetsCount}
+                                                        onChange={(event) =>
+                                                          setWarmupSetsCount(Math.max(1, Number(event.target.value)))
+                                                        }
+                                                        className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
+                                                      />
+                                                    </label>
+                                                    <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                      חזרות חימום
+                                                      <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={warmupReps}
+                                                        onChange={(event) =>
+                                                          setWarmupReps(Math.max(1, Number(event.target.value)))
+                                                        }
+                                                        className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
+                                                      />
+                                                    </label>
+                                                  </>
+                                                ) : null}
+                                                {dropSetEnabled ? (
+                                                  <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                    מספר דרופים
+                                                    <input
+                                                      type="number"
+                                                      min="1"
+                                                      max="5"
+                                                      value={dropSetCount}
+                                                      onChange={(event) =>
+                                                        setDropSetCount(Math.max(1, Number(event.target.value)))
+                                                      }
+                                                      className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
+                                                    />
+                                                  </label>
+                                                ) : null}
+                                                {supersetGroup ? (
+                                                  <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                    קבוצה
+                                                    <input
+                                                      value={supersetGroup}
+                                                      onChange={(event) => setSupersetGroup(event.target.value)}
+                                                      placeholder="A"
+                                                      className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
+                                                    />
+                                                  </label>
+                                                ) : null}
+                                              </div>
+                                            ) : null}
 
                                             <button
                                               type="submit"

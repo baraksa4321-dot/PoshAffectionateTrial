@@ -305,7 +305,9 @@ function NutritionLog() {
         {showRecipes ? (
           <div className="border-t border-border/50 px-3 pb-3 pt-2">
             <div className="flex gap-1.5 overflow-x-auto pb-2">
-              {(["הכל", "עתיר חלבון", "דל שומן", "ארוחה קלה", "מתוק מאוזן"] as const).map(
+              {(
+                ["הכל", "עתיר חלבון", "דל קלוריות", "דל שומן", "ארוחה קלה", "מתוק מאוזן"] as const
+              ).map(
                 (category) => (
                   <button
                     key={category}
