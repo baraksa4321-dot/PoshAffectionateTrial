@@ -596,15 +596,15 @@ const seed = (): GymData => {
     history: [],
     foods: [...EVERYDAY_FOOD_DATABASE],
     nutritionDays: [],
-    nutritionTargets: { calories: 2000, protein: 140, carbs: 200, fat: 65 },
-    mealTemplate: [...DEFAULT_MEALS],
+    nutritionTargets: {},
+    mealTemplate: [],
     recipes: [],
     recentFoods: [],
     favoriteFoods: [],
-    bodyWeightLogs: [{ id: "bw-seed", date: todayKey(), weight: 65 }],
+    bodyWeightLogs: [],
     cardioLogs: [],
     preExitChecklist: [],
-    userProfile: { weight: 65, height: 165, age: 26, gender: "female", workoutsPerWeek: 4 },
+    userProfile: { weight: 0 },
   };
 };
 
@@ -731,23 +731,23 @@ function migrate(d: Partial<GymData>): GymData {
   }
   return {
     exercises: mergeSeedExercises(d.exercises ?? []),
-    workouts: workouts.length ? workouts : seed().workouts,
-    programs: programs.length ? programs : seed().programs,
+    workouts,
+    programs,
     history: d.history ?? [],
     foods: mergeSeedFoods(d.foods ?? []),
     nutritionDays: d.nutritionDays ?? [],
-    nutritionTargets: d.nutritionTargets ?? seed().nutritionTargets,
-    mealTemplate: d.mealTemplate?.length ? d.mealTemplate : [...DEFAULT_MEALS],
+    nutritionTargets: d.nutritionTargets ?? {},
+    mealTemplate: d.mealTemplate ?? [],
     recipes: d.recipes ?? [],
     recentFoods: d.recentFoods ?? [],
     favoriteFoods: d.favoriteFoods ?? [],
     bodyWeightLogs: d.bodyWeightLogs?.length
       ? d.bodyWeightLogs
-      : [{ id: uid(), date: todayKey(), weight: d.userProfile?.weight ?? 65 }],
+      : [],
     bodyMeasurements: d.bodyMeasurements ?? [],
     cardioLogs: d.cardioLogs ?? [],
     preExitChecklist: d.preExitChecklist ?? [],
-    userProfile: d.userProfile ?? seed().userProfile ?? { weight: 65 },
+    userProfile: d.userProfile ?? { weight: 0 },
   };
 }
 

@@ -75,7 +75,7 @@ export async function syncLocalToSupabase(
   try {
     // 1. Profile
     if (localData.userProfile || userEmail) {
-      const p = localData.userProfile ?? { weight: 65 };
+      const p = localData.userProfile;
       await requireSuccessfulWrite(
         supabase.from("profiles").upsert(
           {
@@ -376,8 +376,6 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
              authUser.user_metadata["full_name"].trim()
                ? { full_name: authUser.user_metadata["full_name"].trim() }
               : {}),
-            weight_kg: 65,
-            height_cm: 165,
             today_routine_enabled: true,
           },
           { onConflict: "id" },
@@ -417,9 +415,11 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         ? profile.gender
         : nextData.userProfile?.gender;
     nextData.userProfile = {
-      ...(nextData.userProfile ?? { weight: 65 }),
+      ...(nextData.userProfile ?? { weight: 0 }),
       ...(profileName ? { fullName: profileName } : {}),
-      weight: profile.weight_kg ? Number(profile.weight_kg) : (nextData.userProfile?.weight ?? 65),
+      weight: profile.weight_kg === null || profile.weight_kg === undefined
+        ? (nextData.userProfile?.weight ?? 0)
+        : Number(profile.weight_kg),
       ...(profileHeight !== undefined ? { height: profileHeight } : {}),
       ...(profileAge !== undefined ? { age: profileAge } : {}),
       ...(profileGender ? { gender: profileGender } : {}),
@@ -435,7 +435,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     const authTheme = authUser?.user_metadata?.theme;
     const authGender = authUser?.user_metadata?.gender;
     if (authGender === "male" || authGender === "female") {
-      nextData.userProfile = { ...(nextData.userProfile ?? { weight: 65 }), gender: authGender };
+      nextData.userProfile = { ...(nextData.userProfile ?? { weight: 0 }), gender: authGender };
     }
     if (
       authTheme === "pink" ||
@@ -448,7 +448,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       authTheme === "peach" ||
       authTheme === "mint"
     ) {
-      nextData.userProfile = { ...(nextData.userProfile ?? { weight: 65 }), theme: authTheme };
+      nextData.userProfile = { ...(nextData.userProfile ?? { weight: 0 }), theme: authTheme };
     }
 
     // 2. Fetch Coach Messages if Client
