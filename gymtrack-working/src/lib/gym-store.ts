@@ -601,6 +601,7 @@ const seed = (): GymData => {
     favoriteFoods: [],
     bodyWeightLogs: [{ id: "bw-seed", date: todayKey(), weight: 65 }],
     cardioLogs: [],
+    preExitChecklist: [],
     userProfile: { weight: 65, height: 165, age: 26, gender: "female", workoutsPerWeek: 4 },
   };
 };
@@ -743,6 +744,7 @@ function migrate(d: Partial<GymData>): GymData {
       : [{ id: uid(), date: todayKey(), weight: d.userProfile?.weight ?? 65 }],
     bodyMeasurements: d.bodyMeasurements ?? [],
     cardioLogs: d.cardioLogs ?? [],
+    preExitChecklist: d.preExitChecklist ?? [],
     userProfile: d.userProfile ?? seed().userProfile ?? { weight: 65 },
   };
 }
@@ -773,8 +775,22 @@ function load() {
       }
     });
 
-    supabase.auth
-      .getSession()
+    Promise.race([
+      supabase.auth.getSession(),
+      new Promise<{
+        data: { session: null };
+        error: Error;
+      }>((resolve) =>
+        window.setTimeout(
+          () =>
+            resolve({
+              data: { session: null },
+              error: new Error("פג הזמן לאימות החשבון"),
+            }),
+          8_000,
+        ),
+      ),
+    ])
       .then(({ data: { session }, error }) => {
         if (error) {
           currentUser = null;
@@ -918,7 +934,10 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
     notifyListeners();
     return;
   }
-  data = pulled.data;
+  data = {
+    ...pulled.data,
+    preExitChecklist: data.preExitChecklist ?? pulled.data.preExitChecklist ?? [],
+  };
   persist();
   profileHydrationStatus = "ready";
   profileHydrationError = "";
@@ -1253,6 +1272,34 @@ export function saveProgram(p: Program) {
   set({
     ...data,
     programs: exists ? data.programs.map((x) => (x.id === p.id ? p : x)) : [...data.programs, p],
+  });
+}
+
+export function addChecklistItem(label: string) {
+  const trimmed = label.trim();
+  if (!trimmed) return;
+  set({
+    ...data,
+    preExitChecklist: [
+      ...(data.preExitChecklist ?? []),
+      { id: uid(), label: trimmed, done: false },
+    ],
+  });
+}
+
+export function toggleChecklistItem(id: string) {
+  set({
+    ...data,
+    preExitChecklist: (data.preExitChecklist ?? []).map((item) =>
+      item.id === id ? { ...item, done: !item.done } : item,
+    ),
+  });
+}
+
+export function deleteChecklistItem(id: string) {
+  set({
+    ...data,
+    preExitChecklist: (data.preExitChecklist ?? []).filter((item) => item.id !== id),
   });
 }
 

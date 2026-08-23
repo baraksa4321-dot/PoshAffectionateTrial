@@ -101,6 +101,12 @@ export type Program = {
   dayIds: string[];
 };
 
+export type ChecklistItem = {
+  id: string;
+  label: string;
+  done: boolean;
+};
+
 export type LoggedSet = {
   reps: number;
   weight: number;
@@ -309,6 +315,7 @@ export type GymData = {
   cardioLogs?: CardioLog[];
   userProfile?: UserProfile;
   clients?: ClientLink[];
+  preExitChecklist?: ChecklistItem[];
 };
 
 export const MUSCLE_GROUPS = [

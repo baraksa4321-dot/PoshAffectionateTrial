@@ -21,6 +21,7 @@ import {
   Pencil,
   Trash2,
   X,
+  Check,
 } from "lucide-react";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
@@ -41,6 +42,9 @@ import {
   todayKey,
   updateCardioLog,
   deleteCardioLog,
+  addChecklistItem,
+  toggleChecklistItem,
+  deleteChecklistItem,
   useGym,
 } from "@/lib/gym-store";
 import type { CardioLog } from "@/lib/gym-types";
@@ -93,6 +97,7 @@ function Dashboard() {
     userProfile,
     bodyMeasurements,
     cardioLogs,
+    preExitChecklist,
     coachMessages,
   } = useGym();
 
@@ -109,6 +114,7 @@ function Dashboard() {
   const [cardioIncline, setCardioIncline] = useState("0");
   const [cardioDistance, setCardioDistance] = useState("0");
   const [cardioError, setCardioError] = useState("");
+  const [checklistInput, setChecklistInput] = useState("");
 
   const handleWeeklyWeighIn = () => {
     const valW = parseFloat(weeklyWeightInput);
@@ -233,6 +239,12 @@ function Dashboard() {
     resetCardioForm();
   };
 
+  const handleChecklistSubmit = () => {
+    if (!checklistInput.trim()) return;
+    addChecklistItem(checklistInput);
+    setChecklistInput("");
+  };
+
   return (
     <AppShell title={formatNumericDate(now)} subtitle="">
       {/* Coach Message Banner */}
@@ -336,6 +348,76 @@ function Dashboard() {
           </div>
         </Link>
       </div>
+
+      <section className="surface-card mt-4 p-4 text-start">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-display text-[17px] font-extrabold text-ink">
+              צ׳ק־ליסט לפני יציאה מהבית
+            </h2>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              הוסיפי דברים שחשוב לזכור לפני שיוצאים לאימון.
+            </p>
+          </div>
+          <Check className="mt-1 h-5 w-5 text-primary" />
+        </div>
+        <form
+          className="mt-3 flex gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleChecklistSubmit();
+          }}
+        >
+          <input
+            value={checklistInput}
+            onChange={(event) => setChecklistInput(event.target.value)}
+            placeholder="למשל: בקבוק מים"
+            aria-label="פריט חדש בצ׳ק-ליסט"
+            className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-ink outline-none placeholder:text-muted-foreground focus:border-primary"
+          />
+          <button
+            type="submit"
+            disabled={!checklistInput.trim()}
+            className="press rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            הוספה
+          </button>
+        </form>
+        <div className="mt-3 space-y-1.5">
+          {(preExitChecklist ?? []).map((item) => (
+            <div key={item.id} className="flex items-center gap-2 rounded-xl bg-secondary/60 px-2.5 py-2">
+              <button
+                type="button"
+                onClick={() => toggleChecklistItem(item.id)}
+                aria-label={item.done ? `בטלי סימון של ${item.label}` : `סמני את ${item.label}`}
+                className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg border ${
+                  item.done
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-transparent"
+                }`}
+              >
+                <Check className="h-4 w-4" />
+              </button>
+              <span className={`min-w-0 flex-1 text-[13px] ${item.done ? "text-muted-foreground line-through" : "text-ink"}`}>
+                {item.label}
+              </span>
+              <button
+                type="button"
+                onClick={() => deleteChecklistItem(item.id)}
+                aria-label={`מחיקת ${item.label}`}
+                className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground hover:bg-rose-50 hover:text-rose-700"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+          {(preExitChecklist ?? []).length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border px-3 py-3 text-center text-[11px] text-muted-foreground">
+              עדיין אין פריטים. הוסיפי את הדבר הראשון שחשוב לזכור.
+            </p>
+          ) : null}
+        </div>
+      </section>
 
       {/* Check-In Success Banner */}
       {checkInSuccessMsg && (
