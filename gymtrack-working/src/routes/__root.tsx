@@ -298,9 +298,7 @@ function LoadingIllustration({ variant }: { variant: number }) {
   return (
     <div className="loading-micro-stage" aria-hidden="true">
       <Drawing className={`loading-drawing ${animation.motion}`} size={42} strokeWidth={1.6} />
-      <span className="loading-signal">
-        <span />
-        <span />
+      <span className="loading-fill-cup">
         <span />
       </span>
     </div>
