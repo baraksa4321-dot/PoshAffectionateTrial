@@ -1880,15 +1880,79 @@ html.night-mode .nav-shell {
 }
 
 .witty-note {
-  margin-top: 0.7rem;
-  border-inline-start: 2px solid color-mix(in srgb, var(--primary) 48%, transparent);
-  padding-inline: 0.75rem;
+  position: relative;
+  display: block;
+  width: fit-content;
+  max-width: min(82%, 240px);
+  margin-top: 0.85rem;
+  margin-inline-start: 0.35rem;
+  padding: 0.2rem 0.55rem;
   color: var(--muted-foreground);
-  font-size: 0.72rem;
+  font-family: var(--font-display);
+  font-size: 0.69rem;
   font-weight: 800;
-  line-height: 1.55;
+  line-height: 1.45;
   text-align: start;
-  animation: fade-in 260ms ease both;
+  animation: witty-note-in 360ms ease both;
+}
+
+.witty-note::before {
+  position: absolute;
+  top: 0.15rem;
+  inset-inline-start: -0.35rem;
+  width: 0.28rem;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: var(--primary);
+  opacity: 0.58;
+  content: "";
+}
+
+.witty-note--0 {
+  transform: rotate(-3.2deg);
+}
+
+.witty-note--1 {
+  margin-inline-start: auto;
+  margin-inline-end: 0.45rem;
+  transform: rotate(2.7deg);
+}
+
+.witty-note--2 {
+  max-width: 150px;
+  margin-inline-start: 1.4rem;
+  transform: rotate(-1.4deg);
+}
+
+.witty-note--3 {
+  max-width: 165px;
+  margin-inline-end: 1.1rem;
+  border-bottom: 1px dashed color-mix(in srgb, var(--primary) 60%, transparent);
+  transform: rotate(4deg);
+}
+
+.witty-note--4 {
+  max-width: 145px;
+  margin-inline-start: auto;
+  margin-inline-end: 0.8rem;
+  border: 1px dashed color-mix(in srgb, var(--primary) 48%, transparent);
+  border-radius: 0.65rem 0.35rem 0.7rem 0.25rem;
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+  box-shadow: 2px 3px 0 color-mix(in srgb, var(--primary) 10%, transparent);
+  transform: rotate(-2.4deg);
+}
+
+.witty-note--5 {
+  max-width: 175px;
+  margin-inline-start: 2.2rem;
+  padding-inline-start: 0.9rem;
+  border-inline-start: 2px solid color-mix(in srgb, var(--primary) 48%, transparent);
+  transform: rotate(1.8deg);
+}
+
+@keyframes witty-note-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .loading-clean-dots {
