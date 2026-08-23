@@ -209,54 +209,26 @@ class RuntimeErrorBoundary extends Component<
   }
 }
 
+const LOADING_SYMBOLS = ["✦", "♡", "✿", "☼", "·", "＋", "⌁", "◌"] as const;
+const LOADING_MOTIONS = [
+  "loading-micro-float",
+  "loading-micro-breathe",
+  "loading-micro-wiggle",
+  "loading-micro-orbit",
+  "loading-micro-pop",
+  "loading-micro-sway",
+] as const;
+const LOADING_ANIMATIONS = LOADING_SYMBOLS.flatMap((symbol) =>
+  LOADING_MOTIONS.map((motion) => ({ symbol, motion })),
+);
+
 function LoadingIllustration({ variant }: { variant: number }) {
-  if (variant === 1) {
-    return (
-      <div className="loading-dumbbell" aria-hidden="true">
-        <div className="loading-weight loading-weight-left" />
-        <div className="loading-weight loading-weight-left-small" />
-        <div className="loading-bar" />
-        <div className="loading-grip" />
-        <div className="loading-weight loading-weight-right-small" />
-        <div className="loading-weight loading-weight-right" />
-      </div>
-    );
-  }
-
-  if (variant === 2) {
-    return (
-      <div className="loading-apple" aria-hidden="true">
-        <div className="loading-apple-leaf" />
-        <div className="loading-apple-stem" />
-        <div className="loading-apple-body" />
-        <div className="loading-apple-shine" />
-      </div>
-    );
-  }
-
-  if (variant === 3) {
-    return (
-      <div className="loading-bowl-wrap" aria-hidden="true">
-        <div className="loading-food loading-food-one" />
-        <div className="loading-food loading-food-two" />
-        <div className="loading-food loading-food-three" />
-        <div className="loading-spoon" />
-        <div className="loading-bowl">
-          <div className="loading-bowl-fill" />
-        </div>
-      </div>
-    );
-  }
-
+  const animation = LOADING_ANIMATIONS[variant % LOADING_ANIMATIONS.length]!;
   return (
-    <div className="loading-cup-wrap" aria-hidden="true">
-      <div className="loading-bubble loading-bubble-one" />
-      <div className="loading-bubble loading-bubble-two" />
-      <div className="loading-bubble loading-bubble-three" />
-      <div className="loading-cup">
-        <div className="loading-cup-fill" />
-      </div>
-      <div className="loading-cup-handle" />
+    <div className="loading-micro-stage" aria-hidden="true">
+      <span className={`loading-micro-icon ${animation.motion}`}>{animation.symbol}</span>
+      <span className="loading-micro-dot loading-micro-dot-one" />
+      <span className="loading-micro-dot loading-micro-dot-two" />
     </div>
   );
 }
@@ -363,10 +335,10 @@ function RootContent() {
     document.documentElement.lang = "he";
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
-    setLoadingVariant(Math.floor(Math.random() * 4));
+    setLoadingVariant(Math.floor(Math.random() * LOADING_ANIMATIONS.length));
     const illustrationTimer = window.setInterval(() => {
-      setLoadingVariant((current) => (current + 1) % 4);
-    }, 2400);
+      setLoadingVariant((current) => (current + 1) % LOADING_ANIMATIONS.length);
+    }, 1250);
     const messageTimer = window.setInterval(() => {
       setLoadingMessageIndex((current) => (current + 1) % LOADING_MESSAGES.length);
     }, 1800);
@@ -382,53 +354,24 @@ function RootContent() {
       <ScrollToTop />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       {authStatus === "loading" || isProfileHydrating ? (
-        <div
-          className="loading-screen flex min-h-[100dvh] items-center justify-center bg-background px-4"
-          dir="rtl"
-        >
+        <div className="loading-screen flex min-h-[100dvh] items-center justify-center bg-background px-4" dir="rtl">
           <div
-            className="loading-stage"
+            className="loading-brand"
             role="status"
             aria-live="polite"
             aria-label="My Routine נטען"
           >
-            <div className="loading-orbit loading-orbit-one" aria-hidden="true" />
-            <div className="loading-orbit loading-orbit-two" aria-hidden="true" />
-            <div className="loading-spark loading-spark-one" aria-hidden="true">✦</div>
-            <div className="loading-spark loading-spark-two" aria-hidden="true">·</div>
-            <div className="loading-spark loading-spark-three" aria-hidden="true">✦</div>
-            <div className="loading-card">
-              <div className="loading-card-topline">
-                <span className="loading-live-dot" />
-                <span>השגרה שלך נטענת</span>
-                <span className="loading-topline-dots" aria-hidden="true">•••</span>
-              </div>
-              <div className="loading-illustration-frame">
-                <div className="loading-mini-pill loading-mini-pill-one" aria-hidden="true">סט</div>
-                <div className="loading-mini-pill loading-mini-pill-two" aria-hidden="true">+1</div>
-                <LoadingIllustration variant={loadingVariant} />
-              </div>
-              <div className="mt-4 flex justify-center">
-                <BrandLogo compact />
-              </div>
-              <p key={loadingMessageIndex} className="loading-witty-message">
-                {LOADING_MESSAGES[loadingMessageIndex]}
-              </p>
-              <div className="loading-status-line">
-                <span>מתאמים אימונים ותזונה</span>
-                <span className="loading-status-dots" aria-hidden="true">
-                  <i />
-                  <i />
-                  <i />
-                </span>
-              </div>
-              <div className="loading-progress" aria-hidden="true">
-                <span />
-              </div>
-              <div className="loading-card-footer">
-                <span>My Routine</span>
-                <span>קטן עלייך</span>
-              </div>
+            <LoadingIllustration variant={loadingVariant} />
+            <div className="mt-3 flex justify-center">
+              <BrandLogo compact />
+            </div>
+            <p key={loadingMessageIndex} className="loading-witty-message">
+              {LOADING_MESSAGES[loadingMessageIndex]}
+            </p>
+            <div className="loading-clean-dots" aria-hidden="true">
+              <span />
+              <span />
+              <span />
             </div>
           </div>
         </div>

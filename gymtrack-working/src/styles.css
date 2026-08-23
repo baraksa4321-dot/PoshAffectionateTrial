@@ -1629,9 +1629,182 @@ html.night-mode .nav-shell {
     animation: none;
   }
 
+  .loading-micro-icon,
+  .loading-micro-dot,
+  .loading-clean-dots span,
+  .loading-witty-message {
+    animation: none;
+  }
+
   .loading-cup-fill {
     height: 52%;
   }
+}
+
+/* Compact loading screen: one clean moment, with many tiny animation variations. */
+.loading-screen {
+  background:
+    radial-gradient(circle at 50% 43%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 22%),
+    var(--background);
+}
+
+.loading-screen::before,
+.loading-screen::after,
+.loading-stage,
+.loading-orbit,
+.loading-spark {
+  display: none;
+}
+
+.loading-brand {
+  width: min(100%, 184px);
+  padding: 20px 18px 17px;
+  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
+  border-radius: 27px;
+  background: color-mix(in srgb, var(--card) 96%, var(--primary));
+  box-shadow: 0 14px 36px color-mix(in srgb, var(--primary) 10%, transparent);
+  text-align: center;
+  animation: loading-card-in 500ms ease both;
+}
+
+.loading-micro-stage {
+  position: relative;
+  display: grid;
+  width: 62px;
+  height: 62px;
+  place-items: center;
+  margin: 0 auto;
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+  border-radius: 21px;
+  background: color-mix(in srgb, var(--cream) 72%, var(--card));
+}
+
+.loading-micro-stage::before {
+  position: absolute;
+  inset: 8px;
+  border: 1px dashed color-mix(in srgb, var(--primary) 22%, transparent);
+  border-radius: 16px;
+  content: "";
+  animation: loading-micro-ring 4s linear infinite;
+}
+
+.loading-micro-icon {
+  position: relative;
+  z-index: 1;
+  display: block;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 27px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.loading-micro-dot {
+  position: absolute;
+  z-index: 2;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--sage);
+}
+
+.loading-micro-dot-one {
+  top: 12px;
+  right: 13px;
+  animation: loading-micro-dot-one 1.8s ease-in-out infinite;
+}
+
+.loading-micro-dot-two {
+  bottom: 13px;
+  left: 14px;
+  width: 4px;
+  height: 4px;
+  background: var(--rose);
+  animation: loading-micro-dot-two 1.8s ease-in-out infinite 0.45s;
+}
+
+.loading-micro-float { animation: loading-micro-float 1.8s ease-in-out infinite; }
+.loading-micro-breathe { animation: loading-micro-breathe 1.45s ease-in-out infinite; }
+.loading-micro-wiggle { animation: loading-micro-wiggle 1.7s ease-in-out infinite; }
+.loading-micro-orbit { animation: loading-micro-orbit 2.4s ease-in-out infinite; }
+.loading-micro-pop { animation: loading-micro-pop 1.35s ease-in-out infinite; }
+.loading-micro-sway { animation: loading-micro-sway 1.9s ease-in-out infinite; }
+
+.loading-witty-message {
+  min-height: 20px;
+  margin-top: 8px;
+  color: var(--foreground);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  animation: loading-message-in 300ms ease both;
+}
+
+.loading-clean-dots {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.loading-clean-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--primary);
+  opacity: 0.35;
+  animation: loading-dot 1.1s ease-in-out infinite;
+}
+
+.loading-clean-dots span:nth-child(2) { animation-delay: 150ms; }
+.loading-clean-dots span:nth-child(3) { animation-delay: 300ms; }
+
+@keyframes loading-micro-ring {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes loading-micro-float {
+  0%, 100% { transform: translateY(3px) rotate(-4deg); }
+  50% { transform: translateY(-5px) rotate(4deg); }
+}
+
+@keyframes loading-micro-breathe {
+  0%, 100% { transform: scale(0.86); opacity: 0.65; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+
+@keyframes loading-micro-wiggle {
+  0%, 100% { transform: rotate(-8deg); }
+  25% { transform: rotate(8deg) translateY(-2px); }
+  75% { transform: rotate(5deg) translateY(2px); }
+}
+
+@keyframes loading-micro-orbit {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(4px, -3px); }
+  50% { transform: translate(0, -5px); }
+  75% { transform: translate(-4px, -2px); }
+}
+
+@keyframes loading-micro-pop {
+  0%, 100% { transform: scale(0.75) translateY(3px); }
+  45% { transform: scale(1.08) translateY(-3px); }
+  65% { transform: scale(0.96) translateY(0); }
+}
+
+@keyframes loading-micro-sway {
+  0%, 100% { transform: translateX(-3px) rotate(-5deg); }
+  50% { transform: translateX(3px) rotate(5deg); }
+}
+
+@keyframes loading-micro-dot-one {
+  0%, 100% { transform: translate(0, 0); opacity: 0.4; }
+  50% { transform: translate(3px, -4px); opacity: 1; }
+}
+
+@keyframes loading-micro-dot-two {
+  0%, 100% { transform: translate(0, 0); opacity: 0.4; }
+  50% { transform: translate(-2px, 3px); opacity: 1; }
 }
 
 .page-enter {
