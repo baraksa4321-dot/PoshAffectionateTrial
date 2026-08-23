@@ -144,17 +144,36 @@ function Session() {
         ...(w.repsMax !== undefined ? { targetRepMax: w.repsMax } : {}),
       }));
       const working: LoggedSet[] = Array.from({ length: item.sets }, (_, i) => {
+        const configuredSet = item.workingSets?.[i];
+        const isDropSet = configuredSet?.dropSet ?? false;
         return {
-          reps: last?.sets[i]?.reps ?? item.workingSets?.[i]?.reps ?? targetReps,
-          weight: prescribedWeight,
+          reps: last?.sets[i]?.reps ?? configuredSet?.reps ?? targetReps,
+          weight:
+            configuredSet?.weight ??
+            (isDropSet
+              ? Math.max(
+                  0,
+                  Math.round(
+                    prescribedWeight *
+                      (1 -
+                        (item.dropSetConfig?.weightReductionPercent ??
+                          item.dropSetConfig?.percentReduction ??
+                          20) /
+                          100) *
+                      10,
+                  ) / 10,
+                )
+              : prescribedWeight),
           done: false,
           targetReps,
           warmup: false,
           ...(targetRepMax !== undefined ? { targetRepMax } : {}),
+          ...(isDropSet ? { dropSet: true } : {}),
         };
       });
       const dropConfig = item.dropSetConfig;
-      if (dropConfig?.enabled && dropConfig.drops > 0) {
+      const hasPerSetDrop = item.workingSets?.some((set) => set.dropSet) ?? false;
+      if (dropConfig?.enabled && dropConfig.drops > 0 && !hasPerSetDrop) {
         for (let dropLevel = 1; dropLevel <= dropConfig.drops; dropLevel += 1) {
           const reduction = (dropConfig.weightReductionPercent ?? dropConfig.percentReduction ?? 20) / 100;
           const dropWeight = Math.max(
