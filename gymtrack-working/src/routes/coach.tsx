@@ -65,6 +65,15 @@ type ProfileRow = {
   coach_id?: string | null;
 };
 
+type ClientFeedbackRow = {
+  id: string;
+  client_id: string;
+  difficulty_rating?: string | null;
+  discomfort_notes?: string | null;
+  coach_notes?: string | null;
+  created_at?: string | null;
+};
+
 type ClientDetails = Awaited<ReturnType<typeof pullClientDataForCoach>>;
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -111,6 +120,7 @@ export function CoachDashboardPage({
   const [approvalCoachByUser, setApprovalCoachByUser] = useState<Record<string, string>>({});
   const [approvalUserId, setApprovalUserId] = useState<string | null>(null);
   const [approvalNotice, setApprovalNotice] = useState("");
+  const [clientFeedback, setClientFeedback] = useState<ClientFeedbackRow[]>([]);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMsg, setInviteMsg] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -218,6 +228,16 @@ export function CoachDashboardPage({
     return true;
   }, [isOwner]);
 
+  const loadClientFeedback = useCallback(async () => {
+    if (!isCoach) return;
+    const { data } = await supabase
+      .from("client_feedback")
+      .select("id, client_id, difficulty_rating, discomfort_notes, coach_notes, created_at")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (data) setClientFeedback(data as ClientFeedbackRow[]);
+  }, [isCoach]);
+
   useEffect(() => {
     if (isCoach) {
       loadCoachClients();
@@ -225,7 +245,8 @@ export function CoachDashboardPage({
     if (isOwner) {
       loadAllProfilesForOwner();
     }
-  }, [isCoach, isOwner, loadAllProfilesForOwner, loadCoachClients]);
+    loadClientFeedback();
+  }, [isCoach, isOwner, loadAllProfilesForOwner, loadCoachClients, loadClientFeedback]);
 
   useEffect(() => {
     if (clientsOnly || clients.length === 0) {
@@ -851,6 +872,53 @@ export function CoachDashboardPage({
     >
       {!clientsOnly ? (
         <section className="space-y-4 text-start">
+          <section className="surface-card border-rose-200 bg-rose-50/60 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-rose-700">
+                  חשוב לבדוק
+                </p>
+                <h2 className="mt-0.5 flex items-center gap-2 text-base font-extrabold text-rose-950">
+                  <MessageSquare className="h-4 w-4 text-rose-700" />
+                  הערות ותלונות של מתאמנים
+                </h2>
+              </div>
+              {clientFeedback.length > 0 ? (
+                <span className="rounded-full bg-rose-200 px-2 py-0.5 text-[10px] font-bold text-rose-900">
+                  {clientFeedback.length}
+                </span>
+              ) : null}
+            </div>
+            {clientFeedback.length === 0 ? (
+              <p className="mt-2 rounded-xl bg-white/80 p-2.5 text-xs font-semibold text-rose-900/70">
+                אין כרגע הערות או תלונות חדשות ממתאמנים.
+              </p>
+            ) : (
+              <div className="mt-2 space-y-1.5">
+                {clientFeedback.slice(0, 5).map((feedback) => {
+                  const client = clients.find((item) => item.client_id === feedback.client_id);
+                  const profile = client?.profiles ?? allProfiles.find((item) => item.id === feedback.client_id);
+                  const note = feedback.discomfort_notes?.trim() || feedback.coach_notes?.trim();
+                  return (
+                    <div key={feedback.id} className="rounded-xl border border-rose-100 bg-white/85 p-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-[11px] font-bold text-rose-950">
+                          {profileDisplayName(profile)}
+                        </span>
+                        <span className="shrink-0 text-[10px] text-rose-700">
+                          {feedback.discomfort_notes?.trim() ? "תלונה / אי־נוחות" : "הערה"}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[11px] leading-relaxed text-rose-950/75">
+                        {note || `דירוג קושי: ${feedback.difficulty_rating || "לא צוין"}`}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
               {isOwner ? "לוח מודעות לבעלים" : "לוח מודעות למאמן"}
@@ -865,27 +933,27 @@ export function CoachDashboardPage({
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
-            <div className="surface-card border-primary/25 bg-primary/5 p-1.5 text-start">
-              <p className="text-[11px] font-bold text-muted-foreground">מתאמנים</p>
-              <p className="mt-0.5 font-display text-lg font-extrabold text-ink">{clients.length}</p>
+          <div className="grid grid-cols-2 gap-0.5 sm:grid-cols-4">
+            <div className="surface-card border-primary/25 bg-primary/5 p-1 text-start">
+              <p className="text-[10px] font-bold text-muted-foreground">מתאמנים</p>
+              <p className="mt-0.5 font-display text-base font-extrabold text-ink">{clients.length}</p>
             </div>
-            <div className="surface-card border-accent/60 bg-accent/20 p-1.5 text-start">
-              <p className="text-[11px] font-bold text-muted-foreground">דורשים תכנית</p>
-              <p className="mt-0.5 font-display text-lg font-extrabold text-ink">
+            <div className="surface-card border-accent/60 bg-accent/20 p-1 text-start">
+              <p className="text-[10px] font-bold text-muted-foreground">דורשים תכנית</p>
+              <p className="mt-0.5 font-display text-base font-extrabold text-ink">
                 {needsPlan.length}
               </p>
             </div>
-            <div className="surface-card border-border bg-surface-2 p-1.5 text-start">
-              <p className="text-[11px] font-bold text-muted-foreground">שקטים 14 יום</p>
-              <p className="mt-0.5 font-display text-lg font-extrabold text-ink">
+            <div className="surface-card border-border bg-surface-2 p-1 text-start">
+              <p className="text-[10px] font-bold text-muted-foreground">שקטים 14 יום</p>
+              <p className="mt-0.5 font-display text-base font-extrabold text-ink">
                 {quietClients.length}
               </p>
             </div>
             {isOwner ? (
-              <div className="surface-card border-purple-200 bg-purple-50/70 p-1.5 text-start">
-                <p className="text-[11px] font-bold text-purple-700">משתמשים</p>
-                <p className="mt-0.5 font-display text-lg font-extrabold text-purple-950">
+              <div className="surface-card border-purple-200 bg-purple-50/70 p-1 text-start">
+                <p className="text-[10px] font-bold text-purple-700">משתמשים</p>
+                <p className="mt-0.5 font-display text-base font-extrabold text-purple-950">
                   {allProfiles.length}
                 </p>
               </div>
