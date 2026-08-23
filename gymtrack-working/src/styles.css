@@ -504,52 +504,39 @@
   --gradient-end: #f2e8d3;
 }
 
-/*
- * Accessibility-first light mode:
- * accent colors are for surfaces and actions; black is reserved for readable text.
- */
-:root,
-:root[data-theme] {
-  --foreground: #252329;
-  --ink: #252329;
-  --ink-soft: #665f6a;
-  --muted-foreground: #665f6a;
-  --card-foreground: #252329;
-  --popover-foreground: #252329;
-}
-
 :root[data-theme="black"] {
-  --background: #ffffff;
-  --surface: #fafafa;
-  --surface-2: #f0eef0;
-  --cream: #f5f3f4;
-  --card: #fafafa;
-  --popover: #fafafa;
-  --primary: #d8cbd0;
-  --secondary: #eee9ec;
-  --rose: #d8cbd0;
-  --rose-soft: #f2edef;
-  --accent: #e6dfe2;
-  --muted: #f0eef0;
-  --border: #d3cbd0;
-  --input: #d3cbd0;
-  --ring: #b9aeb3;
-  --gradient-start: #f0e7ea;
-  --gradient-mid: #f7f3f4;
-  --gradient-end: #ffffff;
+  --background: #09090b;
+  --foreground: #f5f5f6;
+  --surface: #141416;
+  --surface-2: #202024;
+  --cream: #252529;
+  --card: #141416;
+  --card-foreground: #f5f5f6;
+  --popover: #141416;
+  --popover-foreground: #f5f5f6;
+  --primary: #e09aaa;
+  --primary-foreground: #1a1013;
+  --secondary: #29292e;
+  --secondary-foreground: #f5f5f6;
+  --rose: #e09aaa;
+  --rose-soft: #3c252d;
+  --accent: #d8b3bc;
+  --accent-foreground: #21161a;
+  --muted: #202024;
+  --muted-foreground: #b9b8be;
+  --border: #38383e;
+  --input: #45454c;
+  --ring: #e09aaa;
+  --gradient-start: #171719;
+  --gradient-mid: #2d2d32;
+  --gradient-end: #4a3940;
 }
 
-/* The page canvas stays light; selected colors belong to surfaces and actions. */
 html,
 body,
 #root {
   background-color: var(--background) !important;
   background-image: none !important;
-}
-
-:root,
-:root[data-theme] {
-  --background: #fffdfb;
 }
 
 /*
@@ -1631,6 +1618,7 @@ html.night-mode .nav-shell {
 
   .loading-micro-icon,
   .loading-drawing,
+  .loading-signal span,
   .loading-micro-dot,
   .loading-clean-dots span,
   .loading-witty-message {
