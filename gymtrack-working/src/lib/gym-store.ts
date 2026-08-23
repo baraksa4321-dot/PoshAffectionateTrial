@@ -917,7 +917,7 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
             success: false,
             error: "Supabase request timed out (network timeout)",
           }),
-        20_000,
+        7_000,
       ),
     ),
   ]);
