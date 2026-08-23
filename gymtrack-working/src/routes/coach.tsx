@@ -170,6 +170,7 @@ export function CoachDashboardPage({
   const [dropSetEnabled, setDropSetEnabled] = useState(false);
   const [dropReductionMode, setDropReductionMode] = useState<"percent" | "kg" | "">("");
   const [dropReductionValue, setDropReductionValue] = useState("");
+  const [exerciseBuilderNotice, setExerciseBuilderNotice] = useState("");
   const [dropRepsMin, setDropRepsMin] = useState(10);
   const [dropRepsMax, setDropRepsMax] = useState(12);
   const [supersetRepsMin, setSupersetRepsMin] = useState(10);
@@ -703,8 +704,12 @@ export function CoachDashboardPage({
         (dropReductionMode === "percent" && parsedDropReduction >= 100) ||
         (dropReductionMode === "kg" && parsedDropReduction >= targetWeight))
     ) {
+      setExerciseBuilderNotice(
+        "בדרופ־סט יש לבחור סוג הפחתה ולהזין כמות תקינה שקטנה ממשקל היעד.",
+      );
       return;
     }
+    setExerciseBuilderNotice("");
 
     const newWorkoutItem: WorkoutItem = {
       id: uid(),
@@ -1988,7 +1993,14 @@ export function CoachDashboardPage({
                                                       ) : null}
                                                       {exItem.dropSetConfig?.enabled ? (
                                                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                                                          דרופ סט ×{exItem.dropSetConfig.drops}
+                                                           {exItem.dropSetConfig.reductionValue &&
+                                                           exItem.dropSetConfig.reductionMode
+                                                             ? `דרופ סט · −${exItem.dropSetConfig.reductionValue}${
+                                                                 exItem.dropSetConfig.reductionMode === "percent"
+                                                                   ? "%"
+                                                                   : " ק״ג"
+                                                               }`
+                                                             : "דרופ סט"}
                                                         </span>
                                                       ) : null}
                                                       {exItem.supersetId ? (
@@ -2044,6 +2056,11 @@ export function CoachDashboardPage({
                                                 <Search className="h-4 w-4 text-muted-foreground" />
                                               </button>
                                             </div>
+                                            {exerciseBuilderNotice ? (
+                                              <p className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-[10px] font-semibold text-ink">
+                                                {exerciseBuilderNotice}
+                                              </p>
+                                            ) : null}
 
                                             <div className="grid grid-cols-4 gap-1.5">
                                               <div>
@@ -2588,6 +2605,98 @@ export function CoachDashboardPage({
                         <Edit2 className="h-3 w-3" />
                         <span>{editingNutrition ? "ביטול" : "ערוך יעדים"}</span>
                       </button>
+                    </div>
+
+                    <div className="rounded-2xl border border-primary/15 bg-card/80 p-3">
+                      <div className="mb-3">
+                        <p className="text-[11px] font-bold text-ink">מחשבון BMR למאמן בלבד</p>
+                        <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                          החישוב הוא אומדן לפי Mifflin–St Jeor. הוא לא מוצג למתאמן ולא משנה יעד קלורי אוטומטית.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                          גיל
+                          <input
+                            type="number"
+                            min="1"
+                            max="120"
+                            value={profileAge}
+                            onChange={(event) => setProfileAge(event.target.value)}
+                            placeholder="נדרש"
+                            className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
+                          />
+                        </label>
+                        <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                          גובה (ס״מ)
+                          <input
+                            type="number"
+                            min="1"
+                            max="300"
+                            value={profileHeight}
+                            onChange={(event) => setProfileHeight(event.target.value)}
+                            placeholder="נדרש"
+                            className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
+                          />
+                        </label>
+                        <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                          משקל (ק״ג)
+                          <input
+                            type="number"
+                            min="0.1"
+                            max="500"
+                            step="0.1"
+                            value={profileWeight}
+                            onChange={(event) => setProfileWeight(event.target.value)}
+                            placeholder="נדרש"
+                            className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
+                          />
+                        </label>
+                        <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                          אימונים בשבוע
+                          <input
+                            type="number"
+                            min="0"
+                            max="14"
+                            value={profileWorkouts}
+                            onChange={(event) => setProfileWorkouts(event.target.value)}
+                            placeholder="נדרש"
+                            className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
+                          />
+                        </label>
+                      </div>
+                      {!clientDetails?.profile?.gender ? (
+                        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-2 text-[10px] font-semibold text-ink">
+                          חסר מין בפרופיל המתאמן. יש להשלים אותו בפרופיל לפני שאפשר לחשב.
+                        </p>
+                      ) : null}
+                      {calorieEstimate ? (
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-center">
+                          <div className="rounded-xl bg-primary/5 p-2">
+                            <span className="block text-[10px] text-muted-foreground">BMR במנוחה</span>
+                            <strong className="text-sm text-ink">{calorieEstimate.bmr} kcal</strong>
+                          </div>
+                          <div className="rounded-xl bg-primary/10 p-2">
+                            <span className="block text-[10px] text-muted-foreground">TDEE בשגרה</span>
+                            <strong className="text-sm text-ink">{calorieEstimate.tdee} kcal</strong>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="mt-3 text-[10px] font-semibold text-muted-foreground">
+                          השלימי גיל, גובה, משקל, מין ומספר אימונים בשבוע — ללא כל אחד מהם לא יוצג חישוב.
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={saveClientCalorieProfile}
+                        className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1 rounded-xl border border-primary/25 bg-primary/5 text-[11px] font-bold text-primary"
+                      >
+                        <Save className="h-3.5 w-3.5" />
+                        שמור נתוני מחשבון
+                      </button>
+                      {profileNotice ? (
+                        <p className="mt-2 text-[10px] font-semibold text-ink">{profileNotice}</p>
+                      ) : null}
                     </div>
 
                     {editingNutrition ? (

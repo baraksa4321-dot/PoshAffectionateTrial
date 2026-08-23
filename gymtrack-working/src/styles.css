@@ -680,13 +680,25 @@ html.night-mode .nav-shell {
   }
 }
 
-/* Neutralize legacy purple/violet copy so it never clashes with the selected palette. */
+/* Neutralize legacy purple/violet utilities so they never clash with the selected palette. */
 .text-purple-700,
 .text-purple-800,
 .text-purple-900,
 .text-purple-950,
 .text-violet-800 {
   color: var(--primary) !important;
+}
+
+.bg-purple-50,
+.bg-purple-100,
+.bg-violet-100 {
+  background-color: color-mix(in srgb, var(--primary) 12%, transparent) !important;
+}
+
+.border-purple-100,
+.border-purple-200,
+.border-purple-500 {
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border)) !important;
 }
 
 @layer base {
