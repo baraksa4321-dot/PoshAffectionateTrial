@@ -144,6 +144,7 @@ function NutritionLog() {
   const [showRecipes, setShowRecipes] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<RecipeDefinition | null>(null);
   const [recipeCategory, setRecipeCategory] = useState<RecipeDefinition["category"] | "הכל">("הכל");
+  const [recipeMealTime, setRecipeMealTime] = useState<"הכל" | "בוקר" | "צהריים" | "ערב" | "כל שעה">("הכל");
   const [recipeQuery, setRecipeQuery] = useState("");
   const [recipeServings, setRecipeServings] = useState(1);
   const [recipeMealId, setRecipeMealId] = useState("");
@@ -169,13 +170,14 @@ function NutritionLog() {
     return RECIPE_LIBRARY.filter(
       (recipe) =>
         (recipeCategory === "הכל" || recipe.category === recipeCategory) &&
+        (recipeMealTime === "הכל" || recipe.mealTime === recipeMealTime || recipe.mealTime === "כל שעה") &&
         (!query ||
-          [recipe.name, recipe.category, ...recipe.ingredients]
+          [recipe.name, recipe.category, recipe.mealTime, ...recipe.ingredients]
             .join(" ")
             .toLocaleLowerCase()
             .includes(query)),
     );
-  }, [recipeCategory, recipeQuery]);
+  }, [recipeCategory, recipeMealTime, recipeQuery]);
   const savedRecipes = gym.recipes ?? [];
   const filteredSavedRecipes = useMemo(() => {
     const query = recipeQuery.trim().toLocaleLowerCase();
@@ -425,6 +427,24 @@ function NutritionLog() {
                 aria-label="חיפוש מתכונים"
               />
             </div>
+            {/* Meal-time filter row */}
+            <div className="flex gap-1.5 overflow-x-auto pb-1.5">
+              {(["הכל", "בוקר", "צהריים", "ערב"] as const).map((time) => (
+                <button
+                  key={time}
+                  type="button"
+                  onClick={() => setRecipeMealTime(time)}
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold transition-colors ${
+                    recipeMealTime === time
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-muted-foreground"
+                  }`}
+                >
+                  {time === "הכל" ? "כל הארוחות" : `ארוחת ${time}`}
+                </button>
+              ))}
+            </div>
+            {/* Category filter row */}
             <div className="flex gap-1.5 overflow-x-auto pb-2">
               <button
                 type="button"

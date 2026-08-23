@@ -4,10 +4,13 @@ export type RecipeNutrition = {
   fat: number;
 };
 
+export type RecipeMealTime = "בוקר" | "צהריים" | "ערב" | "כל שעה";
+
 export type RecipeDefinition = {
   id: string;
   name: string;
   category: "עתיר חלבון" | "דל שומן" | "ארוחה קלה" | "מתוק מאוזן" | "דל קלוריות";
+  mealTime: RecipeMealTime;
   ingredients: string[];
   instructions: string[];
   nutrition: RecipeNutrition;
@@ -15,15 +18,245 @@ export type RecipeDefinition = {
 
 /** Compact, practical recipe suggestions. Values are estimates per serving. */
 export const RECIPE_LIBRARY: RecipeDefinition[] = [
+  // ─── ארוחות בוקר ───────────────────────────────────────────────────────────
+  {
+    id: "oatmeal-yogurt-fruit",
+    name: "שיבולת שועל עם יוגורט ופירות",
+    category: "עתיר חלבון",
+    mealTime: "בוקר",
+    ingredients: [
+      "50 ג׳ שיבולת שועל גסה",
+      "150 ג׳ יוגורט חלבון",
+      "חצי בננה פרוסה",
+      "קומץ אוכמניות",
+      "כפית דבש",
+      "קינמון",
+    ],
+    instructions: [
+      "מבשלים את השיבולת שועל במים לפי ההוראות על האריזה.",
+      "מצננים מעט ומגישים בקערה עם יוגורט חלבון.",
+      "מוסיפים בננה, אוכמניות, דבש וקינמון.",
+    ],
+    nutrition: { calories: 360, protein: 24, fat: 5 },
+  },
+  {
+    id: "scrambled-eggs-cottage",
+    name: "ביצים מקושקשות עם קוטג׳",
+    category: "עתיר חלבון",
+    mealTime: "בוקר",
+    ingredients: [
+      "2 ביצים",
+      "100 ג׳ חלבוני ביצה",
+      "100 ג׳ קוטג׳ 5%",
+      "פלפלון אדום קצוץ",
+      "תרסיס שמן, מלח ופלפל",
+    ],
+    instructions: [
+      "טורפים ביצים, חלבונים, קוטג׳ ותבלינים יחד.",
+      "מחממים מחבת נון-סטיק עם תרסיס שמן.",
+      "מבשלים על אש נמוכה-בינונית תוך ערבוב קבוע עד שהביצים קרמיות ומוכנות.",
+    ],
+    nutrition: { calories: 310, protein: 38, fat: 10 },
+  },
+  {
+    id: "avocado-toast-egg",
+    name: "טוסט אבוקדו עם ביצה",
+    category: "ארוחה קלה",
+    mealTime: "בוקר",
+    ingredients: [
+      "2 פרוסות לחם מחיטה מלאה",
+      "חצי אבוקדו",
+      "ביצה קשה או עין",
+      "לימון, פתיתי צ׳ילי, מלח ופלפל",
+    ],
+    instructions: [
+      "קולים את הלחם עד שהוא זהוב.",
+      "מועכים את האבוקדו עם לימון, מלח ופלפל.",
+      "מורחים על הלחם ומניחים עליו את הביצה.",
+    ],
+    nutrition: { calories: 340, protein: 16, fat: 14 },
+  },
+  {
+    id: "protein-banana-shake",
+    name: "שייק חלבון בננה",
+    category: "עתיר חלבון",
+    mealTime: "בוקר",
+    ingredients: [
+      "בננה קפואה",
+      "30 ג׳ אבקת חלבון ואנילה",
+      "200 מ״ל חלב 1%",
+      "כף חמאת שקדים",
+      "קרח",
+    ],
+    instructions: [
+      "מניחים את כל המרכיבים בבלנדר.",
+      "טוחנים עד לקבלת שייק חלק.",
+      "מגישים מיד.",
+    ],
+    nutrition: { calories: 380, protein: 36, fat: 9 },
+  },
+  {
+    id: "granola-yogurt-berries",
+    name: "גרנולה עם יוגורט ואוכמניות",
+    category: "מתוק מאוזן",
+    mealTime: "בוקר",
+    ingredients: [
+      "180 ג׳ יוגורט יווני 0%",
+      "40 ג׳ גרנולה דלת סוכר",
+      "קומץ אוכמניות",
+      "כפית דבש",
+    ],
+    instructions: [
+      "מניחים את היוגורט בכוס או קערה.",
+      "מפזרים גרנולה ואוכמניות.",
+      "מזלפים דבש ומגישים.",
+    ],
+    nutrition: { calories: 295, protein: 18, fat: 6 },
+  },
+  // ─── ארוחות צהריים ─────────────────────────────────────────────────────────
+  {
+    id: "quinoa-roasted-vegetables",
+    name: "קינואה עם ירקות צלויים",
+    category: "דל קלוריות",
+    mealTime: "צהריים",
+    ingredients: [
+      "80 ג׳ קינואה (יבשה)",
+      "קישוא, בצל סגול ופלפלון",
+      "2 כפיות שמן זית",
+      "כמון, פפריקה, שום, מלח ופלפל",
+      "פטרוזיליה טרייה",
+    ],
+    instructions: [
+      "מבשלים את הקינואה לפי ההוראות.",
+      "חותכים ירקות, מתבלים ואופים ב-200 מעלות כ-20 דקות.",
+      "מגישים קינואה עם ירקות ופטרוזיליה.",
+    ],
+    nutrition: { calories: 350, protein: 12, fat: 10 },
+  },
+  {
+    id: "stuffed-chicken-mushrooms",
+    name: "חזה עוף ממולא בפטריות",
+    category: "דל שומן",
+    mealTime: "צהריים",
+    ingredients: [
+      "160 ג׳ חזה עוף",
+      "80 ג׳ פטריות שמפיניון",
+      "2 כפות גבינת ריקוטה",
+      "שום, טימין, מלח ופלפל",
+      "תרסיס שמן",
+    ],
+    instructions: [
+      "מקפיצים פטריות עם שום. מצננים ומערבבים עם ריקוטה.",
+      "פותחים כיס בחזה העוף וממלאים בתערובת.",
+      "צולים בתנור ב-190 מעלות כ-20 דקות.",
+    ],
+    nutrition: { calories: 320, protein: 44, fat: 9 },
+  },
+  {
+    id: "wholegrain-pasta-tuna",
+    name: "פסטה מחיטה מלאה עם טונה",
+    category: "עתיר חלבון",
+    mealTime: "צהריים",
+    ingredients: [
+      "80 ג׳ פסטה מחיטה מלאה",
+      "קופסת טונה במים",
+      "עגבנייה שרי",
+      "כף שמן זית",
+      "כפית קאפרים, שום, מלח ופלפל",
+    ],
+    instructions: [
+      "מבשלים פסטה לפי ההוראות.",
+      "מחממים שמן, מוסיפים שום ועגבניות, מטגנים דקה.",
+      "מוסיפים טונה מסוננת, פסטה וקאפרים, מערבבים ומגישים.",
+    ],
+    nutrition: { calories: 430, protein: 36, fat: 9 },
+  },
+  {
+    id: "turkey-avocado-sandwich",
+    name: "כריך הודו ואבוקדו",
+    category: "ארוחה קלה",
+    mealTime: "צהריים",
+    ingredients: [
+      "2 פרוסות לחם מחיטה מלאה",
+      "100 ג׳ פרוסות הודו",
+      "רבע אבוקדו",
+      "חסה, עגבנייה, חרדל",
+      "מלח ופלפל",
+    ],
+    instructions: [
+      "מועכים את האבוקדו ומורחים על הלחם.",
+      "מסדרים הודו, חסה ועגבנייה.",
+      "מוסיפים חרדל וסוגרים.",
+    ],
+    nutrition: { calories: 355, protein: 29, fat: 10 },
+  },
+  // ─── ארוחות ערב ────────────────────────────────────────────────────────────
+  {
+    id: "baked-salmon-vegetables",
+    name: "סלמון בתנור עם ירקות",
+    category: "דל שומן",
+    mealTime: "ערב",
+    ingredients: [
+      "160 ג׳ פילה סלמון",
+      "קישוא ועגבניות שרי",
+      "כפית שמן זית",
+      "לימון, שום, שמיר, מלח ופלפל",
+    ],
+    instructions: [
+      "מניחים סלמון וירקות בתבנית.",
+      "מתבלים ומזלפים שמן ולימון.",
+      "אופים ב-200 מעלות כ-15 דקות.",
+    ],
+    nutrition: { calories: 335, protein: 36, fat: 16 },
+  },
+  {
+    id: "lentil-stew",
+    name: "קדרת עדשים",
+    category: "דל קלוריות",
+    mealTime: "ערב",
+    ingredients: [
+      "100 ג׳ עדשים כתומות",
+      "גזר, סלרי ובצל",
+      "400 ג׳ עגבניות מרוסקות",
+      "כמון, כורכום, פפריקה, שום, מלח ופלפל",
+    ],
+    instructions: [
+      "מקפיצים בצל, גזר וסלרי עד ריכוך.",
+      "מוסיפים עדשים, עגבניות ותבלינים.",
+      "מבשלים כ-20 דקות עד שהעדשים רכות.",
+    ],
+    nutrition: { calories: 310, protein: 18, fat: 3 },
+  },
+  {
+    id: "garlic-lemon-chicken",
+    name: "עוף בתנור עם שום ולימון",
+    category: "דל קלוריות",
+    mealTime: "ערב",
+    ingredients: [
+      "160 ג׳ חזה עוף",
+      "4 שיני שום",
+      "לימון שלם",
+      "רוזמרין ואורגנו יבשים",
+      "תרסיס שמן, מלח ופלפל",
+    ],
+    instructions: [
+      "חורצים את חזה העוף ומכניסים שיני שום.",
+      "מתבלים, סוחטים לימון ומניחים בתבנית.",
+      "אופים ב-200 מעלות כ-22 דקות.",
+    ],
+    nutrition: { calories: 285, protein: 40, fat: 5 },
+  },
+  // ─── כל שעה ────────────────────────────────────────────────────────────────
   {
     id: "rice-paper-borek",
     name: "בורקס דפי אורז",
     category: "דל שומן",
+    mealTime: "כל שעה",
     ingredients: ["3 דפי אורז", "100 ג׳ קוטג׳ 5%", "ביצה", "50 ג׳ גבינה בולגרית 5%", "תבלינים"],
     instructions: [
       "טובלים כל דף אורז במים לכמה שניות ומניחים על משטח.",
       "מערבבים קוטג׳, ביצה, בולגרית ותבלינים ומניחים במרכז.",
-      "מקפלים, מברישים מעט בביצה ואופים ב־200 מעלות כ־15–18 דקות.",
+      "מקפלים, מברישים מעט בביצה ואופים ב-200 מעלות כ-15–18 דקות.",
     ],
     nutrition: { calories: 315, protein: 25, fat: 12 },
   },
@@ -31,6 +264,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "cucumber-labaneh-salad",
     name: "סלט מלפפונים ולאבנה",
     category: "ארוחה קלה",
+    mealTime: "כל שעה",
     ingredients: [
       "2 מלפפונים",
       "100 ג׳ לאבנה 5%",
@@ -49,6 +283,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "yogurt-apple-honey",
     name: "יוגורט עם תפוח ודבש",
     category: "מתוק מאוזן",
+    mealTime: "כל שעה",
     ingredients: [
       "200 ג׳ יוגורט חלבון",
       "תפוח קטן חתוך",
@@ -67,6 +302,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "rice-cakes-cottage-honey",
     name: "פריכיות עם קוטג׳ ודבש",
     category: "עתיר חלבון",
+    mealTime: "כל שעה",
     ingredients: ["3 פריכיות אורז", "150 ג׳ קוטג׳ 5%", "כפית דבש", "קינמון או זעתר"],
     instructions: [
       "מורחים קוטג׳ על הפריכיות.",
@@ -79,9 +315,10 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "protein-omelet",
     name: "חביתת חלבון וירקות",
     category: "עתיר חלבון",
+    mealTime: "כל שעה",
     ingredients: ["ביצה", "150 ג׳ חלבוני ביצה", "עגבנייה", "פטריות", "תרסיס שמן ותבלינים"],
     instructions: [
-      "מקפיצים את הירקות במחבת נון־סטיק.",
+      "מקפיצים את הירקות במחבת נון-סטיק.",
       "טורפים ביצה וחלבונים, יוצקים למחבת ומבשלים על אש בינונית.",
       "מקפלים כשהחביתה יציבה ומגישים.",
     ],
@@ -91,6 +328,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "tuna-yogurt-toast",
     name: "טוסט טונה ויוגורט",
     category: "עתיר חלבון",
+    mealTime: "כל שעה",
     ingredients: [
       "2 פרוסות לחם מלא",
       "קופסת טונה במים",
@@ -109,6 +347,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "chicken-tortilla",
     name: "טורטייה עוף וירקות",
     category: "דל שומן",
+    mealTime: "כל שעה",
     ingredients: [
       "טורטייה קטנה",
       "120 ג׳ חזה עוף",
@@ -127,10 +366,11 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "cottage-pancakes",
     name: "פנקייק קוטג׳ ושיבולת שועל",
     category: "עתיר חלבון",
+    mealTime: "כל שעה",
     ingredients: ["100 ג׳ קוטג׳", "ביצה", "30 ג׳ שיבולת שועל", "חצי בננה", "קינמון"],
     instructions: [
       "טוחנים או מועכים את כל המרכיבים לבלילה.",
-      "מטגנים לביבות קטנות במחבת נון־סטיק.",
+      "מטגנים לביבות קטנות במחבת נון-סטיק.",
       "הופכים כשהקצוות מתייצבים ומגישים.",
     ],
     nutrition: { calories: 320, protein: 22, fat: 10 },
@@ -139,6 +379,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "greek-salad-tuna",
     name: "סלט יווני עם טונה",
     category: "דל שומן",
+    mealTime: "כל שעה",
     ingredients: ["מלפפון", "עגבנייה", "פלפל", "קופסת טונה במים", "30 ג׳ בולגרית 5%", "לימון"],
     instructions: [
       "חותכים את הירקות ומניחים בקערה.",
@@ -151,6 +392,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "protein-chocolate-mug",
     name: "עוגת שוקולד חלבונית בכוס",
     category: "מתוק מאוזן",
+    mealTime: "כל שעה",
     ingredients: ["ביצה", "20 ג׳ אבקת חלבון", "כף קקאו", "כף יוגורט", "חצי כפית אבקת אפייה"],
     instructions: [
       "מערבבים את כל המרכיבים בכוס שמתאימה למיקרוגל.",
@@ -163,6 +405,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "chicken-rice-bowl",
     name: "קערת חזה עוף ואורז",
     category: "עתיר חלבון",
+    mealTime: "כל שעה",
     ingredients: [
       "150 ג׳ חזה עוף",
       "100 ג׳ אורז מבושל",
@@ -171,7 +414,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
       "פפריקה, שום, לימון ומלח",
     ],
     instructions: [
-      "מתבלים את חזה העוף וצולים במחבת נון־סטיק או באייר פרייר עד שהוא מוכן.",
+      "מתבלים את חזה העוף וצולים במחבת נון-סטיק או באייר פרייר עד שהוא מוכן.",
       "מניחים בקערה אורז, ירקות וחזה עוף פרוס.",
       "מערבבים יוגורט, לימון ושום לרוטב ומזלפים מעל.",
     ],
@@ -181,6 +424,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "lean-sirloin-potatoes",
     name: "שייטל עם תפוחי אדמה בתנור",
     category: "דל קלוריות",
+    mealTime: "ערב",
     ingredients: [
       "160 ג׳ שייטל פרוס",
       "180 ג׳ תפוחי אדמה",
@@ -189,7 +433,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
       "סלט ירקות קטן",
     ],
     instructions: [
-      "חותכים את תפוחי האדמה לפלחים, מתבלים ואופים ב־210 מעלות כ־30 דקות.",
+      "חותכים את תפוחי האדמה לפלחים, מתבלים ואופים ב-210 מעלות כ-30 דקות.",
       "מתבלים את השייטל וצולים במחבת חמה 2–3 דקות מכל צד, לפי מידת העשייה.",
       "מגישים עם תפוחי האדמה והסלט.",
     ],
@@ -199,6 +443,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "chicken-schnitzel-airfryer",
     name: "שניצל חזה עוף באייר פרייר",
     category: "דל שומן",
+    mealTime: "כל שעה",
     ingredients: [
       "160 ג׳ חזה עוף דק",
       "ביצה קטנה",
@@ -208,7 +453,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     ],
     instructions: [
       "טובלים את חזה העוף בביצה מתובלת ומצפים בפירורי לחם.",
-      "מרססים מעט שמן ומבשלים באייר פרייר ב־190 מעלות כ־12–15 דקות, תוך הפיכה באמצע.",
+      "מרססים מעט שמן ומבשלים באייר פרייר ב-190 מעלות כ-12–15 דקות, תוך הפיכה באמצע.",
       "מגישים עם סלט או ירקות מאודים.",
     ],
     nutrition: { calories: 330, protein: 40, fat: 8 },
@@ -217,6 +462,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "lean-beef-meatballs",
     name: "קציצות בקר רזה ברוטב עגבניות",
     category: "עתיר חלבון",
+    mealTime: "ערב",
     ingredients: [
       "160 ג׳ בשר בקר טחון 5%",
       "חצי בצל קצוץ",
@@ -227,8 +473,8 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     ],
     instructions: [
       "מערבבים את הבשר עם בצל, ביצה, שיבולת שועל ותבלינים ויוצרים קציצות.",
-      "צורבים את הקציצות בסיר נון־סטיק ללא שמן.",
-      "מוסיפים עגבניות מרוסקות, מכסים ומבשלים כ־20 דקות.",
+      "צורבים את הקציצות בסיר נון-סטיק ללא שמן.",
+      "מוסיפים עגבניות מרוסקות, מכסים ומבשלים כ-20 דקות.",
     ],
     nutrition: { calories: 385, protein: 38, fat: 14 },
   },
@@ -236,6 +482,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "chicken-sweet-potato-tray",
     name: "מגש חזה עוף ובטטה בתנור",
     category: "דל קלוריות",
+    mealTime: "ערב",
     ingredients: [
       "150 ג׳ חזה עוף",
       "180 ג׳ בטטה",
@@ -246,7 +493,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     instructions: [
       "חותכים בטטה וירקות, מתבלים ומניחים בתבנית.",
       "מוסיפים חזה עוף מתובל ומרססים מעט שמן.",
-      "אופים ב־200 מעלות כ־25–30 דקות, עד שהעוף מוכן והבטטה רכה.",
+      "אופים ב-200 מעלות כ-25–30 דקות, עד שהעוף מוכן והבטטה רכה.",
     ],
     nutrition: { calories: 395, protein: 42, fat: 6 },
   },
@@ -254,6 +501,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "crispy-potatoes-yogurt",
     name: "תפוחי אדמה קריספיים עם מטבל חלבון",
     category: "דל קלוריות",
+    mealTime: "כל שעה",
     ingredients: [
       "220 ג׳ תפוחי אדמה",
       "150 ג׳ יוגורט חלבון או יוגורט יווני 0%",
@@ -263,7 +511,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     ],
     instructions: [
       "מבשלים את תפוחי האדמה עד שהם מתרככים מעט ומועכים אותם בעדינות.",
-      "מתבלים, מרססים מעט שמן ואופים ב־220 מעלות כ־25 דקות עד להזהבה.",
+      "מתבלים, מרססים מעט שמן ואופים ב-220 מעלות כ-25 דקות עד להזהבה.",
       "מערבבים יוגורט, חרדל, שום ושמיר ומגישים כמטבל.",
     ],
     nutrition: { calories: 285, protein: 20, fat: 3 },
@@ -272,6 +520,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "protein-pizza",
     name: "פיצה חלבון אישית",
     category: "עתיר חלבון",
+    mealTime: "כל שעה",
     ingredients: [
       "150 ג׳ קוטג׳ 5%",
       "ביצה",
@@ -282,7 +531,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     ],
     instructions: [
       "מערבבים קוטג׳, ביצה וקמח שיבולת שועל לבלילה.",
-      "משטחים לעיגול על נייר אפייה ואופים ב־200 מעלות כ־10 דקות.",
+      "משטחים לעיגול על נייר אפייה ואופים ב-200 מעלות כ-10 דקות.",
       "מוסיפים רוטב, גבינה ותוספות ואופים עוד 8–10 דקות.",
     ],
     nutrition: { calories: 430, protein: 38, fat: 17 },
@@ -291,6 +540,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "chicken-shawarma-plate",
     name: "צלחת שווארמה חזה עוף",
     category: "דל שומן",
+    mealTime: "צהריים",
     ingredients: [
       "170 ג׳ חזה עוף",
       "100 ג׳ תפוח אדמה או אורז מבושל",
@@ -309,6 +559,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "tuna-potato-cakes",
     name: "לביבות טונה ותפוחי אדמה",
     category: "עתיר חלבון",
+    mealTime: "כל שעה",
     ingredients: [
       "קופסת טונה במים מסוננת",
       "150 ג׳ תפוח אדמה מבושל",
@@ -319,7 +570,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     instructions: [
       "מועכים את תפוח האדמה ומערבבים עם טונה, ביצה, שיבולת שועל ותבלינים.",
       "יוצרים לביבות ומניחים על נייר אפייה.",
-      "אופים ב־200 מעלות כ־18–20 דקות, או עד הזהבה.",
+      "אופים ב-200 מעלות כ-18–20 דקות, או עד הזהבה.",
     ],
     nutrition: { calories: 340, protein: 35, fat: 8 },
   },
@@ -327,6 +578,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     id: "chicken-vegetable-soup",
     name: "מרק עוף וירקות קל",
     category: "דל קלוריות",
+    mealTime: "ערב",
     ingredients: [
       "150 ג׳ חזה עוף",
       "גזר, קישוא, סלרי ובצל",
@@ -336,7 +588,7 @@ export const RECIPE_LIBRARY: RecipeDefinition[] = [
     ],
     instructions: [
       "חותכים את הירקות ומבשלים בציר עם התבלינים ורסק העגבניות.",
-      "מוסיפים את חזה העוף ומבשלים כ־20 דקות.",
+      "מוסיפים את חזה העוף ומבשלים כ-20 דקות.",
       "מוציאים, מפרקים את העוף ומחזירים לסיר לפני ההגשה.",
     ],
     nutrition: { calories: 245, protein: 37, fat: 4 },

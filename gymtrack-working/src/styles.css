@@ -109,7 +109,7 @@
   --surface-2: #f2dce2;
   --cream: #f8eef0;
   --primary: #d58a9b;
-  --primary-foreground: #ffffff;
+  --primary-foreground: #4a1c27;
   --secondary: #efd0d8;
   --secondary-foreground: #5d3c47;
   --sage: #d9b5bd;
@@ -188,7 +188,7 @@
   --surface-2: #e5ddd4;
   --cream: #f4efea;
   --primary: #a78775;
-  --primary-foreground: #ffffff;
+  --primary-foreground: #3b2215;
   --secondary: #e9dfd6;
   --secondary-foreground: #57443c;
   --rose: #a78775;
@@ -266,7 +266,7 @@
   --surface-2: oklch(0.93 0.07 300);
   --cream: oklch(0.96 0.06 285);
   --primary: oklch(0.64 0.15 300);
-  --primary-foreground: oklch(0.99 0.01 300);
+  --primary-foreground: oklch(0.12 0.05 300);
   --secondary: oklch(0.9 0.05 300);
   --secondary-foreground: oklch(0.3 0.08 300);
   --rose: oklch(0.5 0.12 310);
@@ -292,7 +292,7 @@
   --surface-2: oklch(0.94 0.08 45);
   --cream: oklch(0.965 0.07 55);
   --primary: oklch(0.67 0.15 45);
-  --primary-foreground: oklch(0.99 0.01 45);
+  --primary-foreground: oklch(0.12 0.05 40);
   --secondary: oklch(0.9 0.06 45);
   --secondary-foreground: oklch(0.3 0.08 40);
   --rose: oklch(0.5 0.14 30);
@@ -322,7 +322,7 @@
   --popover: #ffffff;
   --popover-foreground: #493538;
   --primary: #c98283;
-  --primary-foreground: #ffffff;
+  --primary-foreground: #3d1416;
   --secondary: #efd1ca;
   --secondary-foreground: #633f43;
   --sage: #c8ddd4;
@@ -343,86 +343,18 @@
   --gradient-end: #f3d8c9;
 }
 
-:root[data-theme="black"] {
-  --background: #ffffff;
-  --foreground: #ffffff;
-  --surface: #1f1f24;
-  --surface-2: #302c35;
-  --cream: #3b3541;
-  --card: #1f1f24;
-  --card-foreground: #ffffff;
-  --popover: #1f1f24;
-  --popover-foreground: #ffffff;
-  --primary: #c9788a;
-  --primary-foreground: #ffffff;
-  --secondary: #302c35;
-  --secondary-foreground: #ffffff;
-  --rose: #e29c9c;
-  --rose-soft: #46343d;
-  --accent: #e6b8ae;
-  --accent-foreground: #1f1f24;
-  --ink: #ffffff;
-  --ink-soft: #eadfe4;
-  --muted: #302c35;
-  --muted-foreground: #d7cbd2;
-  --destructive: #e29c9c;
-  --border: #6b5964;
-  --input: #6b5964;
-  --ring: #e29c9c;
-  --gradient-start: #1f1f24;
-  --gradient-mid: #55515e;
-  --gradient-end: #a89cad;
-}
-
-:root[data-theme="black"] .bg-white,
-:root[data-theme="black"] .bg-white\/60,
-:root[data-theme="black"] .bg-white\/70,
-:root[data-theme="black"] .bg-white\/80 {
-  background-color: var(--surface) !important;
-  color: var(--ink) !important;
-}
-
 /*
  * Expanded branded palettes.
  * The app canvas stays white in every palette; the selected hue is expressed
  * through surfaces, borders and actions rather than a multicolor dashboard.
  */
-:root[data-theme="black"] {
-  --background: #ffffff;
-  --foreground: #151515;
-  --surface: #f8f8f8;
-  --surface-2: #e9e9eb;
-  --cream: #f2f2f3;
-  --card: #ffffff;
-  --card-foreground: #151515;
-  --popover: #ffffff;
-  --popover-foreground: #151515;
-  --primary: #171719;
-  --primary-foreground: #ffffff;
-  --secondary: #e8e8ea;
-  --secondary-foreground: #171719;
-  --rose: #46464a;
-  --rose-soft: #eeeeef;
-  --accent: #d7d7da;
-  --accent-foreground: #171719;
-  --ink: #151515;
-  --ink-soft: #4b4b4f;
-  --muted: #f1f1f2;
-  --muted-foreground: #55555a;
-  --border: #d5d5d8;
-  --input: #d5d5d8;
-  --ring: #171719;
-  --gradient-start: #171719;
-  --gradient-mid: #707075;
-  --gradient-end: #e4e4e6;
-}
 
 :root[data-theme="black"] .bg-white,
 :root[data-theme="black"] .bg-white\/60,
 :root[data-theme="black"] .bg-white\/70,
 :root[data-theme="black"] .bg-white\/80 {
   background-color: #ffffff !important;
-  color: #151515 !important;
+  color: #141416 !important;
 }
 
 :root[data-theme="dark-brown"] {
@@ -466,7 +398,7 @@
   --popover: #ffffff;
   --popover-foreground: #40332d;
   --primary: #b58f76;
-  --primary-foreground: #ffffff;
+  --primary-foreground: #3b2215;
   --secondary: #eadbd1;
   --secondary-foreground: #5c463a;
   --rose: #a9785d;
