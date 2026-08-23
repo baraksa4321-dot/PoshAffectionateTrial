@@ -27,6 +27,8 @@ export type DropSetConfig = {
   drops: number;
   repsMin?: number;
   repsMax?: number;
+  reductionMode?: "percent" | "kg";
+  reductionValue?: number;
   weightReductionPercent?: number;
   percentReduction?: number; // e.g. 20%
 };

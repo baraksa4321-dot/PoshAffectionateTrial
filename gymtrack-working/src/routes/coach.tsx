@@ -37,6 +37,7 @@ import {
 } from "../lib/gym-store";
 import { pullClientDataForCoach } from "../lib/supabase-sync";
 import { supabase } from "../lib/supabase";
+import { calculateCalorieEstimate } from "../lib/calorie-calculator";
 import type {
   BodyMeasurement,
   Meal,
@@ -167,7 +168,8 @@ export function CoachDashboardPage({
   const [supersetGroup, setSupersetGroup] = useState("");
   const [supersetPartnerId, setSupersetPartnerId] = useState("");
   const [dropSetEnabled, setDropSetEnabled] = useState(false);
-  const [dropSetCount, setDropSetCount] = useState(1);
+  const [dropReductionMode, setDropReductionMode] = useState<"percent" | "kg" | "">("");
+  const [dropReductionValue, setDropReductionValue] = useState("");
   const [dropRepsMin, setDropRepsMin] = useState(10);
   const [dropRepsMax, setDropRepsMax] = useState(12);
   const [supersetRepsMin, setSupersetRepsMin] = useState(10);
@@ -195,6 +197,11 @@ export function CoachDashboardPage({
     date: todayKey(),
   });
   const [measurementNotice, setMeasurementNotice] = useState("");
+  const [profileAge, setProfileAge] = useState("");
+  const [profileHeight, setProfileHeight] = useState("");
+  const [profileWeight, setProfileWeight] = useState("");
+  const [profileWorkouts, setProfileWorkouts] = useState("");
+  const [profileNotice, setProfileNotice] = useState("");
 
   const loadCoachClients = useCallback(async () => {
     setManagementError("");
@@ -347,7 +354,70 @@ export function CoachDashboardPage({
 
   useEffect(() => {
     setCalTarget(clientDetails?.nutritionTargets.calories ?? 2000);
+    const profile = clientDetails?.profile;
+    setProfileAge(profile?.age === undefined ? "" : String(profile.age));
+    setProfileHeight(profile?.height === undefined ? "" : String(profile.height));
+    setProfileWeight(profile?.weight && profile.weight > 0 ? String(profile.weight) : "");
+    setProfileWorkouts(
+      profile?.workoutsPerWeek === undefined ? "" : String(profile.workoutsPerWeek),
+    );
+    setProfileNotice("");
   }, [clientDetails]);
+
+  const calorieProfile = clientDetails?.profile
+    ? {
+        ...clientDetails.profile,
+        age: profileAge === "" ? undefined : Number(profileAge),
+        height: profileHeight === "" ? undefined : Number(profileHeight),
+        weight: profileWeight === "" ? 0 : Number(profileWeight),
+        workoutsPerWeek: profileWorkouts === "" ? undefined : Number(profileWorkouts),
+      }
+    : null;
+  const calorieEstimate = calorieProfile ? calculateCalorieEstimate(calorieProfile) : null;
+
+  const saveClientCalorieProfile = async () => {
+    if (!selectedClientId || !clientDetails?.profile) return;
+    const age = profileAge === "" ? undefined : Number(profileAge);
+    const height = profileHeight === "" ? undefined : Number(profileHeight);
+    const weight = profileWeight === "" ? undefined : Number(profileWeight);
+    const workouts = profileWorkouts === "" ? undefined : Number(profileWorkouts);
+    const valid =
+      [age, height, weight, workouts].every((value) => value !== undefined && Number.isFinite(value)) &&
+      (age ?? 0) > 0 &&
+      (height ?? 0) > 0 &&
+      (weight ?? 0) > 0 &&
+      (workouts ?? -1) >= 0 &&
+      (workouts ?? 15) <= 14;
+    if (!valid) {
+      setProfileNotice("יש להשלים גיל, גובה, משקל ומספר אימונים תקינים כדי לשמור ולחשב.");
+      return;
+    }
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        age_years: age,
+        height_cm: height,
+        weight_kg: weight,
+        workouts_per_week: workouts,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", selectedClientId);
+    if (error) {
+      setProfileNotice(`שמירת נתוני הגוף נכשלה: ${error.message}`);
+      return;
+    }
+    setClientDetails((current) =>
+      current
+        ? {
+            ...current,
+            profile: current.profile
+              ? { ...current.profile, age, height, weight: weight ?? 0, workoutsPerWeek: workouts }
+              : current.profile,
+          }
+        : current,
+    );
+    setProfileNotice("נתוני הגוף נשמרו. הנתונים והחישוב זמינים רק באזור המאמן.");
+  };
 
   const saveClientMeasurements = async () => {
     if (!selectedClientId || !isCoach) return;
@@ -624,6 +694,17 @@ export function CoachDashboardPage({
     const hasDropSets = configuredModes.includes("drop");
     const hasSupersetSets = configuredModes.includes("superset");
     if (hasSupersetSets && !supersetPartnerId) return;
+    const parsedDropReduction = dropReductionValue === "" ? NaN : Number(dropReductionValue);
+    if (
+      hasDropSets &&
+      (!dropReductionMode ||
+        !Number.isFinite(parsedDropReduction) ||
+        parsedDropReduction <= 0 ||
+        (dropReductionMode === "percent" && parsedDropReduction >= 100) ||
+        (dropReductionMode === "kg" && parsedDropReduction >= targetWeight))
+    ) {
+      return;
+    }
 
     const newWorkoutItem: WorkoutItem = {
       id: uid(),
@@ -652,10 +733,11 @@ export function CoachDashboardPage({
         ? {
             dropSetConfig: {
               enabled: true,
-              drops: dropSetCount,
+              drops: configuredModes.filter((mode) => mode === "drop").length,
               repsMin: dropRepsMin,
               repsMax: dropRepsMax,
-              percentReduction: 20,
+              reductionMode: dropReductionMode,
+              reductionValue: parsedDropReduction,
             },
           }
         : {}),
@@ -664,7 +746,15 @@ export function CoachDashboardPage({
         .map((mode, i) => ({
         id: uid(),
         setNumber: i + 1,
-        weight: mode === "drop" ? Math.max(0, targetWeight * 0.8) : targetWeight,
+        weight:
+          mode === "drop"
+            ? Math.max(
+                0,
+                dropReductionMode === "percent"
+                  ? targetWeight * (1 - parsedDropReduction / 100)
+                  : targetWeight - parsedDropReduction,
+              )
+            : targetWeight,
         reps: repMin,
         repMax,
         ...(mode === "drop" ? { dropSet: true } : {}),
@@ -2140,19 +2230,34 @@ export function CoachDashboardPage({
                                                 ) : null}
                                                 {dropSetEnabled ? (
                                                   <>
-                                                    <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                      מספר דרופים
-                                                      <input
-                                                        type="number"
-                                                        min="1"
-                                                        max="5"
-                                                        value={dropSetCount}
-                                                        onChange={(event) =>
-                                                          setDropSetCount(Math.max(1, Number(event.target.value)))
-                                                        }
-                                                        className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
-                                                      />
-                                                    </label>
+                                                     <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                       סוג הפחתת המשקל
+                                                       <select
+                                                         value={dropReductionMode}
+                                                         onChange={(event) =>
+                                                           setDropReductionMode(event.target.value as "percent" | "kg" | "")
+                                                         }
+                                                         className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
+                                                       >
+                                                         <option value="">בחרי סוג הפחתה</option>
+                                                         <option value="percent">אחוזים</option>
+                                                         <option value="kg">ק״ג</option>
+                                                       </select>
+                                                     </label>
+                                                     <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                       כמה משקל להוריד
+                                                       <input
+                                                         type="number"
+                                                         min="0.1"
+                                                         max={dropReductionMode === "percent" ? 99.9 : Math.max(0.1, targetWeight - 0.1)}
+                                                         step={dropReductionMode === "percent" ? "0.1" : "0.5"}
+                                                         value={dropReductionValue}
+                                                         onChange={(event) => setDropReductionValue(event.target.value)}
+                                                         placeholder={dropReductionMode ? "הזיני ערך" : "בחרי סוג קודם"}
+                                                         disabled={!dropReductionMode}
+                                                         className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
+                                                       />
+                                                     </label>
                                                     <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                       חזרות דרופ סט
                                                       <div className="grid grid-cols-2 gap-1">

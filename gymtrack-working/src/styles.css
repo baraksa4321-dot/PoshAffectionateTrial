@@ -680,6 +680,15 @@ html.night-mode .nav-shell {
   }
 }
 
+/* Neutralize legacy purple/violet copy so it never clashes with the selected palette. */
+.text-purple-700,
+.text-purple-800,
+.text-purple-900,
+.text-purple-950,
+.text-violet-800 {
+  color: var(--primary) !important;
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

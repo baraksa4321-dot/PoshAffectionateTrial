@@ -84,6 +84,9 @@ export async function syncLocalToSupabase(
             ...(p.fullName ? { full_name: p.fullName } : {}),
             weight_kg: p.weight,
             ...(p.height !== undefined ? { height_cm: p.height } : {}),
+            ...(p.age !== undefined ? { age_years: p.age } : {}),
+            ...(p.gender ? { gender: p.gender } : {}),
+            ...(p.workoutsPerWeek !== undefined ? { workouts_per_week: p.workoutsPerWeek } : {}),
             today_routine_enabled: p.todayRoutineEnabled ?? true,
             updated_at: new Date().toISOString(),
           },
@@ -401,6 +404,14 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     const profileHeight = profile.height_cm
       ? Number(profile.height_cm)
       : nextData.userProfile?.height;
+    const profileAge =
+      profile.age_years === null || profile.age_years === undefined
+        ? nextData.userProfile?.age
+        : Number(profile.age_years);
+    const profileWorkouts =
+      profile.workouts_per_week === null || profile.workouts_per_week === undefined
+        ? nextData.userProfile?.workoutsPerWeek
+        : Number(profile.workouts_per_week);
     const profileGender =
       profile.gender === "male" || profile.gender === "female"
         ? profile.gender
@@ -410,7 +421,9 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       ...(profileName ? { fullName: profileName } : {}),
       weight: profile.weight_kg ? Number(profile.weight_kg) : (nextData.userProfile?.weight ?? 65),
       ...(profileHeight !== undefined ? { height: profileHeight } : {}),
+      ...(profileAge !== undefined ? { age: profileAge } : {}),
       ...(profileGender ? { gender: profileGender } : {}),
+      ...(profileWorkouts !== undefined ? { workoutsPerWeek: profileWorkouts } : {}),
       role: profile.role as UserRole,
       ...(profile.coach_id ? { coachId: profile.coach_id } : {}),
       todayRoutineEnabled: profile.today_routine_enabled ?? true,
@@ -861,8 +874,19 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
         ? {
             profile: {
               fullName: profile.full_name || undefined,
-              weight: Number(profile.weight_kg || 65),
-              height: Number(profile.height_cm || 165),
+              weight: profile.weight_kg === null || profile.weight_kg === undefined ? 0 : Number(profile.weight_kg),
+              ...(profile.height_cm === null || profile.height_cm === undefined
+                ? {}
+                : { height: Number(profile.height_cm) }),
+              ...(profile.age_years === null || profile.age_years === undefined
+                ? {}
+                : { age: Number(profile.age_years) }),
+              ...(profile.gender === "male" || profile.gender === "female"
+                ? { gender: profile.gender }
+                : {}),
+              ...(profile.workouts_per_week === null || profile.workouts_per_week === undefined
+                ? {}
+                : { workoutsPerWeek: Number(profile.workouts_per_week) }),
               role: profile.role || "client",
             },
           }
