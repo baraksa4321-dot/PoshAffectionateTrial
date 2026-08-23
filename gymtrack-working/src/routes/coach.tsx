@@ -828,7 +828,7 @@ export function CoachDashboardPage({
 
   return (
       <AppShell
-      title={clientsOnly ? "מתאמנים" : "לוח בקרה"}
+      title={clientsOnly ? "מתאמנים" : "ניהול"}
       kicker={clientsOnly ? "בניית תוכניות ותפריטים" : "לוח מודעות"}
       action={
         clientsOnly ? (
