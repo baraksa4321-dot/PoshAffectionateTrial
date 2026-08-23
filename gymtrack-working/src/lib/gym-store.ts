@@ -1666,7 +1666,7 @@ export function addFoodAutoMeal(date: string, food: MealFood) {
   }
 }
 
-export function addMeal(date: string, name: string) {
+export function addMeal(date: string, name = "") {
   withDay(date, (day) => ({
     ...day,
     meals: [...day.meals, { id: uid(), name: name.trim() || "ארוחה חדשה", foods: [] }],

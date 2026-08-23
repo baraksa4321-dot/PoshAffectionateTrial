@@ -110,6 +110,7 @@ export function CoachDashboardPage({
   const [clients, setClients] = useState<CoachClientRow[]>([]);
   const [allProfiles, setAllProfiles] = useState<ProfileRow[]>([]);
   const [clientSearch, setClientSearch] = useState("");
+  const [ownerUserSearch, setOwnerUserSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [showClientWorkspace, setShowClientWorkspace] = useState(false);
   const [clientDetails, setClientDetails] = useState<ClientDetails | null>(null);
@@ -179,8 +180,8 @@ export function CoachDashboardPage({
 
   // Nutrition Prescription state
   const [editingNutrition, setEditingNutrition] = useState(false);
-  const [calTarget, setCalTarget] = useState(2000);
-  const [protTarget, setProtTarget] = useState(140);
+  const [calTarget, setCalTarget] = useState(0);
+  const [protTarget, setProtTarget] = useState(0);
   const [menuDate, setMenuDate] = useState(todayKey());
   const [plannedMeals, setPlannedMeals] = useState<Meal[]>([]);
   const [menuFoodMealId, setMenuFoodMealId] = useState<string | null>(null);
@@ -354,7 +355,7 @@ export function CoachDashboardPage({
   }, [clientDetails]);
 
   useEffect(() => {
-    setCalTarget(clientDetails?.nutritionTargets.calories ?? 2000);
+    setCalTarget(clientDetails?.nutritionTargets.calories ?? 0);
     const profile = clientDetails?.profile;
     setProfileAge(profile?.age === undefined ? "" : String(profile.age));
     setProfileHeight(profile?.height === undefined ? "" : String(profile.height));
@@ -916,7 +917,7 @@ export function CoachDashboardPage({
       date: menuDate,
       meals: existingDay?.meals ?? [],
       planned_meals: plannedMeals,
-       ...(existingDay ? {} : { target_calories: calTarget }),
+       ...(existingDay || calTarget <= 0 ? {} : { target_calories: calTarget }),
       updated_at: new Date().toISOString(),
     });
     if (error) {
@@ -949,6 +950,7 @@ export function CoachDashboardPage({
     const q = clientSearch.toLowerCase();
     return !q || emailStr.includes(q) || nameStr.includes(q);
   });
+  const selfDisplayName = store.userProfile?.fullName?.trim() || "אני";
 
   const selectedClientInfo = clients.find((c) => c.client_id === selectedClientId);
   const filteredExerciseOptions = useMemo(() => {
@@ -967,6 +969,15 @@ export function CoachDashboardPage({
       program.name.toLocaleLowerCase().includes(query),
     );
   }, [clientDetails?.programs, programQuery]);
+  const filteredOwnerProfiles = useMemo(() => {
+    const query = ownerUserSearch.trim().toLocaleLowerCase();
+    if (!query) return allProfiles;
+    return allProfiles.filter((profile) =>
+      [profile.full_name, profile.email]
+        .filter(Boolean)
+        .some((value) => value!.toLocaleLowerCase().includes(query)),
+    );
+  }, [allProfiles, ownerUserSearch]);
   const menuFoodResults = searchFoods(store.foods, menuFoodQuery).slice(0, 24);
   const needsPlan = overviewRows.filter((row) => row.details.programs.length === 0);
   const needsExercises = overviewRows.filter(
@@ -1006,13 +1017,6 @@ export function CoachDashboardPage({
       title={clientsOnly ? "מתאמנים" : ""}
       kicker={clientsOnly ? "בניית תוכניות ותפריטים" : ""}
       compactHeader
-      action={
-        clientsOnly ? (
-          <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-[11px] font-bold text-primary">
-            עדכון תוכניות
-          </span>
-        ) : null
-      }
     >
       {!clientsOnly ? (
         <section className="space-y-2 text-start">
@@ -1343,8 +1347,19 @@ export function CoachDashboardPage({
                   </div>
                 ) : null}
               <p className="text-xs text-purple-900 font-semibold">משתמשים והרשאות תפקיד:</p>
+              <div className="num-pill flex h-10 items-center gap-2 px-3">
+                <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <input
+                  type="search"
+                  value={ownerUserSearch}
+                  onChange={(event) => setOwnerUserSearch(event.target.value)}
+                  placeholder="חיפוש לפי שם או אימייל..."
+                  className="w-full bg-transparent text-xs text-ink outline-none placeholder:text-muted-foreground"
+                  aria-label="חיפוש משתמשים לפי שם או אימייל"
+                />
+              </div>
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                {allProfiles.map((p) => {
+                {filteredOwnerProfiles.map((p) => {
                   const isCurrentUser = p.id === authUser?.id;
                   const canChangeRole =
                     p.role === "owner" || p.role === "coach" || p.role === "client";
@@ -1411,27 +1426,20 @@ export function CoachDashboardPage({
 
         {clientsOnly ? (
           <>
-            <section className="overflow-hidden rounded-[1.75rem] bg-ink p-5 text-primary-foreground shadow-sm">
+            <section className="flex items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-ink">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex min-w-0 items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-foreground/15">
-                    <Dumbbell className="h-5 w-5" />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Dumbbell className="h-4 w-4" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary-foreground/65">
-                      סביבת בנייה
-                    </p>
-                    <h3 className="mt-1 font-display text-lg font-extrabold">בונים עבור מתאמן</h3>
-                    <p className="mt-1 max-w-sm text-xs leading-relaxed text-primary-foreground/75">
-                      {genderText(
-                        gender,
-                        "בחרי מתאמן כדי לבנות תוכנית אימונים, ימים, תרגילים ותפריט אישי.",
-                        "בחר מתאמן כדי לבנות תוכנית אימונים, ימים, תרגילים ותפריט אישי.",
-                      )}
+                    <h3 className="font-bold text-sm">בניית תוכנית ותפריט</h3>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      {genderText(gender, "בחרי מתאמן כדי להתחיל.", "בחר מתאמן כדי להתחיל.")}
                     </p>
                   </div>
                 </div>
-                <span className="shrink-0 rounded-full bg-primary-foreground/15 px-2.5 py-1 text-[11px] font-bold">
+                <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
                   {clients.length} מתאמנים
                 </span>
               </div>
@@ -1488,7 +1496,9 @@ export function CoachDashboardPage({
                       אני
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-sm font-bold text-ink">התכנית האישית שלי</span>
+                      <span className="block text-sm font-bold text-ink">
+                        התוכנית של {selfDisplayName}
+                      </span>
                       <span className="mt-0.5 block truncate text-xs text-muted-foreground">
                         בניית אימונים ותפריט עבורי
                       </span>
@@ -1600,7 +1610,7 @@ export function CoachDashboardPage({
                   <span>תכנית המתאמן:</span>
                   <span className="text-primary font-extrabold">
                     {isSelfSelected
-                      ? "התכנית האישית שלי"
+                      ? `התוכנית של ${selfDisplayName}`
                         : profileDisplayName(selectedClientInfo?.profiles)}
                   </span>
                 </h3>
@@ -1660,7 +1670,7 @@ export function CoachDashboardPage({
                       <div className="rounded-2xl bg-white/80 p-2">
                         <span className="block text-[10px] text-muted-foreground">קלוריות</span>
                         <strong className="mt-0.5 block text-sm text-ink">
-                          {clientDetails.nutritionTargets?.calories || 2000}
+                          {clientDetails.nutritionTargets?.calories ?? "לא הוגדר"}
                         </strong>
                       </div>
                       <div className="rounded-2xl bg-white/80 p-2">
@@ -2743,7 +2753,9 @@ export function CoachDashboardPage({
                         <div className="rounded-xl bg-primary/5 p-2 border border-primary/10">
                           <span className="block text-[10px] text-muted-foreground">קלוריות</span>
                           <span className="font-bold text-ink">
-                            {clientDetails?.nutritionTargets.calories || 2000} kcal
+                             {clientDetails?.nutritionTargets.calories
+                               ? `${clientDetails.nutritionTargets.calories} kcal`
+                               : "לא הוגדר"}
                           </span>
                         </div>
                         <div className="rounded-xl bg-emerald-50 p-2 border border-emerald-100">

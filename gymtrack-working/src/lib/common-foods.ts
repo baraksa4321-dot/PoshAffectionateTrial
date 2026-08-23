@@ -53,7 +53,15 @@ export const COMMON_FOODS: FoodItem[] = [
   makeFood("f-common-skyr", "סקיר טבעי", "יוגורט", "150 גרם", 90, 16, 7, 0.3, 0),
 
   // Eggs, meat, fish and plant proteins
-  makeFood("f-common-egg", "ביצה", "ביצים", "יחידה", 78, 6.3, 0.6, 5.3, 0),
+  makeFood("f-common-egg-s", "ביצה S", "ביצים", "ביצה S (44 גרם)", 54, 4.7, 0.4, 3.6, 0, [
+    "ביצה קטנה",
+  ]),
+  makeFood("f-common-egg", "ביצה M", "ביצים", "ביצה M (53 גרם)", 66, 5.8, 0.5, 4.4, 0, [
+    "ביצה בינונית",
+  ]),
+  makeFood("f-common-egg-l", "ביצה L", "ביצים", "ביצה L (63 גרם)", 78, 6.9, 0.6, 5.3, 0, [
+    "ביצה גדולה",
+  ]),
   makeFood("f-common-egg-white", "חלבון ביצה", "ביצים", "100 גרם", 52, 10.9, 0.7, 0.2, 0),
   makeFood("f-common-chicken-breast", "חזה עוף", "עוף ובשר", "100 גרם", 165, 31, 0, 3.6, 0),
   makeFood("f-common-chicken-thigh", "פרגית ללא עור", "עוף ובשר", "100 גרם", 177, 24, 0, 8, 0),
@@ -138,6 +146,7 @@ export const COMMON_FOODS: FoodItem[] = [
 
   // Vegetables
   makeFood("f-common-tomato", "עגבנייה", "ירקות", "יחידה בינונית", 22, 1.1, 4.8, 0.2, 1.5),
+  makeFood("f-common-cherry-tomatoes", "עגבניות שרי", "ירקות", "12 עגבניות שרי (120 גרם)", 22, 1.1, 4.8, 0.2, 1.5),
   makeFood("f-common-cucumber", "מלפפון", "ירקות", "יחידה בינונית", 30, 1.3, 7.3, 0.2, 1),
   makeFood("f-common-lettuce", "חסה", "ירקות", "100 גרם", 15, 1.4, 2.9, 0.2, 1.3),
   makeFood("f-common-pepper", "פלפל אדום", "ירקות", "יחידה בינונית", 31, 1, 6, 0.3, 2.1),

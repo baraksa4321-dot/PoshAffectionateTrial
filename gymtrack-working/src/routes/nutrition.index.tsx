@@ -112,6 +112,7 @@ function NutritionLog() {
     targets.carbs === undefined ? undefined : Math.max(0, targets.carbs - totals.carbs);
   const remainingFat =
     targets.fat === undefined ? undefined : Math.max(0, targets.fat - totals.fat);
+  const hasWhatToEatTargets = remainingCal !== undefined && remainingProt !== undefined;
 
   // Smart Food Suggestions based on remaining macros
   const suggestedFoods = useMemo(() => {
@@ -443,9 +444,6 @@ function NutritionLog() {
           <MacroPill label="סיבים" value={totals.fiber} target={targets.fiber || 25} unit="g" />
         </div>
       </div>
-      <p className="mt-2 border-s border-primary/35 px-3 text-[11px] leading-relaxed text-muted-foreground">
-        החישוב ביומן מתבסס על ערכי כל מאכל לפי מנת הייחוס שלו ומתרחב בדיוק לפי הכמות שנבחרה.
-      </p>
       {day.plannedMeals && day.plannedMeals.length > 0 ? (
         <section className="order-1 mt-4">
           <div className="mb-3 flex items-end justify-between gap-3">
@@ -648,22 +646,30 @@ function NutritionLog() {
               </button>
             </div>
 
-            <div className="rounded-xl bg-primary/5 p-3 text-xs space-y-1">
-              <p className="font-bold text-ink">יתרה להיום לפי היעד:</p>
-              <div className="grid grid-cols-4 gap-1 text-center font-semibold pt-1">
-                <span className="bg-white p-1 rounded-md text-ink">{remainingCal} קל'</span>
-                <span className="bg-white p-1 rounded-md text-emerald-700">
-                  {remainingProt}g חלבון
-                </span>
-                <span className="bg-white p-1 rounded-md text-amber-700">
-                  {remainingCarbs}g פחמימה
-                </span>
-                <span className="bg-white p-1 rounded-md text-rose-700">{remainingFat}g שומן</span>
+            {hasWhatToEatTargets ? (
+              <div className="rounded-xl bg-primary/5 p-3 text-xs space-y-1">
+                <p className="font-bold text-ink">יתרה להיום לפי היעד:</p>
+                <div className="grid grid-cols-4 gap-1 text-center font-semibold pt-1">
+                  <span className="bg-white p-1 rounded-md text-ink">{remainingCal} קל'</span>
+                  <span className="bg-white p-1 rounded-md text-emerald-700">
+                    {remainingProt}g חלבון
+                  </span>
+                  <span className="bg-white p-1 rounded-md text-amber-700">
+                    {remainingCarbs ?? "—"}g פחמימה
+                  </span>
+                  <span className="bg-white p-1 rounded-md text-rose-700">
+                    {remainingFat ?? "—"}g שומן
+                  </span>
+                </div>
               </div>
-            </div>
+            ) : (
+              <p className="rounded-xl bg-secondary/60 p-3 text-xs font-semibold text-ink">
+                יש להגדיר יעד קלוריות וחלבון לפני קבלת הצעה.
+              </p>
+            )}
 
-            <p className="text-xs font-bold text-muted-foreground">הצעות מובילות מהספרייה:</p>
-            {day.meals.length > 0 ? (
+            {hasWhatToEatTargets ? <p className="text-xs font-bold text-muted-foreground">הצעות מובילות מהספרייה:</p> : null}
+            {hasWhatToEatTargets && day.meals.length > 0 ? (
               <label className="block text-[11.5px] font-semibold text-muted-foreground">
                 הוספה לארוחה
                 <select
@@ -679,7 +685,7 @@ function NutritionLog() {
                 </select>
               </label>
             ) : null}
-            <div className="space-y-1.5 max-h-60 overflow-y-auto">
+            {hasWhatToEatTargets ? <div className="space-y-1.5 max-h-60 overflow-y-auto">
               {suggestedFoods.map(({ food }) => (
                 <button
                   key={food.id}
@@ -703,7 +709,7 @@ function NutritionLog() {
                   </span>
                 </button>
               ))}
-            </div>
+            </div> : null}
           </div>
         </Overlay>
       )}
