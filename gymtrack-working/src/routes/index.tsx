@@ -38,6 +38,7 @@ import {
   calculateRmr,
   dayTotals,
   saveBodyWeight,
+  saveUserProfile,
   saveCardioLog,
   todayKey,
   updateCardioLog,
@@ -103,6 +104,15 @@ function Dashboard() {
   const now = new Date();
 
   const [showWeighInModal, setShowWeighInModal] = useState(false);
+  const [showBodyProfileModal, setShowBodyProfileModal] = useState(false);
+  const [bodyProfileDraft, setBodyProfileDraft] = useState({
+    height: userProfile?.height && userProfile.height > 0 ? String(userProfile.height) : "",
+    weight: userProfile?.weight && userProfile.weight > 0 ? String(userProfile.weight) : "",
+    age: userProfile?.age && userProfile.age > 0 ? String(userProfile.age) : "",
+    workoutsPerWeek:
+      userProfile?.workoutsPerWeek !== undefined ? String(userProfile.workoutsPerWeek) : "",
+    gender: userProfile?.gender ?? "female",
+  });
   const [weeklyWeightInput, setWeeklyWeightInput] = useState(
     userProfile?.weight && userProfile.weight > 0 ? String(userProfile.weight) : "",
   );
@@ -126,6 +136,49 @@ function Dashboard() {
       setTimeout(() => setCheckInSuccessMsg(""), 3000);
     }
     setShowWeighInModal(false);
+  };
+
+  const openBodyProfile = () => {
+    setBodyProfileDraft({
+      height: userProfile?.height && userProfile.height > 0 ? String(userProfile.height) : "",
+      weight: userProfile?.weight && userProfile.weight > 0 ? String(userProfile.weight) : "",
+      age: userProfile?.age && userProfile.age > 0 ? String(userProfile.age) : "",
+      workoutsPerWeek:
+        userProfile?.workoutsPerWeek !== undefined ? String(userProfile.workoutsPerWeek) : "",
+      gender: userProfile?.gender ?? "female",
+    });
+    setShowBodyProfileModal(true);
+  };
+
+  const saveBodyProfile = () => {
+    const height = Number(bodyProfileDraft.height);
+    const weight = Number(bodyProfileDraft.weight);
+    const age = Number(bodyProfileDraft.age);
+    const workoutsPerWeek = Number(bodyProfileDraft.workoutsPerWeek);
+    if (
+      !Number.isFinite(height) ||
+      height <= 0 ||
+      !Number.isFinite(weight) ||
+      weight <= 0 ||
+      !Number.isFinite(age) ||
+      age <= 0 ||
+      !Number.isFinite(workoutsPerWeek) ||
+      workoutsPerWeek < 0
+    ) {
+      setCheckInSuccessMsg("יש למלא גיל, גובה, משקל ומספר אימונים תקינים.");
+      return;
+    }
+    saveUserProfile({
+      ...userProfile,
+      height,
+      weight,
+      age,
+      workoutsPerWeek,
+      gender: bodyProfileDraft.gender,
+    });
+    setCheckInSuccessMsg("נתוני הגוף נשמרו ומחשבון BMR עודכן.");
+    setShowBodyProfileModal(false);
+    setTimeout(() => setCheckInSuccessMsg(""), 3000);
   };
 
   // Weekly Activity calculation
@@ -255,6 +308,23 @@ function Dashboard() {
 
   return (
     <AppShell title={formatNumericDate(now)} subtitle="">
+      <section className="surface-card flex items-center justify-between gap-3 p-3 text-start">
+        <div>
+          <p className="text-[12px] font-bold text-ink">נתוני גוף ומחשבון BMR</p>
+          <p className="mt-0.5 text-[10.5px] text-muted-foreground">
+            {calculateRmr(userProfile)
+              ? `${calculateRmr(userProfile)!.rmr} קק״ל במנוחה`
+              : "מלאי גיל, גובה, משקל, מין ומספר אימונים לחישוב"}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={openBodyProfile}
+          className="press shrink-0 rounded-xl bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground"
+        >
+          עדכון נתונים
+        </button>
+      </section>
       {/* Coach Message Banner */}
       {latestCoachMsg && (
         <div className="surface-card space-y-1.5 border-primary/20 bg-primary/5 p-4 text-start">
@@ -607,6 +677,78 @@ function Dashboard() {
       </section>
 
       {/* Modal: Weekly Weigh-In */}
+      {showBodyProfileModal && (
+        <Overlay
+          open={showBodyProfileModal}
+          onClose={() => setShowBodyProfileModal(false)}
+          ariaLabel="נתוני גוף ומחשבון BMR"
+        >
+          <div
+            className="w-full max-w-sm space-y-3 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b pb-2">
+              <div>
+                <h3 className="font-bold text-base text-ink">נתוני גוף ומחשבון BMR</h3>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  הנתונים נשמרים בפרופיל האישי ומשמשים לחישוב.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBodyProfileModal(false)}
+                aria-label="סגור נתוני גוף"
+                className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-secondary hover:text-ink"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              {[
+                ["height", "גובה (ס״מ)", "numeric"],
+                ["weight", "משקל (ק״ג)", "decimal"],
+                ["age", "גיל", "numeric"],
+                ["workoutsPerWeek", "אימונים בשבוע", "numeric"],
+              ].map(([field, label, inputMode]) => (
+                <label key={field} className="block font-bold text-muted-foreground">
+                  {label}
+                  <input
+                    inputMode={inputMode as "numeric" | "decimal"}
+                    value={bodyProfileDraft[field as keyof typeof bodyProfileDraft] as string}
+                    onChange={(event) =>
+                      setBodyProfileDraft((current) => ({
+                        ...current,
+                        [field]: event.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-xl border border-border bg-background p-2.5 text-sm font-bold text-ink outline-none focus:border-primary"
+                  />
+                </label>
+              ))}
+              <label className="block font-bold text-muted-foreground">
+                מין לחישוב
+                <select
+                  value={bodyProfileDraft.gender}
+                  onChange={(event) =>
+                    setBodyProfileDraft((current) => ({
+                      ...current,
+                      gender: event.target.value as "female" | "male",
+                    }))
+                  }
+                  className="mt-1 w-full rounded-xl border border-border bg-background p-2.5 text-sm font-bold text-ink outline-none focus:border-primary"
+                >
+                  <option value="female">נקבה</option>
+                  <option value="male">זכר</option>
+                </select>
+              </label>
+            </div>
+            <PrimaryButton className="w-full" onClick={saveBodyProfile}>
+              שמירת נתונים וחישוב BMR
+            </PrimaryButton>
+          </div>
+        </Overlay>
+      )}
+
       {showWeighInModal && (
         <Overlay
           open={showWeighInModal}

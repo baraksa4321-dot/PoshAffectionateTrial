@@ -1844,6 +1844,46 @@ html.night-mode .nav-shell {
   stroke-width: 1.5;
 }
 
+.loading-broccoli-shell {
+  fill: #d5eed6;
+  stroke: #23724a;
+  stroke-linejoin: round;
+  stroke-width: 2.7;
+}
+
+.loading-broccoli-fill {
+  fill: #318d50;
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: loading-dumbbell-fill 2.5s ease-in-out infinite;
+}
+
+.loading-broccoli-detail {
+  fill: none;
+  stroke: #17623c;
+  stroke-linecap: round;
+  stroke-width: 2.3;
+}
+
+.loading-egg-white {
+  fill: #fffdf6;
+  stroke: #d8d1c1;
+  stroke-width: 2.7;
+}
+
+.loading-egg-white-fill {
+  fill: #ffffff;
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: loading-dumbbell-fill 2.5s ease-in-out infinite;
+}
+
+.loading-egg-yolk {
+  fill: #f7bd2f;
+  stroke: #b87512;
+  stroke-width: 1.7;
+}
+
 .loading-growth-shell {
   fill: color-mix(in srgb, var(--surface) 72%, var(--rose));
   stroke: var(--rose);

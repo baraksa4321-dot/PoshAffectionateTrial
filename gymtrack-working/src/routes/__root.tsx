@@ -252,16 +252,16 @@ function LoadingIllustration({ variant }: { variant: number }) {
             <path className="loading-dumbbell-cap" d="M11 30h7v34h-7zM133 30h7v34h-7z" />
           </g>
         ) : activeShape === 1 ? (
-          <g className="loading-growth-motion">
-            <path className="loading-growth-shell" d="M44 78c-5-16 3-30 19-35-1-15 9-27 23-27 14 1 23 13 21 27 14 2 23 14 18 27-5 15-24 23-47 23-17 0-29-5-34-15z" />
-            <path className="loading-growth-fill" d="M53 75c-3-11 4-21 17-25-1-10 7-18 15-18 9 1 15 9 13 18 10 2 16 10 12 19-4 10-19 16-35 16-11 0-19-3-22-10z" />
-            <path className="loading-growth-detail" d="M78 42c-4 8-4 17 1 25M91 40c-2 8 1 15 8 20" />
+          <g className="loading-food-motion">
+            <path className="loading-broccoli-shell" d="M44 78c-5-16 3-30 19-35-1-15 9-27 23-27 14 1 23 13 21 27 14 2 23 14 18 27-5 15-24 23-47 23-17 0-29-5-34-15z" />
+            <path className="loading-broccoli-fill" d="M53 75c-3-11 4-21 17-25-1-10 7-18 15-18 9 1 15 9 13 18 10 2 16 10 12 19-4 10-19 16-35 16-11 0-19-3-22-10z" />
+            <path className="loading-broccoli-detail" d="M78 42c-4 8-4 17 1 25M91 40c-2 8 1 15 8 20" />
           </g>
         ) : activeShape === 2 ? (
-          <g className="loading-growth-motion">
-            <path className="loading-growth-shell" d="M75 87c-17-2-28-12-27-27 1-11 10-19 20-21 1-14 12-24 25-23 13 2 21 13 19 26 12 4 18 15 14 26-5 15-24 22-51 19z" />
-            <path className="loading-growth-fill" d="M75 79c-11-2-19-9-18-18 1-7 7-12 15-14 0-10 8-16 16-15 9 1 14 9 13 18 8 3 12 10 9 17-4 10-17 14-35 12z" />
-            <path className="loading-growth-detail" d="M54 54c8-4 15-3 21 2M91 47c-3 7-1 13 4 18" />
+          <g className="loading-food-motion">
+            <path className="loading-broccoli-shell" d="M75 87c-17-2-28-12-27-27 1-11 10-19 20-21 1-14 12-24 25-23 13 2 21 13 19 26 12 4 18 15 14 26-5 15-24 22-51 19z" />
+            <path className="loading-broccoli-fill" d="M75 79c-11-2-19-9-18-18 1-7 7-12 15-14 0-10 8-16 16-15 9 1 14 9 13 18 8 3 12 10 9 17-4 10-17 14-35 12z" />
+            <path className="loading-broccoli-detail" d="M54 54c8-4 15-3 21 2M91 47c-3 7-1 13 4 18" />
           </g>
         ) : activeShape === 3 ? (
           <g className="loading-food-motion">
@@ -277,9 +277,9 @@ function LoadingIllustration({ variant }: { variant: number }) {
           </g>
         ) : activeShape === 5 ? (
           <g className="loading-food-motion">
-            <path className="loading-food-shell" d="M77 16c24 0 37 20 32 46-4 21-18 33-37 33-21 0-35-13-38-33-4-26 16-46 43-46z" />
-            <path className="loading-food-fill" d="M77 25c16 0 24 14 21 31-3 15-12 25-24 25-14 0-23-10-25-25-2-17 11-31 28-31z" />
-            <circle className="loading-food-yolk" cx="75" cy="57" r="12" />
+            <path className="loading-egg-white" d="M77 16c24 0 37 20 32 46-4 21-18 33-37 33-21 0-35-13-38-33-4-26 16-46 43-46z" />
+            <path className="loading-egg-white-fill" d="M77 25c16 0 24 14 21 31-3 15-12 25-24 25-14 0-23-10-25-25-2-17 11-31 28-31z" />
+            <circle className="loading-egg-yolk" cx="75" cy="57" r="12" />
           </g>
         ) : activeShape === 6 ? (
           <g className="loading-food-motion">
@@ -289,9 +289,9 @@ function LoadingIllustration({ variant }: { variant: number }) {
           </g>
         ) : (
           <g className="loading-food-motion">
-            <path className="loading-food-shell" d="M75 18c8 0 14 6 14 14 9-2 16 4 16 13 9 2 14 10 10 19-3 8-10 12-19 11-4 12-11 18-21 18s-17-6-21-18c-9 1-16-3-19-11-4-9 1-17 10-19 0-9 7-15 16-13 0-8 6-14 14-14z" />
-            <path className="loading-food-fill" d="M75 28c4 0 7 4 7 9 7-2 13 3 12 9 7 1 10 7 7 12-2 5-7 7-14 6-2 8-6 11-12 11s-10-3-12-11c-7 1-12-1-14-6-3-5 0-11 7-12-1-6 5-11 12-9 0-5 3-9 7-9z" />
-            <path className="loading-food-detail" d="M75 37v35M57 51l11 6M93 51l-11 6" />
+            <path className="loading-broccoli-shell" d="M75 18c8 0 14 6 14 14 9-2 16 4 16 13 9 2 14 10 10 19-3 8-10 12-19 11-4 12-11 18-21 18s-17-6-21-18c-9 1-16-3-19-11-4-9 1-17 10-19 0-9 7-15 16-13 0-8 6-14 14-14z" />
+            <path className="loading-broccoli-fill" d="M75 28c4 0 7 4 7 9 7-2 13 3 12 9 7 1 10 7 7 12-2 5-7 7-14 6-2 8-6 11-12 11s-10-3-12-11c-7 1-12-1-14-6-3-5 0-11 7-12-1-6 5-11 12-9 0-5 3-9 7-9z" />
+            <path className="loading-broccoli-detail" d="M75 37v35M57 51l11 6M93 51l-11 6" />
           </g>
         )}
       </svg>

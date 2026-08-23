@@ -50,7 +50,7 @@ import {
   updateMealFood,
   useGym,
 } from "@/lib/gym-store";
-import type { MealFood } from "@/lib/gym-types";
+import type { FoodItem, MealFood } from "@/lib/gym-types";
 import { nutritionSourceFor } from "@/lib/nutrition-integrity";
 import { RECIPE_LIBRARY, type RecipeDefinition } from "@/lib/recipe-library";
 import { genderText } from "@/lib/gender-copy";
@@ -101,6 +101,23 @@ function recipeAsMealFood(recipe: RecipeDefinition, servings: number): MealFood 
     fat,
     notes: `מתכון: ${recipe.name}`,
   };
+}
+
+function quantityControlFor(food: FoodItem) {
+  const serving = food.servingSize.toLocaleLowerCase();
+  if (/(כף|כפות)/.test(serving)) return { label: "כמות בכפות", step: 0.5, scale: 1 };
+  if (/(כוס|כוסות)/.test(serving)) return { label: "כמות בכוסות", step: 0.25, scale: 1 };
+  if (/(יחידה|יחידות|ביצה|פרוסה|קופסה|חצי)/.test(serving)) {
+    return { label: "כמות ביחידות", step: 0.5, scale: 1 };
+  }
+  const gramsMatch = serving.match(/(\d+(?:[.,]\d+)?)\s*(?:גרם|g)\b/);
+  if (gramsMatch) {
+    const grams = Number(gramsMatch[1]!.replace(",", "."));
+    if (Number.isFinite(grams) && grams > 0) {
+      return { label: "כמות בגרמים", step: grams >= 100 ? 25 : 5, scale: grams };
+    }
+  }
+  return { label: "כמות מנות", step: 0.5, scale: 1 };
 }
 
 function NutritionLog() {
@@ -1020,6 +1037,7 @@ function NutritionLog() {
                 const selectedFood = gym.foods.find((food) => food.id === pickerFoodId);
                 if (!selectedFood) return null;
                 const source = nutritionSourceFor(selectedFood);
+                const quantityControl = quantityControlFor(selectedFood);
                 return (
                   <div className="space-y-3">
                     <button
@@ -1043,11 +1061,11 @@ function NutritionLog() {
                       </p>
                     </div>
                     <Stepper
-                      label="כמות מנות"
-                      value={pickerQuantity}
-                      step={0.5}
-                      min={0.5}
-                      onChange={setPickerQuantity}
+                      label={quantityControl.label}
+                      value={pickerQuantity * quantityControl.scale}
+                      step={quantityControl.step}
+                      min={quantityControl.step}
+                      onChange={(value) => setPickerQuantity(value / quantityControl.scale)}
                     />
                     <div className="rounded-2xl bg-primary/10 px-3.5 py-3 text-[12px] text-ink">
                       <p>

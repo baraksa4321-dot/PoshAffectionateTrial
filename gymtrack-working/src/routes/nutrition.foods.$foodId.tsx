@@ -178,12 +178,26 @@ function FoodDetail() {
 
         <div className="surface-card p-4">
           <label className={labelCls}>גודל מנת ייחוס</label>
+          <select
+            className={`${field} mb-2`}
+            value={draft.servingSize}
+            onChange={(e) => set({ servingSize: e.target.value })}
+          >
+            <option value="100 גרם">100 גרם — מזון שנמדד במשקל</option>
+            <option value="כף">כף — שמנים, ממרחים ורטבים</option>
+            <option value="כוס (200 מ״ל)">כוס — משקאות ומרקים</option>
+            <option value="יחידה">יחידה — פירות, ירקות ומאפים</option>
+            <option value="פרוסה">פרוסה — לחם וגבינות פרוסות</option>
+          </select>
           <input
             className={field}
             value={draft.servingSize}
             onChange={(e) => set({ servingSize: e.target.value })}
-            placeholder="100 גרם, יחידה 1, פרוסה 1..."
+            placeholder="למשל: ביצה M (53 גרם), חצי אבוקדו (75 גרם)"
           />
+          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+            בחרי יחידה שמתאימה לאוכל: גרמים למזון שנשקל, כפות לממרחים ושמנים, כוסות לנוזלים ויחידות לפירות, ביצים ומאפים.
+          </p>
         </div>
 
         <div className="surface-card grid grid-cols-2 gap-3 p-4">
