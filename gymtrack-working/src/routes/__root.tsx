@@ -209,7 +209,40 @@ class RuntimeErrorBoundary extends Component<
   }
 }
 
-const LOADING_SYMBOLS = ["✦", "♡", "✿", "☼", "·", "＋", "⌁", "◌"] as const;
+const LOADING_SYMBOLS = [
+  "✦",
+  "♡",
+  "✿",
+  "☼",
+  "·",
+  "＋",
+  "⌁",
+  "◌",
+  "🏋️",
+  "🍎",
+  "☕",
+  "⚡",
+  "🌿",
+  "🎧",
+  "⭐",
+  "💪",
+  "🍋",
+  "🫶",
+  "🪩",
+  "🎵",
+  "🔥",
+  "🌈",
+  "🦋",
+  "🐣",
+  "🚀",
+  "🎯",
+  "🌸",
+  "🍒",
+  "🥑",
+  "🏃",
+  "🧘",
+  "💫",
+] as const;
 const LOADING_MOTIONS = [
   "loading-micro-float",
   "loading-micro-breathe",
@@ -217,6 +250,9 @@ const LOADING_MOTIONS = [
   "loading-micro-orbit",
   "loading-micro-pop",
   "loading-micro-sway",
+  "loading-micro-twirl",
+  "loading-micro-hop",
+  "loading-micro-shimmer",
 ] as const;
 const LOADING_ANIMATIONS = LOADING_SYMBOLS.flatMap((symbol) =>
   LOADING_MOTIONS.map((motion) => ({ symbol, motion })),

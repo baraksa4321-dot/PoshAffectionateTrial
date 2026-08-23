@@ -1729,6 +1729,9 @@ html.night-mode .nav-shell {
 .loading-micro-orbit { animation: loading-micro-orbit 2.4s ease-in-out infinite; }
 .loading-micro-pop { animation: loading-micro-pop 1.35s ease-in-out infinite; }
 .loading-micro-sway { animation: loading-micro-sway 1.9s ease-in-out infinite; }
+.loading-micro-twirl { animation: loading-micro-twirl 2.1s ease-in-out infinite; }
+.loading-micro-hop { animation: loading-micro-hop 1.6s ease-in-out infinite; }
+.loading-micro-shimmer { animation: loading-micro-shimmer 1.8s ease-in-out infinite; }
 
 .loading-witty-message {
   min-height: 20px;
@@ -1795,6 +1798,22 @@ html.night-mode .nav-shell {
 @keyframes loading-micro-sway {
   0%, 100% { transform: translateX(-3px) rotate(-5deg); }
   50% { transform: translateX(3px) rotate(5deg); }
+}
+
+@keyframes loading-micro-twirl {
+  0%, 100% { transform: rotate(-10deg) scale(0.94); }
+  50% { transform: rotate(10deg) scale(1.05); }
+}
+
+@keyframes loading-micro-hop {
+  0%, 100% { transform: translateY(2px); }
+  35% { transform: translateY(-7px); }
+  55% { transform: translateY(0) scaleX(1.05); }
+}
+
+@keyframes loading-micro-shimmer {
+  0%, 100% { opacity: 0.55; filter: saturate(0.8); transform: scale(0.94); }
+  50% { opacity: 1; filter: saturate(1.35); transform: scale(1.06); }
 }
 
 @keyframes loading-micro-dot-one {
