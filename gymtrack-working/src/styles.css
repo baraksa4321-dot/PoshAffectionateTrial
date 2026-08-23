@@ -1630,6 +1630,7 @@ html.night-mode .nav-shell {
   }
 
   .loading-micro-icon,
+  .loading-drawing,
   .loading-micro-dot,
   .loading-clean-dots span,
   .loading-witty-message {
@@ -1657,70 +1658,39 @@ html.night-mode .nav-shell {
 }
 
 .loading-brand {
-  width: min(100%, 184px);
-  padding: 20px 18px 17px;
-  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
-  border-radius: 27px;
-  background: color-mix(in srgb, var(--card) 96%, var(--primary));
-  box-shadow: 0 14px 36px color-mix(in srgb, var(--primary) 10%, transparent);
+  width: min(100%, 152px);
+  padding: 14px 12px 12px;
+  background: transparent;
   text-align: center;
-  animation: loading-card-in 500ms ease both;
 }
 
 .loading-micro-stage {
   position: relative;
   display: grid;
-  width: 62px;
-  height: 62px;
+  width: 58px;
+  height: 58px;
   place-items: center;
   margin: 0 auto;
-  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
-  border-radius: 21px;
-  background: color-mix(in srgb, var(--cream) 72%, var(--card));
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
 }
 
 .loading-micro-stage::before {
-  position: absolute;
-  inset: 8px;
-  border: 1px dashed color-mix(in srgb, var(--primary) 22%, transparent);
-  border-radius: 16px;
-  content: "";
-  animation: loading-micro-ring 4s linear infinite;
+  display: none;
 }
 
-.loading-micro-icon {
+.loading-drawing {
   position: relative;
   z-index: 1;
   display: block;
   color: var(--primary);
-  font-family: var(--font-display);
-  font-size: 27px;
-  font-weight: 800;
   line-height: 1;
 }
 
-.loading-micro-dot {
-  position: absolute;
-  z-index: 2;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--sage);
-}
-
-.loading-micro-dot-one {
-  top: 12px;
-  right: 13px;
-  animation: loading-micro-dot-one 1.8s ease-in-out infinite;
-}
-
-.loading-micro-dot-two {
-  bottom: 13px;
-  left: 14px;
-  width: 4px;
-  height: 4px;
-  background: var(--rose);
-  animation: loading-micro-dot-two 1.8s ease-in-out infinite 0.45s;
+.loading-micro-dot,
+.loading-clean-dots {
+  display: none;
 }
 
 .loading-micro-float { animation: loading-micro-float 1.8s ease-in-out infinite; }

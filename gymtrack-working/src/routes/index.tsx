@@ -44,7 +44,6 @@ import {
   deleteCardioLog,
   addChecklistItem,
   toggleChecklistItem,
-  clearChecklist,
   useGym,
 } from "@/lib/gym-store";
 import type { CardioLog } from "@/lib/gym-types";
@@ -366,7 +365,6 @@ function Dashboard() {
               <button
                 type="button"
                 onClick={() => {
-                  clearChecklist();
                   setShowChecklist(false);
                 }}
                 aria-label="סגירת הצ׳ק־ליסט"
@@ -425,6 +423,15 @@ function Dashboard() {
             ) : null}
           </div>
         </section>
+      ) : null}
+      {!showChecklist ? (
+        <button
+          type="button"
+          onClick={() => setShowChecklist(true)}
+          className="press mt-3 flex w-full items-center justify-center rounded-2xl border border-dashed border-primary/35 bg-primary/5 px-4 py-2.5 text-[11px] font-bold text-primary"
+        >
+          הצגת הצ׳ק־ליסט מחדש
+        </button>
       ) : null}
 
       {/* Check-In Success Banner */}

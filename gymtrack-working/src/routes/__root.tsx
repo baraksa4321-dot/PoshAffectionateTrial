@@ -8,6 +8,40 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { Component, type ErrorInfo, type ReactNode, useEffect, useState } from "react";
+import {
+  Activity,
+  Apple,
+  BadgeCheck,
+  Cherry,
+  Circle,
+  CircleDot,
+  Cloud,
+  Coffee,
+  Diamond,
+  Dumbbell,
+  Flower2,
+  Footprints,
+  Gem,
+  Headphones,
+  Heart,
+  Hexagon,
+  Leaf,
+  Moon,
+  Music2,
+  Rainbow,
+  Rocket,
+  Smile,
+  Sparkles,
+  Sprout,
+  Square,
+  Star,
+  Sun,
+  Target,
+  Triangle,
+  Trophy,
+  Waves,
+  Zap,
+} from "lucide-react";
 
 import "../styles.css";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -209,39 +243,39 @@ class RuntimeErrorBoundary extends Component<
   }
 }
 
-const LOADING_SYMBOLS = [
-  "✦",
-  "♡",
-  "✿",
-  "☼",
-  "·",
-  "＋",
-  "⌁",
-  "◌",
-  "🏋️",
-  "🍎",
-  "☕",
-  "⚡",
-  "🌿",
-  "🎧",
-  "⭐",
-  "💪",
-  "🍋",
-  "🫶",
-  "🪩",
-  "🎵",
-  "🔥",
-  "🌈",
-  "🦋",
-  "🐣",
-  "🚀",
-  "🎯",
-  "🌸",
-  "🍒",
-  "🥑",
-  "🏃",
-  "🧘",
-  "💫",
+const LOADING_DRAWINGS = [
+  Dumbbell,
+  Apple,
+  Coffee,
+  Zap,
+  Leaf,
+  Headphones,
+  Star,
+  Heart,
+  Sparkles,
+  Music2,
+  Activity,
+  Rainbow,
+  Rocket,
+  Target,
+  Flower2,
+  Cherry,
+  Sprout,
+  Trophy,
+  Moon,
+  Sun,
+  Cloud,
+  Smile,
+  CircleDot,
+  Waves,
+  Footprints,
+  BadgeCheck,
+  Gem,
+  Circle,
+  Square,
+  Triangle,
+  Hexagon,
+  Diamond,
 ] as const;
 const LOADING_MOTIONS = [
   "loading-micro-float",
@@ -254,17 +288,16 @@ const LOADING_MOTIONS = [
   "loading-micro-hop",
   "loading-micro-shimmer",
 ] as const;
-const LOADING_ANIMATIONS = LOADING_SYMBOLS.flatMap((symbol) =>
-  LOADING_MOTIONS.map((motion) => ({ symbol, motion })),
+const LOADING_ANIMATIONS = LOADING_DRAWINGS.flatMap((drawing) =>
+  LOADING_MOTIONS.map((motion) => ({ drawing, motion })),
 );
 
 function LoadingIllustration({ variant }: { variant: number }) {
   const animation = LOADING_ANIMATIONS[variant % LOADING_ANIMATIONS.length]!;
+  const Drawing = animation.drawing;
   return (
     <div className="loading-micro-stage" aria-hidden="true">
-      <span className={`loading-micro-icon ${animation.motion}`}>{animation.symbol}</span>
-      <span className="loading-micro-dot loading-micro-dot-one" />
-      <span className="loading-micro-dot loading-micro-dot-two" />
+      <Drawing className={`loading-drawing ${animation.motion}`} size={42} strokeWidth={1.6} />
     </div>
   );
 }
@@ -398,17 +431,9 @@ function RootContent() {
             aria-label="My Routine נטען"
           >
             <LoadingIllustration variant={loadingVariant} />
-            <div className="mt-3 flex justify-center">
-              <BrandLogo compact />
-            </div>
             <p key={loadingMessageIndex} className="loading-witty-message">
               {LOADING_MESSAGES[loadingMessageIndex]}
             </p>
-            <div className="loading-clean-dots" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </div>
           </div>
         </div>
       ) : hasProfileHydrationError ? (
