@@ -564,15 +564,18 @@ export function AppShell({
                   )}
                 </p>
                 <div>
-                  <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wide text-muted-foreground">
+                  <label htmlFor="reset-email" className="mb-1.5 block text-[12px] font-bold uppercase tracking-wide text-muted-foreground">
                     כתובת אימייל
                   </label>
                   <input
+                    id="reset-email"
+                    name="email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     autoComplete="email"
+                    inputMode="email"
                     className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
                     placeholder="name@example.com"
                     dir="ltr"
@@ -591,10 +594,12 @@ export function AppShell({
               <form onSubmit={handleAuthSubmit} className="space-y-4">
                 {isSignUp ? (
                   <div>
-                    <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wide text-muted-foreground">
+                    <label htmlFor="signup-name" className="mb-1.5 block text-[12px] font-bold uppercase tracking-wide text-muted-foreground">
                       שם מלא
                     </label>
                     <input
+                      id="signup-name"
+                      name="name"
                       type="text"
                       required
                       value={fullName}
@@ -609,21 +614,25 @@ export function AppShell({
                         }
                       }}
                       autoComplete="name"
+                      inputMode="text"
                       className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
                       placeholder="השם שיוצג באפליקציה"
                     />
                   </div>
                 ) : null}
                 <div>
-                  <label className="block text-[12px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
+                  <label htmlFor="auth-email" className="block text-[12px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
                     כתובת אימייל
                   </label>
                   <input
+                    id="auth-email"
+                    name="email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     autoComplete="email"
+                    inputMode="email"
                     className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-[14px] outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                     placeholder="name@example.com"
                     dir="ltr"
@@ -631,16 +640,19 @@ export function AppShell({
                 </div>
 
                 <div>
-                  <label className="block text-[12px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
+                  <label htmlFor="auth-password" className="block text-[12px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
                     סיסמה
                   </label>
                   <input
+                    id="auth-password"
+                    name="password"
                     type="password"
                     required
                     minLength={6}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete={isSignUp ? "new-password" : "current-password"}
+                    inputMode="text"
                     className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-[14px] outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                     placeholder="••••••••"
                     dir="ltr"

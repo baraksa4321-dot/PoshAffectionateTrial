@@ -31,9 +31,11 @@ import {
 import {
   addFoodToMeal,
   addMeal,
+  addMealWithFoods,
   dayTotals,
   findFoodReplacements,
   foodTotals,
+  logPlannedMeal,
   mealFoodFromLibrary,
   nutritionDay,
   removeMealFood,
@@ -41,6 +43,7 @@ import {
   saveNutritionTargets,
   searchFoods,
   todayKey,
+  uid,
   updateMealFood,
   useGym,
 } from "@/lib/gym-store";
@@ -75,6 +78,28 @@ function formatDayLabel(key: string) {
   return date.toLocaleDateString("he-IL", { weekday: "short", month: "short", day: "numeric" });
 }
 
+function recipeAsMealFood(recipe: RecipeDefinition, servings: number): MealFood {
+  const multiplier = Math.max(0.5, servings);
+  const calories = Math.round(recipe.nutrition.calories * multiplier);
+  const protein = Math.round(recipe.nutrition.protein * multiplier * 10) / 10;
+  const fat = Math.round(recipe.nutrition.fat * multiplier * 10) / 10;
+  // Recipes store calories, protein and fat. The remaining calories are
+  // represented as carbohydrates, preserving the supplied total rather than
+  // inventing a separate nutrition figure.
+  const carbs = Math.max(0, Math.round(((calories - protein * 4 - fat * 9) / 4) * 10) / 10);
+  return {
+    id: uid(),
+    name: recipe.name,
+    servingSize: "מנה מהמתכון",
+    quantity: 1,
+    calories,
+    protein,
+    carbs,
+    fat,
+    notes: `מתכון: ${recipe.name}`,
+  };
+}
+
 function NutritionLog() {
   const gym = useGym();
   const gender = gym.userProfile?.gender;
@@ -99,6 +124,9 @@ function NutritionLog() {
   const [showRecipes, setShowRecipes] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<RecipeDefinition | null>(null);
   const [recipeCategory, setRecipeCategory] = useState<RecipeDefinition["category"] | "הכל">("הכל");
+  const [recipeQuery, setRecipeQuery] = useState("");
+  const [recipeServings, setRecipeServings] = useState(1);
+  const [recipeMealId, setRecipeMealId] = useState("");
   const day = nutritionDay(gym, date);
   const totals = dayTotals(day);
   const { nutritionTargets: targets } = gym;
@@ -113,6 +141,30 @@ function NutritionLog() {
   const remainingFat =
     targets.fat === undefined ? undefined : Math.max(0, targets.fat - totals.fat);
   const hasWhatToEatTargets = remainingCal !== undefined && remainingProt !== undefined;
+  const filteredRecipes = useMemo(() => {
+    const query = recipeQuery.trim().toLocaleLowerCase();
+    return RECIPE_LIBRARY.filter(
+      (recipe) =>
+        (recipeCategory === "הכל" || recipe.category === recipeCategory) &&
+        (!query ||
+          [recipe.name, recipe.category, ...recipe.ingredients]
+            .join(" ")
+            .toLocaleLowerCase()
+            .includes(query)),
+    );
+  }, [recipeCategory, recipeQuery]);
+
+  const addSelectedRecipeToLog = () => {
+    if (!selectedRecipe) return;
+    const recipeFood = recipeAsMealFood(selectedRecipe, recipeServings);
+    if (recipeMealId) {
+      addFoodToMeal(date, recipeMealId, recipeFood);
+    } else {
+      addMealWithFoods(date, selectedRecipe.name, [recipeFood]);
+    }
+    setSelectedRecipe(null);
+    setRecipeServings(1);
+  };
 
   // Smart Food Suggestions based on remaining macros
   const suggestedFoods = useMemo(() => {
@@ -313,6 +365,16 @@ function NutritionLog() {
         </button>
         {showRecipes ? (
           <div className="border-t border-border/50 px-3 pb-3 pt-2">
+            <div className="num-pill mb-2 flex h-9 items-center gap-2 px-2.5">
+              <BookOpen className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <input
+                value={recipeQuery}
+                onChange={(event) => setRecipeQuery(event.target.value)}
+                placeholder={genderText(gender, "חפשי מתכון...", "חפש מתכון...")}
+                className="w-full bg-transparent text-[11px] text-ink outline-none placeholder:text-muted-foreground"
+                aria-label="חיפוש מתכונים"
+              />
+            </div>
             <div className="flex gap-1.5 overflow-x-auto pb-2">
               {(
                 ["הכל", "עתיר חלבון", "דל קלוריות", "דל שומן", "ארוחה קלה", "מתוק מאוזן"] as const
@@ -334,13 +396,15 @@ function NutritionLog() {
               )}
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {RECIPE_LIBRARY.filter(
-                (recipe) => recipeCategory === "הכל" || recipe.category === recipeCategory,
-              ).map((recipe) => (
+              {filteredRecipes.map((recipe) => (
                 <button
                   key={recipe.id}
                   type="button"
-                  onClick={() => setSelectedRecipe(recipe)}
+                  onClick={() => {
+                    setSelectedRecipe(recipe);
+                    setRecipeServings(1);
+                    setRecipeMealId(day.meals[0]?.id ?? "");
+                  }}
                   className="rounded-xl border border-border/60 bg-white/60 p-2.5 text-start transition-colors hover:border-primary/50"
                 >
                   <span className="block truncate text-xs font-bold text-ink">{recipe.name}</span>
@@ -350,6 +414,11 @@ function NutritionLog() {
                 </button>
               ))}
             </div>
+            {filteredRecipes.length === 0 ? (
+              <p className="py-3 text-center text-[11px] font-semibold text-muted-foreground">
+                לא נמצאו מתכונים מתאימים.
+              </p>
+            ) : null}
           </div>
         ) : null}
       </section>
@@ -409,6 +478,34 @@ function NutritionLog() {
             <p className="border-s-2 border-primary/30 ps-2 text-[10px] leading-relaxed text-muted-foreground">
               הערכים הם אומדן למנה ויכולים להשתנות לפי המותג, הכמות ואופן ההכנה.
             </p>
+            <div className="rounded-2xl bg-secondary/60 p-3">
+              <Stepper
+                label="מנות"
+                value={recipeServings}
+                step={0.5}
+                min={0.5}
+                onChange={setRecipeServings}
+              />
+              {day.meals.length > 0 ? (
+                <label className="mt-3 block text-[11px] font-bold text-muted-foreground">
+                  הוספה לארוחה
+                  <select
+                    value={recipeMealId}
+                    onChange={(event) => setRecipeMealId(event.target.value)}
+                    className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2 text-[13px] text-ink outline-none focus:border-primary"
+                  >
+                    {day.meals.map((meal) => (
+                      <option key={meal.id} value={meal.id}>
+                        {meal.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              <PrimaryButton className="mt-3" onClick={addSelectedRecipeToLog}>
+                {recipeMealId ? "הוסיפי לארוחה" : "תעדי כארוחה"}
+              </PrimaryButton>
+            </div>
           </div>
         </Overlay>
       ) : null}
@@ -467,9 +564,26 @@ function NutritionLog() {
                 >
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="font-display text-[15px] font-bold text-ink">{meal.name}</h3>
-                    <span className="text-[11px] font-semibold text-primary">
-                      {Math.round(plannedTotals.calories)} קלוריות
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-semibold text-primary">
+                        {Math.round(plannedTotals.calories)} קלוריות
+                      </span>
+                      <button
+                        type="button"
+                        disabled={day.meals.some((loggedMeal) => loggedMeal.sourcePlanId === meal.id)}
+                        onClick={() => logPlannedMeal(date, meal.id)}
+                        className="inline-flex h-8 items-center gap-1 rounded-xl bg-primary px-2.5 text-[11px] font-bold text-primary-foreground disabled:bg-emerald-600"
+                      >
+                        {day.meals.some((loggedMeal) => loggedMeal.sourcePlanId === meal.id) ? (
+                          <CheckSquare className="h-3.5 w-3.5" />
+                        ) : (
+                          <Square className="h-3.5 w-3.5" />
+                        )}
+                        {day.meals.some((loggedMeal) => loggedMeal.sourcePlanId === meal.id)
+                          ? "סומן כנאכל"
+                          : "סמני כנאכל"}
+                      </button>
+                    </div>
                   </div>
                   {meal.foods.length > 0 ? (
                     <div className="mt-3 space-y-1.5">
@@ -501,8 +615,8 @@ function NutritionLog() {
           </p>
         </section>
       ) : null}
-      {/* Meals */}
-      <section className="order-2 mt-4">
+      {/* The manual log remains available only when no coach plan is assigned. */}
+      {!day.plannedMeals?.length ? <section className="order-2 mt-4">
         <SectionHeader
           title="הארוחות שלך"
           subtitle={`${day.meals.length} ארוחות תועדו`}
@@ -572,10 +686,11 @@ function NutritionLog() {
                             type="button"
                             aria-label="החלף מאכל"
                             onClick={() => setSubstituteFor({ mealId: meal.id, food })}
-                            className="press grid h-8 w-8 place-items-center rounded-xl text-primary hover:bg-white cursor-pointer"
-                            title="החלף לי"
+                            className="press inline-flex h-8 shrink-0 items-center gap-1 rounded-xl bg-primary/10 px-2.5 text-[11px] font-bold text-primary hover:bg-primary/15 cursor-pointer"
+                            title="החלפת מאכל"
                           >
                             <Shuffle className="h-3.5 w-3.5" />
+                            החלפה
                           </button>
                           <button
                             type="button"
@@ -619,7 +734,7 @@ function NutritionLog() {
             );
           })}
         </div>
-      </section>
+      </section> : null}
       {/* "What Should I Eat Now?" Modal */}
       {showWhatToEat && (
         <Overlay

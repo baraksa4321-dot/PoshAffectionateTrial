@@ -201,6 +201,8 @@ export type Meal = {
   id: string;
   name: string;
   foods: MealFood[];
+  /** The prescribed meal this actual-log meal came from, when applicable. */
+  sourcePlanId?: string;
 };
 
 export type NutritionDay = {

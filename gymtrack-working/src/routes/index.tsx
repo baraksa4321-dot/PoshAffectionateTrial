@@ -149,10 +149,13 @@ function Dashboard() {
   );
 
   // Consistency Score calculation (0-100%)
-  const consistencyScore = Math.min(
-    100,
-    Math.round((thisWeek.length / (userProfile?.workoutsPerWeek || 4)) * 100),
-  );
+  const weeklyWorkoutTarget =
+    userProfile?.workoutsPerWeek && userProfile.workoutsPerWeek > 0
+      ? userProfile.workoutsPerWeek
+      : undefined;
+  const consistencyScore = weeklyWorkoutTarget
+    ? Math.min(100, Math.round((thisWeek.length / weeklyWorkoutTarget) * 100))
+    : undefined;
 
   // Nutrition Today
   const todayDateStr = todayKey();
@@ -277,15 +280,20 @@ function Dashboard() {
             <TrendingUp className="h-4 w-4 text-primary" aria-hidden="true" />
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {thisWeek.length} מתוך {userProfile?.workoutsPerWeek || 4} אימונים השבוע
+            {weeklyWorkoutTarget
+              ? `${thisWeek.length} מתוך ${weeklyWorkoutTarget} אימונים השבוע`
+              : `${thisWeek.length} אימונים השבוע · הוסיפי יעד שבועי כדי לראות עקביות`}
           </p>
-          <div className="progress-track mt-3" aria-label={`מדד עקביות ${consistencyScore}%`}>
-            <div className="progress-fill" style={{ width: `${consistencyScore}%` }} />
+          <div
+            className="progress-track mt-3"
+            aria-label={consistencyScore === undefined ? "מדד עקביות ללא יעד" : `מדד עקביות ${consistencyScore}%`}
+          >
+            <div className="progress-fill" style={{ width: `${consistencyScore ?? 0}%` }} />
           </div>
         </div>
         <div className="shrink-0 text-start">
           <p className="font-display text-3xl font-extrabold leading-none tabular-nums text-primary">
-            {consistencyScore}%
+            {consistencyScore === undefined ? "—" : `${consistencyScore}%`}
           </p>
           <p className="mt-1 text-[10px] font-bold text-muted-foreground">עקביות</p>
         </div>

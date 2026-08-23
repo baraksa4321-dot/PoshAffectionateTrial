@@ -1599,6 +1599,32 @@ export function savePlannedMeals(date: string, plannedMeals: Meal[]) {
   withDay(date, (day) => ({ ...day, plannedMeals }));
 }
 
+export function logPlannedMeal(date: string, plannedMealId: string) {
+  withDay(date, (day) => {
+    const plannedMeal = day.plannedMeals?.find((meal) => meal.id === plannedMealId);
+    if (!plannedMeal || day.meals.some((meal) => meal.sourcePlanId === plannedMealId)) return day;
+    return {
+      ...day,
+      meals: [
+        ...day.meals,
+        {
+          id: uid(),
+          name: plannedMeal.name,
+          sourcePlanId: plannedMealId,
+          foods: plannedMeal.foods.map((food) => ({
+            ...food,
+            id: uid(),
+            timeLogged: new Date().toLocaleTimeString("he-IL", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          })),
+        },
+      ],
+    };
+  });
+}
+
 /* ---------- recipes ---------- */
 
 export function saveRecipe(name: string, foods: MealFood[]) {
@@ -1673,6 +1699,20 @@ export function addMeal(date: string, name = "") {
   withDay(date, (day) => ({
     ...day,
     meals: [...day.meals, { id: uid(), name: name.trim() || "ארוחה חדשה", foods: [] }],
+  }));
+}
+
+export function addMealWithFoods(date: string, name: string, foods: MealFood[]) {
+  withDay(date, (day) => ({
+    ...day,
+    meals: [
+      ...day.meals,
+      {
+        id: uid(),
+        name: name.trim() || "ארוחה חדשה",
+        foods,
+      },
+    ],
   }));
 }
 

@@ -51,25 +51,33 @@ function ResetPassword() {
           </p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
-            <label className="block text-sm font-bold text-ink">
+            <label htmlFor="new-password" className="block text-sm font-bold text-ink">
               סיסמה חדשה
               <input
+                id="new-password"
+                name="new-password"
                 type="password"
                 required
                 minLength={6}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
+                autoComplete="new-password"
+                inputMode="text"
                 className="mt-1.5 w-full rounded-xl border border-border px-3 py-2 outline-none focus:border-primary"
               />
             </label>
-            <label className="block text-sm font-bold text-ink">
+            <label htmlFor="confirm-new-password" className="block text-sm font-bold text-ink">
               אימות סיסמה חדשה
               <input
+                id="confirm-new-password"
+                name="confirm-new-password"
                 type="password"
                 required
                 minLength={6}
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
+                autoComplete="new-password"
+                inputMode="text"
                 className="mt-1.5 w-full rounded-xl border border-border px-3 py-2 outline-none focus:border-primary"
               />
             </label>
