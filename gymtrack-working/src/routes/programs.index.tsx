@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Calendar, Copy, Dumbbell, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { ArrowLeft, Calendar, Copy, Dumbbell, ExternalLink, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
@@ -17,6 +17,19 @@ export const Route = createFileRoute("/programs/")({
   head: () => ({ meta: [{ title: "תוכניות אימון — הרוטינה שלי" }] }),
   component: ProgramsPage,
 });
+
+const WORKOUT_PLAYLISTS = [
+  {
+    label: "Spotify · Workout",
+    href: "https://open.spotify.com/playlist/37i9dQZF1DX70RN3TfWWJh",
+    className: "bg-[#e8f7ed] text-[#137333] hover:bg-[#d4f0dc]",
+  },
+  {
+    label: "Apple Music · Pure Workout",
+    href: "https://music.apple.com/gb/playlist/pure-workout/pl.ad0ee1557e3e4feba314fd70f7982766",
+    className: "bg-[#fff0f2] text-[#c9364d] hover:bg-[#ffe1e6]",
+  },
+] as const;
 
 function ProgramsPage() {
   const { programs, workouts, userProfile } = useGym();
@@ -165,6 +178,23 @@ function ProgramsPage() {
                       {program.notes}
                     </p>
                   ) : null}
+                  <div className="mt-3 border-t border-border/50 pt-3">
+                    <p className="mb-2 text-[10px] font-bold text-muted-foreground">מוזיקה לאימון</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {WORKOUT_PLAYLISTS.map((playlist) => (
+                        <a
+                          key={playlist.href}
+                          href={playlist.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[10px] font-bold transition-colors ${playlist.className}`}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          {playlist.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
                 </article>
               );
             })}
