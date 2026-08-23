@@ -3,3 +3,4 @@
 - [Live role RPC safeguard](live-role-rpc-safeguard.md) — Owners may change another user’s role, never their own; preserve the approved live-only security guard.
 - [Mobile overlay keyboard sizing](mobile-overlay-keyboard-sizing.md) — Bottom sheets must size from the visual viewport and apply keyboard offset only as a bottom margin.
 - [Offline cache ownership](offline-cache-ownership.md) — Store offline data by immutable user key; never migrate shared caches without verifiable ownership.
+- [Preferred visual direction](preferred-visual-direction.md) — The user approved the selected clean, ordered premium My Routine direction as the visual baseline.
