@@ -850,29 +850,19 @@ export function CoachDashboardPage({
   return (
       <AppShell
       title={clientsOnly ? "מתאמנים" : ""}
-      kicker={clientsOnly ? "בניית תוכניות ותפריטים" : "לוח מודעות"}
+      kicker={clientsOnly ? "בניית תוכניות ותפריטים" : ""}
       compactHeader
       action={
         clientsOnly ? (
           <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-[11px] font-bold text-primary">
             עדכון תוכניות
           </span>
-        ) : (
-            <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-[11px] font-bold text-primary shadow-xs transition-colors hover:bg-primary/10"
-            >
-              <UserPlus className="h-3.5 w-3.5" />
-              <span>הוסף מתאמן</span>
-            </button>
-          </div>
-        )
+        ) : null
       }
     >
       {!clientsOnly ? (
-        <section className="space-y-4 text-start">
-          <section className="surface-card border-rose-200 bg-rose-50/60 p-3">
+        <section className="space-y-2 text-start">
+          <section className="surface-card border-rose-200 bg-rose-50/60 p-2">
             <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-rose-700">
@@ -919,39 +909,25 @@ export function CoachDashboardPage({
             )}
           </section>
 
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
-              {isOwner ? "לוח מודעות לבעלים" : "לוח מודעות למאמן"}
-            </p>
-            <h2 className="mt-1 font-display text-2xl font-extrabold text-ink">
-              מה חשוב לדעת היום?
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {isOwner
-                ? "תמונת מצב של המועדון, המשתמשים והפעולות שדורשות את תשומת ליבך."
-                : "עדכונים קצרים ופעולות שממתינות לך במרחב הניהול."}
-            </p>
-          </div>
-
           <div className="grid grid-cols-2 gap-0.5 sm:grid-cols-4">
-            <div className="surface-card border-primary/25 bg-primary/5 p-1 text-start">
+            <div className="surface-card border-primary/25 bg-primary/5 p-0.5 text-start">
               <p className="text-[10px] font-bold text-muted-foreground">מתאמנים</p>
               <p className="mt-0.5 font-display text-base font-extrabold text-ink">{clients.length}</p>
             </div>
-            <div className="surface-card border-accent/60 bg-accent/20 p-1 text-start">
+            <div className="surface-card border-accent/60 bg-accent/20 p-0.5 text-start">
               <p className="text-[10px] font-bold text-muted-foreground">דורשים תכנית</p>
               <p className="mt-0.5 font-display text-base font-extrabold text-ink">
                 {needsPlan.length}
               </p>
             </div>
-            <div className="surface-card border-border bg-surface-2 p-1 text-start">
+            <div className="surface-card border-border bg-surface-2 p-0.5 text-start">
               <p className="text-[10px] font-bold text-muted-foreground">שקטים 14 יום</p>
               <p className="mt-0.5 font-display text-base font-extrabold text-ink">
                 {quietClients.length}
               </p>
             </div>
             {isOwner ? (
-              <div className="surface-card border-purple-200 bg-purple-50/70 p-1 text-start">
+              <div className="surface-card border-purple-200 bg-purple-50/70 p-0.5 text-start">
                 <p className="text-[10px] font-bold text-purple-700">משתמשים</p>
                 <p className="mt-0.5 font-display text-base font-extrabold text-purple-950">
                   {allProfiles.length}

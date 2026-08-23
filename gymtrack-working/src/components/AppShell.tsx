@@ -394,68 +394,70 @@ export function AppShell({
               </div>
             </div>
           ) : null}
-          <div className="flex items-start gap-3">
-            <div className="min-w-0 flex-1 text-start">
-              {title ? (
-                <h1
-                  className={`min-w-0 break-words font-display font-extrabold leading-snug tracking-tight text-ink ${
-                    compactHeader
-                      ? "text-[clamp(16px,4.5vw,20px)]"
-                      : "text-[clamp(18px,5vw,23px)]"
-                  }`}
-                >
-                  {headerTitle}
-                </h1>
-              ) : null}
-            </div>
-            <div className="flex shrink-0 items-center gap-2 pt-0.5">
-              {user ? (
-                <div className="flex items-center gap-2 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-[12px] font-bold text-ink shadow-sm">
-                  <SyncIcon
-                    className={`h-3.5 w-3.5 ${syncIconClass} ${
-                      cloudSyncStatus === "syncing" ? "animate-pulse" : ""
+          {title || action ? (
+            <div className="flex items-start gap-3">
+              <div className="min-w-0 flex-1 text-start">
+                {title ? (
+                  <h1
+                    className={`min-w-0 break-words font-display font-extrabold leading-snug tracking-tight text-ink ${
+                      compactHeader
+                        ? "text-[clamp(16px,4.5vw,20px)]"
+                        : "text-[clamp(18px,5vw,23px)]"
                     }`}
-                    aria-hidden="true"
-                  />
-                  <span className="max-w-[120px] truncate">
-                    {store.userProfile?.fullName || "החשבון שלי"}
-                  </span>
-                  <div className="h-3 w-px bg-border/80 mx-1" />
-                  <button
-                    type="button"
-                    onClick={() => setShowThemeModal(true)}
-                    title="בחירת פלטה"
-                    aria-label="בחירת פלטת צבעים"
-                    className="cursor-pointer text-muted-foreground transition-colors hover:text-primary"
                   >
-                    <div className="h-3.5 w-3.5 rounded-sm bg-primary border border-primary/20" />
-                  </button>
+                    {headerTitle}
+                  </h1>
+                ) : null}
+              </div>
+              <div className="flex shrink-0 items-center gap-2 pt-0.5">
+                {user ? (
+                  <div className="flex items-center gap-2 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-[12px] font-bold text-ink shadow-sm">
+                    <SyncIcon
+                      className={`h-3.5 w-3.5 ${syncIconClass} ${
+                        cloudSyncStatus === "syncing" ? "animate-pulse" : ""
+                      }`}
+                      aria-hidden="true"
+                    />
+                    <span className="max-w-[120px] truncate">
+                      {store.userProfile?.fullName || "החשבון שלי"}
+                    </span>
+                    <div className="h-3 w-px bg-border/80 mx-1" />
+                    <button
+                      type="button"
+                      onClick={() => setShowThemeModal(true)}
+                      title="בחירת פלטה"
+                      aria-label="בחירת פלטת צבעים"
+                      className="cursor-pointer text-muted-foreground transition-colors hover:text-primary"
+                    >
+                      <div className="h-3.5 w-3.5 rounded-sm bg-primary border border-primary/20" />
+                    </button>
+                    <button
+                      onClick={handleSignOut}
+                      title="התנתק"
+                      className="cursor-pointer text-muted-foreground transition-colors hover:text-destructive"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
                   <button
-                    onClick={handleSignOut}
-                    title="התנתק"
-                    className="cursor-pointer text-muted-foreground transition-colors hover:text-destructive"
+                    onClick={() => setShowAuthModal(true)}
+                    className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[12px] font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
                   >
-                    <LogOut className="h-3.5 w-3.5" />
+                    <LogIn className="h-3.5 w-3.5" />
+                    <span>התחברות</span>
                   </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowAuthModal(true)}
-                  className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[12px] font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-                >
-                  <LogIn className="h-3.5 w-3.5" />
-                  <span>התחברות</span>
-                </button>
-              )}
-              {action}
+                )}
+                {action}
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
       </header>
 
       <main
         className={`page-enter mx-auto w-full max-w-2xl px-4 pb-8 sm:px-6 ${
-          compactHeader ? "flex flex-col pt-3" : "pt-5 sm:pt-7"
+          compactHeader ? "flex flex-col pt-1.5" : "pt-5 sm:pt-7"
         }`}
         style={{
           paddingBottom: "calc(6.5rem + env(safe-area-inset-bottom))",
