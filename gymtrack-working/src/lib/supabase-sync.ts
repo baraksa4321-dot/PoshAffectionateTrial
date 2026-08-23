@@ -44,6 +44,15 @@ function isMissingTableInSchemaCache(error: unknown, tableName: string): boolean
   );
 }
 
+function recordedAtForDate(date: string): string {
+  return date.includes("T") ? date : `${date}T12:00:00.000Z`;
+}
+
+function dateFromRecordedAt(value: unknown): string {
+  if (typeof value !== "string") return new Date().toISOString().slice(0, 10);
+  return value.slice(0, 10);
+}
+
 async function requireSuccessfulWrite(
   operation: PromiseLike<{ error: unknown }>,
   label: string,
@@ -174,15 +183,11 @@ export async function syncLocalToSupabase(
     const cardioPayload = (localData.cardioLogs ?? []).map((log) => ({
       id: log.id,
       user_id: userId,
-      date: log.date,
-      type: log.type,
-      duration_min: log.durationMin,
+      activity_type: log.type,
+      duration_minutes: Math.round(log.durationMin),
+      recorded_at: recordedAtForDate(log.date),
+      estimated_calories: Math.round(log.calories),
       intensity: log.intensity,
-      speed_kmh: log.speed,
-      incline_pct: log.incline,
-      distance_km: log.distanceKm,
-      calories: log.calories,
-      updated_at: new Date().toISOString(),
     }));
     let cardioSchemaUnavailable = false;
     if (cardioPayload.length > 0) {
@@ -225,13 +230,13 @@ export async function syncLocalToSupabase(
     // 4b. Body Weight Logs (Historical Dated Weigh-Ins)
     if (localData.bodyWeightLogs && localData.bodyWeightLogs.length > 0) {
       const weighInPayload = localData.bodyWeightLogs.map((log) => ({
+        id: log.id,
         user_id: userId,
-        date: log.date,
         weight_kg: log.weight,
-        updated_at: new Date().toISOString(),
+        recorded_at: recordedAtForDate(log.date),
       }));
       await requireSuccessfulWrite(
-        supabase.from("body_weight_logs").upsert(weighInPayload, { onConflict: "user_id,date" }),
+        supabase.from("body_weight_logs").upsert(weighInPayload, { onConflict: "id" }),
         "Body weight log sync",
       ).catch((error: unknown) => {
         if (isMissingTableInSchemaCache(error, "body_weight_logs")) {
@@ -579,9 +584,9 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     // 7. Body Weight Logs
     const { data: dbBodyWeightLogs, error: bodyWeightError } = await supabase
       .from("body_weight_logs")
-      .select("id, date, weight_kg")
+      .select("id, recorded_at, weight_kg")
       .eq("user_id", userId)
-      .order("date", { ascending: false });
+      .order("recorded_at", { ascending: false });
     if (bodyWeightError && !isMissingTableInSchemaCache(bodyWeightError, "body_weight_logs")) {
       throw new Error(`Weight logs pull failed: ${bodyWeightError.message}`);
     }
@@ -592,7 +597,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (dbBodyWeightLogs && dbBodyWeightLogs.length > 0) {
       nextData.bodyWeightLogs = dbBodyWeightLogs.map((row) => ({
         id: row.id,
-        date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
+        date: dateFromRecordedAt(row.recorded_at),
         weight: Number(row.weight_kg),
       }));
     }
@@ -625,7 +630,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .from("cardio_logs")
       .select("*")
       .eq("user_id", userId)
-      .order("date", { ascending: false });
+      .order("recorded_at", { ascending: false });
     if (cardioError && !isMissingTableInSchemaCache(cardioError, "cardio_logs")) {
       throw new Error(`Cardio pull failed: ${cardioError.message}`);
     }
@@ -634,14 +639,11 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
     nextData.cardioLogs = (dbCardioLogs ?? []).map((row): CardioLog => ({
       id: row.id,
-      date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
-      type: row.type,
-      durationMin: Number(row.duration_min),
+      date: dateFromRecordedAt(row.recorded_at),
+      type: row.activity_type,
+      durationMin: Number(row.duration_minutes),
       intensity: row.intensity || undefined,
-      speed: row.speed_kmh === null ? undefined : Number(row.speed_kmh),
-      incline: row.incline_pct === null ? undefined : Number(row.incline_pct),
-      distanceKm: row.distance_km === null ? undefined : Number(row.distance_km),
-      calories: Number(row.calories),
+      calories: Number(row.estimated_calories ?? 0),
     }));
 
     // 8. Custom Foods
