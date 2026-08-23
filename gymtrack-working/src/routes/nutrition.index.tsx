@@ -104,19 +104,28 @@ function NutritionLog() {
   const { nutritionTargets: targets } = gym;
 
   // Compute remaining macros for "What should I eat now?"
-  const remainingCal = Math.max(0, (targets.calories || 2000) - totals.calories);
-  const remainingProt = Math.max(0, (targets.protein || 140) - totals.protein);
-  const remainingCarbs = Math.max(0, (targets.carbs || 200) - totals.carbs);
-  const remainingFat = Math.max(0, (targets.fat || 65) - totals.fat);
+  const remainingCal =
+    targets.calories === undefined ? undefined : Math.max(0, targets.calories - totals.calories);
+  const remainingProt =
+    targets.protein === undefined ? undefined : Math.max(0, targets.protein - totals.protein);
+  const remainingCarbs =
+    targets.carbs === undefined ? undefined : Math.max(0, targets.carbs - totals.carbs);
+  const remainingFat =
+    targets.fat === undefined ? undefined : Math.max(0, targets.fat - totals.fat);
 
   // Smart Food Suggestions based on remaining macros
   const suggestedFoods = useMemo(() => {
     return gym.foods
-      .filter((f) => f.calories <= remainingCal + 100 && f.calories > 0)
+      .filter(
+        (f) =>
+          remainingCal !== undefined &&
+          f.calories <= remainingCal + 100 &&
+          f.calories > 0,
+      )
       .map((f) => ({
         food: f,
-        protDiff: Math.abs(f.protein - remainingProt),
-        score: Math.abs(f.calories - remainingCal),
+        protDiff: Math.abs(f.protein - (remainingProt ?? f.protein)),
+        score: Math.abs(f.calories - remainingCal!),
       }))
       .sort((a, b) => a.score - b.score || a.protDiff - b.protDiff)
       .slice(0, 8);

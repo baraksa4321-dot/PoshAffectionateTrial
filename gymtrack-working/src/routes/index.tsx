@@ -103,7 +103,9 @@ function Dashboard() {
   const now = new Date();
 
   const [showWeighInModal, setShowWeighInModal] = useState(false);
-  const [weeklyWeightInput, setWeeklyWeightInput] = useState(String(userProfile?.weight ?? 65));
+  const [weeklyWeightInput, setWeeklyWeightInput] = useState(
+    userProfile?.weight && userProfile.weight > 0 ? String(userProfile.weight) : "",
+  );
   const [checkInSuccessMsg, setCheckInSuccessMsg] = useState("");
   const [showCardioModal, setShowCardioModal] = useState(false);
   const [editingCardioId, setEditingCardioId] = useState<string | null>(null);
@@ -158,9 +160,12 @@ function Dashboard() {
   const totalsToday = nutritionToday
     ? dayTotals(nutritionToday)
     : { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
-  const targetCals = nutritionTargets.calories || 2000;
-  const remainingCals = Math.max(0, targetCals - totalsToday.calories);
-  const caloriePct = Math.min(100, Math.round((totalsToday.calories / targetCals) * 100));
+  const targetCals = nutritionTargets.calories;
+  const remainingCals = targetCals === undefined ? undefined : Math.max(0, targetCals - totalsToday.calories);
+  const caloriePct =
+    targetCals && targetCals > 0
+      ? Math.min(100, Math.round((totalsToday.calories / targetCals) * 100))
+      : undefined;
 
   const nextWorkout = workouts[0];
   const nextProgram = nextWorkout
@@ -177,7 +182,7 @@ function Dashboard() {
   const cardioCalories = calculateCardioCalories(
     cardioType,
     cardioDurationValue,
-    userProfile?.weight ?? 65,
+    userProfile?.weight ?? 0,
     cardioSpeedValue,
     cardioInclineValue,
   );
@@ -455,7 +460,9 @@ function Dashboard() {
             </div>
             <p className="text-[11px] text-muted-foreground pt-0.5">
               {genderText(gender, "עדכון משקל בוקר", "עדכון משקל בוקר")}:{" "}
-              <strong className="text-ink">{userProfile?.weight ?? 65} ק"ג</strong>
+              <strong className="text-ink">
+                {userProfile?.weight && userProfile.weight > 0 ? `${userProfile.weight} ק"ג` : "לא הוזן"}
+              </strong>
             </p>
           </div>
 

@@ -9,7 +9,6 @@ import {
   SEED_EXERCISE_NAME_MIGRATIONS,
 } from "./exercise-library";
 import {
-  DEFAULT_MEALS,
   type BodyMeasurement,
   type BodyWeightLog,
   type CardioLog,
@@ -902,7 +901,7 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
     role: _role,
     coachId: _coachId,
     ...profileWithoutAccess
-  } = data.userProfile ?? { weight: 65 };
+  } = data.userProfile ?? { weight: 0 };
   data = {
     ...data,
     userProfile: profileWithoutAccess,
@@ -1129,7 +1128,7 @@ export async function completeUserProfileName(
   data = {
     ...data,
     userProfile: {
-      ...(data.userProfile ?? { weight: 65 }),
+      ...(data.userProfile ?? { weight: 0 }),
       fullName: normalizedName,
     },
   };
@@ -1432,7 +1431,7 @@ export async function saveTheme(
   theme: ThemePalette,
 ): Promise<{ success: boolean; error?: string }> {
   const previousProfile = data.userProfile;
-  const profile = { ...(previousProfile ?? { weight: 65 }), theme };
+  const profile = { ...(previousProfile ?? { weight: 0 }), theme };
   set({ ...data, userProfile: profile });
 
   if (!currentUser?.id) return { success: true };
@@ -1455,7 +1454,7 @@ export function saveBodyWeight(weight: number, dateStr = todayKey()) {
   } else {
     logs.unshift({ id: uid(), date: dateStr, weight });
   }
-  const profile = { ...(data.userProfile ?? { weight: 65 }), weight };
+  const profile = { ...(data.userProfile ?? { weight: 0 }), weight };
   set({ ...data, bodyWeightLogs: logs, userProfile: profile });
 }
 
@@ -1469,16 +1468,30 @@ export function saveBodyMeasurement(measurement: Omit<BodyMeasurement, "id">) {
 
 /** RMR Calculation using Mifflin-St Jeor formula */
 export function calculateRmr(profile?: UserProfile) {
-  const p = profile ?? data.userProfile ?? { weight: 65, height: 165, age: 26, gender: "female" };
-  const w = p.weight || 65;
-  const h = p.height || 165;
-  const a = p.age || 26;
-  const isFemale = p.gender !== "male";
+  const p = profile ?? data.userProfile;
+  if (
+    !p ||
+    !Number.isFinite(p.weight) ||
+    p.weight <= 0 ||
+    !Number.isFinite(p.height) ||
+    (p.height ?? 0) <= 0 ||
+    !Number.isFinite(p.age) ||
+    (p.age ?? 0) <= 0 ||
+    !p.gender ||
+    !Number.isFinite(p.workoutsPerWeek) ||
+    (p.workoutsPerWeek ?? -1) < 0
+  ) {
+    return null;
+  }
+  const w = p.weight;
+  const h = p.height;
+  const a = p.age;
+  const isFemale = p.gender === "female";
 
   const baseRmr = 10 * w + 6.25 * h - 5 * a + (isFemale ? -161 : 5);
   const rmr = Math.round(baseRmr);
 
-  const frequency = p.workoutsPerWeek ?? 4;
+  const frequency = p.workoutsPerWeek;
   let mult = 1.2;
   if (frequency >= 1 && frequency <= 2) mult = 1.375;
   else if (frequency >= 3 && frequency <= 4) mult = 1.55;
