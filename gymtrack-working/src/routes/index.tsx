@@ -44,7 +44,7 @@ import {
   deleteCardioLog,
   addChecklistItem,
   toggleChecklistItem,
-  deleteChecklistItem,
+  clearChecklist,
   useGym,
 } from "@/lib/gym-store";
 import type { CardioLog } from "@/lib/gym-types";
@@ -349,20 +349,30 @@ function Dashboard() {
         </Link>
       </div>
 
-      <section className="surface-card mt-4 p-4 text-start">
-        <div className="flex items-start justify-between gap-3">
+      <section className="surface-card mt-3 p-2.5 text-start">
+        <div className="flex items-center justify-between gap-2">
           <div>
-            <h2 className="font-display text-[17px] font-extrabold text-ink">
+            <h2 className="font-display text-[13px] font-extrabold text-ink">
               צ׳ק־ליסט לפני יציאה מהבית
             </h2>
-            <p className="mt-1 text-[11px] text-muted-foreground">
+            <p className="mt-0.5 text-[9px] text-muted-foreground">
               הוסיפי דברים שחשוב לזכור לפני שיוצאים לאימון.
             </p>
           </div>
-          <Check className="mt-1 h-5 w-5 text-primary" />
+          <div className="flex items-center gap-1">
+            <Check className="h-4 w-4 text-primary" />
+            <button
+              type="button"
+              onClick={clearChecklist}
+              aria-label="מחיקת הצ׳ק־ליסט"
+              className="grid h-5 w-5 place-items-center rounded-md text-muted-foreground hover:bg-rose-50 hover:text-rose-700"
+            >
+              <X className="h-3 w-3" strokeWidth={2.5} />
+            </button>
+          </div>
         </div>
         <form
-          className="mt-3 flex gap-2"
+          className="mt-2 flex gap-1.5"
           onSubmit={(event) => {
             event.preventDefault();
             handleChecklistSubmit();
@@ -373,46 +383,38 @@ function Dashboard() {
             onChange={(event) => setChecklistInput(event.target.value)}
             placeholder="למשל: בקבוק מים"
             aria-label="פריט חדש בצ׳ק-ליסט"
-            className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-ink outline-none placeholder:text-muted-foreground focus:border-primary"
+            className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-[11px] text-ink outline-none placeholder:text-muted-foreground focus:border-primary"
           />
           <button
             type="submit"
             disabled={!checklistInput.trim()}
-            className="press rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            className="press rounded-lg bg-primary px-2.5 py-1.5 text-[10px] font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
           >
             הוספה
           </button>
         </form>
-        <div className="mt-3 space-y-1.5">
+        <div className="mt-2 space-y-1">
           {(preExitChecklist ?? []).map((item) => (
-            <div key={item.id} className="flex items-center gap-2 rounded-xl bg-secondary/60 px-2.5 py-2">
+            <div key={item.id} className="flex items-center gap-1.5 rounded-lg bg-secondary/60 px-2 py-1">
               <button
                 type="button"
                 onClick={() => toggleChecklistItem(item.id)}
                 aria-label={item.done ? `בטלי סימון של ${item.label}` : `סמני את ${item.label}`}
-                className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg border ${
+                className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border ${
                   item.done
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border bg-background text-transparent"
                 }`}
               >
-                <Check className="h-4 w-4" />
+                <Check className="h-3 w-3" />
               </button>
-              <span className={`min-w-0 flex-1 text-[13px] ${item.done ? "text-muted-foreground line-through" : "text-ink"}`}>
+              <span className={`min-w-0 flex-1 text-[11px] ${item.done ? "text-muted-foreground line-through" : "text-ink"}`}>
                 {item.label}
               </span>
-              <button
-                type="button"
-                onClick={() => deleteChecklistItem(item.id)}
-                aria-label={`מחיקת ${item.label}`}
-                className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground hover:bg-rose-50 hover:text-rose-700"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
             </div>
           ))}
           {(preExitChecklist ?? []).length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border px-3 py-3 text-center text-[11px] text-muted-foreground">
+            <p className="rounded-lg border border-dashed border-border px-2 py-2 text-center text-[9px] text-muted-foreground">
               עדיין אין פריטים. הוסיפי את הדבר הראשון שחשוב לזכור.
             </p>
           ) : null}

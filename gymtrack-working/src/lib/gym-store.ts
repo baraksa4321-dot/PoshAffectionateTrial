@@ -1307,6 +1307,13 @@ export function deleteChecklistItem(id: string) {
   });
 }
 
+export function clearChecklist() {
+  set({
+    ...data,
+    preExitChecklist: [],
+  });
+}
+
 export function createProgram(name: string): Program {
   const p: Program = { id: uid(), name: name.trim() || "תכנית חדשה", notes: "", dayIds: [] };
   set({ ...data, programs: [...data.programs, p] });
