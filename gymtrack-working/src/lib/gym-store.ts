@@ -867,6 +867,15 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
     return;
   }
 
+  if (browserIsOffline()) {
+    profileHydrationStatus = "error";
+    profileHydrationError =
+      "אין חיבור לאינטרנט ואין נתונים שמורים עבור החשבון הזה במכשיר.";
+    syncStatus = "offline";
+    notifyListeners();
+    return;
+  }
+
   // Read the signed-in user's data before writing anything. Uploading the
   // anonymous seed first can overwrite cloud state on a fresh device.
   // Do not let a previous user's cached role control the UI while this pull
@@ -883,7 +892,15 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
   profileHydrationStatus = "loading";
   profileHydrationError = "";
   notifyListeners();
-  const pulled = await pullSupabaseData(userId, data);
+  const pulled = await Promise.race([
+    pullSupabaseData(userId, data),
+    new Promise<{ success: false; error: string }>((resolve) =>
+      window.setTimeout(
+        () => resolve({ success: false, error: "פג הזמן לטעינת הנתונים מ-Supabase" }),
+        8_000,
+      ),
+    ),
+  ]);
   if (generation !== hydrationGeneration || currentUser?.id !== userId) return;
   if (!pulled.success) {
     console.warn("[Initial Supabase Pull Warning]:", pulled.error);
