@@ -1920,3 +1920,599 @@
     padding-right: 12px;
   }
 }
+
+/* Brand refinement / material calm: flat surfaces, measured rhythm, one accent */
+.gymtrack-mockup.brand-screen {
+  --gt-ink: #252525;
+  --gt-ink-soft: #716e6b;
+  --gt-coral: #b9646e;
+  --gt-coral-deep: #994e59;
+  --gt-blush: #f0dfde;
+  --gt-petal: #fbf4f1;
+  --gt-lilac: #e1ebf0;
+  --gt-lilac-deep: #57717d;
+  --gt-sage: #deebe2;
+  --gt-sage-deep: #4b6f5c;
+  --gt-cream: #eee5d6;
+  --gt-line: #e2dcd6;
+  --gt-canvas: #fcfbf8;
+  color: var(--gt-ink);
+  background: var(--gt-canvas);
+}
+
+.gymtrack-mockup.brand-screen svg {
+  stroke-width: 1.65;
+}
+
+.gymtrack-mockup.brand-screen .brand-topbar {
+  min-height: 62px;
+  padding: 12px 18px;
+  border-bottom-color: #e6e1db;
+  background: var(--gt-canvas);
+}
+
+.gymtrack-mockup.brand-screen .brand-mark {
+  width: 27px;
+  height: 27px;
+  border-radius: 8px;
+  background: var(--gt-ink);
+  transform: none;
+}
+
+.gymtrack-mockup.brand-screen .brand-mark span {
+  width: 9px;
+  height: 9px;
+  border-width: 1.5px;
+}
+
+.gymtrack-mockup.brand-screen .brand-word {
+  color: var(--gt-ink);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.035em;
+}
+
+.gymtrack-mockup.brand-screen .brand-word b {
+  font-weight: 900;
+}
+
+.gymtrack-mockup.brand-screen .brand-profile {
+  padding: 6px 8px;
+  border-color: #ded8d2;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--gt-ink);
+}
+
+.gymtrack-mockup.brand-screen .brand-profile svg {
+  color: var(--gt-coral-deep);
+}
+
+.gymtrack-mockup.brand-screen .brand-page {
+  padding-top: 27px !important;
+  padding-bottom: 98px;
+}
+
+.gymtrack-mockup.brand-screen .brand-welcome {
+  align-items: end;
+  gap: 18px;
+}
+
+.gymtrack-mockup.brand-screen .brand-date {
+  margin-bottom: 8px;
+  color: var(--gt-coral-deep);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .045em;
+}
+
+.gymtrack-mockup.brand-screen .brand-welcome h1 {
+  font-size: clamp(29px, 8vw, 37px);
+  font-weight: 850;
+  letter-spacing: -.055em;
+}
+
+.gymtrack-mockup.brand-screen .brand-welcome h1 span {
+  color: var(--gt-coral);
+}
+
+.gymtrack-mockup.brand-screen .brand-welcome p:last-child {
+  margin-top: 10px;
+  color: var(--gt-ink-soft);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.gymtrack-mockup.brand-screen .brand-day-badge {
+  width: 55px;
+  height: 64px;
+  border-radius: 10px;
+  background: var(--gt-lilac);
+  color: var(--gt-lilac-deep);
+  transform: none;
+}
+
+.gymtrack-mockup.brand-screen .brand-day-badge strong {
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.gymtrack-mockup.brand-screen .brand-coach-note {
+  gap: 10px;
+  margin-top: 19px;
+  padding: 12px 11px;
+  border-color: #e6d7d4;
+  border-radius: 12px;
+  background: var(--gt-petal);
+  box-shadow: none;
+}
+
+.gymtrack-mockup.brand-screen .brand-note-icon {
+  width: 29px;
+  height: 29px;
+  border-radius: 8px;
+  background: var(--gt-blush);
+  color: var(--gt-coral-deep);
+}
+
+.gymtrack-mockup.brand-screen .brand-note-meta {
+  color: var(--gt-coral-deep);
+  font-size: 9px;
+  letter-spacing: .02em;
+}
+
+.gymtrack-mockup.brand-screen .brand-coach-note p {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.gymtrack-mockup.brand-screen .brand-coach-note > button {
+  width: 23px;
+  height: 23px;
+  border-radius: 7px;
+}
+
+.gymtrack-mockup.brand-screen .brand-progress-card {
+  gap: 12px;
+  margin-top: 10px;
+  padding: 13px;
+  border-color: #d5e0e5;
+  border-radius: 13px;
+  background: var(--gt-lilac);
+  box-shadow: none;
+}
+
+.gymtrack-mockup.brand-screen .brand-progress-ring {
+  width: 68px;
+  height: 68px;
+}
+
+.gymtrack-mockup.brand-screen .brand-progress-ring circle {
+  stroke-width: 3.3;
+}
+
+.gymtrack-mockup.brand-screen .brand-ring-track {
+  stroke: #cad9df;
+}
+
+.gymtrack-mockup.brand-screen .brand-ring-value {
+  stroke: var(--gt-coral);
+}
+
+.gymtrack-mockup.brand-screen .brand-eyebrow {
+  color: var(--gt-coral-deep);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .035em;
+}
+
+.gymtrack-mockup.brand-screen .brand-progress-copy h2,
+.gymtrack-mockup.brand-screen .brand-section-head h2 {
+  color: var(--gt-ink);
+  font-size: 16px;
+  font-weight: 850;
+  letter-spacing: -.025em;
+}
+
+.gymtrack-mockup.brand-screen .brand-progress-copy p {
+  margin-top: 4px;
+  color: var(--gt-ink-soft);
+  font-size: 10px;
+}
+
+.gymtrack-mockup.brand-screen .brand-progress-days {
+  margin-top: 1px;
+  padding-top: 9px;
+  border-top-color: rgba(87,113,125,.18);
+}
+
+.gymtrack-mockup.brand-screen .brand-progress-days span {
+  width: 22px;
+  height: 22px;
+  background: rgba(255,255,255,.72);
+  color: var(--gt-ink-soft);
+  font-size: 8px;
+}
+
+.gymtrack-mockup.brand-screen .brand-progress-days .is-complete {
+  background: var(--gt-coral);
+  color: #fff;
+}
+
+.gymtrack-mockup.brand-screen .brand-progress-days .is-today {
+  border-color: var(--gt-coral);
+  background: transparent;
+  color: var(--gt-coral-deep);
+}
+
+.gymtrack-mockup.brand-screen .brand-section {
+  margin-top: 27px;
+}
+
+.gymtrack-mockup.brand-screen .brand-section-head {
+  margin-bottom: 9px;
+}
+
+.gymtrack-mockup.brand-screen .brand-section-head h2 {
+  margin-top: 4px;
+  font-size: 17px;
+}
+
+.gymtrack-mockup.brand-screen .brand-text-button {
+  color: var(--gt-coral-deep);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-card {
+  min-height: 184px;
+  border-radius: 14px;
+  background: var(--gt-ink);
+  box-shadow: 0 10px 18px rgba(37,37,37,.11);
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-content {
+  max-width: 78%;
+  padding: 17px 16px;
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-kicker {
+  color: #eacfd0;
+  font-size: 9px;
+  letter-spacing: .02em;
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-kicker svg {
+  color: #d9929b;
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-card h3 {
+  margin-top: 13px;
+  font-size: 29px;
+  font-weight: 850;
+  letter-spacing: -.06em;
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-card p {
+  margin-top: 8px;
+  color: #c5c0c1;
+  font-size: 10px;
+}
+
+.gymtrack-mockup.brand-screen .brand-primary-button {
+  min-height: 35px;
+  margin-top: 16px;
+  border-radius: 9px;
+  background: var(--gt-coral);
+  color: #fff;
+  font-size: 10px;
+  box-shadow: none;
+}
+
+.gymtrack-mockup.brand-screen .brand-primary-button:hover {
+  background: var(--gt-coral-deep);
+}
+
+.gymtrack-mockup.brand-screen .brand-play-mark {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: rgba(255,255,255,.18);
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-rail {
+  height: 143px;
+  bottom: 19px;
+  left: 16px;
+  border-left-color: rgba(255,255,255,.24);
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-rail::before {
+  width: 3px;
+  height: 3px;
+  background: var(--gt-coral);
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-rail span {
+  color: #bbb6b7;
+  font-size: 6px;
+}
+
+.gymtrack-mockup.brand-screen .brand-workout-rail b {
+  color: #d9d4d5;
+  font-size: 17px;
+}
+
+.gymtrack-mockup.brand-screen .brand-nutrition-card {
+  min-height: 90px;
+  margin-top: 9px;
+  padding: 11px;
+  border-color: #cbded0;
+  border-radius: 12px;
+  background: var(--gt-sage);
+}
+
+.gymtrack-mockup.brand-screen .brand-nutrition-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.55);
+  color: var(--gt-sage-deep);
+}
+
+.gymtrack-mockup.brand-screen .brand-card-title {
+  color: var(--gt-sage-deep);
+  font-size: 10px;
+}
+
+.gymtrack-mockup.brand-screen .brand-nutrition-copy > strong {
+  color: #2d4a38;
+  font-size: 20px;
+}
+
+.gymtrack-mockup.brand-screen .brand-nutrition-copy p {
+  color: #5d7767;
+  font-size: 9px;
+}
+
+.gymtrack-mockup.brand-screen .brand-nutrition-track {
+  background: rgba(75,111,92,.14);
+}
+
+.gymtrack-mockup.brand-screen .brand-nutrition-track span {
+  background: var(--gt-sage-deep);
+}
+
+.gymtrack-mockup.brand-screen .brand-nutrition-percent {
+  color: var(--gt-sage-deep);
+  font-size: 10px;
+}
+
+.gymtrack-mockup.brand-screen .brand-routine-card {
+  padding: 11px;
+  border-color: #e3d8c9;
+  border-radius: 12px;
+  background: var(--gt-cream);
+}
+
+.gymtrack-mockup.brand-screen .brand-add-row {
+  gap: 6px;
+}
+
+.gymtrack-mockup.brand-screen .brand-add-row input {
+  height: 33px;
+  border-color: #ded2c2;
+  border-radius: 9px;
+  background: rgba(255,255,255,.68);
+  font-size: 11px;
+}
+
+.gymtrack-mockup.brand-screen .brand-add-row button {
+  width: 33px;
+  height: 33px;
+  border-radius: 9px;
+  background: var(--gt-coral);
+}
+
+.gymtrack-mockup.brand-screen .brand-routine-list {
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.gymtrack-mockup.brand-screen .brand-routine-item {
+  min-height: 32px;
+  padding: 4px 2px;
+  font-size: 11px;
+}
+
+.gymtrack-mockup.brand-screen .brand-check {
+  width: 17px;
+  height: 17px;
+  border-color: #cfc2b2;
+  border-radius: 5px;
+}
+
+.gymtrack-mockup.brand-screen .brand-routine-item.is-done .brand-check {
+  background: var(--gt-sage-deep);
+  border-color: var(--gt-sage-deep);
+}
+
+.gymtrack-mockup.brand-screen .brand-routine-footer {
+  margin-top: 7px;
+  padding-top: 8px;
+  border-top-color: rgba(147,125,93,.18);
+  color: #887861;
+}
+
+.gymtrack-mockup.brand-screen .brand-footer-rule {
+  width: 14px;
+  background: var(--gt-coral);
+}
+
+.gymtrack-mockup.brand-screen .brand-complete-count {
+  padding: 4px 7px;
+  border-radius: 8px;
+  background: var(--gt-sage);
+  color: var(--gt-sage-deep);
+  font-size: 9px;
+}
+
+.gymtrack-mockup.brand-screen .brand-checkin-grid {
+  gap: 8px;
+}
+
+.gymtrack-mockup.brand-screen .brand-checkin-card {
+  min-height: 138px;
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.gymtrack-mockup.brand-screen .brand-weight-card {
+  border-color: #e3cece;
+  background: var(--gt-blush);
+}
+
+.gymtrack-mockup.brand-screen .brand-measure-card {
+  border-color: #cfdee4;
+  background: var(--gt-lilac);
+}
+
+.gymtrack-mockup.brand-screen .brand-checkin-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.55);
+}
+
+.gymtrack-mockup.brand-screen .brand-checkin-label,
+.gymtrack-mockup.brand-screen .brand-muted-label {
+  color: var(--gt-ink-soft);
+  font-size: 9px;
+}
+
+.gymtrack-mockup.brand-screen .brand-checkin-card strong {
+  font-size: 19px;
+}
+
+.gymtrack-mockup.brand-screen .brand-checkin-card .brand-link-label {
+  color: var(--gt-coral-deep);
+  font-size: 9px;
+}
+
+.gymtrack-mockup.brand-screen .brand-measure-card .brand-link-label {
+  color: var(--gt-lilac-deep);
+}
+
+.gymtrack-mockup.brand-screen .brand-metrics-grid {
+  gap: 7px;
+}
+
+.gymtrack-mockup.brand-screen .brand-metric {
+  min-height: 95px;
+  padding: 11px 9px;
+  border-radius: 11px;
+}
+
+.gymtrack-mockup.brand-screen .metric-coral {
+  background: var(--gt-blush);
+  color: var(--gt-coral-deep);
+}
+
+.gymtrack-mockup.brand-screen .metric-lilac {
+  background: var(--gt-lilac);
+  color: var(--gt-lilac-deep);
+}
+
+.gymtrack-mockup.brand-screen .metric-sage {
+  background: var(--gt-sage);
+  color: var(--gt-sage-deep);
+}
+
+.gymtrack-mockup.brand-screen .brand-metric strong {
+  margin-top: 8px;
+  font-size: 23px;
+}
+
+.gymtrack-mockup.brand-screen .brand-last-card {
+  margin-top: 8px;
+  padding: 9px;
+  border-color: var(--gt-line);
+  border-radius: 11px;
+  background: #fff;
+}
+
+.gymtrack-mockup.brand-screen .brand-last-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--gt-petal);
+}
+
+.gymtrack-mockup.brand-screen .brand-round-button {
+  width: 29px;
+  height: 29px;
+  border-radius: 9px;
+  border-color: #ded8d2;
+  color: var(--gt-coral-deep);
+}
+
+.gymtrack-mockup.brand-screen .brand-toast {
+  border-color: #d7cfbd;
+  border-radius: 10px;
+  background: #f8f2e8;
+  color: #755f40;
+}
+
+.gymtrack-mockup.brand-screen .brand-dialog {
+  padding: 18px;
+  border-color: var(--gt-line);
+  border-radius: 14px;
+  background: var(--gt-canvas);
+  box-shadow: 0 16px 32px rgba(37,37,37,.16);
+}
+
+.gymtrack-mockup.brand-screen .brand-dialog-close {
+  top: 13px;
+  left: 13px;
+  width: 29px;
+  height: 29px;
+  border-radius: 8px;
+  background: var(--gt-petal);
+}
+
+.gymtrack-mockup.brand-screen .brand-dialog-icon {
+  width: 37px;
+  height: 37px;
+  margin-bottom: 14px;
+  border-radius: 9px;
+  background: var(--gt-blush);
+}
+
+.gymtrack-mockup.brand-screen .brand-dialog h2 {
+  font-size: 23px;
+  font-weight: 850;
+  letter-spacing: -.04em;
+}
+
+.gymtrack-mockup.brand-screen .brand-dialog-save {
+  border-radius: 9px;
+  background: var(--gt-ink);
+}
+
+.gymtrack-mockup.brand-screen .brand-bottom-nav {
+  border-top-color: #e5dfd9;
+  background: rgba(252,251,248,.97);
+  box-shadow: 0 -5px 18px rgba(37,37,37,.035);
+}
+
+.gymtrack-mockup.brand-screen .brand-bottom-nav button {
+  border-radius: 9px;
+}
+
+.gymtrack-mockup.brand-screen .brand-bottom-nav button[aria-current="page"] {
+  background: var(--gt-blush);
+  color: var(--gt-coral-deep);
+}

@@ -1,0 +1,106 @@
+.wood-accent-preview {
+  --wood-base: #f7f3eb;
+  --wood-fiber: rgba(116, 87, 56, 0.034);
+  --wood-fiber-faint: rgba(116, 87, 56, 0.018);
+  min-height: 100vh;
+  background-color: var(--wood-base);
+  color: #252525;
+}
+
+/*
+ * A restrained beech/oak surface: two near-invisible, slightly off-axis
+ * fibers keep the material tactile without turning the page into a pattern.
+ * Cards remain opaque warm white so Hebrew copy and pastel accents stay clear.
+ */
+.wood-accent-preview .brand-screen {
+  background-color: var(--wood-base);
+  background-image:
+    repeating-linear-gradient(
+      91deg,
+      transparent 0,
+      transparent 17px,
+      var(--wood-fiber-faint) 17px,
+      var(--wood-fiber-faint) 18px,
+      transparent 18px,
+      transparent 43px
+    ),
+    repeating-linear-gradient(
+      88deg,
+      transparent 0,
+      transparent 31px,
+      var(--wood-fiber) 31px,
+      var(--wood-fiber) 32px,
+      transparent 32px,
+      transparent 79px
+    );
+}
+
+.wood-accent-preview .brand-topbar {
+  background-color: rgba(250, 247, 241, 0.96);
+  border-bottom-color: rgba(126, 104, 79, 0.16);
+}
+
+.wood-accent-preview .brand-page {
+  position: relative;
+}
+
+.wood-accent-preview .brand-page::before {
+  position: absolute;
+  top: 0;
+  right: 18px;
+  width: 1px;
+  height: 24px;
+  background: rgba(126, 104, 79, 0.18);
+  content: "";
+  pointer-events: none;
+}
+
+.wood-accent-preview .brand-coach-note,
+.wood-accent-preview .brand-progress-card,
+.wood-accent-preview .brand-nutrition-card,
+.wood-accent-preview .brand-routine-card,
+.wood-accent-preview .brand-checkin-card,
+.wood-accent-preview .brand-metric,
+.wood-accent-preview .brand-last-card {
+  box-shadow: none;
+}
+
+.wood-accent-preview .brand-coach-note {
+  background-color: rgba(251, 246, 242, 0.94);
+}
+
+.wood-accent-preview .brand-progress-card {
+  background-color: rgba(228, 237, 241, 0.96);
+}
+
+.wood-accent-preview .brand-nutrition-card {
+  background-color: rgba(224, 237, 227, 0.96);
+}
+
+.wood-accent-preview .brand-routine-card {
+  background-color: rgba(242, 235, 222, 0.96);
+}
+
+.wood-accent-preview .brand-weight-card {
+  background-color: rgba(241, 225, 223, 0.96);
+}
+
+.wood-accent-preview .brand-measure-card {
+  background-color: rgba(228, 237, 241, 0.96);
+}
+
+.wood-accent-preview .brand-metric {
+  border: 1px solid rgba(126, 104, 79, 0.12);
+}
+
+.wood-accent-preview .brand-bottom-nav {
+  background-color: rgba(250, 247, 241, 0.97);
+  border-top-color: rgba(126, 104, 79, 0.16);
+  box-shadow: 0 -4px 15px rgba(61, 48, 37, 0.03);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wood-accent-preview * {
+    scroll-behavior: auto !important;
+  }
+}
