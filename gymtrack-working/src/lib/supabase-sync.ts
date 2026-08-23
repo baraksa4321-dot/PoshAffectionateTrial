@@ -1,8 +1,7 @@
-import { EVERYDAY_FOOD_DATABASE } from "./israeli-food-db";
+import { ISRAELI_FOOD_DATABASE } from "./israeli-food-db";
 import { supabase } from "./supabase";
 import {
   type ClientLink,
-  type BodyMeasurement,
   type CardioLog,
   type CoachMessage,
   type Exercise,
@@ -10,14 +9,13 @@ import {
   type GymData,
   type HistorySession,
   type NutritionDay,
-  type NutritionTargets,
   type Program,
   type UserProfile,
   type UserRole,
   type Workout,
 } from "./gym-types";
 
-export type SyncStatus = "idle" | "syncing" | "pending" | "synced" | "error" | "offline";
+export type SyncStatus = "idle" | "syncing" | "synced" | "error" | "offline";
 export type PullResult =
   { success: true; data: GymData } | { success: false; data: GymData; error: string };
 
@@ -25,10 +23,8 @@ export type CoachClientData = {
   programs: Program[];
   workouts: Workout[];
   nutritionDays: NutritionDay[];
-  nutritionTargets: NutritionTargets;
   history: HistorySession[];
   cardioLogs: CardioLog[];
-  bodyMeasurements: BodyMeasurement[];
   profile?: UserProfile;
   error?: string;
 };
@@ -42,15 +38,6 @@ function isMissingTableInSchemaCache(error: unknown, tableName: string): boolean
     message.includes(`public.${tableName}`) ||
     (message.includes(tableName) && message.includes("schema cache"))
   );
-}
-
-function recordedAtForDate(date: string): string {
-  return date.includes("T") ? date : `${date}T12:00:00.000Z`;
-}
-
-function dateFromRecordedAt(value: unknown): string {
-  if (typeof value !== "string") return new Date().toISOString().slice(0, 10);
-  return value.slice(0, 10);
 }
 
 async function requireSuccessfulWrite(
@@ -75,18 +62,14 @@ export async function syncLocalToSupabase(
   try {
     // 1. Profile
     if (localData.userProfile || userEmail) {
-      const p = localData.userProfile;
+      const p = localData.userProfile ?? { weight: 65 };
       await requireSuccessfulWrite(
         supabase.from("profiles").upsert(
           {
             id: userId,
-            ...(userEmail ? { email: userEmail } : {}),
-            ...(p.fullName ? { full_name: p.fullName } : {}),
+            email: userEmail || undefined,
             weight_kg: p.weight,
-            ...(p.height !== undefined ? { height_cm: p.height } : {}),
-            ...(p.age !== undefined ? { age_years: p.age } : {}),
-            ...(p.gender ? { gender: p.gender } : {}),
-            ...(p.workoutsPerWeek !== undefined ? { workouts_per_week: p.workoutsPerWeek } : {}),
+            height_cm: p.height,
             today_routine_enabled: p.todayRoutineEnabled ?? true,
             updated_at: new Date().toISOString(),
           },
@@ -158,36 +141,6 @@ export async function syncLocalToSupabase(
         }
       }
     }
-    const { data: remotePrograms, error: remoteProgramsError } = await supabase
-      .from("programs")
-      .select("id")
-      .eq("user_id", userId);
-    if (remoteProgramsError) throw new Error(`Programs deletion lookup failed: ${remoteProgramsError.message}`);
-    const localProgramIds = new Set(localData.programs.map((program) => program.id));
-    const deletedProgramIds = (remotePrograms ?? [])
-      .map((row) => row.id as string)
-      .filter((id) => !localProgramIds.has(id));
-    if (deletedProgramIds.length > 0) {
-      await requireSuccessfulWrite(
-        supabase.from("programs").delete().in("id", deletedProgramIds),
-        "Programs deletion sync",
-      );
-    }
-    const { data: remoteProgramDays, error: remoteProgramDaysError } = await supabase
-      .from("program_days")
-      .select("id")
-      .eq("user_id", userId);
-    if (remoteProgramDaysError) throw new Error(`Program days deletion lookup failed: ${remoteProgramDaysError.message}`);
-    const localProgramDayIds = new Set(localData.programs.flatMap((program) => program.dayIds));
-    const deletedProgramDayIds = (remoteProgramDays ?? [])
-      .map((row) => row.id as string)
-      .filter((id) => !localProgramDayIds.has(id));
-    if (deletedProgramDayIds.length > 0) {
-      await requireSuccessfulWrite(
-        supabase.from("program_days").delete().in("id", deletedProgramDayIds),
-        "Program days deletion sync",
-      );
-    }
 
     // 4. Workout Sessions / History (including difficulty rating & discomfort notes)
     if (localData.history.length > 0) {
@@ -209,59 +162,50 @@ export async function syncLocalToSupabase(
         "Workout history sync",
       );
     }
-    const { data: remoteSessions, error: remoteSessionsError } = await supabase
-      .from("workout_sessions")
-      .select("id")
-      .eq("user_id", userId);
-    if (remoteSessionsError) throw new Error(`Workout history deletion lookup failed: ${remoteSessionsError.message}`);
-    const localSessionIds = new Set(localData.history.map((session) => session.id));
-    const deletedSessionIds = (remoteSessions ?? [])
-      .map((row) => row.id as string)
-      .filter((id) => !localSessionIds.has(id));
-    if (deletedSessionIds.length > 0) {
-      await requireSuccessfulWrite(
-        supabase.from("workout_sessions").delete().in("id", deletedSessionIds),
-        "Workout history deletion sync",
-      );
-    }
 
     // 4c. Cardio Logs
     // Reconcile deletions as well as upserts so local delete actions persist
     // across devices. The user_id is always derived from the signed-in user.
+    // This migration is not present in every connected project yet, so a
+    // missing schema-cache entry must not prevent the other data from syncing.
     const cardioPayload = (localData.cardioLogs ?? []).map((log) => ({
       id: log.id,
       user_id: userId,
-      activity_type: log.type,
-      duration_minutes: Math.round(log.durationMin),
-      recorded_at: recordedAtForDate(log.date),
-      estimated_calories: Math.round(log.calories),
+      date: log.date,
+      type: log.type,
+      duration_min: log.durationMin,
       intensity: log.intensity,
+      speed_kmh: log.speed,
+      incline_pct: log.incline,
+      distance_km: log.distanceKm,
+      calories: log.calories,
+      updated_at: new Date().toISOString(),
     }));
-    let cardioSchemaUnavailable = false;
-    if (cardioPayload.length > 0) {
-      await requireSuccessfulWrite(
-        supabase.from("cardio_logs").upsert(cardioPayload, { onConflict: "id" }),
-        "Cardio logs sync",
-      ).catch((error: unknown) => {
-        if (!isMissingTableInSchemaCache(error, "cardio_logs")) throw error;
-        cardioSchemaUnavailable = true;
-        console.warn("[Optional cardio sync skipped]: public.cardio_logs is unavailable");
-      });
-    }
-    if (!cardioSchemaUnavailable) {
-      const { data: remoteCardioLogs, error: remoteCardioError } = await supabase
-        .from("cardio_logs")
-        .select("id")
-        .eq("user_id", userId);
-      if (remoteCardioError) {
-        if (isMissingTableInSchemaCache(remoteCardioError, "cardio_logs")) {
-          cardioSchemaUnavailable = true;
-          console.warn("[Optional cardio sync skipped]: public.cardio_logs is unavailable");
-        } else {
-          throw new Error(`Cardio logs lookup failed: ${remoteCardioError.message}`);
-        }
+    let cardioTableAvailable = true;
+    try {
+      if (cardioPayload.length > 0) {
+        await requireSuccessfulWrite(
+          supabase.from("cardio_logs").upsert(cardioPayload, { onConflict: "id" }),
+          "Cardio logs sync",
+        );
       }
-      if (!cardioSchemaUnavailable) {
+    } catch (error: unknown) {
+      if (isMissingTableInSchemaCache(error, "cardio_logs")) {
+        cardioTableAvailable = false;
+        console.warn("[Optional cardio sync skipped]: public.cardio_logs is unavailable");
+      } else {
+        throw error;
+      }
+    }
+
+    if (cardioTableAvailable) {
+      try {
+        const { data: remoteCardioLogs, error: remoteCardioError } = await supabase
+          .from("cardio_logs")
+          .select("id")
+          .eq("user_id", userId);
+        if (remoteCardioError)
+          throw new Error(`Cardio logs lookup failed: ${remoteCardioError.message}`);
         const localCardioIds = new Set((localData.cardioLogs ?? []).map((log) => log.id));
         const deletedCardioIds = (remoteCardioLogs ?? [])
           .map((row) => row.id as string)
@@ -272,19 +216,27 @@ export async function syncLocalToSupabase(
             "Cardio logs deletion sync",
           );
         }
+      } catch (error: unknown) {
+        if (isMissingTableInSchemaCache(error, "cardio_logs")) {
+          console.warn(
+            "[Optional cardio deletion sync skipped]: public.cardio_logs is unavailable",
+          );
+        } else {
+          throw error;
+        }
       }
     }
 
     // 4b. Body Weight Logs (Historical Dated Weigh-Ins)
     if (localData.bodyWeightLogs && localData.bodyWeightLogs.length > 0) {
       const weighInPayload = localData.bodyWeightLogs.map((log) => ({
-        id: log.id,
         user_id: userId,
+        date: log.date,
         weight_kg: log.weight,
-        recorded_at: recordedAtForDate(log.date),
+        updated_at: new Date().toISOString(),
       }));
       await requireSuccessfulWrite(
-        supabase.from("body_weight_logs").upsert(weighInPayload, { onConflict: "id" }),
+        supabase.from("body_weight_logs").upsert(weighInPayload, { onConflict: "user_id,date" }),
         "Body weight log sync",
       ).catch((error: unknown) => {
         if (isMissingTableInSchemaCache(error, "body_weight_logs")) {
@@ -297,36 +249,8 @@ export async function syncLocalToSupabase(
       });
     }
 
-    // 4d. Monthly body measurements are coach-managed in Supabase.
-    if ((localData.bodyMeasurements ?? []).length > 0) {
-      const measurementPayload = localData.bodyMeasurements!.map((measurement) => ({
-        id: measurement.id,
-        user_id: userId,
-        date: measurement.date,
-        chest_cm: measurement.chestCm,
-        waist_cm: measurement.waistCm,
-        hips_cm: measurement.hipsCm,
-        biceps_cm: measurement.bicepsCm,
-        thighs_cm: measurement.thighsCm,
-        calves_cm: measurement.calvesCm,
-        neck_cm: measurement.neckCm,
-        body_fat_pct: measurement.bodyFatPct,
-        muscle_mass_kg: measurement.muscleMassKg,
-        notes: measurement.notes,
-      }));
-      await requireSuccessfulWrite(
-        supabase.from("body_measurements").upsert(measurementPayload, { onConflict: "id" }),
-        "Body measurements sync",
-      ).catch((error: unknown) => {
-        if (!isMissingTableInSchemaCache(error, "body_measurements")) throw error;
-        console.warn(
-          "[Optional body measurements sync skipped]: public.body_measurements is unavailable",
-        );
-      });
-    }
-
     // 5. Custom Foods
-    const seedFoodIds = new Set(EVERYDAY_FOOD_DATABASE.map((f) => f.id));
+    const seedFoodIds = new Set(ISRAELI_FOOD_DATABASE.map((f) => f.id));
     const customFoods = localData.foods.filter((f) => !seedFoodIds.has(f.id));
 
     if (customFoods.length > 0) {
@@ -344,9 +268,6 @@ export async function syncLocalToSupabase(
         carbs: f.carbs,
         fat: f.fat,
         fiber: f.fiber ?? 0,
-        approval_status: f.approvalStatus ?? "pending",
-        approved_by: f.approvedBy,
-        approved_at: f.approvedAt,
         updated_at: new Date().toISOString(),
       }));
       await requireSuccessfulWrite(
@@ -364,26 +285,12 @@ export async function syncLocalToSupabase(
         target_calories: localData.nutritionTargets.calories,
         meals: nd.meals,
         updated_at: new Date().toISOString(),
-        ...(nd.plannedMeals === undefined ? {} : { planned_meals: nd.plannedMeals }),
+        ...(nd.waterMl === undefined ? {} : { water_ml: nd.waterMl }),
+        ...(nd.waterTargetMl === undefined ? {} : { water_target_ml: nd.waterTargetMl }),
       }));
       await requireSuccessfulWrite(
         supabase.from("nutrition_days").upsert(nutritionPayload, { onConflict: "id" }),
         "Nutrition log sync",
-      );
-    }
-    const { data: remoteNutritionDays, error: remoteNutritionDaysError } = await supabase
-      .from("nutrition_days")
-      .select("id")
-      .eq("user_id", userId);
-    if (remoteNutritionDaysError) throw new Error(`Nutrition deletion lookup failed: ${remoteNutritionDaysError.message}`);
-    const localNutritionIds = new Set(localData.nutritionDays.map((day) => day.id).filter(Boolean));
-    const deletedNutritionIds = (remoteNutritionDays ?? [])
-      .map((row) => row.id as string)
-      .filter((id) => !localNutritionIds.has(id));
-    if (deletedNutritionIds.length > 0) {
-      await requireSuccessfulWrite(
-        supabase.from("nutrition_days").delete().in("id", deletedNutritionIds),
-        "Nutrition deletion sync",
       );
     }
 
@@ -396,21 +303,6 @@ export async function syncLocalToSupabase(
       await requireSuccessfulWrite(
         supabase.from("food_favorites").upsert(favPayload, { onConflict: "user_id,food_id" }),
         "Favorites sync",
-      );
-    }
-    const { data: remoteFavorites, error: remoteFavoritesError } = await supabase
-      .from("food_favorites")
-      .select("food_id")
-      .eq("user_id", userId);
-    if (remoteFavoritesError) throw new Error(`Favorites deletion lookup failed: ${remoteFavoritesError.message}`);
-    const localFavoriteIds = new Set(localData.favoriteFoods ?? []);
-    const deletedFavoriteIds = (remoteFavorites ?? [])
-      .map((row) => row.food_id as string)
-      .filter((id) => !localFavoriteIds.has(id));
-    if (deletedFavoriteIds.length > 0) {
-      await requireSuccessfulWrite(
-        supabase.from("food_favorites").delete().eq("user_id", userId).in("food_id", deletedFavoriteIds),
-        "Favorites deletion sync",
       );
     }
 
@@ -429,89 +321,30 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
 
   try {
     // 1. Profile
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
-    const { data: profileRow, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", userId)
       .maybeSingle();
     if (profileError) throw new Error(`Profile pull failed: ${profileError.message}`);
 
-    let profile = profileRow;
-    if (!profile) {
-      const { data: createdProfile, error: createProfileError } = await supabase
-        .from("profiles")
-        .upsert(
-          {
-            id: userId,
-             ...(authUser?.email ? { email: authUser.email } : {}),
-             ...(typeof authUser?.user_metadata?.["full_name"] === "string" &&
-             authUser.user_metadata["full_name"].trim()
-               ? { full_name: authUser.user_metadata["full_name"].trim() }
-              : {}),
-            today_routine_enabled: true,
-          },
-          { onConflict: "id" },
-        )
-        .select("*")
-        .single();
-      if (createProfileError || !createdProfile) {
-        throw new Error(
-          `Profile pull failed: could not create profile${
-            createProfileError?.message ? ` — ${createProfileError.message}` : ""
-          }`,
-        );
-      }
-      profile = createdProfile;
-    }
+    if (!profile) throw new Error("Profile pull failed: authenticated user has no profile");
     if (profile.role !== "owner" && profile.role !== "coach" && profile.role !== "client") {
       throw new Error("Profile pull failed: authenticated user has an invalid role");
     }
-    const authFullName =
-      typeof authUser?.user_metadata?.["full_name"] === "string"
-        ? authUser.user_metadata["full_name"].trim()
-        : "";
-    const profileName = profile.full_name?.trim() || authFullName || nextData.userProfile?.fullName;
-    const profileHeight = profile.height_cm
-      ? Number(profile.height_cm)
-      : nextData.userProfile?.height;
-    const profileAge =
-      profile.age_years === null || profile.age_years === undefined
-        ? nextData.userProfile?.age
-        : Number(profile.age_years);
-    const profileWorkouts =
-      profile.workouts_per_week === null || profile.workouts_per_week === undefined
-        ? nextData.userProfile?.workoutsPerWeek
-        : Number(profile.workouts_per_week);
-    const profileGender =
-      profile.gender === "male" || profile.gender === "female"
-        ? profile.gender
-        : nextData.userProfile?.gender;
     nextData.userProfile = {
-      ...(nextData.userProfile ?? { weight: 0 }),
-      ...(profileName ? { fullName: profileName } : {}),
-      weight: profile.weight_kg === null || profile.weight_kg === undefined
-        ? (nextData.userProfile?.weight ?? 0)
-        : Number(profile.weight_kg),
-      ...(profileHeight !== undefined ? { height: profileHeight } : {}),
-      ...(profileAge !== undefined ? { age: profileAge } : {}),
-      ...(profileGender ? { gender: profileGender } : {}),
-      ...(profileWorkouts !== undefined ? { workoutsPerWeek: profileWorkouts } : {}),
+      ...nextData.userProfile,
+      weight: profile.weight_kg ? Number(profile.weight_kg) : (nextData.userProfile?.weight ?? 65),
+      height: profile.height_cm ? Number(profile.height_cm) : nextData.userProfile?.height,
       role: profile.role as UserRole,
-      ...(profile.coach_id ? { coachId: profile.coach_id } : {}),
+      coachId: profile.coach_id || undefined,
       todayRoutineEnabled: profile.today_routine_enabled ?? true,
     };
-    if (!profile.full_name?.trim() && authFullName) {
-      await supabase.from("profiles").update({ full_name: authFullName }).eq("id", userId);
-    }
 
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
     const authTheme = authUser?.user_metadata?.theme;
-    const authGender = authUser?.user_metadata?.gender;
-    if (authGender === "male" || authGender === "female") {
-      nextData.userProfile = { ...(nextData.userProfile ?? { weight: 0 }), gender: authGender };
-    }
     if (
       authTheme === "pink" ||
       authTheme === "blue" ||
@@ -523,10 +356,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       authTheme === "peach" ||
       authTheme === "mint"
     ) {
-      nextData.userProfile = {
-        ...(nextData.userProfile ?? { weight: 0 }),
-        theme: authTheme === "mint" ? "pink" : authTheme,
-      };
+      nextData.userProfile = { ...(nextData.userProfile ?? { weight: 65 }), theme: authTheme };
     }
 
     // 2. Fetch Coach Messages if Client
@@ -578,7 +408,8 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     // 4. Custom Exercises
     const { data: dbCustomExercises, error: customExercisesError } = await supabase
       .from("custom_exercises")
-      .select("*");
+      .select("*")
+      .eq("user_id", userId);
     if (customExercisesError)
       throw new Error(`Custom exercises pull failed: ${customExercisesError.message}`);
 
@@ -644,9 +475,6 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
 
       nextData.programs = programsList;
       nextData.workouts = Array.from(workoutsMap.values());
-    } else {
-      nextData.programs = [];
-      nextData.workouts = [];
     }
 
     // 6. History Sessions
@@ -671,16 +499,14 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         discomfortNotes: row.discomfort_notes,
       }));
       nextData.history = historyList;
-    } else {
-      nextData.history = [];
     }
 
     // 7. Body Weight Logs
     const { data: dbBodyWeightLogs, error: bodyWeightError } = await supabase
       .from("body_weight_logs")
-      .select("id, recorded_at, weight_kg")
+      .select("id, date, weight_kg")
       .eq("user_id", userId)
-      .order("recorded_at", { ascending: false });
+      .order("date", { ascending: false });
     if (bodyWeightError && !isMissingTableInSchemaCache(bodyWeightError, "body_weight_logs")) {
       throw new Error(`Weight logs pull failed: ${bodyWeightError.message}`);
     }
@@ -691,56 +517,39 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (dbBodyWeightLogs && dbBodyWeightLogs.length > 0) {
       nextData.bodyWeightLogs = dbBodyWeightLogs.map((row) => ({
         id: row.id,
-        date: dateFromRecordedAt(row.recorded_at),
+        date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
         weight: Number(row.weight_kg),
       }));
-    } else if (!bodyWeightError) {
-      nextData.bodyWeightLogs = [];
     }
-
-    const { data: dbBodyMeasurements, error: measurementError } = await supabase
-      .from("body_measurements")
-      .select("*")
-      .eq("user_id", userId)
-      .order("date", { ascending: false });
-    if (measurementError && !isMissingTableInSchemaCache(measurementError, "body_measurements")) {
-      throw new Error(`Body measurements pull failed: ${measurementError.message}`);
-    }
-    nextData.bodyMeasurements = (dbBodyMeasurements ?? []).map((row): BodyMeasurement => ({
-      id: row.id,
-      date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
-      chestCm: row.chest_cm === null ? undefined : Number(row.chest_cm),
-      waistCm: row.waist_cm === null ? undefined : Number(row.waist_cm),
-      hipsCm: row.hips_cm === null ? undefined : Number(row.hips_cm),
-      bicepsCm: row.biceps_cm === null ? undefined : Number(row.biceps_cm),
-      thighsCm: row.thighs_cm === null ? undefined : Number(row.thighs_cm),
-      calvesCm: row.calves_cm === null ? undefined : Number(row.calves_cm),
-      neckCm: row.neck_cm === null ? undefined : Number(row.neck_cm),
-      bodyFatPct: row.body_fat_pct === null ? undefined : Number(row.body_fat_pct),
-      muscleMassKg: row.muscle_mass_kg === null ? undefined : Number(row.muscle_mass_kg),
-      notes: row.notes || undefined,
-    }));
 
     // 7b. Cardio Logs
     const { data: dbCardioLogs, error: cardioError } = await supabase
       .from("cardio_logs")
       .select("*")
       .eq("user_id", userId)
-      .order("recorded_at", { ascending: false });
+      .order("date", { ascending: false });
     if (cardioError && !isMissingTableInSchemaCache(cardioError, "cardio_logs")) {
       throw new Error(`Cardio pull failed: ${cardioError.message}`);
     }
     if (cardioError) {
       console.warn("[Optional cardio pull skipped]: public.cardio_logs is unavailable");
     }
-    nextData.cardioLogs = (dbCardioLogs ?? []).map((row): CardioLog => ({
-      id: row.id,
-      date: dateFromRecordedAt(row.recorded_at),
-      type: row.activity_type,
-      durationMin: Number(row.duration_minutes),
-      intensity: row.intensity || undefined,
-      calories: Number(row.estimated_calories ?? 0),
-    }));
+    // Preserve local entries while the optional table is unavailable. Also
+    // preserve them when the cloud table is empty, allowing a failed first
+    // upload to retry instead of losing the user's newly entered history.
+    if (!cardioError && dbCardioLogs && dbCardioLogs.length > 0) {
+      nextData.cardioLogs = dbCardioLogs.map((row): CardioLog => ({
+        id: row.id,
+        date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
+        type: row.type,
+        durationMin: Number(row.duration_min),
+        intensity: row.intensity || undefined,
+        speed: row.speed_kmh === null ? undefined : Number(row.speed_kmh),
+        incline: row.incline_pct === null ? undefined : Number(row.incline_pct),
+        distanceKm: row.distance_km === null ? undefined : Number(row.distance_km),
+        calories: Number(row.calories),
+      }));
+    }
 
     // 8. Custom Foods
     const { data: dbCustomFoods, error: customFoodsError } = await supabase
@@ -749,14 +558,8 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .eq("user_id", userId);
     if (customFoodsError) throw new Error(`Custom foods pull failed: ${customFoodsError.message}`);
 
-    const seedFoodIds = new Set(EVERYDAY_FOOD_DATABASE.map((food) => food.id));
-    const customFoodMap = new Map(
-      nextData.foods
-        .filter((food) => seedFoodIds.has(food.id) || food.ownerId !== userId)
-        .map((food) => [food.id, food]),
-    );
     if (dbCustomFoods && dbCustomFoods.length > 0) {
-      const foodMap = customFoodMap;
+      const foodMap = new Map(nextData.foods.map((f) => [f.id, f]));
       for (const row of dbCustomFoods) {
         const foodItem: FoodItem = {
           id: row.id,
@@ -770,16 +573,10 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
           carbs: Number(row.carbs),
           fat: Number(row.fat),
           fiber: Number(row.fiber || 0),
-          ownerId: row.user_id || undefined,
-          approvalStatus: row.approval_status || "approved",
-          approvedBy: row.approved_by || undefined,
-          approvedAt: row.approved_at || undefined,
         };
         foodMap.set(row.id, foodItem);
       }
       nextData.foods = Array.from(foodMap.values());
-    } else {
-      nextData.foods = Array.from(customFoodMap.values());
     }
 
     // 9. Nutrition Days
@@ -794,21 +591,11 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         id: row.id,
         date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
         meals: row.meals || [],
-        plannedMeals: row.planned_meals || [],
+        waterMl: row.water_ml === null ? undefined : Number(row.water_ml ?? 0),
+        waterTargetMl:
+          row.water_target_ml === null ? undefined : Number(row.water_target_ml ?? 2500),
       }));
       nextData.nutritionDays = daysList;
-      const calorieTargetRow = dbNutritionDays.find(
-        (row) => typeof row.target_calories === "number" && row.target_calories > 0,
-      );
-      if (calorieTargetRow?.target_calories) {
-        nextData.nutritionTargets = {
-          ...nextData.nutritionTargets,
-          calories: Number(calorieTargetRow.target_calories),
-        };
-      }
-    } else {
-      nextData.nutritionDays = [];
-      nextData.nutritionTargets = {};
     }
 
     // 10. Food Favorites
@@ -869,10 +656,8 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       .from("cardio_logs")
       .select("*")
       .eq("user_id", clientId)
-      .order("recorded_at", { ascending: false });
-    if (cardioError && !isMissingTableInSchemaCache(cardioError, "cardio_logs")) {
-      throw new Error(`Client cardio pull failed: ${cardioError.message}`);
-    }
+      .order("date", { ascending: false });
+    if (cardioError) throw new Error(`Client cardio pull failed: ${cardioError.message}`);
 
     const workoutsMap = new Map<string, Workout>();
     const programsList: Program[] = [];
@@ -907,15 +692,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       id: row.id,
       date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
       meals: row.meals || [],
-      plannedMeals: row.planned_meals || [],
     }));
-    const nutritionTargets: NutritionTargets = {};
-    const clientTargetRow = (dbNutritionDays ?? []).find(
-      (row) => typeof row.target_calories === "number" && row.target_calories > 0,
-    );
-    if (clientTargetRow?.target_calories) {
-      nutritionTargets.calories = Number(clientTargetRow.target_calories);
-    }
 
     const historyList: HistorySession[] = (dbSessions || []).map((row) => ({
       id: row.id,
@@ -929,77 +706,33 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     }));
     const cardioList: CardioLog[] = (dbCardioLogs || []).map((row) => ({
       id: row.id,
-      date: dateFromRecordedAt(row.recorded_at),
-      type: row.activity_type,
-      durationMin: Number(row.duration_minutes),
-      intensity: row.intensity || undefined,
-      calories: Number(row.estimated_calories ?? 0),
-    }));
-    const { data: dbBodyMeasurements, error: measurementError } = await supabase
-      .from("body_measurements")
-      .select("*")
-      .eq("user_id", clientId)
-      .order("date", { ascending: false });
-    if (measurementError && !isMissingTableInSchemaCache(measurementError, "body_measurements")) {
-      throw new Error(`Client body measurements pull failed: ${measurementError.message}`);
-    }
-    const bodyMeasurements: BodyMeasurement[] = (dbBodyMeasurements ?? []).map((row) => ({
-      id: row.id,
       date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
-      chestCm: row.chest_cm === null ? undefined : Number(row.chest_cm),
-      waistCm: row.waist_cm === null ? undefined : Number(row.waist_cm),
-      hipsCm: row.hips_cm === null ? undefined : Number(row.hips_cm),
-      bicepsCm: row.biceps_cm === null ? undefined : Number(row.biceps_cm),
-      thighsCm: row.thighs_cm === null ? undefined : Number(row.thighs_cm),
-      calvesCm: row.calves_cm === null ? undefined : Number(row.calves_cm),
-      neckCm: row.neck_cm === null ? undefined : Number(row.neck_cm),
-      bodyFatPct: row.body_fat_pct === null ? undefined : Number(row.body_fat_pct),
-      muscleMassKg: row.muscle_mass_kg === null ? undefined : Number(row.muscle_mass_kg),
-      notes: row.notes || undefined,
+      type: row.type,
+      durationMin: Number(row.duration_min),
+      intensity: row.intensity || undefined,
+      speed: row.speed_kmh === null ? undefined : Number(row.speed_kmh),
+      incline: row.incline_pct === null ? undefined : Number(row.incline_pct),
+      distanceKm: row.distance_km === null ? undefined : Number(row.distance_km),
+      calories: Number(row.calories),
     }));
 
     return {
       programs: programsList,
       workouts: Array.from(workoutsMap.values()),
       nutritionDays: nutritionList,
-      nutritionTargets,
       history: historyList,
       cardioLogs: cardioList,
-      bodyMeasurements,
-      ...(profile
+      profile: profile
         ? {
-            profile: {
-              fullName: profile.full_name || undefined,
-              weight: profile.weight_kg === null || profile.weight_kg === undefined ? 0 : Number(profile.weight_kg),
-              ...(profile.height_cm === null || profile.height_cm === undefined
-                ? {}
-                : { height: Number(profile.height_cm) }),
-              ...(profile.age_years === null || profile.age_years === undefined
-                ? {}
-                : { age: Number(profile.age_years) }),
-              ...(profile.gender === "male" || profile.gender === "female"
-                ? { gender: profile.gender }
-                : {}),
-              ...(profile.workouts_per_week === null || profile.workouts_per_week === undefined
-                ? {}
-                : { workoutsPerWeek: Number(profile.workouts_per_week) }),
-              role: profile.role || "client",
-            },
+            weight: Number(profile.weight_kg || 65),
+            height: Number(profile.height_cm || 165),
+            role: profile.role || "client",
           }
-        : {}),
+        : undefined,
     };
   } catch (err: unknown) {
     const error = err instanceof Error && err.message ? err.message : "Client data pull failed";
     console.error("[Pull Client Data Error]:", error);
-    return {
-      programs: [],
-      workouts: [],
-      nutritionDays: [],
-      nutritionTargets: {},
-      history: [],
-      cardioLogs: [],
-      bodyMeasurements: [],
-      error,
-    };
+    return { programs: [], workouts: [], nutritionDays: [], history: [], cardioLogs: [], error };
   }
 }
