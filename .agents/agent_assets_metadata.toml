@@ -117,14 +117,14 @@ content_type = "text/plain"
 id = "2OTS-n-U2k2bwnyr3AACI"
 uri = "file://GymTrack-updated.zip"
 type = "unspecified"
-title = "My Routine — ZIP עם מסך טעינה קומפקטי"
-description = "גרסה מעודכנת עם מסך טעינה קטן ונקי, משפטים שנונים ו־48 וריאציות אנימציה עדינות."
+title = "My Routine — ZIP עם 32 איורי טעינה"
+description = "גרסה מעודכנת עם מסך טעינה נקי וקומפקטי, 32 איורים שונים, 9 סוגי תנועה ו־288 שילובים."
 logical_id = "324ce929-850e-4872-85b9-f535a48312c9"
-content_hash = "sha256:8ee4c038b88f5def7c435f0bd910d5d845e3ad17a47d362d0bf45ec4d2b361d6"
-size = 433871
-mtime_ms = 1787473997643
-storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/324ce929-850e-4872-85b9-f535a48312c9/0d0e692e-038c-4a54-ac8d-29f937c02330"
-storage_version_token = "1787474005796534"
+content_hash = "sha256:92316c47b7de8cbc8983cd592d799a3f88a96e5f44b7de76751565774b5e060c"
+size = 434120
+mtime_ms = 1787474152230
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/324ce929-850e-4872-85b9-f535a48312c9/6e9efea7-2ac4-484c-a5a0-cfc6a57de8cf"
+storage_version_token = "1787474159409842"
 content_type = "application/octet-stream"
 
 [[outputs]]
