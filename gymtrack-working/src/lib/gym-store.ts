@@ -33,6 +33,8 @@ import {
 const KEY = "gymtrack.v1";
 const CACHED_USER_KEY = "gymtrack.v1.userId";
 const USER_CACHE_PREFIX = "gymtrack.v1.user.";
+const AUTH_TIMEOUT_MS = 4_000;
+const INITIAL_DATA_TIMEOUT_MS = 4_000;
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -787,7 +789,7 @@ function load() {
               data: { session: null },
               error: new Error("פג הזמן לאימות החשבון"),
             }),
-          8_000,
+          AUTH_TIMEOUT_MS,
         ),
       ),
     ])
@@ -917,7 +919,7 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
             success: false,
             error: "Supabase request timed out (network timeout)",
           }),
-        7_000,
+        INITIAL_DATA_TIMEOUT_MS,
       ),
     ),
   ]);
