@@ -210,7 +210,8 @@ class RuntimeErrorBoundary extends Component<
   }
 }
 
-function LoadingIllustration() {
+function LoadingIllustration({ variant }: { variant: number }) {
+  const shape = variant % 4;
   return (
     <div className="loading-micro-stage" aria-hidden="true">
       <svg className="loading-dumbbell-svg" viewBox="0 0 150 92" role="presentation">
@@ -227,36 +228,45 @@ function LoadingIllustration() {
             <rect x="108" y="19" width="25" height="54" rx="6" />
           </clipPath>
         </defs>
-        <g className="loading-dumbbell-motion">
-          <ellipse className="loading-dumbbell-shadow" cx="75" cy="79" rx="51" ry="5" />
-          <path className="loading-dumbbell-bar" d="M37 42h76v8H37z" />
-          <path className="loading-dumbbell-grip" d="M57 39h36v14H57z" />
-          <g className="loading-dumbbell-plate">
-            <rect x="17" y="19" width="25" height="54" rx="6" />
-            <rect
-              className="loading-dumbbell-fill"
-              clipPath="url(#loading-left-plate)"
-              x="17"
-              y="19"
-              width="25"
-              height="54"
-            />
-            <path className="loading-dumbbell-highlight" d="M22 24v44" />
+        {shape === 0 ? (
+          <g className="loading-object-motion loading-dumbbell-motion">
+            <ellipse className="loading-dumbbell-shadow" cx="75" cy="79" rx="51" ry="5" />
+            <path className="loading-dumbbell-bar" d="M37 42h76v8H37z" />
+            <path className="loading-dumbbell-grip" d="M57 39h36v14H57z" />
+            <g className="loading-dumbbell-plate">
+              <rect x="17" y="19" width="25" height="54" rx="6" />
+              <rect className="loading-dumbbell-fill" x="17" y="19" width="25" height="54" />
+              <path className="loading-dumbbell-highlight" d="M22 24v44" />
+            </g>
+            <g className="loading-dumbbell-plate">
+              <rect x="108" y="19" width="25" height="54" rx="6" />
+              <rect className="loading-dumbbell-fill" x="108" y="19" width="25" height="54" />
+              <path className="loading-dumbbell-highlight" d="M113 24v44" />
+            </g>
+            <path className="loading-dumbbell-cap" d="M11 29h7v34h-7zM133 29h7v34h-7z" />
           </g>
-          <g className="loading-dumbbell-plate">
-            <rect x="108" y="19" width="25" height="54" rx="6" />
-            <rect
-              className="loading-dumbbell-fill"
-              clipPath="url(#loading-right-plate)"
-              x="108"
-              y="19"
-              width="25"
-              height="54"
-            />
-            <path className="loading-dumbbell-highlight" d="M113 24v44" />
+        ) : shape === 1 ? (
+          <g className="loading-object-motion">
+            <path className="loading-object-shell" d="M43 23h64l-5 51H48z" />
+            <path className="loading-object-fill" d="M48 74h54l-5-51H43z" />
+            <path className="loading-object-lip" d="M39 22h72v8H39z" />
+            <path className="loading-object-highlight" d="M51 35l3 31" />
           </g>
-          <path className="loading-dumbbell-cap" d="M11 29h7v34h-7zM133 29h7v34h-7z" />
-        </g>
+        ) : shape === 2 ? (
+          <g className="loading-object-motion">
+            <path className="loading-object-shell" d="M58 16h34v9l8 8v41H50V33l8-8z" />
+            <path className="loading-object-fill" d="M50 74h50V33l-8-8H58l-8 8z" />
+            <path className="loading-object-lip" d="M58 16h34v9H58z" />
+            <path className="loading-object-highlight" d="M58 36v29" />
+          </g>
+        ) : (
+          <g className="loading-object-motion">
+            <path className="loading-object-shell" d="M48 31c0-13 9-20 27-20s27 7 27 20v37c0 7-6 11-13 11H61c-7 0-13-4-13-11z" />
+            <path className="loading-object-fill" d="M48 74h54V31c0-13-9-20-27-20S48 18 48 31z" />
+            <path className="loading-object-lip" d="M53 19h44v8H53z" />
+            <path className="loading-object-highlight" d="M60 34v32" />
+          </g>
+        )}
       </svg>
     </div>
   );
@@ -334,6 +344,7 @@ function RootContent() {
   const { queryClient } = Route.useRouteContext();
   const authStatus = useAuthStatus();
   const { userProfile } = useGym();
+  const [loadingVariant, setLoadingVariant] = useState(0);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const profileHydrationStatus = useProfileHydrationStatus();
   const profileHydrationError = useProfileHydrationError();
@@ -352,11 +363,16 @@ function RootContent() {
     document.documentElement.lang = "he";
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
+    setLoadingVariant(Math.floor(Math.random() * 4));
     setLoadingMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
+    const illustrationTimer = window.setInterval(() => {
+      setLoadingVariant((current) => (current + 1) % 4);
+    }, 2400);
     const messageTimer = window.setInterval(() => {
       setLoadingMessageIndex((current) => (current + 1) % LOADING_MESSAGES.length);
     }, 1800);
     return () => {
+      window.clearInterval(illustrationTimer);
       window.clearInterval(messageTimer);
     };
   }, []);
@@ -374,7 +390,7 @@ function RootContent() {
             aria-live="polite"
             aria-label="My Routine נטען"
           >
-            <LoadingIllustration />
+            <LoadingIllustration variant={loadingVariant} />
             <p key={loadingMessageIndex} className="loading-witty-message">
               {LOADING_MESSAGES[loadingMessageIndex]}
             </p>
