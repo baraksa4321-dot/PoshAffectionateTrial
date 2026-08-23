@@ -390,6 +390,19 @@
   --gradient-end: #ffffff;
 }
 
+/* The page canvas is always white; selected colors belong to UI surfaces. */
+html,
+body,
+#root {
+  background-color: #ffffff !important;
+  background-image: none !important;
+}
+
+:root,
+:root[data-theme] {
+  --background: #ffffff;
+}
+
 .ink-card {
   background: var(--surface-2);
   color: var(--ink);
