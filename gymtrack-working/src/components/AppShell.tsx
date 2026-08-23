@@ -38,6 +38,7 @@ export function AppShell({
   kicker,
   action,
   authOnly = false,
+  compactHeader = false,
   children,
 }: {
   title: string;
@@ -45,6 +46,7 @@ export function AppShell({
   kicker?: string | undefined;
   action?: ReactNode | undefined;
   authOnly?: boolean | undefined;
+  compactHeader?: boolean | undefined;
   children: ReactNode;
 }) {
   const store = useGym();
@@ -336,12 +338,24 @@ export function AppShell({
         className="sticky top-0 z-30 border-b border-border/70 bg-background/90 shadow-[0_8px_24px_oklch(0.2_0.03_35_/_0.035)] backdrop-blur-xl"
         style={{ paddingTop: "max(0.6rem, env(safe-area-inset-top))" }}
       >
-        <div className="mx-auto w-full max-w-2xl px-4 pb-4 pt-1 sm:px-6">
-          <div className="mb-3 flex items-center border-b border-border/50 pb-2">
+        <div
+          className={`mx-auto w-full max-w-2xl px-4 sm:px-6 ${
+            compactHeader ? "pb-2 pt-0.5" : "pb-4 pt-1"
+          }`}
+        >
+          <div
+            className={`flex items-center border-b border-border/50 ${
+              compactHeader ? "mb-1 pb-1" : "mb-3 pb-2"
+            }`}
+          >
             <BrandLogo />
           </div>
           {isCoach ? (
-            <div className="mb-3 flex justify-end border-b border-border/50 pb-2">
+            <div
+              className={`flex justify-end border-b border-border/50 ${
+                compactHeader ? "mb-1 pb-1" : "mb-3 pb-2"
+              }`}
+            >
               <div
                 className="flex items-center gap-0.5 rounded-full border border-border bg-surface-2 p-0.5"
                 role="group"
@@ -351,7 +365,9 @@ export function AppShell({
                   to="/"
                   onClick={() => setWorkspace("personal")}
                   aria-current={activeMode === "personal" ? "page" : undefined}
-                  className={`min-w-20 rounded-full px-3 py-1.5 text-center text-[11px] font-bold transition-colors ${
+                    className={`min-w-20 rounded-full px-3 ${
+                      compactHeader ? "py-1 text-[10px]" : "py-1.5 text-[11px]"
+                    } text-center font-bold transition-colors ${
                     activeMode === "personal"
                       ? "bg-surface text-ink shadow-sm"
                       : "text-muted-foreground hover:text-ink"
@@ -363,7 +379,9 @@ export function AppShell({
                   to="/coach"
                   onClick={() => setWorkspace("management")}
                   aria-current={activeMode === "management" ? "page" : undefined}
-                  className={`min-w-20 rounded-full px-3 py-1.5 text-center text-[11px] font-bold transition-colors ${
+                    className={`min-w-20 rounded-full px-3 ${
+                      compactHeader ? "py-1 text-[10px]" : "py-1.5 text-[11px]"
+                    } text-center font-bold transition-colors ${
                     activeMode === "management"
                       ? isOwner
                         ? "bg-ink text-primary-foreground"
@@ -379,7 +397,13 @@ export function AppShell({
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1 text-start">
               {title ? (
-                <h1 className="min-w-0 break-words font-display text-[clamp(18px,5vw,23px)] font-extrabold leading-snug tracking-tight text-ink">
+                <h1
+                  className={`min-w-0 break-words font-display font-extrabold leading-snug tracking-tight text-ink ${
+                    compactHeader
+                      ? "text-[clamp(16px,4.5vw,20px)]"
+                      : "text-[clamp(18px,5vw,23px)]"
+                  }`}
+                >
                   {headerTitle}
                 </h1>
               ) : null}
@@ -430,7 +454,9 @@ export function AppShell({
       </header>
 
       <main
-        className="page-enter mx-auto w-full max-w-2xl px-4 pb-8 pt-5 sm:px-6 sm:pt-7"
+        className={`page-enter mx-auto w-full max-w-2xl px-4 pb-8 sm:px-6 ${
+          compactHeader ? "flex flex-col pt-3" : "pt-5 sm:pt-7"
+        }`}
         style={{
           paddingBottom: "calc(6.5rem + env(safe-area-inset-bottom))",
         }}

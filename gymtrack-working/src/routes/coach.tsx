@@ -20,7 +20,7 @@ import {
   Activity,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "../components/AppShell";
 import { Overlay } from "../components/ui-app/Overlay";
 import {
@@ -1260,6 +1260,76 @@ export function CoachDashboardPage({
                 </button>
               </div>
 
+              {workspacePage && clientDetails ? (
+                <>
+                  <section className="rounded-3xl border border-primary/20 bg-primary/5 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                          סביבת עריכה אישית
+                        </p>
+                        <h2 className="mt-1 font-display text-xl font-extrabold text-ink">
+                          {isSelfSelected
+                            ? "התוכנית והתפריט שלי"
+                            : `בונים עבור ${profileDisplayName(selectedClientInfo?.profiles)}`}
+                        </h2>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                          עדכון מרוכז של האימונים, ימי האימון, התרגילים והתפריט המתוכנן.
+                        </p>
+                      </div>
+                      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
+                        <Dumbbell className="h-5 w-5" />
+                      </div>
+                    </div>
+                    <div className="mt-4 grid grid-cols-4 gap-2 text-center">
+                      <div className="rounded-2xl bg-white/80 p-2">
+                        <span className="block text-[10px] text-muted-foreground">תוכניות</span>
+                        <strong className="mt-0.5 block text-sm text-ink">
+                          {clientDetails.programs?.length || 0}
+                        </strong>
+                      </div>
+                      <div className="rounded-2xl bg-white/80 p-2">
+                        <span className="block text-[10px] text-muted-foreground">ימי אימון</span>
+                        <strong className="mt-0.5 block text-sm text-ink">
+                          {clientDetails.workouts?.length || 0}
+                        </strong>
+                      </div>
+                      <div className="rounded-2xl bg-white/80 p-2">
+                        <span className="block text-[10px] text-muted-foreground">קלוריות</span>
+                        <strong className="mt-0.5 block text-sm text-ink">
+                          {clientDetails.nutritionTargets?.calories || 2000}
+                        </strong>
+                      </div>
+                      <div className="rounded-2xl bg-white/80 p-2">
+                        <span className="block text-[10px] text-muted-foreground">ימי תפריט</span>
+                        <strong className="mt-0.5 block text-sm text-ink">
+                          {clientDetails.nutritionDays?.length || 0}
+                        </strong>
+                      </div>
+                    </div>
+                  </section>
+                  <nav
+                    aria-label="ניווט בסביבת העריכה"
+                    className="sticky top-2 z-10 grid grid-cols-2 gap-2 rounded-2xl border border-border/70 bg-background/95 p-1.5 shadow-sm backdrop-blur"
+                  >
+                    <a
+                      href="#coach-programs"
+                      className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-primary-foreground"
+                    >
+                      <Dumbbell className="h-3.5 w-3.5" />
+                      תוכנית אימונים
+                    </a>
+                    <a
+                      href="#coach-nutrition"
+                      className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2.5 text-xs font-bold text-emerald-800"
+                    >
+                      <Apple className="h-3.5 w-3.5" />
+                      תפריט ותזונה
+                    </a>
+                  </nav>
+                </>
+              ) : null}
+
               {loadingDetails ? (
                 <div className="surface-card p-6 text-center text-xs text-muted-foreground animate-pulse">
                   טוען נתוני מתאמן מ-Supabase...
@@ -1415,11 +1485,17 @@ export function CoachDashboardPage({
                   ) : null}
 
                   {/* Client Programs & Full Exercise Prescription Builder */}
-                  <div className="surface-card p-4 rounded-2xl space-y-3">
+                  <div
+                    id="coach-programs"
+                    className="scroll-mt-24 surface-card space-y-4 rounded-[1.75rem] border-primary/15 bg-primary/[0.02] p-4"
+                  >
                     <div className="flex items-center justify-between border-b pb-2">
-                      <h4 className="font-bold text-sm text-ink flex items-center gap-1.5">
+                      <h3 className="flex items-center gap-2 font-display text-lg font-extrabold text-ink">
                         <Dumbbell className="h-4 w-4 text-primary" /> תוכנית האימונים
-                      </h4>
+                      </h3>
+                      <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary">
+                        {clientDetails?.programs?.length || 0} תוכניות
+                      </span>
                     </div>
 
                     <form onSubmit={handleCreateClientProgram} className="flex gap-2">
@@ -1866,11 +1942,14 @@ export function CoachDashboardPage({
                   </div>
 
                   {/* Client Nutrition Targets Editor */}
-                  <div className="surface-card p-4 rounded-2xl space-y-3">
+                  <div
+                    id="coach-nutrition"
+                    className="scroll-mt-24 surface-card space-y-4 rounded-[1.75rem] border-emerald-200/70 bg-emerald-50/30 p-4"
+                  >
                     <div className="flex items-center justify-between border-b pb-2">
-                      <h4 className="font-bold text-sm text-ink flex items-center gap-1.5">
+                      <h3 className="flex items-center gap-2 font-display text-lg font-extrabold text-ink">
                         <Apple className="h-4 w-4 text-primary" /> יעד קלורי ותזונה למתאמן
-                      </h4>
+                      </h3>
                       <button
                         onClick={() => setEditingNutrition(!editingNutrition)}
                         className="text-primary text-xs font-bold hover:underline flex items-center gap-1 cursor-pointer"

@@ -211,6 +211,7 @@ function NutritionLog() {
       kicker="תזונה"
       title="יומן תזונה"
       subtitle={formatDayLabel(date)}
+      compactHeader
       action={
         <div className="flex gap-1.5">
           <Link
@@ -233,31 +234,31 @@ function NutritionLog() {
       }
     >
       {/* Date selector */}
-      <div className="surface-card flex items-center justify-between gap-2 p-2.5">
+      <div className="surface-card flex items-center justify-between gap-1.5 p-1.5">
         <button
           type="button"
           aria-label="יום קודם"
           onClick={() => setDate((d) => shiftDate(d, -1))}
-          className="press grid h-10 w-10 place-items-center rounded-2xl bg-secondary cursor-pointer"
+          className="press grid h-8 w-8 place-items-center rounded-xl bg-secondary cursor-pointer"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
         <div className="text-center">
-          <p className="font-display text-[16px] font-semibold text-ink">{formatDayLabel(date)}</p>
-          <p className="text-[11px] text-muted-foreground tabular-nums">{date}</p>
+          <p className="font-display text-[14px] font-semibold text-ink">{formatDayLabel(date)}</p>
+          <p className="text-[10px] text-muted-foreground tabular-nums">{date}</p>
         </div>
         <button
           type="button"
           aria-label="יום הבא"
           onClick={() => setDate((d) => shiftDate(d, 1))}
-          className="press grid h-10 w-10 place-items-center rounded-2xl bg-secondary cursor-pointer"
+          className="press grid h-8 w-8 place-items-center rounded-xl bg-secondary cursor-pointer"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
       </div>
 
       {/* Quick Action Tools: "What should I eat now?" & "Shopping List" */}
-      <div className="grid grid-cols-2 gap-2 mt-3">
+      <div className="order-4 mt-2 grid grid-cols-2 gap-2">
         <button
           onClick={() => {
             setSuggestionMealId(day.meals[0]?.id ?? "");
@@ -279,7 +280,7 @@ function NutritionLog() {
       </div>
 
       {/* Secondary recipe library */}
-      <section className="mt-3 rounded-2xl border border-border/40 bg-secondary/20">
+      <section className="order-5 mt-2 rounded-2xl border border-border/40 bg-secondary/20">
         <button
           type="button"
           onClick={() => setShowRecipes((open) => !open)}
@@ -402,7 +403,7 @@ function NutritionLog() {
       ) : null}
 
       {/* Daily total */}
-      <div className="surface-card mt-4 overflow-hidden border border-border/60 bg-secondary/25 p-4">
+      <div className="order-3 mt-4 surface-card overflow-hidden border border-border/60 bg-secondary/25 p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="text-start">
             <p className="text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
@@ -437,7 +438,7 @@ function NutritionLog() {
       </p>
 
       {day.plannedMeals && day.plannedMeals.length > 0 ? (
-        <section className="mt-6">
+        <section className="order-1 mt-4">
           <div className="mb-3 flex items-end justify-between gap-3">
             <div>
               <p className="section-kicker text-primary">תפריט מהמאמן</p>
@@ -495,7 +496,7 @@ function NutritionLog() {
       ) : null}
 
       {/* Meals */}
-      <section className="mt-6">
+      <section className="order-2 mt-4">
         <SectionHeader
           title="הארוחות שלך"
           subtitle={`${day.meals.length} ארוחות תועדו`}
