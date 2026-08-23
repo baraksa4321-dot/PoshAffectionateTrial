@@ -1,5 +1,6 @@
 - [Replit Preview routing](preview-routing.md) — browser Preview needs a registered root web artifact, not only a healthy standalone Vite workflow.
 - [Optional activity-log schema drift](supabase-optional-logs.md) — the connected Supabase project lacks weight and cardio log tables; these must not block authenticated role hydration.
+- [Body measurement schema compatibility](body-measurement-schema.md) — measurement writes require the extended columns in Supabase; keep code and schema aligned.
 - [Live role RPC safeguard](live-role-rpc-safeguard.md) — Owners may change another user’s role, never their own; preserve the approved live-only security guard.
 - [Mobile overlay keyboard sizing](mobile-overlay-keyboard-sizing.md) — Bottom sheets must size from the visual viewport and apply keyboard offset only as a bottom margin.
 - [Offline cache ownership](offline-cache-ownership.md) — Store offline data by immutable user key; never migrate shared caches without verifiable ownership.
