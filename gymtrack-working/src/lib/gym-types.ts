@@ -109,6 +109,7 @@ export type LoggedSet = {
   targetRepMax?: number;
   warmup?: boolean;
   dropSet?: boolean;
+  dropLevel?: number;
 };
 
 export type HistoryEntry = {

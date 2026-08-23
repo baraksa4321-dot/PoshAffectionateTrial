@@ -144,7 +144,6 @@ function Session() {
         ...(w.repsMax !== undefined ? { targetRepMax: w.repsMax } : {}),
       }));
       const working: LoggedSet[] = Array.from({ length: item.sets }, (_, i) => {
-        const dropSet = item.workingSets?.[i]?.dropSet ?? item.dropSetConfig?.enabled;
         return {
           reps: last?.sets[i]?.reps ?? item.workingSets?.[i]?.reps ?? targetReps,
           weight: prescribedWeight,
@@ -152,9 +151,27 @@ function Session() {
           targetReps,
           warmup: false,
           ...(targetRepMax !== undefined ? { targetRepMax } : {}),
-          ...(dropSet !== undefined ? { dropSet } : {}),
         };
       });
+      const dropConfig = item.dropSetConfig;
+      if (dropConfig?.enabled && dropConfig.drops > 0) {
+        for (let dropLevel = 1; dropLevel <= dropConfig.drops; dropLevel += 1) {
+          const reduction = (dropConfig.weightReductionPercent ?? dropConfig.percentReduction ?? 20) / 100;
+          const dropWeight = Math.max(
+            0,
+            Math.round(prescribedWeight * Math.pow(1 - reduction, dropLevel) * 10) / 10,
+          );
+          working.push({
+            reps: dropConfig.repsMin ?? targetReps,
+            weight: dropWeight,
+            done: false,
+            targetReps: dropConfig.repsMin ?? targetReps,
+            ...(dropConfig.repsMax !== undefined ? { targetRepMax: dropConfig.repsMax } : {}),
+            dropSet: true,
+            dropLevel,
+          });
+        }
+      }
       return {
         exerciseId: item.exerciseId,
         exerciseName: ex?.name ?? "תרגיל שהוסר",
@@ -476,8 +493,10 @@ function Session() {
           const targetLabel = item ? repLabel(item) : String(entry.targetReps ?? "");
           const supersetLabel = labels[ei];
           const fullExercise = exerciseCatalog.find((e) => e.id === entry.exerciseId);
-          const workingCount = entry.sets.filter((s) => !s.warmup).length;
+          const workingCount = entry.sets.filter((s) => !s.warmup && !s.dropSet).length;
           const prescribedWeight = item?.targetWeight || item?.weight || 0;
+          const isSupersetFirst =
+            item?.supersetOrder === 1 || Boolean(supersetLabel?.endsWith("1"));
 
           return (
             <article
@@ -522,18 +541,20 @@ function Session() {
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRest(item?.rest ?? 60);
-                      setRestPaused(false);
-                    }}
-                    className="press flex shrink-0 items-center gap-1 rounded-full bg-secondary px-3 py-2 text-[12px] font-semibold text-ink cursor-pointer"
-                    aria-label="התחל מנוחה"
-                  >
-                    <Timer className="h-3.5 w-3.5 text-primary" />
-                    {item?.rest ?? 60}ש׳
-                  </button>
+                   {!isSupersetFirst ? (
+                     <button
+                       type="button"
+                       onClick={() => {
+                         setRest(item?.rest ?? 60);
+                         setRestPaused(false);
+                       }}
+                       className="press flex shrink-0 items-center gap-1 rounded-full bg-secondary px-3 py-2 text-[12px] font-semibold text-ink cursor-pointer"
+                       aria-label="התחל מנוחה"
+                     >
+                       <Timer className="h-3.5 w-3.5 text-primary" />
+                       {item?.rest ?? 60}ש׳
+                     </button>
+                   ) : null}
                 </div>
               </div>
 
@@ -583,7 +604,7 @@ function Session() {
                           </span>
                           <div className="min-w-0 flex-1 text-start">
                             <p className="break-words text-[12.5px] leading-snug font-semibold text-ink">
-                              {s.dropSet ? "דרופ סט" : setLabel}
+                               {s.dropSet ? `דרופ סט ${s.dropLevel ?? ""}` : setLabel}
                               <span className="ms-1 text-[11px] font-normal text-muted-foreground">
                                 · יעד {s.targetReps}
                                 {s.targetRepMax ? `–${s.targetRepMax}` : ""}

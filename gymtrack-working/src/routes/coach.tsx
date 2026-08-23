@@ -161,6 +161,7 @@ export function CoachDashboardPage({
   const [warmupRepsMax, setWarmupRepsMax] = useState(12);
   const [techNotes, setTechniqueNotes] = useState("");
   const [supersetGroup, setSupersetGroup] = useState("");
+  const [supersetPartnerId, setSupersetPartnerId] = useState("");
   const [dropSetEnabled, setDropSetEnabled] = useState(false);
   const [dropSetCount, setDropSetCount] = useState(1);
   const [dropRepsMin, setDropRepsMin] = useState(10);
@@ -630,6 +631,8 @@ export function CoachDashboardPage({
       ...(supersetGroup.trim()
         ? {
             supersetId: supersetGroup.trim(),
+            supersetPartnerId,
+            supersetOrder: 1 as const,
             supersetRepsMin,
             supersetRepsMax,
           }
@@ -664,13 +667,26 @@ export function CoachDashboardPage({
         : {}),
     };
 
-    const updatedItems = [...currentDay.items, newWorkoutItem];
+    const partnerItem =
+      supersetGroup.trim() && supersetPartnerId
+        ? {
+            ...newWorkoutItem,
+            id: uid(),
+            exerciseId: supersetPartnerId,
+            supersetPartnerId: selectedExId,
+            supersetOrder: 2 as const,
+          }
+        : null;
+    const updatedItems = partnerItem
+      ? [...currentDay.items, newWorkoutItem, partnerItem]
+      : [...currentDay.items, newWorkoutItem];
 
     if (isSelfSelected) {
       saveWorkout({ ...currentDay, items: updatedItems });
        setSelectedExId("");
       setTechniqueNotes("");
       setSupersetGroup("");
+      setSupersetPartnerId("");
       setDropSetEnabled(false);
        setApprovedAltIds([]);
       return;
@@ -685,6 +701,7 @@ export function CoachDashboardPage({
       setSelectedExId("");
       setTechniqueNotes("");
       setSupersetGroup("");
+      setSupersetPartnerId("");
       setDropSetEnabled(false);
        setApprovedAltIds([]);
       pullClientDataForCoach(selectedClientId).then(applyClientDetails);
@@ -2147,6 +2164,28 @@ export function CoachDashboardPage({
                                                         placeholder="A"
                                                         className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
                                                       />
+                                                    </label>
+                                                    <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                      תרגיל שני בסופר סט
+                                                      <select
+                                                        required
+                                                        value={supersetPartnerId}
+                                                        onChange={(event) =>
+                                                          setSupersetPartnerId(event.target.value)
+                                                        }
+                                                        className="h-9 rounded-lg border border-border bg-white px-2 text-xs text-ink"
+                                                      >
+                                                        <option value="">
+                                                          בחרי תרגיל שמתבצע מיד אחרי הראשון...
+                                                        </option>
+                                                        {filteredExerciseOptions
+                                                          .filter((exercise) => exercise.id !== selectedExId)
+                                                          .map((exercise) => (
+                                                            <option key={exercise.id} value={exercise.id}>
+                                                              {exercise.name} ({exercise.muscleGroup})
+                                                            </option>
+                                                          ))}
+                                                      </select>
                                                     </label>
                                                     <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                       חזרות סופר סט
