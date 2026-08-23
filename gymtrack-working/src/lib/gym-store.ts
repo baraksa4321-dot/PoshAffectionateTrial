@@ -912,8 +912,12 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
     pullSupabaseData(userId, data),
     new Promise<{ success: false; error: string }>((resolve) =>
       window.setTimeout(
-        () => resolve({ success: false, error: "פג הזמן לטעינת הנתונים מ-Supabase" }),
-        8_000,
+        () =>
+          resolve({
+            success: false,
+            error: "Supabase request timed out (network timeout)",
+          }),
+        20_000,
       ),
     ),
   ]);
