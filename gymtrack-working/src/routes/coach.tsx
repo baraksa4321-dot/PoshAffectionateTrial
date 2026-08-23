@@ -131,6 +131,7 @@ export function CoachDashboardPage({
 
   // Exercise Assignment Editor state
   const [selectedExId, setSelectedExId] = useState("");
+  const [exerciseQuery, setExerciseQuery] = useState("");
   const [targetWeight, setTargetWeight] = useState(20);
   const [setsCount, setSetsCount] = useState(3);
   const [repMin, setRepMin] = useState(8);
@@ -725,6 +726,15 @@ export function CoachDashboardPage({
   });
 
   const selectedClientInfo = clients.find((c) => c.client_id === selectedClientId);
+  const filteredExerciseOptions = useMemo(() => {
+    const query = exerciseQuery.trim().toLocaleLowerCase();
+    if (!query) return store.exercises;
+    return store.exercises.filter((exercise) =>
+      [exercise.name, exercise.muscleGroup, exercise.equipment]
+        .filter(Boolean)
+        .some((value) => value.toLocaleLowerCase().includes(query)),
+    );
+  }, [exerciseQuery, store.exercises]);
   const menuFoodResults = searchFoods(store.foods, menuFoodQuery).slice(0, 24);
   const needsPlan = overviewRows.filter((row) => row.details.programs.length === 0);
   const needsExercises = overviewRows.filter(
@@ -1543,6 +1553,15 @@ export function CoachDashboardPage({
                                               <label className="block text-[10px] font-bold text-muted-foreground mb-1">
                                                 בחר תרגיל מספרייה
                                               </label>
+                                               <input
+                                                 type="search"
+                                                 value={exerciseQuery}
+                                                 onChange={(e) => setExerciseQuery(e.target.value)}
+                                                 placeholder="חיפוש לפי שם, שריר או ציוד..."
+                                                 className="mb-1.5 w-full rounded-lg border border-border bg-background px-2.5 py-2 text-xs outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/15"
+                                                 aria-label="חיפוש תרגיל לפי שם, שריר או ציוד"
+                                                 autoComplete="off"
+                                               />
                                               <select
                                                 required
                                                 value={selectedExId}
@@ -1550,12 +1569,21 @@ export function CoachDashboardPage({
                                                 className="w-full rounded-lg border border-border px-2 py-1.5 text-xs outline-none"
                                               >
                                                 <option value="">-- בחר תרגיל --</option>
-                                                {store.exercises.map((e) => (
-                                                  <option key={e.id} value={e.id}>
-                                                    {e.name} ({e.muscleGroup})
-                                                  </option>
-                                                ))}
+                                                 {filteredExerciseOptions.length > 0 ? (
+                                                   filteredExerciseOptions.map((e) => (
+                                                     <option key={e.id} value={e.id}>
+                                                       {e.name} ({e.muscleGroup})
+                                                     </option>
+                                                   ))
+                                                 ) : (
+                                                   <option value="" disabled>
+                                                     לא נמצאו תרגילים
+                                                   </option>
+                                                 )}
                                               </select>
+                                               <p className="mt-1 text-[10px] text-muted-foreground">
+                                                 {filteredExerciseOptions.length} תרגילים נמצאו
+                                               </p>
                                             </div>
 
                                             <div className="grid grid-cols-4 gap-1.5">
