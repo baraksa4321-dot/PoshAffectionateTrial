@@ -76,23 +76,6 @@ export function AppShell({
     return window.localStorage.getItem("gymtrack.night-mode") === "true";
   });
   const managementView = isCoach && (activeMode === "management" || isManagementRoute);
-  const syncNotice =
-    cloudSyncStatus === "offline"
-      ? {
-          text: "אין חיבור לאינטרנט — השינויים נשמרים במכשיר ויסתנכרנו אוטומטית כשהחיבור יחזור.",
-          tone: "border-amber-300/70 bg-amber-50 text-amber-950",
-        }
-      : cloudSyncStatus === "syncing"
-        ? {
-            text: "מסנכרנים את השינויים שלך לענן…",
-            tone: "border-primary/20 bg-primary/5 text-primary",
-          }
-        : cloudSyncStatus === "pending"
-          ? {
-              text: "השינויים נשמרו במכשיר וממתינים לסנכרון.",
-              tone: "border-primary/20 bg-primary/5 text-primary",
-            }
-          : null;
   const SyncIcon = cloudSyncStatus === "offline" ? CloudOff : Cloud;
   const syncIconClass =
     cloudSyncStatus === "offline"
@@ -101,7 +84,7 @@ export function AppShell({
         ? "text-destructive"
         : cloudSyncStatus === "syncing" || cloudSyncStatus === "pending"
           ? "text-primary"
-          : "text-emerald-600";
+          : "text-primary";
   const syncTitle =
     cloudSyncStatus === "offline"
       ? "אין חיבור לאינטרנט — השינויים נשמרים במכשיר"
@@ -343,11 +326,11 @@ export function AppShell({
       dir="rtl"
     >
       <header
-        className="sticky top-0 z-30 border-b border-border/70 bg-background/90 shadow-[0_8px_24px_oklch(0.2_0.03_35_/_0.035)] backdrop-blur-xl"
+        className="app-topbar sticky top-0 z-30 border-b border-border/70 bg-background/90 shadow-[0_8px_24px_oklch(0.2_0.03_35_/_0.035)] backdrop-blur-xl"
         style={{ paddingTop: "max(0.6rem, env(safe-area-inset-top))" }}
       >
         <div
-          className={`mx-auto w-full max-w-2xl px-4 sm:px-6 ${
+          className={`mx-auto w-full max-w-3xl px-4 sm:px-6 ${
             compactHeader ? "pb-2 pt-0.5" : "pb-4 pt-1"
           }`}
         >
@@ -478,28 +461,13 @@ export function AppShell({
       </header>
 
       <main
-        className={`page-enter mx-auto w-full max-w-2xl px-4 pb-8 sm:px-6 ${
+        className={`page-enter mx-auto w-full max-w-3xl px-4 pb-8 sm:px-6 ${
           compactHeader ? "flex flex-col pt-1.5" : "pt-5 sm:pt-7"
         }`}
         style={{
           paddingBottom: "calc(6.5rem + env(safe-area-inset-bottom))",
         }}
       >
-        {user && syncNotice ? (
-          <div
-            role="status"
-            aria-live="polite"
-            className={`mb-4 flex items-start gap-2 rounded-2xl border px-3 py-2.5 text-xs font-semibold leading-relaxed ${syncNotice.tone}`}
-          >
-            <SyncIcon
-              className={`mt-0.5 h-4 w-4 shrink-0 ${syncIconClass} ${
-                cloudSyncStatus === "syncing" ? "animate-pulse" : ""
-              }`}
-              aria-hidden="true"
-            />
-            <span>{syncNotice.text}</span>
-          </div>
-        ) : null}
         {user ? <span className="sr-only">{syncTitle}</span> : null}
         {!authOnly ? children : null}
       </main>
@@ -790,7 +758,7 @@ export function AppShell({
       {!authOnly ? (
         <nav aria-label="ניווט ראשי" className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
           <div
-            className="nav-shell pointer-events-auto mx-auto flex w-full max-w-2xl items-center justify-between border-t bg-background/95 backdrop-blur-xl"
+            className="nav-shell pointer-events-auto mx-auto flex w-full max-w-3xl items-center justify-between border-t bg-background/95 backdrop-blur-xl"
             style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
           >
             {NAV.map(({ to, label, id, icon: Icon, onClick }) => (
@@ -800,7 +768,7 @@ export function AppShell({
                 onClick={onClick}
                 activeOptions={{ exact: to === "/" || to === "/coach" }}
                 data-testid={`link-nav-${id}`}
-                className="group relative flex min-h-[4rem] flex-1 flex-col items-center justify-center gap-1.5 py-2 text-muted-foreground transition-colors data-[status=active]:text-primary hover:text-ink"
+                className="app-nav-link group relative flex min-h-[4rem] flex-1 flex-col items-center justify-center gap-1.5 py-2 text-muted-foreground transition-colors data-[status=active]:text-primary hover:text-ink"
               >
                 <span className="absolute inset-x-0 top-0 h-[2px] bg-primary opacity-0 transition-opacity group-data-[status=active]:opacity-100" />
                 <Icon

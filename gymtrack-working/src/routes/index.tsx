@@ -329,20 +329,20 @@ function Dashboard() {
 
         <Link
           to="/nutrition"
-          className="surface-card flex min-h-[150px] flex-col border-emerald-200/70 bg-emerald-50/45 p-3 text-start transition-colors hover:border-emerald-400"
+          className="home-calorie-card surface-card flex min-h-[150px] flex-col p-3 text-start transition-colors"
         >
           <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] font-bold text-emerald-700">תזונה יומית</span>
-            <Apple className="h-4 w-4 text-emerald-700" />
+            <span className="text-[10px] font-bold text-primary">תזונה יומית</span>
+            <Apple className="h-4 w-4 text-primary" />
           </div>
-          <p className="mt-2 font-display text-2xl font-extrabold leading-none text-emerald-950">
+          <p className="mt-2 font-display text-2xl font-extrabold leading-none text-ink">
             {totalsToday.calories}
-            <span className="ms-1 text-[10px] font-bold text-emerald-800/70">קק״ל</span>
+            <span className="ms-1 text-[10px] font-bold text-primary/75">קק״ל</span>
           </p>
-          <p className="mt-1 text-[10px] text-emerald-900/70">
+          <p className="mt-1 text-[10px] text-muted-foreground">
             מתוך {targetCals} · {Math.max(0, targetCals - totalsToday.calories)} נשארו
           </p>
-          <div className="mt-auto flex items-center justify-between rounded-xl bg-white/70 px-2 py-1.5 text-[10px] font-bold text-emerald-900">
+          <div className="mt-auto flex items-center justify-between rounded-xl bg-background/80 px-2 py-1.5 text-[10px] font-bold text-ink">
             <span>{Math.round(totalsToday.protein)} גרם חלבון</span>
             <ChevronLeft className="h-3.5 w-3.5" />
           </div>
@@ -423,7 +423,7 @@ function Dashboard() {
 
       {/* Check-In Success Banner */}
       {checkInSuccessMsg && (
-        <div className="surface-card p-3.5 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-start font-bold text-xs mt-3">
+        <div className="surface-card mt-3 rounded-2xl border border-primary/25 bg-primary/5 p-3.5 text-start text-xs font-bold text-primary">
           <CheckCircle2 className="me-1 inline-block h-4 w-4 align-[-3px]" aria-hidden="true" />
           {checkInSuccessMsg}
         </div>

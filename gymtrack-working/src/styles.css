@@ -5,9 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * My Routine — pastel fitness product design system
- * Light lilac surfaces, soft pink accents, and confident purple/blue progress cues
- * Pure mobile-first Hebrew / true RTL
+ * My Routine — Current / soft editorial product system
+ * White daytime canvas, measured ink, blush-led actions, and compact rhythm.
+ * The shared variables keep every route in one visual language.
  */
 
 @theme inline {
@@ -55,48 +55,48 @@
 :root {
   --radius: 0.7rem;
 
-  /* Default — warm studio / coral and pistachio */
-  --background: #ffffff;
-  --foreground: oklch(0.25 0.035 35);
-  --surface: oklch(0.995 0.008 78);
-  --surface-2: oklch(0.935 0.035 78);
-  --cream: oklch(0.95 0.045 60);
+  /* Default — Current blush / ivory */
+  --background: #fffdfb;
+  --foreground: #252329;
+  --surface: #ffffff;
+  --surface-2: #f7e5e8;
+  --cream: #fbf2df;
 
   --card: var(--surface);
   --card-foreground: var(--foreground);
   --popover: var(--surface);
   --popover-foreground: var(--foreground);
 
-  --primary: oklch(0.62 0.16 24);
-  --primary-foreground: oklch(0.985 0.01 30);
+  --primary: #d58a9b;
+  --primary-foreground: #ffffff;
 
-  --sage: oklch(0.61 0.12 145);
-  --sage-soft: oklch(0.91 0.065 145);
+  --sage: #8ab29b;
+  --sage-soft: #dceee5;
 
-  --secondary: oklch(0.925 0.045 24);
-  --secondary-foreground: oklch(0.32 0.075 24);
+  --secondary: #f2dce2;
+  --secondary-foreground: #6d3e4c;
 
-  --rose: oklch(0.62 0.16 24);
-  --rose-soft: oklch(0.93 0.06 24);
+  --rose: #b7677b;
+  --rose-soft: #f7e5e8;
 
-  --accent: oklch(0.88 0.1 92);
-  --accent-foreground: oklch(0.28 0.055 55);
+  --accent: #e8c98d;
+  --accent-foreground: #70552a;
 
-  --ink: oklch(0.2 0.035 35);
-  --ink-soft: oklch(0.42 0.035 35);
+  --ink: #252329;
+  --ink-soft: #665f6a;
 
-  --muted: oklch(0.91 0.022 65);
-  --muted-foreground: oklch(0.48 0.032 35);
+  --muted: #f6f0f1;
+  --muted-foreground: #665f6a;
 
-  --destructive: oklch(0.58 0.17 25);
-  --destructive-foreground: oklch(0.99 0.01 25);
+  --destructive: #b85d70;
+  --destructive-foreground: #ffffff;
 
-  --border: oklch(0.86 0.035 60);
-  --input: oklch(0.86 0.035 60);
-  --ring: oklch(0.62 0.16 24);
-  --gradient-start: #b96b7f;
-  --gradient-mid: #d89598;
-  --gradient-end: #e8b7aa;
+  --border: #e9e0e1;
+  --input: #e5d9dd;
+  --ring: #d58a9b;
+  --gradient-start: #d58a9b;
+  --gradient-mid: #e5a6b4;
+  --gradient-end: #f3c7c5;
 }
 
 :root[data-theme="pink"] {
@@ -510,15 +510,12 @@
  */
 :root,
 :root[data-theme] {
-  --foreground: #111111;
-  --ink: #111111;
-  --ink-soft: #333333;
-  --muted-foreground: #444444;
-  --primary-foreground: #111111;
-  --secondary-foreground: #111111;
-  --accent-foreground: #111111;
-  --card-foreground: #111111;
-  --popover-foreground: #111111;
+  --foreground: #252329;
+  --ink: #252329;
+  --ink-soft: #665f6a;
+  --muted-foreground: #665f6a;
+  --card-foreground: #252329;
+  --popover-foreground: #252329;
 }
 
 :root[data-theme="black"] {
@@ -542,17 +539,17 @@
   --gradient-end: #ffffff;
 }
 
-/* The page canvas is always white; selected colors belong to UI surfaces. */
+/* The page canvas stays light; selected colors belong to surfaces and actions. */
 html,
 body,
 #root {
-  background-color: #ffffff !important;
+  background-color: var(--background) !important;
   background-image: none !important;
 }
 
 :root,
 :root[data-theme] {
-  --background: #ffffff;
+  --background: #fffdfb;
 }
 
 /*
@@ -716,10 +713,10 @@ html.night-mode .text-gray-900 {
 .surface-card {
   background-color: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
+  border-radius: 1.25rem;
   box-shadow:
-    0 1px 1px oklch(0.25 0.04 275 / 0.025),
-    0 8px 24px oklch(0.25 0.04 275 / 0.055);
+    0 1px 1px rgb(52 37 47 / 2.5%),
+    0 9px 24px rgb(52 37 47 / 5.5%);
   transition:
     border-color 200ms ease,
     box-shadow 200ms ease,
@@ -762,8 +759,8 @@ html.night-mode .text-gray-900 {
     var(--gradient-end) 100%
   );
   color: #fff;
-  border-radius: var(--radius-2xl);
-  box-shadow: 0 14px 30px oklch(0.2 0.03 35 / 0.16);
+  border-radius: 1.2rem;
+  box-shadow: 0 11px 24px rgb(181 103 123 / 18%);
   position: relative;
   overflow: hidden;
 }
@@ -795,6 +792,17 @@ html.night-mode .text-gray-900 {
   border: 1px solid var(--border);
   border-right: 3px solid var(--primary);
   box-shadow: 0 8px 22px oklch(from var(--primary) l c h / 0.08);
+}
+
+/* The Current home calorie tile is blush-led, never an accidental green tile. */
+.home-calorie-card {
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
+  background: color-mix(in srgb, var(--rose-soft) 42%, var(--surface));
+}
+
+.home-calorie-card:hover {
+  border-color: color-mix(in srgb, var(--primary) 58%, var(--border));
+  background: color-mix(in srgb, var(--rose-soft) 58%, var(--surface));
 }
 
 /* --- Section labels --- */
@@ -833,8 +841,22 @@ html.night-mode .text-gray-900 {
 
 .nav-shell {
   border-color: oklch(from var(--border) l c h / 0.82);
-  background: oklch(from var(--background) l c h / 0.86);
-  box-shadow: 0 -8px 30px oklch(0.2 0.03 35 / 0.06);
+  background: color-mix(in srgb, var(--background) 94%, transparent);
+  box-shadow: 0 -9px 25px rgb(52 37 47 / 6%);
+}
+
+.app-topbar {
+  background: color-mix(in srgb, var(--background) 92%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.app-nav-link {
+  border-radius: 0.75rem;
+}
+
+.app-nav-link:hover {
+  background: color-mix(in srgb, var(--rose-soft) 44%, transparent);
 }
 
 @media (min-width: 768px) {

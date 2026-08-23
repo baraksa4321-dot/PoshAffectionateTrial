@@ -168,7 +168,7 @@ export function SectionHeader({
   return (
     <div
       className={cn(
-        "mb-4 flex items-end justify-between gap-4 border-b border-border/50 pb-2.5",
+        "mb-3.5 flex items-end justify-between gap-4",
         className,
       )}
     >
@@ -210,7 +210,7 @@ export function StatTile({
   return (
     <div
       className={cn(
-        "surface-card flex min-h-[106px] flex-col gap-2 px-3.5 py-3.5 text-start",
+        "surface-card flex min-h-[92px] flex-col gap-2 px-3.5 py-3.5 text-start shadow-none",
         tone === "sage" && "border-t-2 border-t-sage bg-sage-soft/40",
         tone === "rose" && "border-t-2 border-t-rose bg-rose-soft/45",
         tone === "cream" && "border-t-2 border-t-accent bg-cream/55",

@@ -140,3 +140,17 @@ mtime_ms = 1787471464477
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/2b1dbb1c-8aab-410b-8552-8acf0c4621e8/355fe09f-a859-4332-bf73-4d3ece1bd5f7"
 storage_version_token = "1787471483560074"
 content_type = "image/png"
+
+[[outputs]]
+id = "CW7ctDGUfwDwOw82DXPU2"
+uri = "file://attached_assets/logo-variations/myroutine-wordmark-02.png"
+type = "image"
+title = "MYroutine — וריאציית לוגו 02"
+description = "וורדמארק קטן, שחור ונקי בלבד, עם דגש טיפוגרפי עדין על MY."
+logical_id = "65c211a0-f8af-48a9-8576-a0ae0caf1fa0"
+content_hash = "sha256:334e9f9ba95a1c79e735a3c54cceef1b017abccdca0d05ff1673ef4306ac8ab3"
+size = 22824
+mtime_ms = 1787471558525
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/65c211a0-f8af-48a9-8576-a0ae0caf1fa0/09c81f18-5dab-4b4f-90fc-c3e3c7f34144"
+storage_version_token = "1787471629205502"
+content_type = "image/png"

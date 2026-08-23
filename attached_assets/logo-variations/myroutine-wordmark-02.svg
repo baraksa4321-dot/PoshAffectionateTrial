@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="700" viewBox="0 0 1400 700" role="img" aria-labelledby="title desc">
+  <title id="title">MYroutine wordmark — variation 02</title>
+  <desc id="desc">A small, black-only editorial wordmark for MYroutine.</desc>
+  <rect width="1400" height="700" fill="#ffffff"/>
+  <g transform="translate(700 350)" text-anchor="middle" fill="#151515" font-family="Arial, Helvetica, sans-serif">
+    <text y="26" font-size="86" font-weight="700" letter-spacing="-5">
+      <tspan>MY</tspan><tspan font-weight="400" letter-spacing="-3">routine</tspan>
+    </text>
+    <rect x="-133" y="62" width="266" height="1" fill="#151515"/>
+  </g>
+</svg>
