@@ -156,6 +156,7 @@ export function CoachDashboardPage({
   const [restSec, setRestSec] = useState(90);
   const [warmupEnabled, setWarmupEnabled] = useState(false);
   const [warmupSetsCount, setWarmupSetsCount] = useState(1);
+  const [warmupWeight, setWarmupWeight] = useState(10);
   const [warmupReps, setWarmupReps] = useState(10);
   const [warmupRepsMax, setWarmupRepsMax] = useState(12);
   const [techNotes, setTechniqueNotes] = useState("");
@@ -655,7 +656,7 @@ export function CoachDashboardPage({
         ? {
             warmups: Array.from({ length: warmupSetsCount }, (_, i) => ({
               id: uid(),
-              weight: 0,
+              weight: warmupWeight,
               reps: warmupReps,
               repsMax: warmupRepsMax,
             })),
@@ -2042,6 +2043,19 @@ export function CoachDashboardPage({
                                               <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border/60 bg-background p-3">
                                                 {warmupEnabled ? (
                                                   <>
+                                                    <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                      משקל חימום (ק״ג)
+                                                      <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="0.5"
+                                                        value={warmupWeight}
+                                                        onChange={(event) =>
+                                                          setWarmupWeight(Math.max(0, Number(event.target.value)))
+                                                        }
+                                                        className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
+                                                      />
+                                                    </label>
                                                     <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                       מספר סטי חימום
                                                       <input

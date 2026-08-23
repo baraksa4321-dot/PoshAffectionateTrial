@@ -140,6 +140,8 @@ function Session() {
         weight: w.weight,
         done: false,
         warmup: true,
+        targetReps: w.reps,
+        ...(w.repsMax !== undefined ? { targetRepMax: w.repsMax } : {}),
       }));
       const working: LoggedSet[] = Array.from({ length: item.sets }, (_, i) => {
         const dropSet = item.workingSets?.[i]?.dropSet ?? item.dropSetConfig?.enabled;

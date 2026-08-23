@@ -15,6 +15,7 @@ export type DropSetConfig = {
   drops: number;
   repsMin?: number;
   repsMax?: number;
+  weightReductionPercent?: number;
   percentReduction?: number; // e.g. 20%
 };
 
@@ -80,6 +81,8 @@ export type WorkoutItem = {
   rpe?: number | null;
   warmups?: WarmupSet[];
   supersetId?: string;
+  supersetPartnerId?: string;
+  supersetOrder?: 1 | 2;
   supersetRepsMin?: number;
   supersetRepsMax?: number;
 };
