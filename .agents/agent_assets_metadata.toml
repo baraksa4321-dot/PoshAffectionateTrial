@@ -117,14 +117,14 @@ content_type = "text/plain"
 id = "2OTS-n-U2k2bwnyr3AACI"
 uri = "file://GymTrack-updated.zip"
 type = "unspecified"
-title = "GymTrack updated project"
-description = "Latest GymTrack / My Routine project bundle, rebuilt after the SVG loading screen and checklist updates."
+title = "GymTrack updated ZIP"
+description = "The latest GymTrack / My Routine project archive, rebuilt and verified successfully."
 logical_id = "324ce929-850e-4872-85b9-f535a48312c9"
 content_hash = "sha256:b60a5fa2de0da95875004b0cb7d5fc6d390f5d47f22987106a2abde342c8471d"
 size = 433843
-mtime_ms = 1787474466922
-storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/324ce929-850e-4872-85b9-f535a48312c9/a787e3aa-57d4-4cc1-8437-290d6da3ecb8"
-storage_version_token = "1787474503248913"
+mtime_ms = 1787474633504
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/324ce929-850e-4872-85b9-f535a48312c9/03f8caf6-dd10-43b7-8f85-aa4dc2c7c8ad"
+storage_version_token = "1787474639043291"
 content_type = "application/octet-stream"
 
 [[outputs]]
