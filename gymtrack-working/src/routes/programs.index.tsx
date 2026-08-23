@@ -81,6 +81,41 @@ const WORKOUT_PLAYLISTS = [
     href: "https://music.apple.com/us/playlist/jazz-in-spatial-audio/pl.efbd24628ff04ff3b5e416a6e237d753",
     className: "bg-[#eef6f4] text-[#28766a] hover:bg-[#dceeea]",
   },
+  {
+    label: "Spotify · גלגל״צ",
+    href: "https://open.spotify.com/playlist/37i9dQZF1E4v4STfPGOGsm",
+    className: "bg-[#f0f0f0] text-[#222] hover:bg-[#e4e4e4]",
+  },
+  {
+    label: "Spotify · גלגל״צ LIVE",
+    href: "https://open.spotify.com/playlist/2SXRvfqiMBXFkaMi03npLZ",
+    className: "bg-[#f0f0f0] text-[#222] hover:bg-[#e4e4e4]",
+  },
+  {
+    label: "Spotify · Top 50 ישראל",
+    href: "https://open.spotify.com/playlist/37i9dQZEVXbJ6IpvItkve3",
+    className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]",
+  },
+  {
+    label: "Spotify · חדש בישראל",
+    href: "https://open.spotify.com/playlist/5kvO5S3mESUO2DwnGobnBt",
+    className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]",
+  },
+  {
+    label: "Apple · להיטים ישראליים",
+    href: "https://music.apple.com/ca/playlist/israeli-hits/pl.b4c77d8c6cc74426ad3d591307ba7e1a",
+    className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]",
+  },
+  {
+    label: "Apple · אושר כהן",
+    href: "https://music.apple.com/us/playlist/osher-cohen-essentials/pl.ca23dfc9c37346719d75f0909f80738a",
+    className: "bg-[#fff4df] text-[#a25b00] hover:bg-[#ffeac2]",
+  },
+  {
+    label: "Spotify · אושר כהן",
+    href: "https://open.spotify.com/artist/2LUB7PhWK2j2obgSTeD3GN",
+    className: "bg-[#fff4df] text-[#a25b00] hover:bg-[#ffeac2]",
+  },
 ] as const;
 
 function playlistStyle(label: string) {
