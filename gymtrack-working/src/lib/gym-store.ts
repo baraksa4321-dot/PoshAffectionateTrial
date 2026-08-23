@@ -1629,8 +1629,36 @@ export function logPlannedMeal(date: string, plannedMealId: string) {
 
 export function saveRecipe(name: string, foods: MealFood[]) {
   const recipes = data.recipes ?? [];
+  const normalizedName = name.trim().toLocaleLowerCase();
+  if (recipes.some((recipe) => recipe.name.trim().toLocaleLowerCase() === normalizedName)) {
+    return false;
+  }
   const recipe: SavedRecipe = { id: uid(), name: name.trim() || "מתכון שמור", foods };
   set({ ...data, recipes: [recipe, ...recipes] });
+  return true;
+}
+
+export function renameRecipe(id: string, name: string) {
+  const nextName = name.trim();
+  if (!nextName) return false;
+  const recipes = data.recipes ?? [];
+  if (
+    recipes.some(
+      (recipe) =>
+        recipe.id !== id && recipe.name.trim().toLocaleLowerCase() === nextName.toLocaleLowerCase(),
+    )
+  ) {
+    return false;
+  }
+  set({
+    ...data,
+    recipes: recipes.map((recipe) => (recipe.id === id ? { ...recipe, name: nextName } : recipe)),
+  });
+  return true;
+}
+
+export function deleteRecipe(id: string) {
+  set({ ...data, recipes: (data.recipes ?? []).filter((recipe) => recipe.id !== id) });
 }
 
 /* ---------- nutrition: days & meals ---------- */

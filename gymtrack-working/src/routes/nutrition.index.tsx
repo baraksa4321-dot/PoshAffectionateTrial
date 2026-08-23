@@ -33,6 +33,7 @@ import {
   addMeal,
   addMealWithFoods,
   dayTotals,
+  deleteRecipe,
   findFoodReplacements,
   foodTotals,
   logPlannedMeal,
@@ -40,6 +41,8 @@ import {
   nutritionDay,
   removeMealFood,
   renameMeal,
+  renameRecipe,
+  saveRecipe,
   saveNutritionTargets,
   searchFoods,
   todayKey,
@@ -127,6 +130,9 @@ function NutritionLog() {
   const [recipeQuery, setRecipeQuery] = useState("");
   const [recipeServings, setRecipeServings] = useState(1);
   const [recipeMealId, setRecipeMealId] = useState("");
+  const [showSavedRecipesOnly, setShowSavedRecipesOnly] = useState(false);
+  const [savedRecipeDrafts, setSavedRecipeDrafts] = useState<Record<string, string>>({});
+  const [recipeNotice, setRecipeNotice] = useState("");
   const day = nutritionDay(gym, date);
   const totals = dayTotals(day);
   const { nutritionTargets: targets } = gym;
@@ -153,6 +159,7 @@ function NutritionLog() {
             .includes(query)),
     );
   }, [recipeCategory, recipeQuery]);
+  const savedRecipes = gym.recipes ?? [];
 
   const addSelectedRecipeToLog = () => {
     if (!selectedRecipe) return;
@@ -164,6 +171,15 @@ function NutritionLog() {
     }
     setSelectedRecipe(null);
     setRecipeServings(1);
+  };
+
+  const saveSelectedRecipe = () => {
+    if (!selectedRecipe) return;
+    const saved = saveRecipe(
+      selectedRecipe.name,
+      [recipeAsMealFood(selectedRecipe, recipeServings)],
+    );
+    setRecipeNotice(saved ? "המתכון נשמר בספרייה האישית." : "המתכון הזה כבר שמור אצלך.");
   };
 
   // Smart Food Suggestions based on remaining macros
@@ -376,6 +392,15 @@ function NutritionLog() {
               />
             </div>
             <div className="flex gap-1.5 overflow-x-auto pb-2">
+              <button
+                type="button"
+                onClick={() => setShowSavedRecipesOnly((current) => !current)}
+                className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold ${
+                  showSavedRecipesOnly ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                }`}
+              >
+                רק מהתפריט שלי
+              </button>
               {(
                 ["הכל", "עתיר חלבון", "דל קלוריות", "דל שומן", "ארוחה קלה", "מתוק מאוזן"] as const
               ).map(
@@ -395,7 +420,7 @@ function NutritionLog() {
                 ),
               )}
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            {!showSavedRecipesOnly ? <div className="grid grid-cols-2 gap-2">
               {filteredRecipes.map((recipe) => (
                 <button
                   key={recipe.id}
@@ -413,8 +438,58 @@ function NutritionLog() {
                   </span>
                 </button>
               ))}
-            </div>
-            {filteredRecipes.length === 0 ? (
+            </div> : null}
+            {showSavedRecipesOnly ? (
+              <div className="space-y-2">
+                {savedRecipes.map((recipe) => (
+                  <div key={recipe.id} className="rounded-xl border border-border/60 bg-white/60 p-2.5">
+                    <div className="flex items-center gap-2">
+                      <input
+                        value={savedRecipeDrafts[recipe.id] ?? recipe.name}
+                        onChange={(event) =>
+                          setSavedRecipeDrafts((current) => ({
+                            ...current,
+                            [recipe.id]: event.target.value,
+                          }))
+                        }
+                        className="min-w-0 flex-1 bg-transparent text-xs font-bold text-ink outline-none"
+                        aria-label={`שם מתכון ${recipe.name}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const ok = renameRecipe(
+                            recipe.id,
+                            savedRecipeDrafts[recipe.id] ?? recipe.name,
+                          );
+                          setRecipeNotice(ok ? "שם המתכון עודכן." : "לא ניתן להשתמש בשם כפול או ריק.");
+                        }}
+                        className="rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary"
+                      >
+                        שמירה
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteRecipe(recipe.id)}
+                        className="rounded-lg p-1 text-muted-foreground hover:text-destructive"
+                        aria-label={`מחיקת מתכון ${recipe.name}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      {recipe.foods.length} רכיבים · {Math.round(foodTotals(recipe.foods).calories)} קל׳
+                    </p>
+                  </div>
+                ))}
+                {savedRecipes.length === 0 ? (
+                  <p className="py-3 text-center text-[11px] font-semibold text-muted-foreground">
+                    עדיין אין מתכונים אישיים שמורים.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+            {!showSavedRecipesOnly && filteredRecipes.length === 0 ? (
               <p className="py-3 text-center text-[11px] font-semibold text-muted-foreground">
                 לא נמצאו מתכונים מתאימים.
               </p>
@@ -505,6 +580,12 @@ function NutritionLog() {
               <PrimaryButton className="mt-3" onClick={addSelectedRecipeToLog}>
                 {recipeMealId ? "הוסיפי לארוחה" : "תעדי כארוחה"}
               </PrimaryButton>
+              <SecondaryButton className="mt-2 w-full" onClick={saveSelectedRecipe}>
+                שמרי בספרייה האישית
+              </SecondaryButton>
+              {recipeNotice ? (
+                <p className="mt-2 text-center text-[11px] font-semibold text-primary">{recipeNotice}</p>
+              ) : null}
             </div>
           </div>
         </Overlay>
