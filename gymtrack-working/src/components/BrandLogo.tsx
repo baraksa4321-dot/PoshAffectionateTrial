@@ -5,7 +5,7 @@ export function BrandLogo({ compact = false }: { compact?: boolean }) {
   return (
     <Link
       to="/"
-      aria-label="My Routine — דף הבית"
+      aria-label="MY routine — דף הבית"
       className={`inline-flex items-center gap-2 text-start transition-opacity hover:opacity-80 ${
         compact ? "" : "group"
       }`}
@@ -16,12 +16,8 @@ export function BrandLogo({ compact = false }: { compact?: boolean }) {
         </span>
       ) : null}
       <span className={`font-display font-extrabold tracking-tight text-ink ${compact ? "text-base" : "text-[17px]"}`}>
-        My Routine
-        {!compact ? (
-          <small className="mt-0.5 block text-[9px] font-semibold tracking-[0.11em] text-muted-foreground">
-            הגוף שלך. הקצב שלך.
-          </small>
-        ) : null}
+        <span className="font-black">MY</span>{" "}
+        <span className="font-extrabold">routine</span>
       </span>
     </Link>
   );

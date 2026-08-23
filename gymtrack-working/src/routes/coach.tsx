@@ -529,7 +529,7 @@ export function CoachDashboardPage({
       );
 
       if (lookupErr || !lookupRes || lookupRes.length === 0) {
-        throw new Error("משתמש לא נמצא. יש לוודא שהמתאמן נרשם ל-My Routine בכתובת זו.");
+        throw new Error("משתמש לא נמצא. יש לוודא שהמתאמן נרשם ל־MY routine בכתובת זו.");
       }
 
       const foundClientId = lookupRes[0].client_id;

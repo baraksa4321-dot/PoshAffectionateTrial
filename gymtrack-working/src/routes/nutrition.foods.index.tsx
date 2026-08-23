@@ -9,7 +9,7 @@ import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/nutrition/foods/")({
   head: () => ({
-    meta: [{ title: "ספריית מאכלים — My Routine" }],
+    meta: [{ title: "ספריית מאכלים — MY routine" }],
   }),
   component: FoodLibrary,
 });

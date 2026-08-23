@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * My Routine — Current / soft editorial product system
+ * MY routine — Current / soft editorial product system
  * White daytime canvas, measured ink, blush-led actions, and compact rhythm.
  * The shared variables keep every route in one visual language.
  */
@@ -1778,6 +1778,67 @@ html.night-mode .nav-shell {
   animation: loading-dumbbell-motion 1.8s ease-in-out infinite;
 }
 
+.loading-food-shell {
+  fill: color-mix(in srgb, var(--surface) 72%, var(--primary));
+  stroke: var(--primary);
+  stroke-linejoin: round;
+  stroke-width: 2.7;
+}
+
+.loading-food-fill {
+  fill: var(--primary);
+  opacity: 0.78;
+  stroke: none;
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: loading-dumbbell-fill 2.5s ease-in-out infinite;
+}
+
+.loading-food-detail {
+  fill: none;
+  stroke: var(--ink);
+  stroke-linecap: round;
+  stroke-width: 2.4;
+  opacity: 0.72;
+}
+
+.loading-food-pit,
+.loading-food-yolk {
+  fill: var(--accent);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.loading-food-leaf {
+  fill: var(--sage);
+  stroke: var(--ink);
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+.loading-growth-shell {
+  fill: color-mix(in srgb, var(--surface) 72%, var(--rose));
+  stroke: var(--rose);
+  stroke-linejoin: round;
+  stroke-width: 2.7;
+}
+
+.loading-growth-fill {
+  fill: var(--rose);
+  opacity: 0.8;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: loading-growth-fill 2.8s ease-in-out infinite;
+}
+
+.loading-growth-detail {
+  fill: none;
+  stroke: var(--ink);
+  stroke-linecap: round;
+  stroke-width: 2.3;
+  opacity: 0.72;
+}
+
 .loading-food-generic-shell {
   fill: color-mix(in srgb, currentColor 20%, var(--surface));
   stroke: currentColor;
@@ -2028,6 +2089,23 @@ html.night-mode .nav-shell {
 /* --- Divider --- */
 .hairline {
   border-color: var(--border);
+}
+
+/* All ordinary copy stays black across the selectable palettes. */
+:root,
+:root[data-theme] {
+  --foreground: #111111;
+  --ink: #111111;
+  --ink-soft: #111111;
+  --muted-foreground: #111111;
+  --secondary-foreground: #111111;
+  --accent-foreground: #111111;
+  --card-foreground: #111111;
+  --popover-foreground: #111111;
+}
+
+body {
+  color: #111111;
 }
 
 /* Keep legacy utility colors inside the approved blush / ivory palette. */

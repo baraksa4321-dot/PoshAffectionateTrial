@@ -64,7 +64,7 @@ import {
 } from "@/lib/gym-types";
 
 export const Route = createFileRoute("/programs/$programId/$dayId")({
-  head: () => ({ meta: [{ title: "עורך יום אימון — My Routine" }] }),
+  head: () => ({ meta: [{ title: "עורך יום אימון — MY routine" }] }),
   component: DayBuilder,
 });
 

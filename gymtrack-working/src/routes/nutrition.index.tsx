@@ -51,7 +51,7 @@ import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/nutrition/")({
   head: () => ({
-    meta: [{ title: "יומן תזונה — My Routine" }],
+    meta: [{ title: "יומן תזונה — MY routine" }],
   }),
   component: NutritionLog,
 });

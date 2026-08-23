@@ -238,7 +238,67 @@ const LOADING_FOOD_ILLUSTRATIONS = [
 ] as const;
 
 function LoadingIllustration({ variant }: { variant: number }) {
-  const shape = variant % 36;
+  const activeShape = variant % 8;
+  return (
+    <div className="loading-micro-stage" aria-hidden="true">
+      <svg className="loading-dumbbell-svg loading-simple-illustration" viewBox="0 0 150 104" role="presentation">
+        {activeShape === 0 ? (
+          <g className="loading-dumbbell-motion">
+            <ellipse className="loading-dumbbell-shadow" cx="75" cy="82" rx="48" ry="5" />
+            <path className="loading-dumbbell-bar" d="M37 43h76v8H37z" />
+            <path className="loading-dumbbell-grip" d="M57 39h36v16H57z" />
+            <rect className="loading-dumbbell-plate" x="17" y="20" width="25" height="54" rx="6" />
+            <rect className="loading-dumbbell-plate" x="108" y="20" width="25" height="54" rx="6" />
+            <path className="loading-dumbbell-cap" d="M11 30h7v34h-7zM133 30h7v34h-7z" />
+          </g>
+        ) : activeShape === 1 ? (
+          <g className="loading-growth-motion">
+            <path className="loading-growth-shell" d="M44 78c-5-16 3-30 19-35-1-15 9-27 23-27 14 1 23 13 21 27 14 2 23 14 18 27-5 15-24 23-47 23-17 0-29-5-34-15z" />
+            <path className="loading-growth-fill" d="M53 75c-3-11 4-21 17-25-1-10 7-18 15-18 9 1 15 9 13 18 10 2 16 10 12 19-4 10-19 16-35 16-11 0-19-3-22-10z" />
+            <path className="loading-growth-detail" d="M78 42c-4 8-4 17 1 25M91 40c-2 8 1 15 8 20" />
+          </g>
+        ) : activeShape === 2 ? (
+          <g className="loading-growth-motion">
+            <path className="loading-growth-shell" d="M75 87c-17-2-28-12-27-27 1-11 10-19 20-21 1-14 12-24 25-23 13 2 21 13 19 26 12 4 18 15 14 26-5 15-24 22-51 19z" />
+            <path className="loading-growth-fill" d="M75 79c-11-2-19-9-18-18 1-7 7-12 15-14 0-10 8-16 16-15 9 1 14 9 13 18 8 3 12 10 9 17-4 10-17 14-35 12z" />
+            <path className="loading-growth-detail" d="M54 54c8-4 15-3 21 2M91 47c-3 7-1 13 4 18" />
+          </g>
+        ) : activeShape === 3 ? (
+          <g className="loading-food-motion">
+            <path className="loading-food-shell" d="M74 13c26 0 40 27 36 49-4 22-19 35-36 35S42 84 38 62C34 40 48 13 74 13z" />
+            <path className="loading-food-fill" d="M74 21c20 0 30 21 27 39-3 18-14 28-27 28S50 78 47 60c-3-18 7-39 27-39z" />
+            <circle className="loading-food-pit" cx="74" cy="67" r="12" />
+          </g>
+        ) : activeShape === 4 ? (
+          <g className="loading-food-motion">
+            <path className="loading-food-shell" d="M75 18c20 0 31 15 31 35 0 21-12 39-31 39S44 74 44 53c0-20 11-35 31-35z" />
+            <path className="loading-food-fill" d="M75 27c14 0 22 11 22 27 0 15-8 28-22 28S53 69 53 54c0-16 8-27 22-27z" />
+            <path className="loading-food-detail" d="M67 31c-4 8-5 16-3 23M83 31c4 8 5 16 3 23" />
+          </g>
+        ) : activeShape === 5 ? (
+          <g className="loading-food-motion">
+            <path className="loading-food-shell" d="M77 16c24 0 37 20 32 46-4 21-18 33-37 33-21 0-35-13-38-33-4-26 16-46 43-46z" />
+            <path className="loading-food-fill" d="M77 25c16 0 24 14 21 31-3 15-12 25-24 25-14 0-23-10-25-25-2-17 11-31 28-31z" />
+            <circle className="loading-food-yolk" cx="75" cy="57" r="12" />
+          </g>
+        ) : activeShape === 6 ? (
+          <g className="loading-food-motion">
+            <path className="loading-food-shell" d="M75 24c24-15 47 5 41 33-4 22-20 34-41 34S38 79 34 57c-5-28 17-48 41-33z" />
+            <path className="loading-food-fill" d="M75 31c18-11 34 4 29 26-3 17-15 26-29 26S50 74 47 57c-4-22 10-37 28-26z" />
+            <path className="loading-food-leaf" d="M75 28c-7-8-2-14 6-17-1 8 2 11 9 12-5 6-10 7-15 5z" />
+          </g>
+        ) : (
+          <g className="loading-food-motion">
+            <path className="loading-food-shell" d="M75 18c8 0 14 6 14 14 9-2 16 4 16 13 9 2 14 10 10 19-3 8-10 12-19 11-4 12-11 18-21 18s-17-6-21-18c-9 1-16-3-19-11-4-9 1-17 10-19 0-9 7-15 16-13 0-8 6-14 14-14z" />
+            <path className="loading-food-fill" d="M75 28c4 0 7 4 7 9 7-2 13 3 12 9 7 1 10 7 7 12-2 5-7 7-14 6-2 8-6 11-12 11s-10-3-12-11c-7 1-12-1-14-6-3-5 0-11 7-12-1-6 5-11 12-9 0-5 3-9 7-9z" />
+            <path className="loading-food-detail" d="M75 37v35M57 51l11 6M93 51l-11 6" />
+          </g>
+        )}
+      </svg>
+    </div>
+  );
+
+  const shape = variant % 8;
   return (
     <div className="loading-micro-stage" aria-hidden="true">
       <svg className="loading-dumbbell-svg" viewBox="0 0 150 104" role="presentation">
@@ -394,7 +454,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "viewport",
         content: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1",
       },
-      { title: "My Routine — אימונים ותזונה" },
+      { title: "MY routine — אימונים ותזונה" },
       {
         name: "description",
         content: "מעקב אימונים, תזונה, תרגילים ושיאים אישיים בעברית.",
@@ -402,16 +462,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "theme-color", content: "#567765" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "My Routine" },
+      { name: "apple-mobile-web-app-title", content: "MY routine" },
       { property: "og:type", content: "website" },
-      { property: "og:title", content: "My Routine — אימונים ותזונה" },
-      { property: "og:site_name", content: "My Routine" },
+      { property: "og:title", content: "MY routine — אימונים ותזונה" },
+      { property: "og:site_name", content: "MY routine" },
       {
         property: "og:description",
         content: "האימונים, התזונה והשגרה שלך במקום אחד.",
       },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "My Routine — אימונים ותזונה" },
+      { name: "twitter:title", content: "MY routine — אימונים ותזונה" },
     ],
     links: [
       { rel: "manifest", href: "/manifest.json" },
@@ -477,10 +537,10 @@ function RootContent() {
     document.documentElement.lang = "he";
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
-    setLoadingVariant(Math.floor(Math.random() * 36));
+    setLoadingVariant(Math.floor(Math.random() * 8));
     setLoadingMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
     const illustrationTimer = window.setInterval(() => {
-      setLoadingVariant((current) => (current + 1) % 36);
+      setLoadingVariant((current) => (current + 1) % 8);
     }, 2400);
     const messageTimer = window.setInterval(() => {
       setLoadingMessageIndex((current) => (current + 1) % LOADING_MESSAGES.length);
@@ -502,7 +562,7 @@ function RootContent() {
             className="loading-brand"
             role="status"
             aria-live="polite"
-            aria-label="My Routine נטען"
+            aria-label="MY routine נטען"
           >
             <LoadingIllustration variant={loadingVariant} />
             <p key={loadingMessageIndex} className="loading-witty-message">

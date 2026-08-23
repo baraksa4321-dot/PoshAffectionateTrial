@@ -26,7 +26,7 @@ import { createProgram, deleteProgram, duplicateProgram, useGym } from "@/lib/gy
 import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/programs/")({
-  head: () => ({ meta: [{ title: "תוכניות אימון — My Routine" }] }),
+  head: () => ({ meta: [{ title: "תוכניות אימון — MY routine" }] }),
   component: ProgramsPage,
 });
 

@@ -55,9 +55,9 @@ const DEFAULT_CARDIO_TYPE = CARDIO_TYPES[0] ?? "הליכה";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "לוח בקרה — My Routine" },
+      { title: "לוח בקרה — MY routine" },
       { name: "description", content: "מעקב אימונים, משקל גוף ותזונה יומית." },
-      { property: "og:title", content: "לוח בקרה — My Routine" },
+      { property: "og:title", content: "לוח בקרה — MY routine" },
     ],
   }),
   component: Dashboard,

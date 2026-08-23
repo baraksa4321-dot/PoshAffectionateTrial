@@ -19,7 +19,7 @@ type FoodSearch = {
 
 export const Route = createFileRoute("/nutrition/foods/$foodId")({
   head: () => ({
-    meta: [{ title: "פרטי מאכל — My Routine" }],
+    meta: [{ title: "פרטי מאכל — MY routine" }],
   }),
   validateSearch: (search: Record<string, unknown>): FoodSearch => ({
     mealDate: typeof search.mealDate === "string" ? search.mealDate : undefined,
