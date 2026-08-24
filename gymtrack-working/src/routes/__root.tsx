@@ -1080,8 +1080,9 @@ function RootContent() {
   const { queryClient } = Route.useRouteContext();
   const authStatus = useAuthStatus();
   const { userProfile } = useGym();
-  const [loadingVariant, setLoadingVariant] = useState(0);
-  const [loadingMessageIndex, setLoadingMessageIndex] = useState(1 % LOADING_MESSAGES.length);
+  const [loadingCycle, setLoadingCycle] = useState(0);
+  const loadingVariant = loadingCycle % SIMPLE_LOADING_ILLUSTRATIONS.length;
+  const loadingMessageIndex = loadingCycle % LOADING_MESSAGES.length;
   const profileHydrationStatus = useProfileHydrationStatus();
   const profileHydrationError = useProfileHydrationError();
   const hasProfileHydrationError =
@@ -1105,36 +1106,20 @@ function RootContent() {
       });
     }
     try {
-      const storageKey = "my-routine-loading-illustration";
-      const previousVariant = Number(window.localStorage.getItem(storageKey));
-      const nextVariant =
-        Number.isInteger(previousVariant) && previousVariant >= 0
-          ? (previousVariant + 1) % SIMPLE_LOADING_ILLUSTRATIONS.length
-          : 0;
-      window.localStorage.setItem(storageKey, String(nextVariant));
-      setLoadingVariant(nextVariant);
+      const storageKey = "my-routine-loading-cycle";
+      const previousCycle = Number(window.localStorage.getItem(storageKey));
+      const nextCycle =
+        Number.isInteger(previousCycle) && previousCycle >= 0 ? previousCycle + 1 : 1;
+      window.localStorage.setItem(storageKey, String(nextCycle));
+      setLoadingCycle(nextCycle);
     } catch {
-      setLoadingVariant(0);
-    }
-    try {
-      const messageStorageKey = "my-routine-loading-message";
-      const previousMessage = Number(window.localStorage.getItem(messageStorageKey));
-      const nextMessage =
-        Number.isInteger(previousMessage) &&
-        previousMessage >= 0 &&
-        previousMessage < LOADING_MESSAGES.length
-          ? (previousMessage + 1) % LOADING_MESSAGES.length
-          : 0;
-      window.localStorage.setItem(messageStorageKey, String(nextMessage));
-      setLoadingMessageIndex(nextMessage);
-    } catch {
-      setLoadingMessageIndex(0);
+      setLoadingCycle(1);
     }
     const illustrationTimer = window.setInterval(() => {
-      setLoadingVariant((current) => (current + 1) % SIMPLE_LOADING_ILLUSTRATIONS.length);
+      setLoadingCycle((current) => current + 1);
     }, 2400);
     const messageTimer = window.setInterval(() => {
-      setLoadingMessageIndex((current) => (current + 1) % LOADING_MESSAGES.length);
+      setLoadingCycle((current) => current + 1);
     }, 2400);
     return () => {
       window.clearInterval(illustrationTimer);
