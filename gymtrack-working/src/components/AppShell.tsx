@@ -297,7 +297,7 @@ export function AppShell({
   };
 
   const handlePasswordReset = async () => {
-    const normalizedEmail = email.trim();
+    const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
       setErrorMsg("יש להזין כתובת אימייל כדי לקבל קישור לאיפוס סיסמה.");
       return;
@@ -311,7 +311,8 @@ export function AppShell({
     setErrorMsg("");
     setSuccessMsg("");
     try {
-      const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
+      const redirectTo =
+        typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
       const { error } = await supabase.auth.resetPasswordForEmail(
         normalizedEmail,
         redirectTo ? { redirectTo } : {},

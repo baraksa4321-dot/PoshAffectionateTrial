@@ -14,9 +14,23 @@ function ResetPassword() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    void supabase.auth.getSession().then(({ data }) => {
-      setIsRecoverySession(Boolean(data.session));
+    let mounted = true;
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+      if (event === "PASSWORD_RECOVERY" || session) {
+        setIsRecoverySession(true);
+      }
     });
+
+    void supabase.auth.getSession().then(({ data, error }) => {
+      if (!mounted) return;
+      setIsRecoverySession(!error && Boolean(data.session));
+    });
+
+    return () => {
+      mounted = false;
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   const handleSubmit = async (event: React.FormEvent) => {
