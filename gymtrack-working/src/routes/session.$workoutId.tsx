@@ -237,26 +237,26 @@ function Session() {
 
   const nextSmartTimerPosition = useCallback(
     (position: SmartTimerPosition): SmartTimerPosition | null => {
-    const currentEntry = entries[position.exerciseIndex];
-    const totalSets =
-      currentEntry?.sets.filter((set) => !set.warmup).length ??
-      workout?.items[position.exerciseIndex]?.sets ??
-      0;
-    if (position.setNumber < totalSets) {
-      return { ...position, setNumber: position.setNumber + 1 };
-    }
-
-    for (
-      let exerciseIndex = position.exerciseIndex + 1;
-      exerciseIndex < entries.length;
-      exerciseIndex += 1
-    ) {
-      const nextEntry = entries[exerciseIndex];
-      if (nextEntry?.sets.some((set) => !set.warmup)) {
-        return { exerciseIndex, setNumber: 1 };
+      const currentEntry = entries[position.exerciseIndex];
+      const totalSets =
+        currentEntry?.sets.filter((set) => !set.warmup).length ??
+        workout?.items[position.exerciseIndex]?.sets ??
+        0;
+      if (position.setNumber < totalSets) {
+        return { ...position, setNumber: position.setNumber + 1 };
       }
-    }
-    return null;
+
+      for (
+        let exerciseIndex = position.exerciseIndex + 1;
+        exerciseIndex < entries.length;
+        exerciseIndex += 1
+      ) {
+        const nextEntry = entries[exerciseIndex];
+        if (nextEntry?.sets.some((set) => !set.warmup)) {
+          return { exerciseIndex, setNumber: 1 };
+        }
+      }
+      return null;
     },
     [entries, workout?.items],
   );

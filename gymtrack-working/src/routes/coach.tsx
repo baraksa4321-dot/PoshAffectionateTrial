@@ -1072,7 +1072,7 @@ export function CoachDashboardPage({
     ? (clientDetails?.programs ?? []).filter((program) =>
         program.name.toLocaleLowerCase().includes(programQueryLower),
       )
-    : clientDetails?.programs ?? [];
+    : (clientDetails?.programs ?? []);
   const ownerUserSearchLower = ownerUserSearch.trim().toLocaleLowerCase();
   const filteredOwnerProfiles = ownerUserSearchLower
     ? allProfiles.filter((profile) =>
@@ -1671,6 +1671,8 @@ export function CoachDashboardPage({
                             to="/coach/clients/$clientId"
                             params={{ clientId: c.client_id }}
                             onClick={(event) => event.stopPropagation()}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-primary/20"
                           >
                             פתח וערוך
@@ -2062,19 +2064,15 @@ export function CoachDashboardPage({
                             </p>
                           ) : null}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            selectedClientId &&
-                            navigate({
-                              to: "/coach/clients/$clientId/program",
-                              params: { clientId: selectedClientId },
-                            })
-                          }
+                        <Link
+                          to="/coach/clients/$clientId/program"
+                          params={{ clientId: selectedClientId! }}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary text-xs font-bold text-white"
                         >
                           <Dumbbell className="h-4 w-4" /> תוכנית אימון
-                        </button>
+                        </Link>
                       </div>
 
                       <div className="surface-card space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/35 p-4">
@@ -2140,19 +2138,15 @@ export function CoachDashboardPage({
                             </p>
                           ))}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            selectedClientId &&
-                            navigate({
-                              to: "/coach/clients/$clientId/nutrition",
-                              params: { clientId: selectedClientId },
-                            })
-                          }
+                        <Link
+                          to="/coach/clients/$clientId/nutrition"
+                          params={{ clientId: selectedClientId! }}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 text-xs font-bold text-white"
                         >
                           <Apple className="h-4 w-4" /> תפריט תזונה
-                        </button>
+                        </Link>
                       </div>
                     </section>
                   ) : null}
