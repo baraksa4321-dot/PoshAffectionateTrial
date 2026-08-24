@@ -1931,6 +1931,7 @@ html.night-mode .auth-panel {
   width: 116px;
   height: 116px;
   object-fit: contain;
+  mix-blend-mode: multiply;
   filter: brightness(1.08) saturate(1.04) drop-shadow(0 3px 3px rgb(75 48 58 / 10%));
   animation: loading-simple-hop 2.5s ease-in-out infinite;
 }

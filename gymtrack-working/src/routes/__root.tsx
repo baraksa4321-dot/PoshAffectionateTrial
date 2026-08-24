@@ -337,10 +337,19 @@ const REFERENCE_LOADING_IMAGES = [
 ] as const;
 
 const SIMPLE_LOADING_ILLUSTRATIONS = [
-  { file: "cartoon-loading-muscle.png", label: "שריר יד חמוד" },
-  { file: "cartoon-loading-banana.png", label: "בננה מצוירת" },
-  { file: "cartoon-loading-broccoli.png", label: "ברוקולי מצויר" },
-  { file: "cartoon-loading-avocado.png", label: "אבוקדו מצויר" },
+  { file: "user-strawberry.gif", label: "תות מצויר" },
+  { file: "user-tomato.gif", label: "עגבנייה מצוירת" },
+  { file: "user-character-01.gif", label: "דמות מצוירת" },
+  { file: "user-character-02.gif", label: "דמות מצוירת" },
+  { file: "user-lemon.gif", label: "לימון מצויר" },
+  { file: "user-character-03.gif", label: "דמות מצוירת" },
+  { file: "user-character-04.gif", label: "דמות מצוירת" },
+  { file: "user-character-05.gif", label: "דמות מצוירת" },
+  { file: "user-character-06.gif", label: "דמות מצוירת" },
+  { file: "user-character-07.gif", label: "דמות מצוירת" },
+  { file: "user-character-08.gif", label: "דמות מצוירת" },
+  { file: "user-character-09.gif", label: "דמות מצוירת" },
+  { file: "user-character-10.gif", label: "דמות מצוירת" },
 ] as const;
 
 function SimpleLoadingIllustration({ variant }: { variant: number }) {
