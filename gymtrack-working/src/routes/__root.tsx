@@ -337,19 +337,19 @@ const REFERENCE_LOADING_IMAGES = [
 ] as const;
 
 const SIMPLE_LOADING_ILLUSTRATIONS = [
-  { file: "user-strawberry.webp", label: "תות מצויר" },
-  { file: "user-tomato.webp", label: "עגבנייה מצוירת" },
-  { file: "user-character-01.webp", label: "דמות מצוירת" },
-  { file: "user-character-02.webp", label: "דמות מצוירת" },
-  { file: "user-lemon.webp", label: "לימון מצויר" },
-  { file: "user-character-03.webp", label: "דמות מצוירת" },
-  { file: "user-character-04.webp", label: "דמות מצוירת" },
-  { file: "user-character-05.webp", label: "דמות מצוירת" },
-  { file: "user-character-06.webp", label: "דמות מצוירת" },
-  { file: "user-character-07.webp", label: "דמות מצוירת" },
-  { file: "user-character-08.webp", label: "דמות מצוירת" },
-  { file: "user-character-09.webp", label: "דמות מצוירת" },
-  { file: "user-character-10.webp", label: "דמות מצוירת" },
+  { file: "user-strawberry.png", label: "תות מצויר" },
+  { file: "user-tomato.png", label: "עגבנייה מצוירת" },
+  { file: "user-character-01.png", label: "דמות מצוירת" },
+  { file: "user-character-02.png", label: "דמות מצוירת" },
+  { file: "user-lemon.png", label: "לימון מצויר" },
+  { file: "user-character-03.png", label: "דמות מצוירת" },
+  { file: "user-character-04.png", label: "דמות מצוירת" },
+  { file: "user-character-05.png", label: "דמות מצוירת" },
+  { file: "user-character-06.png", label: "דמות מצוירת" },
+  { file: "user-character-07.png", label: "דמות מצוירת" },
+  { file: "user-character-08.png", label: "דמות מצוירת" },
+  { file: "user-character-09.png", label: "דמות מצוירת" },
+  { file: "user-character-10.png", label: "דמות מצוירת" },
 ] as const;
 
 function SimpleLoadingIllustration({ variant }: { variant: number }) {
@@ -358,7 +358,7 @@ function SimpleLoadingIllustration({ variant }: { variant: number }) {
     <div className={`loading-micro-stage loading-simple-pose-${variant % 4}`}>
       <img
         className="loading-simple-image"
-        src={`/loading/${illustration.file.replace(".webm", ".png")}`}
+        src={`/loading/${illustration.file}`}
         aria-label={`איור טעינה: ${illustration.label}`}
         alt={`איור טעינה: ${illustration.label}`}
       />
