@@ -163,6 +163,7 @@ export function CoachDashboardPage({
   const [selectedExId, setSelectedExId] = useState("");
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [exerciseQuery, setExerciseQuery] = useState("");
+  const [exerciseMuscleFilter, setExerciseMuscleFilter] = useState("הכל");
   const [showCreateExercise, setShowCreateExercise] = useState(false);
   const [newExerciseDraft, setNewExerciseDraft] = useState<Exercise>(() => emptyExercise());
   const [newExerciseError, setNewExerciseError] = useState("");
@@ -1122,6 +1123,19 @@ export function CoachDashboardPage({
     ),
   );
   const exerciseQueryLower = exerciseQuery.trim().toLocaleLowerCase();
+  const exerciseMuscleOptions = [
+    "הכל",
+    ...Array.from(
+      new Set(
+        store.exercises.flatMap((exercise) => [
+          exercise.muscleGroup,
+          ...(exercise.muscleGroups ?? []),
+        ]),
+      ),
+    )
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, "he")),
+  ];
   const filteredExerciseOptions = exerciseQueryLower
     ? store.exercises.filter((exercise) =>
         [exercise.name, exercise.muscleGroup, exercise.equipment]
@@ -1129,6 +1143,14 @@ export function CoachDashboardPage({
           .some((value) => value.toLocaleLowerCase().includes(exerciseQueryLower)),
       )
     : store.exercises;
+  const visibleExerciseOptions =
+    exerciseMuscleFilter === "הכל"
+      ? filteredExerciseOptions
+      : filteredExerciseOptions.filter(
+          (exercise) =>
+            exercise.muscleGroup === exerciseMuscleFilter ||
+            (exercise.muscleGroups ?? []).includes(exerciseMuscleFilter),
+        );
 
   const openCreateExercise = () => {
     setNewExerciseDraft(emptyExercise());
@@ -3712,6 +3734,22 @@ export function CoachDashboardPage({
                   autoFocus
                 />
               </div>
+              <div className="mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 no-scrollbar">
+                {exerciseMuscleOptions.map((muscle) => (
+                  <button
+                    type="button"
+                    key={muscle}
+                    onClick={() => setExerciseMuscleFilter(muscle)}
+                    className={`press shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-colors ${
+                      exerciseMuscleFilter === muscle
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-secondary text-muted-foreground hover:text-ink"
+                    }`}
+                  >
+                    {muscle}
+                  </button>
+                ))}
+              </div>
               <button
                 type="button"
                 onClick={openCreateExercise}
@@ -3722,7 +3760,7 @@ export function CoachDashboardPage({
               </button>
 
               <div className="mt-4 min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain">
-                {filteredExerciseOptions.map((exercise) => (
+                {visibleExerciseOptions.map((exercise) => (
                   <button
                     type="button"
                     key={exercise.id}
@@ -3745,9 +3783,9 @@ export function CoachDashboardPage({
                     </span>
                   </button>
                 ))}
-                {filteredExerciseOptions.length === 0 ? (
+                {visibleExerciseOptions.length === 0 ? (
                   <p className="rounded-2xl bg-secondary p-4 text-[13px] text-muted-foreground">
-                    לא נמצאו תרגילים מתאימים לחיפוש.
+                    לא נמצאו תרגילים מתאימים לסינון או לחיפוש.
                   </p>
                 ) : null}
               </div>
