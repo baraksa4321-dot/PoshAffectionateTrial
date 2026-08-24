@@ -128,8 +128,8 @@ html.night-mode textarea::placeholder {
   --gradient-mid: #e5a6b4;
   --gradient-end: #f3c7c5;
   --shadow-color: 66 45 53;
-  --elevation-1: 0 2px 5px rgb(var(--shadow-color) / 5%), 0 12px 28px rgb(var(--shadow-color) / 7%);
-  --elevation-2: 0 6px 13px rgb(var(--shadow-color) / 7%), 0 20px 42px rgb(var(--shadow-color) / 11%);
+  --elevation-1: 0 3px 8px rgb(var(--shadow-color) / 9%), 0 14px 30px rgb(var(--shadow-color) / 12%);
+  --elevation-2: 0 7px 16px rgb(var(--shadow-color) / 12%), 0 24px 48px rgb(var(--shadow-color) / 17%);
 }
 
 :root[data-theme="pink"] {
@@ -721,14 +721,22 @@ html.night-mode .nav-shell {
   border: 1px solid color-mix(in srgb, var(--border) 82%, white);
   border-radius: 1.25rem;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 78%),
+    inset 0 1px 0 rgb(255 255 255 / 86%),
     var(--elevation-1),
-    0 16px 34px rgb(var(--shadow-color) / 10%),
-    0 3px 8px rgb(var(--shadow-color) / 7%);
+    0 18px 36px rgb(var(--shadow-color) / 14%),
+    0 4px 10px rgb(var(--shadow-color) / 10%);
   transition:
     border-color 200ms ease,
     box-shadow 200ms ease,
     transform 200ms ease;
+}
+
+.surface-card:hover {
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 88%),
+    0 8px 16px rgb(var(--shadow-color) / 12%),
+    0 22px 42px rgb(var(--shadow-color) / 18%);
 }
 
 .surface-card-soft {
