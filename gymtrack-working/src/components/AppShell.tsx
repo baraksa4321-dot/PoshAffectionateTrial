@@ -196,6 +196,7 @@ export function AppShell({
     setLoading(true);
     setErrorMsg("");
     setSuccessMsg("");
+    const normalizedEmail = email.trim().toLowerCase();
 
     try {
       const redirectTo =
@@ -206,7 +207,7 @@ export function AppShell({
           throw new Error(FULL_NAME_REQUIRED_ERROR);
         }
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: normalizedEmail,
           password,
           options: {
             ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
@@ -220,19 +221,29 @@ export function AppShell({
         if (error) throw error;
 
         if (data?.user && !data?.session) {
-          setPendingVerificationEmail(email);
+          setPendingVerificationEmail(normalizedEmail);
           setSuccessMsg(
-            "נרשמת בהצלחה! שלחנו מייל אימות לכתובת " + email + ". יש לאשר את המייל להתחברות.",
+            "נרשמת בהצלחה! שלחנו מייל אימות לכתובת " +
+              normalizedEmail +
+              ". יש לאשר את המייל להתחברות.",
           );
           return;
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
         if (error) {
           if (error.message.includes("Email not confirmed")) {
-            setPendingVerificationEmail(email);
+            setPendingVerificationEmail(normalizedEmail);
             throw new Error(
               "כתובת האימייל עדיין לא אומתה. יש לאשר את המייל או ללחוץ על 'שלח מייל אימות מחדש'.",
+            );
+          }
+          if (error.message.toLowerCase().includes("invalid login credentials")) {
+            throw new Error(
+              "האימייל או הסיסמה אינם נכונים. בדקי את הפרטים או השתמשי ב'שכחתי את הסיסמה'.",
             );
           }
           throw error;
