@@ -1718,6 +1718,23 @@ html.night-mode .nav-shell {
   text-align: center;
 }
 
+.home-feature-item {
+  min-width: 0;
+  cursor: grab;
+  touch-action: none;
+  transition: transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease;
+}
+
+.home-feature-item:active {
+  cursor: grabbing;
+}
+
+.home-feature-dragging {
+  opacity: 0.72;
+  transform: scale(1.035) rotate(-1deg);
+  box-shadow: 0 12px 26px rgb(70 46 53 / 18%);
+}
+
 .loading-dumbbell-motion {
   transform-box: fill-box;
   transform-origin: center;

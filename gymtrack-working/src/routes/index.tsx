@@ -23,7 +23,7 @@ import {
   X,
   Check,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Overlay } from "@/components/ui-app/Overlay";
 import {
@@ -52,6 +52,8 @@ import { CARDIO_TYPES } from "@/lib/gym-types";
 import { genderText } from "@/lib/gender-copy";
 
 const DEFAULT_CARDIO_TYPE = CARDIO_TYPES[0] ?? "הליכה";
+type HomeFeatureId = "workout" | "nutrition";
+const HOME_FEATURE_ORDER_KEY = "myroutine-home-feature-order-v1";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -126,6 +128,69 @@ function Dashboard() {
   const [cardioDistance, setCardioDistance] = useState("0");
   const [cardioError, setCardioError] = useState("");
   const [checklistInput, setChecklistInput] = useState("");
+  const [featureOrder, setFeatureOrder] = useState<HomeFeatureId[]>(() => {
+    if (typeof window === "undefined") return ["workout", "nutrition"];
+    try {
+      const saved = JSON.parse(
+        window.localStorage.getItem(HOME_FEATURE_ORDER_KEY) ?? "null",
+      ) as unknown;
+      return Array.isArray(saved) && saved.includes("workout") && saved.includes("nutrition")
+        ? (saved as HomeFeatureId[])
+        : ["workout", "nutrition"];
+    } catch {
+      return ["workout", "nutrition"];
+    }
+  });
+  const [isArrangingFeatures, setIsArrangingFeatures] = useState(false);
+  const [draggingFeature, setDraggingFeature] = useState<HomeFeatureId | null>(null);
+  const holdTimer = useRef<number | null>(null);
+  const suppressFeatureClick = useRef(false);
+
+  useEffect(() => {
+    window.localStorage.setItem(HOME_FEATURE_ORDER_KEY, JSON.stringify(featureOrder));
+  }, [featureOrder]);
+
+  const clearFeatureHold = () => {
+    if (holdTimer.current !== null) {
+      window.clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
+  };
+
+  const startFeatureHold = (feature: HomeFeatureId) => {
+    clearFeatureHold();
+    holdTimer.current = window.setTimeout(() => {
+      setIsArrangingFeatures(true);
+      setDraggingFeature(feature);
+      suppressFeatureClick.current = true;
+      navigator.vibrate?.(25);
+    }, 520);
+  };
+
+  const swapFeature = (target: HomeFeatureId) => {
+    if (!isArrangingFeatures || !draggingFeature || target === draggingFeature) return;
+    setFeatureOrder((current) => {
+      const next = [...current];
+      const from = next.indexOf(draggingFeature);
+      const to = next.indexOf(target);
+      if (from < 0 || to < 0) return current;
+      [next[from], next[to]] = [next[to], next[from]];
+      return next;
+    });
+    setDraggingFeature(target);
+    navigator.vibrate?.(15);
+  };
+
+  const finishFeaturePointer = () => {
+    clearFeatureHold();
+    setDraggingFeature(null);
+  };
+
+  const preventFeatureNavigation = (event: MouseEvent) => {
+    if (!suppressFeatureClick.current) return;
+    event.preventDefault();
+    suppressFeatureClick.current = false;
+  };
 
   const handleWeeklyWeighIn = () => {
     const valW = parseFloat(weeklyWeightInput);
@@ -368,10 +433,34 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* 1. Daily workout + nutrition tiles */}
-      <div className="mt-3 grid grid-cols-2 gap-2">
+       {/* 1. Daily workout + nutrition tiles */}
+       <div className="mt-3">
+         {isArrangingFeatures ? (
+           <div className="mb-2 flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-[10px] font-bold text-primary">
+             <span>מצב סידור — גררי כרטיס כדי להחליף מיקום</span>
+             <button
+               type="button"
+               onClick={() => {
+                 setIsArrangingFeatures(false);
+                 setDraggingFeature(null);
+               }}
+               className="rounded-lg bg-primary px-2.5 py-1 text-primary-foreground"
+             >
+               סיום
+             </button>
+           </div>
+         ) : null}
+         <div className="grid grid-cols-2 gap-2">
         {nextWorkout ? (
-          <div className="ink-card flex min-h-[150px] flex-col p-3 text-start">
+           <div
+             className={`home-feature-item ${draggingFeature === "workout" ? "home-feature-dragging" : ""}`}
+             style={{ order: featureOrder.indexOf("workout") }}
+             onPointerDown={() => startFeatureHold("workout")}
+             onPointerUp={finishFeaturePointer}
+             onPointerCancel={finishFeaturePointer}
+             onPointerEnter={() => swapFeature("workout")}
+           >
+           <div className="ink-card flex min-h-[150px] flex-col p-3 text-start">
             <div className="flex items-center justify-between gap-1">
               <span className="text-[10px] font-bold text-primary-foreground/80">אימון יומי</span>
               <Dumbbell className="h-4 w-4 text-primary-foreground/80" />
@@ -384,20 +473,33 @@ function Dashboard() {
             </p>
             <button
               type="button"
-              onClick={() =>
-                navigate({
-                  to: "/session/$workoutId",
-                  params: { workoutId: nextWorkout.id },
-                })
-              }
+               onClick={(event) => {
+                 if (suppressFeatureClick.current) {
+                   preventFeatureNavigation(event);
+                   return;
+                 }
+                 navigate({
+                   to: "/session/$workoutId",
+                   params: { workoutId: nextWorkout.id },
+                 });
+               }}
               className="press mt-auto inline-flex h-9 cursor-pointer items-center justify-center gap-1 rounded-xl bg-background px-2 text-[11px] font-bold text-ink shadow-sm"
             >
               <Play className="h-3.5 w-3.5 fill-current text-primary" />
               התחלת אימון
             </button>
           </div>
+           </div>
         ) : (
-          <Card className="flex min-h-[150px] flex-col p-3 text-start">
+           <div
+             className={`home-feature-item ${draggingFeature === "workout" ? "home-feature-dragging" : ""}`}
+             style={{ order: featureOrder.indexOf("workout") }}
+             onPointerDown={() => startFeatureHold("workout")}
+             onPointerUp={finishFeaturePointer}
+             onPointerCancel={finishFeaturePointer}
+             onPointerEnter={() => swapFeature("workout")}
+           >
+           <Card className="flex min-h-[150px] flex-col p-3 text-start">
             <p className="font-display text-sm font-bold text-ink">אין אימון יומי</p>
             <p className="mt-1 text-[11px] text-muted-foreground">עדיין אין תכנית אימונים.</p>
             <Link
@@ -407,11 +509,20 @@ function Dashboard() {
               <Plus className="h-3.5 w-3.5" /> יצירת תכנית
             </Link>
           </Card>
+           </div>
         )}
 
-        <Link
+         <Link
           to="/nutrition"
-          className="home-calorie-card surface-card flex min-h-[150px] flex-col p-3 text-start transition-colors"
+           onPointerDown={() => startFeatureHold("nutrition")}
+           onPointerUp={finishFeaturePointer}
+           onPointerCancel={finishFeaturePointer}
+           onPointerEnter={() => swapFeature("nutrition")}
+           onClick={preventFeatureNavigation}
+           style={{ order: featureOrder.indexOf("nutrition") }}
+           className={`home-feature-item home-calorie-card surface-card flex min-h-[150px] flex-col p-3 text-start transition-colors ${
+             draggingFeature === "nutrition" ? "home-feature-dragging" : ""
+           }`}
         >
           <div className="flex items-center justify-between gap-1">
             <span className="text-[10px] font-bold text-primary">תזונה יומית</span>
@@ -429,6 +540,7 @@ function Dashboard() {
             <ChevronLeft className="h-3.5 w-3.5" />
           </div>
         </Link>
+         </div>
       </div>
 
       <section className="surface-card mt-3 p-3 text-start">
