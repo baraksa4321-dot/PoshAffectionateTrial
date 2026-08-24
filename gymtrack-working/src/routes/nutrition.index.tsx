@@ -106,19 +106,19 @@ function recipeAsMealFood(recipe: RecipeDefinition, servings: number): MealFood 
 
 function quantityControlFor(food: FoodItem) {
   const serving = food.servingSize.toLocaleLowerCase();
-  if (/(כף|כפות)/.test(serving)) return { label: "כמות בכפות", step: 0.5, scale: 1 };
-  if (/(כוס|כוסות)/.test(serving)) return { label: "כמות בכוסות", step: 0.25, scale: 1 };
+  if (/(כף|כפות)/.test(serving)) return { label: "כמות בכפות", step: "any", scale: 1 };
+  if (/(כוס|כוסות)/.test(serving)) return { label: "כמות בכוסות", step: "any", scale: 1 };
   if (/(יחידה|יחידות|ביצה|פרוסה|קופסה|חצי)/.test(serving)) {
-    return { label: "כמות ביחידות", step: 0.5, scale: 1 };
+    return { label: "כמות ביחידות", step: "any", scale: 1 };
   }
   const gramsMatch = serving.match(/(\d+(?:[.,]\d+)?)\s*(?:גרם|g)\b/);
   if (gramsMatch) {
     const grams = Number(gramsMatch[1]!.replace(",", "."));
     if (Number.isFinite(grams) && grams > 0) {
-      return { label: "כמות בגרמים", step: grams >= 100 ? 25 : 5, scale: grams };
+      return { label: "כמות בגרמים", step: "any", scale: grams };
     }
   }
-  return { label: "כמות מנות", step: 0.5, scale: 1 };
+  return { label: "כמות מנות", step: "any", scale: 1 };
 }
 
 function NutritionLog() {
@@ -621,7 +621,7 @@ function NutritionLog() {
               <Stepper
                 label="מנות"
                 value={recipeServings}
-                step={0.5}
+                step="any"
                 min={0.5}
                 onChange={setRecipeServings}
               />
@@ -855,7 +855,7 @@ function NutritionLog() {
                             <Stepper
                               label="כמות"
                               value={food.quantity}
-                              step={0.5}
+                              step="any"
                               onChange={(v) =>
                                 updateMealFood(date, meal.id, { id: food.id, quantity: v })
                               }
@@ -1120,7 +1120,7 @@ function NutritionLog() {
                     <Stepper
                       label={quantityControl.label}
                       value={pickerQuantity * quantityControl.scale}
-                      step={quantityControl.step}
+                      step="any"
                       min={quantityControl.step}
                       onChange={(value) => setPickerQuantity(value / quantityControl.scale)}
                     />

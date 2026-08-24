@@ -212,7 +212,7 @@ function FoodDetail() {
           <Stepper
             label="חלבון"
             value={draft.protein}
-            step={0.5}
+            step="any"
             min={0}
             suffix="g"
             onChange={(protein) => set({ protein })}
@@ -220,7 +220,7 @@ function FoodDetail() {
           <Stepper
             label="פחמימות"
             value={draft.carbs}
-            step={0.5}
+            step="any"
             min={0}
             suffix="g"
             onChange={(carbs) => set({ carbs })}
@@ -228,7 +228,7 @@ function FoodDetail() {
           <Stepper
             label="שומן"
             value={draft.fat}
-            step={0.5}
+            step="any"
             min={0}
             suffix="g"
             onChange={(fat) => set({ fat })}
@@ -237,7 +237,7 @@ function FoodDetail() {
             <Stepper
               label="סיבים תזונתיים"
               value={draft.fiber ?? 0}
-              step={0.5}
+              step="any"
               min={0}
               suffix="g"
               onChange={(fiber) => set({ fiber })}

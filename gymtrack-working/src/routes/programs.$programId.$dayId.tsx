@@ -690,7 +690,7 @@ function SortableItem({
         <Stepper
           label="מנוחה"
           value={item.rest}
-          step={15}
+          step="any"
           suffix="שניות"
           onChange={(value) => onPatch(item.id, { rest: value })}
         />
@@ -773,7 +773,7 @@ function SortableItem({
                 <Stepper
                   label="משקל"
                   value={set.weight}
-                  step={2.5}
+                  step="any"
                   suffix="ק״ג"
                   onChange={(weight) =>
                     onPatch(item.id, {
@@ -809,7 +809,9 @@ function SortableItem({
                   }
                   className="h-4 w-4 rounded border-border text-primary"
                 />
-                <span className={((set as WorkingSet).dropSet) ? "font-semibold text-primary" : ""}>Drop Set</span>
+                <span className={(set as WorkingSet).dropSet ? "font-semibold text-primary" : ""}>
+                  Drop Set
+                </span>
               </label>
             </div>
           ))}
@@ -842,7 +844,7 @@ function SortableItem({
                   <Stepper
                     label="ק״ג"
                     value={w.weight}
-                    step={2.5}
+                    step="any"
                     onChange={(value) => patchWarmup(w.id, { weight: value })}
                   />
                   <Stepper

@@ -2044,7 +2044,7 @@ export function CoachDashboardPage({
                                   <input
                                     type="number"
                                     min="0"
-                                    step="0.1"
+                                    step="any"
                                     value={measurementDraft[field] ?? ""}
                                     onChange={(event) =>
                                       setMeasurementDraft((current) => ({
@@ -2892,7 +2892,7 @@ export function CoachDashboardPage({
                                                       <input
                                                         type="number"
                                                         min="0"
-                                                        step="0.5"
+                                                        step="any"
                                                         value={warmupWeight}
                                                         onChange={(event) =>
                                                           setWarmupWeight(
@@ -2957,7 +2957,7 @@ export function CoachDashboardPage({
                                                       <input
                                                         type="number"
                                                         min="0.1"
-                                                        step="0.5"
+                                                        step="any"
                                                         inputMode="decimal"
                                                         value={dropLevel1Weight}
                                                         onChange={(event) =>
@@ -2973,7 +2973,7 @@ export function CoachDashboardPage({
                                                       <input
                                                         type="number"
                                                         min="0.1"
-                                                        step="0.5"
+                                                        step="any"
                                                         inputMode="decimal"
                                                         value={dropLevel2Weight}
                                                         onChange={(event) =>
@@ -3339,7 +3339,7 @@ export function CoachDashboardPage({
                                     <input
                                       type="number"
                                       min="0.1"
-                                      step="0.1"
+                                      step="any"
                                       value={menuFoodQuantity}
                                       onChange={(event) =>
                                         setMenuFoodQuantity(Number(event.target.value))
@@ -3466,7 +3466,7 @@ export function CoachDashboardPage({
                             type="number"
                             min="0.1"
                             max="500"
-                            step="0.1"
+                            step="any"
                             value={profileWeight}
                             onChange={(event) => setProfileWeight(event.target.value)}
                             placeholder="נדרש"

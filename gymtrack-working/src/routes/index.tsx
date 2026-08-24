@@ -1053,7 +1053,7 @@ function Dashboard() {
               <label className="block font-bold text-muted-foreground">משקל נוכחי (ק"ג)</label>
               <input
                 type="number"
-                step="0.1"
+                step="any"
                 value={weeklyWeightInput}
                 onChange={(e) => setWeeklyWeightInput(e.target.value)}
                 className="w-full rounded-xl border border-border p-2.5 text-sm font-bold text-ink outline-none focus:border-primary"
@@ -1140,7 +1140,7 @@ function Dashboard() {
                     <input
                       type="number"
                       min="0"
-                      step="0.1"
+                      step="any"
                       value={cardioSpeed}
                       onChange={(event) => setCardioSpeed(event.target.value)}
                       className="h-11 min-w-0 rounded-xl border border-border bg-background px-2 text-sm font-semibold text-ink outline-none focus:border-primary"
@@ -1153,7 +1153,7 @@ function Dashboard() {
                     <input
                       type="number"
                       min="0"
-                      step="0.5"
+                      step="any"
                       value={cardioIncline}
                       onChange={(event) => setCardioIncline(event.target.value)}
                       className="h-11 min-w-0 rounded-xl border border-border bg-background px-2 text-sm font-semibold text-ink outline-none focus:border-primary"
@@ -1166,7 +1166,7 @@ function Dashboard() {
                     <input
                       type="number"
                       min="0"
-                      step="0.1"
+                      step="any"
                       value={cardioDistance}
                       onChange={(event) => setCardioDistance(event.target.value)}
                       className="h-11 min-w-0 rounded-xl border border-border bg-background px-2 text-sm font-semibold text-ink outline-none focus:border-primary"
