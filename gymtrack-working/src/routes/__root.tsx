@@ -238,7 +238,7 @@ const LOADING_FOOD_ILLUSTRATIONS = [
 ] as const;
 
 function LoadingIllustration({ variant }: { variant: number }) {
-  const activeShape = variant % 6;
+  const activeShape = variant % 8;
   const illustrationLabel = [
     "משקולת ורודה",
     "ברוקולי ירוק",
@@ -246,6 +246,8 @@ function LoadingIllustration({ variant }: { variant: number }) {
     "ביצה",
     "שריר יד",
     "אפרסק",
+    "בננה צהובה",
+    "אבוקדו ירוק",
   ][activeShape];
   return (
     <div className="loading-micro-stage">
@@ -266,14 +268,15 @@ function LoadingIllustration({ variant }: { variant: number }) {
           </g>
         ) : activeShape === 1 ? (
           <g className="loading-food-motion">
-            <path className="loading-broccoli-shell" d="M44 78c-5-16 3-30 19-35-1-15 9-27 23-27 14 1 23 13 21 27 14 2 23 14 18 27-5 15-24 23-47 23-17 0-29-5-34-15z" />
-            <path className="loading-broccoli-fill" d="M53 75c-3-11 4-21 17-25-1-10 7-18 15-18 9 1 15 9 13 18 10 2 16 10 12 19-4 10-19 16-35 16-11 0-19-3-22-10z" />
-            <path className="loading-broccoli-detail" d="M78 42c-4 8-4 17 1 25M91 40c-2 8 1 15 8 20" />
+            <path className="loading-broccoli-shell" d="M47 72c-7-7-7-18 1-25 2-2 5-4 8-5-1-11 7-20 18-20 4 0 8 1 11 4 4-10 16-14 25-8 6 4 9 10 8 17 9 2 15 10 14 19-1 12-11 19-23 18-5 10-14 15-25 15s-20-5-25-15c-5 2-9 1-12 0zM66 80h18v17H66z" />
+            <path className="loading-broccoli-fill" d="M55 69c-4-4-4-10 1-14 3-3 7-4 11-2-3-8 3-16 11-16 5 0 9 3 11 7 2-7 9-11 16-8 6 3 8 9 6 15 8-1 14 5 14 12 0 8-7 12-15 11-4 7-10 10-17 10s-13-3-17-10c-4 2-8 1-11-2zM70 77h10v17H70z" />
+            <path className="loading-broccoli-detail" d="M75 78v15M62 55c4 3 8 4 12 2M88 50c2 5 6 8 12 9" />
           </g>
         ) : activeShape === 2 ? (
           <g className="loading-food-motion">
             <path className="loading-food-shell" d="M75 27c-4-10 4-17 13-18-1 7 3 11 9 14-7 6-14 7-22 4zM75 29c-22-13-42 3-40 27 2 24 18 39 40 39s38-15 40-39c2-24-18-40-40-27z" />
             <path className="loading-food-fill loading-apple-fill" d="M75 37c-15-9-30 3-29 19 1 18 12 29 29 29s28-11 29-29c1-16-14-28-29-19z" />
+            <path className="loading-apple-leaf" d="M76 27c5-8 13-9 19-5-3 7-10 10-19 5z" />
             <path className="loading-food-detail" d="M62 51c-2 10 1 18 7 24" />
           </g>
         ) : activeShape === 3 ? (
@@ -296,41 +299,18 @@ function LoadingIllustration({ variant }: { variant: number }) {
           </g>
         ) : activeShape === 6 ? (
           <g className="loading-food-motion">
-            <path className="loading-food-shell" d="M75 24c24-15 47 5 41 33-4 22-20 34-41 34S38 79 34 57c-5-28 17-48 41-33z" />
-            <path className="loading-food-fill" d="M75 31c18-11 34 4 29 26-3 17-15 26-29 26S50 74 47 57c-4-22 10-37 28-26z" />
-            <path className="loading-food-leaf" d="M75 28c-7-8-2-14 6-17-1 8 2 11 9 12-5 6-10 7-15 5z" />
+            <path className="loading-banana-shell" d="M37 27c8 31 24 51 48 52 13 1 23-5 29-17-4 19-18 31-35 31-29 0-48-24-55-62z" />
+            <path className="loading-banana-fill" d="M47 31c8 25 21 38 39 39 9 1 16-2 22-8-5 10-13 15-23 14-22-1-36-18-44-45z" />
+            <path className="loading-banana-detail" d="M37 27l6-4M114 62l4 3" />
           </g>
         ) : activeShape === 7 ? (
           <g className="loading-food-motion">
-            <path className="loading-broccoli-shell" d="M75 18c8 0 14 6 14 14 9-2 16 4 16 13 9 2 14 10 10 19-3 8-10 12-19 11-4 12-11 18-21 18s-17-6-21-18c-9 1-16-3-19-11-4-9 1-17 10-19 0-9 7-15 16-13 0-8 6-14 14-14z" />
-            <path className="loading-broccoli-fill" d="M75 28c4 0 7 4 7 9 7-2 13 3 12 9 7 1 10 7 7 12-2 5-7 7-14 6-2 8-6 11-12 11s-10-3-12-11c-7 1-12-1-14-6-3-5 0-11 7-12-1-6 5-11 12-9 0-5 3-9 7-9z" />
-            <path className="loading-broccoli-detail" d="M75 37v35M57 51l11 6M93 51l-11 6" />
+            <path className="loading-avocado-shell" d="M75 12c-11 0-16 13-22 27-7 16-17 32-13 47 4 15 18 20 35 20s31-5 35-20c4-15-6-31-13-47-6-14-11-27-22-27z" />
+            <path className="loading-avocado-fill" d="M75 21c-6 0-10 12-15 24-7 17-15 30-12 40 3 9 12 13 27 13s24-4 27-13c3-10-5-23-12-40-5-12-9-24-15-24z" />
+            <circle className="loading-avocado-pit" cx="75" cy="75" r="13" />
+            <path className="loading-avocado-detail" d="M58 35c-5 13-11 23-13 34" />
           </g>
-        ) : activeShape === 8 ? (
-          <g className="loading-food-motion">
-            <path className="loading-food-shell" d="M75 27c-4-10 4-17 13-18-1 7 3 11 9 14-7 6-14 7-22 4zM75 29c-22-13-42 3-40 27 2 24 18 39 40 39s38-15 40-39c2-24-18-40-40-27z" />
-            <path className="loading-food-fill" d="M75 37c-15-9-30 3-29 19 1 18 12 29 29 29s28-11 29-29c1-16-14-28-29-19z" />
-            <path className="loading-food-detail" d="M62 51c-2 10 1 18 7 24" />
-          </g>
-        ) : activeShape === 9 ? (
-          <g className="loading-food-motion">
-            <path className="loading-food-shell" d="M54 21c10-5 20 0 25 9 8-8 19-6 22 2-8 4-15 4-22-2-1 21-11 39-27 48-13 7-24-5-17-17 8-13 15-25 19-40z" />
-            <path className="loading-food-fill" d="M61 31c7 4 10 12 7 21-4 13-12 23-21 28-6 3-10-2-6-9 9-15 15-27 20-40z" />
-            <path className="loading-food-detail" d="M60 42c-3 10-7 19-13 27" />
-          </g>
-        ) : activeShape === 10 ? (
-          <g className="loading-food-motion">
-            <path className="loading-food-shell" d="M55 23h40l5 12v49c0 7-5 11-12 11H62c-7 0-12-4-12-11V35z" />
-            <path className="loading-food-fill" d="M55 74h40V36H55z" />
-            <path className="loading-food-detail" d="M55 43h40M62 51v21M75 51v21M88 51v21" />
-          </g>
-        ) : (
-          <g className="loading-food-motion">
-            <path className="loading-food-shell" d="M46 41c-5-12 3-23 15-22 5-10 19-12 26-3 12-3 21 8 16 19 12 8 9 26-4 30 1 14-11 25-25 21-13 7-28-2-27-16-12-5-12-22-1-29z" />
-            <path className="loading-food-fill" d="M53 45c-3-8 3-14 11-13 4-7 12-8 18-2 8-2 14 6 10 13 9 6 6 17-3 19 1 9-7 16-16 13-9 5-18-1-18-10-8-3-10-14-2-20z" />
-            <path className="loading-food-detail" d="M62 47c7 5 15 7 24 4M61 60c8 4 16 4 24 0" />
-          </g>
-        )}
+        ) : null}
       </svg>
     </div>
   );
@@ -575,10 +555,10 @@ function RootContent() {
     document.documentElement.lang = "he";
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
-     setLoadingVariant(Math.floor(Math.random() * 12));
+     setLoadingVariant(Math.floor(Math.random() * 8));
     setLoadingMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
     const illustrationTimer = window.setInterval(() => {
-       setLoadingVariant((current) => (current + 1) % 12);
+       setLoadingVariant((current) => (current + 1) % 8);
     }, 2400);
     const messageTimer = window.setInterval(() => {
       setLoadingMessageIndex((current) => (current + 1) % LOADING_MESSAGES.length);

@@ -2050,7 +2050,9 @@ html.night-mode .auth-panel {
 .loading-simple-illustration .loading-dumbbell-plate,
 .loading-simple-illustration .loading-dumbbell-cap,
 .loading-simple-illustration .loading-dumbbell-grip {
-  fill: #fff;
+  fill: #e78aa0;
+  stroke: var(--ink);
+  stroke-width: 1.6;
 }
 
 .loading-simple-illustration .loading-food-fill,
@@ -2078,6 +2080,82 @@ html.night-mode .auth-panel {
 .loading-simple-illustration .loading-food-generic-fill {
   opacity: 1;
   filter: drop-shadow(0 2px 1px color-mix(in srgb, var(--ink) 20%, transparent));
+}
+
+.loading-simple-illustration .loading-apple-fill {
+  fill: #79b957;
+}
+
+.loading-simple-illustration .loading-broccoli-fill {
+  fill: #62ad58;
+}
+
+.loading-simple-illustration .loading-muscle-fill {
+  fill: #e58a9b;
+  opacity: 1;
+  filter: drop-shadow(0 2px 1px color-mix(in srgb, var(--ink) 20%, transparent));
+}
+
+.loading-simple-illustration .loading-peach-fill {
+  fill: #f2a06b;
+  opacity: 1;
+  filter: drop-shadow(0 2px 1px color-mix(in srgb, var(--ink) 20%, transparent));
+}
+
+.loading-simple-illustration .loading-muscle-shell,
+.loading-simple-illustration .loading-peach-shell {
+  fill: #fff;
+  stroke: var(--ink);
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.loading-simple-illustration .loading-banana-shell,
+.loading-simple-illustration .loading-avocado-shell {
+  fill: #fff;
+  stroke: var(--ink);
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.loading-simple-illustration .loading-banana-fill {
+  fill: #f3c84b;
+  opacity: 1;
+  filter: drop-shadow(0 2px 1px color-mix(in srgb, var(--ink) 20%, transparent));
+}
+
+.loading-simple-illustration .loading-avocado-fill {
+  fill: #6eaf62;
+  opacity: 1;
+  filter: drop-shadow(0 2px 1px color-mix(in srgb, var(--ink) 20%, transparent));
+}
+
+.loading-simple-illustration .loading-banana-fill,
+.loading-simple-illustration .loading-avocado-fill {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: loading-bottom-fill 3.8s cubic-bezier(0.22, 0.75, 0.3, 1) infinite;
+}
+
+.loading-simple-illustration .loading-banana-detail,
+.loading-simple-illustration .loading-avocado-detail {
+  fill: none;
+  stroke: var(--ink);
+  stroke-linecap: round;
+  stroke-width: 1.7;
+}
+
+.loading-simple-illustration .loading-avocado-pit {
+  fill: #b87545;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.loading-simple-illustration .loading-apple-leaf {
+  fill: #4f9b55;
+  stroke: var(--ink);
+  stroke-linejoin: round;
+  stroke-width: 1.5;
 }
 
 .loading-simple-illustration .loading-food-detail,
