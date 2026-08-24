@@ -1080,7 +1080,15 @@ function RootContent() {
   const { queryClient } = Route.useRouteContext();
   const authStatus = useAuthStatus();
   const { userProfile } = useGym();
-  const [loadingCycle, setLoadingCycle] = useState(0);
+  const [loadingCycle, setLoadingCycle] = useState(() => {
+    if (typeof window === "undefined") return 0;
+    try {
+      const previousCycle = Number(window.localStorage.getItem("my-routine-loading-cycle"));
+      return Number.isInteger(previousCycle) && previousCycle >= 0 ? previousCycle + 1 : 1;
+    } catch {
+      return Math.floor(Date.now() / 2400);
+    }
+  });
   const loadingVariant = loadingCycle % SIMPLE_LOADING_ILLUSTRATIONS.length;
   const loadingMessageIndex = loadingCycle % LOADING_MESSAGES.length;
   const profileHydrationStatus = useProfileHydrationStatus();
@@ -1105,23 +1113,41 @@ function RootContent() {
         console.warn("[App shell cache unavailable]:", error);
       });
     }
+    const storageKey = "my-routine-loading-cycle";
     try {
-      const storageKey = "my-routine-loading-cycle";
-      const previousCycle = Number(window.localStorage.getItem(storageKey));
-      const nextCycle =
-        Number.isInteger(previousCycle) && previousCycle >= 0 ? previousCycle + 1 : 1;
-      window.localStorage.setItem(storageKey, String(nextCycle));
-      setLoadingCycle(nextCycle);
+      window.localStorage.setItem(storageKey, String(loadingCycle));
     } catch {
-      setLoadingCycle(1);
+      // The in-memory timestamp fallback from the state initializer remains active.
     }
+    const advanceForRestoredPage = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      setLoadingCycle((current) => {
+        const nextCycle = current + 1;
+        try {
+          window.localStorage.setItem(storageKey, String(nextCycle));
+        } catch {
+          // Keep the new cycle in memory when storage is unavailable.
+        }
+        return nextCycle;
+      });
+    };
+    window.addEventListener("pageshow", advanceForRestoredPage);
     const illustrationTimer = window.setInterval(() => {
-      setLoadingCycle((current) => current + 1);
+      setLoadingCycle((current) => {
+        const nextCycle = current + 1;
+        try {
+          window.localStorage.setItem(storageKey, String(nextCycle));
+        } catch {
+          // Keep the animation rotation in memory when storage is unavailable.
+        }
+        return nextCycle;
+      });
     }, 2400);
     return () => {
       window.clearInterval(illustrationTimer);
+      window.removeEventListener("pageshow", advanceForRestoredPage);
     };
-  }, []);
+  }, [loadingCycle]);
 
   return (
     <QueryClientProvider client={queryClient}>
