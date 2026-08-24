@@ -480,7 +480,7 @@ export function AppShell({
           }}
           ariaLabel="התחברות לחשבון"
         >
-          <div className="w-full max-w-sm space-y-6 rounded-2xl border border-border bg-surface p-6 shadow-xl">
+          <div className="auth-panel w-full max-w-sm space-y-6 rounded-2xl border border-border bg-surface p-6 shadow-xl">
             <div className="flex justify-center">
               <BrandLogo compact />
             </div>
