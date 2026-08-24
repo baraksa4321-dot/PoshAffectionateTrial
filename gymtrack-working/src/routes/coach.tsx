@@ -533,6 +533,20 @@ export function CoachDashboardPage({
     setMenuNotice("");
   }, [clientDetails, menuDate]);
 
+  useEffect(() => {
+    if (!clientDetails) return;
+    const latestProgram = clientDetails.programs.at(-1);
+    if (latestProgram) {
+      setEditingProgramId(latestProgram.id);
+    }
+    const latestNutritionDay = [...clientDetails.nutritionDays].sort((a, b) =>
+      b.date.localeCompare(a.date),
+    )[0];
+    if (latestNutritionDay) {
+      setMenuDate(latestNutritionDay.date);
+    }
+  }, [clientDetails]);
+
   // OWNER RPC: change a target user's role. The database function remains the
   // only authority for role changes; this UI never writes profiles.role.
   const handleOwnerChangeRole = async (
@@ -2187,6 +2201,44 @@ export function CoachDashboardPage({
                                   0,
                                 )}
                               </p>
+                              <div className="mt-2 space-y-1.5 border-t border-amber-100 pt-2">
+                                {session.entries.map((entry) => (
+                                  <div
+                                    key={`${session.id}-${entry.exerciseId}`}
+                                    className="rounded-lg bg-amber-50/70 px-2 py-1.5"
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <strong className="text-ink">{entry.exerciseName}</strong>
+                                      <span className="text-[10px] text-muted-foreground">
+                                        {entry.feedback?.rating === "easy"
+                                          ? "קל"
+                                          : entry.feedback?.rating === "difficult"
+                                            ? "כבד"
+                                            : entry.feedback?.rating === "appropriate"
+                                              ? "מתאים"
+                                              : ""}
+                                      </span>
+                                    </div>
+                                    <p className="mt-1 text-[10px] text-muted-foreground">
+                                      {entry.sets.length > 0
+                                        ? entry.sets
+                                            .map(
+                                              (set, index) =>
+                                                `סט ${index + 1}: ${set.weight} ק״ג × ${set.reps}${
+                                                  set.done ? " ✓" : " — לא בוצע"
+                                                }`,
+                                            )
+                                            .join(" · ")
+                                        : "לא נרשמו סטים"}
+                                    </p>
+                                    {entry.feedback?.notes || entry.notes ? (
+                                      <p className="mt-1 text-[10px] text-ink">
+                                        הערה: {entry.feedback?.notes || entry.notes}
+                                      </p>
+                                    ) : null}
+                                  </div>
+                                ))}
+                              </div>
                               {session.entries
                                 .filter((entry) => entry.feedback?.notes || entry.notes)
                                 .slice(0, 3)
