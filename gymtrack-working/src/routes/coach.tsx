@@ -3700,11 +3700,11 @@ export function CoachDashboardPage({
           open={showExercisePicker}
           onClose={() => setShowExercisePicker(false)}
           ariaLabel="בחירת תרגיל"
-          variant="bottom"
+          variant="full"
           backdrop={false}
           panelClassName="p-0"
         >
-          <div dir="rtl" className="h-[min(82dvh,44rem)]">
+          <div dir="rtl" className="h-full max-h-full">
             <div className="flex h-full min-h-0 flex-col p-5 text-start">
               <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
               <div className="mb-3.5 flex items-center justify-between">
