@@ -432,13 +432,22 @@ function SimpleLoadingIllustration({ variant }: { variant: number }) {
   const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length]!;
   return (
     <div className={`loading-micro-stage loading-simple-pose-${variant % 4}`}>
-      <img
+      <video
         key={illustration.file}
-        className="loading-simple-image"
-        src={`/loading/flat/${illustration.file.replace(".png", ".gif")}`}
+        className="loading-simple-image loading-simple-video"
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        poster={`/loading/${illustration.file}`}
         aria-label={`איור טעינה: ${illustration.label}`}
-        alt=""
-      />
+      >
+        <source
+          src={`/loading/tinted/${illustration.file.replace(".png", ".webm")}`}
+          type="video/webm"
+        />
+      </video>
     </div>
   );
 }

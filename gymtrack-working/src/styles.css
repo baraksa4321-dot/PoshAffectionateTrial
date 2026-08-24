@@ -1941,6 +1941,11 @@ html.night-mode .auth-panel {
   filter: saturate(1.04) drop-shadow(0 3px 3px rgb(75 48 58 / 10%));
 }
 
+.loading-simple-video {
+  background: #f7f2ec;
+  mix-blend-mode: multiply;
+}
+
 .loading-reference-image {
   position: relative;
   z-index: 1;
