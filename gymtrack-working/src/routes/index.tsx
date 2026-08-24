@@ -547,7 +547,7 @@ function Dashboard() {
                   <button
                     type="button"
                     onClick={(event) => {
-                      if (suppressFeatureClick.current) {
+                      if (suppressHomeClick.current) {
                         preventHomeNavigation(event);
                         return;
                       }
