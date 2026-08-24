@@ -752,8 +752,17 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     const { data: dbNutritionDays, error: nutritionError } = await supabase
       .from("nutrition_days")
       .select("*")
-      .eq("user_id", clientId);
+      .eq("user_id", clientId)
+      .order("date", { ascending: false });
     if (nutritionError) throw new Error(`Client nutrition pull failed: ${nutritionError.message}`);
+
+    const { data: dbMeasurements, error: measurementsError } = await supabase
+      .from("body_measurements")
+      .select("*")
+      .eq("user_id", clientId)
+      .order("date", { ascending: false });
+    if (measurementsError)
+      throw new Error(`Client measurements pull failed: ${measurementsError.message}`);
 
     const { data: dbSessions, error: sessionsError } = await supabase
       .from("workout_sessions")
@@ -808,6 +817,25 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
           : (row.date ?? row.recorded_at),
       meals: row.meals || [],
       plannedMeals: row.planned_meals || [],
+      waterMl: row.water_ml === null ? undefined : Number(row.water_ml ?? 0),
+      waterTargetMl: row.water_target_ml === null ? undefined : Number(row.water_target_ml ?? 2500),
+    }));
+    const latestNutritionTarget = (dbNutritionDays || []).find(
+      (row) => row.target_calories !== null && row.target_calories !== undefined,
+    )?.target_calories;
+    const measurementList: BodyMeasurement[] = (dbMeasurements || []).map((row) => ({
+      id: row.id,
+      date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
+      chestCm: row.chest_cm === null ? undefined : Number(row.chest_cm),
+      waistCm: row.waist_cm === null ? undefined : Number(row.waist_cm),
+      hipsCm: row.hips_cm === null ? undefined : Number(row.hips_cm),
+      bicepsCm: row.biceps_cm === null ? undefined : Number(row.biceps_cm),
+      thighsCm: row.thighs_cm === null ? undefined : Number(row.thighs_cm),
+      calvesCm: row.calves_cm === null ? undefined : Number(row.calves_cm),
+      neckCm: row.neck_cm === null ? undefined : Number(row.neck_cm),
+      bodyFatPct: row.body_fat_pct === null ? undefined : Number(row.body_fat_pct),
+      muscleMassKg: row.muscle_mass_kg === null ? undefined : Number(row.muscle_mass_kg),
+      notes: row.notes || undefined,
     }));
 
     const historyList: HistorySession[] = (dbSessions || []).map((row) => ({
@@ -838,10 +866,11 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       programs: programsList,
       workouts: Array.from(workoutsMap.values()),
       nutritionDays: nutritionList,
-      nutritionTargets: {},
+      nutritionTargets:
+        latestNutritionTarget === undefined ? {} : { calories: Number(latestNutritionTarget) },
       history: historyList,
       cardioLogs: cardioList,
-      bodyMeasurements: [],
+      bodyMeasurements: measurementList,
       profile: profile
         ? {
             email: profile.email || undefined,
