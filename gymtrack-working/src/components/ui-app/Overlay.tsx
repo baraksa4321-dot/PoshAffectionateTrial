@@ -28,7 +28,6 @@ export function Overlay({
   const [mounted, setMounted] = useState(false);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
-  const [viewportTop, setViewportTop] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
 
@@ -103,10 +102,8 @@ export function Overlay({
     };
     const updateKeyboardOffset = () => {
       const visibleHeight = visualViewport?.height ?? window.innerHeight;
-      const offsetTop = visualViewport?.offsetTop ?? 0;
       setViewportHeight(visibleHeight);
-      setViewportTop(offsetTop);
-      setKeyboardOffset(Math.max(0, window.innerHeight - visibleHeight - offsetTop));
+      setKeyboardOffset(Math.max(0, window.innerHeight - visibleHeight));
       if (visibleHeight < window.innerHeight) keepFocusedFieldVisible();
     };
     updateKeyboardOffset();
@@ -127,7 +124,6 @@ export function Overlay({
       window.cancelAnimationFrame(focusFrame);
       setKeyboardOffset(0);
       setViewportHeight(null);
-      setViewportTop(0);
       scrollLockCount = Math.max(0, scrollLockCount - 1);
       const tokenIndex = openOverlayTokens.indexOf(overlayToken);
       if (tokenIndex !== -1) openOverlayTokens.splice(tokenIndex, 1);
@@ -167,11 +163,7 @@ export function Overlay({
               ? "items-start justify-center"
               : "items-center justify-center"
       } ${isFull ? "bg-background p-0" : "bg-foreground/40 p-4"} ${className}`}
-      style={
-        viewportHeight !== null
-          ? { height: `${viewportHeight}px`, top: `${viewportTop}px` }
-          : undefined
-      }
+      style={viewportHeight !== null ? { height: `${viewportHeight}px`, top: 0 } : undefined}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
