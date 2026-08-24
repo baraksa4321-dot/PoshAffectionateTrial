@@ -1706,6 +1706,7 @@ html.night-mode .nav-shell {
   width: 150px;
   height: 104px;
   overflow: visible;
+  filter: drop-shadow(0 5px 5px color-mix(in srgb, var(--ink) 18%, transparent));
 }
 
 .loading-illustration-label {
@@ -1796,14 +1797,14 @@ html.night-mode .nav-shell {
 
 .loading-food-shell {
   fill: color-mix(in srgb, var(--surface) 72%, var(--primary));
-  stroke: var(--primary);
+  stroke: var(--ink);
   stroke-linejoin: round;
-  stroke-width: 2.7;
+  stroke-width: 3.2;
 }
 
 .loading-food-fill {
   fill: var(--primary);
-  opacity: 0.78;
+  opacity: 0.94;
   stroke: none;
   transform-box: fill-box;
   transform-origin: bottom;
@@ -1814,8 +1815,8 @@ html.night-mode .nav-shell {
   fill: none;
   stroke: var(--ink);
   stroke-linecap: round;
-  stroke-width: 2.4;
-  opacity: 0.72;
+  stroke-width: 2.8;
+  opacity: 0.9;
 }
 
 .loading-food-pit,
@@ -1833,14 +1834,15 @@ html.night-mode .nav-shell {
 }
 
 .loading-broccoli-shell {
-  fill: #d5eed6;
-  stroke: #23724a;
+  fill: #fff;
+  stroke: var(--ink);
   stroke-linejoin: round;
-  stroke-width: 2.7;
+  stroke-width: 3.2;
 }
 
 .loading-broccoli-fill {
-  fill: #318d50;
+  fill: color-mix(in srgb, var(--primary) 78%, #227447);
+  opacity: 0.96;
   transform-box: fill-box;
   transform-origin: bottom;
   animation: loading-dumbbell-fill 2.5s ease-in-out infinite;
@@ -1848,15 +1850,15 @@ html.night-mode .nav-shell {
 
 .loading-broccoli-detail {
   fill: none;
-  stroke: #17623c;
+  stroke: var(--ink);
   stroke-linecap: round;
-  stroke-width: 2.3;
+  stroke-width: 2.8;
 }
 
 .loading-egg-white {
-  fill: #fffdf6;
-  stroke: #d8d1c1;
-  stroke-width: 2.7;
+  fill: #fff;
+  stroke: var(--ink);
+  stroke-width: 3.2;
 }
 
 .loading-egg-white-fill {
@@ -1867,9 +1869,9 @@ html.night-mode .nav-shell {
 }
 
 .loading-egg-yolk {
-  fill: #f7bd2f;
-  stroke: #b87512;
-  stroke-width: 1.7;
+  fill: color-mix(in srgb, var(--accent) 84%, #f09b16);
+  stroke: var(--ink);
+  stroke-width: 2.2;
 }
 
 .loading-growth-shell {
@@ -1896,15 +1898,15 @@ html.night-mode .nav-shell {
 }
 
 .loading-food-generic-shell {
-  fill: color-mix(in srgb, currentColor 20%, var(--surface));
+  fill: #fff;
   stroke: currentColor;
   stroke-linejoin: round;
-  stroke-width: 2.7;
+  stroke-width: 3.2;
 }
 
 .loading-food-generic-fill {
   fill: currentColor;
-  opacity: 0.82;
+  opacity: 0.96;
   stroke: none;
   transform-box: fill-box;
   transform-origin: bottom;
@@ -1913,9 +1915,9 @@ html.night-mode .nav-shell {
 
 .loading-food-generic-detail {
   fill: none;
-  stroke: color-mix(in srgb, white 65%, currentColor);
+  stroke: var(--ink);
   stroke-linecap: round;
-  stroke-width: 2.4;
+  stroke-width: 2.8;
 }
 
 /* Loading illustrations start as clean white line art and slowly fill from
@@ -1940,6 +1942,44 @@ html.night-mode .nav-shell {
   transform-box: fill-box;
   transform-origin: bottom center;
   animation: loading-bottom-fill 3.8s cubic-bezier(0.22, 0.75, 0.3, 1) infinite;
+}
+
+/* High-contrast silhouette treatment: the white interior stays identifiable
+   against every palette while the fill and outline carry the active theme. */
+.loading-simple-illustration .loading-food-shell,
+.loading-simple-illustration .loading-broccoli-shell,
+.loading-simple-illustration .loading-egg-white,
+.loading-simple-illustration .loading-food-generic-shell {
+  fill: #fff;
+  stroke: var(--ink);
+  stroke-width: 3.4;
+}
+
+.loading-simple-illustration .loading-food-fill,
+.loading-simple-illustration .loading-broccoli-fill,
+.loading-simple-illustration .loading-food-generic-fill {
+  opacity: 1;
+  filter: drop-shadow(0 2px 1px color-mix(in srgb, var(--ink) 20%, transparent));
+}
+
+.loading-simple-illustration .loading-food-detail,
+.loading-simple-illustration .loading-broccoli-detail {
+  stroke: var(--ink);
+  stroke-width: 2.9;
+  opacity: 1;
+}
+
+.loading-simple-illustration .loading-food-pit,
+.loading-simple-illustration .loading-food-yolk {
+  stroke: var(--ink);
+  stroke-width: 2.2;
+}
+
+.loading-simple-illustration .loading-dumbbell-plate,
+.loading-simple-illustration .loading-dumbbell-cap,
+.loading-simple-illustration .loading-dumbbell-grip {
+  stroke: var(--ink);
+  stroke-width: 2.2;
 }
 
 @keyframes loading-bottom-fill {
