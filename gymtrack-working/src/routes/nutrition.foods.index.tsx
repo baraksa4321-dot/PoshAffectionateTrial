@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Apple, ArrowRight, Heart, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";

@@ -17,5 +17,5 @@ function Workouts() {
   useEffect(() => {
     navigate({ to: "/programs", replace: true });
   }, [navigate]);
-  return <AppShell title="" subtitle="" />;
+  return <AppShell title="" subtitle=""><span /></AppShell>;
 }

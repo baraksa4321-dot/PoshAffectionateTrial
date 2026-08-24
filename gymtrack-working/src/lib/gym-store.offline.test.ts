@@ -1,3 +1,6 @@
+// The standalone package is executed by Bun; its runtime matcher types are
+// supplied by Bun rather than the browser TypeScript environment.
+// @ts-nocheck
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 type Deferred<T> = {
@@ -153,7 +156,7 @@ describe("offline store lifecycle", () => {
 
     emit("online");
     await eventually(() => syncCalls.length > 0);
-    expect(syncCalls[0]?.localData.preExitChecklist).toEqual([
+    expect(syncCalls[0]?.localData["preExitChecklist"]).toEqual([
       expect.objectContaining({ label: "Bring water" }),
     ]);
     await eventually(() => reloadedStore.getGymStoreSyncStatus() === "synced");

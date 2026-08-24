@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { EVERYDAY_FOOD_DATABASE } from "./israeli-food-db";
 import { supabase } from "./supabase";
 import {

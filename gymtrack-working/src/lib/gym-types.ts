@@ -168,6 +168,7 @@ export type HistorySession = {
   date: string; // ISO
   durationSec: number;
   entries: HistoryEntry[];
+  notes?: string;
   difficultyRating?: "easy" | "appropriate" | "difficult";
   discomfortNotes?: string;
 };
