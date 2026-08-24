@@ -1892,12 +1892,14 @@ html.night-mode .auth-panel {
 }
 
 .loading-wordmark {
+  position: fixed;
+  right: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 2;
   display: block;
-  width: 126px;
+  width: 78px;
   height: auto;
-  margin-top: 17px;
-  margin-right: auto;
-  margin-left: auto;
+  margin: 0;
   object-fit: contain;
 }
 
