@@ -538,6 +538,13 @@ export function CoachDashboardPage({
     const latestProgram = clientDetails.programs.at(-1);
     if (latestProgram) {
       setEditingProgramId(latestProgram.id);
+      const firstWorkoutDay = clientDetails.workouts.find((workout) =>
+        latestProgram.dayIds.includes(workout.id),
+      );
+      setEditingDayId(firstWorkoutDay?.id ?? null);
+    } else {
+      setEditingProgramId(null);
+      setEditingDayId(null);
     }
     const latestNutritionDay = [...clientDetails.nutritionDays].sort((a, b) =>
       b.date.localeCompare(a.date),
