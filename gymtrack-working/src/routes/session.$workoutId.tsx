@@ -82,6 +82,11 @@ function supersetLabels(items: WorkoutItem[]) {
 
 const ACTIVE_SESSION_KEY = (id: string) => `gymtrack.active_session.${id}`;
 
+type SmartTimerPosition = {
+  exerciseIndex: number;
+  setNumber: number;
+};
+
 function Session() {
   const { workoutId } = Route.useParams();
   const navigate = useNavigate();
@@ -209,6 +214,7 @@ function Session() {
   const [startedAt] = useState(() => Date.now());
   const [rest, setRest] = useState(0);
   const [restFinished, setRestFinished] = useState(false);
+  const [smartTimerPosition, setSmartTimerPosition] = useState<SmartTimerPosition | null>(null);
   const [restPaused, setRestPaused] = useState(false);
   const [restExpanded, setRestExpanded] = useState(false);
   const [restOffset, setRestOffset] = useState({ x: 0, y: 0 });
@@ -226,6 +232,29 @@ function Session() {
     offsetY: number;
   } | null>(null);
   const restDraggedRef = useRef(false);
+
+  const nextSmartTimerPosition = (position: SmartTimerPosition): SmartTimerPosition | null => {
+    const currentEntry = entries[position.exerciseIndex];
+    const totalSets =
+      currentEntry?.sets.filter((set) => !set.warmup).length ??
+      workout?.items[position.exerciseIndex]?.sets ??
+      0;
+    if (position.setNumber < totalSets) {
+      return { ...position, setNumber: position.setNumber + 1 };
+    }
+
+    for (
+      let exerciseIndex = position.exerciseIndex + 1;
+      exerciseIndex < entries.length;
+      exerciseIndex += 1
+    ) {
+      const nextEntry = entries[exerciseIndex];
+      if (nextEntry?.sets.some((set) => !set.warmup)) {
+        return { exerciseIndex, setNumber: 1 };
+      }
+    }
+    return null;
+  };
 
   useEffect(() => {
     setEntries(initial);
