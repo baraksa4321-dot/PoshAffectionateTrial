@@ -206,13 +206,9 @@ function Dashboard() {
 
   const startHomeCardHold = (card: HomeCardId, event: PointerEvent<HTMLElement>) => {
     clearFeatureHold();
-    holdStart.current = { x: event.clientX, y: event.clientY };
-    holdTimer.current = window.setTimeout(() => {
-      setIsArrangingHome(true);
-      setDraggingHomeCard(card);
-      suppressHomeClick.current = true;
-      navigator.vibrate?.(25);
-    }, 520);
+    // Home-card reordering is intentionally disabled.
+    void card;
+    void event;
   };
 
   const moveHomeCard = (event: PointerEvent<HTMLElement>) => {
