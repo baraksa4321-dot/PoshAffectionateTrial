@@ -215,6 +215,7 @@ function Session() {
   const [rest, setRest] = useState(0);
   const [restFinished, setRestFinished] = useState(false);
   const [smartTimerPosition, setSmartTimerPosition] = useState<SmartTimerPosition | null>(null);
+  const [smartTimerStarted, setSmartTimerStarted] = useState(false);
   const [restPaused, setRestPaused] = useState(false);
   const [restExpanded, setRestExpanded] = useState(false);
   const [restOffset, setRestOffset] = useState({ x: 0, y: 0 });
@@ -290,6 +291,9 @@ function Session() {
     ) {
       restCompletionVibratedRef.current = true;
       setRestFinished(true);
+      setSmartTimerPosition((current) =>
+        current ? nextSmartTimerPosition(current) : current,
+      );
       // Vibration is not exposed by every iOS browser. Use both the native
       // pattern and a short user-activated audio fallback when available.
       navigator.vibrate?.([180, 80, 180, 80, 320]);
@@ -313,7 +317,7 @@ function Session() {
       }
     }
     previousRestRef.current = rest;
-  }, [rest]);
+  }, [entries, rest]);
 
   const labels = useMemo(() => supersetLabels(workout?.items ?? []), [workout?.items]);
   const exerciseCatalog = useMemo(() => [...exercises, ...BODYWEIGHT_EXERCISES], [exercises]);
@@ -383,11 +387,27 @@ function Session() {
       } else {
         void vibrationAudioRef.current?.resume();
       }
+      const setNumber =
+        entries[ei]?.sets.slice(0, si + 1).filter((set) => !set.warmup).length ?? 1;
+      setSmartTimerPosition({ exerciseIndex: ei, setNumber });
+      setSmartTimerStarted(true);
       const restSec = workout.items[ei]?.rest ?? 60;
       setRest(restSec);
       setRestFinished(false);
       setRestPaused(false);
     }
+  };
+
+  const startSmartRest = () => {
+    if (smartTimerStarted && !smartTimerPosition) return;
+    const position = smartTimerPosition ?? { exerciseIndex: 0, setNumber: 1 };
+    const restSeconds = workout?.items[position.exerciseIndex]?.rest ?? 60;
+    setSmartTimerPosition(position);
+    setSmartTimerStarted(true);
+    setRest(restSeconds);
+    setRestFinished(false);
+    setRestPaused(false);
+    setRestExpanded(true);
   };
 
   const replaceExercise = (ei: number, newEx: Exercise) => {
@@ -998,7 +1018,7 @@ function Session() {
                   if (rest > 0) {
                     setRestPaused((paused) => !paused);
                   } else {
-                    setRestExpanded((expanded) => !expanded);
+                     startSmartRest();
                   }
                 }}
                 role="button"
@@ -1018,7 +1038,7 @@ function Session() {
                     if (rest > 0) {
                       setRestPaused((paused) => !paused);
                     } else {
-                      setRestExpanded((expanded) => !expanded);
+                       startSmartRest();
                     }
                   }
                 }}
@@ -1039,6 +1059,12 @@ function Session() {
                             ? "Time over"
                             : "מוכן"}
                       </p>
+                      {smartTimerPosition ? (
+                        <p className="truncate text-[9px] text-primary-foreground/70">
+                          {entries[smartTimerPosition.exerciseIndex]?.exerciseName ?? "תרגיל"} · סט{" "}
+                          {smartTimerPosition.setNumber}
+                        </p>
+                      ) : null}
                     </div>
                     {rest <= 0 ? (
                       <div className="flex items-center gap-1">
