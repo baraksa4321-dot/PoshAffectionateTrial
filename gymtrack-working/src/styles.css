@@ -1834,6 +1834,7 @@ html.night-mode .auth-panel {
   .loading-clean-dots span,
   .loading-witty-message,
   .loading-realistic-image,
+  .loading-reference-image,
   .loading-character,
   .loading-character *,
   .loading-doodle-streak,
@@ -1886,6 +1887,192 @@ html.night-mode .auth-panel {
 
 .loading-micro-stage::before {
   display: none;
+}
+
+.loading-reference-image {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 150px;
+  height: 112px;
+  object-fit: cover;
+  border-radius: 18px;
+  filter: drop-shadow(0 5px 4px rgb(75 48 58 / 16%));
+  animation: loading-reference-breathe 1.7s ease-in-out infinite;
+}
+
+.loading-reference-pose-1,
+.loading-reference-pose-11 {
+  animation-name: loading-reference-squat;
+}
+
+.loading-reference-pose-2,
+.loading-reference-pose-12 {
+  animation-name: loading-reference-run;
+}
+
+.loading-reference-pose-3,
+.loading-reference-pose-13 {
+  animation-name: loading-reference-knees;
+  animation-duration: 1.05s;
+}
+
+.loading-reference-pose-4,
+.loading-reference-pose-14 {
+  animation-name: loading-reference-rope;
+}
+
+.loading-reference-pose-5,
+.loading-reference-pose-15 {
+  animation-name: loading-reference-stretch;
+}
+
+.loading-reference-pose-6,
+.loading-reference-pose-16 {
+  animation-name: loading-reference-curl;
+}
+
+.loading-reference-pose-7,
+.loading-reference-pose-17 {
+  animation-name: loading-reference-yoga;
+}
+
+.loading-reference-pose-8,
+.loading-reference-pose-18 {
+  animation-name: loading-reference-dance;
+}
+
+.loading-reference-pose-9,
+.loading-reference-pose-19 {
+  animation-name: loading-reference-lift;
+}
+
+.loading-reference-pose-10,
+.loading-reference-pose-11,
+.loading-reference-pose-12,
+.loading-reference-pose-13,
+.loading-reference-pose-14,
+.loading-reference-pose-15,
+.loading-reference-pose-16,
+.loading-reference-pose-17,
+.loading-reference-pose-18,
+.loading-reference-pose-19 {
+  animation-direction: reverse;
+}
+
+@keyframes loading-reference-breathe {
+  0%,
+  100% {
+    transform: translateY(5px) rotate(-1deg) scale(0.97);
+  }
+  45% {
+    transform: translateY(-10px) rotate(2deg) scale(1.03);
+  }
+}
+
+@keyframes loading-reference-squat {
+  0%,
+  100% {
+    transform: translateY(4px) scaleY(0.96);
+  }
+  45% {
+    transform: translateY(12px) scaleY(0.9) rotate(-2deg);
+  }
+  65% {
+    transform: translateY(-7px) scaleY(1.02) rotate(2deg);
+  }
+}
+
+@keyframes loading-reference-run {
+  0%,
+  100% {
+    transform: translate(-5px, 3px) rotate(-5deg);
+  }
+  35% {
+    transform: translate(5px, -12px) rotate(5deg);
+  }
+  70% {
+    transform: translate(-2px, -5px) rotate(-2deg);
+  }
+}
+
+@keyframes loading-reference-knees {
+  0%,
+  100% {
+    transform: translateY(5px) rotate(4deg);
+  }
+  35% {
+    transform: translateY(-15px) rotate(-5deg);
+  }
+  60% {
+    transform: translateY(-6px) rotate(3deg);
+  }
+}
+
+@keyframes loading-reference-rope {
+  0%,
+  100% {
+    transform: translateY(4px) rotate(-6deg);
+  }
+  40% {
+    transform: translateY(-11px) rotate(6deg);
+  }
+  60% {
+    transform: translateY(-4px) rotate(-3deg);
+  }
+}
+
+@keyframes loading-reference-stretch {
+  0%,
+  100% {
+    transform: translateX(-5px) translateY(3px) rotate(-4deg);
+  }
+  50% {
+    transform: translateX(6px) translateY(-12px) rotate(5deg);
+  }
+}
+
+@keyframes loading-reference-curl {
+  0%,
+  100% {
+    transform: translateY(4px) rotate(-7deg) scale(0.97);
+  }
+  42% {
+    transform: translateY(-13px) rotate(6deg) scale(1.04);
+  }
+}
+
+@keyframes loading-reference-yoga {
+  0%,
+  100% {
+    transform: translateY(3px) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(-11px) rotate(5deg);
+  }
+}
+
+@keyframes loading-reference-dance {
+  0%,
+  100% {
+    transform: translate(-6px, 4px) rotate(-8deg);
+  }
+  50% {
+    transform: translate(7px, -13px) rotate(8deg);
+  }
+}
+
+@keyframes loading-reference-lift {
+  0%,
+  100% {
+    transform: translateY(5px) rotate(3deg);
+  }
+  45% {
+    transform: translateY(-16px) rotate(-4deg);
+  }
+  65% {
+    transform: translateY(-5px) rotate(2deg);
+  }
 }
 
 .loading-character {

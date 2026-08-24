@@ -327,6 +327,29 @@ const LOADING_CHARACTER_POSES = [
   "נפנוף",
 ] as const;
 
+const REFERENCE_LOADING_IMAGES = [
+  { file: "ref-5444.png", label: "מלפפון מצויר בתנועה" },
+  { file: "ref-5445.png", label: "אבוקדו מתאמן" },
+  { file: "ref-5446.png", label: "צפרדע במתיחה" },
+  { file: "ref-5447.png", label: "כלבלב ביוגה" },
+  { file: "ref-5448.png", label: "בננה באימון שיווי משקל" },
+  { file: "ref-5449.png", label: "גזר מרים משקולות" },
+] as const;
+
+function ReferenceLoadingIllustration({ variant }: { variant: number }) {
+  const pose = variant % LOADING_CHARACTER_POSES.length;
+  const image = REFERENCE_LOADING_IMAGES[pose % REFERENCE_LOADING_IMAGES.length];
+  return (
+    <div className="loading-micro-stage">
+      <img
+        className={`loading-reference-image loading-reference-pose-${pose}`}
+        src={`/loading/references/${image.file}`}
+        alt={`איור טעינה: ${image.label}`}
+      />
+    </div>
+  );
+}
+
 function LoadingIllustration({ variant }: { variant: number }) {
   const pose = variant % LOADING_CHARACTER_POSES.length;
   const color = pose % 4;
@@ -998,7 +1021,7 @@ function RootContent() {
             aria-live="polite"
             aria-label="MY routine נטען"
           >
-            <LoadingIllustration variant={loadingVariant} />
+            <ReferenceLoadingIllustration variant={loadingVariant} />
             <p key={loadingMessageIndex} className="loading-witty-message">
               {LOADING_MESSAGES[loadingMessageIndex]}
             </p>
