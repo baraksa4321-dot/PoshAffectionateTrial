@@ -1708,6 +1708,16 @@ html.night-mode .nav-shell {
   overflow: visible;
 }
 
+.loading-illustration-label {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
 .loading-dumbbell-motion {
   transform-box: fill-box;
   transform-origin: center;

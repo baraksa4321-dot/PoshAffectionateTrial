@@ -239,9 +239,24 @@ const LOADING_FOOD_ILLUSTRATIONS = [
 
 function LoadingIllustration({ variant }: { variant: number }) {
   const activeShape = variant % 8;
+  const illustrationLabel = [
+    "משקולת",
+    "ברוקולי",
+    "ברוקולי",
+    "אבוקדו",
+    "ביצה",
+    "עגבנייה",
+    "בטטה",
+    "ברוקולי",
+  ][activeShape];
   return (
-    <div className="loading-micro-stage" aria-hidden="true">
-      <svg className="loading-dumbbell-svg loading-simple-illustration" viewBox="0 0 150 104" role="presentation">
+    <div className="loading-micro-stage">
+      <svg
+        className="loading-dumbbell-svg loading-simple-illustration"
+        viewBox="0 0 150 104"
+        role="img"
+        aria-label={`איור טעינה: ${illustrationLabel}`}
+      >
         {activeShape === 0 ? (
           <g className="loading-dumbbell-motion">
             <ellipse className="loading-dumbbell-shadow" cx="75" cy="82" rx="48" ry="5" />
@@ -442,6 +457,7 @@ function LoadingIllustration({ variant }: { variant: number }) {
           })()
         )}
       </svg>
+      <span className="loading-illustration-label">{illustrationLabel}</span>
     </div>
   );
 }

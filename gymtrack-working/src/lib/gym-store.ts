@@ -32,8 +32,11 @@ import {
 const KEY = "gymtrack.v1";
 const CACHED_USER_KEY = "gymtrack.v1.userId";
 const USER_CACHE_PREFIX = "gymtrack.v1.user.";
-const AUTH_TIMEOUT_MS = 4_000;
-const INITIAL_DATA_TIMEOUT_MS = 4_000;
+// Supabase auth and the initial profile/data hydration may cross several
+// network boundaries. Four seconds caused valid logins on slower connections
+// to be reported as permission failures before the request could finish.
+const AUTH_TIMEOUT_MS = 15_000;
+const INITIAL_DATA_TIMEOUT_MS = 30_000;
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
