@@ -382,7 +382,7 @@ export function AppShell({
               )}
               {isCoach ? (
                 <div
-                  className="flex items-center gap-0.5 rounded-full border border-border bg-surface-2 p-0.5"
+                  className="flex items-center gap-2 rounded-full border border-border bg-surface-2 p-0.5"
                   role="group"
                   aria-label="בחירת מצב עבודה"
                 >
