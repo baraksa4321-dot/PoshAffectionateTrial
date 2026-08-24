@@ -1,4 +1,4 @@
-modules = ["nodejs-24", "python-base-3.13"]
+modules = ["nodejs-20", "web"]
 
 [deployment]
 router = "application"
@@ -23,3 +23,6 @@ timeoutMs = 20000
 [userenv.shared]
 VITE_SUPABASE_URL = "https://pnvtxazqtorylcsjtatv.supabase.co/rest/v1/"
 VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBudnR4YXpxdG9yeWxjc2p0YXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk4MjYsImV4cCI6MjEwMjgzNTgyNn0.L6ZSPRfeJ2EeXw1g7ElIUXHkffF2pjS-4U6qF4EFLAo"
+
+[nix]
+channel = "stable-25_05"
