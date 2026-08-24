@@ -123,6 +123,12 @@ export function AppShell({
     }
   }, [isNightMode]);
 
+  const toggleNightMode = () => {
+    const nextNightMode = !isNightMode;
+    applyNightMode(nextNightMode);
+    setIsNightMode(nextNightMode);
+  };
+
   const NAV = managementView
     ? [
         {
@@ -356,7 +362,7 @@ export function AppShell({
             <BrandLogo />
             <button
               type="button"
-              onClick={() => setIsNightMode((enabled) => !enabled)}
+              onClick={toggleNightMode}
               aria-pressed={isNightMode}
               aria-label={isNightMode ? "מעבר לתצוגת יום" : "מעבר לתצוגת לילה"}
               title={isNightMode ? "תצוגת יום" : "תצוגת לילה"}
