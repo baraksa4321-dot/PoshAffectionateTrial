@@ -949,7 +949,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "manifest", href: "/manifest.json" },
       { rel: "apple-touch-icon", href: "/brand-icon-180.png" },
-      { rel: "icon", type: "image/svg+xml", href: "/brand-icon.svg" },
+      { rel: "icon", type: "image/png", href: "/brand-icon-192.png" },
     ],
   }),
 
@@ -1070,9 +1070,7 @@ function RootContent() {
             <p key={loadingMessageIndex} className="loading-witty-message">
               {LOADING_MESSAGES[loadingMessageIndex]}
             </p>
-            <div className="loading-wordmark" aria-label="MY routine">
-              <span>MY</span> routine
-            </div>
+            <img className="loading-wordmark" src="/brand-logo.png" alt="MY routine" />
           </div>
         </div>
       ) : hasProfileHydrationError ? (

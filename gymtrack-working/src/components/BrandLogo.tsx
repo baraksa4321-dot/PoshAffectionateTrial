@@ -9,11 +9,11 @@ export function BrandLogo({ compact = false }: { compact?: boolean }) {
         compact ? "" : "group"
       }`}
     >
-      <span
-        className={`font-display font-extrabold tracking-tight text-ink ${compact ? "text-base" : "text-[17px]"}`}
-      >
-        <span className="font-black">MY</span> <span className="font-extrabold">routine</span>
-      </span>
+      <img
+        src="/brand-logo.png"
+        alt="MY routine"
+        className={compact ? "h-5 w-[92px] object-contain" : "h-7 w-[128px] object-contain"}
+      />
     </Link>
   );
 }

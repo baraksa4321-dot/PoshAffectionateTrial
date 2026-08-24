@@ -1892,20 +1892,13 @@ html.night-mode .auth-panel {
 }
 
 .loading-wordmark {
+  display: block;
+  width: 126px;
+  height: auto;
   margin-top: 17px;
-  color: #171414;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.05rem;
-  font-style: italic;
-  font-weight: 600;
-  letter-spacing: -0.035em;
-  line-height: 1;
-}
-
-.loading-wordmark span {
-  font-style: normal;
-  font-weight: 800;
-  letter-spacing: -0.06em;
+  margin-right: auto;
+  margin-left: auto;
+  object-fit: contain;
 }
 
 .loading-micro-stage {
