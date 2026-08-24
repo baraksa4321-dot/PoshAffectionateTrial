@@ -115,6 +115,7 @@ export function CoachDashboardPage({
   const [ownerUserSearch, setOwnerUserSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [showClientWorkspace, setShowClientWorkspace] = useState(false);
+  const [openEditor, setOpenEditor] = useState<"programs" | "nutrition" | null>(null);
   const [clientDetails, setClientDetails] = useState<ClientDetails | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [clientDetailsError, setClientDetailsError] = useState("");
@@ -305,9 +306,10 @@ export function CoachDashboardPage({
   }, [clients, clientsOnly]);
 
   useEffect(() => {
-    if (!workspacePage || !clientId) return;
+    if (!clientId) return;
     setSelectedClientId(clientId);
     setShowClientWorkspace(true);
+    setOpenEditor(workspaceMode === "all" ? null : workspaceMode);
     setActiveWorkspaceTab(workspaceMode === "nutrition" ? "nutrition" : "programs");
   }, [workspacePage, clientId, workspaceMode]);
 
@@ -1697,7 +1699,7 @@ export function CoachDashboardPage({
           <Overlay
             open={showClientWorkspace}
             onClose={() => {
-              if (workspacePage) {
+              if (clientId) {
                 navigate({ to: "/coach/clients" });
                 return;
               }
@@ -1707,13 +1709,15 @@ export function CoachDashboardPage({
               setEditingDayId(null);
             }}
             ariaLabel="בניית תוכנית ותפריט למתאמן"
-            variant={workspacePage ? "full" : "center"}
-            className={workspacePage ? "bg-background" : ""}
-            panelClassName={workspacePage ? "bg-background" : ""}
+            variant={workspacePage || openEditor ? "full" : "center"}
+            className={workspacePage || openEditor ? "bg-background" : ""}
+            panelClassName={workspacePage || openEditor ? "bg-background" : ""}
           >
             <div
               className={`w-full space-y-4 bg-background p-4 sm:p-6 ${
-                workspacePage ? "mx-auto max-w-5xl pb-10" : "max-w-2xl rounded-3xl shadow-2xl"
+                workspacePage || openEditor
+                  ? "mx-auto max-w-5xl pb-10"
+                  : "max-w-2xl rounded-3xl shadow-2xl"
               }`}
             >
               <div className="flex items-center justify-between border-b border-border/60 pb-3">
@@ -1729,15 +1733,13 @@ export function CoachDashboardPage({
                 <button
                   type="button"
                   onClick={() => {
-                    if (workspacePage) {
+                    if (clientId) {
                       if (workspaceMode !== "all" && selectedClientId) {
                         navigate({
                           to: "/coach/clients/$clientId",
                           params: { clientId: selectedClientId },
                         });
-                      } else {
-                        navigate({ to: "/coach/clients" });
-                      }
+                      } else navigate({ to: "/coach/clients" });
                       return;
                     }
                     setShowClientWorkspace(false);
@@ -1752,7 +1754,7 @@ export function CoachDashboardPage({
                 </button>
               </div>
 
-              {workspacePage && clientDetails ? (
+              {(workspacePage || openEditor) && clientDetails ? (
                 <>
                   <section className="rounded-3xl border border-primary/20 bg-primary/5 p-4">
                     <div className="flex items-start justify-between gap-3">
@@ -1804,11 +1806,9 @@ export function CoachDashboardPage({
                     aria-label="ניווט בסביבת העריכה"
                     className="sticky top-2 z-10 grid grid-cols-2 gap-2 rounded-2xl border border-border/70 bg-background/95 p-1.5 shadow-sm backdrop-blur"
                   >
-                    <Link
-                      to="/coach/clients/$clientId/program"
-                      params={{ clientId: selectedClientId! }}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => setOpenEditor("programs")}
                       aria-selected={activeWorkspaceTab === "programs"}
                       role="tab"
                       className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors ${
@@ -1819,12 +1819,10 @@ export function CoachDashboardPage({
                     >
                       <Dumbbell className="h-3.5 w-3.5" />
                       תוכנית אימונים
-                    </Link>
-                    <Link
-                      to="/coach/clients/$clientId/nutrition"
-                      params={{ clientId: selectedClientId! }}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOpenEditor("nutrition")}
                       aria-selected={activeWorkspaceTab === "nutrition"}
                       role="tab"
                       className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors ${
@@ -1835,7 +1833,7 @@ export function CoachDashboardPage({
                     >
                       <Apple className="h-3.5 w-3.5" />
                       תפריט תזונה
-                    </Link>
+                    </button>
                   </nav>
                 </>
               ) : null}
@@ -2052,15 +2050,13 @@ export function CoachDashboardPage({
                             </p>
                           ) : null}
                         </div>
-                        <Link
-                          to="/coach/clients/$clientId/program"
-                          params={{ clientId: selectedClientId! }}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
+                          onClick={() => setOpenEditor("programs")}
                           className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary text-xs font-bold text-white"
                         >
                           <Dumbbell className="h-4 w-4" /> תוכנית אימון
-                        </Link>
+                        </button>
                       </div>
 
                       <div className="surface-card space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/35 p-4">
@@ -2126,20 +2122,19 @@ export function CoachDashboardPage({
                             </p>
                           ))}
                         </div>
-                        <Link
-                          to="/coach/clients/$clientId/nutrition"
-                          params={{ clientId: selectedClientId! }}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
+                          onClick={() => setOpenEditor("nutrition")}
                           className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 text-xs font-bold text-white"
                         >
                           <Apple className="h-4 w-4" /> תפריט תזונה
-                        </Link>
+                        </button>
                       </div>
                     </section>
                   ) : null}
 
-                  {workspacePage && workspaceMode === "programs" ? (
+                  {(workspacePage || openEditor === "programs") &&
+                  (workspaceMode === "programs" || openEditor === "programs") ? (
                     <section className="surface-card space-y-3 rounded-2xl border border-amber-200 bg-amber-50/35 p-4">
                       <div className="flex items-center justify-between border-b border-amber-200 pb-2">
                         <div>
@@ -2206,7 +2201,8 @@ export function CoachDashboardPage({
                     </section>
                   ) : null}
 
-                  {workspacePage && workspaceMode === "nutrition" ? (
+                  {(workspacePage || openEditor === "nutrition") &&
+                  (workspaceMode === "nutrition" || openEditor === "nutrition") ? (
                     <section className="surface-card space-y-3 rounded-2xl border border-amber-200 bg-amber-50/35 p-4">
                       <div className="flex items-center justify-between border-b border-amber-200 pb-2">
                         <div>
@@ -2274,7 +2270,7 @@ export function CoachDashboardPage({
                   <div
                     id="coach-programs"
                     className={`scroll-mt-24 surface-card space-y-4 rounded-[1.75rem] border-primary/15 bg-primary/[0.02] p-4 ${
-                      workspacePage && workspaceMode === "nutrition" ? "hidden" : ""
+                      (workspaceMode === "nutrition" || openEditor !== "programs") ? "hidden" : ""
                     }`}
                   >
                     <div className="flex items-center justify-between border-b pb-2">
@@ -2905,7 +2901,7 @@ export function CoachDashboardPage({
                   <div
                     id="coach-menu"
                     className={`surface-card space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 ${
-                      workspacePage && workspaceMode === "programs" ? "hidden" : ""
+                      (workspaceMode === "programs" || openEditor !== "nutrition") ? "hidden" : ""
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3 border-b border-emerald-200/70 pb-2">
@@ -3115,7 +3111,7 @@ export function CoachDashboardPage({
                   <div
                     id="coach-nutrition"
                     className={`scroll-mt-24 surface-card space-y-4 rounded-[1.75rem] border-emerald-200/70 bg-emerald-50/30 p-4 ${
-                      workspacePage && workspaceMode === "programs" ? "hidden" : ""
+                      (workspaceMode === "programs" || openEditor !== "nutrition") ? "hidden" : ""
                     }`}
                   >
                     <div className="flex items-center justify-between border-b pb-2">
