@@ -1771,52 +1771,6 @@ export function CoachDashboardPage({
 
               {(workspacePage || openEditor) && clientDetails ? (
                 <>
-                  <section className="rounded-3xl border border-primary/20 bg-primary/5 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                          סביבת עריכה אישית
-                        </p>
-                        <h2 className="mt-1 font-display text-xl font-extrabold text-ink">
-                          {isSelfSelected
-                            ? "התוכנית והתפריט שלי"
-                            : `בונים עבור ${profileDisplayName(selectedClientInfo?.profiles)}`}
-                        </h2>
-                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                          עדכון מרוכז של האימונים, ימי האימון, התרגילים והתפריט המתוכנן.
-                        </p>
-                      </div>
-                      <div className="illustrated-mark grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
-                        <Dumbbell className="h-5 w-5" />
-                      </div>
-                    </div>
-                    <div className="mt-4 grid grid-cols-4 gap-2 text-center">
-                      <div className="rounded-2xl bg-white/80 p-2">
-                        <span className="block text-[10px] text-muted-foreground">תוכניות</span>
-                        <strong className="mt-0.5 block text-sm text-ink">
-                          {clientDetails.programs?.length || 0}
-                        </strong>
-                      </div>
-                      <div className="rounded-2xl bg-white/80 p-2">
-                        <span className="block text-[10px] text-muted-foreground">ימי אימון</span>
-                        <strong className="mt-0.5 block text-sm text-ink">
-                          {clientDetails.workouts?.length || 0}
-                        </strong>
-                      </div>
-                      <div className="rounded-2xl bg-white/80 p-2">
-                        <span className="block text-[10px] text-muted-foreground">קלוריות</span>
-                        <strong className="mt-0.5 block text-sm text-ink">
-                          {clientDetails.nutritionTargets?.calories ?? "לא הוגדר"}
-                        </strong>
-                      </div>
-                      <div className="rounded-2xl bg-white/80 p-2">
-                        <span className="block text-[10px] text-muted-foreground">ימי תפריט</span>
-                        <strong className="mt-0.5 block text-sm text-ink">
-                          {clientDetails.nutritionDays?.length || 0}
-                        </strong>
-                      </div>
-                    </div>
-                  </section>
                   <nav
                     aria-label="ניווט בסביבת העריכה"
                     className="sticky top-2 z-10 grid grid-cols-2 gap-2 rounded-2xl border border-border/70 bg-background/95 p-1.5 shadow-sm backdrop-blur"
