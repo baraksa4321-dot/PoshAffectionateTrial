@@ -255,7 +255,7 @@ function LoadingIllustration({ variant }: { variant: number }) {
     <div className="loading-micro-stage">
       <img
         className="loading-realistic-image"
-        src={`/loading/cartoon-loading-${asset.file}.png`}
+        src={`/loading/handmade-loading-${asset.file}.png`}
         alt={`איור טעינה: ${asset.label}`}
       />
     </div>
