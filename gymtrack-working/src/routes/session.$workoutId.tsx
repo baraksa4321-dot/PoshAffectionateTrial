@@ -521,6 +521,22 @@ function Session() {
       kicker={currentProgram?.name ?? "אימון"}
       title={workout.name}
       subtitle={`${doneSets} מתוך ${totalSets} סטים · בהצלחה!`}
+      headerAccessory={
+        <button
+          type="button"
+          onClick={toggleBodyweightMode}
+          aria-pressed={isBodyweightMode}
+          aria-label={isBodyweightMode ? "חזרה לאימון רגיל" : "הפעלת אימון משקל גוף"}
+          title={isBodyweightMode ? "חזרה לאימון רגיל" : "הפעלת אימון משקל גוף"}
+          className={`bodyweight-header-toggle press rounded-full border px-2 py-1 text-[9px] font-medium transition-colors ${
+            isBodyweightMode
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
+          }`}
+        >
+          {isBodyweightMode ? "משקל גוף פעיל" : "אימון משקל גוף"}
+        </button>
+      }
       action={
         <div className="flex items-center gap-2">
           <button
@@ -592,30 +608,11 @@ function Session() {
           </div>
         </div>
       </div>
-      <div className="bodyweight-toggle-card surface-card border border-primary/20 bg-primary/5 p-2 text-start">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold text-ink">
-              {genderText(gender, "צריכה אימון משקל גוף?", "צריך אימון משקל גוף?")}
-            </p>
-            <p className="mt-0.5 text-[9px] leading-relaxed text-muted-foreground">
-              נחליף כל תרגיל בתרגיל משקל גוף שעובד על אותו שריר.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={toggleBodyweightMode}
-            className="press shrink-0 rounded-lg bg-primary px-2 py-1.5 text-[9px] font-bold text-primary-foreground shadow-sm"
-          >
-            {isBodyweightMode ? "חזרה לאימון רגיל" : "עדכני לאימון משקל גוף"}
-          </button>
-        </div>
-        {bodyweightNotice ? (
-          <p className="mt-2 rounded-lg bg-emerald-50 px-2.5 py-2 text-[11px] font-semibold text-emerald-800">
-            {bodyweightNotice}
-          </p>
-        ) : null}
-      </div>
+      {bodyweightNotice ? (
+        <p className="mt-2 rounded-lg bg-emerald-50 px-2.5 py-2 text-[11px] font-semibold text-emerald-800">
+          {bodyweightNotice}
+        </p>
+      ) : null}
       <div className="mt-5 space-y-4">
         {entries.map((entry, ei) => {
           const item = workout.items[ei];

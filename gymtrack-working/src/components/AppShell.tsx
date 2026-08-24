@@ -39,6 +39,7 @@ export function AppShell({
   subtitle,
   kicker,
   action,
+  headerAccessory,
   authOnly = false,
   compactHeader = false,
   children,
@@ -47,6 +48,7 @@ export function AppShell({
   subtitle?: string | undefined;
   kicker?: string | undefined;
   action?: ReactNode | undefined;
+  headerAccessory?: ReactNode | undefined;
   authOnly?: boolean | undefined;
   compactHeader?: boolean | undefined;
   children: ReactNode;
@@ -327,16 +329,16 @@ export function AppShell({
     >
       <header
         className="app-topbar sticky top-0 z-30 border-b border-border/70 bg-background/90 shadow-[0_8px_24px_oklch(0.2_0.03_35_/_0.035)] backdrop-blur-xl"
-        style={{ paddingTop: "max(0.6rem, env(safe-area-inset-top))" }}
+        style={{ paddingTop: "max(0.35rem, env(safe-area-inset-top))" }}
       >
         <div
           className={`mx-auto w-full max-w-3xl px-4 sm:px-6 ${
-            compactHeader ? "pb-2 pt-0.5" : "pb-4 pt-1"
+            compactHeader ? "pb-1.5 pt-0" : "pb-2 pt-0"
           }`}
         >
           <div
             className={`flex items-center justify-between gap-3 border-b border-border/50 ${
-              compactHeader ? "mb-1 pb-1" : "mb-3 pb-2"
+              compactHeader ? "mb-1 pb-0.5" : "mb-2 pb-1"
             }`}
           >
             <BrandLogo />
@@ -355,12 +357,14 @@ export function AppShell({
               )}
             </button>
           </div>
-          {isCoach ? (
+          {headerAccessory || isCoach ? (
             <div
-              className={`flex justify-end border-b border-border/50 ${
-                compactHeader ? "mb-1 pb-1" : "mb-3 pb-2"
+              className={`flex items-center justify-between gap-2 border-b border-border/50 ${
+                compactHeader ? "mb-1 pb-0.5" : "mb-2 pb-1"
               }`}
             >
+              {headerAccessory ? <div className="min-w-0 shrink-0">{headerAccessory}</div> : <span />}
+              {isCoach ? (
               <div
                 className="flex items-center gap-0.5 rounded-full border border-border bg-surface-2 p-0.5"
                 role="group"
@@ -397,6 +401,7 @@ export function AppShell({
                   {isOwner ? "בעלים" : "מאמן"}
                 </Link>
               </div>
+              ) : null}
             </div>
           ) : null}
           {title || action ? (
@@ -404,10 +409,10 @@ export function AppShell({
               <div className="min-w-0 flex-1 text-start">
                 {title ? (
                   <h1
-                    className={`min-w-0 break-words font-display font-extrabold leading-snug tracking-tight text-ink ${
+                    className={`min-w-0 truncate whitespace-nowrap font-display font-extrabold leading-snug tracking-tight text-ink ${
                       compactHeader
-                        ? "text-[clamp(16px,4.5vw,20px)]"
-                        : "text-[clamp(18px,5vw,23px)]"
+                        ? "text-[clamp(15px,4vw,18px)]"
+                        : "text-[clamp(16px,4.5vw,20px)]"
                     }`}
                   >
                     {headerTitle}
@@ -771,7 +776,7 @@ export function AppShell({
         <nav aria-label="ניווט ראשי" className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
           <div
             className="nav-shell pointer-events-auto mx-auto flex w-full max-w-3xl items-center justify-between border-t bg-background/95 backdrop-blur-xl"
-            style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
+            style={{ paddingBottom: "max(0.25rem, env(safe-area-inset-bottom))" }}
           >
             {NAV.map(({ to, label, id, icon: Icon, onClick }) => (
               <Link
@@ -780,14 +785,14 @@ export function AppShell({
                 onClick={onClick}
                 activeOptions={{ exact: to === "/" || to === "/coach" }}
                 data-testid={`link-nav-${id}`}
-                className="app-nav-link group relative flex min-h-[4rem] flex-1 flex-col items-center justify-center gap-1.5 py-2 text-muted-foreground transition-colors data-[status=active]:text-primary hover:text-ink"
+                className="app-nav-link group relative flex min-h-[3.1rem] flex-1 flex-col items-center justify-center gap-0.5 py-1 text-muted-foreground transition-colors data-[status=active]:text-primary hover:text-ink"
               >
                 <span className="absolute inset-x-0 top-0 h-[2px] bg-primary opacity-0 transition-opacity group-data-[status=active]:opacity-100" />
                 <Icon
                   className="h-[20px] w-[20px] transition-transform group-active:scale-95"
                   strokeWidth={2}
                 />
-                <span className="text-[11px] font-bold tracking-wide">{label}</span>
+                <span className="max-w-full truncate px-1 text-[10px] font-medium tracking-wide">{label}</span>
               </Link>
             ))}
           </div>
