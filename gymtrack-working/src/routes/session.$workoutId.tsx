@@ -101,6 +101,12 @@ function Session() {
   );
   const regularWorkoutSnapshot = useRef(workout);
 
+  useEffect(() => {
+    if (!bodyweightNotice) return;
+    const timeoutId = window.setTimeout(() => setBodyweightNotice(""), 4000);
+    return () => window.clearTimeout(timeoutId);
+  }, [bodyweightNotice]);
+
   const [isPaused, setIsPaused] = useState(false);
 
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
