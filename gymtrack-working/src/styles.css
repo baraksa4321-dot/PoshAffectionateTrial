@@ -1949,6 +1949,110 @@ html.night-mode .auth-panel {
   opacity: 0.9;
 }
 
+.loading-character-avocado,
+.loading-character-banana,
+.loading-character-carrot,
+.loading-character-frog,
+.loading-character-dog,
+.loading-character-apple,
+.loading-character-broccoli,
+.loading-character-egg,
+.loading-character-peach,
+.loading-character-tomato {
+  stroke: #55344a;
+  stroke-width: 3;
+}
+
+.loading-character-avocado {
+  fill: #9bd33e;
+}
+
+.loading-character-pit {
+  fill: #b96b35;
+  stroke: #55344a;
+  stroke-width: 2;
+}
+
+.loading-character-banana {
+  fill: #ffd447;
+}
+
+.loading-character-carrot,
+.loading-character-tomato {
+  fill: #f28b35;
+}
+
+.loading-character-leaves,
+.loading-character-leaf {
+  fill: #6bb84a;
+  stroke: #55344a;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+.loading-character-frog {
+  fill: #86c94c;
+}
+
+.loading-character-frog-eye {
+  fill: #b8e765;
+  stroke: #55344a;
+  stroke-width: 3;
+}
+
+.loading-character-dog,
+.loading-character-egg {
+  fill: #fffaf1;
+}
+
+.loading-character-ear {
+  fill: #e9a4a6;
+  stroke: #55344a;
+  stroke-linecap: round;
+  stroke-width: 3;
+}
+
+.loading-character-apple {
+  fill: #ef6d63;
+}
+
+.loading-character-broccoli {
+  fill: #62b957;
+}
+
+.loading-character-broccoli-stem {
+  fill: #8dcb63;
+  stroke: #55344a;
+  stroke-width: 3;
+}
+
+.loading-character-yolk {
+  fill: #f6b83f;
+  stroke: #55344a;
+  stroke-width: 2;
+}
+
+.loading-character-peach {
+  fill: #f3a06c;
+}
+
+.loading-character-type-1 .loading-character-head {
+  animation: loading-character-head-banana 1.55s ease-in-out infinite;
+}
+
+.loading-character-type-3 .loading-character-head {
+  animation: loading-character-head-frog 1.2s ease-in-out infinite;
+}
+
+.loading-character-type-4 .loading-character-head {
+  animation: loading-character-head-dog 1.8s ease-in-out infinite;
+}
+
+.loading-character-type-7 .loading-character-head {
+  animation: loading-character-head-egg 1.4s ease-in-out infinite;
+}
+
 .loading-character-hand {
   fill: #fff1df;
   stroke: #55344a;
@@ -2337,6 +2441,46 @@ html.night-mode .auth-panel {
   }
   50% {
     transform: rotate(4deg);
+  }
+}
+
+@keyframes loading-character-head-banana {
+  0%,
+  100% {
+    transform: rotate(-5deg) translateY(2px);
+  }
+  50% {
+    transform: rotate(7deg) translateY(-7px);
+  }
+}
+
+@keyframes loading-character-head-frog {
+  0%,
+  100% {
+    transform: translateY(2px) scaleY(0.96);
+  }
+  50% {
+    transform: translateY(-7px) scaleY(1.05);
+  }
+}
+
+@keyframes loading-character-head-dog {
+  0%,
+  100% {
+    transform: rotate(5deg) translateY(2px);
+  }
+  50% {
+    transform: rotate(-7deg) translateY(-5px);
+  }
+}
+
+@keyframes loading-character-head-egg {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(5deg) translateY(-10px);
   }
 }
 

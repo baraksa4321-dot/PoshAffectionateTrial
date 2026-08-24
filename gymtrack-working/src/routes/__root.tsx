@@ -330,10 +330,11 @@ const LOADING_CHARACTER_POSES = [
 function LoadingIllustration({ variant }: { variant: number }) {
   const pose = variant % LOADING_CHARACTER_POSES.length;
   const color = pose % 4;
+  const characterType = pose % 10;
   return (
     <div className="loading-micro-stage">
       <svg
-        className={`loading-character loading-character-pose-${pose} loading-character-color-${color}`}
+        className={`loading-character loading-character-pose-${pose} loading-character-type-${characterType} loading-character-color-${color}`}
         viewBox="0 0 180 140"
         role="img"
         aria-label={`איור טעינה: ${LOADING_CHARACTER_POSES[pose]}`}
@@ -364,11 +365,97 @@ function LoadingIllustration({ variant }: { variant: number }) {
           <circle className="loading-character-hand" cx="139" cy="88" r="4" />
         </g>
         <g className="loading-character-body">
-          <path
-            className="loading-character-shirt"
-            d="M65 55c7-8 43-8 50 0l-7 42c-8 6-28 6-36 0z"
-          />
-          <path className="loading-character-belly" d="M75 66c8 5 22 5 30 0v26c-8 4-22 4-30 0z" />
+          {characterType === 0 ? (
+            <>
+              <path
+                className="loading-character-avocado"
+                d="M90 51c-24-8-39 11-35 34 4 20 17 28 35 28s31-8 35-28c4-23-11-42-35-34z"
+              />
+              <circle className="loading-character-pit" cx="90" cy="88" r="10" />
+            </>
+          ) : characterType === 1 ? (
+            <path
+              className="loading-character-banana"
+              d="M61 72c12-24 35-28 58-16 11 6 16 17 13 28-4 14-22 22-39 18-20-5-32-15-32-30z"
+            />
+          ) : characterType === 2 ? (
+            <>
+              <path
+                className="loading-character-carrot"
+                d="M68 58c14-5 30-5 44 0l-6 49c-7 12-25 12-32 0z"
+              />
+              <path
+                className="loading-character-leaves"
+                d="M78 58c-7-14 3-21 8-8 1-17 12-17 11 0 10-10 17-1 7 10"
+              />
+            </>
+          ) : characterType === 3 ? (
+            <>
+              <path
+                className="loading-character-frog"
+                d="M61 64c0-17 13-25 29-25s29 8 29 25v37c-9 11-49 11-58 0z"
+              />
+              <circle className="loading-character-frog-eye" cx="72" cy="44" r="8" />
+              <circle className="loading-character-frog-eye" cx="108" cy="44" r="8" />
+            </>
+          ) : characterType === 4 ? (
+            <>
+              <path
+                className="loading-character-dog"
+                d="M62 61c4-12 18-17 28-8 10-9 24-4 28 8v36c-10 10-46 10-56 0z"
+              />
+              <path
+                className="loading-character-ear"
+                d="M67 61c-14-5-17 9-4 17M113 61c14-5 17 9 4 17"
+              />
+            </>
+          ) : characterType === 5 ? (
+            <>
+              <path
+                className="loading-character-apple"
+                d="M90 57c-21-13-38 2-34 23 4 22 17 31 34 31s30-9 34-31c4-21-13-36-34-23z"
+              />
+              <path
+                className="loading-character-leaf"
+                d="M89 57c3-13 14-17 23-12-4 10-12 14-23 12z"
+              />
+            </>
+          ) : characterType === 6 ? (
+            <>
+              <path className="loading-character-broccoli-stem" d="M81 76h18l4 29H77z" />
+              <path
+                className="loading-character-broccoli"
+                d="M61 76c-9-18 4-29 16-23-2-17 18-24 27-10 13-10 27 5 18 18 12 8 5 25-9 24-8 13-29 12-37 0-10 4-20-1-15-9z"
+              />
+            </>
+          ) : characterType === 7 ? (
+            <>
+              <path
+                className="loading-character-egg"
+                d="M90 51c22 0 31 19 27 38-3 16-13 25-27 25s-24-9-27-25c-4-19 5-38 27-38z"
+              />
+              <circle className="loading-character-yolk" cx="90" cy="87" r="10" />
+            </>
+          ) : characterType === 8 ? (
+            <>
+              <path
+                className="loading-character-peach"
+                d="M90 57c-23-12-39 5-34 27 5 20 18 30 34 30s29-10 34-30c5-22-11-39-34-27z"
+              />
+              <path
+                className="loading-character-leaf"
+                d="M90 59c-2-12 7-18 17-17-1 10-7 16-17 17z"
+              />
+            </>
+          ) : (
+            <>
+              <path
+                className="loading-character-tomato"
+                d="M90 57c-22-10-38 7-34 28 4 19 18 29 34 29s30-10 34-29c4-21-12-38-34-28z"
+              />
+              <path className="loading-character-leaf" d="M90 59c-8-11 1-18 9-10 6-12 15-6 8 7" />
+            </>
+          )}
         </g>
         <g className="loading-character-head">
           <circle className="loading-character-face" cx="90" cy="37" r="24" />
