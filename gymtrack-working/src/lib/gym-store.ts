@@ -1625,6 +1625,107 @@ export function logPlannedMeal(date: string, plannedMealId: string) {
   });
 }
 
+export function togglePlannedFoodEaten(date: string, plannedMealId: string, plannedFoodId: string) {
+  withDay(date, (day) => {
+    const plannedMeal = day.plannedMeals?.find((meal) => meal.id === plannedMealId);
+    const plannedFood = plannedMeal?.foods.find((food) => food.id === plannedFoodId);
+    if (!plannedFood) return day;
+
+    const existingMeal = day.meals.find((meal) => meal.sourcePlanId === plannedMealId);
+    const alreadyEaten = existingMeal?.foods.some(
+      (food) => food.sourcePlanFoodId === plannedFoodId,
+    ) ?? false;
+
+    if (alreadyEaten) {
+      const nextMeals = day.meals
+        .map((meal) =>
+          meal.id !== existingMeal?.id
+            ? meal
+            : {
+                ...meal,
+                foods: meal.foods.filter((food) => food.sourcePlanFoodId !== plannedFoodId),
+              },
+        )
+        .filter((meal) => meal.foods.length > 0 || !meal.sourcePlanId);
+      return { ...day, meals: nextMeals };
+    }
+
+    const loggedFood: MealFood = {
+      ...plannedFood,
+      id: uid(),
+      sourcePlanMealId: plannedMealId,
+      sourcePlanFoodId: plannedFoodId,
+      timeLogged: new Date().toLocaleTimeString("he-IL", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
+
+    if (existingMeal) {
+      return {
+        ...day,
+        meals: day.meals.map((meal) =>
+          meal.id === existingMeal.id ? { ...meal, foods: [...meal.foods, loggedFood] } : meal,
+        ),
+      };
+    }
+
+    return {
+      ...day,
+      meals: [
+        ...day.meals,
+        {
+          id: uid(),
+          name: plannedMeal?.name ?? "ארוחה",
+          sourcePlanId: plannedMealId,
+          foods: [loggedFood],
+        },
+      ],
+    };
+  });
+}
+
+export function replacePlannedMealFood(
+  date: string,
+  plannedMealId: string,
+  plannedFoodId: string,
+  replacement: MealFood,
+) {
+  withDay(date, (day) => {
+    const plannedMeals = (day.plannedMeals ?? []).map((meal) =>
+      meal.id !== plannedMealId
+        ? meal
+        : {
+            ...meal,
+            foods: meal.foods.map((food) =>
+              food.id === plannedFoodId ? { ...replacement, id: plannedFoodId } : food,
+            ),
+          },
+    );
+
+    const meals = day.meals.map((meal) =>
+      meal.sourcePlanId !== plannedMealId
+        ? meal
+        : {
+            ...meal,
+            foods: meal.foods.map((food) =>
+              food.sourcePlanFoodId === plannedFoodId
+                ? {
+                    ...replacement,
+                    id: food.id,
+                    sourcePlanMealId: plannedMealId,
+                    sourcePlanFoodId: plannedFoodId,
+                    timeLogged: food.timeLogged,
+                  }
+                : food,
+            ),
+          },
+    );
+
+    return { ...day, plannedMeals, meals };
+  });
+}
+
 /* ---------- recipes ---------- */
 
 export function saveRecipe(name: string, foods: MealFood[]) {
@@ -1874,33 +1975,56 @@ export function searchFoods(foods: FoodItem[], query: string) {
   });
 }
 
+export type FoodReplacementMode = "calories" | "protein" | "calories-protein";
+
 export function findFoodReplacements(
   foods: FoodItem[],
   current: Pick<MealFood, "foodId" | "name" | "calories" | "protein" | "quantity">,
   query = "",
+  mode: FoodReplacementMode = "calories",
 ) {
   const targetCal = (current.calories ?? 0) * (current.quantity ?? 1);
+  const targetProtein = (current.protein ?? 0) * (current.quantity ?? 1);
   const searchResults = searchFoods(foods, query);
 
   return searchResults
     .filter((food) => {
       if (current.foodId && food.id === current.foodId) return false;
       if (!current.foodId && current.name && food.name === current.name) return false;
-      return true;
+      return food.calories > 0 || food.protein > 0;
     })
     .map((food) => {
-      const requiredQty = food.calories > 0 ? targetCal / food.calories : 1;
+      const calorieQty = food.calories > 0 ? targetCal / food.calories : 0;
+      const proteinQty = food.protein > 0 ? targetProtein / food.protein : 0;
+      const requiredQty =
+        mode === "protein"
+          ? proteinQty
+          : mode === "calories-protein"
+            ? calorieQty > 0 && proteinQty > 0
+              ? (calorieQty + proteinQty) / 2
+              : calorieQty || proteinQty || 1
+            : calorieQty || 1;
       const servingGrams = parseServingGrams(food.servingSize);
+      const calculatedCalories = Math.round(food.calories * requiredQty);
+      const calculatedProtein = round1(food.protein * requiredQty);
+      const calorieError = targetCal > 0 ? Math.abs(calculatedCalories - targetCal) / targetCal : 0;
+      const proteinError = targetProtein > 0 ? Math.abs(calculatedProtein - targetProtein) / targetProtein : 0;
+      const score =
+        mode === "protein"
+          ? proteinError
+          : mode === "calories-protein"
+            ? calorieError + proteinError
+            : calorieError;
       return {
         food,
-        calculatedQuantity: round1(requiredQty),
-        calculatedGrams: servingGrams === null ? null : round1(servingGrams * requiredQty),
-        calculatedCalories: Math.round(food.calories * requiredQty),
-        calculatedProtein: round1(food.protein * requiredQty),
-        calculatedCarbs: round1(food.carbs * requiredQty),
-        calculatedFat: round1(food.fat * requiredQty),
-        calculatedFiber: round1((food.fiber ?? 0) * requiredQty),
-        score: Math.abs(food.calories - (current.calories ?? 0)),
+        calculatedQuantity: round1(Math.max(0.1, requiredQty)),
+        calculatedGrams: servingGrams === null ? null : round1(servingGrams * Math.max(0.1, requiredQty)),
+        calculatedCalories: Math.round(food.calories * Math.max(0.1, requiredQty)),
+        calculatedProtein: round1(food.protein * Math.max(0.1, requiredQty)),
+        calculatedCarbs: round1(food.carbs * Math.max(0.1, requiredQty)),
+        calculatedFat: round1(food.fat * Math.max(0.1, requiredQty)),
+        calculatedFiber: round1((food.fiber ?? 0) * Math.max(0.1, requiredQty)),
+        score,
       };
     })
     .sort((a, b) => a.score - b.score || a.food.name.localeCompare(b.food.name));

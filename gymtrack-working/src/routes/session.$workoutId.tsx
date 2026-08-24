@@ -33,7 +33,7 @@ import {
   SecondaryButton,
   SectionHeader,
 } from "@/components/ui-app/primitives";
-import { lastPerformance, repLabel, saveSession, saveWorkout, uid, useGym } from "@/lib/gym-store";
+import { lastPerformance, repLabel, saveSession, uid, useGym } from "@/lib/gym-store";
 import { BODYWEIGHT_EXERCISES, replaceWithBodyweight } from "@/lib/bodyweight-exercises";
 import type { Exercise, HistoryEntry, LoggedSet, WorkoutItem } from "@/lib/gym-types";
 import { genderText } from "@/lib/gender-copy";
@@ -430,26 +430,59 @@ function Session() {
 
   const progress = totalSets ? (doneSets / totalSets) * 100 : 0;
   const toggleBodyweightMode = () => {
+    const regularWorkout = regularWorkoutSnapshot.current ?? workout;
+    if (!regularWorkout) return;
+
     if (isBodyweightMode) {
-      const regularWorkout = regularWorkoutSnapshot.current;
-      if (!regularWorkout) return;
-      saveWorkout(regularWorkout);
+      const regularEntries = regularWorkout.items.map((item, index) => {
+        const source = exercises.find((exercise) => exercise.id === item.exerciseId);
+        return {
+          index,
+          exerciseId: item.exerciseId,
+          exerciseName: source?.name ?? "תרגיל",
+          equipment: source?.equipment,
+        };
+      });
+      setEntries((current) =>
+        current.map((entry, index) => {
+          const regular = regularEntries[index];
+          if (!regular) return entry;
+          return {
+            ...entry,
+            exerciseId: regular.exerciseId,
+            exerciseName: regular.exerciseName,
+            ...(regular.equipment ? { equipment: regular.equipment } : {}),
+            sets: entry.sets.map((set, setIndex) => ({
+              ...set,
+              weight: regularWorkout.items[index]?.workingSets?.[setIndex]?.weight ?? set.weight,
+            })),
+          };
+        }),
+      );
       setIsBodyweightMode(false);
-      setBodyweightNotice("האימון חזר לגרסה הרגילה.");
+      setBodyweightNotice("האימון חזר לגרסה הרגילה. השינוי לא שינה את התוכנית המקורית.");
       return;
     }
-    const nextWorkout = {
-      ...workout,
-      name: workout.name.replace(/\s*·\s*משקל גוף$/, "") + " · משקל גוף",
-      notes: workout.notes
-        ? `${workout.notes}\nגרסת משקל גוף — התרגילים מותאמים לפי קבוצת השרירים.`
-        : "גרסת משקל גוף — התרגילים מותאמים לפי קבוצת השרירים.",
-      items: replaceWithBodyweight(workout.items, exerciseCatalog),
-    };
-    saveWorkout(nextWorkout);
+
+    const bodyweightItems = replaceWithBodyweight(regularWorkout.items, exerciseCatalog);
+    setEntries((current) =>
+      current.map((entry, index) => {
+        const bodyItem = bodyweightItems[index];
+        const bodyExercise = bodyItem
+          ? exerciseCatalog.find((exercise) => exercise.id === bodyItem.exerciseId)
+          : undefined;
+        if (!bodyItem || !bodyExercise) return entry;
+        return {
+          ...entry,
+          exerciseId: bodyExercise.id,
+          exerciseName: bodyExercise.name,
+          ...(bodyExercise.equipment ? { equipment: bodyExercise.equipment } : {}),
+          sets: entry.sets.map((set) => ({ ...set, weight: 0 })),
+        };
+      }),
+    );
     setIsBodyweightMode(true);
-    clearSavedSession();
-    setBodyweightNotice("האימון עודכן לגרסת משקל גוף. אפשר לחזור בכל רגע.");
+    setBodyweightNotice("עברת לגרסת משקל גוף. התוכנית המקורית נשארת ללא שינוי.");
   };
 
   const handleRestPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {

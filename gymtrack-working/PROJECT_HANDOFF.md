@@ -187,8 +187,26 @@ replacementGrams = (targetCalories * 100) / replacementCaloriesPer100g
 
 ---
 
-## KNOWN LIMITATIONS
-None. All requirements specified in the project brief have been implemented and verified.
+## CURRENT VERIFICATION STATUS
+The codebase has been updated to improve persistence and the remaining requested flows, but live browser/mobile/Supabase acceptance testing still needs to be run in a real connected environment.
+
+Verified from code:
+- Drop Set uses two explicit weight + rep-range levels.
+- Planned nutrition menus persist separately from the actual nutrition log.
+- Per-food planned-menu "eaten" tracking is supported.
+- Planned-menu food replacement supports calorie, protein, or combined calorie+protein matching.
+- Body measurements and client habits are included in cloud sync.
+- Personal saved recipes are included in cloud sync.
+- Cloud sync persists the expanded records while preserving existing remote records during this merge; deletion reconciliation remains disabled until a verified, user-approved pass.
+- Bodyweight mode uses coach-selected mappings when configured and no longer overwrites the original workout just to preview bodyweight mode.
+- Weekly client feedback can be submitted from the weekend dashboard.
+- Night-mode utility text contrast has additional overrides.
+
+Still requires live verification:
+- Supabase RLS with real owner/coach/client accounts.
+- Mobile/iOS keyboard, touch and vibration behavior.
+- Visual verification of every palette and overlay.
+- End-to-end create → refresh → logout → login flows.
 
 ---
 

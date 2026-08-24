@@ -185,14 +185,19 @@ export function replaceWithBodyweight(items: WorkoutItem[], exercises: Exercise[
   return items.map((item) => {
     const source = exercises.find((exercise) => exercise.id === item.exerciseId);
     if (!source) return item;
-    const alternative = bodyweightAlternativeFor(source);
+    const alternative = item.bodyweightAlternativeId
+      ? exercises.find((exercise) => exercise.id === item.bodyweightAlternativeId) ??
+        bodyweightAlternativeFor(source)
+      : bodyweightAlternativeFor(source);
     return {
       ...item,
       exerciseId: alternative.id,
       weight: 0,
       targetWeight: 0,
-      workingSets: item.workingSets?.map((set) => ({ ...set, weight: 0 })),
-      warmups: item.warmups?.map((set) => ({ ...set, weight: 0 })),
+      ...(item.workingSets
+        ? { workingSets: item.workingSets.map((set) => ({ ...set, weight: 0 })) }
+        : {}),
+      ...(item.warmups ? { warmups: item.warmups.map((set) => ({ ...set, weight: 0 })) } : {}),
     };
   });
 }

@@ -169,14 +169,23 @@ export function CoachDashboardPage({
   const [supersetGroup, setSupersetGroup] = useState("");
   const [supersetPartnerId, setSupersetPartnerId] = useState("");
   const [dropSetEnabled, setDropSetEnabled] = useState(false);
+  const [dropLevel1Weight, setDropLevel1Weight] = useState("");
+  const [dropLevel1RepsMin, setDropLevel1RepsMin] = useState(8);
+  const [dropLevel1RepsMax, setDropLevel1RepsMax] = useState(10);
+  const [dropLevel2Weight, setDropLevel2Weight] = useState("");
+  const [dropLevel2RepsMin, setDropLevel2RepsMin] = useState(6);
+  const [dropLevel2RepsMax, setDropLevel2RepsMax] = useState(8);
+  // Legacy controls remain available for existing plans; their selected result
+  // is converted to the fixed levels below when the item is saved.
   const [dropReductionMode, setDropReductionMode] = useState<"percent" | "kg" | "">("");
   const [dropReductionValue, setDropReductionValue] = useState("");
-  const [exerciseBuilderNotice, setExerciseBuilderNotice] = useState("");
   const [dropRepsMin, setDropRepsMin] = useState(10);
   const [dropRepsMax, setDropRepsMax] = useState(12);
+  const [exerciseBuilderNotice, setExerciseBuilderNotice] = useState("");
   const [supersetRepsMin, setSupersetRepsMin] = useState(10);
   const [supersetRepsMax, setSupersetRepsMax] = useState(12);
   const [approvedAltIds, setApprovedAltIds] = useState<string[]>([]);
+  const [bodyweightAlternativeId, setBodyweightAlternativeId] = useState("");
 
   // Nutrition Prescription state
   const [editingNutrition, setEditingNutrition] = useState(false);
@@ -696,18 +705,25 @@ export function CoachDashboardPage({
     const hasDropSets = configuredModes.includes("drop");
     const hasSupersetSets = configuredModes.includes("superset");
     if (hasSupersetSets && !supersetPartnerId) return;
-    const parsedDropReduction = dropReductionValue === "" ? NaN : Number(dropReductionValue);
+    const legacyReduction = dropReductionValue === "" ? NaN : Number(dropReductionValue);
+    const legacyLevelWeight =
+      Number.isFinite(legacyReduction) && legacyReduction > 0 && dropReductionMode
+        ? dropReductionMode === "percent"
+          ? targetWeight * (1 - legacyReduction / 100)
+          : targetWeight - legacyReduction
+        : NaN;
+    const parsedDropLevel1Weight =
+      dropLevel1Weight === "" ? legacyLevelWeight : Number(dropLevel1Weight);
+    const parsedDropLevel2Weight =
+      dropLevel2Weight === "" ? legacyLevelWeight : Number(dropLevel2Weight);
     if (
       hasDropSets &&
-      (!dropReductionMode ||
-        !Number.isFinite(parsedDropReduction) ||
-        parsedDropReduction <= 0 ||
-        (dropReductionMode === "percent" && parsedDropReduction >= 100) ||
-        (dropReductionMode === "kg" && parsedDropReduction >= targetWeight))
+      (!Number.isFinite(parsedDropLevel1Weight) ||
+        parsedDropLevel1Weight <= 0 ||
+        !Number.isFinite(parsedDropLevel2Weight) ||
+        parsedDropLevel2Weight <= 0)
     ) {
-      setExerciseBuilderNotice(
-        "בדרופ־סט יש לבחור סוג הפחתה ולהזין כמות תקינה שקטנה ממשקל היעד.",
-      );
+      setExerciseBuilderNotice("בדרופ־סט יש להזין משקל תקין (גדול מ-0) לשני השלבים.");
       return;
     }
     setExerciseBuilderNotice("");
@@ -726,6 +742,7 @@ export function CoachDashboardPage({
       notes: "",
       ...(techNotes.trim() ? { techniqueNotes: techNotes.trim() } : {}),
       ...(approvedAltIds.length > 0 ? { approvedAlternatives: approvedAltIds } : {}),
+      ...(bodyweightAlternativeId ? { bodyweightAlternativeId } : {}),
       ...(hasSupersetSets && supersetGroup.trim()
         ? {
             supersetId: supersetGroup.trim(),
@@ -740,31 +757,57 @@ export function CoachDashboardPage({
             dropSetConfig: {
               enabled: true,
               drops: configuredModes.filter((mode) => mode === "drop").length,
-              repsMin: dropRepsMin,
-              repsMax: dropRepsMax,
-              reductionMode: dropReductionMode,
-              reductionValue: parsedDropReduction,
+              levels: [
+                {
+                  weight: parsedDropLevel1Weight,
+                  repsMin: dropLevel1Weight === "" ? dropRepsMin : dropLevel1RepsMin,
+                  repsMax: dropLevel1Weight === "" ? dropRepsMax : dropLevel1RepsMax,
+                },
+                {
+                  weight: parsedDropLevel2Weight,
+                  repsMin: dropLevel2Weight === "" ? dropRepsMin : dropLevel2RepsMin,
+                  repsMax: dropLevel2Weight === "" ? dropRepsMax : dropLevel2RepsMax,
+                },
+              ],
             },
           }
         : {}),
-      workingSets: configuredModes
-        .filter((mode) => mode !== "warmup")
-        .map((mode, i) => ({
-        id: uid(),
-        setNumber: i + 1,
-        weight:
-          mode === "drop"
-            ? Math.max(
-                0,
-                dropReductionMode === "percent"
-                  ? targetWeight * (1 - parsedDropReduction / 100)
-                  : targetWeight - parsedDropReduction,
-              )
-            : targetWeight,
-        reps: repMin,
-        repMax,
-        ...(mode === "drop" ? { dropSet: true } : {}),
-      })),
+      workingSets: (() => {
+        let dropOccurrence = 0;
+        return configuredModes
+          .filter((mode) => mode !== "warmup")
+          .map((mode, i) => {
+            let weight = targetWeight;
+            let reps = repMin;
+            let repMaxForSet = repMax;
+            if (mode === "drop") {
+              dropOccurrence += 1;
+              const level =
+                dropOccurrence === 1
+                  ? {
+                      weight: parsedDropLevel1Weight,
+                      repsMin: dropLevel1Weight === "" ? dropRepsMin : dropLevel1RepsMin,
+                      repsMax: dropLevel1Weight === "" ? dropRepsMax : dropLevel1RepsMax,
+                    }
+                  : {
+                      weight: parsedDropLevel2Weight,
+                      repsMin: dropLevel2Weight === "" ? dropRepsMin : dropLevel2RepsMin,
+                      repsMax: dropLevel2Weight === "" ? dropRepsMax : dropLevel2RepsMax,
+                    };
+              weight = Math.max(0, level.weight);
+              reps = level.repsMin;
+              repMaxForSet = level.repsMax;
+            }
+            return {
+              id: uid(),
+              setNumber: i + 1,
+              weight,
+              reps,
+              repMax: repMaxForSet,
+              ...(mode === "drop" ? { dropSet: true } : {}),
+            };
+          });
+      })(),
       ...(warmupModeCount > 0
         ? {
             warmups: Array.from({ length: warmupModeCount }, (_, i) => ({
@@ -798,8 +841,11 @@ export function CoachDashboardPage({
       setSupersetGroup("");
       setSupersetPartnerId("");
       setDropSetEnabled(false);
+      setDropLevel1Weight("");
+      setDropLevel2Weight("");
       setSetModes(["normal", "normal", "normal"]);
        setApprovedAltIds([]);
+       setBodyweightAlternativeId("");
       return;
     }
 
@@ -814,8 +860,11 @@ export function CoachDashboardPage({
       setSupersetGroup("");
       setSupersetPartnerId("");
       setDropSetEnabled(false);
+      setDropLevel1Weight("");
+      setDropLevel2Weight("");
       setSetModes(["normal", "normal", "normal"]);
        setApprovedAltIds([]);
+       setBodyweightAlternativeId("");
       pullClientDataForCoach(selectedClientId).then(applyClientDetails);
     }
   };

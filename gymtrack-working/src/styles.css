@@ -52,6 +52,36 @@
   --color-ink-soft: var(--ink-soft);
 }
 
+/* Night-mode legibility pass for status text and translucent controls. */
+html.night-mode .text-emerald-700,
+html.night-mode .text-emerald-800,
+html.night-mode .text-emerald-600 {
+  color: #86efac !important;
+}
+html.night-mode .text-amber-700,
+html.night-mode .text-amber-600 {
+  color: #fcd34d !important;
+}
+html.night-mode .text-rose-700,
+html.night-mode .text-rose-600,
+html.night-mode .text-red-700 {
+  color: #fda4af !important;
+}
+html.night-mode .border-white,
+html.night-mode .border-white\/80 {
+  border-color: var(--border) !important;
+}
+html.night-mode .bg-white\/60,
+html.night-mode .bg-white\/70,
+html.night-mode .bg-white\/80 {
+  background-color: var(--surface) !important;
+}
+html.night-mode input::placeholder,
+html.night-mode textarea::placeholder {
+  color: var(--muted-foreground) !important;
+  opacity: 0.85;
+}
+
 :root {
   --radius: 0.7rem;
 

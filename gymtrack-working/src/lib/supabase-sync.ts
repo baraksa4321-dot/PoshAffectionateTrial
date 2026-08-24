@@ -13,6 +13,9 @@ import {
   type UserProfile,
   type UserRole,
   type Workout,
+  type BodyMeasurement,
+  type ClientHabits,
+  type SavedRecipe,
 } from "./gym-types";
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "error" | "offline";
@@ -70,6 +73,9 @@ export async function syncLocalToSupabase(
             email: userEmail || undefined,
             weight_kg: p.weight,
             height_cm: p.height,
+            age_years: p.age,
+            workouts_per_week: p.workoutsPerWeek,
+            gender: p.gender,
             today_routine_enabled: p.todayRoutineEnabled ?? true,
             updated_at: new Date().toISOString(),
           },
@@ -198,55 +204,68 @@ export async function syncLocalToSupabase(
       }
     }
 
-    if (cardioTableAvailable) {
-      try {
-        const { data: remoteCardioLogs, error: remoteCardioError } = await supabase
-          .from("cardio_logs")
-          .select("id")
-          .eq("user_id", userId);
-        if (remoteCardioError)
-          throw new Error(`Cardio logs lookup failed: ${remoteCardioError.message}`);
-        const localCardioIds = new Set((localData.cardioLogs ?? []).map((log) => log.id));
-        const deletedCardioIds = (remoteCardioLogs ?? [])
-          .map((row) => row.id as string)
-          .filter((id) => !localCardioIds.has(id));
-        if (deletedCardioIds.length > 0) {
-          await requireSuccessfulWrite(
-            supabase.from("cardio_logs").delete().in("id", deletedCardioIds),
-            "Cardio logs deletion sync",
-          );
-        }
-      } catch (error: unknown) {
-        if (isMissingTableInSchemaCache(error, "cardio_logs")) {
-          console.warn(
-            "[Optional cardio deletion sync skipped]: public.cardio_logs is unavailable",
-          );
-        } else {
-          throw error;
-        }
-      }
-    }
-
     // 4b. Body Weight Logs (Historical Dated Weigh-Ins)
-    if (localData.bodyWeightLogs && localData.bodyWeightLogs.length > 0) {
-      const weighInPayload = localData.bodyWeightLogs.map((log) => ({
+    try {
+      const weighInPayload = (localData.bodyWeightLogs ?? []).map((log) => ({
         user_id: userId,
-        date: log.date,
+        recorded_at: `${log.date}T00:00:00.000Z`,
         weight_kg: log.weight,
         updated_at: new Date().toISOString(),
       }));
-      await requireSuccessfulWrite(
-        supabase.from("body_weight_logs").upsert(weighInPayload, { onConflict: "user_id,date" }),
-        "Body weight log sync",
-      ).catch((error: unknown) => {
-        if (isMissingTableInSchemaCache(error, "body_weight_logs")) {
-          console.warn(
-            "[Optional body weight sync skipped]: public.body_weight_logs is unavailable",
-          );
-          return;
-        }
+      if (weighInPayload.length > 0) {
+        await requireSuccessfulWrite(
+          supabase
+            .from("body_weight_logs")
+            .upsert(weighInPayload, { onConflict: "user_id,recorded_at" }),
+          "Body weight log sync",
+        );
+      }
+    } catch (error: unknown) {
+      if (isMissingTableInSchemaCache(error, "body_weight_logs")) {
+        console.warn("[Optional body weight sync skipped]: public.body_weight_logs is unavailable");
+      } else {
         throw error;
-      });
+      }
+    }
+
+    // 4d. Measurements and habits are persisted independently from the local UI.
+    const measurementPayload = (localData.bodyMeasurements ?? []).map((m) => ({
+      id: m.id,
+      user_id: userId,
+      date: m.date,
+      chest_cm: m.chestCm ?? null,
+      waist_cm: m.waistCm ?? null,
+      hips_cm: m.hipsCm ?? null,
+      biceps_cm: m.bicepsCm ?? null,
+      thighs_cm: m.thighsCm ?? null,
+      calves_cm: m.calvesCm ?? null,
+      neck_cm: m.neckCm ?? null,
+      body_fat_pct: m.bodyFatPct ?? null,
+      muscle_mass_kg: m.muscleMassKg ?? null,
+      notes: m.notes ?? null,
+    }));
+    if (measurementPayload.length > 0) {
+      await requireSuccessfulWrite(
+        supabase.from("body_measurements").upsert(measurementPayload, { onConflict: "user_id,date" }),
+        "Body measurements sync",
+      );
+    }
+
+    const habitsPayload = (localData.habits ?? []).map((h) => ({
+      id: h.id,
+      user_id: userId,
+      date: h.date,
+      steps: h.steps,
+      steps_target: h.stepsTarget,
+      weigh_in_done: h.weighInDone,
+      workout_done: h.workoutDone,
+      busy_day_mode: h.busyDayMode,
+    }));
+    if (habitsPayload.length > 0) {
+      await requireSuccessfulWrite(
+        supabase.from("client_habits").upsert(habitsPayload, { onConflict: "user_id,date" }),
+        "Client habits sync",
+      );
     }
 
     // 5. Custom Foods (seed = all built-in items including USDA expansion)
@@ -284,6 +303,7 @@ export async function syncLocalToSupabase(
         date: nd.date,
         target_calories: localData.nutritionTargets.calories,
         meals: nd.meals,
+        planned_meals: nd.plannedMeals ?? [],
         updated_at: new Date().toISOString(),
         ...(nd.waterMl === undefined ? {} : { water_ml: nd.waterMl }),
         ...(nd.waterTargetMl === undefined ? {} : { water_target_ml: nd.waterTargetMl }),
@@ -291,6 +311,20 @@ export async function syncLocalToSupabase(
       await requireSuccessfulWrite(
         supabase.from("nutrition_days").upsert(nutritionPayload, { onConflict: "id" }),
         "Nutrition log sync",
+      );
+    }
+
+    // 6b. Personal recipe library. Existing RLS keeps these records scoped by owner.
+    const recipePayload = (localData.recipes ?? []).map((recipe) => ({
+      id: recipe.id,
+      coach_id: userId,
+      name: recipe.name,
+      foods: recipe.foods,
+    }));
+    if (recipePayload.length > 0) {
+      await requireSuccessfulWrite(
+        supabase.from("coach_recipes").upsert(recipePayload, { onConflict: "id" }),
+        "Recipe library sync",
       );
     }
 
@@ -336,6 +370,14 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       ...nextData.userProfile,
       weight: profile.weight_kg ? Number(profile.weight_kg) : (nextData.userProfile?.weight ?? 65),
       height: profile.height_cm ? Number(profile.height_cm) : nextData.userProfile?.height,
+      age: profile.age_years ? Number(profile.age_years) : nextData.userProfile?.age,
+      workoutsPerWeek: profile.workouts_per_week
+        ? Number(profile.workouts_per_week)
+        : nextData.userProfile?.workoutsPerWeek,
+      gender:
+        profile.gender === "male" || profile.gender === "female"
+          ? profile.gender
+          : nextData.userProfile?.gender,
       role: profile.role as UserRole,
       coachId: profile.coach_id || undefined,
       todayRoutineEnabled: profile.today_routine_enabled ?? true,
@@ -504,9 +546,9 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     // 7. Body Weight Logs
     const { data: dbBodyWeightLogs, error: bodyWeightError } = await supabase
       .from("body_weight_logs")
-      .select("id, date, weight_kg")
+      .select("id, recorded_at, weight_kg")
       .eq("user_id", userId)
-      .order("date", { ascending: false });
+      .order("recorded_at", { ascending: false });
     if (bodyWeightError && !isMissingTableInSchemaCache(bodyWeightError, "body_weight_logs")) {
       throw new Error(`Weight logs pull failed: ${bodyWeightError.message}`);
     }
@@ -517,7 +559,10 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (dbBodyWeightLogs && dbBodyWeightLogs.length > 0) {
       nextData.bodyWeightLogs = dbBodyWeightLogs.map((row) => ({
         id: row.id,
-        date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
+        date:
+          typeof row.recorded_at === "string"
+            ? row.recorded_at.slice(0, 10)
+            : row.recorded_at,
         weight: Number(row.weight_kg),
       }));
     }
@@ -548,6 +593,53 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         incline: row.incline_pct === null ? undefined : Number(row.incline_pct),
         distanceKm: row.distance_km === null ? undefined : Number(row.distance_km),
         calories: Number(row.calories),
+      }));
+    }
+
+    // 7c. The body-measurement schema uses `date` (not `recorded_at`).
+    const { data: dbMeasurements, error: measurementsError } = await supabase
+      .from("body_measurements")
+      .select("*")
+      .eq("user_id", userId)
+      .order("date", { ascending: false });
+    if (measurementsError && !isMissingTableInSchemaCache(measurementsError, "body_measurements")) {
+      throw new Error(`Body measurements pull failed: ${measurementsError.message}`);
+    }
+    if (!measurementsError && dbMeasurements) {
+      nextData.bodyMeasurements = dbMeasurements.map((row): BodyMeasurement => ({
+        id: row.id,
+        date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
+        chestCm: row.chest_cm == null ? undefined : Number(row.chest_cm),
+        waistCm: row.waist_cm == null ? undefined : Number(row.waist_cm),
+        hipsCm: row.hips_cm == null ? undefined : Number(row.hips_cm),
+        bicepsCm: row.biceps_cm == null ? undefined : Number(row.biceps_cm),
+        thighsCm: row.thighs_cm == null ? undefined : Number(row.thighs_cm),
+        calvesCm: row.calves_cm == null ? undefined : Number(row.calves_cm),
+        neckCm: row.neck_cm == null ? undefined : Number(row.neck_cm),
+        bodyFatPct: row.body_fat_pct == null ? undefined : Number(row.body_fat_pct),
+        muscleMassKg: row.muscle_mass_kg == null ? undefined : Number(row.muscle_mass_kg),
+        notes: row.notes || undefined,
+      }));
+    }
+
+    // 7d. The client-habits schema also uses `date`.
+    const { data: dbHabits, error: habitsError } = await supabase
+      .from("client_habits")
+      .select("*")
+      .eq("user_id", userId)
+      .order("date", { ascending: false });
+    if (habitsError && !isMissingTableInSchemaCache(habitsError, "client_habits")) {
+      throw new Error(`Client habits pull failed: ${habitsError.message}`);
+    }
+    if (!habitsError && dbHabits) {
+      nextData.habits = dbHabits.map((row): ClientHabits => ({
+        id: row.id,
+        date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
+        steps: Number(row.steps ?? 0),
+        stepsTarget: Number(row.steps_target ?? 8000),
+        weighInDone: Boolean(row.weigh_in_done),
+        workoutDone: Boolean(row.workout_done),
+        busyDayMode: Boolean(row.busy_day_mode),
       }));
     }
 
@@ -591,11 +683,29 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         id: row.id,
         date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
         meals: row.meals || [],
+        plannedMeals: row.planned_meals || [],
         waterMl: row.water_ml === null ? undefined : Number(row.water_ml ?? 0),
         waterTargetMl:
           row.water_target_ml === null ? undefined : Number(row.water_target_ml ?? 2500),
       }));
       nextData.nutritionDays = daysList;
+    }
+
+    // 9b. Personal saved recipes use the existing role-scoped recipes table.
+    const { data: dbRecipes, error: recipesError } = await supabase
+      .from("coach_recipes")
+      .select("id, name, foods")
+      .eq("coach_id", userId)
+      .order("created_at", { ascending: false });
+    if (recipesError && !isMissingTableInSchemaCache(recipesError, "coach_recipes")) {
+      throw new Error(`Recipe library pull failed: ${recipesError.message}`);
+    }
+    if (!recipesError && dbRecipes) {
+      nextData.recipes = dbRecipes.map((row): SavedRecipe => ({
+        id: row.id,
+        name: row.name,
+        foods: row.foods || [],
+      }));
     }
 
     // 10. Food Favorites
@@ -692,6 +802,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       id: row.id,
       date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
       meals: row.meals || [],
+      plannedMeals: row.planned_meals || [],
     }));
 
     const historyList: HistorySession[] = (dbSessions || []).map((row) => ({
@@ -703,6 +814,8 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       durationSec: row.duration_sec,
       entries: row.entries || [],
       notes: row.notes || "",
+      difficultyRating: row.difficulty_rating || undefined,
+      discomfortNotes: row.discomfort_notes || undefined,
     }));
     const cardioList: CardioLog[] = (dbCardioLogs || []).map((row) => ({
       id: row.id,
@@ -724,9 +837,13 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       cardioLogs: cardioList,
       profile: profile
         ? {
+              email: profile.email || undefined,
+              name: profile.full_name || undefined,
             weight: Number(profile.weight_kg || 65),
             height: Number(profile.height_cm || 165),
-            role: profile.role || "client",
+            role: profile.role as UserRole,
+            coachId: profile.coach_id || undefined,
+            todayRoutineEnabled: profile.today_routine_enabled ?? true,
           }
         : undefined,
     };

@@ -21,11 +21,20 @@ export type ClientLink = {
   createdAt: string;
 };
 
+export type DropSetLevel = {
+  weight: number;
+  repsMin: number;
+  repsMax?: number;
+};
+
 export type DropSetConfig = {
   enabled: boolean;
   drops: number;
   repsMin?: number;
   repsMax?: number;
+  /** Fixed weight + reps for each drop level (e.g. 60kg 8-10, 30kg 6-8). Preferred over the legacy reduction fields below. */
+  levels?: DropSetLevel[];
+  /** @deprecated legacy percent/kg reduction fields, kept only so older saved plans keep working */
   reductionMode?: "percent" | "kg";
   reductionValue?: number;
   weightReductionPercent?: number;
@@ -88,6 +97,10 @@ export type WorkoutItem = {
   notes: string;
   techniqueNotes?: string;
   approvedAlternatives?: string[];
+  /** Coach-selected bodyweight equivalent for this exercise. */
+  bodyweightAlternativeId?: string;
+  /** Coach-selected equipment-only alternatives, keyed by equipment label. */
+  equipmentAlternatives?: Record<string, string>;
   dropSetConfig?: DropSetConfig;
   tempo?: string;
   rir?: number | null;
@@ -194,6 +207,9 @@ export type MealFood = {
   fiber?: number;
   notes?: string;
   timeLogged?: string; // HH:MM
+  /** Links a logged food back to a prescribed menu food for per-food tracking. */
+  sourcePlanMealId?: string;
+  sourcePlanFoodId?: string;
 };
 
 export type Meal = {
@@ -210,6 +226,8 @@ export type NutritionDay = {
   meals: Meal[];
   /** Meals prescribed by a coach; kept separate from the client's actual log. */
   plannedMeals?: Meal[];
+  waterMl?: number;
+  waterTargetMl?: number;
 };
 
 export type NutritionTargets = {
