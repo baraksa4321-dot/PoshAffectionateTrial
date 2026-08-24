@@ -32,6 +32,7 @@ import {
 const KEY = "gymtrack.v1";
 const CACHED_USER_KEY = "gymtrack.v1.userId";
 const USER_CACHE_PREFIX = "gymtrack.v1.user.";
+const USER_PENDING_PREFIX = "gymtrack.v1.pending.";
 // Supabase auth and the initial profile/data hydration may cross several
 // network boundaries. Four seconds caused valid logins on slower connections
 // to be reported as permission failures before the request could finish.
@@ -645,8 +646,19 @@ function isNetworkFailure(message?: string) {
   );
 }
 
+function isRetryableSyncFailure(message?: string) {
+  return (
+    isNetworkFailure(message) ||
+    /timed?\s*out|temporar|unavailable|too many requests|\b429\b|\b5\d\d\b/i.test(message ?? "")
+  );
+}
+
 function userCacheKey(userId: string) {
   return `${USER_CACHE_PREFIX}${userId}`;
+}
+
+function userPendingKey(userId: string) {
+  return `${USER_PENDING_PREFIX}${userId}`;
 }
 
 function parseCachedData(raw: string | null): GymData | null {
@@ -672,6 +684,15 @@ function loadCachedDataForUser(userId: string) {
     return null;
   } catch {
     return null;
+  }
+}
+
+function hasPersistedPendingChanges(userId: string) {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(userPendingKey(userId)) === "true";
+  } catch {
+    return false;
   }
 }
 
@@ -774,8 +795,9 @@ function load() {
       if (hasPendingCloudChanges) {
         void queueCloudSync();
       } else {
-        syncStatus = "synced";
-        notifyListeners();
+        // An offline visit can have no local edits but still needs a
+        // background refresh once the connection returns.
+        void handleUserLogin(currentUser.id, loadCachedDataForUser(currentUser.id));
       }
     });
 
@@ -877,14 +899,14 @@ function load() {
 async function handleUserLogin(userId: string, cachedData = loadCachedDataForUser(userId)) {
   const generation = ++hydrationGeneration;
   const trustedOfflineCache = hasUsableOfflineCache(cachedData);
-  if (cachedData && trustedOfflineCache && browserIsOffline()) {
+  if (cachedData && trustedOfflineCache) {
     data = cachedData;
     profileHydrationStatus = "ready";
     profileHydrationError = "";
-    hasPendingCloudChanges = true;
-    syncStatus = "offline";
+    hasPendingCloudChanges = hasPersistedPendingChanges(userId);
+    syncStatus = browserIsOffline() ? "offline" : hasPendingCloudChanges ? "pending" : "synced";
     notifyListeners();
-    return;
+    if (browserIsOffline()) return;
   }
 
   if (browserIsOffline()) {
@@ -896,21 +918,20 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
   }
 
   // Read the signed-in user's data before writing anything. Uploading the
-  // anonymous seed first can overwrite cloud state on a fresh device.
-  // Do not let a previous user's cached role control the UI while this pull
-  // is in flight. A missing or failed profile read leaves the role unknown.
-  const {
-    role: _role,
-    coachId: _coachId,
-    ...profileWithoutAccess
-  } = data.userProfile ?? { weight: 0 };
-  data = {
-    ...data,
-    userProfile: profileWithoutAccess,
-  };
-  profileHydrationStatus = "loading";
-  profileHydrationError = "";
-  notifyListeners();
+  // anonymous seed first can overwrite cloud state on a fresh device. A
+  // trusted per-user cache may remain visible while this background refresh runs.
+  const revisionAtPullStart = dataRevision;
+  if (!trustedOfflineCache) {
+    const {
+      role: _role,
+      coachId: _coachId,
+      ...profileWithoutAccess
+    } = data.userProfile ?? { weight: 0 };
+    data = { ...data, userProfile: profileWithoutAccess };
+    profileHydrationStatus = "loading";
+    profileHydrationError = "";
+    notifyListeners();
+  }
   const pulled = await Promise.race([
     pullSupabaseData(userId, data),
     new Promise<{ success: false; error: string }>((resolve) =>
@@ -928,11 +949,17 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
   if (!pulled.success) {
     console.warn("[Initial Supabase Pull Warning]:", pulled.error);
     if (cachedData && trustedOfflineCache && isNetworkFailure(pulled.error)) {
-      data = cachedData;
       profileHydrationStatus = "ready";
       profileHydrationError = "";
-      hasPendingCloudChanges = true;
+      hasPendingCloudChanges = hasPersistedPendingChanges(userId);
       syncStatus = "offline";
+      notifyListeners();
+      return;
+    }
+    if (cachedData && trustedOfflineCache) {
+      profileHydrationStatus = "ready";
+      profileHydrationError = pulled.error;
+      syncStatus = "error";
       notifyListeners();
       return;
     }
@@ -941,27 +968,39 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
     notifyListeners();
     return;
   }
-  data = {
-    ...pulled.data,
-    preExitChecklist: data.preExitChecklist ?? pulled.data.preExitChecklist ?? [],
-  };
-  persist();
+  // A local edit made while the pull was in flight always wins. The next
+  // background sync uploads that newer snapshot instead of clobbering it.
+  if (dataRevision === revisionAtPullStart) {
+    data = {
+      ...pulled.data,
+      preExitChecklist: data.preExitChecklist ?? pulled.data.preExitChecklist ?? [],
+    };
+    persistCacheOnly();
+  }
   profileHydrationStatus = "ready";
   profileHydrationError = "";
+  if (dataRevision !== revisionAtPullStart) {
+    hasPendingCloudChanges = true;
+    syncStatus = "pending";
+    void queueCloudSync();
+  } else if (!hasPendingCloudChanges) {
+    syncStatus = "synced";
+  } else {
+    void queueCloudSync();
+  }
   notifyListeners();
 }
 
 function scheduleCloudRetry(userId: string) {
   if (
     syncRetryTimer ||
-    syncRetryAttempts >= 4 ||
     browserIsOffline() ||
     currentUser?.id !== userId ||
     !hasPendingCloudChanges
   ) {
     return;
   }
-  const delay = Math.min(30_000, 1_000 * 2 ** syncRetryAttempts);
+  const delay = Math.min(5 * 60_000, 1_000 * 2 ** syncRetryAttempts);
   syncRetryAttempts += 1;
   syncRetryTimer = setTimeout(() => {
     syncRetryTimer = null;
@@ -995,6 +1034,11 @@ function queueCloudSync() {
       if (dataRevision === revisionAtStart) {
         hasPendingCloudChanges = false;
         syncStatus = "synced";
+        try {
+          window.localStorage.removeItem(userPendingKey(userId));
+        } catch {
+          /* ignore */
+        }
       } else {
         syncStatus = "pending";
       }
@@ -1004,7 +1048,7 @@ function queueCloudSync() {
     hasPendingCloudChanges = true;
     syncStatus = isNetworkFailure(result.error) ? "offline" : "error";
     console.warn("[Background Supabase Sync Warning]:", result.error);
-    if (!isNetworkFailure(result.error)) scheduleCloudRetry(userId);
+    if (isRetryableSyncFailure(result.error)) scheduleCloudRetry(userId);
   })().finally(() => {
     if (syncInFlight?.promise === promise) syncInFlight = null;
     notifyListeners();
@@ -1021,6 +1065,7 @@ function persist() {
   try {
     if (currentUser?.id) {
       window.localStorage.setItem(userCacheKey(currentUser.id), JSON.stringify(data));
+      window.localStorage.setItem(userPendingKey(currentUser.id), "true");
     }
   } catch {
     /* ignore */
@@ -1033,6 +1078,15 @@ function persist() {
   // and retries automatically after the browser reports that it is back online.
   if (currentUser?.id) {
     void queueCloudSync();
+  }
+}
+
+function persistCacheOnly() {
+  if (typeof window === "undefined" || !currentUser?.id) return;
+  try {
+    window.localStorage.setItem(userCacheKey(currentUser.id), JSON.stringify(data));
+  } catch {
+    /* ignore */
   }
 }
 

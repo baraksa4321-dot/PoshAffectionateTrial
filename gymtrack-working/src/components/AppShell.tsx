@@ -95,7 +95,7 @@ export function AppShell({
         : cloudSyncStatus === "pending"
           ? "שינויים ממתינים לסנכרון"
           : cloudSyncStatus === "error"
-            ? "השינויים נשמרו במכשיר וננסה לסנכרן שוב"
+            ? "השינויים נשמרו במכשיר — הסנכרון דורש תשומת לב"
             : "הנתונים מסונכרנים";
 
   useEffect(() => {

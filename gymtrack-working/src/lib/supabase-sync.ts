@@ -20,7 +20,7 @@ import {
   type BroadcastAnnouncement,
 } from "./gym-types";
 
-export type SyncStatus = "idle" | "syncing" | "synced" | "error" | "offline";
+export type SyncStatus = "idle" | "syncing" | "synced" | "pending" | "error" | "offline";
 export type PullResult =
   { success: true; data: GymData } | { success: false; data: GymData; error: string };
 
