@@ -578,7 +578,19 @@ function RootContent() {
      } catch {
        setLoadingVariant(Math.floor(Math.random() * 9));
      }
-    setLoadingMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
+     try {
+       const messageStorageKey = "my-routine-loading-message";
+       const previousMessage = Number(window.localStorage.getItem(messageStorageKey));
+       const nextMessage = Number.isInteger(previousMessage) &&
+           previousMessage >= 0 &&
+           previousMessage < LOADING_MESSAGES.length
+         ? (previousMessage + 1) % LOADING_MESSAGES.length
+         : Math.floor(Math.random() * LOADING_MESSAGES.length);
+       window.localStorage.setItem(messageStorageKey, String(nextMessage));
+       setLoadingMessageIndex(nextMessage);
+     } catch {
+       setLoadingMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
+     }
     const illustrationTimer = window.setInterval(() => {
        setLoadingVariant((current) => (current + 1) % 9);
     }, 2400);
