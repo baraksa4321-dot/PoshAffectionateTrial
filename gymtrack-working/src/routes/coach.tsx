@@ -1039,6 +1039,17 @@ export function CoachDashboardPage({
   const selfDisplayName = store.userProfile?.fullName?.trim() || "אני";
 
   const selectedClientInfo = clients.find((c) => c.client_id === selectedClientId);
+  const latestProgram = clientDetails?.programs?.[clientDetails.programs.length - 1];
+  const latestNutritionDay = [...(clientDetails?.nutritionDays ?? [])].sort((a, b) =>
+    b.date.localeCompare(a.date),
+  )[0];
+  const clientNutritionNotes = (clientDetails?.nutritionDays ?? []).flatMap((day) =>
+    day.meals.flatMap((meal) =>
+      meal.foods
+        .filter((food) => food.notes?.trim())
+        .map((food) => ({ date: day.date, meal: meal.name, note: food.notes!.trim() })),
+    ),
+  );
   const filteredExerciseOptions = useMemo(() => {
     const query = exerciseQuery.trim().toLocaleLowerCase();
     if (!query) return store.exercises;
@@ -1978,6 +1989,252 @@ export function CoachDashboardPage({
                         ) : null}
                       </div>
                     </>
+                  ) : null}
+
+                  {!workspacePage ? (
+                    <section className="grid gap-3 lg:grid-cols-2">
+                      <div className="surface-card space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.03] p-4">
+                        <div className="flex items-start justify-between gap-3 border-b border-primary/15 pb-2">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                              התוכנית העדכנית
+                            </p>
+                            <h4 className="mt-1 font-display text-base font-extrabold text-ink">
+                              {latestProgram?.name || "עדיין לא נבנתה תוכנית"}
+                            </h4>
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              {latestProgram
+                                ? `${latestProgram.dayIds.length} ימי אימון · ${
+                                    clientDetails.workouts
+                                      .filter((day) => latestProgram.dayIds.includes(day.id))
+                                      .reduce((total, day) => total + day.items.length, 0)
+                                  } תרגילים`
+                                : "אפשר להתחיל לבנות תוכנית חדשה"}
+                            </p>
+                          </div>
+                          <Dumbbell className="h-5 w-5 shrink-0 text-primary" />
+                        </div>
+                        <div className="space-y-2">
+                          {clientDetails.history.slice(0, 4).map((session) => {
+                            const doneSets = session.entries.reduce(
+                              (total, entry) => total + entry.sets.filter((set) => set.done).length,
+                              0,
+                            );
+                            return (
+                              <div key={session.id} className="rounded-xl bg-white/80 p-2.5 text-[11px]">
+                                <div className="flex items-center justify-between gap-2">
+                                  <strong className="text-ink">{session.workoutName || "אימון"}</strong>
+                                  <span className="text-muted-foreground">
+                                    {new Date(session.date).toLocaleDateString("he-IL")}
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-muted-foreground">
+                                  {doneSets} סטים בוצעו · {session.entries.length} תרגילים
+                                  {session.difficultyRating ? ` · ${session.difficultyRating}` : ""}
+                                </p>
+                                {session.discomfortNotes ? (
+                                  <p className="mt-1 rounded-lg bg-rose-50 px-2 py-1 font-semibold text-rose-800">
+                                    כאב / אי־נוחות: {session.discomfortNotes}
+                                  </p>
+                                ) : null}
+                              </div>
+                            );
+                          })}
+                          {clientDetails.history.length === 0 ? (
+                            <p className="rounded-xl bg-white/70 p-3 text-center text-[11px] text-muted-foreground">
+                              עדיין לא נרשמו אימונים בפועל.
+                            </p>
+                          ) : null}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            selectedClientId &&
+                            navigate({
+                              to: "/coach/clients/$clientId/program",
+                              params: { clientId: selectedClientId },
+                            })
+                          }
+                          className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary text-xs font-bold text-white"
+                        >
+                          <Dumbbell className="h-4 w-4" /> תוכנית אימון
+                        </button>
+                      </div>
+
+                      <div className="surface-card space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/35 p-4">
+                        <div className="flex items-start justify-between gap-3 border-b border-emerald-200/70 pb-2">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">
+                              התפריט העדכני
+                            </p>
+                            <h4 className="mt-1 font-display text-base font-extrabold text-ink">
+                              {latestNutritionDay
+                                ? `תפריט ליום ${new Date(`${latestNutritionDay.date}T00:00:00`).toLocaleDateString("he-IL")}`
+                                : "עדיין לא נבנה תפריט"}
+                            </h4>
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              {latestNutritionDay
+                                ? `${latestNutritionDay.plannedMeals?.length || 0} ארוחות מתוכננות · ${
+                                    latestNutritionDay.meals.reduce(
+                                      (total, meal) => total + meal.foods.length,
+                                      0,
+                                    )
+                                  } מאכלים שנרשמו`
+                                : "אפשר להתחיל לבנות תפריט חדש"}
+                            </p>
+                          </div>
+                          <Apple className="h-5 w-5 shrink-0 text-emerald-700" />
+                        </div>
+                        <div className="space-y-2">
+                          {(clientDetails.nutritionDays ?? []).slice(0, 4).map((day) => {
+                            const actualFoods = day.meals.flatMap((meal) => meal.foods);
+                            const calories = actualFoods.reduce(
+                              (total, food) => total + food.calories * food.quantity,
+                              0,
+                            );
+                            return (
+                              <div key={day.id || day.date} className="rounded-xl bg-white/80 p-2.5 text-[11px]">
+                                <div className="flex items-center justify-between gap-2">
+                                  <strong className="text-ink">
+                                    {new Date(`${day.date}T00:00:00`).toLocaleDateString("he-IL")}
+                                  </strong>
+                                  <span className="text-emerald-700">{Math.round(calories)} קל׳ בפועל</span>
+                                </div>
+                                <p className="mt-1 text-muted-foreground">
+                                  {day.plannedMeals?.length || 0} ארוחות מתוכננות · {actualFoods.length} מאכלים בפועל
+                                </p>
+                              </div>
+                            );
+                          })}
+                          {clientDetails.nutritionDays.length === 0 ? (
+                            <p className="rounded-xl bg-white/70 p-3 text-center text-[11px] text-muted-foreground">
+                              עדיין לא נרשם מעקב תזונה.
+                            </p>
+                          ) : null}
+                          {clientNutritionNotes.slice(0, 2).map((note) => (
+                            <p key={`${note.date}-${note.meal}-${note.note}`} className="rounded-lg bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-900">
+                              הערת מתאמן: {note.note}
+                            </p>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            selectedClientId &&
+                            navigate({
+                              to: "/coach/clients/$clientId/nutrition",
+                              params: { clientId: selectedClientId },
+                            })
+                          }
+                          className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 text-xs font-bold text-white"
+                        >
+                          <Apple className="h-4 w-4" /> תפריט תזונה
+                        </button>
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {workspacePage && workspaceMode === "programs" ? (
+                    <section className="surface-card space-y-3 rounded-2xl border border-amber-200 bg-amber-50/35 p-4">
+                      <div className="flex items-center justify-between border-b border-amber-200 pb-2">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">
+                            מה המתאמן ביצע בפועל
+                          </p>
+                          <h4 className="mt-1 font-display text-base font-extrabold text-ink">
+                            היסטוריית אימונים והערות
+                          </h4>
+                        </div>
+                        <Activity className="h-5 w-5 text-amber-700" />
+                      </div>
+                      {clientDetails.history.length > 0 ? (
+                        <div className="grid gap-2 md:grid-cols-2">
+                          {clientDetails.history.map((session) => (
+                            <div key={session.id} className="rounded-xl bg-white/80 p-3 text-[11px]">
+                              <div className="flex items-center justify-between gap-2">
+                                <strong className="text-ink">{session.workoutName || "אימון"}</strong>
+                                <span className="text-muted-foreground">
+                                  {new Date(session.date).toLocaleDateString("he-IL")}
+                                </span>
+                              </div>
+                              <p className="mt-1 text-muted-foreground">
+                                {session.entries.reduce(
+                                  (total, entry) => total + entry.sets.filter((set) => set.done).length,
+                                  0,
+                                )}{" "}
+                                סטים בוצעו מתוך {session.entries.reduce((total, entry) => total + entry.sets.length, 0)}
+                              </p>
+                              {session.entries
+                                .filter((entry) => entry.feedback?.notes || entry.notes)
+                                .slice(0, 3)
+                                .map((entry) => (
+                                  <p key={`${session.id}-${entry.exerciseId}`} className="mt-1 text-ink">
+                                    {entry.exerciseName}: {entry.feedback?.notes || entry.notes}
+                                  </p>
+                                ))}
+                              {session.discomfortNotes ? (
+                                <p className="mt-1 rounded-lg bg-rose-50 px-2 py-1 font-semibold text-rose-800">
+                                  כאב / אי־נוחות: {session.discomfortNotes}
+                                </p>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-center text-xs text-muted-foreground">אין עדיין ביצועי אימון להצגה.</p>
+                      )}
+                    </section>
+                  ) : null}
+
+                  {workspacePage && workspaceMode === "nutrition" ? (
+                    <section className="surface-card space-y-3 rounded-2xl border border-amber-200 bg-amber-50/35 p-4">
+                      <div className="flex items-center justify-between border-b border-amber-200 pb-2">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">
+                            מעקב תזונה בפועל
+                          </p>
+                          <h4 className="mt-1 font-display text-base font-extrabold text-ink">
+                            מה המתאמן אכל והערותיו
+                          </h4>
+                        </div>
+                        <Apple className="h-5 w-5 text-amber-700" />
+                      </div>
+                      <div className="grid gap-2 md:grid-cols-2">
+                        {clientDetails.nutritionDays.map((day) => {
+                          const actualFoods = day.meals.flatMap((meal) => meal.foods);
+                          return (
+                            <div key={day.id || day.date} className="rounded-xl bg-white/80 p-3 text-[11px]">
+                              <div className="flex items-center justify-between gap-2">
+                                <strong className="text-ink">
+                                  {new Date(`${day.date}T00:00:00`).toLocaleDateString("he-IL")}
+                                </strong>
+                                <span className="text-muted-foreground">
+                                  {actualFoods.length} מאכלים בפועל
+                                </span>
+                              </div>
+                              {actualFoods.length > 0 ? (
+                                <p className="mt-1 text-muted-foreground">
+                                  {actualFoods.map((food) => `${food.name} ×${food.quantity}`).join(" · ")}
+                                </p>
+                              ) : (
+                                <p className="mt-1 text-muted-foreground">לא נרשמו מאכלים ביום זה.</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {clientNutritionNotes.length > 0 ? (
+                        <div className="space-y-1">
+                          {clientNutritionNotes.map((note) => (
+                            <p key={`${note.date}-${note.meal}-${note.note}`} className="rounded-lg bg-white/80 px-2 py-1 text-[11px] text-ink">
+                              {new Date(`${note.date}T00:00:00`).toLocaleDateString("he-IL")} · {note.meal}: {note.note}
+                            </p>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">אין הערות תזונה שנרשמו על ידי המתאמן.</p>
+                      )}
+                    </section>
                   ) : null}
 
                   {/* Client Programs & Full Exercise Prescription Builder */}
