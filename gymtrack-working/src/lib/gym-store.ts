@@ -1105,6 +1105,9 @@ function subscribe(cb: () => void) {
   return () => listeners.delete(cb);
 }
 
+export function getGymStoreSnapshot(): GymData {
+  return data;
+}
 let serverSnapshot: GymData | undefined;
 function getServerSnapshot(): GymData {
   if (!serverSnapshot) serverSnapshot = seed();
@@ -2125,4 +2128,32 @@ export function dayTotals(day: NutritionDay): MacroTotals {
     fat: round1(t.fat),
     fiber: round1(t.fiber),
   };
+}
+
+/** Reset the singleton for browser-lifecycle tests that simulate a full reload. */
+export function resetGymStoreForTests() {
+  if (syncRetryTimer) clearTimeout(syncRetryTimer);
+  data = seed();
+  hydrated = false;
+  currentUser = null;
+  authStatus = "loading";
+  profileHydrationStatus = "loading";
+  profileHydrationError = "";
+  authResolved = false;
+  hydrationGeneration += 1;
+  syncStatus = "idle";
+  hasPendingCloudChanges = false;
+  syncRetryTimer = null;
+  syncRetryAttempts = 0;
+  dataRevision = 0;
+  syncInFlight = null;
+  listeners.clear();
+}
+
+export function subscribeGymStore(cb: () => void) {
+  return subscribe(cb);
+}
+
+export function getGymStoreSyncStatus(): SyncStatus {
+  return syncStatus;
 }
