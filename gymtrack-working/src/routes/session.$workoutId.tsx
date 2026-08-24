@@ -208,6 +208,7 @@ function Session() {
   const [entries, setEntries] = useState<HistoryEntry[]>(initial);
   const [startedAt] = useState(() => Date.now());
   const [rest, setRest] = useState(0);
+  const [restFinished, setRestFinished] = useState(false);
   const [restPaused, setRestPaused] = useState(false);
   const [restExpanded, setRestExpanded] = useState(false);
   const [restOffset, setRestOffset] = useState({ x: 0, y: 0 });
@@ -250,6 +251,7 @@ function Session() {
   useEffect(() => {
     if (rest > 0) {
       restCompletionVibratedRef.current = false;
+      setRestFinished(false);
     }
     if (
       previousRestRef.current > 0 &&
@@ -258,6 +260,7 @@ function Session() {
       typeof navigator !== "undefined"
     ) {
       restCompletionVibratedRef.current = true;
+      setRestFinished(true);
       // Vibration is not exposed by every iOS browser. Use both the native
       // pattern and a short user-activated audio fallback when available.
       navigator.vibrate?.([180, 80, 180, 80, 320]);
@@ -353,6 +356,7 @@ function Session() {
       }
       const restSec = workout.items[ei]?.rest ?? 60;
       setRest(restSec);
+      setRestFinished(false);
       setRestPaused(false);
     }
   };
@@ -975,7 +979,9 @@ function Session() {
                     ? restPaused
                       ? "המשך טיימר מנוחה"
                       : "עצור טיימר מנוחה"
-                    : "פתח טיימר מנוחה"
+                    : restFinished
+                      ? "Time over"
+                      : "פתח טיימר מנוחה"
                 }
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -1000,7 +1006,9 @@ function Session() {
                       <p className="font-display text-[17px] font-semibold tabular-nums text-primary-foreground">
                         {rest > 0
                           ? `${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, "0")}`
-                          : "מוכן"}
+                          : restFinished
+                            ? "Time over"
+                            : "מוכן"}
                       </p>
                     </div>
                     {rest <= 0 ? (
@@ -1012,6 +1020,7 @@ function Session() {
                             onClick={(event) => {
                               event.stopPropagation();
                               setRest(seconds);
+                              setRestFinished(false);
                               setRestPaused(false);
                               setRestExpanded(false);
                             }}
@@ -1033,7 +1042,9 @@ function Session() {
                     <p className="mt-0.5 font-display text-[12px] font-bold tabular-nums text-primary-foreground">
                       {rest > 0
                         ? `${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, "0")}`
-                        : "טיימר"}
+                        : restFinished
+                          ? "Time over"
+                          : "טיימר"}
                     </p>
                   </div>
                 )}

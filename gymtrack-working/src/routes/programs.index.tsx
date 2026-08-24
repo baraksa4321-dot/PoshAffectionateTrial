@@ -66,7 +66,7 @@ const WORKOUT_PLAYLISTS = [
     className: "bg-[#e8f7ed] text-[#137333] hover:bg-[#d4f0dc]",
   },
   {
-    label: "Apple · אימון",
+    label: "Apple Music · אימון",
     href: "https://music.apple.com/gb/playlist/pure-workout/pl.ad0ee1557e3e4feba314fd70f7982766",
     className: "bg-[#fff0f2] text-[#c9364d] hover:bg-[#ffe1e6]",
   },
@@ -76,7 +76,7 @@ const WORKOUT_PLAYLISTS = [
     className: "bg-[#fff4df] text-[#a25b00] hover:bg-[#ffeac2]",
   },
   {
-    label: "Apple · מזרחית",
+    label: "Apple Music · מזרחית",
     href: "https://music.apple.com/us/playlist/mizrahi/pl.b3dacbd3e4c64ddaaf4c882b35da8027",
     className: "bg-[#fff4df] text-[#a25b00] hover:bg-[#ffeac2]",
   },
@@ -86,7 +86,7 @@ const WORKOUT_PLAYLISTS = [
     className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]",
   },
   {
-    label: "Apple · Top 100 ישראל",
+    label: "Apple Music · Top ישראל",
     href: "https://music.apple.com/il/playlist/top-100-israel/pl.0c9765e5330048af96c2336fa7bc3525?l=he",
     className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]",
   },
@@ -96,7 +96,7 @@ const WORKOUT_PLAYLISTS = [
     className: "bg-[#f4edff] text-[#7047a8] hover:bg-[#eae0ff]",
   },
   {
-    label: "Apple · Taylor Swift",
+    label: "Apple Music · Taylor Swift",
     href: "https://music.apple.com/us/playlist/taylor-swift-essentials/pl.3950454ced8c45a3b0cc693c2a7db97b",
     className: "bg-[#f4edff] text-[#7047a8] hover:bg-[#eae0ff]",
   },
@@ -106,7 +106,7 @@ const WORKOUT_PLAYLISTS = [
     className: "bg-[#eef6f4] text-[#28766a] hover:bg-[#dceeea]",
   },
   {
-    label: "Apple · ג׳אז",
+    label: "Apple Music · ג׳אז",
     href: "https://music.apple.com/us/playlist/jazz-in-spatial-audio/pl.efbd24628ff04ff3b5e416a6e237d753",
     className: "bg-[#eef6f4] text-[#28766a] hover:bg-[#dceeea]",
   },
@@ -121,8 +121,23 @@ const WORKOUT_PLAYLISTS = [
     className: "bg-[#f0f0f0] text-[#222] hover:bg-[#e4e4e4]",
   },
   {
+    label: "Apple Music · גלגל״צ",
+    href: "https://music.apple.com/us/search?term=%D7%92%D7%9C%D7%92%D7%9C%D7%A6",
+    className: "bg-[#f0f0f0] text-[#222] hover:bg-[#e4e4e4]",
+  },
+  {
+    label: "Apple Music · גלגל״צ LIVE",
+    href: "https://music.apple.com/us/search?term=%D7%92%D7%9C%D7%92%D7%9C%D7%A6%20LIVE",
+    className: "bg-[#f0f0f0] text-[#222] hover:bg-[#e4e4e4]",
+  },
+  {
     label: "Spotify · Top 50 ישראל",
     href: "https://open.spotify.com/playlist/37i9dQZEVXbJ6IpvItkve3",
+    className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]",
+  },
+  {
+    label: "Apple Music · Top 50 ישראל",
+    href: "https://music.apple.com/il/search?term=Top%2050%20Israel&l=he",
     className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]",
   },
   {
@@ -131,12 +146,22 @@ const WORKOUT_PLAYLISTS = [
     className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]",
   },
   {
-    label: "Apple · להיטים ישראליים",
+    label: "Apple Music · חדש בישראל",
+    href: "https://music.apple.com/il/search?term=New%20in%20Israel&l=he",
+    className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]",
+  },
+  {
+    label: "Apple Music · להיטים ישראליים",
     href: "https://music.apple.com/ca/playlist/israeli-hits/pl.b4c77d8c6cc74426ad3d591307ba7e1a",
     className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]",
   },
   {
-    label: "Apple · אושר כהן",
+    label: "Spotify · להיטים ישראליים",
+    href: "https://open.spotify.com/search/israeli%20hits/playlists",
+    className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]",
+  },
+  {
+    label: "Apple Music · אושר כהן",
     href: "https://music.apple.com/us/playlist/osher-cohen-essentials/pl.ca23dfc9c37346719d75f0909f80738a",
     className: "bg-[#fff4df] text-[#a25b00] hover:bg-[#ffeac2]",
   },

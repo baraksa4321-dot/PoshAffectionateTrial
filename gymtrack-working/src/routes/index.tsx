@@ -150,6 +150,7 @@ function Dashboard() {
   const [cardioDistance, setCardioDistance] = useState("0");
   const [cardioError, setCardioError] = useState("");
   const [checklistInput, setChecklistInput] = useState("");
+  const [showChecklistModal, setShowChecklistModal] = useState(false);
   const [homeCardOrder, setHomeCardOrder] = useState<HomeCardId[]>(() => {
     if (typeof window === "undefined") return DEFAULT_HOME_CARD_ORDER;
     try {
@@ -582,6 +583,23 @@ function Dashboard() {
             <ChevronLeft className="h-3.5 w-3.5" />
           </div>
         </Link>
+         <button
+           type="button"
+           onClick={() => setShowChecklistModal(true)}
+           className="home-feature-item home-bodyweight-tile home-checklist-tile text-start"
+           aria-label="פתיחת צ׳קליסט לאימון"
+         >
+           <div className="ink-card flex min-h-[76px] flex-col p-2.5">
+             <div className="flex items-center justify-between gap-1">
+               <span className="text-[10px] font-bold text-primary">צ׳קליסט לאימון</span>
+               <CheckCircle2 className="h-4 w-4 text-primary" aria-hidden="true" />
+             </div>
+             <h2 className="mt-2 font-display text-[13px] font-bold leading-tight text-ink">
+               {preExitChecklist?.length ?? 0} פריטים לזכור
+             </h2>
+             <span className="mt-auto text-[9px] font-bold text-primary">פתיחת הצ׳קליסט</span>
+           </div>
+         </button>
          </div>
       </div>
 
@@ -745,77 +763,95 @@ function Dashboard() {
         </div>
       </section>
 
-      <section {...homeCardProps("checklist")} className="surface-card mt-5 p-3 text-start">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <h2 className="font-display text-[13px] font-extrabold text-ink">
-              צ׳ק־ליסט לפני יציאה מהבית
-            </h2>
-            <p className="mt-0.5 text-[9px] text-muted-foreground">
-              הוסיפי דברים שחשוב לזכור לפני שיוצאים לאימון.
-            </p>
-          </div>
-        </div>
-        <form
-          className="mt-2 flex gap-1.5"
-          onSubmit={(event) => {
-            event.preventDefault();
-            handleChecklistSubmit();
-          }}
+      </div>
+      {showChecklistModal ? (
+        <Overlay
+          open={showChecklistModal}
+          onClose={() => setShowChecklistModal(false)}
+          ariaLabel="צ׳קליסט לאימון"
         >
-          <input
-            value={checklistInput}
-            onChange={(event) => setChecklistInput(event.target.value)}
-            placeholder="למשל: בקבוק מים"
-            aria-label="פריט חדש בצ׳ק-ליסט"
-            className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-[11px] text-ink outline-none placeholder:text-muted-foreground focus:border-primary"
-          />
-          <button
-            type="submit"
-            disabled={!checklistInput.trim()}
-            className="press rounded-lg bg-primary px-2.5 py-1.5 text-[10px] font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          <div
+            className="w-full max-w-sm space-y-3 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
           >
-            הוספה
-          </button>
-        </form>
-        <div className="mt-2 space-y-1">
-          {(preExitChecklist ?? []).map((item) => (
-            <div
-              key={item.id}
-              className="flex min-h-12 items-center gap-2 rounded-xl bg-secondary/60 px-2.5 py-1.5 touch-manipulation"
-            >
+            <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
+              <div>
+                <h2 className="font-display text-lg font-extrabold text-ink">
+                  צ׳קליסט לפני יציאה מהבית
+                </h2>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  הוסיפי דברים שחשוב לזכור לפני שיוצאים לאימון.
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={() => toggleChecklistItem(item.id)}
-                aria-label={item.done ? `בטלי סימון של ${item.label}` : `סמני את ${item.label}`}
-                className={`press grid h-9 w-9 shrink-0 place-items-center rounded-xl border-2 transition-colors ${
-                  item.done
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background text-transparent"
-                }`}
+                onClick={() => setShowChecklistModal(false)}
+                className="press rounded-xl p-2 text-muted-foreground hover:bg-secondary"
+                aria-label="סגירת הצ׳קליסט"
               >
-                <Check className="h-3 w-3" />
-              </button>
-              <button
-                type="button"
-                onClick={() => toggleChecklistItem(item.id)}
-                className={`min-h-9 min-w-0 flex-1 text-start text-[12px] ${
-                  item.done ? "text-muted-foreground line-through" : "text-ink"
-                }`}
-              >
-                {item.label}
+                <X className="h-4 w-4" />
               </button>
             </div>
-          ))}
-          {(preExitChecklist ?? []).length === 0 ? (
-            <p className="rounded-lg border border-dashed border-border px-2 py-2 text-center text-[9px] text-muted-foreground">
-              עדיין אין פריטים. הוסיפי את הדבר הראשון שחשוב לזכור.
-            </p>
-          ) : null}
-        </div>
-      </section>
-
-      </div>
+            <form
+              className="flex gap-1.5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleChecklistSubmit();
+              }}
+            >
+              <input
+                value={checklistInput}
+                onChange={(event) => setChecklistInput(event.target.value)}
+                placeholder="למשל: בקבוק מים"
+                aria-label="פריט חדש בצ׳ק-ליסט"
+                className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-ink outline-none placeholder:text-muted-foreground focus:border-primary"
+              />
+              <button
+                type="submit"
+                disabled={!checklistInput.trim()}
+                className="press rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                הוספה
+              </button>
+            </form>
+            <div className="space-y-1.5">
+              {(preExitChecklist ?? []).map((item) => (
+                <div
+                  key={item.id}
+                  className="flex min-h-12 items-center gap-2 rounded-xl bg-secondary/60 px-2.5 py-1.5 touch-manipulation"
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleChecklistItem(item.id)}
+                    aria-label={item.done ? `בטלי סימון של ${item.label}` : `סמני את ${item.label}`}
+                    className={`press grid h-9 w-9 shrink-0 place-items-center rounded-xl border-2 transition-colors ${
+                      item.done
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-transparent"
+                    }`}
+                  >
+                    <Check className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleChecklistItem(item.id)}
+                    className={`min-h-9 min-w-0 flex-1 text-start text-[13px] ${
+                      item.done ? "text-muted-foreground line-through" : "text-ink"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                </div>
+              ))}
+              {(preExitChecklist ?? []).length === 0 ? (
+                <p className="rounded-xl border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
+                  עדיין אין פריטים. הוסיפי את הדבר הראשון שחשוב לזכור.
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </Overlay>
+      ) : null}
       {/* Modal: Weekly Weigh-In */}
       {showBodyProfileModal && (
         <Overlay
