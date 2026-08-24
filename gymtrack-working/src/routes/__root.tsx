@@ -237,7 +237,32 @@ const LOADING_FOOD_ILLUSTRATIONS = [
   { color: "#8fc6b3", growth: true, shell: "M48 76c-11-17-4-34 13-39-1-16 11-27 25-24 12 3 18 14 15 25 17 4 23 22 13 35-13 17-50 20-66 3z" },
 ] as const;
 
+const REALISTIC_LOADING_ASSETS = [
+  { file: "dumbbell", label: "משקולת ורודה" },
+  { file: "broccoli", label: "ברוקולי ירוק" },
+  { file: "apple", label: "תפוח ירוק" },
+  { file: "egg", label: "ביצה" },
+  { file: "muscle", label: "שריר יד" },
+  { file: "peach", label: "אפרסק" },
+  { file: "banana", label: "בננה צהובה" },
+  { file: "avocado", label: "אבוקדו ירוק" },
+  { file: "lifter", label: "מתאמנת עם משקולת" },
+] as const;
+
 function LoadingIllustration({ variant }: { variant: number }) {
+  const asset = REALISTIC_LOADING_ASSETS[variant % REALISTIC_LOADING_ASSETS.length];
+  return (
+    <div className="loading-micro-stage">
+      <img
+        className="loading-realistic-image"
+        src={`/loading/illustrated-loading-${asset.file}.png`}
+        alt={`איור טעינה: ${asset.label}`}
+      />
+    </div>
+  );
+}
+
+function LegacyLoadingIllustration({ variant }: { variant: number }) {
   const activeShape = variant % 9;
   const illustrationLabel = [
     "משקולת ורודה",

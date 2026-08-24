@@ -1765,6 +1765,27 @@ html.night-mode .auth-panel {
   display: none;
 }
 
+.loading-realistic-image {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: min(118px, 88%);
+  height: 88px;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 4px color-mix(in srgb, var(--ink) 18%, transparent));
+  animation: loading-realistic-float 2.8s ease-in-out infinite;
+}
+
+@keyframes loading-realistic-float {
+  0%,
+  100% {
+    transform: translateY(3px) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-3px) rotate(1deg);
+  }
+}
+
 .loading-drawing {
   position: relative;
   z-index: 1;

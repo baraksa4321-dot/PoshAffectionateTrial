@@ -847,6 +847,10 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
               name: profile.full_name || undefined,
             weight: Number(profile.weight_kg || 65),
             height: Number(profile.height_cm || 165),
+              gender:
+                profile.gender === "male" || profile.gender === "female"
+                  ? profile.gender
+                  : undefined,
             role: profile.role as UserRole,
             coachId: profile.coach_id || undefined,
             todayRoutineEnabled: profile.today_routine_enabled ?? true,

@@ -94,10 +94,12 @@ export function CoachDashboardPage({
   clientsOnly = false,
   workspacePage = false,
   clientId,
+  workspaceMode = "all",
 }: {
   clientsOnly?: boolean;
   workspacePage?: boolean;
   clientId?: string;
+  workspaceMode?: "all" | "programs" | "nutrition";
 }) {
   const store = useGym();
   const navigate = useNavigate();
@@ -189,6 +191,7 @@ export function CoachDashboardPage({
 
   // Nutrition Prescription state
   const [editingNutrition, setEditingNutrition] = useState(false);
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"programs" | "nutrition">("programs");
   const [calTarget, setCalTarget] = useState(0);
   const [protTarget, setProtTarget] = useState(0);
   const [menuDate, setMenuDate] = useState(todayKey());
@@ -212,6 +215,7 @@ export function CoachDashboardPage({
   const [profileHeight, setProfileHeight] = useState("");
   const [profileWeight, setProfileWeight] = useState("");
   const [profileWorkouts, setProfileWorkouts] = useState("");
+  const [profileGender, setProfileGender] = useState<"female" | "male" | "">("");
   const [profileNotice, setProfileNotice] = useState("");
 
   const loadCoachClients = useCallback(async () => {
@@ -300,7 +304,8 @@ export function CoachDashboardPage({
     if (!workspacePage || !clientId) return;
     setSelectedClientId(clientId);
     setShowClientWorkspace(true);
-  }, [workspacePage, clientId]);
+    setActiveWorkspaceTab(workspaceMode === "nutrition" ? "nutrition" : "programs");
+  }, [workspacePage, clientId, workspaceMode]);
 
   useEffect(() => {
     if (!selectedClientId) {
@@ -372,6 +377,7 @@ export function CoachDashboardPage({
     setProfileWorkouts(
       profile?.workoutsPerWeek === undefined ? "" : String(profile.workoutsPerWeek),
     );
+    setProfileGender(profile?.gender ?? "");
     setProfileNotice("");
   }, [clientDetails]);
 
@@ -382,6 +388,7 @@ export function CoachDashboardPage({
         height: profileHeight === "" ? undefined : Number(profileHeight),
         weight: profileWeight === "" ? 0 : Number(profileWeight),
         workoutsPerWeek: profileWorkouts === "" ? undefined : Number(profileWorkouts),
+        gender: profileGender === "" ? undefined : profileGender,
       }
     : null;
   const calorieEstimate = calorieProfile ? calculateCalorieEstimate(calorieProfile) : null;
@@ -392,8 +399,10 @@ export function CoachDashboardPage({
     const height = profileHeight === "" ? undefined : Number(profileHeight);
     const weight = profileWeight === "" ? undefined : Number(profileWeight);
     const workouts = profileWorkouts === "" ? undefined : Number(profileWorkouts);
+    const gender = profileGender === "" ? undefined : profileGender;
     const valid =
       [age, height, weight, workouts].every((value) => value !== undefined && Number.isFinite(value)) &&
+      gender !== undefined &&
       (age ?? 0) > 0 &&
       (height ?? 0) > 0 &&
       (weight ?? 0) > 0 &&
@@ -410,6 +419,7 @@ export function CoachDashboardPage({
         height_cm: height,
         weight_kg: weight,
         workouts_per_week: workouts,
+        gender,
         updated_at: new Date().toISOString(),
       })
       .eq("id", selectedClientId);
@@ -422,7 +432,14 @@ export function CoachDashboardPage({
         ? {
             ...current,
             profile: current.profile
-              ? { ...current.profile, age, height, weight: weight ?? 0, workoutsPerWeek: workouts }
+              ? {
+                  ...current.profile,
+                  age,
+                  height,
+                  weight: weight ?? 0,
+                  workoutsPerWeek: workouts,
+                  gender,
+                }
               : current.profile,
           }
         : current,
@@ -1687,7 +1704,14 @@ export function CoachDashboardPage({
                   type="button"
                   onClick={() => {
                     if (workspacePage) {
-                      navigate({ to: "/coach/clients" });
+                      if (workspaceMode !== "all" && selectedClientId) {
+                        navigate({
+                          to: "/coach/clients/$clientId",
+                          params: { clientId: selectedClientId },
+                        });
+                      } else {
+                        navigate({ to: "/coach/clients" });
+                      }
                       return;
                     }
                     setShowClientWorkspace(false);
@@ -1750,24 +1774,54 @@ export function CoachDashboardPage({
                       </div>
                     </div>
                   </section>
-                  <nav
+                   <nav
                     aria-label="ניווט בסביבת העריכה"
                     className="sticky top-2 z-10 grid grid-cols-2 gap-2 rounded-2xl border border-border/70 bg-background/95 p-1.5 shadow-sm backdrop-blur"
                   >
-                    <a
-                      href="#coach-programs"
-                      className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-primary-foreground"
+                     <button
+                       type="button"
+                       onClick={() => {
+                         if (selectedClientId) {
+                           navigate({
+                             to: "/coach/clients/$clientId/program",
+                             params: { clientId: selectedClientId },
+                           });
+                         } else {
+                           setActiveWorkspaceTab("programs");
+                         }
+                       }}
+                       aria-selected={activeWorkspaceTab === "programs"}
+                       className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors ${
+                         activeWorkspaceTab === "programs"
+                           ? "bg-primary text-primary-foreground shadow-sm"
+                           : "bg-primary/5 text-primary hover:bg-primary/10"
+                       }`}
                     >
                       <Dumbbell className="h-3.5 w-3.5" />
                       תוכנית אימונים
-                    </a>
-                    <a
-                      href="#coach-menu"
-                      className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2.5 text-xs font-bold text-emerald-800"
+                     </button>
+                     <button
+                       type="button"
+                       onClick={() => {
+                         if (selectedClientId) {
+                           navigate({
+                             to: "/coach/clients/$clientId/nutrition",
+                             params: { clientId: selectedClientId },
+                           });
+                         } else {
+                           setActiveWorkspaceTab("nutrition");
+                         }
+                       }}
+                       aria-selected={activeWorkspaceTab === "nutrition"}
+                       className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors ${
+                         activeWorkspaceTab === "nutrition"
+                           ? "bg-emerald-700 text-white shadow-sm"
+                           : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                       }`}
                     >
                       <Apple className="h-3.5 w-3.5" />
-                      תפריט ותזונה
-                    </a>
+                       תפריט תזונה
+                     </button>
                   </nav>
                 </>
               ) : null}
@@ -1929,7 +1983,9 @@ export function CoachDashboardPage({
                   {/* Client Programs & Full Exercise Prescription Builder */}
                   <div
                     id="coach-programs"
-                    className="scroll-mt-24 surface-card space-y-4 rounded-[1.75rem] border-primary/15 bg-primary/[0.02] p-4"
+                    className={`scroll-mt-24 surface-card space-y-4 rounded-[1.75rem] border-primary/15 bg-primary/[0.02] p-4 ${
+                      workspacePage && workspaceMode === "nutrition" ? "hidden" : ""
+                    }`}
                   >
                     <div className="flex items-center justify-between border-b pb-2">
                       <h3 className="flex items-center gap-2 font-display text-lg font-extrabold text-ink">
@@ -2470,7 +2526,12 @@ export function CoachDashboardPage({
                   </div>
 
                   {/* Coach-prescribed menu builder */}
-                  <div className="surface-card space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
+                   <div
+                     id="coach-menu"
+                     className={`surface-card space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 ${
+                       workspacePage && workspaceMode === "programs" ? "hidden" : ""
+                     }`}
+                   >
                     <div className="flex items-start justify-between gap-3 border-b border-emerald-200/70 pb-2">
                       <div>
                         <h4 className="flex items-center gap-1.5 text-sm font-bold text-ink">
@@ -2677,7 +2738,9 @@ export function CoachDashboardPage({
                   {/* Client Nutrition Targets Editor */}
                   <div
                     id="coach-nutrition"
-                    className="scroll-mt-24 surface-card space-y-4 rounded-[1.75rem] border-emerald-200/70 bg-emerald-50/30 p-4"
+                    className={`scroll-mt-24 surface-card space-y-4 rounded-[1.75rem] border-emerald-200/70 bg-emerald-50/30 p-4 ${
+                      workspacePage && workspaceMode === "programs" ? "hidden" : ""
+                    }`}
                   >
                     <div className="flex items-center justify-between border-b pb-2">
                       <h3 className="flex items-center gap-2 font-display text-lg font-extrabold text-ink">
@@ -2700,6 +2763,20 @@ export function CoachDashboardPage({
                         </p>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
+                        <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                          מין
+                          <select
+                            value={profileGender}
+                            onChange={(event) =>
+                              setProfileGender(event.target.value as "female" | "male" | "")
+                            }
+                            className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
+                          >
+                            <option value="">נדרש</option>
+                            <option value="female">נקבה</option>
+                            <option value="male">זכר</option>
+                          </select>
+                        </label>
                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                           גיל
                           <input
