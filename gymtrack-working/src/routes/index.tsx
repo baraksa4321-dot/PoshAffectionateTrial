@@ -123,6 +123,7 @@ function Dashboard() {
     cardioLogs,
     preExitChecklist,
     coachMessages,
+    broadcasts,
   } = useGym();
 
   const now = new Date();
@@ -352,6 +353,7 @@ function Dashboard() {
     : undefined;
 
   const latestCoachMsg = coachMessages && coachMessages.length > 0 ? coachMessages[0] : null;
+  const latestBroadcast = broadcasts && broadcasts.length > 0 ? broadcasts[0] : null;
   const latestMeasurement = bodyMeasurements?.[0];
   const gender = userProfile?.gender;
   const cardioDurationValue = Number(cardioDuration) || 0;
@@ -465,6 +467,25 @@ function Dashboard() {
             </div>
             <p className="text-xs font-semibold text-ink leading-relaxed">
               "{latestCoachMsg.message}"
+            </p>
+          </div>
+        )}
+
+        {latestBroadcast && (
+          <div
+            {...homeCardProps("coach-message")}
+            className="surface-card space-y-1.5 border-accent/40 bg-accent/10 p-4 text-start"
+          >
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-xs font-bold text-ink">
+                <MessageSquare className="h-4 w-4 text-primary" /> הודעה חשובה
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                {new Date(latestBroadcast.createdAt).toLocaleDateString("he-IL")}
+              </span>
+            </div>
+            <p className="text-xs font-semibold leading-relaxed text-ink">
+              "{latestBroadcast.message}"
             </p>
           </div>
         )}

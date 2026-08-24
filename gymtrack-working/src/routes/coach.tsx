@@ -143,6 +143,12 @@ export function CoachDashboardPage({
   // Coach Message sender state
   const [coachMsgText, setCoachMsgText] = useState("");
   const [msgSentNotice, setMsgSentNotice] = useState("");
+  const [broadcastText, setBroadcastText] = useState("");
+  const [broadcastAudience, setBroadcastAudience] = useState<
+    "assigned_clients" | "coaches" | "clients" | "everyone"
+  >("assigned_clients");
+  const [broadcastNotice, setBroadcastNotice] = useState("");
+  const [broadcastError, setBroadcastError] = useState("");
 
   // Coach Program & Day Builder state
   const [newProgramName, setNewProgramName] = useState("");
@@ -637,6 +643,32 @@ export function CoachDashboardPage({
       }
     } catch {
       /* ignore */
+    }
+  };
+
+  const handleSendBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const message = broadcastText.trim();
+    if (!message) return;
+    setBroadcastNotice("");
+    setBroadcastError("");
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("יש להתחבר מחדש כדי לשלוח הודעה.");
+      const { error } = await supabase.from("broadcast_announcements").insert({
+        sender_id: user.id,
+        audience: broadcastAudience,
+        message,
+      });
+      if (error) throw error;
+      setBroadcastText("");
+      setBroadcastNotice("ההודעה נשלחה בהצלחה.");
+    } catch (err: unknown) {
+      setBroadcastError(
+        `שליחת ההודעה נכשלה: ${errorMessage(err, "יש לוודא שמיגרציית ההודעות הוחלה ב־Supabase.")}`,
+      );
     }
   };
 
@@ -1226,6 +1258,60 @@ export function CoachDashboardPage({
               </div>
             ) : null}
           </div>
+
+          <section className="surface-card space-y-2.5 border-primary/20 bg-primary/5 p-4 text-start">
+            <div className="flex items-center gap-1.5">
+              <MessageSquare className="h-4 w-4 text-primary" />
+              <div>
+                <h2 className="text-sm font-extrabold text-primary">הודעה לכל הקבוצה</h2>
+                <p className="text-[11px] text-muted-foreground">
+                  {isOwner ? "שליחה לכל המאמנים, לכל המתאמנים או לכולם" : "שליחה לכל המתאמנים שלך"}
+                </p>
+              </div>
+            </div>
+            {broadcastNotice ? (
+              <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-2 text-xs font-bold text-emerald-800">
+                {broadcastNotice}
+              </p>
+            ) : null}
+            {broadcastError ? (
+              <p className="rounded-xl border border-rose-200 bg-rose-50 p-2 text-xs font-bold text-rose-800">
+                {broadcastError}
+              </p>
+            ) : null}
+            <form onSubmit={handleSendBroadcast} className="space-y-2">
+              {isOwner ? (
+                <select
+                  value={broadcastAudience}
+                  onChange={(e) =>
+                    setBroadcastAudience(e.target.value as "coaches" | "clients" | "everyone")
+                  }
+                  className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs font-semibold"
+                >
+                  <option value="coaches">כל המאמנים</option>
+                  <option value="clients">כל המתאמנים</option>
+                  <option value="everyone">כולם</option>
+                </select>
+              ) : null}
+              <div className="flex gap-2">
+                <textarea
+                  required
+                  rows={2}
+                  maxLength={2000}
+                  value={broadcastText}
+                  onChange={(e) => setBroadcastText(e.target.value)}
+                  placeholder="כתבי הודעה שתופיע במסכי הבית..."
+                  className="min-h-12 flex-1 resize-none rounded-xl border border-border bg-white px-3 py-2 text-xs outline-none focus:border-primary"
+                />
+                <button
+                  type="submit"
+                  className="self-end rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-xs hover:bg-primary/90"
+                >
+                  שלח
+                </button>
+              </div>
+            </form>
+          </section>
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <div className="surface-card border-primary/20 bg-primary/5 px-2.5 py-1.5">

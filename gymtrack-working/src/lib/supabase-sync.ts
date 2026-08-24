@@ -17,6 +17,7 @@ import {
   type BodyMeasurement,
   type ClientHabits,
   type SavedRecipe,
+  type BroadcastAnnouncement,
 } from "./gym-types";
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "error" | "offline";
@@ -426,6 +427,27 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       }));
     }
 
+    const { data: broadcasts, error: broadcastsError } = await supabase
+      .from("broadcast_announcements")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(30);
+    if (
+      broadcastsError &&
+      !isMissingTableInSchemaCache(broadcastsError, "broadcast_announcements")
+    ) {
+      throw new Error(`Broadcast announcements pull failed: ${broadcastsError.message}`);
+    }
+    if (broadcasts) {
+      nextData.broadcasts = broadcasts.map((row): BroadcastAnnouncement => ({
+        id: row.id,
+        senderId: row.sender_id,
+        audience: row.audience,
+        message: row.message,
+        createdAt: row.created_at,
+      }));
+    }
+
     // 3. Coach sees only their links. Owner can hydrate all links under the
     // existing owner policy; neither path infers a role from identity details.
     const role = nextData.userProfile?.role;
@@ -575,9 +597,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .from("cardio_logs")
       .select("*")
       .eq("user_id", userId);
-    if (cardioError) {
-      console.warn(`[Optional cardio pull skipped]: ${cardioError.message}`);
-    }
+    if (cardioError) console.warn(`[Optional cardio pull skipped]: ${cardioError.message}`);
     // Preserve local entries while the optional table is unavailable. Also
     // preserve them when the cloud table is empty, allowing a failed first
     // upload to retry instead of losing the user's newly entered history.

@@ -284,6 +284,14 @@ export type CoachMessage = {
   isRead?: boolean;
 };
 
+export type BroadcastAnnouncement = {
+  id: string;
+  senderId: string;
+  audience: "assigned_clients" | "coaches" | "clients" | "everyone";
+  message: string;
+  createdAt: string;
+};
+
 export type CoachChangeHistory = {
   id: string;
   coachId: string;
@@ -340,6 +348,7 @@ export type GymData = {
   bodyMeasurements?: BodyMeasurement[];
   habits?: ClientHabits[];
   coachMessages?: CoachMessage[];
+  broadcasts?: BroadcastAnnouncement[];
   changeHistory?: CoachChangeHistory[];
   cardioLogs?: CardioLog[];
   userProfile?: UserProfile;
