@@ -427,6 +427,7 @@ function Dashboard() {
   return (
     <AppShell title={formatNumericDate(now)} subtitle="">
       <div className="home-card-stack">
+      {userProfile?.role !== "client" ? (
       <section {...homeCardProps("profile")} className="surface-card flex items-center justify-between gap-3 p-3 text-start">
         <div>
           <p className="text-[12px] font-bold text-ink">נתוני גוף ומחשבון BMR</p>
@@ -444,6 +445,7 @@ function Dashboard() {
           עדכון נתונים
         </button>
       </section>
+      ) : null}
       {/* Coach Message Banner */}
       {latestCoachMsg && (
         <div {...homeCardProps("coach-message")} className="surface-card space-y-1.5 border-primary/20 bg-primary/5 p-4 text-start">
