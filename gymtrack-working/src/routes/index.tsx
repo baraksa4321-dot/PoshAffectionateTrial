@@ -601,76 +601,6 @@ function Dashboard() {
          </div>
       </div>
 
-      <section {...homeCardProps("checklist")} className="surface-card mt-3 p-3 text-start">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <h2 className="font-display text-[13px] font-extrabold text-ink">
-                צ׳ק־ליסט לפני יציאה מהבית
-              </h2>
-              <p className="mt-0.5 text-[9px] text-muted-foreground">
-                הוסיפי דברים שחשוב לזכור לפני שיוצאים לאימון.
-              </p>
-            </div>
-          </div>
-          <form
-            className="mt-2 flex gap-1.5"
-            onSubmit={(event) => {
-              event.preventDefault();
-              handleChecklistSubmit();
-            }}
-          >
-            <input
-              value={checklistInput}
-              onChange={(event) => setChecklistInput(event.target.value)}
-              placeholder="למשל: בקבוק מים"
-              aria-label="פריט חדש בצ׳ק-ליסט"
-              className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-[11px] text-ink outline-none placeholder:text-muted-foreground focus:border-primary"
-            />
-            <button
-              type="submit"
-              disabled={!checklistInput.trim()}
-              className="press rounded-lg bg-primary px-2.5 py-1.5 text-[10px] font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              הוספה
-            </button>
-          </form>
-          <div className="mt-2 space-y-1">
-            {(preExitChecklist ?? []).map((item) => (
-              <div
-                key={item.id}
-                className="flex min-h-12 items-center gap-2 rounded-xl bg-secondary/60 px-2.5 py-1.5 touch-manipulation"
-              >
-                <button
-                  type="button"
-                  onClick={() => toggleChecklistItem(item.id)}
-                  aria-label={item.done ? `בטלי סימון של ${item.label}` : `סמני את ${item.label}`}
-                  className={`press grid h-9 w-9 shrink-0 place-items-center rounded-xl border-2 transition-colors ${
-                    item.done
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-background text-transparent"
-                  }`}
-                >
-                  <Check className="h-3 w-3" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toggleChecklistItem(item.id)}
-                  className={`min-h-9 min-w-0 flex-1 text-start text-[12px] ${
-                    item.done ? "text-muted-foreground line-through" : "text-ink"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              </div>
-            ))}
-            {(preExitChecklist ?? []).length === 0 ? (
-              <p className="rounded-lg border border-dashed border-border px-2 py-2 text-center text-[9px] text-muted-foreground">
-                עדיין אין פריטים. הוסיפי את הדבר הראשון שחשוב לזכור.
-              </p>
-            ) : null}
-          </div>
-        </section>
-
       {/* Check-In Success Banner */}
       {checkInSuccessMsg && (
         <div {...homeCardProps("checklist")} className="surface-card mt-3 rounded-2xl border border-primary/25 bg-primary/5 p-3.5 text-start text-xs font-bold text-primary">
@@ -828,6 +758,76 @@ function Dashboard() {
               </p>
             </div>
           )}
+        </div>
+      </section>
+
+      <section {...homeCardProps("checklist")} className="surface-card mt-5 p-3 text-start">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h2 className="font-display text-[13px] font-extrabold text-ink">
+              צ׳ק־ליסט לפני יציאה מהבית
+            </h2>
+            <p className="mt-0.5 text-[9px] text-muted-foreground">
+              הוסיפי דברים שחשוב לזכור לפני שיוצאים לאימון.
+            </p>
+          </div>
+        </div>
+        <form
+          className="mt-2 flex gap-1.5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleChecklistSubmit();
+          }}
+        >
+          <input
+            value={checklistInput}
+            onChange={(event) => setChecklistInput(event.target.value)}
+            placeholder="למשל: בקבוק מים"
+            aria-label="פריט חדש בצ׳ק-ליסט"
+            className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-[11px] text-ink outline-none placeholder:text-muted-foreground focus:border-primary"
+          />
+          <button
+            type="submit"
+            disabled={!checklistInput.trim()}
+            className="press rounded-lg bg-primary px-2.5 py-1.5 text-[10px] font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            הוספה
+          </button>
+        </form>
+        <div className="mt-2 space-y-1">
+          {(preExitChecklist ?? []).map((item) => (
+            <div
+              key={item.id}
+              className="flex min-h-12 items-center gap-2 rounded-xl bg-secondary/60 px-2.5 py-1.5 touch-manipulation"
+            >
+              <button
+                type="button"
+                onClick={() => toggleChecklistItem(item.id)}
+                aria-label={item.done ? `בטלי סימון של ${item.label}` : `סמני את ${item.label}`}
+                className={`press grid h-9 w-9 shrink-0 place-items-center rounded-xl border-2 transition-colors ${
+                  item.done
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-transparent"
+                }`}
+              >
+                <Check className="h-3 w-3" />
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleChecklistItem(item.id)}
+                className={`min-h-9 min-w-0 flex-1 text-start text-[12px] ${
+                  item.done ? "text-muted-foreground line-through" : "text-ink"
+                }`}
+              >
+                {item.label}
+              </button>
+            </div>
+          ))}
+          {(preExitChecklist ?? []).length === 0 ? (
+            <p className="rounded-lg border border-dashed border-border px-2 py-2 text-center text-[9px] text-muted-foreground">
+              עדיין אין פריטים. הוסיפי את הדבר הראשון שחשוב לזכור.
+            </p>
+          ) : null}
         </div>
       </section>
 
