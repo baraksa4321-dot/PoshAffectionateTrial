@@ -26,6 +26,7 @@ import { AppShell } from "../components/AppShell";
 import { Overlay } from "../components/ui-app/Overlay";
 import {
   emptyExercise,
+  foodTotals,
   savePlannedMeals,
   saveProgram,
   saveExercise,
@@ -1201,6 +1202,7 @@ export function CoachDashboardPage({
     : allProfiles;
   const menuFoodResults = searchFoods(store.foods, menuFoodQuery).slice(0, 24);
   const selectedMenuFood = store.foods.find((food) => food.id === menuFoodId);
+  const menuTotals = foodTotals(plannedMeals.flatMap((meal) => meal.foods));
   const needsPlan = overviewRows.filter((row) => row.details.programs.length === 0);
   const needsExercises = overviewRows.filter(
     (row) =>
@@ -3146,6 +3148,37 @@ export function CoachDashboardPage({
                         className="rounded-lg border border-emerald-200 bg-white px-2 py-1.5 text-[11px] outline-none focus:border-emerald-500"
                         aria-label="תאריך התפריט"
                       />
+                    </div>
+
+                    <div className="sticky top-2 z-10 grid grid-cols-4 gap-1.5 rounded-xl border border-emerald-200 bg-white/95 p-2 shadow-sm backdrop-blur">
+                      <div className="rounded-lg bg-orange-50 px-1.5 py-2 text-center">
+                        <div className="text-[10px] font-bold text-orange-700">קלוריות</div>
+                        <div className="mt-0.5 text-sm font-black text-orange-950">
+                          {Math.round(menuTotals.calories)}
+                        </div>
+                        <div className="text-[9px] text-orange-700">קק״ל</div>
+                      </div>
+                      <div className="rounded-lg bg-blue-50 px-1.5 py-2 text-center">
+                        <div className="text-[10px] font-bold text-blue-700">חלבון</div>
+                        <div className="mt-0.5 text-sm font-black text-blue-950">
+                          {Math.round(menuTotals.protein * 10) / 10}
+                        </div>
+                        <div className="text-[9px] text-blue-700">גרם</div>
+                      </div>
+                      <div className="rounded-lg bg-amber-50 px-1.5 py-2 text-center">
+                        <div className="text-[10px] font-bold text-amber-700">פחמימה</div>
+                        <div className="mt-0.5 text-sm font-black text-amber-950">
+                          {Math.round(menuTotals.carbs * 10) / 10}
+                        </div>
+                        <div className="text-[9px] text-amber-700">גרם</div>
+                      </div>
+                      <div className="rounded-lg bg-rose-50 px-1.5 py-2 text-center">
+                        <div className="text-[10px] font-bold text-rose-700">שומנים</div>
+                        <div className="mt-0.5 text-sm font-black text-rose-950">
+                          {Math.round(menuTotals.fat * 10) / 10}
+                        </div>
+                        <div className="text-[9px] text-rose-700">גרם</div>
+                      </div>
                     </div>
 
                     <div className="space-y-2">
