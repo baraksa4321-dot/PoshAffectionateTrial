@@ -225,6 +225,81 @@ class RuntimeErrorBoundary extends Component<RuntimeErrorBoundaryProps, RuntimeE
   }
 }
 
+function isAppLoadingError(error: unknown) {
+  const message =
+    error instanceof Error
+      ? `${error.name} ${error.message}`
+      : typeof error === "string"
+        ? error
+        : "";
+  return /chunk|dynamically imported module|importing a module script|loading css/i.test(message);
+}
+
+function BrowserRuntimeGuard({ children }: RuntimeErrorBoundaryProps) {
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const onError = (event: ErrorEvent) => {
+      if (event.error || isAppLoadingError(event.message)) {
+        setError(
+          event.error instanceof Error
+            ? event.error
+            : new Error(event.message || "שגיאה לא צפויה בדפדפן"),
+        );
+      }
+    };
+    const onRejection = (event: PromiseRejectionEvent) => {
+      event.preventDefault();
+      setError(event.reason instanceof Error ? event.reason : new Error(String(event.reason)));
+    };
+
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => {
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
+  }, []);
+
+  if (!error) return children;
+
+  const recover = async () => {
+    try {
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      }
+      const cacheKeys = await caches.keys();
+      await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+    } catch {
+      // Reload still helps when storage or Service Worker APIs are unavailable.
+    } finally {
+      window.location.reload();
+    }
+  };
+
+  return (
+    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4" dir="rtl">
+      <div className="w-full max-w-md rounded-3xl border border-destructive/20 bg-white px-6 py-7 text-center shadow-sm">
+        <div className="flex justify-center">
+          <BrandLogo compact />
+        </div>
+        <h1 className="mt-5 text-lg font-bold text-foreground">האתר לא נטען כראוי</h1>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          זוהתה בעיה בטעינת קובץ של האפליקציה. אפשר לבצע טעינה נקייה בלי למחוק את הנתונים השמורים.
+        </p>
+        <button
+          type="button"
+          onClick={() => void recover()}
+          className="mt-5 inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+        >
+          טעינה נקייה
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const LOADING_FOOD_ILLUSTRATIONS = [
   { color: "#f3a24b", shell: "M75 12c23 0 37 16 37 39s-14 40-37 40S38 74 38 51 52 12 75 12z" },
   {
@@ -1138,8 +1213,10 @@ function RootContent() {
 
 function RootComponent() {
   return (
-    <RuntimeErrorBoundary>
-      <RootContent />
-    </RuntimeErrorBoundary>
+    <BrowserRuntimeGuard>
+      <RuntimeErrorBoundary>
+        <RootContent />
+      </RuntimeErrorBoundary>
+    </BrowserRuntimeGuard>
   );
 }
