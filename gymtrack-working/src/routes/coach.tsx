@@ -25,7 +25,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "../components/AppShell";
 import { Overlay } from "../components/ui-app/Overlay";
 import {
-  mealFoodFromLibrary,
   emptyExercise,
   savePlannedMeals,
   saveProgram,
@@ -52,6 +51,13 @@ import type {
   WorkoutItem,
 } from "../lib/gym-types";
 import { genderText } from "../lib/gender-copy";
+import {
+  defaultFoodQuantity,
+  foodQuantityOptions,
+  mealFoodFromPortion,
+  mealFoodQuantityLabel,
+  type FoodQuantityUnit,
+} from "../lib/food-portions";
 
 type CoachClientRow = {
   id: string;
@@ -219,6 +225,7 @@ export function CoachDashboardPage({
   const [menuFoodId, setMenuFoodId] = useState("");
   const [menuFoodQuery, setMenuFoodQuery] = useState("");
   const [menuFoodQuantity, setMenuFoodQuantity] = useState(1);
+  const [menuFoodUnit, setMenuFoodUnit] = useState<FoodQuantityUnit>("serving");
   const [menuNotice, setMenuNotice] = useState("");
   const isSelfSelected = Boolean(authUser?.id && selectedClientId === authUser.id);
   const [overviewRows, setOverviewRows] = useState<
@@ -1021,10 +1028,7 @@ export function CoachDashboardPage({
     // prevents mobile browsers from scrolling the disappearing focused field
     // back into view.
     activeElement?.blur();
-    const plannedFood: MealFood = {
-      ...mealFoodFromLibrary(food),
-      quantity: menuFoodQuantity,
-    };
+    const plannedFood: MealFood = mealFoodFromPortion(food, menuFoodQuantity, menuFoodUnit);
     setPlannedMeals((current) =>
       current.map((meal) =>
         meal.id === mealId ? { ...meal, foods: [...meal.foods, plannedFood] } : meal,
@@ -1034,6 +1038,7 @@ export function CoachDashboardPage({
     setMenuFoodId("");
     setMenuFoodQuery("");
     setMenuFoodQuantity(1);
+    setMenuFoodUnit("serving");
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
         if (scrollContainer) {
@@ -1195,6 +1200,7 @@ export function CoachDashboardPage({
       )
     : allProfiles;
   const menuFoodResults = searchFoods(store.foods, menuFoodQuery).slice(0, 24);
+  const selectedMenuFood = store.foods.find((food) => food.id === menuFoodId);
   const needsPlan = overviewRows.filter((row) => row.details.programs.length === 0);
   const needsExercises = overviewRows.filter(
     (row) =>
@@ -3187,7 +3193,7 @@ export function CoachDashboardPage({
                                     className="flex items-center justify-between rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[11px]"
                                   >
                                     <span className="truncate font-semibold text-ink">
-                                      {food.name} · כמות {food.quantity}
+                                      {food.name} · {mealFoodQuantityLabel(food)}
                                     </span>
                                     <button
                                       type="button"
@@ -3282,7 +3288,12 @@ export function CoachDashboardPage({
                                         type="button"
                                         role="option"
                                         aria-selected={menuFoodId === food.id}
-                                        onClick={() => setMenuFoodId(food.id)}
+                                        onClick={() => {
+                                          setMenuFoodId(food.id);
+                                          const portion = defaultFoodQuantity(food);
+                                          setMenuFoodQuantity(portion.quantity);
+                                          setMenuFoodUnit(portion.unit);
+                                        }}
                                         className={`flex w-full items-center justify-between rounded-md px-2.5 py-2 text-start text-[12px] transition-colors ${
                                           menuFoodId === food.id
                                             ? "bg-emerald-700 font-bold text-white"
@@ -3301,13 +3312,34 @@ export function CoachDashboardPage({
                                     </p>
                                   )}
                                 </div>
-                                <div className="flex items-end gap-1.5">
-                                  <label className="flex-1 text-[10px] font-bold text-muted-foreground">
+                                <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-end gap-1.5">
+                                  <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                    יחידת מידה
+                                    <select
+                                      value={menuFoodUnit}
+                                      onChange={(event) =>
+                                        setMenuFoodUnit(event.target.value as FoodQuantityUnit)
+                                      }
+                                      disabled={!selectedMenuFood}
+                                      className="h-9 min-w-0 w-full rounded-lg border border-border bg-white px-2 text-center text-[12px] outline-none focus:border-emerald-500"
+                                      aria-label="יחידת מידה למאכל"
+                                    >
+                                      {(selectedMenuFood
+                                        ? foodQuantityOptions(selectedMenuFood)
+                                        : []
+                                      ).map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                          {option.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+                                  <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                     כמות
                                     <input
                                       type="number"
-                                      min="0.25"
-                                      step="0.25"
+                                      min="0.1"
+                                      step="0.1"
                                       value={menuFoodQuantity}
                                       onChange={(event) =>
                                         setMenuFoodQuantity(Number(event.target.value))
