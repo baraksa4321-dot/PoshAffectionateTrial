@@ -592,20 +592,20 @@ function Session() {
           </div>
         </div>
       </div>
-      <div className="surface-card border border-primary/20 bg-primary/5 p-3 text-start">
+      <div className="bodyweight-toggle-card surface-card border border-primary/20 bg-primary/5 p-2 text-start">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-bold text-ink">
+            <p className="text-[11px] font-bold text-ink">
               {genderText(gender, "צריכה אימון משקל גוף?", "צריך אימון משקל גוף?")}
             </p>
-            <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+            <p className="mt-0.5 text-[9px] leading-relaxed text-muted-foreground">
               נחליף כל תרגיל בתרגיל משקל גוף שעובד על אותו שריר.
             </p>
           </div>
           <button
             type="button"
             onClick={toggleBodyweightMode}
-            className="press shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-sm"
+            className="press shrink-0 rounded-lg bg-primary px-2 py-1.5 text-[9px] font-bold text-primary-foreground shadow-sm"
           >
             {isBodyweightMode ? "חזרה לאימון רגיל" : "עדכני לאימון משקל גוף"}
           </button>

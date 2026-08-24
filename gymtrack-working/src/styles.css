@@ -1846,6 +1846,21 @@ html.night-mode .auth-panel {
   border-radius: 0.65rem;
 }
 
+.bodyweight-toggle-card {
+  width: min(100%, 17rem);
+  margin-inline-start: auto;
+  padding: 0.5rem !important;
+  border-radius: 0.9rem;
+}
+
+.bodyweight-toggle-card > div {
+  gap: 0.4rem;
+}
+
+.bodyweight-toggle-card > p {
+  font-size: 0.58rem;
+}
+
 [data-home-card-id].home-feature-dragging {
   opacity: 0.72;
   transform: scale(1.035) rotate(-1deg);
