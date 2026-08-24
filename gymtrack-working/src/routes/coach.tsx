@@ -2164,8 +2164,7 @@ export function CoachDashboardPage({
                     </section>
                   ) : null}
 
-                  {(workspacePage || openEditor === "programs") &&
-                  (workspaceMode === "programs" || openEditor === "programs") ? (
+                  {false ? (
                     <section className="surface-card space-y-3 rounded-2xl border border-amber-200 bg-amber-50/35 p-4">
                       <div className="flex items-center justify-between border-b border-amber-200 pb-2">
                         <div>
@@ -2272,8 +2271,7 @@ export function CoachDashboardPage({
                     </section>
                   ) : null}
 
-                  {(workspacePage || openEditor === "nutrition") &&
-                  (workspaceMode === "nutrition" || openEditor === "nutrition") ? (
+                  {false ? (
                     <section className="surface-card space-y-3 rounded-2xl border border-amber-200 bg-amber-50/35 p-4">
                       <div className="flex items-center justify-between border-b border-amber-200 pb-2">
                         <div>
@@ -3073,7 +3071,11 @@ export function CoachDashboardPage({
                     </div>
 
                     <div className="space-y-2">
-                      {plannedMeals.map((meal) => (
+                      {plannedMeals.map((meal, mealIndex) => {
+                        const actualMeal = clientDetails.nutritionDays
+                          .find((day) => day.date === menuDate)
+                          ?.meals.at(mealIndex);
+                        return (
                         <div
                           key={meal.id}
                           id={`coach-menu-meal-${meal.id}`}
@@ -3129,6 +3131,35 @@ export function CoachDashboardPage({
                           ) : (
                             <p className="mt-2 text-[11px] text-muted-foreground">
                               אין מאכלים בארוחה עדיין.
+                            </p>
+                          )}
+
+                          {actualMeal?.foods.length ? (
+                            <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/80 p-2 text-[10px]">
+                              <div className="flex items-center justify-between gap-2 font-bold text-amber-900">
+                                <span>מה שהמתאמן אכל בפועל</span>
+                                <span className="font-normal">
+                                  {new Date(`${menuDate}T00:00:00`).toLocaleDateString("he-IL")}
+                                </span>
+                              </div>
+                              <p className="mt-1 text-amber-950">
+                                {actualMeal.foods
+                                  .map((food) => `${food.name} ×${food.quantity}`)
+                                  .join(" · ")}
+                              </p>
+                              {actualMeal.foods.some((food) => food.notes?.trim()) ? (
+                                <p className="mt-1 text-amber-900/80">
+                                  הערה:{" "}
+                                  {actualMeal.foods
+                                    .map((food) => food.notes?.trim())
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <p className="mt-2 rounded-lg bg-amber-50/60 px-2 py-1 text-[10px] text-amber-800">
+                              עדיין אין רישום בפועל לארוחה הזו.
                             </p>
                           )}
 
@@ -3225,7 +3256,8 @@ export function CoachDashboardPage({
                             </div>
                           ) : null}
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     <div className="flex gap-2">
