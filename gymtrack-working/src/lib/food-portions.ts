@@ -1,6 +1,17 @@
 import type { FoodItem, MealFood } from "./gym-types";
 
-export type FoodQuantityUnit = "g" | "ml" | "unit" | "tbsp" | "tsp" | "slice" | "serving";
+export type FoodQuantityUnit =
+  | "g"
+  | "ml"
+  | "cup"
+  | "unit"
+  | "small"
+  | "medium"
+  | "large"
+  | "tbsp"
+  | "tsp"
+  | "slice"
+  | "serving";
 
 export type FoodQuantityOption = {
   value: FoodQuantityUnit;
@@ -10,7 +21,11 @@ export type FoodQuantityOption = {
 const unitLabels: Record<FoodQuantityUnit, string> = {
   g: "גרם",
   ml: "מ״ל",
+  cup: "כוס",
   unit: "יחידה",
+  small: "יחידה קטנה",
+  medium: "יחידה בינונית",
+  large: "יחידה גדולה",
   tbsp: "כף",
   tsp: "כפית",
   slice: "פרוסה",
@@ -39,6 +54,32 @@ function isOilOrSauce(food: FoodItem) {
   );
 }
 
+function isMilkOrDrink(food: FoodItem) {
+  return /חלב|milk|משקה|drink|מיץ|juice|מים|water|שייק|shake/i.test(
+    `${food.name} ${food.englishName ?? ""} ${food.category ?? ""}`,
+  );
+}
+
+function isCucumber(food: FoodItem) {
+  return /מלפפון|cucumber/i.test(`${food.name} ${food.englishName ?? ""}`);
+}
+
+function isBellPepper(food: FoodItem) {
+  return /גמבה|פלפל אדום|פלפל צהוב|פלפל ירוק|bell pepper/i.test(
+    `${food.name} ${food.englishName ?? ""}`,
+  );
+}
+
+function isAvocado(food: FoodItem) {
+  return /אבוקדו|avocado/i.test(`${food.name} ${food.englishName ?? ""}`);
+}
+
+function isProteinOrStaple(food: FoodItem) {
+  return /עוף|חזה|פרגית|הודו|בשר|סטייק|קציצה|דג|סלמון|טונה|שניצל|chicken|turkey|beef|steak|fish|salmon|tuna|אורז|פסטה|קינואה|שיבולת|שיבולת שועל|rice|pasta|quinoa|oat/i.test(
+    `${food.name} ${food.englishName ?? ""} ${food.category ?? ""}`,
+  );
+}
+
 export function foodQuantityOptions(food: FoodItem): FoodQuantityOption[] {
   if (isCherryTomato(food)) {
     return [
@@ -53,6 +94,33 @@ export function foodQuantityOptions(food: FoodItem): FoodQuantityOption[] {
       { value: "tbsp", label: unitLabels.tbsp },
       { value: "tsp", label: unitLabels.tsp },
     ];
+  }
+
+  if (isMilkOrDrink(food)) {
+    return [
+      { value: "ml", label: unitLabels.ml },
+      { value: "cup", label: unitLabels.cup },
+    ];
+  }
+
+  if (isBellPepper(food)) {
+    return [
+      { value: "medium", label: unitLabels.medium },
+      { value: "small", label: unitLabels.small },
+      { value: "large", label: unitLabels.large },
+      { value: "g", label: unitLabels.g },
+    ];
+  }
+
+  if (isCucumber(food)) {
+    return [
+      { value: "unit", label: "מלפפון" },
+      { value: "g", label: unitLabels.g },
+    ];
+  }
+
+  if (isAvocado(food) || isProteinOrStaple(food)) {
+    return [{ value: "g", label: unitLabels.g }];
   }
 
   if (millilitersFromServing(food.servingSize) !== null) {
@@ -88,6 +156,10 @@ export function defaultFoodQuantity(food: FoodItem): {
   unit: FoodQuantityUnit;
 } {
   if (isCherryTomato(food)) return { quantity: 12, unit: "unit" };
+  if (isMilkOrDrink(food)) return { quantity: 100, unit: "ml" };
+  if (isBellPepper(food)) return { quantity: 1, unit: "medium" };
+  if (isCucumber(food)) return { quantity: 1, unit: "unit" };
+  if (isAvocado(food) || isProteinOrStaple(food)) return { quantity: 100, unit: "g" };
   if (/יחידה|unit|ביצה|egg/i.test(food.servingSize)) return { quantity: 1, unit: "unit" };
   if (/פרוסה|slice/i.test(food.servingSize)) return { quantity: 1, unit: "slice" };
   if (millilitersFromServing(food.servingSize) !== null) return { quantity: 100, unit: "ml" };
@@ -98,7 +170,12 @@ export function defaultFoodQuantity(food: FoodItem): {
 function gramsForUnit(food: FoodItem, unit: FoodQuantityUnit) {
   if (unit === "tbsp") return 15;
   if (unit === "tsp") return 5;
+  if (unit === "cup") return 240;
   if (unit === "unit" && isCherryTomato(food)) return 15;
+  if (unit === "unit" && isCucumber(food)) return 200;
+  if (unit === "small" && isBellPepper(food)) return 75;
+  if (unit === "medium" && isBellPepper(food)) return 120;
+  if (unit === "large" && isBellPepper(food)) return 160;
   return gramsFromServing(food.servingSize);
 }
 
@@ -108,7 +185,16 @@ function servingMultiplier(food: FoodItem, unit: FoodQuantityUnit) {
 
   if (unit === "g" && servingGrams) return 1 / servingGrams;
   if (unit === "ml" && servingMl) return 1 / servingMl;
-  if (unit === "tbsp" || unit === "tsp" || (unit === "unit" && isCherryTomato(food))) {
+  if (unit === "cup" && servingMl) return 240 / servingMl;
+  if (
+    unit === "tbsp" ||
+    unit === "tsp" ||
+    unit === "cup" ||
+    unit === "small" ||
+    unit === "medium" ||
+    unit === "large" ||
+    (unit === "unit" && (isCherryTomato(food) || isCucumber(food) || isBellPepper(food)))
+  ) {
     const grams = gramsForUnit(food, unit);
     return grams && servingGrams ? grams / servingGrams : 1;
   }
