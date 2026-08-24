@@ -427,7 +427,22 @@ function Dashboard() {
   };
 
   return (
-    <AppShell title={formatNumericDate(now)} subtitle="">
+    <AppShell
+      title={formatNumericDate(now)}
+      subtitle=""
+      headerAccessory={
+        <button
+          type="button"
+          onClick={() => setShowChecklistModal(true)}
+          aria-label="פתיחת צ׳קליסט לאימון"
+          title="צ׳קליסט לאימון"
+          className="bodyweight-header-toggle press inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-1 text-[9px] font-medium text-primary transition-colors hover:bg-primary/10"
+        >
+          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+          צ׳קליסט
+        </button>
+      }
+    >
       <div className="home-card-stack">
       {/* Coach Message Banner */}
       {latestCoachMsg && (
@@ -583,23 +598,6 @@ function Dashboard() {
             <ChevronLeft className="h-3.5 w-3.5" />
           </div>
         </Link>
-         <button
-           type="button"
-           onClick={() => setShowChecklistModal(true)}
-           className="home-feature-item home-bodyweight-tile home-checklist-tile text-start"
-           aria-label="פתיחת צ׳קליסט לאימון"
-         >
-           <div className="ink-card flex min-h-[76px] flex-col p-2.5">
-             <div className="flex items-center justify-between gap-1">
-               <span className="text-[10px] font-bold text-primary">צ׳קליסט לאימון</span>
-               <CheckCircle2 className="h-4 w-4 text-primary" aria-hidden="true" />
-             </div>
-             <h2 className="mt-2 font-display text-[13px] font-bold leading-tight text-ink">
-               {preExitChecklist?.length ?? 0} פריטים לזכור
-             </h2>
-             <span className="mt-auto text-[9px] font-bold text-primary">פתיחת הצ׳קליסט</span>
-           </div>
-         </button>
          </div>
       </div>
 
