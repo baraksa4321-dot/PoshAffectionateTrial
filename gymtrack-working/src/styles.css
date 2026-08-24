@@ -1718,18 +1718,42 @@ html.night-mode .nav-shell {
   text-align: center;
 }
 
-.home-feature-item {
+.home-card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.home-card-stack > .home-feature-section,
+.home-card-stack > .home-feature-section > .home-feature-grid {
+  display: contents;
+}
+
+.home-card-stack > [data-home-card-id] {
+  min-width: 0;
+  cursor: grab;
+  touch-action: pan-y;
+  transition: transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease;
+}
+
+.home-card-stack > [data-home-card-id]:active {
+  cursor: grabbing;
+}
+
+.home-feature-item,
+.home-sortable-card {
   min-width: 0;
   cursor: grab;
   touch-action: none;
   transition: transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease;
 }
 
-.home-feature-item:active {
+.home-feature-item:active,
+.home-sortable-card:active {
   cursor: grabbing;
 }
 
-.home-feature-dragging {
+[data-home-card-id].home-feature-dragging {
   opacity: 0.72;
   transform: scale(1.035) rotate(-1deg);
   box-shadow: 0 12px 26px rgb(70 46 53 / 18%);

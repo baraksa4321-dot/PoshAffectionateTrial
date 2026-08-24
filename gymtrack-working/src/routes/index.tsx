@@ -237,6 +237,19 @@ function Dashboard() {
     suppressHomeClick.current = false;
   };
 
+  const homeCardProps = (id: HomeCardId) => ({
+    "data-home-card-id": id,
+    style: { order: homeCardOrder.indexOf(id) },
+    onPointerDown: (event: PointerEvent<HTMLElement>) => startHomeCardHold(id, event),
+    onPointerMove: moveHomeCard,
+    onPointerUp: finishHomeCardPointer,
+    onPointerCancel: finishHomeCardPointer,
+    onClickCapture: preventHomeNavigation,
+    className: `home-sortable-card ${
+      draggingHomeCard === id ? "home-feature-dragging" : ""
+    }`,
+  });
+
   const handleWeeklyWeighIn = () => {
     const valW = parseFloat(weeklyWeightInput);
     if (!isNaN(valW) && valW > 0) {
@@ -417,7 +430,8 @@ function Dashboard() {
 
   return (
     <AppShell title={formatNumericDate(now)} subtitle="">
-      <section className="surface-card flex items-center justify-between gap-3 p-3 text-start">
+      <div className="home-card-stack">
+      <section {...homeCardProps("profile")} className="surface-card flex items-center justify-between gap-3 p-3 text-start">
         <div>
           <p className="text-[12px] font-bold text-ink">נתוני גוף ומחשבון BMR</p>
           <p className="mt-0.5 text-[10.5px] text-muted-foreground">
@@ -436,7 +450,7 @@ function Dashboard() {
       </section>
       {/* Coach Message Banner */}
       {latestCoachMsg && (
-        <div className="surface-card space-y-1.5 border-primary/20 bg-primary/5 p-4 text-start">
+        <div {...homeCardProps("coach-message")} className="surface-card space-y-1.5 border-primary/20 bg-primary/5 p-4 text-start">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5 font-bold text-xs text-primary">
               <MessageSquare className="h-4 w-4" /> הודעה מהמאמן שלך
@@ -452,7 +466,7 @@ function Dashboard() {
       )}
 
       {/* Consistency Banner */}
-      <div className="surface-card flex items-center justify-between gap-4 border-primary/20 bg-surface p-4 text-start">
+      <div {...homeCardProps("consistency")} className="surface-card flex items-center justify-between gap-4 border-primary/20 bg-surface p-4 text-start">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 text-sm font-bold text-ink">
             <span>רצף אימונים שבועי</span>
@@ -479,15 +493,15 @@ function Dashboard() {
       </div>
 
        {/* 1. Daily workout + nutrition tiles */}
-       <div className="mt-3">
-         {isArrangingFeatures ? (
+       <div className="home-feature-section mt-3">
+         {isArrangingHome ? (
            <div className="mb-2 flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-[10px] font-bold text-primary">
              <span>מצב סידור — גררי כרטיס כדי להחליף מיקום</span>
              <button
                type="button"
                onClick={() => {
-                 setIsArrangingFeatures(false);
-                 setDraggingFeature(null);
+                 setIsArrangingHome(false);
+                 setDraggingHomeCard(null);
                }}
                className="rounded-lg bg-primary px-2.5 py-1 text-primary-foreground"
              >
@@ -495,15 +509,16 @@ function Dashboard() {
              </button>
            </div>
          ) : null}
-         <div className="grid grid-cols-2 gap-2">
+         <div className="home-feature-grid grid grid-cols-2 gap-2">
         {nextWorkout ? (
            <div
-             className={`home-feature-item ${draggingFeature === "workout" ? "home-feature-dragging" : ""}`}
-             style={{ order: featureOrder.indexOf("workout") }}
-             onPointerDown={() => startFeatureHold("workout")}
-             onPointerUp={finishFeaturePointer}
-             onPointerCancel={finishFeaturePointer}
-             onPointerEnter={() => swapFeature("workout")}
+             className={`home-feature-item ${draggingHomeCard === "workout" ? "home-feature-dragging" : ""}`}
+             data-home-card-id="workout"
+             style={{ order: homeCardOrder.indexOf("workout") }}
+             onPointerDown={(event) => startHomeCardHold("workout", event)}
+             onPointerMove={moveHomeCard}
+             onPointerUp={finishHomeCardPointer}
+             onPointerCancel={finishHomeCardPointer}
            >
            <div className="ink-card flex min-h-[150px] flex-col p-3 text-start">
             <div className="flex items-center justify-between gap-1">
@@ -520,7 +535,7 @@ function Dashboard() {
               type="button"
                onClick={(event) => {
                  if (suppressFeatureClick.current) {
-                   preventFeatureNavigation(event);
+                   preventHomeNavigation(event);
                    return;
                  }
                  navigate({
@@ -537,12 +552,13 @@ function Dashboard() {
            </div>
         ) : (
            <div
-             className={`home-feature-item ${draggingFeature === "workout" ? "home-feature-dragging" : ""}`}
-             style={{ order: featureOrder.indexOf("workout") }}
-             onPointerDown={() => startFeatureHold("workout")}
-             onPointerUp={finishFeaturePointer}
-             onPointerCancel={finishFeaturePointer}
-             onPointerEnter={() => swapFeature("workout")}
+             className={`home-feature-item ${draggingHomeCard === "workout" ? "home-feature-dragging" : ""}`}
+             data-home-card-id="workout"
+             style={{ order: homeCardOrder.indexOf("workout") }}
+             onPointerDown={(event) => startHomeCardHold("workout", event)}
+             onPointerMove={moveHomeCard}
+             onPointerUp={finishHomeCardPointer}
+             onPointerCancel={finishHomeCardPointer}
            >
            <Card className="flex min-h-[150px] flex-col p-3 text-start">
             <p className="font-display text-sm font-bold text-ink">אין אימון יומי</p>
@@ -559,14 +575,15 @@ function Dashboard() {
 
          <Link
           to="/nutrition"
-           onPointerDown={() => startFeatureHold("nutrition")}
-           onPointerUp={finishFeaturePointer}
-           onPointerCancel={finishFeaturePointer}
-           onPointerEnter={() => swapFeature("nutrition")}
-           onClick={preventFeatureNavigation}
-           style={{ order: featureOrder.indexOf("nutrition") }}
+           data-home-card-id="nutrition"
+           onPointerDown={(event) => startHomeCardHold("nutrition", event)}
+           onPointerMove={moveHomeCard}
+           onPointerUp={finishHomeCardPointer}
+           onPointerCancel={finishHomeCardPointer}
+           onClick={preventHomeNavigation}
+           style={{ order: homeCardOrder.indexOf("nutrition") }}
            className={`home-feature-item home-calorie-card surface-card flex min-h-[150px] flex-col p-3 text-start transition-colors ${
-             draggingFeature === "nutrition" ? "home-feature-dragging" : ""
+             draggingHomeCard === "nutrition" ? "home-feature-dragging" : ""
            }`}
         >
           <div className="flex items-center justify-between gap-1">
@@ -588,7 +605,7 @@ function Dashboard() {
          </div>
       </div>
 
-      <section className="surface-card mt-3 p-3 text-start">
+      <section {...homeCardProps("checklist")} className="surface-card mt-3 p-3 text-start">
           <div className="flex items-center justify-between gap-2">
             <div>
               <h2 className="font-display text-[13px] font-extrabold text-ink">
@@ -660,14 +677,14 @@ function Dashboard() {
 
       {/* Check-In Success Banner */}
       {checkInSuccessMsg && (
-        <div className="surface-card mt-3 rounded-2xl border border-primary/25 bg-primary/5 p-3.5 text-start text-xs font-bold text-primary">
+        <div {...homeCardProps("checklist")} className="surface-card mt-3 rounded-2xl border border-primary/25 bg-primary/5 p-3.5 text-start text-xs font-bold text-primary">
           <CheckCircle2 className="me-1 inline-block h-4 w-4 align-[-3px]" aria-hidden="true" />
           {checkInSuccessMsg}
         </div>
       )}
 
       {/* Weekly Weigh-In & Monthly Check-In Cards */}
-      <section className="mt-5 text-start space-y-2.5">
+      <section {...homeCardProps("check-in")} className="mt-5 text-start space-y-2.5">
         <SectionHeader title="מעקב משקל וצ'ק-אין חודשי" subtitle="דיווח למאמן" />
         <div className="grid grid-cols-2 gap-2.5">
           <div
@@ -703,7 +720,7 @@ function Dashboard() {
       </section>
 
       {/* 4. Weekly Activity Overview */}
-      <section className="mt-5">
+      <section {...homeCardProps("activity")} className="mt-5">
         <SectionHeader title="פעילות השבוע" subtitle={`${thisWeek.length} אימונים בוצעו השבוע`} />
         <div className="grid grid-cols-3 gap-2.5">
           <StatTile label="אימונים" value={String(thisWeek.length)} icon={Flame} tone="rose" />
@@ -718,7 +735,7 @@ function Dashboard() {
       </section>
 
       {latestMeasurement ? (
-        <section className="mt-5 text-start">
+        <section {...homeCardProps("measurements")} className="mt-5 text-start">
           <SectionHeader
             title="המדידות החודשיות שלי"
             subtitle={genderText(
@@ -747,7 +764,7 @@ function Dashboard() {
       ) : null}
 
       {/* Cardio */}
-      <section className="mt-5 text-start">
+      <section {...homeCardProps("cardio")} className="mt-5 text-start">
         <SectionHeader
           title="אימון אירובי"
           subtitle={
@@ -818,6 +835,7 @@ function Dashboard() {
         </div>
       </section>
 
+      </div>
       {/* Modal: Weekly Weigh-In */}
       {showBodyProfileModal && (
         <Overlay
