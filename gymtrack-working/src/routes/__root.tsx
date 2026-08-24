@@ -304,27 +304,91 @@ const LOADING_FOOD_ILLUSTRATIONS = [
   },
 ] as const;
 
-const REALISTIC_LOADING_ASSETS = [
-  { file: "dumbbell", label: "משקולת ורודה" },
-  { file: "broccoli", label: "ברוקולי ירוק" },
-  { file: "apple", label: "תפוח ירוק" },
-  { file: "egg", label: "ביצה" },
-  { file: "muscle", label: "שריר יד" },
-  { file: "peach", label: "אפרסק" },
-  { file: "banana", label: "בננה צהובה" },
-  { file: "avocado", label: "אבוקדו ירוק" },
-  { file: "lifter", label: "מתאמנת עם משקולת" },
+const LOADING_CHARACTER_POSES = [
+  "קפיצות פתיחה",
+  "סקוואט",
+  "ריצה",
+  "ברכיים גבוהות",
+  "קפיצה בחבל",
+  "מתיחת צד",
+  "כפיפת מרפקים",
+  "תנוחת יוגה",
+  "ריקוד",
+  "הרמת משקולת",
+  "קפיצת כוכב",
+  "בעיטת צד",
+  "לאנג׳",
+  "ריצה במקום",
+  "מתיחת בוקר",
+  "קפיצת שמחה",
+  "סיבוב גוף",
+  "אגרוף",
+  "הרמת ברכיים",
+  "נפנוף",
 ] as const;
 
 function LoadingIllustration({ variant }: { variant: number }) {
-  const asset = REALISTIC_LOADING_ASSETS[variant % REALISTIC_LOADING_ASSETS.length];
+  const pose = variant % LOADING_CHARACTER_POSES.length;
+  const color = pose % 4;
   return (
     <div className="loading-micro-stage">
-      <img
-        className={`loading-realistic-image loading-realistic-${asset.file}`}
-        src={`/loading/handmade-loading-${asset.file}.png`}
-        alt={`איור טעינה: ${asset.label}`}
-      />
+      <svg
+        className={`loading-character loading-character-pose-${pose} loading-character-color-${color}`}
+        viewBox="0 0 180 140"
+        role="img"
+        aria-label={`איור טעינה: ${LOADING_CHARACTER_POSES[pose]}`}
+      >
+        <ellipse className="loading-character-shadow" cx="90" cy="126" rx="43" ry="6" />
+        <g className="loading-character-legs">
+          <path
+            className="loading-character-leg loading-character-leg-left"
+            d="M78 94C73 103 67 112 58 121"
+          />
+          <path
+            className="loading-character-leg loading-character-leg-right"
+            d="M101 94C108 104 115 113 124 121"
+          />
+          <path className="loading-character-foot" d="M55 121c-8 0-14 3-18 7 9 2 19 2 28-1" />
+          <path className="loading-character-foot" d="M122 121c8 0 14 3 18 7-9 2-19 2-28-1" />
+        </g>
+        <g className="loading-character-arms">
+          <path
+            className="loading-character-arm loading-character-arm-left"
+            d="M67 61C56 67 48 76 42 87"
+          />
+          <path
+            className="loading-character-arm loading-character-arm-right"
+            d="M113 61C124 67 132 76 138 87"
+          />
+          <circle className="loading-character-hand" cx="41" cy="88" r="4" />
+          <circle className="loading-character-hand" cx="139" cy="88" r="4" />
+        </g>
+        <g className="loading-character-body">
+          <path
+            className="loading-character-shirt"
+            d="M65 55c7-8 43-8 50 0l-7 42c-8 6-28 6-36 0z"
+          />
+          <path className="loading-character-belly" d="M75 66c8 5 22 5 30 0v26c-8 4-22 4-30 0z" />
+        </g>
+        <g className="loading-character-head">
+          <circle className="loading-character-face" cx="90" cy="37" r="24" />
+          <path className="loading-character-hair" d="M68 33c2-25 43-29 47 1-11-8-31-8-47-1z" />
+          <circle className="loading-character-eye" cx="81" cy="39" r="2.7" />
+          <circle className="loading-character-eye" cx="99" cy="39" r="2.7" />
+          <path className="loading-character-smile" d="M84 48c4 4 8 4 12 0" />
+          <circle className="loading-character-cheek" cx="76" cy="48" r="3" />
+          <circle className="loading-character-cheek" cx="104" cy="48" r="3" />
+        </g>
+        <g className="loading-character-prop" aria-hidden="true">
+          <path
+            className="loading-character-rope"
+            d="M35 83c-18 10-18 39 5 45M145 83c18 10 18 39-5 45"
+          />
+          <path className="loading-character-bar" d="M42 82h96" />
+          <circle className="loading-character-plate" cx="38" cy="82" r="8" />
+          <circle className="loading-character-plate" cx="142" cy="82" r="8" />
+        </g>
+      </svg>
     </div>
   );
 }
@@ -798,12 +862,12 @@ function RootContent() {
       const previousVariant = Number(window.localStorage.getItem(storageKey));
       const nextVariant =
         Number.isInteger(previousVariant) && previousVariant >= 0
-          ? (previousVariant + 1) % 9
-          : Math.floor(Math.random() * 9);
+          ? (previousVariant + 1) % LOADING_CHARACTER_POSES.length
+          : 0;
       window.localStorage.setItem(storageKey, String(nextVariant));
       setLoadingVariant(nextVariant);
     } catch {
-      setLoadingVariant(Math.floor(Math.random() * 9));
+      setLoadingVariant(0);
     }
     try {
       const messageStorageKey = "my-routine-loading-message";
@@ -813,14 +877,14 @@ function RootContent() {
         previousMessage >= 0 &&
         previousMessage < LOADING_MESSAGES.length
           ? (previousMessage + 1) % LOADING_MESSAGES.length
-          : Math.floor(Math.random() * LOADING_MESSAGES.length);
+          : 0;
       window.localStorage.setItem(messageStorageKey, String(nextMessage));
       setLoadingMessageIndex(nextMessage);
     } catch {
-      setLoadingMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
+      setLoadingMessageIndex(0);
     }
     const illustrationTimer = window.setInterval(() => {
-      setLoadingVariant((current) => (current + 1) % 9);
+      setLoadingVariant((current) => (current + 1) % LOADING_CHARACTER_POSES.length);
     }, 2400);
     const messageTimer = window.setInterval(() => {
       setLoadingMessageIndex((current) => (current + 1) % LOADING_MESSAGES.length);

@@ -1834,6 +1834,8 @@ html.night-mode .auth-panel {
   .loading-clean-dots span,
   .loading-witty-message,
   .loading-realistic-image,
+  .loading-character,
+  .loading-character *,
   .loading-doodle-streak,
   .loading-doodle-spark {
     animation: none;
@@ -1884,6 +1886,458 @@ html.night-mode .auth-panel {
 
 .loading-micro-stage::before {
   display: none;
+}
+
+.loading-character {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 164px;
+  height: 128px;
+  overflow: visible;
+  filter: drop-shadow(0 5px 3px rgb(75 48 58 / 18%));
+}
+
+.loading-character-shadow {
+  fill: rgb(75 48 58 / 16%);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: loading-character-shadow 1.45s ease-in-out infinite;
+}
+
+.loading-character-face {
+  fill: #fff1df;
+  stroke: #55344a;
+  stroke-width: 3;
+}
+
+.loading-character-hair {
+  fill: #55344a;
+}
+
+.loading-character-eye,
+.loading-character-cheek {
+  fill: #55344a;
+}
+
+.loading-character-cheek {
+  fill: #ed8e9b;
+  opacity: 0.82;
+}
+
+.loading-character-smile,
+.loading-character-arm,
+.loading-character-leg,
+.loading-character-foot,
+.loading-character-rope,
+.loading-character-bar {
+  fill: none;
+  stroke: #55344a;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 5;
+}
+
+.loading-character-shirt {
+  fill: #d889a0;
+  stroke: #55344a;
+  stroke-width: 3;
+}
+
+.loading-character-belly {
+  fill: color-mix(in srgb, #f8c66d 70%, white);
+  opacity: 0.9;
+}
+
+.loading-character-hand {
+  fill: #fff1df;
+  stroke: #55344a;
+  stroke-width: 3;
+}
+
+.loading-character-plate {
+  fill: #a875c2;
+  stroke: #55344a;
+  stroke-width: 3;
+}
+
+.loading-character-arms,
+.loading-character-legs,
+.loading-character-body,
+.loading-character-head,
+.loading-character-prop {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.loading-character-arms {
+  animation: loading-character-arms-jack 1.55s ease-in-out infinite;
+}
+
+.loading-character-legs {
+  animation: loading-character-legs-jack 1.55s ease-in-out infinite;
+}
+
+.loading-character-body,
+.loading-character-head {
+  animation: loading-character-body-bounce 1.55s ease-in-out infinite;
+}
+
+.loading-character-prop {
+  animation: loading-character-prop-swing 1.55s ease-in-out infinite;
+}
+
+/* Each pair of poses has a different movement pattern; poses 10–19 run the
+   same actions in reverse or with a different rhythm, keeping the full cycle
+   visibly varied before it repeats. */
+.loading-character-pose-1 .loading-character-arms,
+.loading-character-pose-11 .loading-character-arms {
+  animation-name: loading-character-arms-squat;
+}
+
+.loading-character-pose-1 .loading-character-legs,
+.loading-character-pose-11 .loading-character-legs {
+  animation-name: loading-character-legs-squat;
+}
+
+.loading-character-pose-2 .loading-character-arms,
+.loading-character-pose-12 .loading-character-arms {
+  animation-name: loading-character-arms-run;
+}
+
+.loading-character-pose-2 .loading-character-legs,
+.loading-character-pose-12 .loading-character-legs {
+  animation-name: loading-character-legs-run;
+}
+
+.loading-character-pose-3 .loading-character-arms,
+.loading-character-pose-13 .loading-character-arms {
+  animation-name: loading-character-arms-run;
+  animation-duration: 0.9s;
+}
+
+.loading-character-pose-3 .loading-character-legs,
+.loading-character-pose-13 .loading-character-legs {
+  animation-name: loading-character-legs-knees;
+  animation-duration: 0.9s;
+}
+
+.loading-character-pose-4 .loading-character-arms,
+.loading-character-pose-14 .loading-character-arms {
+  animation-name: loading-character-arms-rope;
+}
+
+.loading-character-pose-4 .loading-character-legs,
+.loading-character-pose-14 .loading-character-legs {
+  animation-name: loading-character-legs-hop;
+}
+
+.loading-character-pose-5 .loading-character-arms,
+.loading-character-pose-15 .loading-character-arms {
+  animation-name: loading-character-arms-stretch;
+}
+
+.loading-character-pose-5 .loading-character-legs,
+.loading-character-pose-15 .loading-character-legs {
+  animation-name: loading-character-legs-stretch;
+}
+
+.loading-character-pose-6 .loading-character-arms,
+.loading-character-pose-16 .loading-character-arms {
+  animation-name: loading-character-arms-curl;
+}
+
+.loading-character-pose-6 .loading-character-legs,
+.loading-character-pose-16 .loading-character-legs {
+  animation-name: loading-character-legs-balance;
+}
+
+.loading-character-pose-7 .loading-character-arms,
+.loading-character-pose-17 .loading-character-arms {
+  animation-name: loading-character-arms-yoga;
+}
+
+.loading-character-pose-7 .loading-character-legs,
+.loading-character-pose-17 .loading-character-legs {
+  animation-name: loading-character-legs-yoga;
+}
+
+.loading-character-pose-8 .loading-character-arms,
+.loading-character-pose-18 .loading-character-arms {
+  animation-name: loading-character-arms-dance;
+}
+
+.loading-character-pose-8 .loading-character-legs,
+.loading-character-pose-18 .loading-character-legs {
+  animation-name: loading-character-legs-dance;
+}
+
+.loading-character-pose-9 .loading-character-arms,
+.loading-character-pose-19 .loading-character-arms {
+  animation-name: loading-character-arms-lift;
+}
+
+.loading-character-pose-9 .loading-character-legs,
+.loading-character-pose-19 .loading-character-legs {
+  animation-name: loading-character-legs-lift;
+}
+
+.loading-character-pose-10 .loading-character-arms,
+.loading-character-pose-10 .loading-character-legs,
+.loading-character-pose-10 .loading-character-body,
+.loading-character-pose-10 .loading-character-head,
+.loading-character-pose-10 .loading-character-prop,
+.loading-character-pose-12 .loading-character-body,
+.loading-character-pose-17 .loading-character-body,
+.loading-character-pose-18 .loading-character-body {
+  animation-direction: reverse;
+}
+
+.loading-character-pose-11 .loading-character-arms,
+.loading-character-pose-11 .loading-character-legs,
+.loading-character-pose-13 .loading-character-arms,
+.loading-character-pose-13 .loading-character-legs,
+.loading-character-pose-14 .loading-character-arms,
+.loading-character-pose-14 .loading-character-legs,
+.loading-character-pose-15 .loading-character-arms,
+.loading-character-pose-15 .loading-character-legs,
+.loading-character-pose-16 .loading-character-arms,
+.loading-character-pose-16 .loading-character-legs,
+.loading-character-pose-17 .loading-character-arms,
+.loading-character-pose-17 .loading-character-legs,
+.loading-character-pose-18 .loading-character-arms,
+.loading-character-pose-18 .loading-character-legs,
+.loading-character-pose-19 .loading-character-arms,
+.loading-character-pose-19 .loading-character-legs {
+  animation-direction: reverse;
+}
+
+@keyframes loading-character-body-bounce {
+  0%,
+  100% {
+    transform: translateY(6px) rotate(-2deg);
+  }
+  45% {
+    transform: translateY(-14px) rotate(2deg);
+  }
+  62% {
+    transform: translateY(-5px) rotate(0deg);
+  }
+}
+
+@keyframes loading-character-shadow {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.6;
+  }
+  45% {
+    transform: scaleX(0.65);
+    opacity: 0.25;
+  }
+}
+
+@keyframes loading-character-arms-jack {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  45% {
+    transform: rotate(-22deg) translateY(-5px);
+  }
+  55% {
+    transform: rotate(22deg) translateY(-5px);
+  }
+}
+
+@keyframes loading-character-legs-jack {
+  0%,
+  100% {
+    transform: rotate(0deg) scaleX(1);
+  }
+  50% {
+    transform: rotate(7deg) scaleX(1.14);
+  }
+}
+
+@keyframes loading-character-arms-squat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(11px) rotate(16deg);
+  }
+}
+
+@keyframes loading-character-legs-squat {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  50% {
+    transform: translateY(11px) scaleY(0.72) rotate(-4deg);
+  }
+}
+
+@keyframes loading-character-arms-run {
+  0%,
+  100% {
+    transform: rotate(27deg);
+  }
+  50% {
+    transform: rotate(-27deg);
+  }
+}
+
+@keyframes loading-character-legs-run {
+  0%,
+  100% {
+    transform: rotate(-20deg) translate(-5px, -3px);
+  }
+  50% {
+    transform: rotate(20deg) translate(5px, -3px);
+  }
+}
+
+@keyframes loading-character-legs-knees {
+  0%,
+  100% {
+    transform: translateY(5px) rotate(-12deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(14deg);
+  }
+}
+
+@keyframes loading-character-arms-rope {
+  0%,
+  100% {
+    transform: rotate(-28deg);
+  }
+  50% {
+    transform: rotate(28deg);
+  }
+}
+
+@keyframes loading-character-legs-hop {
+  0%,
+  100% {
+    transform: translateY(7px);
+  }
+  45% {
+    transform: translateY(-17px) rotate(5deg);
+  }
+}
+
+@keyframes loading-character-arms-stretch {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  50% {
+    transform: translateX(-8px) rotate(-38deg);
+  }
+}
+
+@keyframes loading-character-legs-stretch {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-14deg) translateX(-6px);
+  }
+}
+
+@keyframes loading-character-arms-curl {
+  0%,
+  100% {
+    transform: rotate(-30deg);
+  }
+  50% {
+    transform: rotate(30deg);
+  }
+}
+
+@keyframes loading-character-legs-balance {
+  0%,
+  100% {
+    transform: rotate(-8deg) translateY(4px);
+  }
+  50% {
+    transform: rotate(13deg) translateY(-12px);
+  }
+}
+
+@keyframes loading-character-arms-yoga {
+  0%,
+  100% {
+    transform: rotate(-18deg) translateY(2px);
+  }
+  50% {
+    transform: rotate(18deg) translateY(-9px);
+  }
+}
+
+@keyframes loading-character-legs-yoga {
+  0%,
+  100% {
+    transform: rotate(9deg);
+  }
+  50% {
+    transform: rotate(-9deg) translateY(-10px);
+  }
+}
+
+@keyframes loading-character-arms-dance {
+  0%,
+  100% {
+    transform: rotate(-32deg) translateY(2px);
+  }
+  50% {
+    transform: rotate(32deg) translateY(-8px);
+  }
+}
+
+@keyframes loading-character-legs-dance {
+  0%,
+  100% {
+    transform: rotate(-12deg) translateY(4px);
+  }
+  50% {
+    transform: rotate(12deg) translateY(-10px);
+  }
+}
+
+@keyframes loading-character-arms-lift {
+  0%,
+  100% {
+    transform: translateY(6px) rotate(18deg);
+  }
+  50% {
+    transform: translateY(-16px) rotate(-18deg);
+  }
+}
+
+@keyframes loading-character-legs-lift {
+  0%,
+  100% {
+    transform: translateY(6px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-13px) rotate(-7deg);
+  }
+}
+
+@keyframes loading-character-prop-swing {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
 }
 
 .loading-realistic-image {
