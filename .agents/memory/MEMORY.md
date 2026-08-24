@@ -1,4 +1,5 @@
  - [Runtime crash recovery](runtime-crash-recovery.md) — React boundaries alone do not cover browser-level chunk failures and unhandled rejections; keep a visible recovery path.
+- [Animated asset disposal](animated-asset-disposal.md) — Normalize transparent GIF frames before using them; disposal-none source files can leave duplicate trails.
  - [Replit Preview routing](preview-routing.md) — browser Preview needs a registered root web artifact, not only a healthy standalone Vite workflow.
 - [Optional activity-log schema drift](supabase-optional-logs.md) — the connected Supabase project lacks weight and cardio log tables; these must not block authenticated role hydration.
 - [Body measurement schema compatibility](body-measurement-schema.md) — measurement writes require the extended columns in Supabase; keep code and schema aligned.
