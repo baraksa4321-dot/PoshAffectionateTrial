@@ -334,7 +334,6 @@ const REFERENCE_LOADING_IMAGES = [
   { file: "avocado-hula.png", label: "אבוקדו עם חישוק" },
   { file: "avocado-dumbbells.png", label: "אבוקדו מרים משקולות" },
   { file: "avocado-rope.png", label: "אבוקדו בקפיצה בחבל" },
-  { file: "avocado-lift.png", label: "אבוקדו באימון כוח" },
 ] as const;
 
 function ReferenceLoadingIllustration({ variant }: { variant: number }) {

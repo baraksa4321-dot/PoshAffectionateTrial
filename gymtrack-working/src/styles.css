@@ -1893,12 +1893,12 @@ html.night-mode .auth-panel {
   position: relative;
   z-index: 1;
   display: block;
-  width: 150px;
-  height: 112px;
-  object-fit: cover;
-  border-radius: 18px;
-  filter: drop-shadow(0 5px 4px rgb(75 48 58 / 16%));
-  animation: loading-reference-breathe 1.7s ease-in-out infinite;
+  width: 154px;
+  height: 120px;
+  object-fit: contain;
+  border-radius: 12px;
+  filter: drop-shadow(0 3px 3px rgb(75 48 58 / 10%));
+  animation: loading-reference-breathe 2.6s ease-in-out infinite;
 }
 
 .loading-reference-pose-1,
@@ -1914,7 +1914,7 @@ html.night-mode .auth-panel {
 .loading-reference-pose-3,
 .loading-reference-pose-13 {
   animation-name: loading-reference-knees;
-  animation-duration: 1.05s;
+  animation-duration: 2s;
 }
 
 .loading-reference-pose-4,
@@ -1963,10 +1963,10 @@ html.night-mode .auth-panel {
 @keyframes loading-reference-breathe {
   0%,
   100% {
-    transform: translateY(5px) rotate(-1deg) scale(0.97);
+    transform: translateY(3px) rotate(-1deg) scale(0.985);
   }
   45% {
-    transform: translateY(-10px) rotate(2deg) scale(1.03);
+    transform: translateY(-5px) rotate(2deg) scale(1.015);
   }
 }
 
