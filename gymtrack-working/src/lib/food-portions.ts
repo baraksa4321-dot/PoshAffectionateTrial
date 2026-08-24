@@ -1,17 +1,7 @@
 import type { FoodItem, MealFood } from "./gym-types";
 
 export type FoodQuantityUnit =
-  | "g"
-  | "ml"
-  | "cup"
-  | "unit"
-  | "small"
-  | "medium"
-  | "large"
-  | "tbsp"
-  | "tsp"
-  | "slice"
-  | "serving";
+  "g" | "ml" | "cup" | "unit" | "small" | "medium" | "large" | "tbsp" | "tsp" | "slice" | "serving";
 
 export type FoodQuantityOption = {
   value: FoodQuantityUnit;
