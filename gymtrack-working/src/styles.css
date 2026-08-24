@@ -510,7 +510,7 @@ html.night-mode textarea::placeholder {
 /* Keep the daytime canvas consistent across every palette. The selected
  * palette still controls accents, borders and controls, not the page backdrop. */
 :root:not(.night-mode) {
-  --background: #f2ebe2;
+  --background: #f7f2ec;
 }
 
 html,
@@ -1872,7 +1872,7 @@ html.night-mode .auth-panel {
 
 /* Compact loading screen: one clean moment, with many tiny animation variations. */
 .loading-screen {
-  background: #f2ebe2;
+  background: #f7f2ec;
   color: #171414;
 }
 
