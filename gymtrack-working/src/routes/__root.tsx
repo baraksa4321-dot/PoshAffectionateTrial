@@ -444,7 +444,7 @@ function SimpleLoadingIllustration({ variant }: { variant: number }) {
         aria-label={`איור טעינה: ${illustration.label}`}
       >
         <source
-          src={`/loading/tinted/${illustration.file.replace(".png", ".webm")}`}
+          src={`/loading/tinted/${illustration.file.replace(".png", ".webm")}?v=cream-bg-2`}
           type="video/webm"
         />
       </video>
