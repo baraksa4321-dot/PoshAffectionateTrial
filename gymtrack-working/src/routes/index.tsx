@@ -107,7 +107,7 @@ function cardioFieldVisibility(type: string) {
   return {
     speed: isTreadmill || isRunning || isBike,
     incline: isTreadmill,
-    distance: isTreadmill || isRunning || isBike || isRowing || isSwimming || type.includes("טיול"),
+    distance: isRunning || isBike || isRowing || type.includes("טיול"),
   };
 }
 
