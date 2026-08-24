@@ -1118,12 +1118,8 @@ function RootContent() {
     const illustrationTimer = window.setInterval(() => {
       setLoadingCycle((current) => current + 1);
     }, 2400);
-    const messageTimer = window.setInterval(() => {
-      setLoadingCycle((current) => current + 1);
-    }, 2400);
     return () => {
       window.clearInterval(illustrationTimer);
-      window.clearInterval(messageTimer);
     };
   }, []);
 
