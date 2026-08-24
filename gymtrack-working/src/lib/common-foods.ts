@@ -146,7 +146,17 @@ export const COMMON_FOODS: FoodItem[] = [
 
   // Vegetables
   makeFood("f-common-tomato", "עגבנייה", "ירקות", "יחידה בינונית", 22, 1.1, 4.8, 0.2, 1.5),
-  makeFood("f-common-cherry-tomatoes", "עגבניות שרי", "ירקות", "12 עגבניות שרי (120 גרם)", 22, 1.1, 4.8, 0.2, 1.5),
+  makeFood(
+    "f-common-cherry-tomatoes",
+    "עגבניות שרי",
+    "ירקות",
+    "12 עגבניות שרי (120 גרם)",
+    22,
+    1.1,
+    4.8,
+    0.2,
+    1.5,
+  ),
   makeFood("f-common-cucumber", "מלפפון", "ירקות", "יחידה בינונית", 30, 1.3, 7.3, 0.2, 1),
   makeFood("f-common-lettuce", "חסה", "ירקות", "100 גרם", 15, 1.4, 2.9, 0.2, 1.3),
   makeFood("f-common-pepper", "פלפל אדום", "ירקות", "יחידה בינונית", 31, 1, 6, 0.3, 2.1),

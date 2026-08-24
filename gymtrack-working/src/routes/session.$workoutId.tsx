@@ -21,7 +21,7 @@ import {
   Meh,
   Frown,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Stepper } from "@/components/Stepper";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
@@ -180,7 +180,8 @@ function Session() {
       const hasPerSetDrop = item.workingSets?.some((set) => set.dropSet) ?? false;
       if (dropConfig?.enabled && dropConfig.drops > 0 && !hasPerSetDrop) {
         for (let dropLevel = 1; dropLevel <= dropConfig.drops; dropLevel += 1) {
-          const reduction = (dropConfig.weightReductionPercent ?? dropConfig.percentReduction ?? 20) / 100;
+          const reduction =
+            (dropConfig.weightReductionPercent ?? dropConfig.percentReduction ?? 20) / 100;
           const dropWeight = Math.max(
             0,
             Math.round(prescribedWeight * Math.pow(1 - reduction, dropLevel) * 10) / 10,
@@ -234,7 +235,8 @@ function Session() {
   } | null>(null);
   const restDraggedRef = useRef(false);
 
-  const nextSmartTimerPosition = (position: SmartTimerPosition): SmartTimerPosition | null => {
+  const nextSmartTimerPosition = useCallback(
+    (position: SmartTimerPosition): SmartTimerPosition | null => {
     const currentEntry = entries[position.exerciseIndex];
     const totalSets =
       currentEntry?.sets.filter((set) => !set.warmup).length ??
@@ -255,7 +257,9 @@ function Session() {
       }
     }
     return null;
-  };
+    },
+    [entries, workout?.items],
+  );
 
   useEffect(() => {
     setEntries(initial);
@@ -291,9 +295,7 @@ function Session() {
     ) {
       restCompletionVibratedRef.current = true;
       setRestFinished(true);
-      setSmartTimerPosition((current) =>
-        current ? nextSmartTimerPosition(current) : current,
-      );
+      setSmartTimerPosition((current) => (current ? nextSmartTimerPosition(current) : current));
       // Vibration is not exposed by every iOS browser. Use both the native
       // pattern and a short user-activated audio fallback when available.
       navigator.vibrate?.([180, 80, 180, 80, 320]);
@@ -317,7 +319,7 @@ function Session() {
       }
     }
     previousRestRef.current = rest;
-  }, [entries, rest]);
+  }, [entries, nextSmartTimerPosition, rest]);
 
   const labels = useMemo(() => supersetLabels(workout?.items ?? []), [workout?.items]);
   const exerciseCatalog = useMemo(() => [...exercises, ...BODYWEIGHT_EXERCISES], [exercises]);
@@ -387,8 +389,7 @@ function Session() {
       } else {
         void vibrationAudioRef.current?.resume();
       }
-      const setNumber =
-        entries[ei]?.sets.slice(0, si + 1).filter((set) => !set.warmup).length ?? 1;
+      const setNumber = entries[ei]?.sets.slice(0, si + 1).filter((set) => !set.warmup).length ?? 1;
       setSmartTimerPosition({ exerciseIndex: ei, setNumber });
       setSmartTimerStarted(true);
       const restSec = workout.items[ei]?.rest ?? 60;
@@ -455,18 +456,18 @@ function Session() {
       entries: entries.map((e, index) => ({
         ...e,
         sets: e.sets.filter((s) => s.done),
-          ...(exerciseFeedback[index]?.rating || exerciseFeedback[index]?.notes.trim()
-            ? {
-                feedback: {
-                  ...(exerciseFeedback[index]?.rating
-                    ? { rating: exerciseFeedback[index].rating }
-                    : {}),
-                  ...(exerciseFeedback[index]?.notes.trim()
-                    ? { notes: exerciseFeedback[index].notes.trim() }
-                    : {}),
-                },
-              }
-            : {}),
+        ...(exerciseFeedback[index]?.rating || exerciseFeedback[index]?.notes.trim()
+          ? {
+              feedback: {
+                ...(exerciseFeedback[index]?.rating
+                  ? { rating: exerciseFeedback[index].rating }
+                  : {}),
+                ...(exerciseFeedback[index]?.notes.trim()
+                  ? { notes: exerciseFeedback[index].notes.trim() }
+                  : {}),
+              },
+            }
+          : {}),
       })),
       difficultyRating,
       ...(discomfortNotes.trim() ? { discomfortNotes: discomfortNotes.trim() } : {}),
@@ -610,7 +611,10 @@ function Session() {
       }
     >
       {showCompletionConfetti ? (
-        <div className="pointer-events-none fixed inset-0 z-[100] overflow-hidden" aria-live="polite">
+        <div
+          className="pointer-events-none fixed inset-0 z-[100] overflow-hidden"
+          aria-live="polite"
+        >
           <div className="absolute inset-x-0 top-[22%] text-center">
             <div className="inline-flex rounded-2xl bg-white/95 px-5 py-3 text-lg font-extrabold text-ink shadow-xl">
               כל הכבוד! האימון הושלם
@@ -624,7 +628,9 @@ function Session() {
                 left: `${(index * 37) % 101}%`,
                 animationDelay: `${(index % 9) * 35}ms`,
                 animationDuration: `${1200 + (index % 5) * 150}ms`,
-                backgroundColor: ["var(--primary)", "var(--rose)", "var(--accent)", "#111111"][index % 4],
+                backgroundColor: ["var(--primary)", "var(--rose)", "var(--accent)", "#111111"][
+                  index % 4
+                ],
                 transform: `rotate(${(index * 47) % 360}deg)`,
               }}
             />
@@ -720,20 +726,20 @@ function Session() {
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
                   </button>
-                   {!isSupersetFirst ? (
-                     <button
-                       type="button"
-                       onClick={() => {
-                         setRest(item?.rest ?? 60);
-                         setRestPaused(false);
-                       }}
-                       className="press flex shrink-0 items-center gap-1 rounded-full bg-secondary px-3 py-2 text-[12px] font-semibold text-ink cursor-pointer"
-                       aria-label="התחל מנוחה"
-                     >
-                       <Timer className="h-3.5 w-3.5 text-primary" />
-                       {item?.rest ?? 60}ש׳
-                     </button>
-                   ) : null}
+                  {!isSupersetFirst ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRest(item?.rest ?? 60);
+                        setRestPaused(false);
+                      }}
+                      className="press flex shrink-0 items-center gap-1 rounded-full bg-secondary px-3 py-2 text-[12px] font-semibold text-ink cursor-pointer"
+                      aria-label="התחל מנוחה"
+                    >
+                      <Timer className="h-3.5 w-3.5 text-primary" />
+                      {item?.rest ?? 60}ש׳
+                    </button>
+                  ) : null}
                 </div>
               </div>
 
@@ -783,7 +789,7 @@ function Session() {
                           </span>
                           <div className="min-w-0 flex-1 text-start">
                             <p className="break-words text-[12.5px] leading-snug font-semibold text-ink">
-                               {s.dropSet ? `דרופ סט ${s.dropLevel ?? ""}` : setLabel}
+                              {s.dropSet ? `דרופ סט ${s.dropLevel ?? ""}` : setLabel}
                               <span className="ms-1 text-[11px] font-normal text-muted-foreground">
                                 · יעד {s.targetReps}
                                 {s.targetRepMax ? `–${s.targetRepMax}` : ""}
@@ -1018,7 +1024,7 @@ function Session() {
                   if (rest > 0) {
                     setRestPaused((paused) => !paused);
                   } else {
-                     startSmartRest();
+                    startSmartRest();
                   }
                 }}
                 role="button"
@@ -1038,7 +1044,7 @@ function Session() {
                     if (rest > 0) {
                       setRestPaused((paused) => !paused);
                     } else {
-                       startSmartRest();
+                      startSmartRest();
                     }
                   }
                 }}

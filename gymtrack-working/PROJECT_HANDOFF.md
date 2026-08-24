@@ -1,11 +1,13 @@
 # PROJECT HANDOFF — הרוטינה שלי (My Routine / GymTrack)
 
 ## PROJECT OVERVIEW
+
 **My Routine** (הרוטינה שלי / GymTrack) is a mobile-first, full-Hebrew, true RTL web application designed for workout tracking, exercise library management, and daily nutrition logging. The application enables users to follow custom workout programs, log sets with independent weights and reps, execute supersets and drop sets, track personal records, and log nutrition using a comprehensive Israeli supermarket food database with calorie-based food swapping.
 
 ---
 
 ## TECH STACK
+
 - **Framework**: React 19 + TypeScript
 - **Router**: TanStack Router (`@tanstack/react-router`)
 - **Server/Start**: TanStack Start (`@tanstack/react-start`)
@@ -18,6 +20,7 @@
 ---
 
 ## INSTALLATION
+
 ```bash
 # Clone the repository
 git clone https://github.com/mayayosfan234/my-gym-muse-53.git
@@ -32,18 +35,23 @@ npm install
 ---
 
 ## DEVELOPMENT
+
 To start the local development server:
+
 ```bash
 bun run dev
 # or
 npm run dev
 ```
+
 Open `http://localhost:3000` in your browser.
 
 ---
 
 ## BUILD
+
 To build the application for production:
+
 ```bash
 bun run build
 # or
@@ -53,11 +61,13 @@ npm run build
 ---
 
 ## ENVIRONMENT VARIABLES
+
 No external environment variables are required for basic offline local storage operation. All user data, workouts, exercises, history, and nutrition logs persist in browser `localStorage` (`gymtrack.v1`).
 
 ---
 
 ## ARCHITECTURE
+
 ```
 src/
 ├── components/
@@ -86,7 +96,9 @@ src/
 ---
 
 ## STORE
+
 The application uses a reactive external store pattern (`useSyncExternalStore`) in `src/lib/gym-store.ts`.
+
 - **Key**: `gymtrack.v1` in `localStorage`.
 - **Subscribers**: Automatically re-renders UI components when data updates.
 - **Migration**: Safely migrates older data structures while preserving user records.
@@ -94,6 +106,7 @@ The application uses a reactive external store pattern (`useSyncExternalStore`) 
 ---
 
 ## WORKOUT SYSTEM
+
 - **Programs**: Named training templates (e.g. 4-day split).
 - **Initial Seed Program**:
   1. פלג גוף תחתון 1
@@ -110,6 +123,7 @@ The application uses a reactive external store pattern (`useSyncExternalStore`) 
 ---
 
 ## EXERCISE SYSTEM
+
 - **Expanded Taxonomy**:
   - Muscle Groups: חזה, חזה עליון, חזה תחתון, גב, גב רחב, טרפזים, גב תחתון, כתפיים, כתף קדמית, כתף צידית, כתף אחורית, ביצפס (יד קדמית), טריצפס (יד אחורית), אמות, בטן, אלכסונים, ישבן, ארבע ראשי, המסטרינג, תאומים, מקרבים, מרחיקים, כופפי הירך, צוואר, גוף מלא, אירובי, אחר.
   - Multi-select support (`muscleGroups` array).
@@ -120,6 +134,7 @@ The application uses a reactive external store pattern (`useSyncExternalStore`) 
 ---
 
 ## NUTRITION & FOOD DATABASE
+
 - **Israeli Food Database**: Located in `src/lib/israeli-food-db.ts`, containing **488 distinct realistic food/product entries** from Israeli supermarkets (Tnuva, Strauss, Tara, Piraeus, Angel, Berman, Osem, GDM, etc.).
 - **Variations Included**:
   - Dairy: Milk 1%, 3%; Cottage 3%, 5%, 9%, Pro 12g; White Cheese 3%, 5%, 9%; Yellow Cheese 9%, 15%, 28%; Danone Pro 20g (unflavored, strawberry, vanilla, peach), Go 20g, Skyr, Greek yogurt, Labneh, Feta 5%/16%, Mozzarella light.
@@ -132,16 +147,20 @@ The application uses a reactive external store pattern (`useSyncExternalStore`) 
 ---
 
 ## CALORIE-BASED FOOD REPLACEMENT
+
 The application implements an exact mathematical calorie-matching replacement formula:
+
 ```ts
 // Formula:
-replacementGrams = (targetCalories * 100) / replacementCaloriesPer100g
+replacementGrams = (targetCalories * 100) / replacementCaloriesPer100g;
 ```
+
 - **How it works**: When swapping Food A (e.g. 300 kcal target) with Food B (e.g. 150 kcal per 100g), the system calculates `requiredQuantity = targetCalories / foodB.calories` (2.0 = 200g), preserving the energy target while scaling protein, carbs, and fat proportionally.
 
 ---
 
 ## HISTORY & RELATIVE DATES
+
 - Workout history records sessions with duration, total volume (kg), and logged sets.
 - Dates are displayed in natural Hebrew:
   - היום (Today)
@@ -154,6 +173,7 @@ replacementGrams = (targetCalories * 100) / replacementCaloriesPer100g
 ---
 
 ## RTL & HEBREW LOCALIZATION
+
 - Application level: `lang="he"`, `dir="rtl"` in `<html>` and `<body>`.
 - Locale: `he-IL` for date and number formatting.
 - Directional CSS: Converted to logical or RTL equivalents (`text-start`, `text-end`, `ms-`, `me-`, `ps-`, `pe-`).
@@ -161,6 +181,7 @@ replacementGrams = (targetCalories * 100) / replacementCaloriesPer100g
 ---
 
 ## MOBILE-FIRST & PWA
+
 - Primary viewport target: iPhone screen sizes.
 - Floating pill bottom navigation bar in Hebrew.
 - PWA configured in `public/manifest.json` with standalone display, theme color `#567765`, and iOS metadata in root route.
@@ -168,6 +189,7 @@ replacementGrams = (targetCalories * 100) / replacementCaloriesPer100g
 ---
 
 ## COMPLETED FEATURES
+
 - [x] Full Hebrew UI translation for all screens.
 - [x] True RTL layout throughout the app.
 - [x] Initial seed program with 4 Hebrew workout days (פלג גוף תחתון 1, פלג גוף עליון 1, פלג גוף תחתון 2, פלג גוף עליון 2).
@@ -188,9 +210,11 @@ replacementGrams = (targetCalories * 100) / replacementCaloriesPer100g
 ---
 
 ## CURRENT VERIFICATION STATUS
+
 The codebase has been updated to improve persistence and the remaining requested flows, but live browser/mobile/Supabase acceptance testing still needs to be run in a real connected environment.
 
 Verified from code:
+
 - Drop Set uses two explicit weight + rep-range levels.
 - Planned nutrition menus persist separately from the actual nutrition log.
 - Per-food planned-menu "eaten" tracking is supported.
@@ -203,6 +227,7 @@ Verified from code:
 - Night-mode utility text contrast has additional overrides.
 
 Still requires live verification:
+
 - Supabase RLS with real owner/coach/client accounts.
 - Mobile/iOS keyboard, touch and vibration behavior.
 - Visual verification of every palette and overlay.

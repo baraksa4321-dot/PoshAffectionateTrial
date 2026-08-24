@@ -156,9 +156,11 @@ export function CoachDashboardPage({
   const [programQuery, setProgramQuery] = useState("");
   const [targetWeight, setTargetWeight] = useState(20);
   const [setsCount, setSetsCount] = useState(3);
-  const [setModes, setSetModes] = useState<
-    Array<"normal" | "warmup" | "drop" | "superset">
-  >(["normal", "normal", "normal"]);
+  const [setModes, setSetModes] = useState<Array<"normal" | "warmup" | "drop" | "superset">>([
+    "normal",
+    "normal",
+    "normal",
+  ]);
   const [repMin, setRepMin] = useState(8);
   const [repMax, setRepMax] = useState(10);
   const [restSec, setRestSec] = useState(90);
@@ -191,7 +193,9 @@ export function CoachDashboardPage({
 
   // Nutrition Prescription state
   const [editingNutrition, setEditingNutrition] = useState(false);
-  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"programs" | "nutrition">("programs");
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"programs" | "nutrition">(
+    "programs",
+  );
   const [calTarget, setCalTarget] = useState(0);
   const [protTarget, setProtTarget] = useState(0);
   const [menuDate, setMenuDate] = useState(todayKey());
@@ -401,7 +405,9 @@ export function CoachDashboardPage({
     const workouts = profileWorkouts === "" ? undefined : Number(profileWorkouts);
     const gender = profileGender === "" ? undefined : profileGender;
     const valid =
-      [age, height, weight, workouts].every((value) => value !== undefined && Number.isFinite(value)) &&
+      [age, height, weight, workouts].every(
+        (value) => value !== undefined && Number.isFinite(value),
+      ) &&
       gender !== undefined &&
       (age ?? 0) > 0 &&
       (height ?? 0) > 0 &&
@@ -716,7 +722,10 @@ export function CoachDashboardPage({
     const currentDay = clientDetails?.workouts?.find((w) => w.id === editingDayId);
     if (!currentDay) return;
 
-    const configuredModes = Array.from({ length: setsCount }, (_, index) => setModes[index] ?? "normal");
+    const configuredModes = Array.from(
+      { length: setsCount },
+      (_, index) => setModes[index] ?? "normal",
+    );
     const warmupModeCount = configuredModes.filter((mode) => mode === "warmup").length;
     const workingModeCount = configuredModes.length - warmupModeCount;
     const hasDropSets = configuredModes.includes("drop");
@@ -853,7 +862,7 @@ export function CoachDashboardPage({
 
     if (isSelfSelected) {
       saveWorkout({ ...currentDay, items: updatedItems });
-       setSelectedExId("");
+      setSelectedExId("");
       setTechniqueNotes("");
       setSupersetGroup("");
       setSupersetPartnerId("");
@@ -861,8 +870,8 @@ export function CoachDashboardPage({
       setDropLevel1Weight("");
       setDropLevel2Weight("");
       setSetModes(["normal", "normal", "normal"]);
-       setApprovedAltIds([]);
-       setBodyweightAlternativeId("");
+      setApprovedAltIds([]);
+      setBodyweightAlternativeId("");
       return;
     }
 
@@ -880,8 +889,8 @@ export function CoachDashboardPage({
       setDropLevel1Weight("");
       setDropLevel2Weight("");
       setSetModes(["normal", "normal", "normal"]);
-       setApprovedAltIds([]);
-       setBodyweightAlternativeId("");
+      setApprovedAltIds([]);
+      setBodyweightAlternativeId("");
       pullClientDataForCoach(selectedClientId).then(applyClientDetails);
     }
   };
@@ -1003,7 +1012,7 @@ export function CoachDashboardPage({
       date: menuDate,
       meals: existingDay?.meals ?? [],
       planned_meals: plannedMeals,
-       ...(existingDay || calTarget <= 0 ? {} : { target_calories: calTarget }),
+      ...(existingDay || calTarget <= 0 ? {} : { target_calories: calTarget }),
       updated_at: new Date().toISOString(),
     });
     if (error) {
@@ -1050,31 +1059,28 @@ export function CoachDashboardPage({
         .map((food) => ({ date: day.date, meal: meal.name, note: food.notes!.trim() })),
     ),
   );
-  const filteredExerciseOptions = useMemo(() => {
-    const query = exerciseQuery.trim().toLocaleLowerCase();
-    if (!query) return store.exercises;
-    return store.exercises.filter((exercise) =>
-      [exercise.name, exercise.muscleGroup, exercise.equipment]
-        .filter(Boolean)
-        .some((value) => value.toLocaleLowerCase().includes(query)),
-    );
-  }, [exerciseQuery, store.exercises]);
-  const filteredPrograms = useMemo(() => {
-    const query = programQuery.trim().toLocaleLowerCase();
-    if (!query) return clientDetails?.programs ?? [];
-    return (clientDetails?.programs ?? []).filter((program) =>
-      program.name.toLocaleLowerCase().includes(query),
-    );
-  }, [clientDetails?.programs, programQuery]);
-  const filteredOwnerProfiles = useMemo(() => {
-    const query = ownerUserSearch.trim().toLocaleLowerCase();
-    if (!query) return allProfiles;
-    return allProfiles.filter((profile) =>
-      [profile.full_name, profile.email]
-        .filter(Boolean)
-        .some((value) => value!.toLocaleLowerCase().includes(query)),
-    );
-  }, [allProfiles, ownerUserSearch]);
+  const exerciseQueryLower = exerciseQuery.trim().toLocaleLowerCase();
+  const filteredExerciseOptions = exerciseQueryLower
+    ? store.exercises.filter((exercise) =>
+        [exercise.name, exercise.muscleGroup, exercise.equipment]
+          .filter(Boolean)
+          .some((value) => value.toLocaleLowerCase().includes(exerciseQueryLower)),
+      )
+    : store.exercises;
+  const programQueryLower = programQuery.trim().toLocaleLowerCase();
+  const filteredPrograms = programQueryLower
+    ? (clientDetails?.programs ?? []).filter((program) =>
+        program.name.toLocaleLowerCase().includes(programQueryLower),
+      )
+    : clientDetails?.programs ?? [];
+  const ownerUserSearchLower = ownerUserSearch.trim().toLocaleLowerCase();
+  const filteredOwnerProfiles = ownerUserSearchLower
+    ? allProfiles.filter((profile) =>
+        [profile.full_name, profile.email]
+          .filter(Boolean)
+          .some((value) => value!.toLocaleLowerCase().includes(ownerUserSearchLower)),
+      )
+    : allProfiles;
   const menuFoodResults = searchFoods(store.foods, menuFoodQuery).slice(0, 24);
   const needsPlan = overviewRows.filter((row) => row.details.programs.length === 0);
   const needsExercises = overviewRows.filter(
@@ -1110,7 +1116,7 @@ export function CoachDashboardPage({
   };
 
   return (
-      <AppShell
+    <AppShell
       title={clientsOnly ? "מתאמנים" : ""}
       kicker={clientsOnly ? "בניית תוכניות ותפריטים" : ""}
       compactHeader
@@ -1142,10 +1148,14 @@ export function CoachDashboardPage({
               <div className="mt-2 space-y-1.5">
                 {clientFeedback.slice(0, 5).map((feedback) => {
                   const client = clients.find((item) => item.client_id === feedback.client_id);
-                  const profile = client?.profiles ?? allProfiles.find((item) => item.id === feedback.client_id);
+                  const profile =
+                    client?.profiles ?? allProfiles.find((item) => item.id === feedback.client_id);
                   const note = feedback.discomfort_notes?.trim() || feedback.coach_notes?.trim();
                   return (
-                    <div key={feedback.id} className="rounded-xl border border-rose-100 bg-white/85 p-2">
+                    <div
+                      key={feedback.id}
+                      className="rounded-xl border border-rose-100 bg-white/85 p-2"
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate text-[11px] font-bold text-rose-950">
                           {profileDisplayName(profile)}
@@ -1167,7 +1177,9 @@ export function CoachDashboardPage({
           <div className="grid grid-cols-2 gap-0.5 sm:grid-cols-4">
             <div className="surface-card flex items-center justify-between gap-1 border-primary/25 bg-primary/5 px-2 py-1.5 text-start">
               <p className="truncate text-[10px] font-bold text-muted-foreground">מתאמנים</p>
-              <p className="font-display text-base font-extrabold leading-none text-ink">{clients.length}</p>
+              <p className="font-display text-base font-extrabold leading-none text-ink">
+                {clients.length}
+              </p>
             </div>
             <div className="surface-card flex items-center justify-between gap-1 border-accent/60 bg-accent/20 px-2 py-1.5 text-start">
               <p className="truncate text-[10px] font-bold text-muted-foreground">דורשים תכנית</p>
@@ -1356,9 +1368,7 @@ export function CoachDashboardPage({
             <div className="flex items-center justify-between border-b border-purple-200/60 pb-2">
               <div className="flex items-center gap-2">
                 <Crown className="h-5 w-5 text-purple-700" />
-                <h3 className="font-bold text-sm text-purple-950">
-                  ניהול משתמשים והרשאות בעלים
-                </h3>
+                <h3 className="font-bold text-sm text-purple-950">ניהול משתמשים והרשאות בעלים</h3>
               </div>
               <span className="text-[11px] font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-full">
                 {allProfiles.length} משתמשים במערכת
@@ -1366,83 +1376,88 @@ export function CoachDashboardPage({
             </div>
 
             <div className="space-y-2 pt-1">
-                {pendingApprovals.length > 0 ? (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-bold text-amber-950">אישור מתאמנים חדשים</p>
-                      <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-900">
-                        {pendingApprovals.length} ממתינים
-                      </span>
-                    </div>
-                    <p className="mt-1 text-[11px] leading-relaxed text-amber-900/75">
-                      בדקי את השם המלא ובחרי מאמן לפני שהחשבון נכנס למערכת.
-                    </p>
-                    <div className="mt-3 space-y-2">
-                      {pendingApprovals.map((profile) => (
-                        <div key={profile.id} className="rounded-xl border border-amber-200 bg-white p-2.5">
-                          <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                            שם מלא
-                            <input
-                              value={profile.full_name ?? ""}
-                              onChange={(event) =>
-                                setAllProfiles((current) =>
-                                  current.map((item) =>
-                                    item.id === profile.id
-                                      ? { ...item, full_name: event.target.value }
-                                      : item,
-                                  ),
-                                )
-                              }
-                              className="h-9 rounded-lg border border-border px-2 text-xs font-semibold text-ink outline-none focus:border-primary"
-                            />
-                          </label>
-                          <div className="mt-2 flex gap-2">
-                            <select
-                              value={approvalCoachByUser[profile.id] ?? ""}
-                              onChange={(event) =>
-                                setApprovalCoachByUser((current) => ({
-                                  ...current,
-                                  [profile.id]: event.target.value,
-                                }))
-                              }
-                              className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-white px-2 text-xs text-ink outline-none focus:border-primary"
-                              aria-label={`בחירת מאמן עבור ${profileDisplayName(profile)}`}
-                            >
-                              <option value="">בחירת מאמן...</option>
-                              {allProfiles
-                                .filter(
-                                  (candidate) =>
-                                    candidate.role === "coach" ||
-                                    (candidate.id === authUser?.id && candidate.role === "owner"),
-                                )
-                                .map((coach) => (
-                                  <option key={coach.id} value={coach.id}>
-                                    {coach.id === authUser?.id ? "אני (בעלים)" : profileDisplayName(coach)}
-                                  </option>
-                                ))}
-                            </select>
-                            <button
-                              type="button"
-                              disabled={approvalUserId === profile.id}
-                              onClick={() => void handleApproveClient(profile)}
-                              className="h-9 shrink-0 rounded-lg bg-amber-700 px-3 text-[11px] font-bold text-white disabled:opacity-50"
-                            >
-                              {approvalUserId === profile.id ? "מאשר..." : "אישור"}
-                            </button>
-                          </div>
-                          <p className="mt-1 text-[10px] text-muted-foreground">
-                            {profile.email || "ללא אימייל מוצג"}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                    {approvalNotice ? (
-                      <p className="mt-2 rounded-lg bg-white p-2 text-[11px] font-semibold text-amber-950">
-                        {approvalNotice}
-                      </p>
-                    ) : null}
+              {pendingApprovals.length > 0 ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-bold text-amber-950">אישור מתאמנים חדשים</p>
+                    <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-900">
+                      {pendingApprovals.length} ממתינים
+                    </span>
                   </div>
-                ) : null}
+                  <p className="mt-1 text-[11px] leading-relaxed text-amber-900/75">
+                    בדקי את השם המלא ובחרי מאמן לפני שהחשבון נכנס למערכת.
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    {pendingApprovals.map((profile) => (
+                      <div
+                        key={profile.id}
+                        className="rounded-xl border border-amber-200 bg-white p-2.5"
+                      >
+                        <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                          שם מלא
+                          <input
+                            value={profile.full_name ?? ""}
+                            onChange={(event) =>
+                              setAllProfiles((current) =>
+                                current.map((item) =>
+                                  item.id === profile.id
+                                    ? { ...item, full_name: event.target.value }
+                                    : item,
+                                ),
+                              )
+                            }
+                            className="h-9 rounded-lg border border-border px-2 text-xs font-semibold text-ink outline-none focus:border-primary"
+                          />
+                        </label>
+                        <div className="mt-2 flex gap-2">
+                          <select
+                            value={approvalCoachByUser[profile.id] ?? ""}
+                            onChange={(event) =>
+                              setApprovalCoachByUser((current) => ({
+                                ...current,
+                                [profile.id]: event.target.value,
+                              }))
+                            }
+                            className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-white px-2 text-xs text-ink outline-none focus:border-primary"
+                            aria-label={`בחירת מאמן עבור ${profileDisplayName(profile)}`}
+                          >
+                            <option value="">בחירת מאמן...</option>
+                            {allProfiles
+                              .filter(
+                                (candidate) =>
+                                  candidate.role === "coach" ||
+                                  (candidate.id === authUser?.id && candidate.role === "owner"),
+                              )
+                              .map((coach) => (
+                                <option key={coach.id} value={coach.id}>
+                                  {coach.id === authUser?.id
+                                    ? "אני (בעלים)"
+                                    : profileDisplayName(coach)}
+                                </option>
+                              ))}
+                          </select>
+                          <button
+                            type="button"
+                            disabled={approvalUserId === profile.id}
+                            onClick={() => void handleApproveClient(profile)}
+                            className="h-9 shrink-0 rounded-lg bg-amber-700 px-3 text-[11px] font-bold text-white disabled:opacity-50"
+                          >
+                            {approvalUserId === profile.id ? "מאשר..." : "אישור"}
+                          </button>
+                        </div>
+                        <p className="mt-1 text-[10px] text-muted-foreground">
+                          {profile.email || "ללא אימייל מוצג"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  {approvalNotice ? (
+                    <p className="mt-2 rounded-lg bg-white p-2 text-[11px] font-semibold text-amber-950">
+                      {approvalNotice}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               <p className="text-xs text-purple-900 font-semibold">משתמשים והרשאות תפקיד:</p>
               <div className="num-pill flex h-10 items-center gap-2 px-3">
                 <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -1468,9 +1483,7 @@ export function CoachDashboardPage({
                       className="flex items-center justify-between rounded-xl bg-white p-2.5 text-xs border border-purple-100"
                     >
                       <div className="min-w-0">
-                        <span className="font-bold text-ink">
-                          {profileDisplayName(p)}
-                        </span>
+                        <span className="font-bold text-ink">{profileDisplayName(p)}</span>
                         <span className="text-muted-foreground mr-1">
                           (
                           {p.role === "owner"
@@ -1537,7 +1550,7 @@ export function CoachDashboardPage({
                   </div>
                 </div>
                 <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
-                   {clients.length} מתאמנים
+                  {clients.length} מתאמנים
                 </span>
               </div>
             </section>
@@ -1572,7 +1585,7 @@ export function CoachDashboardPage({
                 />
               </div>
 
-               {authUser ? (
+              {authUser ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -1594,10 +1607,10 @@ export function CoachDashboardPage({
                     </span>
                     <span className="min-w-0">
                       <span className="block text-sm font-bold text-ink">
-                         {selfDisplayName} (הפרופיל שלי)
+                        {selfDisplayName} (הפרופיל שלי)
                       </span>
                       <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                         בניית אימונים ותפריט עבורי
+                        בניית אימונים ותפריט עבורי
                       </span>
                     </span>
                   </span>
@@ -1614,11 +1627,11 @@ export function CoachDashboardPage({
                     onClick={() => setShowAddModal(true)}
                     className="text-primary font-bold hover:underline cursor-pointer"
                   >
-                {genderText(
-                  gender,
-                  "לחצי כאן להוספת מתאמן לפי אימייל",
-                  "לחץ כאן להוספת מתאמן לפי אימייל",
-                )}
+                    {genderText(
+                      gender,
+                      "לחצי כאן להוספת מתאמן לפי אימייל",
+                      "לחץ כאן להוספת מתאמן לפי אימייל",
+                    )}
                   </button>
                 </div>
               ) : (
@@ -1708,7 +1721,7 @@ export function CoachDashboardPage({
                   <span className="text-primary font-extrabold">
                     {isSelfSelected
                       ? `התוכנית של ${selfDisplayName}`
-                        : profileDisplayName(selectedClientInfo?.profiles)}
+                      : profileDisplayName(selectedClientInfo?.profiles)}
                   </span>
                 </h3>
                 <button
@@ -1785,54 +1798,54 @@ export function CoachDashboardPage({
                       </div>
                     </div>
                   </section>
-                   <nav
+                  <nav
                     aria-label="ניווט בסביבת העריכה"
                     className="sticky top-2 z-10 grid grid-cols-2 gap-2 rounded-2xl border border-border/70 bg-background/95 p-1.5 shadow-sm backdrop-blur"
                   >
-                     <button
-                       type="button"
-                       onClick={() => {
-                         if (selectedClientId) {
-                           navigate({
-                             to: "/coach/clients/$clientId/program",
-                             params: { clientId: selectedClientId },
-                           });
-                         } else {
-                           setActiveWorkspaceTab("programs");
-                         }
-                       }}
-                       aria-selected={activeWorkspaceTab === "programs"}
-                       className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors ${
-                         activeWorkspaceTab === "programs"
-                           ? "bg-primary text-primary-foreground shadow-sm"
-                           : "bg-primary/5 text-primary hover:bg-primary/10"
-                       }`}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedClientId) {
+                          navigate({
+                            to: "/coach/clients/$clientId/program",
+                            params: { clientId: selectedClientId },
+                          });
+                        } else {
+                          setActiveWorkspaceTab("programs");
+                        }
+                      }}
+                      aria-selected={activeWorkspaceTab === "programs"}
+                      className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors ${
+                        activeWorkspaceTab === "programs"
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-primary/5 text-primary hover:bg-primary/10"
+                      }`}
                     >
                       <Dumbbell className="h-3.5 w-3.5" />
                       תוכנית אימונים
-                     </button>
-                     <button
-                       type="button"
-                       onClick={() => {
-                         if (selectedClientId) {
-                           navigate({
-                             to: "/coach/clients/$clientId/nutrition",
-                             params: { clientId: selectedClientId },
-                           });
-                         } else {
-                           setActiveWorkspaceTab("nutrition");
-                         }
-                       }}
-                       aria-selected={activeWorkspaceTab === "nutrition"}
-                       className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors ${
-                         activeWorkspaceTab === "nutrition"
-                           ? "bg-emerald-700 text-white shadow-sm"
-                           : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
-                       }`}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedClientId) {
+                          navigate({
+                            to: "/coach/clients/$clientId/nutrition",
+                            params: { clientId: selectedClientId },
+                          });
+                        } else {
+                          setActiveWorkspaceTab("nutrition");
+                        }
+                      }}
+                      aria-selected={activeWorkspaceTab === "nutrition"}
+                      className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors ${
+                        activeWorkspaceTab === "nutrition"
+                          ? "bg-emerald-700 text-white shadow-sm"
+                          : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                      }`}
                     >
                       <Apple className="h-3.5 w-3.5" />
-                       תפריט תזונה
-                     </button>
+                      תפריט תזונה
+                    </button>
                   </nav>
                 </>
               ) : null}
@@ -2004,11 +2017,9 @@ export function CoachDashboardPage({
                             </h4>
                             <p className="mt-1 text-[11px] text-muted-foreground">
                               {latestProgram
-                                ? `${latestProgram.dayIds.length} ימי אימון · ${
-                                    clientDetails.workouts
-                                      .filter((day) => latestProgram.dayIds.includes(day.id))
-                                      .reduce((total, day) => total + day.items.length, 0)
-                                  } תרגילים`
+                                ? `${latestProgram.dayIds.length} ימי אימון · ${clientDetails.workouts
+                                    .filter((day) => latestProgram.dayIds.includes(day.id))
+                                    .reduce((total, day) => total + day.items.length, 0)} תרגילים`
                                 : "אפשר להתחיל לבנות תוכנית חדשה"}
                             </p>
                           </div>
@@ -2021,9 +2032,14 @@ export function CoachDashboardPage({
                               0,
                             );
                             return (
-                              <div key={session.id} className="rounded-xl bg-white/80 p-2.5 text-[11px]">
+                              <div
+                                key={session.id}
+                                className="rounded-xl bg-white/80 p-2.5 text-[11px]"
+                              >
                                 <div className="flex items-center justify-between gap-2">
-                                  <strong className="text-ink">{session.workoutName || "אימון"}</strong>
+                                  <strong className="text-ink">
+                                    {session.workoutName || "אימון"}
+                                  </strong>
                                   <span className="text-muted-foreground">
                                     {new Date(session.date).toLocaleDateString("he-IL")}
                                   </span>
@@ -2074,12 +2090,10 @@ export function CoachDashboardPage({
                             </h4>
                             <p className="mt-1 text-[11px] text-muted-foreground">
                               {latestNutritionDay
-                                ? `${latestNutritionDay.plannedMeals?.length || 0} ארוחות מתוכננות · ${
-                                    latestNutritionDay.meals.reduce(
-                                      (total, meal) => total + meal.foods.length,
-                                      0,
-                                    )
-                                  } מאכלים שנרשמו`
+                                ? `${latestNutritionDay.plannedMeals?.length || 0} ארוחות מתוכננות · ${latestNutritionDay.meals.reduce(
+                                    (total, meal) => total + meal.foods.length,
+                                    0,
+                                  )} מאכלים שנרשמו`
                                 : "אפשר להתחיל לבנות תפריט חדש"}
                             </p>
                           </div>
@@ -2093,15 +2107,21 @@ export function CoachDashboardPage({
                               0,
                             );
                             return (
-                              <div key={day.id || day.date} className="rounded-xl bg-white/80 p-2.5 text-[11px]">
+                              <div
+                                key={day.id || day.date}
+                                className="rounded-xl bg-white/80 p-2.5 text-[11px]"
+                              >
                                 <div className="flex items-center justify-between gap-2">
                                   <strong className="text-ink">
                                     {new Date(`${day.date}T00:00:00`).toLocaleDateString("he-IL")}
                                   </strong>
-                                  <span className="text-emerald-700">{Math.round(calories)} קל׳ בפועל</span>
+                                  <span className="text-emerald-700">
+                                    {Math.round(calories)} קל׳ בפועל
+                                  </span>
                                 </div>
                                 <p className="mt-1 text-muted-foreground">
-                                  {day.plannedMeals?.length || 0} ארוחות מתוכננות · {actualFoods.length} מאכלים בפועל
+                                  {day.plannedMeals?.length || 0} ארוחות מתוכננות ·{" "}
+                                  {actualFoods.length} מאכלים בפועל
                                 </p>
                               </div>
                             );
@@ -2112,7 +2132,10 @@ export function CoachDashboardPage({
                             </p>
                           ) : null}
                           {clientNutritionNotes.slice(0, 2).map((note) => (
-                            <p key={`${note.date}-${note.meal}-${note.note}`} className="rounded-lg bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-900">
+                            <p
+                              key={`${note.date}-${note.meal}-${note.note}`}
+                              className="rounded-lg bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-900"
+                            >
                               הערת מתאמן: {note.note}
                             </p>
                           ))}
@@ -2150,25 +2173,38 @@ export function CoachDashboardPage({
                       {clientDetails.history.length > 0 ? (
                         <div className="grid gap-2 md:grid-cols-2">
                           {clientDetails.history.map((session) => (
-                            <div key={session.id} className="rounded-xl bg-white/80 p-3 text-[11px]">
+                            <div
+                              key={session.id}
+                              className="rounded-xl bg-white/80 p-3 text-[11px]"
+                            >
                               <div className="flex items-center justify-between gap-2">
-                                <strong className="text-ink">{session.workoutName || "אימון"}</strong>
+                                <strong className="text-ink">
+                                  {session.workoutName || "אימון"}
+                                </strong>
                                 <span className="text-muted-foreground">
                                   {new Date(session.date).toLocaleDateString("he-IL")}
                                 </span>
                               </div>
                               <p className="mt-1 text-muted-foreground">
                                 {session.entries.reduce(
-                                  (total, entry) => total + entry.sets.filter((set) => set.done).length,
+                                  (total, entry) =>
+                                    total + entry.sets.filter((set) => set.done).length,
                                   0,
                                 )}{" "}
-                                סטים בוצעו מתוך {session.entries.reduce((total, entry) => total + entry.sets.length, 0)}
+                                סטים בוצעו מתוך{" "}
+                                {session.entries.reduce(
+                                  (total, entry) => total + entry.sets.length,
+                                  0,
+                                )}
                               </p>
                               {session.entries
                                 .filter((entry) => entry.feedback?.notes || entry.notes)
                                 .slice(0, 3)
                                 .map((entry) => (
-                                  <p key={`${session.id}-${entry.exerciseId}`} className="mt-1 text-ink">
+                                  <p
+                                    key={`${session.id}-${entry.exerciseId}`}
+                                    className="mt-1 text-ink"
+                                  >
                                     {entry.exerciseName}: {entry.feedback?.notes || entry.notes}
                                   </p>
                                 ))}
@@ -2181,7 +2217,9 @@ export function CoachDashboardPage({
                           ))}
                         </div>
                       ) : (
-                        <p className="text-center text-xs text-muted-foreground">אין עדיין ביצועי אימון להצגה.</p>
+                        <p className="text-center text-xs text-muted-foreground">
+                          אין עדיין ביצועי אימון להצגה.
+                        </p>
                       )}
                     </section>
                   ) : null}
@@ -2203,7 +2241,10 @@ export function CoachDashboardPage({
                         {clientDetails.nutritionDays.map((day) => {
                           const actualFoods = day.meals.flatMap((meal) => meal.foods);
                           return (
-                            <div key={day.id || day.date} className="rounded-xl bg-white/80 p-3 text-[11px]">
+                            <div
+                              key={day.id || day.date}
+                              className="rounded-xl bg-white/80 p-3 text-[11px]"
+                            >
                               <div className="flex items-center justify-between gap-2">
                                 <strong className="text-ink">
                                   {new Date(`${day.date}T00:00:00`).toLocaleDateString("he-IL")}
@@ -2214,10 +2255,14 @@ export function CoachDashboardPage({
                               </div>
                               {actualFoods.length > 0 ? (
                                 <p className="mt-1 text-muted-foreground">
-                                  {actualFoods.map((food) => `${food.name} ×${food.quantity}`).join(" · ")}
+                                  {actualFoods
+                                    .map((food) => `${food.name} ×${food.quantity}`)
+                                    .join(" · ")}
                                 </p>
                               ) : (
-                                <p className="mt-1 text-muted-foreground">לא נרשמו מאכלים ביום זה.</p>
+                                <p className="mt-1 text-muted-foreground">
+                                  לא נרשמו מאכלים ביום זה.
+                                </p>
                               )}
                             </div>
                           );
@@ -2226,13 +2271,19 @@ export function CoachDashboardPage({
                       {clientNutritionNotes.length > 0 ? (
                         <div className="space-y-1">
                           {clientNutritionNotes.map((note) => (
-                            <p key={`${note.date}-${note.meal}-${note.note}`} className="rounded-lg bg-white/80 px-2 py-1 text-[11px] text-ink">
-                              {new Date(`${note.date}T00:00:00`).toLocaleDateString("he-IL")} · {note.meal}: {note.note}
+                            <p
+                              key={`${note.date}-${note.meal}-${note.note}`}
+                              className="rounded-lg bg-white/80 px-2 py-1 text-[11px] text-ink"
+                            >
+                              {new Date(`${note.date}T00:00:00`).toLocaleDateString("he-IL")} ·{" "}
+                              {note.meal}: {note.note}
                             </p>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-muted-foreground">אין הערות תזונה שנרשמו על ידי המתאמן.</p>
+                        <p className="text-xs text-muted-foreground">
+                          אין הערות תזונה שנרשמו על ידי המתאמן.
+                        </p>
                       )}
                     </section>
                   ) : null}
@@ -2306,7 +2357,9 @@ export function CoachDashboardPage({
                                 </span>
                                 <span className="mt-0.5 block text-[11px] text-muted-foreground">
                                   {progDays?.length || 0} ימי אימון ·{" "}
-                                  {progDays?.reduce((total, day) => total + day.items.length, 0) || 0} תרגילים
+                                  {progDays?.reduce((total, day) => total + day.items.length, 0) ||
+                                    0}{" "}
+                                  תרגילים
                                 </span>
                               </div>
                               <button
@@ -2345,7 +2398,7 @@ export function CoachDashboardPage({
                                     return (
                                       <div
                                         key={dayItem.id}
-                                       className="rounded-2xl border border-border/60 bg-background p-3.5 shadow-sm"
+                                        className="rounded-2xl border border-border/60 bg-background p-3.5 shadow-sm"
                                       >
                                         <div className="flex items-center justify-between">
                                           <span className="font-bold text-[13px] text-ink">
@@ -2390,21 +2443,27 @@ export function CoachDashboardPage({
                                                       ) : null}
                                                       {exItem.dropSetConfig?.enabled ? (
                                                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                                                           {exItem.dropSetConfig.reductionValue &&
-                                                           exItem.dropSetConfig.reductionMode
-                                                             ? `דרופ סט · −${exItem.dropSetConfig.reductionValue}${
-                                                                 exItem.dropSetConfig.reductionMode === "percent"
-                                                                   ? "%"
-                                                                   : " ק״ג"
-                                                               }`
-                                                             : "דרופ סט"}
+                                                          {exItem.dropSetConfig.reductionValue &&
+                                                          exItem.dropSetConfig.reductionMode
+                                                            ? `דרופ סט · −${exItem.dropSetConfig.reductionValue}${
+                                                                exItem.dropSetConfig
+                                                                  .reductionMode === "percent"
+                                                                  ? "%"
+                                                                  : " ק״ג"
+                                                              }`
+                                                            : "דרופ סט"}
                                                         </span>
                                                       ) : null}
                                                       {exItem.supersetId ? (
                                                         <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-800">
-                                                         סופר סט {exItem.supersetId} ·{" "}
-                                                         {exItem.supersetRepsMin || exItem.repMin || exItem.reps}-
-                                                         {exItem.supersetRepsMax || exItem.repMax || exItem.reps}
+                                                          סופר סט {exItem.supersetId} ·{" "}
+                                                          {exItem.supersetRepsMin ||
+                                                            exItem.repMin ||
+                                                            exItem.reps}
+                                                          -
+                                                          {exItem.supersetRepsMax ||
+                                                            exItem.repMax ||
+                                                            exItem.reps}
                                                         </span>
                                                       ) : null}
                                                       {exItem.techniqueNotes ? (
@@ -2445,9 +2504,17 @@ export function CoachDashboardPage({
                                                 onClick={() => setShowExercisePicker(true)}
                                                 className="w-full flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 text-start"
                                               >
-                                                <span className={selectedExId ? "text-ink" : "text-muted-foreground"}>
+                                                <span
+                                                  className={
+                                                    selectedExId
+                                                      ? "text-ink"
+                                                      : "text-muted-foreground"
+                                                  }
+                                                >
                                                   {selectedExId
-                                                    ? store.exercises.find((e) => e.id === selectedExId)?.name || "תרגיל נבחר"
+                                                    ? store.exercises.find(
+                                                        (e) => e.id === selectedExId,
+                                                      )?.name || "תרגיל נבחר"
                                                     : "חיפוש ובחירת תרגיל..."}
                                                 </span>
                                                 <Search className="h-4 w-4 text-muted-foreground" />
@@ -2549,16 +2616,23 @@ export function CoachDashboardPage({
                                                           setWarmupEnabled(
                                                             nextMode === "warmup" ||
                                                               setModes.some((item, itemIndex) =>
-                                                                itemIndex === index ? false : item === "warmup",
+                                                                itemIndex === index
+                                                                  ? false
+                                                                  : item === "warmup",
                                                               ),
                                                           );
                                                           setDropSetEnabled(
                                                             nextMode === "drop" ||
                                                               setModes.some((item, itemIndex) =>
-                                                                itemIndex === index ? false : item === "drop",
+                                                                itemIndex === index
+                                                                  ? false
+                                                                  : item === "drop",
                                                               ),
                                                           );
-                                                          if (nextMode === "superset" && !supersetGroup) {
+                                                          if (
+                                                            nextMode === "superset" &&
+                                                            !supersetGroup
+                                                          ) {
                                                             setSupersetGroup("A");
                                                           }
                                                         }}
@@ -2566,8 +2640,12 @@ export function CoachDashboardPage({
                                                       >
                                                         <option value="normal">סט רגיל</option>
                                                         <option value="warmup">סט חימום</option>
-                                                        <option value="drop">דרופ סט — הורדת משקל</option>
-                                                        <option value="superset">סופר סט — בלי מנוחה</option>
+                                                        <option value="drop">
+                                                          דרופ סט — הורדת משקל
+                                                        </option>
+                                                        <option value="superset">
+                                                          סופר סט — בלי מנוחה
+                                                        </option>
                                                       </select>
                                                     </div>
                                                   );
@@ -2579,7 +2657,9 @@ export function CoachDashboardPage({
                                               הערה למתאמן על התרגיל
                                               <textarea
                                                 value={techNotes}
-                                                onChange={(event) => setTechniqueNotes(event.target.value)}
+                                                onChange={(event) =>
+                                                  setTechniqueNotes(event.target.value)
+                                                }
                                                 placeholder="למשל: לשמור על גב ישר ולבצע לאט..."
                                                 rows={2}
                                                 className="w-full resize-none rounded-lg border border-border bg-white px-2 py-1.5 text-xs font-normal text-ink outline-none focus:border-primary"
@@ -2598,7 +2678,9 @@ export function CoachDashboardPage({
                                                         step="0.5"
                                                         value={warmupWeight}
                                                         onChange={(event) =>
-                                                          setWarmupWeight(Math.max(0, Number(event.target.value)))
+                                                          setWarmupWeight(
+                                                            Math.max(0, Number(event.target.value)),
+                                                          )
                                                         }
                                                         className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
                                                       />
@@ -2611,7 +2693,9 @@ export function CoachDashboardPage({
                                                         max="5"
                                                         value={warmupSetsCount}
                                                         onChange={(event) =>
-                                                          setWarmupSetsCount(Math.max(1, Number(event.target.value)))
+                                                          setWarmupSetsCount(
+                                                            Math.max(1, Number(event.target.value)),
+                                                          )
                                                         }
                                                         className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
                                                       />
@@ -2623,7 +2707,9 @@ export function CoachDashboardPage({
                                                         min="1"
                                                         value={warmupReps}
                                                         onChange={(event) =>
-                                                          setWarmupReps(Math.max(1, Number(event.target.value)))
+                                                          setWarmupReps(
+                                                            Math.max(1, Number(event.target.value)),
+                                                          )
                                                         }
                                                         className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
                                                       />
@@ -2635,7 +2721,12 @@ export function CoachDashboardPage({
                                                         min={warmupReps}
                                                         value={warmupRepsMax}
                                                         onChange={(event) =>
-                                                          setWarmupRepsMax(Math.max(warmupReps, Number(event.target.value)))
+                                                          setWarmupRepsMax(
+                                                            Math.max(
+                                                              warmupReps,
+                                                              Number(event.target.value),
+                                                            ),
+                                                          )
                                                         }
                                                         className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
                                                       />
@@ -2644,34 +2735,51 @@ export function CoachDashboardPage({
                                                 ) : null}
                                                 {dropSetEnabled ? (
                                                   <>
-                                                     <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                       סוג הפחתת המשקל
-                                                       <select
-                                                         value={dropReductionMode}
-                                                         onChange={(event) =>
-                                                           setDropReductionMode(event.target.value as "percent" | "kg" | "")
-                                                         }
-                                                         className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
-                                                       >
-                                                         <option value="">בחרי סוג הפחתה</option>
-                                                         <option value="percent">אחוזים</option>
-                                                         <option value="kg">ק״ג</option>
-                                                       </select>
-                                                     </label>
-                                                     <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                       כמה משקל להוריד
-                                                       <input
-                                                         type="number"
-                                                         min="0.1"
-                                                         max={dropReductionMode === "percent" ? 99.9 : Math.max(0.1, targetWeight - 0.1)}
-                                                         step={dropReductionMode === "percent" ? "0.1" : "0.5"}
-                                                         value={dropReductionValue}
-                                                         onChange={(event) => setDropReductionValue(event.target.value)}
-                                                         placeholder={dropReductionMode ? "הזיני ערך" : "בחרי סוג קודם"}
-                                                         disabled={!dropReductionMode}
-                                                         className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
-                                                       />
-                                                     </label>
+                                                    <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                      סוג הפחתת המשקל
+                                                      <select
+                                                        value={dropReductionMode}
+                                                        onChange={(event) =>
+                                                          setDropReductionMode(
+                                                            event.target.value as
+                                                              "percent" | "kg" | "",
+                                                          )
+                                                        }
+                                                        className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
+                                                      >
+                                                        <option value="">בחרי סוג הפחתה</option>
+                                                        <option value="percent">אחוזים</option>
+                                                        <option value="kg">ק״ג</option>
+                                                      </select>
+                                                    </label>
+                                                    <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                      כמה משקל להוריד
+                                                      <input
+                                                        type="number"
+                                                        min="0.1"
+                                                        max={
+                                                          dropReductionMode === "percent"
+                                                            ? 99.9
+                                                            : Math.max(0.1, targetWeight - 0.1)
+                                                        }
+                                                        step={
+                                                          dropReductionMode === "percent"
+                                                            ? "0.1"
+                                                            : "0.5"
+                                                        }
+                                                        value={dropReductionValue}
+                                                        onChange={(event) =>
+                                                          setDropReductionValue(event.target.value)
+                                                        }
+                                                        placeholder={
+                                                          dropReductionMode
+                                                            ? "הזיני ערך"
+                                                            : "בחרי סוג קודם"
+                                                        }
+                                                        disabled={!dropReductionMode}
+                                                        className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
+                                                      />
+                                                    </label>
                                                     <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                       חזרות דרופ סט
                                                       <div className="grid grid-cols-2 gap-1">
@@ -2680,7 +2788,12 @@ export function CoachDashboardPage({
                                                           min="1"
                                                           value={dropRepsMin}
                                                           onChange={(event) =>
-                                                            setDropRepsMin(Math.max(1, Number(event.target.value)))
+                                                            setDropRepsMin(
+                                                              Math.max(
+                                                                1,
+                                                                Number(event.target.value),
+                                                              ),
+                                                            )
                                                           }
                                                           className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
                                                           aria-label="חזרות דרופ סט מינימום"
@@ -2690,7 +2803,12 @@ export function CoachDashboardPage({
                                                           min={dropRepsMin}
                                                           value={dropRepsMax}
                                                           onChange={(event) =>
-                                                            setDropRepsMax(Math.max(dropRepsMin, Number(event.target.value)))
+                                                            setDropRepsMax(
+                                                              Math.max(
+                                                                dropRepsMin,
+                                                                Number(event.target.value),
+                                                              ),
+                                                            )
                                                           }
                                                           className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
                                                           aria-label="חזרות דרופ סט מקסימום"
@@ -2705,7 +2823,9 @@ export function CoachDashboardPage({
                                                       קבוצה
                                                       <input
                                                         value={supersetGroup}
-                                                        onChange={(event) => setSupersetGroup(event.target.value)}
+                                                        onChange={(event) =>
+                                                          setSupersetGroup(event.target.value)
+                                                        }
                                                         placeholder="A"
                                                         className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
                                                       />
@@ -2724,10 +2844,17 @@ export function CoachDashboardPage({
                                                           בחרי תרגיל שמתבצע מיד אחרי הראשון...
                                                         </option>
                                                         {filteredExerciseOptions
-                                                          .filter((exercise) => exercise.id !== selectedExId)
+                                                          .filter(
+                                                            (exercise) =>
+                                                              exercise.id !== selectedExId,
+                                                          )
                                                           .map((exercise) => (
-                                                            <option key={exercise.id} value={exercise.id}>
-                                                              {exercise.name} ({exercise.muscleGroup})
+                                                            <option
+                                                              key={exercise.id}
+                                                              value={exercise.id}
+                                                            >
+                                                              {exercise.name} (
+                                                              {exercise.muscleGroup})
                                                             </option>
                                                           ))}
                                                       </select>
@@ -2740,7 +2867,12 @@ export function CoachDashboardPage({
                                                           min="1"
                                                           value={supersetRepsMin}
                                                           onChange={(event) =>
-                                                            setSupersetRepsMin(Math.max(1, Number(event.target.value)))
+                                                            setSupersetRepsMin(
+                                                              Math.max(
+                                                                1,
+                                                                Number(event.target.value),
+                                                              ),
+                                                            )
                                                           }
                                                           className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
                                                           aria-label="חזרות סופר סט מינימום"
@@ -2750,7 +2882,12 @@ export function CoachDashboardPage({
                                                           min={supersetRepsMin}
                                                           value={supersetRepsMax}
                                                           onChange={(event) =>
-                                                            setSupersetRepsMax(Math.max(supersetRepsMin, Number(event.target.value)))
+                                                            setSupersetRepsMax(
+                                                              Math.max(
+                                                                supersetRepsMin,
+                                                                Number(event.target.value),
+                                                              ),
+                                                            )
                                                           }
                                                           className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
                                                           aria-label="חזרות סופר סט מקסימום"
@@ -2783,12 +2920,12 @@ export function CoachDashboardPage({
                   </div>
 
                   {/* Coach-prescribed menu builder */}
-                   <div
-                     id="coach-menu"
-                     className={`surface-card space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 ${
-                       workspacePage && workspaceMode === "programs" ? "hidden" : ""
-                     }`}
-                   >
+                  <div
+                    id="coach-menu"
+                    className={`surface-card space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 ${
+                      workspacePage && workspaceMode === "programs" ? "hidden" : ""
+                    }`}
+                  >
                     <div className="flex items-start justify-between gap-3 border-b border-emerald-200/70 pb-2">
                       <div>
                         <h4 className="flex items-center gap-1.5 text-sm font-bold text-ink">
@@ -2896,11 +3033,11 @@ export function CoachDashboardPage({
                                 id={`menu-food-help-${meal.id}`}
                                 className="text-[10px] text-muted-foreground"
                               >
-                    {genderText(
-                      gender,
-                      "בחרי מאכל מהרשימה כדי להוסיף אותו לארוחה.",
-                      "בחר מאכל מהרשימה כדי להוסיף אותו לארוחה.",
-                    )}
+                                {genderText(
+                                  gender,
+                                  "בחרי מאכל מהרשימה כדי להוסיף אותו לארוחה.",
+                                  "בחר מאכל מהרשימה כדי להוסיף אותו לארוחה.",
+                                )}
                               </p>
                               <div
                                 role="listbox"
@@ -3016,7 +3153,8 @@ export function CoachDashboardPage({
                       <div className="mb-3">
                         <p className="text-[11px] font-bold text-ink">מחשבון BMR למאמן בלבד</p>
                         <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
-                          החישוב הוא אומדן לפי Mifflin–St Jeor. הוא לא מוצג למתאמן ולא משנה יעד קלורי אוטומטית.
+                          החישוב הוא אומדן לפי Mifflin–St Jeor. הוא לא מוצג למתאמן ולא משנה יעד
+                          קלורי אוטומטית.
                         </p>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
@@ -3092,17 +3230,24 @@ export function CoachDashboardPage({
                       {calorieEstimate ? (
                         <div className="mt-3 grid grid-cols-2 gap-2 text-center">
                           <div className="rounded-xl bg-primary/5 p-2">
-                            <span className="block text-[10px] text-muted-foreground">BMR במנוחה</span>
+                            <span className="block text-[10px] text-muted-foreground">
+                              BMR במנוחה
+                            </span>
                             <strong className="text-sm text-ink">{calorieEstimate.bmr} kcal</strong>
                           </div>
                           <div className="rounded-xl bg-primary/10 p-2">
-                            <span className="block text-[10px] text-muted-foreground">TDEE בשגרה</span>
-                            <strong className="text-sm text-ink">{calorieEstimate.tdee} kcal</strong>
+                            <span className="block text-[10px] text-muted-foreground">
+                              TDEE בשגרה
+                            </span>
+                            <strong className="text-sm text-ink">
+                              {calorieEstimate.tdee} kcal
+                            </strong>
                           </div>
                         </div>
                       ) : (
                         <p className="mt-3 text-[10px] font-semibold text-muted-foreground">
-                          השלימי גיל, גובה, משקל, מין ומספר אימונים בשבוע — ללא כל אחד מהם לא יוצג חישוב.
+                          השלימי גיל, גובה, משקל, מין ומספר אימונים בשבוע — ללא כל אחד מהם לא יוצג
+                          חישוב.
                         </p>
                       )}
                       <button
@@ -3157,9 +3302,9 @@ export function CoachDashboardPage({
                         <div className="rounded-xl bg-primary/5 p-2 border border-primary/10">
                           <span className="block text-[10px] text-muted-foreground">קלוריות</span>
                           <span className="font-bold text-ink">
-                             {clientDetails?.nutritionTargets?.calories
-                               ? `${clientDetails.nutritionTargets.calories} kcal`
-                               : "לא הוגדר"}
+                            {clientDetails?.nutritionTargets?.calories
+                              ? `${clientDetails.nutritionTargets.calories} kcal`
+                              : "לא הוגדר"}
                           </span>
                         </div>
                         <div className="rounded-xl bg-emerald-50 p-2 border border-emerald-100">
@@ -3175,7 +3320,10 @@ export function CoachDashboardPage({
                   {!workspacePage ? (
                     /* Read-only Client Cardio History */
                     <div className="surface-card p-4 rounded-2xl space-y-3">
-                      <div id="coach-menu" className="flex items-center justify-between border-b pb-2 scroll-mt-24">
+                      <div
+                        id="coach-menu"
+                        className="flex items-center justify-between border-b pb-2 scroll-mt-24"
+                      >
                         <h4 className="font-bold text-sm text-ink flex items-center gap-1.5">
                           <Activity className="h-4 w-4 text-primary" /> היסטוריית אירובי
                         </h4>

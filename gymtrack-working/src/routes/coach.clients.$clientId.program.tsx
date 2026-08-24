@@ -8,11 +8,6 @@ export const Route = createFileRoute("/coach/clients/$clientId/program")({
 function CoachClientProgramRoute() {
   const { clientId } = Route.useParams();
   return (
-    <CoachDashboardPage
-      clientsOnly
-      workspacePage
-      workspaceMode="programs"
-      clientId={clientId}
-    />
+    <CoachDashboardPage clientsOnly workspacePage workspaceMode="programs" clientId={clientId} />
   );
 }

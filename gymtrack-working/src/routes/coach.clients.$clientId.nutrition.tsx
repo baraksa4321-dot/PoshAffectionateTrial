@@ -8,11 +8,6 @@ export const Route = createFileRoute("/coach/clients/$clientId/nutrition")({
 function CoachClientNutritionRoute() {
   const { clientId } = Route.useParams();
   return (
-    <CoachDashboardPage
-      clientsOnly
-      workspacePage
-      workspaceMode="nutrition"
-      clientId={clientId}
-    />
+    <CoachDashboardPage clientsOnly workspacePage workspaceMode="nutrition" clientId={clientId} />
   );
 }

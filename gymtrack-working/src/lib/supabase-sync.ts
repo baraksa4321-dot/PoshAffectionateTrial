@@ -249,7 +249,9 @@ export async function syncLocalToSupabase(
     }));
     if (measurementPayload.length > 0) {
       await requireSuccessfulWrite(
-        supabase.from("body_measurements").upsert(measurementPayload, { onConflict: "user_id,date" }),
+        supabase
+          .from("body_measurements")
+          .upsert(measurementPayload, { onConflict: "user_id,date" }),
         "Body measurements sync",
       );
     }
@@ -562,10 +564,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (dbBodyWeightLogs && dbBodyWeightLogs.length > 0) {
       nextData.bodyWeightLogs = dbBodyWeightLogs.map((row) => ({
         id: row.id,
-        date:
-          typeof row.recorded_at === "string"
-            ? row.recorded_at.slice(0, 10)
-            : row.recorded_at,
+        date: typeof row.recorded_at === "string" ? row.recorded_at.slice(0, 10) : row.recorded_at,
         weight: Number(row.weight_kg),
       }));
     }
@@ -584,9 +583,10 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (!cardioError && dbCardioLogs && dbCardioLogs.length > 0) {
       nextData.cardioLogs = dbCardioLogs.map((row): CardioLog => ({
         id: row.id,
-        date: typeof (row.date ?? row.recorded_at) === "string"
-          ? (row.date ?? row.recorded_at).slice(0, 10)
-          : (row.date ?? row.recorded_at),
+        date:
+          typeof (row.date ?? row.recorded_at) === "string"
+            ? (row.date ?? row.recorded_at).slice(0, 10)
+            : (row.date ?? row.recorded_at),
         type: row.type,
         durationMin: Number(row.duration_min),
         intensity: row.intensity || undefined,
@@ -802,9 +802,10 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
 
     const nutritionList: NutritionDay[] = (dbNutritionDays || []).map((row) => ({
       id: row.id,
-      date: typeof (row.date ?? row.recorded_at) === "string"
-        ? (row.date ?? row.recorded_at).slice(0, 10)
-        : (row.date ?? row.recorded_at),
+      date:
+        typeof (row.date ?? row.recorded_at) === "string"
+          ? (row.date ?? row.recorded_at).slice(0, 10)
+          : (row.date ?? row.recorded_at),
       meals: row.meals || [],
       plannedMeals: row.planned_meals || [],
     }));
@@ -843,14 +844,12 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       bodyMeasurements: [],
       profile: profile
         ? {
-              email: profile.email || undefined,
-              name: profile.full_name || undefined,
+            email: profile.email || undefined,
+            name: profile.full_name || undefined,
             weight: Number(profile.weight_kg || 65),
             height: Number(profile.height_cm || 165),
-              gender:
-                profile.gender === "male" || profile.gender === "female"
-                  ? profile.gender
-                  : undefined,
+            gender:
+              profile.gender === "male" || profile.gender === "female" ? profile.gender : undefined,
             role: profile.role as UserRole,
             coachId: profile.coach_id || undefined,
             todayRoutineEnabled: profile.today_routine_enabled ?? true,

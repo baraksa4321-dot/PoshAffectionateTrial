@@ -186,8 +186,8 @@ export function replaceWithBodyweight(items: WorkoutItem[], exercises: Exercise[
     const source = exercises.find((exercise) => exercise.id === item.exerciseId);
     if (!source) return item;
     const alternative = item.bodyweightAlternativeId
-      ? exercises.find((exercise) => exercise.id === item.bodyweightAlternativeId) ??
-        bodyweightAlternativeFor(source)
+      ? (exercises.find((exercise) => exercise.id === item.bodyweightAlternativeId) ??
+        bodyweightAlternativeFor(source))
       : bodyweightAlternativeFor(source);
     return {
       ...item,

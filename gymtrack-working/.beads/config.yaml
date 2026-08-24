@@ -67,6 +67,6 @@
 
 sync.remote: "git+https://github.com/mayayosfan234/my-gym-muse-53.git"
 dolt:
-    shared-server: true
+  shared-server: true
 export:
-    auto: true
+  auto: true

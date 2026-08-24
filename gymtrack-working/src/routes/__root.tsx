@@ -79,9 +79,7 @@ function CompleteProfileName() {
             disabled={saving}
             className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
           >
-            {saving
-              ? genderText(userProfile?.gender, "שומרת...", "שומר...")
-              : "שמירת השם והמשך"}
+            {saving ? genderText(userProfile?.gender, "שומרת...", "שומר...") : "שמירת השם והמשך"}
           </button>
         </form>
       </div>
@@ -157,10 +155,7 @@ type RuntimeErrorBoundaryState = {
   error: Error | null;
 };
 
-class RuntimeErrorBoundary extends Component<
-  RuntimeErrorBoundaryProps,
-  RuntimeErrorBoundaryState
-> {
+class RuntimeErrorBoundary extends Component<RuntimeErrorBoundaryProps, RuntimeErrorBoundaryState> {
   override state: RuntimeErrorBoundaryState = { error: null };
 
   static getDerivedStateFromError(error: Error): RuntimeErrorBoundaryState {
@@ -186,8 +181,7 @@ class RuntimeErrorBoundary extends Component<
           </div>
           <h1 className="mt-5 text-lg font-bold text-foreground">העמוד לא נטען</h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            משהו השתבש בטעינת המסך. אפשר לנסות לטעון מחדש בלי לאבד את הנתונים
-            ששמורים במכשיר.
+            משהו השתבש בטעינת המסך. אפשר לנסות לטעון מחדש בלי לאבד את הנתונים ששמורים במכשיר.
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-2">
             <button
@@ -212,29 +206,82 @@ class RuntimeErrorBoundary extends Component<
 
 const LOADING_FOOD_ILLUSTRATIONS = [
   { color: "#f3a24b", shell: "M75 12c23 0 37 16 37 39s-14 40-37 40S38 74 38 51 52 12 75 12z" },
-  { color: "#f3cf5b", shell: "M40 51c9-29 28-40 54-29 19 8 21 26 7 45-14 18-34 28-50 15-11-9-16-17-11-31z" },
-  { color: "#e56e72", shell: "M75 28c25 0 34 18 23 43-8 18-15 27-23 27S60 89 52 71C41 46 50 28 75 28z" },
+  {
+    color: "#f3cf5b",
+    shell: "M40 51c9-29 28-40 54-29 19 8 21 26 7 45-14 18-34 28-50 15-11-9-16-17-11-31z",
+  },
+  {
+    color: "#e56e72",
+    shell: "M75 28c25 0 34 18 23 43-8 18-15 27-23 27S60 89 52 71C41 46 50 28 75 28z",
+  },
   { color: "#e77b75", shell: "M38 47h74c-4 30-17 45-37 45S42 77 38 47z" },
-  { color: "#e7bd59", shell: "M48 31c0-12 12-20 27-20s27 8 27 20v43c0 12-12 18-27 18s-27-6-27-18z" },
+  {
+    color: "#e7bd59",
+    shell: "M48 31c0-12 12-20 27-20s27 8 27 20v43c0 12-12 18-27 18s-27-6-27-18z",
+  },
   { color: "#ed9154", shell: "M51 28h48l-5 60c-1 7-11 9-19 9s-18-2-19-9z" },
-  { color: "#df786c", shell: "M59 29c-4-16 12-22 16-10 4-12 20-6 16 10 12 8 9 35-2 55-6 10-21 10-27 0-11-20-14-47-3-55z" },
-  { color: "#c99573", shell: "M38 48c0-23 17-37 37-37s37 14 37 37H91v39c0 8-6 12-16 12s-16-4-16-12V48z" },
+  {
+    color: "#df786c",
+    shell:
+      "M59 29c-4-16 12-22 16-10 4-12 20-6 16 10 12 8 9 35-2 55-6 10-21 10-27 0-11-20-14-47-3-55z",
+  },
+  {
+    color: "#c99573",
+    shell: "M38 48c0-23 17-37 37-37s37 14 37 37H91v39c0 8-6 12-16 12s-16-4-16-12V48z",
+  },
   { color: "#dca66c", shell: "M40 39c0-19 14-28 35-28s35 9 35 28v46c0 8-12 12-35 12S40 93 40 85z" },
   { color: "#f1ca65", shell: "M39 39l36-24 36 24v48c-22 10-50 10-72 0z" },
   { color: "#d993bd", shell: "M38 52c0-23 16-39 37-39s37 16 37 39-16 39-37 39-37-16-37-39z" },
   { color: "#d99cba", shell: "M46 47h58l-6 43H52z" },
   { color: "#d5a36d", shell: "M38 53c0-22 16-39 37-39s37 17 37 39-16 38-37 38-37-16-37-38z" },
-  { color: "#9d83c7", shell: "M75 21c-6-12 7-19 13-10-2 7-5 10-13 10zM55 40c-12 0-16 13-8 19-10 6-4 20 8 18-2 12 13 18 20 8 8 10 23 4 20-8 12 2 18-12 8-18 8-6 4-19-8-19-4-10-17-10-20 0-3-10-16-10-20 0z" },
+  {
+    color: "#9d83c7",
+    shell:
+      "M75 21c-6-12 7-19 13-10-2 7-5 10-13 10zM55 40c-12 0-16 13-8 19-10 6-4 20 8 18-2 12 13 18 20 8 8 10 23 4 20-8 12 2 18-12 8-18 8-6 4-19-8-19-4-10-17-10-20 0-3-10-16-10-20 0z",
+  },
   { color: "#83b7a4", shell: "M43 28h64v49c0 13-14 20-32 20S43 90 43 77z" },
-  { color: "#d99a64", shell: "M39 48c0-19 16-32 36-32s36 13 36 32H39zM39 57h72v14H39zM45 76h60c-7 16-53 16-60 0z" },
+  {
+    color: "#d99a64",
+    shell: "M39 48c0-19 16-32 36-32s36 13 36 32H39zM39 57h72v14H39zM45 76h60c-7 16-53 16-60 0z",
+  },
   { color: "#a97c66", shell: "M46 31h58v47c0 12-13 17-29 17S46 90 46 78zM104 43c23-2 23 27 0 25" },
   { color: "#cf91a7", shell: "M48 30h54l-7 63H55zM61 30l8-17h12l8 17z" },
-  { color: "#d9899d", growth: true, shell: "M75 88c-25 0-39-14-35-31 2-9 9-15 18-16 3-16 16-26 30-22 10 3 16 12 15 22 10 1 17 9 17 19 0 17-17 28-45 28z" },
-  { color: "#c97f93", growth: true, shell: "M52 84c-10-9-11-22-2-31 5-5 11-7 17-6-2-13 7-26 20-27 13-1 23 9 22 22 10 4 15 14 12 24-5 17-36 30-69 18z" },
-  { color: "#e09b9a", growth: true, shell: "M75 90c-24 0-39-12-39-29 0-12 8-22 21-25 4-12 13-20 27-20s23 8 27 20c13 3 21 13 21 25 0 17-15 29-39 29z" },
-  { color: "#d9a39f", growth: true, shell: "M53 18c12-9 32-8 44 1 7 6 10 15 8 25 9 8 10 23 2 32-15 16-54 16-68 0-8-9-7-24 2-32-2-11 2-20 12-26z" },
-  { color: "#d98291", growth: true, shell: "M75 90c-7-17-29-18-35-36-6-17 10-30 24-22 5-16 17-23 28-18 10 4 14 14 12 24 15-5 29 9 23 25-6 17-29 17-52 27z" },
-  { color: "#8fc6b3", growth: true, shell: "M48 76c-11-17-4-34 13-39-1-16 11-27 25-24 12 3 18 14 15 25 17 4 23 22 13 35-13 17-50 20-66 3z" },
+  {
+    color: "#d9899d",
+    growth: true,
+    shell:
+      "M75 88c-25 0-39-14-35-31 2-9 9-15 18-16 3-16 16-26 30-22 10 3 16 12 15 22 10 1 17 9 17 19 0 17-17 28-45 28z",
+  },
+  {
+    color: "#c97f93",
+    growth: true,
+    shell:
+      "M52 84c-10-9-11-22-2-31 5-5 11-7 17-6-2-13 7-26 20-27 13-1 23 9 22 22 10 4 15 14 12 24-5 17-36 30-69 18z",
+  },
+  {
+    color: "#e09b9a",
+    growth: true,
+    shell:
+      "M75 90c-24 0-39-12-39-29 0-12 8-22 21-25 4-12 13-20 27-20s23 8 27 20c13 3 21 13 21 25 0 17-15 29-39 29z",
+  },
+  {
+    color: "#d9a39f",
+    growth: true,
+    shell:
+      "M53 18c12-9 32-8 44 1 7 6 10 15 8 25 9 8 10 23 2 32-15 16-54 16-68 0-8-9-7-24 2-32-2-11 2-20 12-26z",
+  },
+  {
+    color: "#d98291",
+    growth: true,
+    shell:
+      "M75 90c-7-17-29-18-35-36-6-17 10-30 24-22 5-16 17-23 28-18 10 4 14 14 12 24 15-5 29 9 23 25-6 17-29 17-52 27z",
+  },
+  {
+    color: "#8fc6b3",
+    growth: true,
+    shell:
+      "M48 76c-11-17-4-34 13-39-1-16 11-27 25-24 12 3 18 14 15 25 17 4 23 22 13 35-13 17-50 20-66 3z",
+  },
 ] as const;
 
 const REALISTIC_LOADING_ASSETS = [
@@ -294,7 +341,10 @@ function LegacyLoadingIllustration({ variant }: { variant: number }) {
           </g>
         ) : activeShape === 1 ? (
           <g className="loading-food-motion">
-            <path className="loading-broccoli-shell" d="M65 76c-10-1-18-8-18-18 0-8 5-15 13-18-1-12 8-22 20-22 6 0 11 3 15 7 3-8 11-13 19-11 10 2 16 11 14 21 8 2 14 9 14 18 0 13-11 23-25 23-4 0-8-1-11-3-5 4-10 6-16 6-5 0-10-1-15-3zM64 76h22l4 21H60z" />
+            <path
+              className="loading-broccoli-shell"
+              d="M65 76c-10-1-18-8-18-18 0-8 5-15 13-18-1-12 8-22 20-22 6 0 11 3 15 7 3-8 11-13 19-11 10 2 16 11 14 21 8 2 14 9 14 18 0 13-11 23-25 23-4 0-8-1-11-3-5 4-10 6-16 6-5 0-10-1-15-3zM64 76h22l4 21H60z"
+            />
             <g className="loading-broccoli-fill">
               <path className="loading-broccoli-stem" d="M65 75h20l4 22H61z" />
               <circle className="loading-broccoli-floret" cx="60" cy="61" r="13" />
@@ -303,52 +353,100 @@ function LegacyLoadingIllustration({ variant }: { variant: number }) {
               <circle className="loading-broccoli-floret" cx="111" cy="66" r="12" />
               <circle className="loading-broccoli-floret" cx="79" cy="66" r="15" />
             </g>
-            <path className="loading-broccoli-detail" d="M68 80h13M71 86h11M58 58c3 2 5 2 8 1M72 38c3 3 6 4 10 3M90 49c3 3 6 4 10 3M105 63c3 2 5 2 8 1" />
+            <path
+              className="loading-broccoli-detail"
+              d="M68 80h13M71 86h11M58 58c3 2 5 2 8 1M72 38c3 3 6 4 10 3M90 49c3 3 6 4 10 3M105 63c3 2 5 2 8 1"
+            />
           </g>
         ) : activeShape === 2 ? (
           <g className="loading-food-motion">
-            <path className="loading-food-shell" d="M75 27c-4-10 4-17 13-18-1 7 3 11 9 14-7 6-14 7-22 4zM75 29c-22-13-42 3-40 27 2 24 18 39 40 39s38-15 40-39c2-24-18-40-40-27z" />
-            <path className="loading-food-fill loading-apple-fill" d="M75 37c-15-9-30 3-29 19 1 18 12 29 29 29s28-11 29-29c1-16-14-28-29-19z" />
+            <path
+              className="loading-food-shell"
+              d="M75 27c-4-10 4-17 13-18-1 7 3 11 9 14-7 6-14 7-22 4zM75 29c-22-13-42 3-40 27 2 24 18 39 40 39s38-15 40-39c2-24-18-40-40-27z"
+            />
+            <path
+              className="loading-food-fill loading-apple-fill"
+              d="M75 37c-15-9-30 3-29 19 1 18 12 29 29 29s28-11 29-29c1-16-14-28-29-19z"
+            />
             <path className="loading-apple-leaf" d="M76 27c5-8 13-9 19-5-3 7-10 10-19 5z" />
             <path className="loading-food-detail" d="M62 51c-2 10 1 18 7 24" />
           </g>
         ) : activeShape === 3 ? (
           <g className="loading-food-motion">
-            <path className="loading-egg-white" d="M77 16c24 0 37 20 32 46-4 21-18 33-37 33-21 0-35-13-38-33-4-26 16-46 43-46z" />
-            <path className="loading-egg-white-fill" d="M77 25c16 0 24 14 21 31-3 15-12 25-24 25-14 0-23-10-25-25-2-17 11-31 28-31z" />
+            <path
+              className="loading-egg-white"
+              d="M77 16c24 0 37 20 32 46-4 21-18 33-37 33-21 0-35-13-38-33-4-26 16-46 43-46z"
+            />
+            <path
+              className="loading-egg-white-fill"
+              d="M77 25c16 0 24 14 21 31-3 15-12 25-24 25-14 0-23-10-25-25-2-17 11-31 28-31z"
+            />
             <circle className="loading-egg-yolk" cx="75" cy="57" r="12" />
           </g>
         ) : activeShape === 4 ? (
           <g className="loading-food-motion">
-            <path className="loading-muscle-shell" d="M54 77c-5-10-2-21 6-28l11-10c4-4 10-3 12 2l3 7 10-4c6-2 11 3 9 9l-6 18c-3 10-12 17-23 18-9 1-17-3-22-12z" />
-            <path className="loading-muscle-fill" d="M62 75c-2-6 0-12 5-16l12-11 4 11 13-5-5 15c-2 6-8 10-15 11-6 1-11-1-14-5z" />
+            <path
+              className="loading-muscle-shell"
+              d="M54 77c-5-10-2-21 6-28l11-10c4-4 10-3 12 2l3 7 10-4c6-2 11 3 9 9l-6 18c-3 10-12 17-23 18-9 1-17-3-22-12z"
+            />
+            <path
+              className="loading-muscle-fill"
+              d="M62 75c-2-6 0-12 5-16l12-11 4 11 13-5-5 15c-2 6-8 10-15 11-6 1-11-1-14-5z"
+            />
             <path className="loading-food-detail" d="M72 65c5 3 10 3 16 0M67 75c6 2 12 2 18-1" />
           </g>
         ) : activeShape === 5 ? (
           <g className="loading-food-motion">
-            <path className="loading-peach-shell" d="M75 22c-5-7-1-14 7-17 0 7 4 10 11 11-4 7-11 9-18 6zM75 27c-24-10-43 8-38 32 5 23 19 36 38 36s33-13 38-36c5-24-14-42-38-32z" />
-            <path className="loading-peach-fill" d="M75 36c-16-7-29 7-25 22 4 17 13 26 25 26s21-9 25-26c4-15-9-29-25-22z" />
+            <path
+              className="loading-peach-shell"
+              d="M75 22c-5-7-1-14 7-17 0 7 4 10 11 11-4 7-11 9-18 6zM75 27c-24-10-43 8-38 32 5 23 19 36 38 36s33-13 38-36c5-24-14-42-38-32z"
+            />
+            <path
+              className="loading-peach-fill"
+              d="M75 36c-16-7-29 7-25 22 4 17 13 26 25 26s21-9 25-26c4-15-9-29-25-22z"
+            />
             <path className="loading-food-detail" d="M75 38c-4 10-4 20 0 29" />
           </g>
         ) : activeShape === 6 ? (
           <g className="loading-food-motion">
-            <path className="loading-banana-shell" d="M37 27c8 31 24 51 48 52 13 1 23-5 29-17-4 19-18 31-35 31-29 0-48-24-55-62z" />
-            <path className="loading-banana-fill" d="M47 31c8 25 21 38 39 39 9 1 16-2 22-8-5 10-13 15-23 14-22-1-36-18-44-45z" />
+            <path
+              className="loading-banana-shell"
+              d="M37 27c8 31 24 51 48 52 13 1 23-5 29-17-4 19-18 31-35 31-29 0-48-24-55-62z"
+            />
+            <path
+              className="loading-banana-fill"
+              d="M47 31c8 25 21 38 39 39 9 1 16-2 22-8-5 10-13 15-23 14-22-1-36-18-44-45z"
+            />
             <path className="loading-banana-detail" d="M37 27l6-4M114 62l4 3" />
           </g>
         ) : activeShape === 7 ? (
           <g className="loading-food-motion">
-            <path className="loading-avocado-shell" d="M75 12c-11 0-16 13-22 27-7 16-17 32-13 47 4 15 18 20 35 20s31-5 35-20c4-15-6-31-13-47-6-14-11-27-22-27z" />
-            <path className="loading-avocado-fill" d="M75 21c-6 0-10 12-15 24-7 17-15 30-12 40 3 9 12 13 27 13s24-4 27-13c3-10-5-23-12-40-5-12-9-24-15-24z" />
+            <path
+              className="loading-avocado-shell"
+              d="M75 12c-11 0-16 13-22 27-7 16-17 32-13 47 4 15 18 20 35 20s31-5 35-20c4-15-6-31-13-47-6-14-11-27-22-27z"
+            />
+            <path
+              className="loading-avocado-fill"
+              d="M75 21c-6 0-10 12-15 24-7 17-15 30-12 40 3 9 12 13 27 13s24-4 27-13c3-10-5-23-12-40-5-12-9-24-15-24z"
+            />
             <circle className="loading-avocado-pit" cx="75" cy="75" r="13" />
             <path className="loading-avocado-detail" d="M58 35c-5 13-11 23-13 34" />
           </g>
         ) : activeShape === 8 ? (
           <g className="loading-lifter-motion">
-            <path className="loading-lifter-hair" d="M67 28c-2-8 4-14 11-14 8 0 13 6 11 14-2-4-5-6-9-6-4 3-8 5-13 6z" />
+            <path
+              className="loading-lifter-hair"
+              d="M67 28c-2-8 4-14 11-14 8 0 13 6 11 14-2-4-5-6-9-6-4 3-8 5-13 6z"
+            />
             <circle className="loading-lifter-head" cx="75" cy="29" r="8" />
-            <path className="loading-lifter-body" d="M64 43c3-4 19-4 22 0l6 20c-4 5-8 7-17 7s-13-2-17-7z" />
-            <path className="loading-lifter-shorts" d="M65 66h29l-4 15c-3 3-7 4-11 1-4 3-8 2-11-1z" />
+            <path
+              className="loading-lifter-body"
+              d="M64 43c3-4 19-4 22 0l6 20c-4 5-8 7-17 7s-13-2-17-7z"
+            />
+            <path
+              className="loading-lifter-shorts"
+              d="M65 66h29l-4 15c-3 3-7 4-11 1-4 3-8 2-11-1z"
+            />
             <path className="loading-lifter-arms" d="M65 46 51 29 43 19M85 46l14-17 8-10" />
             <path className="loading-lifter-bar" d="M35 15h80" />
             <path className="loading-lifter-plate" d="M32 10v10M38 7v16M112 10v10M118 7v16" />
@@ -404,7 +502,14 @@ function LegacyLoadingIllustration({ variant }: { variant: number }) {
             </g>
             <g className="loading-dumbbell-plate">
               <rect x="108" y="19" width="25" height="54" rx="6" />
-              <rect className="loading-dumbbell-fill" x="108" y="19" width="25" height="54" rx="6" />
+              <rect
+                className="loading-dumbbell-fill"
+                x="108"
+                y="19"
+                width="25"
+                height="54"
+                rx="6"
+              />
               <path className="loading-dumbbell-highlight" d="M113 24v44" />
             </g>
             <path className="loading-dumbbell-cap" d="M11 29h7v34h-7zM133 29h7v34h-7z" />
@@ -425,64 +530,132 @@ function LegacyLoadingIllustration({ variant }: { variant: number }) {
           </g>
         ) : shape === 3 ? (
           <g className="loading-object-motion">
-            <path className="loading-object-shell" d="M48 31c0-13 9-20 27-20s27 7 27 20v37c0 7-6 11-13 11H61c-7 0-13-4-13-11z" />
+            <path
+              className="loading-object-shell"
+              d="M48 31c0-13 9-20 27-20s27 7 27 20v37c0 7-6 11-13 11H61c-7 0-13-4-13-11z"
+            />
             <path className="loading-object-fill" d="M48 74h54V31c0-13-9-20-27-20S48 18 48 31z" />
             <path className="loading-object-lip" d="M53 19h44v8H53z" />
             <path className="loading-object-highlight" d="M60 34v32" />
           </g>
         ) : shape === 4 ? (
           <g className="loading-food-motion">
-            <path className="loading-food-shell" d="M74 13c26 0 40 27 36 49-4 22-19 35-36 35S42 84 38 62C34 40 48 13 74 13z" />
-            <path className="loading-food-fill" fill="url(#loading-avocado)" d="M74 21c20 0 30 21 27 39-3 18-14 28-27 28S50 78 47 60c-3-18 7-39 27-39z" />
+            <path
+              className="loading-food-shell"
+              d="M74 13c26 0 40 27 36 49-4 22-19 35-36 35S42 84 38 62C34 40 48 13 74 13z"
+            />
+            <path
+              className="loading-food-fill"
+              fill="url(#loading-avocado)"
+              d="M74 21c20 0 30 21 27 39-3 18-14 28-27 28S50 78 47 60c-3-18 7-39 27-39z"
+            />
             <circle className="loading-food-pit" cx="74" cy="67" r="12" />
             <path className="loading-food-highlight" d="M59 36c-5 8-6 16-5 22" />
           </g>
         ) : shape === 5 ? (
           <g className="loading-food-motion">
-            <path className="loading-food-shell" d="M77 16c24 0 37 20 32 46-4 21-18 33-37 33-21 0-35-13-38-33-4-26 16-46 43-46z" />
-            <path className="loading-food-fill" fill="url(#loading-sunny)" d="M77 25c16 0 24 14 21 31-3 15-12 25-24 25-14 0-23-10-25-25-2-17 11-31 28-31z" />
+            <path
+              className="loading-food-shell"
+              d="M77 16c24 0 37 20 32 46-4 21-18 33-37 33-21 0-35-13-38-33-4-26 16-46 43-46z"
+            />
+            <path
+              className="loading-food-fill"
+              fill="url(#loading-sunny)"
+              d="M77 25c16 0 24 14 21 31-3 15-12 25-24 25-14 0-23-10-25-25-2-17 11-31 28-31z"
+            />
             <circle className="loading-food-yolk" cx="75" cy="57" r="12" />
             <path className="loading-food-highlight" d="M57 39c-4 8-4 15-2 20" />
           </g>
         ) : shape === 6 ? (
           <g className="loading-food-motion">
-            <path className="loading-food-shell" d="M75 24c24-15 47 5 41 33-4 22-20 34-41 34S38 79 34 57c-5-28 17-48 41-33z" />
-            <path className="loading-food-fill" fill="url(#loading-tomato)" d="M75 31c18-11 34 4 29 26-3 17-15 26-29 26S50 74 47 57c-4-22 10-37 28-26z" />
-            <path className="loading-food-leaf" d="M75 28c-7-8-2-14 6-17-1 8 2 11 9 12-5 6-10 7-15 5z" />
+            <path
+              className="loading-food-shell"
+              d="M75 24c24-15 47 5 41 33-4 22-20 34-41 34S38 79 34 57c-5-28 17-48 41-33z"
+            />
+            <path
+              className="loading-food-fill"
+              fill="url(#loading-tomato)"
+              d="M75 31c18-11 34 4 29 26-3 17-15 26-29 26S50 74 47 57c-4-22 10-37 28-26z"
+            />
+            <path
+              className="loading-food-leaf"
+              d="M75 28c-7-8-2-14 6-17-1 8 2 11 9 12-5 6-10 7-15 5z"
+            />
             <path className="loading-food-highlight" d="M56 46c-4 7-3 13-1 18" />
           </g>
         ) : shape === 7 ? (
           <g className="loading-food-motion">
-            <path className="loading-food-shell" d="M53 23c7 0 10 5 9 11 15-9 37 1 34 21-3 20-20 40-40 40-14 0-19-12-10-22 7-8 9-18 5-27-4-8-3-16 2-23z" />
-            <path className="loading-food-fill" fill="url(#loading-sunny)" d="M58 35c13-7 28 1 25 16-3 16-16 31-28 31-8 0-11-7-5-15 9-12 11-25 8-32z" />
+            <path
+              className="loading-food-shell"
+              d="M53 23c7 0 10 5 9 11 15-9 37 1 34 21-3 20-20 40-40 40-14 0-19-12-10-22 7-8 9-18 5-27-4-8-3-16 2-23z"
+            />
+            <path
+              className="loading-food-fill"
+              fill="url(#loading-sunny)"
+              d="M58 35c13-7 28 1 25 16-3 16-16 31-28 31-8 0-11-7-5-15 9-12 11-25 8-32z"
+            />
             <path className="loading-food-leaf" d="M53 24c-5-6 1-13 9-15 0 8-2 12-9 15z" />
             <path className="loading-food-highlight" d="M60 48c3 9 1 17-3 23" />
           </g>
         ) : shape === 8 ? (
           <g className="loading-food-motion">
-            <path className="loading-food-shell" d="M46 47c0-21 13-35 29-35s29 14 29 35c0 26-12 44-29 44S46 73 46 47z" />
-            <path className="loading-food-fill" fill="url(#loading-violet)" d="M54 47c0-16 9-27 21-27s21 11 21 27c0 20-9 35-21 35S54 67 54 47z" />
-            <path className="loading-food-leaf" d="M72 16c-6-7-2-12 5-15 0 8 5 10 9 12-4 5-9 6-14 3z" />
+            <path
+              className="loading-food-shell"
+              d="M46 47c0-21 13-35 29-35s29 14 29 35c0 26-12 44-29 44S46 73 46 47z"
+            />
+            <path
+              className="loading-food-fill"
+              fill="url(#loading-violet)"
+              d="M54 47c0-16 9-27 21-27s21 11 21 27c0 20-9 35-21 35S54 67 54 47z"
+            />
+            <path
+              className="loading-food-leaf"
+              d="M72 16c-6-7-2-12 5-15 0 8 5 10 9 12-4 5-9 6-14 3z"
+            />
             <path className="loading-food-highlight" d="M61 39c-3 9-3 20 0 28" />
           </g>
         ) : shape === 9 ? (
           <g className="loading-food-motion">
-            <path className="loading-food-shell" d="M40 38c0-14 12-23 35-23s35 9 35 23v36c0 12-13 19-35 19S40 86 40 74z" />
-            <path className="loading-food-fill" fill="url(#loading-sunny)" d="M48 41c0-11 9-17 27-17s27 6 27 17v31c0 9-10 13-27 13s-27-4-27-13z" />
+            <path
+              className="loading-food-shell"
+              d="M40 38c0-14 12-23 35-23s35 9 35 23v36c0 12-13 19-35 19S40 86 40 74z"
+            />
+            <path
+              className="loading-food-fill"
+              fill="url(#loading-sunny)"
+              d="M48 41c0-11 9-17 27-17s27 6 27 17v31c0 9-10 13-27 13s-27-4-27-13z"
+            />
             <path className="loading-food-detail" d="M50 47h50M52 58h46M55 69h40" />
           </g>
         ) : shape === 10 ? (
           <g className="loading-food-motion">
-            <path className="loading-food-shell" d="M38 48c0-15 16-27 37-27s37 12 37 27v23c0 14-15 22-37 22S38 85 38 71z" />
-            <path className="loading-food-fill" fill="url(#loading-avocado)" d="M46 49c0-10 13-18 29-18s29 8 29 18v19c0 10-12 15-29 15S46 78 46 68z" />
+            <path
+              className="loading-food-shell"
+              d="M38 48c0-15 16-27 37-27s37 12 37 27v23c0 14-15 22-37 22S38 85 38 71z"
+            />
+            <path
+              className="loading-food-fill"
+              fill="url(#loading-avocado)"
+              d="M46 49c0-10 13-18 29-18s29 8 29 18v19c0 10-12 15-29 15S46 78 46 68z"
+            />
             <path className="loading-food-detail" d="M43 48h64" />
             <circle className="loading-food-yolk" cx="75" cy="52" r="7" />
           </g>
         ) : shape === 11 ? (
           <g className="loading-food-motion">
-            <path className="loading-food-shell" d="M75 16c10 0 16 10 16 20 16-9 29 4 25 19 12 4 13 20 0 25-1 14-17 17-25 8-9 12-27 12-34 0-12 9-27-3-22-17-12-7-5-22 8-22-4-14 8-24 21-17 0-8 4-16 11-16z" />
-            <path className="loading-food-fill" fill="url(#loading-avocado)" d="M75 26c7 0 10 8 8 16 12-6 21 5 15 15 10 3 8 15-2 16-1 9-11 11-17 5-6 9-20 8-23-2-10 5-18-5-12-13-8-5-1-15 8-12-2-10 7-16 15-9 0-7 4-13 9-13z" />
-            <path className="loading-food-detail" d="M75 35v42M54 51l12 8M96 51L84 59M54 72l12-7M96 72l-12-7" />
+            <path
+              className="loading-food-shell"
+              d="M75 16c10 0 16 10 16 20 16-9 29 4 25 19 12 4 13 20 0 25-1 14-17 17-25 8-9 12-27 12-34 0-12 9-27-3-22-17-12-7-5-22 8-22-4-14 8-24 21-17 0-8 4-16 11-16z"
+            />
+            <path
+              className="loading-food-fill"
+              fill="url(#loading-avocado)"
+              d="M75 26c7 0 10 8 8 16 12-6 21 5 15 15 10 3 8 15-2 16-1 9-11 11-17 5-6 9-20 8-23-2-10 5-18-5-12-13-8-5-1-15 8-12-2-10 7-16 15-9 0-7 4-13 9-13z"
+            />
+            <path
+              className="loading-food-detail"
+              d="M75 35v42M54 51l12 8M96 51L84 59M54 72l12-7M96 72l-12-7"
+            />
           </g>
         ) : (
           (() => {
@@ -497,7 +670,10 @@ function LegacyLoadingIllustration({ variant }: { variant: number }) {
                   className={`loading-food-generic-fill ${food.growth ? "loading-growth-fill" : ""}`}
                   d={food.shell}
                 />
-                <path className="loading-food-generic-detail" d="M58 35c-5 8-5 19-1 27M88 35c5 8 5 19 1 27" />
+                <path
+                  className="loading-food-generic-detail"
+                  d="M58 35c-5 8-5 19-1 27M88 35c5 8 5 19 1 27"
+                />
               </g>
             );
           })()
@@ -535,9 +711,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "MY routine — אימונים ותזונה" },
     ],
-    links: [
-      { rel: "manifest", href: "/manifest.json" },
-    ],
+    links: [{ rel: "manifest", href: "/manifest.json" }],
   }),
 
   component: RootComponent,
@@ -599,32 +773,34 @@ function RootContent() {
     document.documentElement.lang = "he";
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
-     try {
-       const storageKey = "my-routine-loading-illustration";
-       const previousVariant = Number(window.localStorage.getItem(storageKey));
-       const nextVariant = Number.isInteger(previousVariant) && previousVariant >= 0
-         ? (previousVariant + 1) % 9
-         : Math.floor(Math.random() * 9);
-       window.localStorage.setItem(storageKey, String(nextVariant));
-       setLoadingVariant(nextVariant);
-     } catch {
-       setLoadingVariant(Math.floor(Math.random() * 9));
-     }
-     try {
-       const messageStorageKey = "my-routine-loading-message";
-       const previousMessage = Number(window.localStorage.getItem(messageStorageKey));
-       const nextMessage = Number.isInteger(previousMessage) &&
-           previousMessage >= 0 &&
-           previousMessage < LOADING_MESSAGES.length
-         ? (previousMessage + 1) % LOADING_MESSAGES.length
-         : Math.floor(Math.random() * LOADING_MESSAGES.length);
-       window.localStorage.setItem(messageStorageKey, String(nextMessage));
-       setLoadingMessageIndex(nextMessage);
-     } catch {
-       setLoadingMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
-     }
+    try {
+      const storageKey = "my-routine-loading-illustration";
+      const previousVariant = Number(window.localStorage.getItem(storageKey));
+      const nextVariant =
+        Number.isInteger(previousVariant) && previousVariant >= 0
+          ? (previousVariant + 1) % 9
+          : Math.floor(Math.random() * 9);
+      window.localStorage.setItem(storageKey, String(nextVariant));
+      setLoadingVariant(nextVariant);
+    } catch {
+      setLoadingVariant(Math.floor(Math.random() * 9));
+    }
+    try {
+      const messageStorageKey = "my-routine-loading-message";
+      const previousMessage = Number(window.localStorage.getItem(messageStorageKey));
+      const nextMessage =
+        Number.isInteger(previousMessage) &&
+        previousMessage >= 0 &&
+        previousMessage < LOADING_MESSAGES.length
+          ? (previousMessage + 1) % LOADING_MESSAGES.length
+          : Math.floor(Math.random() * LOADING_MESSAGES.length);
+      window.localStorage.setItem(messageStorageKey, String(nextMessage));
+      setLoadingMessageIndex(nextMessage);
+    } catch {
+      setLoadingMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
+    }
     const illustrationTimer = window.setInterval(() => {
-       setLoadingVariant((current) => (current + 1) % 9);
+      setLoadingVariant((current) => (current + 1) % 9);
     }, 2400);
     const messageTimer = window.setInterval(() => {
       setLoadingMessageIndex((current) => (current + 1) % LOADING_MESSAGES.length);
@@ -641,7 +817,10 @@ function RootContent() {
       <ScrollToTop />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       {authStatus === "loading" || isProfileHydrating ? (
-        <div className="loading-screen flex min-h-[100dvh] items-center justify-center bg-background px-4" dir="rtl">
+        <div
+          className="loading-screen flex min-h-[100dvh] items-center justify-center bg-background px-4"
+          dir="rtl"
+        >
           <div
             className="loading-brand"
             role="status"

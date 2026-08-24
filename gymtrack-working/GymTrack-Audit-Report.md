@@ -37,8 +37,7 @@ that source code is proof of live behavior.
 - Corrected fiber calculation in food replacement.
 - Removed fixed demo-auth credentials.
 - Fixed the active-workout conditional-hook issue.
-- Added additive Owner/Coach/Client and SECURITY DEFINER hardening migration
-  11.
+- Added additive Owner/Coach/Client and SECURITY DEFINER hardening migration 11.
 - Rejected unsafe automatic cloud deletion rather than risking deletion of
   existing user data after a partial pull.
 

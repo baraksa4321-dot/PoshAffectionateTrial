@@ -144,7 +144,9 @@ function NutritionLog() {
   const [showRecipes, setShowRecipes] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<RecipeDefinition | null>(null);
   const [recipeCategory, setRecipeCategory] = useState<RecipeDefinition["category"] | "הכל">("הכל");
-  const [recipeMealTime, setRecipeMealTime] = useState<"הכל" | "בוקר" | "צהריים" | "ערב" | "כל שעה">("הכל");
+  const [recipeMealTime, setRecipeMealTime] = useState<
+    "הכל" | "בוקר" | "צהריים" | "ערב" | "כל שעה"
+  >("הכל");
   const [recipeQuery, setRecipeQuery] = useState("");
   const [recipeServings, setRecipeServings] = useState(1);
   const [recipeMealId, setRecipeMealId] = useState("");
@@ -170,7 +172,9 @@ function NutritionLog() {
     return RECIPE_LIBRARY.filter(
       (recipe) =>
         (recipeCategory === "הכל" || recipe.category === recipeCategory) &&
-        (recipeMealTime === "הכל" || recipe.mealTime === recipeMealTime || recipe.mealTime === "כל שעה") &&
+        (recipeMealTime === "הכל" ||
+          recipe.mealTime === recipeMealTime ||
+          recipe.mealTime === "כל שעה") &&
         (!query ||
           [recipe.name, recipe.category, recipe.mealTime, ...recipe.ingredients]
             .join(" ")
@@ -178,10 +182,9 @@ function NutritionLog() {
             .includes(query)),
     );
   }, [recipeCategory, recipeMealTime, recipeQuery]);
-  const savedRecipes = gym.recipes ?? [];
   const filteredSavedRecipes = useMemo(() => {
     const query = recipeQuery.trim().toLocaleLowerCase();
-    return savedRecipes.filter((recipe) => {
+    return (gym.recipes ?? []).filter((recipe) => {
       const totals = foodTotals(recipe.foods);
       return (
         (!query ||
@@ -195,7 +198,7 @@ function NutritionLog() {
           (recipeCategory === "ארוחה קלה" && totals.calories <= 450))
       );
     });
-  }, [recipeCategory, recipeQuery, savedRecipes]);
+  }, [gym.recipes, recipeCategory, recipeQuery]);
 
   const addSelectedRecipeToLog = () => {
     if (!selectedRecipe) return;
@@ -211,10 +214,9 @@ function NutritionLog() {
 
   const saveSelectedRecipe = () => {
     if (!selectedRecipe) return;
-    const saved = saveRecipe(
-      selectedRecipe.name,
-      [recipeAsMealFood(selectedRecipe, recipeServings)],
-    );
+    const saved = saveRecipe(selectedRecipe.name, [
+      recipeAsMealFood(selectedRecipe, recipeServings),
+    ]);
     setRecipeNotice(saved ? "המתכון נשמר בספרייה האישית." : "המתכון הזה כבר שמור אצלך.");
   };
 
@@ -222,10 +224,7 @@ function NutritionLog() {
   const suggestedFoods = useMemo(() => {
     return gym.foods
       .filter(
-        (f) =>
-          remainingCal !== undefined &&
-          f.calories <= remainingCal + 100 &&
-          f.calories > 0,
+        (f) => remainingCal !== undefined && f.calories <= remainingCal + 100 && f.calories > 0,
       )
       .map((f) => ({
         food: f,
@@ -450,53 +449,58 @@ function NutritionLog() {
                 type="button"
                 onClick={() => setShowSavedRecipesOnly((current) => !current)}
                 className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold ${
-                  showSavedRecipesOnly ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                  showSavedRecipesOnly
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-muted-foreground"
                 }`}
               >
                 רק מהתפריט שלי
               </button>
               {(
                 ["הכל", "עתיר חלבון", "דל קלוריות", "דל שומן", "ארוחה קלה", "מתוק מאוזן"] as const
-              ).map(
-                (category) => (
-                  <button
-                    key={category}
-                    type="button"
-                    onClick={() => setRecipeCategory(category)}
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold transition-colors ${
-                      recipeCategory === category
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-muted-foreground"
-                    }`}
-                  >
-                    {category}
-                  </button>
-                ),
-              )}
-            </div>
-            {!showSavedRecipesOnly ? <div className="grid grid-cols-2 gap-2">
-              {filteredRecipes.map((recipe) => (
+              ).map((category) => (
                 <button
-                  key={recipe.id}
+                  key={category}
                   type="button"
-                  onClick={() => {
-                    setSelectedRecipe(recipe);
-                    setRecipeServings(1);
-                    setRecipeMealId(day.meals[0]?.id ?? "");
-                  }}
-                  className="rounded-xl border border-border/60 bg-white/60 p-2.5 text-start transition-colors hover:border-primary/50"
+                  onClick={() => setRecipeCategory(category)}
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold transition-colors ${
+                    recipeCategory === category
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-muted-foreground"
+                  }`}
                 >
-                  <span className="block truncate text-xs font-bold text-ink">{recipe.name}</span>
-                  <span className="mt-1 block truncate text-[10px] text-muted-foreground">
-                    {recipe.category} · {recipe.nutrition.calories} קל׳
-                  </span>
+                  {category}
                 </button>
               ))}
-            </div> : null}
+            </div>
+            {!showSavedRecipesOnly ? (
+              <div className="grid grid-cols-2 gap-2">
+                {filteredRecipes.map((recipe) => (
+                  <button
+                    key={recipe.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedRecipe(recipe);
+                      setRecipeServings(1);
+                      setRecipeMealId(day.meals[0]?.id ?? "");
+                    }}
+                    className="rounded-xl border border-border/60 bg-white/60 p-2.5 text-start transition-colors hover:border-primary/50"
+                  >
+                    <span className="block truncate text-xs font-bold text-ink">{recipe.name}</span>
+                    <span className="mt-1 block truncate text-[10px] text-muted-foreground">
+                      {recipe.category} · {recipe.nutrition.calories} קל׳
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
             {showSavedRecipesOnly ? (
               <div className="space-y-2">
-                 {filteredSavedRecipes.map((recipe) => (
-                  <div key={recipe.id} className="rounded-xl border border-border/60 bg-white/60 p-2.5">
+                {filteredSavedRecipes.map((recipe) => (
+                  <div
+                    key={recipe.id}
+                    className="rounded-xl border border-border/60 bg-white/60 p-2.5"
+                  >
                     <div className="flex items-center gap-2">
                       <input
                         value={savedRecipeDrafts[recipe.id] ?? recipe.name}
@@ -516,7 +520,9 @@ function NutritionLog() {
                             recipe.id,
                             savedRecipeDrafts[recipe.id] ?? recipe.name,
                           );
-                          setRecipeNotice(ok ? "שם המתכון עודכן." : "לא ניתן להשתמש בשם כפול או ריק.");
+                          setRecipeNotice(
+                            ok ? "שם המתכון עודכן." : "לא ניתן להשתמש בשם כפול או ריק.",
+                          );
                         }}
                         className="rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary"
                       >
@@ -532,15 +538,16 @@ function NutritionLog() {
                       </button>
                     </div>
                     <p className="mt-1 text-[10px] text-muted-foreground">
-                      {recipe.foods.length} רכיבים · {Math.round(foodTotals(recipe.foods).calories)} קל׳
+                      {recipe.foods.length} רכיבים · {Math.round(foodTotals(recipe.foods).calories)}{" "}
+                      קל׳
                     </p>
                   </div>
                 ))}
-                 {filteredSavedRecipes.length === 0 ? (
+                {filteredSavedRecipes.length === 0 ? (
                   <p className="py-3 text-center text-[11px] font-semibold text-muted-foreground">
-                     {savedRecipes.length === 0
-                       ? "עדיין אין מתכונים אישיים שמורים."
-                       : "לא נמצאו מתכונים אישיים לפי החיפוש והסינון."}
+                    {savedRecipes.length === 0
+                      ? "עדיין אין מתכונים אישיים שמורים."
+                      : "לא נמצאו מתכונים אישיים לפי החיפוש והסינון."}
                   </p>
                 ) : null}
               </div>
@@ -640,7 +647,9 @@ function NutritionLog() {
                 שמרי בספרייה האישית
               </SecondaryButton>
               {recipeNotice ? (
-                <p className="mt-2 text-center text-[11px] font-semibold text-primary">{recipeNotice}</p>
+                <p className="mt-2 text-center text-[11px] font-semibold text-primary">
+                  {recipeNotice}
+                </p>
               ) : null}
             </div>
           </div>
@@ -707,7 +716,9 @@ function NutritionLog() {
                       </span>
                       <button
                         type="button"
-                        disabled={day.meals.some((loggedMeal) => loggedMeal.sourcePlanId === meal.id)}
+                        disabled={day.meals.some(
+                          (loggedMeal) => loggedMeal.sourcePlanId === meal.id,
+                        )}
                         onClick={() => logPlannedMeal(date, meal.id)}
                         className="inline-flex h-8 items-center gap-1 rounded-xl bg-primary px-2.5 text-[11px] font-bold text-primary-foreground disabled:bg-emerald-600"
                       >
@@ -753,125 +764,127 @@ function NutritionLog() {
         </section>
       ) : null}
       {/* The manual log remains available only when no coach plan is assigned. */}
-      {!day.plannedMeals?.length ? <section className="order-2 mt-4">
-        <SectionHeader
-          title="הארוחות שלך"
-          subtitle={`${day.meals.length} ארוחות תועדו`}
-          action={
-            <button
-              type="button"
-              onClick={() => addMeal(date)}
-              className="press inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-3.5 text-[12.5px] font-semibold text-primary-foreground cursor-pointer"
-            >
-              <Plus className="h-3.5 w-3.5" strokeWidth={2.4} />
-              {genderText(gender, "הוסיפי ארוחה", "הוסף ארוחה")}
-            </button>
-          }
-        />
+      {!day.plannedMeals?.length ? (
+        <section className="order-2 mt-4">
+          <SectionHeader
+            title="הארוחות שלך"
+            subtitle={`${day.meals.length} ארוחות תועדו`}
+            action={
+              <button
+                type="button"
+                onClick={() => addMeal(date)}
+                className="press inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-3.5 text-[12.5px] font-semibold text-primary-foreground cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5" strokeWidth={2.4} />
+                {genderText(gender, "הוסיפי ארוחה", "הוסף ארוחה")}
+              </button>
+            }
+          />
 
-        <div className="space-y-3">
-          {day.meals.map((meal) => {
-            const mealTotals = foodTotals(meal.foods);
-            return (
-              <section key={meal.id} className="surface-card p-4">
-                <div className="flex items-start gap-3">
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-cream text-ink-soft">
-                    <Utensils className="h-4 w-4" strokeWidth={1.8} />
+          <div className="space-y-3">
+            {day.meals.map((meal) => {
+              const mealTotals = foodTotals(meal.foods);
+              return (
+                <section key={meal.id} className="surface-card p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-cream text-ink-soft">
+                      <Utensils className="h-4 w-4" strokeWidth={1.8} />
+                    </div>
+                    <div className="min-w-0 flex-1 text-start">
+                      <input
+                        className="w-full bg-transparent font-display text-[16px] font-semibold text-ink outline-none placeholder:text-muted-foreground"
+                        value={meal.name}
+                        onChange={(e) => renameMeal(date, meal.id, e.target.value)}
+                      />
+                      <p className="mt-0.5 text-[12px] text-muted-foreground tabular-nums">
+                        {Math.round(mealTotals.calories)} קלוריות · חלבון{" "}
+                        {Math.round(mealTotals.protein)}g
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openFoodPicker(meal.id)}
+                      className="press grid h-9 w-9 place-items-center rounded-2xl bg-primary text-primary-foreground cursor-pointer"
+                      aria-label="הוסף מאכל"
+                    >
+                      <Plus className="h-4 w-4" strokeWidth={2.4} />
+                    </button>
                   </div>
-                  <div className="min-w-0 flex-1 text-start">
-                    <input
-                      className="w-full bg-transparent font-display text-[16px] font-semibold text-ink outline-none placeholder:text-muted-foreground"
-                      value={meal.name}
-                      onChange={(e) => renameMeal(date, meal.id, e.target.value)}
-                    />
-                    <p className="mt-0.5 text-[12px] text-muted-foreground tabular-nums">
-                      {Math.round(mealTotals.calories)} קלוריות · חלבון{" "}
-                      {Math.round(mealTotals.protein)}g
+
+                  {meal.foods.length > 0 ? (
+                    <div className="mt-3 space-y-2.5">
+                      {meal.foods.map((food) => (
+                        <article
+                          key={food.id}
+                          className="rounded-2xl border border-border/40 bg-secondary/60 p-3 text-start"
+                        >
+                          <div className="flex items-start gap-2.5">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[14px] font-semibold text-ink">
+                                {food.name}
+                              </p>
+                              <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+                                {food.servingSize} · {Math.round(food.calories * food.quantity)} קל׳
+                                · {Math.round(food.protein * food.quantity)}ח׳ ·{" "}
+                                {Math.round(food.carbs * food.quantity)}פ׳ ·{" "}
+                                {Math.round(food.fat * food.quantity)}ש׳ · סיבים{" "}
+                                {Math.round((food.fiber ?? 0) * food.quantity)}ג׳
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              aria-label="החלף מאכל"
+                              onClick={() => setSubstituteFor({ mealId: meal.id, food })}
+                              className="press inline-flex h-8 shrink-0 items-center gap-1 rounded-xl bg-primary/10 px-2.5 text-[11px] font-bold text-primary hover:bg-primary/15 cursor-pointer"
+                              title="החלפת מאכל"
+                            >
+                              <Shuffle className="h-3.5 w-3.5" />
+                              החלפה
+                            </button>
+                            <button
+                              type="button"
+                              aria-label="הסר מאכל"
+                              onClick={() => removeMealFood(date, meal.id, food.id)}
+                              className="press grid h-8 w-8 place-items-center rounded-xl text-muted-foreground hover:bg-white hover:text-destructive cursor-pointer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                          <div className="mt-2.5 grid grid-cols-2 gap-2">
+                            <Stepper
+                              label="כמות"
+                              value={food.quantity}
+                              step={0.5}
+                              onChange={(v) =>
+                                updateMealFood(date, meal.id, { id: food.id, quantity: v })
+                              }
+                            />
+                            <div className="rounded-2xl bg-white/60 px-3 py-2.5 text-start">
+                              <p className="text-[10.5px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+                                סה״כ
+                              </p>
+                              <p className="mt-0.5 font-display text-[15px] font-semibold tabular-nums text-ink">
+                                {Math.round(food.calories * food.quantity)}
+                                <span className="ms-0.5 text-[11px] font-normal text-muted-foreground">
+                                  קל
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-[12.5px] text-muted-foreground text-start">
+                      אין מאכלים בארוחה זו עדיין.
                     </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => openFoodPicker(meal.id)}
-                    className="press grid h-9 w-9 place-items-center rounded-2xl bg-primary text-primary-foreground cursor-pointer"
-                    aria-label="הוסף מאכל"
-                  >
-                    <Plus className="h-4 w-4" strokeWidth={2.4} />
-                  </button>
-                </div>
-
-                {meal.foods.length > 0 ? (
-                  <div className="mt-3 space-y-2.5">
-                    {meal.foods.map((food) => (
-                      <article
-                        key={food.id}
-                        className="rounded-2xl border border-border/40 bg-secondary/60 p-3 text-start"
-                      >
-                        <div className="flex items-start gap-2.5">
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-[14px] font-semibold text-ink">
-                              {food.name}
-                            </p>
-                            <p className="mt-0.5 text-[11.5px] text-muted-foreground">
-                              {food.servingSize} · {Math.round(food.calories * food.quantity)} קל׳ ·{" "}
-                              {Math.round(food.protein * food.quantity)}ח׳ ·{" "}
-                              {Math.round(food.carbs * food.quantity)}פ׳ ·{" "}
-                              {Math.round(food.fat * food.quantity)}ש׳ · סיבים{" "}
-                              {Math.round((food.fiber ?? 0) * food.quantity)}ג׳
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            aria-label="החלף מאכל"
-                            onClick={() => setSubstituteFor({ mealId: meal.id, food })}
-                            className="press inline-flex h-8 shrink-0 items-center gap-1 rounded-xl bg-primary/10 px-2.5 text-[11px] font-bold text-primary hover:bg-primary/15 cursor-pointer"
-                            title="החלפת מאכל"
-                          >
-                            <Shuffle className="h-3.5 w-3.5" />
-                            החלפה
-                          </button>
-                          <button
-                            type="button"
-                            aria-label="הסר מאכל"
-                            onClick={() => removeMealFood(date, meal.id, food.id)}
-                            className="press grid h-8 w-8 place-items-center rounded-xl text-muted-foreground hover:bg-white hover:text-destructive cursor-pointer"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                        <div className="mt-2.5 grid grid-cols-2 gap-2">
-                          <Stepper
-                            label="כמות"
-                            value={food.quantity}
-                            step={0.5}
-                            onChange={(v) =>
-                              updateMealFood(date, meal.id, { id: food.id, quantity: v })
-                            }
-                          />
-                          <div className="rounded-2xl bg-white/60 px-3 py-2.5 text-start">
-                            <p className="text-[10.5px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-                              סה״כ
-                            </p>
-                            <p className="mt-0.5 font-display text-[15px] font-semibold tabular-nums text-ink">
-                              {Math.round(food.calories * food.quantity)}
-                              <span className="ms-0.5 text-[11px] font-normal text-muted-foreground">
-                                קל
-                              </span>
-                            </p>
-                          </div>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-3 text-[12.5px] text-muted-foreground text-start">
-                    אין מאכלים בארוחה זו עדיין.
-                  </p>
-                )}
-              </section>
-            );
-          })}
-        </div>
-      </section> : null}
+                  )}
+                </section>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
       {/* "What Should I Eat Now?" Modal */}
       {showWhatToEat && (
         <Overlay
@@ -920,7 +933,9 @@ function NutritionLog() {
               </p>
             )}
 
-            {hasWhatToEatTargets ? <p className="text-xs font-bold text-muted-foreground">הצעות מובילות מהספרייה:</p> : null}
+            {hasWhatToEatTargets ? (
+              <p className="text-xs font-bold text-muted-foreground">הצעות מובילות מהספרייה:</p>
+            ) : null}
             {hasWhatToEatTargets && day.meals.length > 0 ? (
               <label className="block text-[11.5px] font-semibold text-muted-foreground">
                 הוספה לארוחה
@@ -937,31 +952,33 @@ function NutritionLog() {
                 </select>
               </label>
             ) : null}
-            {hasWhatToEatTargets ? <div className="space-y-1.5 max-h-60 overflow-y-auto">
-              {suggestedFoods.map(({ food }) => (
-                <button
-                  key={food.id}
-                  type="button"
-                  disabled={!suggestionMealId}
-                  onClick={() => {
-                    if (!suggestionMealId) return;
-                    addFoodToMeal(date, suggestionMealId, mealFoodFromLibrary(food));
-                    setShowWhatToEat(false);
-                  }}
-                  className="w-full p-2.5 rounded-xl border border-border/60 bg-secondary/40 flex items-center justify-between gap-2 text-start text-xs hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <div>
-                    <p className="font-bold text-ink">{food.name}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {food.servingSize} · {food.calories} קל' · {food.protein}g חלבון
-                    </p>
-                  </div>
-                  <span className="shrink-0 rounded-lg bg-primary/10 px-2 py-1 font-bold text-primary">
-                    הוספה
-                  </span>
-                </button>
-              ))}
-            </div> : null}
+            {hasWhatToEatTargets ? (
+              <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                {suggestedFoods.map(({ food }) => (
+                  <button
+                    key={food.id}
+                    type="button"
+                    disabled={!suggestionMealId}
+                    onClick={() => {
+                      if (!suggestionMealId) return;
+                      addFoodToMeal(date, suggestionMealId, mealFoodFromLibrary(food));
+                      setShowWhatToEat(false);
+                    }}
+                    className="w-full p-2.5 rounded-xl border border-border/60 bg-secondary/40 flex items-center justify-between gap-2 text-start text-xs hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <div>
+                      <p className="font-bold text-ink">{food.name}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {food.servingSize} · {food.calories} קל' · {food.protein}g חלבון
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-lg bg-primary/10 px-2 py-1 font-bold text-primary">
+                      הוספה
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         </Overlay>
       )}

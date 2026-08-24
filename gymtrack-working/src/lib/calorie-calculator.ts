@@ -33,11 +33,7 @@ export function calculateCalorieEstimate(
     return null;
   }
 
-  const bmr =
-    10 * weight +
-    6.25 * height -
-    5 * age +
-    (gender === "male" ? 5 : -161);
+  const bmr = 10 * weight + 6.25 * height - 5 * age + (gender === "male" ? 5 : -161);
   const activityMultiplier =
     workoutsPerWeek === 0
       ? 1.2

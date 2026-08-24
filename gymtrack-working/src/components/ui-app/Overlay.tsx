@@ -165,7 +165,7 @@ export function Overlay({
             ? "items-end justify-center"
             : isTop
               ? "items-start justify-center"
-            : "items-center justify-center"
+              : "items-center justify-center"
       } ${isFull ? "bg-background p-0" : "bg-foreground/40 p-4 backdrop-blur-sm"} ${className}`}
       style={
         viewportHeight !== null
@@ -194,7 +194,7 @@ export function Overlay({
               ? "max-h-[calc(100dvh-1rem)] max-w-xl rounded-t-[2rem] pb-[max(1.25rem,env(safe-area-inset-bottom))]"
               : isTop
                 ? "max-h-[calc(100dvh-2rem)] max-w-lg rounded-3xl"
-              : "max-h-[calc(100dvh-2rem)] max-w-lg rounded-3xl"
+                : "max-h-[calc(100dvh-2rem)] max-w-lg rounded-3xl"
         } overflow-y-auto overscroll-contain bg-card shadow-2xl ${panelClassName}`}
         onMouseDown={(event) => event.stopPropagation()}
         onTouchStart={(event) => event.stopPropagation()}

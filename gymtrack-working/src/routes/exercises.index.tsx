@@ -183,11 +183,7 @@ function Library() {
       <SectionHeader
         className="mt-5 text-start"
         title={`${list.length} תרגילים בספרייה`}
-        subtitle={genderText(
-          gender,
-          "לחצי על תרגיל לעריכה ופרטים",
-          "לחץ על תרגיל לעריכה ופרטים",
-        )}
+        subtitle={genderText(gender, "לחצי על תרגיל לעריכה ופרטים", "לחץ על תרגיל לעריכה ופרטים")}
       />
 
       <div className="space-y-2.5">

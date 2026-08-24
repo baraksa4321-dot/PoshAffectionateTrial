@@ -363,44 +363,48 @@ export function AppShell({
                 compactHeader ? "mb-1 pb-0.5" : "mb-2 pb-1"
               }`}
             >
-              {headerAccessory ? <div className="min-w-0 shrink-0">{headerAccessory}</div> : <span />}
+              {headerAccessory ? (
+                <div className="min-w-0 shrink-0">{headerAccessory}</div>
+              ) : (
+                <span />
+              )}
               {isCoach ? (
-              <div
-                className="flex items-center gap-0.5 rounded-full border border-border bg-surface-2 p-0.5"
-                role="group"
-                aria-label="בחירת מצב עבודה"
-              >
-                <Link
-                  to="/"
-                  onClick={() => setWorkspace("personal")}
-                  aria-current={activeMode === "personal" ? "page" : undefined}
+                <div
+                  className="flex items-center gap-0.5 rounded-full border border-border bg-surface-2 p-0.5"
+                  role="group"
+                  aria-label="בחירת מצב עבודה"
+                >
+                  <Link
+                    to="/"
+                    onClick={() => setWorkspace("personal")}
+                    aria-current={activeMode === "personal" ? "page" : undefined}
                     className={`min-w-20 rounded-full px-3 ${
                       compactHeader ? "py-1 text-[10px]" : "py-1.5 text-[11px]"
                     } text-center font-bold transition-colors ${
-                    activeMode === "personal"
-                      ? "bg-surface text-ink shadow-sm"
-                      : "text-muted-foreground hover:text-ink"
-                  }`}
-                >
-                  אישי
-                </Link>
-                <Link
-                  to="/coach"
-                  onClick={() => setWorkspace("management")}
-                  aria-current={activeMode === "management" ? "page" : undefined}
+                      activeMode === "personal"
+                        ? "bg-surface text-ink shadow-sm"
+                        : "text-muted-foreground hover:text-ink"
+                    }`}
+                  >
+                    אישי
+                  </Link>
+                  <Link
+                    to="/coach"
+                    onClick={() => setWorkspace("management")}
+                    aria-current={activeMode === "management" ? "page" : undefined}
                     className={`min-w-20 rounded-full px-3 ${
                       compactHeader ? "py-1 text-[10px]" : "py-1.5 text-[11px]"
                     } text-center font-bold transition-colors ${
-                    activeMode === "management"
-                      ? isOwner
-                        ? "bg-ink text-primary-foreground"
-                        : "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-ink"
-                  }`}
-                >
-                  {isOwner ? "בעלים" : "מאמן"}
-                </Link>
-              </div>
+                      activeMode === "management"
+                        ? isOwner
+                          ? "bg-ink text-primary-foreground"
+                          : "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-ink"
+                    }`}
+                  >
+                    {isOwner ? "בעלים" : "מאמן"}
+                  </Link>
+                </div>
               ) : null}
             </div>
           ) : null}
@@ -569,7 +573,10 @@ export function AppShell({
                   )}
                 </p>
                 <div>
-                  <label htmlFor="reset-email" className="mb-1.5 block text-[12px] font-bold uppercase tracking-wide text-muted-foreground">
+                  <label
+                    htmlFor="reset-email"
+                    className="mb-1.5 block text-[12px] font-bold uppercase tracking-wide text-muted-foreground"
+                  >
                     כתובת אימייל
                   </label>
                   <input
@@ -599,7 +606,10 @@ export function AppShell({
               <form onSubmit={handleAuthSubmit} className="space-y-4">
                 {isSignUp ? (
                   <div>
-                    <label htmlFor="signup-name" className="mb-1.5 block text-[12px] font-bold uppercase tracking-wide text-muted-foreground">
+                    <label
+                      htmlFor="signup-name"
+                      className="mb-1.5 block text-[12px] font-bold uppercase tracking-wide text-muted-foreground"
+                    >
                       שם מלא
                     </label>
                     <input
@@ -626,7 +636,10 @@ export function AppShell({
                   </div>
                 ) : null}
                 <div>
-                  <label htmlFor="auth-email" className="block text-[12px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
+                  <label
+                    htmlFor="auth-email"
+                    className="block text-[12px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5"
+                  >
                     כתובת אימייל
                   </label>
                   <input
@@ -645,7 +658,10 @@ export function AppShell({
                 </div>
 
                 <div>
-                  <label htmlFor="auth-password" className="block text-[12px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
+                  <label
+                    htmlFor="auth-password"
+                    className="block text-[12px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5"
+                  >
                     סיסמה
                   </label>
                   <input
@@ -792,7 +808,9 @@ export function AppShell({
                   className="h-[20px] w-[20px] transition-transform group-active:scale-95"
                   strokeWidth={2}
                 />
-                <span className="max-w-full truncate px-1 text-[10px] font-medium tracking-wide">{label}</span>
+                <span className="max-w-full truncate px-1 text-[10px] font-medium tracking-wide">
+                  {label}
+                </span>
               </Link>
             ))}
           </div>

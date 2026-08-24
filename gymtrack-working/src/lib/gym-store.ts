@@ -745,9 +745,7 @@ function migrate(d: Partial<GymData>): GymData {
     recipes: d.recipes ?? [],
     recentFoods: d.recentFoods ?? [],
     favoriteFoods: d.favoriteFoods ?? [],
-    bodyWeightLogs: d.bodyWeightLogs?.length
-      ? d.bodyWeightLogs
-      : [],
+    bodyWeightLogs: d.bodyWeightLogs?.length ? d.bodyWeightLogs : [],
     bodyMeasurements: d.bodyMeasurements ?? [],
     cardioLogs: d.cardioLogs ?? [],
     preExitChecklist: d.preExitChecklist ?? [],
@@ -891,8 +889,7 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
 
   if (browserIsOffline()) {
     profileHydrationStatus = "error";
-    profileHydrationError =
-      "אין חיבור לאינטרנט ואין נתונים שמורים עבור החשבון הזה במכשיר.";
+    profileHydrationError = "אין חיבור לאינטרנט ואין נתונים שמורים עבור החשבון הזה במכשיר.";
     syncStatus = "offline";
     notifyListeners();
     return;
@@ -1635,9 +1632,8 @@ export function togglePlannedFoodEaten(date: string, plannedMealId: string, plan
     if (!plannedFood) return day;
 
     const existingMeal = day.meals.find((meal) => meal.sourcePlanId === plannedMealId);
-    const alreadyEaten = existingMeal?.foods.some(
-      (food) => food.sourcePlanFoodId === plannedFoodId,
-    ) ?? false;
+    const alreadyEaten =
+      existingMeal?.foods.some((food) => food.sourcePlanFoodId === plannedFoodId) ?? false;
 
     if (alreadyEaten) {
       const nextMeals = day.meals
@@ -2011,7 +2007,8 @@ export function findFoodReplacements(
       const calculatedCalories = Math.round(food.calories * requiredQty);
       const calculatedProtein = round1(food.protein * requiredQty);
       const calorieError = targetCal > 0 ? Math.abs(calculatedCalories - targetCal) / targetCal : 0;
-      const proteinError = targetProtein > 0 ? Math.abs(calculatedProtein - targetProtein) / targetProtein : 0;
+      const proteinError =
+        targetProtein > 0 ? Math.abs(calculatedProtein - targetProtein) / targetProtein : 0;
       const score =
         mode === "protein"
           ? proteinError
@@ -2021,7 +2018,8 @@ export function findFoodReplacements(
       return {
         food,
         calculatedQuantity: round1(Math.max(0.1, requiredQty)),
-        calculatedGrams: servingGrams === null ? null : round1(servingGrams * Math.max(0.1, requiredQty)),
+        calculatedGrams:
+          servingGrams === null ? null : round1(servingGrams * Math.max(0.1, requiredQty)),
         calculatedCalories: Math.round(food.calories * Math.max(0.1, requiredQty)),
         calculatedProtein: round1(food.protein * Math.max(0.1, requiredQty)),
         calculatedCarbs: round1(food.carbs * Math.max(0.1, requiredQty)),

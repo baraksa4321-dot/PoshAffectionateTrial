@@ -27,14 +27,14 @@ Run each check at a narrow RTL viewport (390 × 844) and once at desktop width.
 
 ## Main surfaces
 
-| Surface | Route / action | Expected overlay |
-| --- | --- | --- |
-| Nutrition food picker | `/nutrition` → add food | Food picker search opens; query and quantity are fresh after close/reopen |
-| Nutrition replacement | `/nutrition` → replace food | Replacement sheet closes from backdrop, Escape, close button, and keeps the meal page open |
-| Nutrition confirmation | Any destructive nutrition action | Confirm sheet supports cancel, visible close, backdrop, and Escape without applying the action |
-| Exercise selection | `/coach` → exercise picker | Narrow RTL layout keeps search, close button, and exercise rows reachable |
-| Session replacement | `/session/:workoutId` → replace exercise | Replacement sheet closes cleanly and a selected exercise does not leave a stale sheet |
-| Body/profile confirmation | `/` → body profile or weigh-in | Closing and reopening shows fresh form state and restores focus to the opener |
+| Surface                   | Route / action                           | Expected overlay                                                                               |
+| ------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Nutrition food picker     | `/nutrition` → add food                  | Food picker search opens; query and quantity are fresh after close/reopen                      |
+| Nutrition replacement     | `/nutrition` → replace food              | Replacement sheet closes from backdrop, Escape, close button, and keeps the meal page open     |
+| Nutrition confirmation    | Any destructive nutrition action         | Confirm sheet supports cancel, visible close, backdrop, and Escape without applying the action |
+| Exercise selection        | `/coach` → exercise picker               | Narrow RTL layout keeps search, close button, and exercise rows reachable                      |
+| Session replacement       | `/session/:workoutId` → replace exercise | Replacement sheet closes cleanly and a selected exercise does not leave a stale sheet          |
+| Body/profile confirmation | `/` → body profile or weigh-in           | Closing and reopening shows fresh form state and restores focus to the opener                  |
 
 ## Release acceptance
 
