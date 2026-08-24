@@ -1722,11 +1722,23 @@ html.night-mode .nav-shell {
   display: flex;
   flex-direction: column;
   gap: 0;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .home-card-stack > .home-feature-section,
 .home-card-stack > .home-feature-section > .home-feature-grid {
   display: contents;
+}
+
+/* Keep form controls usable while preventing iOS text selection during drag. */
+.home-card-stack input,
+.home-card-stack textarea,
+.home-card-stack [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 
 .home-card-stack > [data-home-card-id] {
