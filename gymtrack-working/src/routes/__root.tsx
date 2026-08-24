@@ -25,6 +25,26 @@ import { supabase } from "../lib/supabase";
 import { genderText } from "../lib/gender-copy";
 import { LOADING_MESSAGES } from "../lib/loading-copy";
 
+async function resetAuthSessionAndReload() {
+  try {
+    await supabase.auth.signOut({ scope: "local" });
+  } catch {
+    // A future-issued JWT can make the network sign-out fail. Clearing the
+    // persisted token locally is enough to return to the login screen.
+  }
+  try {
+    const authKeys = Object.keys(window.localStorage).filter(
+      (key) => key.startsWith("sb-") && key.endsWith("-auth-token"),
+    );
+    authKeys.forEach((key) => window.localStorage.removeItem(key));
+    window.localStorage.removeItem("supabase.auth.token");
+  } catch {
+    // Storage may be unavailable in private browsing; reload still lets the
+    // auth client retry with an empty in-memory session.
+  }
+  window.location.reload();
+}
+
 function CompleteProfileName() {
   const { userProfile } = useGym();
   const [fullName, setFullName] = useState(userProfile?.fullName ?? "");
@@ -853,10 +873,10 @@ function RootContent() {
               </button>
               <button
                 type="button"
-                onClick={() => void supabase.auth.signOut()}
+                onClick={() => void resetAuthSessionAndReload()}
                 className="rounded-xl border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground"
               >
-                התנתקי
+                איפוס והתחברות מחדש
               </button>
             </div>
           </div>
