@@ -193,6 +193,21 @@ export type FoodItem = {
   approvalStatus?: "pending" | "approved" | "rejected";
   approvedBy?: string;
   approvedAt?: string;
+  /** Audit trail for nutrition values; empty means the legacy value was not re-verified. */
+  nutritionReview?: {
+    status: "unreviewed" | "reviewed";
+    checkedAt?: string;
+    confidence?: "low" | "medium" | "high";
+    sources: Array<{
+      name: string;
+      url: string;
+      kind: "manufacturer" | "israeli-database" | "food-dictionary" | "usda" | "open-food-facts";
+      match: "exact-product" | "same-food" | "comparison";
+      valuesPer: "100g" | "100ml" | "serving";
+    }>;
+    method?: "official" | "average-matching-sources" | "existing-value";
+    notes?: string;
+  };
 };
 
 export type MealFood = {

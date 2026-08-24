@@ -1002,7 +1002,7 @@ function RootContent() {
   const authStatus = useAuthStatus();
   const { userProfile } = useGym();
   const [loadingVariant, setLoadingVariant] = useState(0);
-  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(1 % LOADING_MESSAGES.length);
   const profileHydrationStatus = useProfileHydrationStatus();
   const profileHydrationError = useProfileHydrationError();
   const hasProfileHydrationError =

@@ -24,18 +24,32 @@ const REQUIRED_MACROS = [
 ] as const;
 
 /** Classifies food values without claiming an external nutrition-data source. */
-export function nutritionSourceFor(food: Pick<FoodItem, "id">): NutritionSource {
+export function nutritionSourceFor(
+  food: Pick<FoodItem, "id" | "nutritionReview">,
+): NutritionSource {
+  if (food.nutritionReview?.status === "reviewed") {
+    const sourceNames = food.nutritionReview.sources.map((source) => source.name).join(" · ");
+    const confidence = food.nutritionReview.confidence
+      ? `רמת ביטחון: ${food.nutritionReview.confidence === "high" ? "גבוהה" : food.nutritionReview.confidence === "medium" ? "בינונית" : "נמוכה"}.`
+      : "";
+    return {
+      label: "נבדק מול מקורות חיצוניים",
+      detail: `${sourceNames || "מקורות מתועדים"}${confidence ? ` ${confidence}` : ""}`,
+      verified: true,
+    };
+  }
+
   if (food.id.startsWith("f-israel-")) {
     return {
-      label: "קטלוג מקומי",
-      detail: "ערכי מנת הייחוס נשמרו מהקטלוג הקיים; יש לאמת מול תווית המוצר העדכנית.",
+      label: "טרם אומת מול מקור חיצוני",
+      detail: "זהו ערך קיים מהקטלוג המקומי. הוא נשמר ללא שינוי עד לבדיקה מול מקור ישראלי או יצרן.",
       verified: false,
     };
   }
 
   return {
-    label: "ערך שהוזן ידנית",
-    detail: "בדקי את הנתונים מול תווית המוצר לפני שימוש קבוע ביומן.",
+    label: "טרם אומת מול מקור חיצוני",
+    detail: "הערך הקיים נשמר ללא שינוי עד שתושלם בדיקה מול מקור אמין.",
     verified: false,
   };
 }
