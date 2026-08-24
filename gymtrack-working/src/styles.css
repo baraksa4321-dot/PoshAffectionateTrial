@@ -1919,6 +1919,7 @@ html.night-mode .auth-panel {
   height: 104px;
   place-items: center;
   margin: 0 auto;
+  overflow: hidden;
   border: 0;
   border-radius: 50%;
   background: transparent;

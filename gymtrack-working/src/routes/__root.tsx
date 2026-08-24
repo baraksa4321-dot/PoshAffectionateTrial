@@ -433,6 +433,7 @@ function SimpleLoadingIllustration({ variant }: { variant: number }) {
   return (
     <div className={`loading-micro-stage loading-simple-pose-${variant % 4}`}>
       <img
+        key={illustration.file}
         className="loading-simple-image"
         src={`/loading/${illustration.file.replace(".png", ".gif")}`}
         aria-label={`איור טעינה: ${illustration.label}`}
