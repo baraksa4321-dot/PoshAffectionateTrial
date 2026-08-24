@@ -328,12 +328,13 @@ const LOADING_CHARACTER_POSES = [
 ] as const;
 
 const REFERENCE_LOADING_IMAGES = [
-  { file: "ref-5444.png", label: "מלפפון מצויר בתנועה" },
-  { file: "ref-5445.png", label: "אבוקדו מתאמן" },
-  { file: "ref-5446.png", label: "צפרדע במתיחה" },
-  { file: "ref-5447.png", label: "כלבלב ביוגה" },
-  { file: "ref-5448.png", label: "בננה באימון שיווי משקל" },
-  { file: "ref-5449.png", label: "גזר מרים משקולות" },
+  { file: "banana-dance.png", label: "בננה באימון שיווי משקל" },
+  { file: "dog-yoga.png", label: "כלבלב ביוגה" },
+  { file: "frog-stretch.png", label: "צפרדע במתיחה" },
+  { file: "avocado-hula.png", label: "אבוקדו עם חישוק" },
+  { file: "avocado-dumbbells.png", label: "אבוקדו מרים משקולות" },
+  { file: "avocado-rope.png", label: "אבוקדו בקפיצה בחבל" },
+  { file: "avocado-lift.png", label: "אבוקדו באימון כוח" },
 ] as const;
 
 function ReferenceLoadingIllustration({ variant }: { variant: number }) {
