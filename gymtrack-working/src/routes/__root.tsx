@@ -1080,15 +1080,7 @@ function RootContent() {
   const { queryClient } = Route.useRouteContext();
   const authStatus = useAuthStatus();
   const { userProfile } = useGym();
-  const [loadingCycle, setLoadingCycle] = useState(() => {
-    if (typeof window === "undefined") return 0;
-    try {
-      const previousCycle = Number(window.localStorage.getItem("my-routine-loading-cycle-v2"));
-      return Number.isInteger(previousCycle) && previousCycle >= 0 ? previousCycle + 1 : 1;
-    } catch {
-      return Math.floor(Date.now() / 2400);
-    }
-  });
+  const [loadingCycle, setLoadingCycle] = useState(0);
   const loadingVariant = loadingCycle % SIMPLE_LOADING_ILLUSTRATIONS.length;
   const loadingMessageIndex = loadingCycle % LOADING_MESSAGES.length;
   const profileHydrationStatus = useProfileHydrationStatus();
@@ -1115,11 +1107,16 @@ function RootContent() {
     }
     const storageKey = "my-routine-loading-cycle-v2";
     try {
-      window.localStorage.setItem(storageKey, String(loadingCycle));
+      const previousCycle = Number(window.localStorage.getItem(storageKey));
+      const nextCycle =
+        Number.isInteger(previousCycle) && previousCycle >= 0 ? previousCycle + 1 : 1;
+      window.localStorage.setItem(storageKey, String(nextCycle));
+      setLoadingCycle(nextCycle);
     } catch {
-      // The in-memory timestamp fallback from the state initializer remains active.
+      setLoadingCycle(1);
     }
-    const advanceForRestoredPage = () => {
+    const advanceForRestoredPage = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
       setLoadingCycle((current) => {
         const nextCycle = current + 1;
         try {
@@ -1146,7 +1143,7 @@ function RootContent() {
       window.clearInterval(illustrationTimer);
       window.removeEventListener("pageshow", advanceForRestoredPage);
     };
-  }, [loadingCycle]);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
