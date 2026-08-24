@@ -337,19 +337,19 @@ const REFERENCE_LOADING_IMAGES = [
 ] as const;
 
 const SIMPLE_LOADING_ILLUSTRATIONS = [
-  { file: "user-strawberry.gif", label: "תות מצויר" },
-  { file: "user-tomato.gif", label: "עגבנייה מצוירת" },
-  { file: "user-character-01.gif", label: "דמות מצוירת" },
-  { file: "user-character-02.gif", label: "דמות מצוירת" },
-  { file: "user-lemon.gif", label: "לימון מצויר" },
-  { file: "user-character-03.gif", label: "דמות מצוירת" },
-  { file: "user-character-04.gif", label: "דמות מצוירת" },
-  { file: "user-character-05.gif", label: "דמות מצוירת" },
-  { file: "user-character-06.gif", label: "דמות מצוירת" },
-  { file: "user-character-07.gif", label: "דמות מצוירת" },
-  { file: "user-character-08.gif", label: "דמות מצוירת" },
-  { file: "user-character-09.gif", label: "דמות מצוירת" },
-  { file: "user-character-10.gif", label: "דמות מצוירת" },
+  { file: "user-strawberry.webp", label: "תות מצויר" },
+  { file: "user-tomato.webp", label: "עגבנייה מצוירת" },
+  { file: "user-character-01.webp", label: "דמות מצוירת" },
+  { file: "user-character-02.webp", label: "דמות מצוירת" },
+  { file: "user-lemon.webp", label: "לימון מצויר" },
+  { file: "user-character-03.webp", label: "דמות מצוירת" },
+  { file: "user-character-04.webp", label: "דמות מצוירת" },
+  { file: "user-character-05.webp", label: "דמות מצוירת" },
+  { file: "user-character-06.webp", label: "דמות מצוירת" },
+  { file: "user-character-07.webp", label: "דמות מצוירת" },
+  { file: "user-character-08.webp", label: "דמות מצוירת" },
+  { file: "user-character-09.webp", label: "דמות מצוירת" },
+  { file: "user-character-10.webp", label: "דמות מצוירת" },
 ] as const;
 
 function SimpleLoadingIllustration({ variant }: { variant: number }) {
