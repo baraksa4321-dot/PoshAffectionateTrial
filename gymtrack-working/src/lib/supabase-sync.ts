@@ -571,13 +571,9 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     const { data: dbCardioLogs, error: cardioError } = await supabase
       .from("cardio_logs")
       .select("*")
-      .eq("user_id", userId)
-      .order("date", { ascending: false });
-    if (cardioError && !isMissingTableInSchemaCache(cardioError, "cardio_logs")) {
-      throw new Error(`Cardio pull failed: ${cardioError.message}`);
-    }
+      .eq("user_id", userId);
     if (cardioError) {
-      console.warn("[Optional cardio pull skipped]: public.cardio_logs is unavailable");
+      console.warn(`[Optional cardio pull skipped]: ${cardioError.message}`);
     }
     // Preserve local entries while the optional table is unavailable. Also
     // preserve them when the cloud table is empty, allowing a failed first
@@ -585,7 +581,9 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (!cardioError && dbCardioLogs && dbCardioLogs.length > 0) {
       nextData.cardioLogs = dbCardioLogs.map((row): CardioLog => ({
         id: row.id,
-        date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
+        date: typeof (row.date ?? row.recorded_at) === "string"
+          ? (row.date ?? row.recorded_at).slice(0, 10)
+          : (row.date ?? row.recorded_at),
         type: row.type,
         durationMin: Number(row.duration_min),
         intensity: row.intensity || undefined,
@@ -765,9 +763,10 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     const { data: dbCardioLogs, error: cardioError } = await supabase
       .from("cardio_logs")
       .select("*")
-      .eq("user_id", clientId)
-      .order("date", { ascending: false });
-    if (cardioError) throw new Error(`Client cardio pull failed: ${cardioError.message}`);
+      .eq("user_id", clientId);
+    if (cardioError) {
+      console.warn(`[Optional client cardio pull skipped]: ${cardioError.message}`);
+    }
 
     const workoutsMap = new Map<string, Workout>();
     const programsList: Program[] = [];
@@ -800,7 +799,9 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
 
     const nutritionList: NutritionDay[] = (dbNutritionDays || []).map((row) => ({
       id: row.id,
-      date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
+      date: typeof (row.date ?? row.recorded_at) === "string"
+        ? (row.date ?? row.recorded_at).slice(0, 10)
+        : (row.date ?? row.recorded_at),
       meals: row.meals || [],
       plannedMeals: row.planned_meals || [],
     }));

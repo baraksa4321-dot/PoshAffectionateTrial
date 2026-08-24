@@ -1878,6 +1878,35 @@ html.night-mode .nav-shell {
   stroke-width: 2.4;
 }
 
+/* Loading illustrations start as clean white line art and slowly fill from
+   the bottom upward, instead of appearing already colored. */
+.loading-simple-illustration .loading-object-shell,
+.loading-simple-illustration .loading-food-shell,
+.loading-simple-illustration .loading-broccoli-shell,
+.loading-simple-illustration .loading-food-generic-shell {
+  fill: #fff;
+}
+
+.loading-simple-illustration .loading-dumbbell-plate,
+.loading-simple-illustration .loading-dumbbell-cap,
+.loading-simple-illustration .loading-dumbbell-grip {
+  fill: #fff;
+}
+
+.loading-simple-illustration .loading-food-fill,
+.loading-simple-illustration .loading-broccoli-fill,
+.loading-simple-illustration .loading-food-generic-fill,
+.loading-simple-illustration .loading-egg-white-fill {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: loading-bottom-fill 3.8s cubic-bezier(0.22, 0.75, 0.3, 1) infinite;
+}
+
+@keyframes loading-bottom-fill {
+  0%, 12% { transform: scaleY(0); opacity: 0.12; }
+  72%, 100% { transform: scaleY(1); opacity: 0.86; }
+}
+
 .loading-growth-motion {
   animation-duration: 2.1s;
 }
