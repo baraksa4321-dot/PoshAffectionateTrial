@@ -1953,7 +1953,7 @@ html.night-mode .auth-panel {
 
 .loading-simple-video {
   background: #f7f2ec;
-  filter: saturate(1.04) drop-shadow(0 3px 3px rgb(75 48 58 / 10%));
+  filter: saturate(1.04);
   mix-blend-mode: normal;
 }
 
