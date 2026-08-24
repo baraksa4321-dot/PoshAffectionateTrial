@@ -1938,7 +1938,7 @@ html.night-mode .auth-panel {
   width: 116px;
   height: 116px;
   object-fit: contain;
-  filter: brightness(1.08) saturate(1.04) drop-shadow(0 3px 3px rgb(75 48 58 / 10%));
+  filter: saturate(1.04) drop-shadow(0 3px 3px rgb(75 48 58 / 10%));
 }
 
 .loading-reference-image {
