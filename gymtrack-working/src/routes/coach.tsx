@@ -25,8 +25,10 @@ import { AppShell } from "../components/AppShell";
 import { Overlay } from "../components/ui-app/Overlay";
 import {
   mealFoodFromLibrary,
+  emptyExercise,
   savePlannedMeals,
   saveProgram,
+  saveExercise,
   saveWorkout,
   saveWorkoutInProgram,
   searchFoods,
@@ -40,6 +42,7 @@ import { supabase } from "../lib/supabase";
 import { calculateCalorieEstimate } from "../lib/calorie-calculator";
 import type {
   BodyMeasurement,
+  Exercise,
   Meal,
   MealFood,
   Program,
@@ -160,6 +163,9 @@ export function CoachDashboardPage({
   const [selectedExId, setSelectedExId] = useState("");
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [exerciseQuery, setExerciseQuery] = useState("");
+  const [showCreateExercise, setShowCreateExercise] = useState(false);
+  const [newExerciseDraft, setNewExerciseDraft] = useState<Exercise>(() => emptyExercise());
+  const [newExerciseError, setNewExerciseError] = useState("");
   const [programQuery, setProgramQuery] = useState("");
   const [targetWeight, setTargetWeight] = useState(20);
   const [setsCount, setSetsCount] = useState(3);
@@ -1123,6 +1129,34 @@ export function CoachDashboardPage({
           .some((value) => value.toLocaleLowerCase().includes(exerciseQueryLower)),
       )
     : store.exercises;
+
+  const openCreateExercise = () => {
+    setNewExerciseDraft(emptyExercise());
+    setNewExerciseError("");
+    setShowExercisePicker(false);
+    setShowCreateExercise(true);
+  };
+
+  const handleCreateExercise = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const name = newExerciseDraft.name.trim();
+    if (!name) {
+      setNewExerciseError("יש להזין שם תרגיל.");
+      return;
+    }
+    const exercise = {
+      ...newExerciseDraft,
+      name,
+      description: newExerciseDraft.description.trim(),
+      instructions: newExerciseDraft.instructions?.trim() ?? "",
+      notes: newExerciseDraft.notes.trim(),
+    };
+    saveExercise(exercise);
+    setSelectedExId(exercise.id);
+    setExerciseQuery("");
+    setShowCreateExercise(false);
+    setExerciseBuilderNotice(`התרגיל "${exercise.name}" נוסף למאגר ונבחר לאימון.`);
+  };
   const programQueryLower = programQuery.trim().toLocaleLowerCase();
   const filteredPrograms = programQueryLower
     ? (clientDetails?.programs ?? []).filter((program) =>
@@ -3678,6 +3712,14 @@ export function CoachDashboardPage({
                   autoFocus
                 />
               </div>
+              <button
+                type="button"
+                onClick={openCreateExercise}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/30 bg-primary/5 px-3.5 py-3 text-[13px] font-bold text-primary hover:bg-primary/10"
+              >
+                <Plus className="h-4 w-4" />
+                הוספת תרגיל חדש למאגר
+              </button>
 
               <div className="mt-4 min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain">
                 {filteredExerciseOptions.map((exercise) => (
@@ -3710,6 +3752,110 @@ export function CoachDashboardPage({
                 ) : null}
               </div>
             </div>
+          </div>
+        </Overlay>
+
+        <Overlay
+          open={showCreateExercise}
+          onClose={() => setShowCreateExercise(false)}
+          ariaLabel="הוספת תרגיל חדש למאגר"
+          variant="bottom"
+          panelClassName="p-0"
+        >
+          <div dir="rtl" className="max-h-[88dvh] overflow-y-auto p-5 text-start">
+            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold tracking-[0.14em] text-primary uppercase">
+                  מאגר תרגילים
+                </p>
+                <h2 className="mt-1 font-display text-[20px] font-semibold text-ink">
+                  הוספת תרגיל חדש
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCreateExercise(false)}
+                className="grid h-9 w-9 place-items-center rounded-xl bg-secondary text-muted-foreground hover:text-ink"
+                aria-label="סגור"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateExercise} className="space-y-3">
+              <label className="block text-xs font-bold text-muted-foreground">
+                שם התרגיל
+                <input
+                  required
+                  autoFocus
+                  value={newExerciseDraft.name}
+                  onChange={(event) =>
+                    setNewExerciseDraft((current) => ({ ...current, name: event.target.value }))
+                  }
+                  placeholder="לדוגמה: לחיצת חזה במכונה"
+                  className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary"
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block text-xs font-bold text-muted-foreground">
+                  קבוצת שרירים
+                  <input
+                    required
+                    value={newExerciseDraft.muscleGroup}
+                    onChange={(event) =>
+                      setNewExerciseDraft((current) => ({
+                        ...current,
+                        muscleGroup: event.target.value,
+                        muscleGroups: [event.target.value],
+                      }))
+                    }
+                    placeholder="חזה"
+                    className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary"
+                  />
+                </label>
+                <label className="block text-xs font-bold text-muted-foreground">
+                  ציוד
+                  <input
+                    required
+                    value={newExerciseDraft.equipment}
+                    onChange={(event) =>
+                      setNewExerciseDraft((current) => ({
+                        ...current,
+                        equipment: event.target.value,
+                      }))
+                    }
+                    placeholder="מכונה / משקוליות"
+                    className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary"
+                  />
+                </label>
+              </div>
+              <label className="block text-xs font-bold text-muted-foreground">
+                הוראות ביצוע (אופציונלי)
+                <textarea
+                  value={newExerciseDraft.instructions ?? ""}
+                  onChange={(event) =>
+                    setNewExerciseDraft((current) => ({
+                      ...current,
+                      instructions: event.target.value,
+                    }))
+                  }
+                  rows={3}
+                  placeholder="הנחיות קצרות למתאמן"
+                  className="mt-1.5 w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary"
+                />
+              </label>
+              {newExerciseError ? (
+                <p className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs font-semibold text-destructive">
+                  {newExerciseError}
+                </p>
+              ) : null}
+              <button
+                type="submit"
+                className="w-full rounded-2xl bg-primary py-3 text-sm font-bold text-primary-foreground shadow-sm hover:bg-primary/90"
+              >
+                שמירה ובחירת התרגיל לאימון
+              </button>
+            </form>
           </div>
         </Overlay>
       </div>
