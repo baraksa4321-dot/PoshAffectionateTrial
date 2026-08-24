@@ -13,6 +13,7 @@ export function Overlay({
   onClose,
   children,
   variant = "center",
+  backdrop = true,
   panelClassName = "",
   className = "",
   ariaLabel,
@@ -21,6 +22,7 @@ export function Overlay({
   onClose: () => void;
   children: ReactNode;
   variant?: OverlayVariant;
+  backdrop?: boolean;
   panelClassName?: string;
   className?: string;
   ariaLabel?: string;
@@ -162,7 +164,7 @@ export function Overlay({
             : isTop
               ? "items-start justify-center"
               : "items-center justify-center"
-      } ${isFull ? "bg-background p-0" : "bg-foreground/40 p-4"} ${className}`}
+      } ${isFull ? "bg-background p-0" : backdrop ? "bg-foreground/40 p-4" : "bg-transparent p-4"} ${className}`}
       style={viewportHeight !== null ? { height: `${viewportHeight}px`, top: 0 } : undefined}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();

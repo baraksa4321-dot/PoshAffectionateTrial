@@ -3701,6 +3701,7 @@ export function CoachDashboardPage({
           onClose={() => setShowExercisePicker(false)}
           ariaLabel="בחירת תרגיל"
           variant="bottom"
+          backdrop={false}
           panelClassName="p-0"
         >
           <div dir="rtl" className="h-[min(82dvh,44rem)]">
