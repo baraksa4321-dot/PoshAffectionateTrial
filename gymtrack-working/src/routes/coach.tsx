@@ -1786,7 +1786,7 @@ export function CoachDashboardPage({
                           עדכון מרוכז של האימונים, ימי האימון, התרגילים והתפריט המתוכנן.
                         </p>
                       </div>
-                      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
+                      <div className="illustrated-mark grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
                         <Dumbbell className="h-5 w-5" />
                       </div>
                     </div>
@@ -2032,7 +2032,9 @@ export function CoachDashboardPage({
                                 : "אפשר להתחיל לבנות תוכנית חדשה"}
                             </p>
                           </div>
-                          <Dumbbell className="h-5 w-5 shrink-0 text-primary" />
+                          <span className="illustrated-mark inline-grid h-9 w-9 shrink-0 place-items-center text-primary">
+                            <Dumbbell className="h-5 w-5" />
+                          </span>
                         </div>
                         <div className="space-y-2">
                           {clientDetails.history.slice(0, 4).map((session) => {
@@ -2103,7 +2105,9 @@ export function CoachDashboardPage({
                                 : "אפשר להתחיל לבנות תפריט חדש"}
                             </p>
                           </div>
-                          <Apple className="h-5 w-5 shrink-0 text-emerald-700" />
+                          <span className="illustrated-mark inline-grid h-9 w-9 shrink-0 place-items-center text-emerald-700">
+                            <Apple className="h-5 w-5" />
+                          </span>
                         </div>
                         <div className="space-y-2">
                           {(clientDetails.nutritionDays ?? []).slice(0, 4).map((day) => {
@@ -2172,7 +2176,9 @@ export function CoachDashboardPage({
                             היסטוריית אימונים והערות
                           </h4>
                         </div>
-                        <Activity className="h-5 w-5 text-amber-700" />
+                        <span className="illustrated-mark inline-grid h-9 w-9 shrink-0 place-items-center text-amber-700">
+                          <Activity className="h-5 w-5" />
+                        </span>
                       </div>
                       {clientDetails.history.length > 0 ? (
                         <div className="grid gap-2 md:grid-cols-2">
@@ -2278,7 +2284,9 @@ export function CoachDashboardPage({
                             מה המתאמן אכל והערותיו
                           </h4>
                         </div>
-                        <Apple className="h-5 w-5 text-amber-700" />
+                        <span className="illustrated-mark inline-grid h-9 w-9 shrink-0 place-items-center text-amber-700">
+                          <Apple className="h-5 w-5" />
+                        </span>
                       </div>
                       <div className="grid gap-2 md:grid-cols-2">
                         {clientDetails.nutritionDays.map((day) => {
@@ -2463,13 +2471,27 @@ export function CoachDashboardPage({
                                               const exMeta = store.exercises.find(
                                                 (e) => e.id === exItem.exerciseId,
                                               );
+                                              const actualExecutions = clientDetails.history
+                                                .flatMap((session) =>
+                                                  session.entries
+                                                    .filter(
+                                                      (entry) =>
+                                                        entry.exerciseId === exItem.exerciseId,
+                                                    )
+                                                    .map((entry) => ({
+                                                      entry,
+                                                      date: session.date,
+                                                    })),
+                                                )
+                                                .slice(0, 3);
 
                                               return (
                                                 <div
                                                   key={exItem.id}
-                                                  className="flex items-center justify-between rounded-lg bg-secondary/50 p-2 text-xs"
+                                                  className="rounded-xl bg-secondary/50 p-2.5 text-xs"
                                                 >
-                                                  <div>
+                                                  <div className="flex items-start justify-between gap-2">
+                                                    <div>
                                                     <span className="font-bold text-ink">
                                                       {exMeta?.name || "תרגיל"}
                                                     </span>
@@ -2515,18 +2537,80 @@ export function CoachDashboardPage({
                                                         </span>
                                                       ) : null}
                                                     </div>
+                                                    </div>
+                                                    <button
+                                                      onClick={() =>
+                                                        handleRemoveExerciseFromDay(
+                                                          dayItem.id,
+                                                          exItem.id,
+                                                        )
+                                                      }
+                                                      className="shrink-0 p-1 text-muted-foreground hover:text-red-600 cursor-pointer"
+                                                      aria-label={`הסר את ${exMeta?.name || "התרגיל"}`}
+                                                    >
+                                                      <Trash2 className="h-3.5 w-3.5" />
+                                                    </button>
                                                   </div>
-                                                  <button
-                                                    onClick={() =>
-                                                      handleRemoveExerciseFromDay(
-                                                        dayItem.id,
-                                                        exItem.id,
-                                                      )
-                                                    }
-                                                    className="text-muted-foreground hover:text-red-600 p-1 cursor-pointer"
-                                                  >
-                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                  </button>
+                                                  {actualExecutions.length > 0 ? (
+                                                    <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/80 p-2 text-[10px]">
+                                                      <div className="flex items-center justify-between gap-2 font-bold text-amber-900">
+                                                        <span>ביצוע אחרון של המתאמן</span>
+                                                        <span className="font-normal text-amber-800">
+                                                          {new Date(
+                                                            actualExecutions[0].date,
+                                                          ).toLocaleDateString("he-IL")}
+                                                        </span>
+                                                      </div>
+                                                      {actualExecutions.map(({ entry }) => (
+                                                        <div
+                                                          key={`${entry.exerciseId}-${entry.notes}-${entry.sets.length}`}
+                                                          className="mt-1.5 border-t border-amber-200/70 pt-1.5"
+                                                        >
+                                                          <p className="text-amber-950">
+                                                            {entry.sets.length > 0
+                                                              ? entry.sets
+                                                                  .map(
+                                                                    (set, index) =>
+                                                                      `סט ${index + 1}: ${
+                                                                        set.weight
+                                                                      } ק״ג × ${set.reps}${
+                                                                        set.done
+                                                                          ? " ✓"
+                                                                          : " — לא בוצע"
+                                                                      }`,
+                                                                  )
+                                                                  .join(" · ")
+                                                              : "לא נרשמו סטים"}
+                                                          </p>
+                                                          {entry.feedback?.rating ||
+                                                          entry.feedback?.notes ||
+                                                          entry.notes ? (
+                                                            <p className="mt-1 text-amber-900/80">
+                                                              {entry.feedback?.rating === "easy"
+                                                                ? "קל"
+                                                                : entry.feedback?.rating ===
+                                                                    "difficult"
+                                                                  ? "כבד"
+                                                                  : entry.feedback?.rating ===
+                                                                      "appropriate"
+                                                                    ? "מתאים"
+                                                                    : ""}
+                                                              {entry.feedback?.notes || entry.notes
+                                                                ? ` · ${
+                                                                    entry.feedback?.notes ||
+                                                                    entry.notes
+                                                                  }`
+                                                                : ""}
+                                                            </p>
+                                                          ) : null}
+                                                        </div>
+                                                      ))}
+                                                    </div>
+                                                  ) : (
+                                                    <p className="mt-2 rounded-lg bg-white/60 px-2 py-1 text-[10px] text-muted-foreground">
+                                                      עדיין אין ביצוע בפועל לתרגיל הזה.
+                                                    </p>
+                                                  )}
                                                 </div>
                                               );
                                             })}
