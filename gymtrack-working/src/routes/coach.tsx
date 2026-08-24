@@ -1646,25 +1646,6 @@ export function CoachDashboardPage({
 
         {clientsOnly ? (
           <>
-            <section className="flex items-center justify-between gap-3 rounded-xl border border-primary/15 bg-primary/[0.035] px-3 py-2 text-ink">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex min-w-0 items-start gap-3">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Dumbbell className="h-3.5 w-3.5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xs">סביבת בנייה</h3>
-                    <p className="mt-0.5 text-[10px] text-muted-foreground">
-                      {genderText(gender, "בחרי מתאמן כדי להתחיל.", "בחר מתאמן כדי להתחיל.")}
-                    </p>
-                  </div>
-                </div>
-                <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
-                  {clients.length} מתאמנים
-                </span>
-              </div>
-            </section>
-
             {/* Client Search & List */}
             <section className="space-y-3 rounded-3xl border border-border/70 bg-surface p-4 shadow-sm">
               <div className="flex items-end justify-between gap-3">
