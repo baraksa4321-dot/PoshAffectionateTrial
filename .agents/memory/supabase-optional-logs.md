@@ -1,10 +1,10 @@
 ---
 name: Optional activity-log schema drift
-description: Connected Supabase lacks the weight and cardio activity-log tables expected by the app.
+description: Connected Supabase activity-log tables may exist with legacy column names that differ from the app contract.
 ---
 
-The connected Supabase project currently does not expose the body-weight and cardio log tables in its schema cache. Authentication and profile-role hydration must stay fail-closed for identity errors, but must not be blocked by those optional feature data sources.
+The connected Supabase project has had activity-log schema drift: cardio_logs may exist with legacy columns (activity_type, duration_minutes, estimated_calories, recorded_at) rather than the app's newer names. Authentication and profile-role hydration must stay fail-closed for identity errors, but must not be blocked by optional activity data sources.
 
 **Why:** A missing optional activity-log table previously prevented an otherwise valid authenticated user from reaching the app, even after their profile role had loaded.
 
-**How to apply:** Keep the affected feature's cloud-persistence state explicit, and only reconcile its schema through the existing migrations after the user approves database work. Do not treat a missing activity-log table as permission to infer a role or bypass RLS.
+**How to apply:** Verify the live columns before applying an idempotent migration. Keep cloud persistence explicit and map the app to the live schema or use an additive compatibility migration; never infer a role or bypass RLS.

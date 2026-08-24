@@ -47,6 +47,18 @@ function isMissingTableInSchemaCache(error: unknown, tableName: string): boolean
   );
 }
 
+function cardioCloudId(localId: string): string {
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(localId)) {
+    return localId;
+  }
+  const hex = Array.from(localId)
+    .map((char) => char.charCodeAt(0).toString(16).padStart(2, "0"))
+    .join("")
+    .padEnd(32, "0")
+    .slice(0, 32);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20)}`;
+}
+
 async function requireSuccessfulWrite(
   operation: PromiseLike<{ error: unknown }>,
   label: string,
@@ -179,17 +191,13 @@ export async function syncLocalToSupabase(
     // This migration is not present in every connected project yet, so a
     // missing schema-cache entry must not prevent the other data from syncing.
     const cardioPayload = (localData.cardioLogs ?? []).map((log) => ({
-      id: log.id,
+      id: cardioCloudId(log.id),
       user_id: userId,
-      date: log.date,
-      type: log.type,
-      duration_min: log.durationMin,
+      activity_type: log.type,
+      duration_minutes: Math.round(log.durationMin),
+      estimated_calories: log.calories,
       intensity: log.intensity,
-      speed_kmh: log.speed,
-      incline_pct: log.incline,
-      distance_km: log.distanceKm,
-      calories: log.calories,
-      updated_at: new Date().toISOString(),
+      recorded_at: `${log.date}T00:00:00.000Z`,
     }));
     let cardioTableAvailable = true;
     try {
@@ -604,17 +612,11 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (!cardioError && dbCardioLogs && dbCardioLogs.length > 0) {
       nextData.cardioLogs = dbCardioLogs.map((row): CardioLog => ({
         id: row.id,
-        date:
-          typeof (row.date ?? row.recorded_at) === "string"
-            ? (row.date ?? row.recorded_at).slice(0, 10)
-            : (row.date ?? row.recorded_at),
-        type: row.type,
-        durationMin: Number(row.duration_min),
+        date: typeof row.recorded_at === "string" ? row.recorded_at.slice(0, 10) : row.recorded_at,
+        type: row.activity_type,
+        durationMin: Number(row.duration_minutes),
         intensity: row.intensity || undefined,
-        speed: row.speed_kmh === null ? undefined : Number(row.speed_kmh),
-        incline: row.incline_pct === null ? undefined : Number(row.incline_pct),
-        distanceKm: row.distance_km === null ? undefined : Number(row.distance_km),
-        calories: Number(row.calories),
+        calories: Number(row.estimated_calories ?? 0),
       }));
     }
 
@@ -873,14 +875,11 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     }));
     const cardioList: CardioLog[] = (dbCardioLogs || []).map((row) => ({
       id: row.id,
-      date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
-      type: row.type,
-      durationMin: Number(row.duration_min),
+      date: typeof row.recorded_at === "string" ? row.recorded_at.slice(0, 10) : row.recorded_at,
+      type: row.activity_type,
+      durationMin: Number(row.duration_minutes),
       intensity: row.intensity || undefined,
-      speed: row.speed_kmh === null ? undefined : Number(row.speed_kmh),
-      incline: row.incline_pct === null ? undefined : Number(row.incline_pct),
-      distanceKm: row.distance_km === null ? undefined : Number(row.distance_km),
-      calories: Number(row.calories),
+      calories: Number(row.estimated_calories ?? 0),
     }));
 
     return {
