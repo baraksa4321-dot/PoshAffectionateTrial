@@ -235,7 +235,7 @@ function Dashboard() {
 
   const homeCardProps = (id: HomeCardId) => ({
     "data-home-card-id": id,
-    style: { order: homeCardOrder.indexOf(id) },
+    style: undefined,
     onPointerDown: (event: PointerEvent<HTMLElement>) => startHomeCardHold(id, event),
     onPointerMove: moveHomeCard,
     onPointerUp: finishHomeCardPointer,

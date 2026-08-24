@@ -1719,27 +1719,27 @@ html.night-mode .nav-shell {
 }
 
 .home-card-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+  display: block;
 }
 
-.home-card-stack > .home-feature-section,
+.home-card-stack > .home-feature-section {
+  display: block;
+}
+
 .home-card-stack > .home-feature-section > .home-feature-grid {
-  display: contents;
+  display: grid;
 }
 
 .home-card-stack > [data-home-card-id] {
   min-width: 0;
-  touch-action: pan-y;
-  transition: transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease;
+  transition: none;
 }
 
 .home-feature-item,
 .home-sortable-card {
-  min-width: 0;
+  min-width: auto;
   touch-action: auto;
-  transition: transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease;
+  transition: none;
 }
 
 [data-home-card-id].home-feature-dragging {
