@@ -320,6 +320,14 @@ function LoadingIllustration({ variant }: { variant: number }) {
   const asset = REALISTIC_LOADING_ASSETS[variant % REALISTIC_LOADING_ASSETS.length];
   return (
     <div className="loading-micro-stage">
+      <span className="loading-doodle-streak loading-doodle-streak-one" aria-hidden="true" />
+      <span className="loading-doodle-streak loading-doodle-streak-two" aria-hidden="true" />
+      <span className="loading-doodle-spark loading-doodle-spark-one" aria-hidden="true">
+        ✦
+      </span>
+      <span className="loading-doodle-spark loading-doodle-spark-two" aria-hidden="true">
+        •
+      </span>
       <img
         className="loading-realistic-image"
         src={`/loading/handmade-loading-${asset.file}.png`}
