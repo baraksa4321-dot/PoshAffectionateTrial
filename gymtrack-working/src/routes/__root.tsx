@@ -340,11 +340,23 @@ function ReferenceLoadingIllustration({ variant }: { variant: number }) {
   const pose = variant % LOADING_CHARACTER_POSES.length;
   const image = REFERENCE_LOADING_IMAGES[pose % REFERENCE_LOADING_IMAGES.length];
   return (
-    <div className="loading-micro-stage">
+    <div className={`loading-micro-stage loading-reference-stage-pose-${pose}`}>
       <img
-        className={`loading-reference-image loading-reference-pose-${pose}`}
+        className={`loading-reference-image loading-reference-base loading-reference-pose-${pose}`}
         src={`/loading/references/${image.file}`}
         alt={`איור טעינה: ${image.label}`}
+      />
+      <img
+        className="loading-reference-layer loading-reference-arms"
+        src={`/loading/references/${image.file}`}
+        alt=""
+        aria-hidden="true"
+      />
+      <img
+        className="loading-reference-layer loading-reference-legs"
+        src={`/loading/references/${image.file}`}
+        alt=""
+        aria-hidden="true"
       />
     </div>
   );

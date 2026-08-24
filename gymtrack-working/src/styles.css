@@ -1835,6 +1835,7 @@ html.night-mode .auth-panel {
   .loading-witty-message,
   .loading-realistic-image,
   .loading-reference-image,
+  .loading-reference-layer,
   .loading-character,
   .loading-character *,
   .loading-doodle-streak,
@@ -1899,6 +1900,143 @@ html.night-mode .auth-panel {
   border-radius: 12px;
   filter: drop-shadow(0 3px 3px rgb(75 48 58 / 10%));
   animation: loading-reference-breathe 2.6s ease-in-out infinite;
+}
+
+.loading-reference-layer {
+  position: absolute;
+  z-index: 2;
+  display: block;
+  width: 154px;
+  height: 120px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.loading-reference-base {
+  clip-path: polygon(16% 0, 84% 0, 90% 88%, 76% 100%, 24% 100%, 10% 88%);
+}
+
+.loading-reference-arms {
+  clip-path: polygon(0 0, 100% 0, 100% 75%, 0 75%);
+  transform-origin: 50% 58%;
+  animation: loading-reference-arms-soft 2.7s ease-in-out infinite;
+}
+
+.loading-reference-legs {
+  clip-path: polygon(0 63%, 100% 63%, 100% 100%, 0 100%);
+  transform-origin: 50% 65%;
+  animation: loading-reference-legs-soft 2.7s ease-in-out infinite;
+}
+
+.loading-reference-stage-pose-1 .loading-reference-arms,
+.loading-reference-stage-pose-11 .loading-reference-arms,
+.loading-reference-stage-pose-6 .loading-reference-arms,
+.loading-reference-stage-pose-16 .loading-reference-arms {
+  animation-name: loading-reference-arms-lift-soft;
+}
+
+.loading-reference-stage-pose-2 .loading-reference-arms,
+.loading-reference-stage-pose-12 .loading-reference-arms,
+.loading-reference-stage-pose-8 .loading-reference-arms,
+.loading-reference-stage-pose-18 .loading-reference-arms {
+  animation-name: loading-reference-arms-sway-soft;
+}
+
+.loading-reference-stage-pose-3 .loading-reference-legs,
+.loading-reference-stage-pose-13 .loading-reference-legs,
+.loading-reference-stage-pose-4 .loading-reference-legs,
+.loading-reference-stage-pose-14 .loading-reference-legs {
+  animation-name: loading-reference-legs-step-soft;
+}
+
+.loading-reference-stage-pose-7 .loading-reference-legs,
+.loading-reference-stage-pose-17 .loading-reference-legs,
+.loading-reference-stage-pose-9 .loading-reference-legs,
+.loading-reference-stage-pose-19 .loading-reference-legs {
+  animation-name: loading-reference-legs-balance-soft;
+}
+
+.loading-reference-stage-pose-10 .loading-reference-arms,
+.loading-reference-stage-pose-11 .loading-reference-arms,
+.loading-reference-stage-pose-12 .loading-reference-arms,
+.loading-reference-stage-pose-13 .loading-reference-arms,
+.loading-reference-stage-pose-14 .loading-reference-arms,
+.loading-reference-stage-pose-15 .loading-reference-arms,
+.loading-reference-stage-pose-16 .loading-reference-arms,
+.loading-reference-stage-pose-17 .loading-reference-arms,
+.loading-reference-stage-pose-18 .loading-reference-arms,
+.loading-reference-stage-pose-19 .loading-reference-arms,
+.loading-reference-stage-pose-10 .loading-reference-legs,
+.loading-reference-stage-pose-11 .loading-reference-legs,
+.loading-reference-stage-pose-12 .loading-reference-legs,
+.loading-reference-stage-pose-13 .loading-reference-legs,
+.loading-reference-stage-pose-14 .loading-reference-legs,
+.loading-reference-stage-pose-15 .loading-reference-legs,
+.loading-reference-stage-pose-16 .loading-reference-legs,
+.loading-reference-stage-pose-17 .loading-reference-legs,
+.loading-reference-stage-pose-18 .loading-reference-legs,
+.loading-reference-stage-pose-19 .loading-reference-legs {
+  animation-direction: reverse;
+}
+
+@keyframes loading-reference-arms-soft {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(4deg) translateY(-3px);
+  }
+}
+
+@keyframes loading-reference-arms-lift-soft {
+  0%,
+  100% {
+    transform: rotate(3deg) translateY(2px);
+  }
+  50% {
+    transform: rotate(-5deg) translateY(-6px);
+  }
+}
+
+@keyframes loading-reference-arms-sway-soft {
+  0%,
+  100% {
+    transform: translateX(-2px) rotate(-5deg);
+  }
+  50% {
+    transform: translateX(3px) rotate(5deg);
+  }
+}
+
+@keyframes loading-reference-legs-soft {
+  0%,
+  100% {
+    transform: rotate(-2deg) translateY(2px);
+  }
+  50% {
+    transform: rotate(3deg) translateY(-3px);
+  }
+}
+
+@keyframes loading-reference-legs-step-soft {
+  0%,
+  100% {
+    transform: translateX(-2px) rotate(-3deg);
+  }
+  50% {
+    transform: translateX(3px) rotate(4deg);
+  }
+}
+
+@keyframes loading-reference-legs-balance-soft {
+  0%,
+  100% {
+    transform: rotate(4deg) translateY(2px);
+  }
+  50% {
+    transform: rotate(-4deg) translateY(-5px);
+  }
 }
 
 .loading-reference-pose-1,
