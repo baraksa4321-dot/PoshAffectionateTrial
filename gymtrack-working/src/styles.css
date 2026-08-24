@@ -723,7 +723,8 @@ html.night-mode .nav-shell {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 78%),
     var(--elevation-1),
-    0 14px 30px rgb(var(--shadow-color) / 6%);
+    0 16px 34px rgb(var(--shadow-color) / 10%),
+    0 3px 8px rgb(var(--shadow-color) / 7%);
   transition:
     border-color 200ms ease,
     box-shadow 200ms ease,
@@ -734,14 +735,20 @@ html.night-mode .nav-shell {
   background: linear-gradient(145deg, color-mix(in srgb, white 38%, var(--surface-2)), var(--surface-2));
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 52%), 0 9px 20px rgb(var(--shadow-color) / 8%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 58%),
+    0 10px 22px rgb(var(--shadow-color) / 11%),
+    0 2px 6px rgb(var(--shadow-color) / 7%);
 }
 
 .surface-cream {
   background: linear-gradient(145deg, color-mix(in srgb, white 35%, var(--cream)), var(--cream));
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 55%), 0 5px 14px rgb(var(--shadow-color) / 4%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 62%),
+    0 7px 17px rgb(var(--shadow-color) / 8%),
+    0 2px 5px rgb(var(--shadow-color) / 6%);
 }
 
 .soft-lift {
@@ -749,7 +756,9 @@ html.night-mode .nav-shell {
 }
 
 .primary-shadow {
-  box-shadow: 0 8px 18px oklch(from var(--primary) l c h / 0.18);
+  box-shadow:
+    0 8px 18px oklch(from var(--primary) l c h / 0.24),
+    0 2px 5px rgb(var(--shadow-color) / 10%);
 }
 
 .num-pill {
@@ -769,7 +778,9 @@ html.night-mode .nav-shell {
   );
   color: #fff;
   border-radius: 1.2rem;
-  box-shadow: 0 11px 24px rgb(181 103 123 / 18%);
+  box-shadow:
+    0 14px 28px color-mix(in srgb, var(--shadow-color) 22%, transparent),
+    0 3px 8px color-mix(in srgb, var(--ink) 14%, transparent);
   position: relative;
   overflow: hidden;
 }
