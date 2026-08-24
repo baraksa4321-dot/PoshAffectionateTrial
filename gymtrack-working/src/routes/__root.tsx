@@ -431,7 +431,7 @@ const SIMPLE_LOADING_ILLUSTRATIONS = [
 function SimpleLoadingIllustration({ variant }: { variant: number }) {
   const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length]!;
   return (
-    <div className={`loading-micro-stage loading-simple-pose-${variant % 4}`}>
+    <div className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4}`}>
       <video
         key={illustration.file}
         className="loading-simple-image loading-simple-video"
