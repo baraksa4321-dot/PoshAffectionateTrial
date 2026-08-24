@@ -1935,68 +1935,7 @@ html.night-mode .auth-panel {
   width: 116px;
   height: 116px;
   object-fit: contain;
-  mix-blend-mode: multiply;
   filter: brightness(1.08) saturate(1.04) drop-shadow(0 3px 3px rgb(75 48 58 / 10%));
-  animation: loading-simple-hop 2.5s ease-in-out infinite;
-}
-
-.loading-simple-pose-0 .loading-simple-image {
-  animation-name: loading-simple-muscle;
-}
-
-.loading-simple-pose-1 .loading-simple-image {
-  animation-name: loading-simple-banana;
-  animation-delay: -0.35s;
-}
-
-.loading-simple-pose-2 .loading-simple-image {
-  animation-name: loading-simple-broccoli;
-  animation-delay: -0.7s;
-}
-
-.loading-simple-pose-3 .loading-simple-image {
-  animation-name: loading-simple-avocado;
-  animation-delay: -1s;
-}
-
-@keyframes loading-simple-muscle {
-  0%,
-  100% {
-    transform: translateY(3px) scale(0.88);
-  }
-  50% {
-    transform: translateY(-3px) scale(1.08);
-  }
-}
-
-@keyframes loading-simple-banana {
-  0%,
-  100% {
-    transform: translateY(3px) rotate(-3deg);
-  }
-  45% {
-    transform: translateY(-8px) rotate(3deg);
-  }
-}
-
-@keyframes loading-simple-broccoli {
-  0%,
-  100% {
-    transform: translateY(3px) rotate(2deg);
-  }
-  45% {
-    transform: translateY(-9px) rotate(-3deg);
-  }
-}
-
-@keyframes loading-simple-avocado {
-  0%,
-  100% {
-    transform: translateY(4px) rotate(-2deg) scale(0.97);
-  }
-  50% {
-    transform: translateY(-8px) rotate(2deg) scale(1.03);
-  }
 }
 
 .loading-reference-image {
