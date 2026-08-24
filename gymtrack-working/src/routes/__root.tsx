@@ -336,6 +336,26 @@ const REFERENCE_LOADING_IMAGES = [
   { file: "avocado-rope.png", label: "אבוקדו בקפיצה בחבל" },
 ] as const;
 
+const SIMPLE_LOADING_ILLUSTRATIONS = [
+  { file: "cartoon-loading-muscle.png", label: "שריר יד חמוד" },
+  { file: "cartoon-loading-banana.png", label: "בננה מצוירת" },
+  { file: "cartoon-loading-broccoli.png", label: "ברוקולי מצויר" },
+  { file: "cartoon-loading-avocado.png", label: "אבוקדו מצויר" },
+] as const;
+
+function SimpleLoadingIllustration({ variant }: { variant: number }) {
+  const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length];
+  return (
+    <div className={`loading-micro-stage loading-simple-pose-${variant % 4}`}>
+      <img
+        className="loading-simple-image"
+        src={`/loading/${illustration.file}`}
+        alt={`איור טעינה: ${illustration.label}`}
+      />
+    </div>
+  );
+}
+
 function ReferenceLoadingIllustration({ variant }: { variant: number }) {
   const pose = variant % LOADING_CHARACTER_POSES.length;
   const image = REFERENCE_LOADING_IMAGES[pose % REFERENCE_LOADING_IMAGES.length];
@@ -988,7 +1008,7 @@ function RootContent() {
       const previousVariant = Number(window.localStorage.getItem(storageKey));
       const nextVariant =
         Number.isInteger(previousVariant) && previousVariant >= 0
-          ? (previousVariant + 1) % LOADING_CHARACTER_POSES.length
+          ? (previousVariant + 1) % SIMPLE_LOADING_ILLUSTRATIONS.length
           : 0;
       window.localStorage.setItem(storageKey, String(nextVariant));
       setLoadingVariant(nextVariant);
@@ -1010,7 +1030,7 @@ function RootContent() {
       setLoadingMessageIndex(0);
     }
     const illustrationTimer = window.setInterval(() => {
-      setLoadingVariant((current) => (current + 1) % LOADING_CHARACTER_POSES.length);
+      setLoadingVariant((current) => (current + 1) % SIMPLE_LOADING_ILLUSTRATIONS.length);
     }, 2400);
     const messageTimer = window.setInterval(() => {
       setLoadingMessageIndex((current) => (current + 1) % LOADING_MESSAGES.length);
@@ -1037,13 +1057,10 @@ function RootContent() {
             aria-live="polite"
             aria-label="MY routine נטען"
           >
-            <ReferenceLoadingIllustration variant={loadingVariant} />
+            <SimpleLoadingIllustration variant={loadingVariant} />
             <p key={loadingMessageIndex} className="loading-witty-message">
               {LOADING_MESSAGES[loadingMessageIndex]}
             </p>
-            <div className="loading-wordmark" aria-label="MY routine">
-              <span>MY</span> routine
-            </div>
           </div>
         </div>
       ) : hasProfileHydrationError ? (
