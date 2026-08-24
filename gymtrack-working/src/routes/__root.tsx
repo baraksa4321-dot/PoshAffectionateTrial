@@ -917,7 +917,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "MY routine — אימונים ותזונה" },
     ],
-    links: [{ rel: "manifest", href: "/manifest.json" }],
+    links: [
+      { rel: "manifest", href: "/manifest.json" },
+      { rel: "apple-touch-icon", href: "/brand-icon-180.png" },
+      { rel: "icon", type: "image/svg+xml", href: "/brand-icon.svg" },
+    ],
   }),
 
   component: RootComponent,
@@ -1037,6 +1041,9 @@ function RootContent() {
             <p key={loadingMessageIndex} className="loading-witty-message">
               {LOADING_MESSAGES[loadingMessageIndex]}
             </p>
+            <div className="loading-wordmark" aria-label="MY routine">
+              <span>MY</span> routine
+            </div>
           </div>
         </div>
       ) : hasProfileHydrationError ? (

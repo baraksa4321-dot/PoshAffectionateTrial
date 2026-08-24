@@ -1856,7 +1856,8 @@ html.night-mode .auth-panel {
       color-mix(in srgb, var(--primary) 8%, transparent),
       transparent 22%
     ),
-    var(--background);
+    #fffdf8;
+  color: #171414;
 }
 
 .loading-screen::before,
@@ -1869,9 +1870,26 @@ html.night-mode .auth-panel {
 
 .loading-brand {
   width: min(100%, 240px);
-  padding: 14px 0 12px;
+  padding: 14px 0 10px;
   background: transparent;
   text-align: center;
+}
+
+.loading-wordmark {
+  margin-top: 17px;
+  color: #171414;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.loading-wordmark span {
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: -0.06em;
 }
 
 .loading-micro-stage {
