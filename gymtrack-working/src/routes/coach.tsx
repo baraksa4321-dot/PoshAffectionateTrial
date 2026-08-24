@@ -2947,48 +2947,35 @@ export function CoachDashboardPage({
                                                 {dropSetEnabled ? (
                                                   <>
                                                     <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                      סוג הפחתת המשקל
-                                                      <select
-                                                        value={dropReductionMode}
-                                                        onChange={(event) =>
-                                                          setDropReductionMode(
-                                                            event.target.value as
-                                                              "percent" | "kg" | "",
-                                                          )
-                                                        }
-                                                        className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
-                                                      >
-                                                        <option value="">בחרי סוג הפחתה</option>
-                                                        <option value="percent">אחוזים</option>
-                                                        <option value="kg">ק״ג</option>
-                                                      </select>
-                                                    </label>
-                                                    <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                      כמה משקל להוריד
+                                                      משקל לפני הדרופ (ק״ג)
                                                       <input
                                                         type="number"
                                                         min="0.1"
-                                                        max={
-                                                          dropReductionMode === "percent"
-                                                            ? 99.9
-                                                            : Math.max(0.1, targetWeight - 0.1)
-                                                        }
-                                                        step={
-                                                          dropReductionMode === "percent"
-                                                            ? "0.1"
-                                                            : "0.5"
-                                                        }
-                                                        value={dropReductionValue}
+                                                        step="0.5"
+                                                        inputMode="decimal"
+                                                        value={dropLevel1Weight}
                                                         onChange={(event) =>
-                                                          setDropReductionValue(event.target.value)
+                                                          setDropLevel1Weight(event.target.value)
                                                         }
-                                                        placeholder={
-                                                          dropReductionMode
-                                                            ? "הזיני ערך"
-                                                            : "בחרי סוג קודם"
-                                                        }
-                                                        disabled={!dropReductionMode}
+                                                        placeholder="למשל 20"
                                                         className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
+                                                        aria-label="משקל לפני הדרופ בקילוגרמים"
+                                                      />
+                                                    </label>
+                                                    <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                      משקל אחרי הדרופ (ק״ג)
+                                                      <input
+                                                        type="number"
+                                                        min="0.1"
+                                                        step="0.5"
+                                                        inputMode="decimal"
+                                                        value={dropLevel2Weight}
+                                                        onChange={(event) =>
+                                                          setDropLevel2Weight(event.target.value)
+                                                        }
+                                                        placeholder="למשל 15"
+                                                        className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
+                                                        aria-label="משקל אחרי הדרופ בקילוגרמים"
                                                       />
                                                     </label>
                                                     <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
