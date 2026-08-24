@@ -507,6 +507,12 @@ html.night-mode textarea::placeholder {
   --gradient-end: #8b8b92;
 }
 
+/* Keep the daytime canvas consistent across every palette. The selected
+ * palette still controls accents, borders and controls, not the page backdrop. */
+:root:not(.night-mode) {
+  --background: #f2ebe2;
+}
+
 html,
 body,
 #root {
@@ -1866,13 +1872,7 @@ html.night-mode .auth-panel {
 
 /* Compact loading screen: one clean moment, with many tiny animation variations. */
 .loading-screen {
-  background:
-    radial-gradient(
-      circle at 50% 43%,
-      color-mix(in srgb, var(--primary) 8%, transparent),
-      transparent 22%
-    ),
-    #fffdf8;
+  background: #f2ebe2;
   color: #171414;
 }
 

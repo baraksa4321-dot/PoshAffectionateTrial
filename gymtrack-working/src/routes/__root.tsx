@@ -1070,6 +1070,9 @@ function RootContent() {
             <p key={loadingMessageIndex} className="loading-witty-message">
               {LOADING_MESSAGES[loadingMessageIndex]}
             </p>
+            <div className="loading-wordmark" aria-label="MY routine">
+              <span>MY</span> routine
+            </div>
           </div>
         </div>
       ) : hasProfileHydrationError ? (
