@@ -1017,6 +1017,14 @@ html.night-mode .auth-panel {
   -webkit-backdrop-filter: none !important;
 }
 
+/* On iOS the visual viewport can report the keyboard before the overlay
+   resize event reaches React. Focus-within is the reliable second guard:
+   keep the app behind a search sheet dimmed, but never blur it. */
+.overlay-root:focus-within {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 .app-nav-link {
   border-radius: 0.75rem;
 }

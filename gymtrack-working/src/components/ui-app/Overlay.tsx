@@ -147,7 +147,7 @@ export function Overlay({
   const panelBottomGap = isFull ? 0 : isBottom ? 16 : 32;
   const panelMaxHeight =
     viewportHeight === null
-      ? `calc(100dvh - ${keyboardOffset}px - ${panelBottomGap}px)`
+      ? `calc(100dvh - ${panelBottomGap}px)`
       : `${Math.max(0, viewportHeight - panelBottomGap)}px`;
 
   return createPortal(
@@ -158,7 +158,7 @@ export function Overlay({
       data-overlay-root="true"
       data-overlay-variant={variant}
       data-keyboard-open={keyboardOffset > 0 ? "true" : undefined}
-      className={`fixed inset-0 z-[100] flex ${
+      className={`overlay-root fixed inset-0 z-[100] flex ${
         isFull
           ? "items-stretch justify-center"
           : isBottom
