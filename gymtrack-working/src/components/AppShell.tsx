@@ -420,7 +420,7 @@ export function AppShell({
               ) : null}
             </div>
           ) : null}
-          {title || action ? (
+          {title || action || user ? (
             <div className="flex items-start gap-3">
               <div className="min-w-0 flex-1 text-start">
                 {title ? (
@@ -444,8 +444,15 @@ export function AppShell({
                       }`}
                       aria-hidden="true"
                     />
-                    <span className="max-w-[120px] truncate">
-                      {store.userProfile?.fullName || "החשבון שלי"}
+                    <span className="flex max-w-[150px] min-w-0 flex-col truncate text-start leading-tight">
+                      <span className="truncate">
+                        {store.userProfile?.fullName || "החשבון שלי"}
+                      </span>
+                      {user.email ? (
+                        <span className="truncate text-[9px] font-medium text-muted-foreground">
+                          {user.email}
+                        </span>
+                      ) : null}
                     </span>
                     <div className="h-3 w-px bg-border/80 mx-1" />
                     <button
