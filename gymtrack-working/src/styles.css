@@ -2151,6 +2151,51 @@ html.night-mode .auth-panel {
   stroke-width: 1.5;
 }
 
+.loading-simple-illustration .loading-lifter-motion {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: loading-dumbbell-motion 1.8s ease-in-out infinite;
+}
+
+.loading-simple-illustration .loading-lifter-head,
+.loading-simple-illustration .loading-lifter-shell {
+  fill: #fff;
+  stroke: var(--ink);
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.loading-simple-illustration .loading-lifter-fill {
+  fill: #e58a9b;
+  opacity: 1;
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: loading-bottom-fill 3.8s cubic-bezier(0.22, 0.75, 0.3, 1) infinite;
+}
+
+.loading-simple-illustration .loading-lifter-arms,
+.loading-simple-illustration .loading-lifter-legs {
+  fill: none;
+  stroke: var(--ink);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.loading-simple-illustration .loading-lifter-bar {
+  fill: none;
+  stroke: #e78aa0;
+  stroke-linecap: round;
+  stroke-width: 3;
+}
+
+.loading-simple-illustration .loading-lifter-plate {
+  fill: none;
+  stroke: #e78aa0;
+  stroke-linecap: round;
+  stroke-width: 2.5;
+}
+
 .loading-simple-illustration .loading-apple-leaf {
   fill: #4f9b55;
   stroke: var(--ink);

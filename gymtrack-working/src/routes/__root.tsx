@@ -238,7 +238,7 @@ const LOADING_FOOD_ILLUSTRATIONS = [
 ] as const;
 
 function LoadingIllustration({ variant }: { variant: number }) {
-  const activeShape = variant % 8;
+  const activeShape = variant % 9;
   const illustrationLabel = [
     "משקולת ורודה",
     "ברוקולי ירוק",
@@ -248,6 +248,7 @@ function LoadingIllustration({ variant }: { variant: number }) {
     "אפרסק",
     "בננה צהובה",
     "אבוקדו ירוק",
+    "מתאמנת עם משקולת",
   ][activeShape];
   return (
     <div className="loading-micro-stage">
@@ -309,6 +310,16 @@ function LoadingIllustration({ variant }: { variant: number }) {
             <path className="loading-avocado-fill" d="M75 21c-6 0-10 12-15 24-7 17-15 30-12 40 3 9 12 13 27 13s24-4 27-13c3-10-5-23-12-40-5-12-9-24-15-24z" />
             <circle className="loading-avocado-pit" cx="75" cy="75" r="13" />
             <path className="loading-avocado-detail" d="M58 35c-5 13-11 23-13 34" />
+          </g>
+        ) : activeShape === 8 ? (
+          <g className="loading-lifter-motion">
+            <circle className="loading-lifter-head" cx="75" cy="29" r="9" />
+            <path className="loading-lifter-shell" d="M63 43c4-4 20-4 24 0l5 18-9 3v22H67V64l-9-3z" />
+            <path className="loading-lifter-fill" d="M68 47c4-2 10-2 14 0l3 12-5 2v19H70V61l-5-2z" />
+            <path className="loading-lifter-arms" d="M63 48 50 29M87 48l13-19M50 29 43 19M100 29l7-10" />
+            <path className="loading-lifter-bar" d="M35 15h80" />
+            <path className="loading-lifter-plate" d="M32 10v10M38 7v16M112 10v10M118 7v16" />
+            <path className="loading-lifter-legs" d="M70 86 62 99M80 86l8 13" />
           </g>
         ) : null}
       </svg>
@@ -555,10 +566,10 @@ function RootContent() {
     document.documentElement.lang = "he";
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
-     setLoadingVariant(Math.floor(Math.random() * 8));
+     setLoadingVariant(Math.floor(Math.random() * 9));
     setLoadingMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
     const illustrationTimer = window.setInterval(() => {
-       setLoadingVariant((current) => (current + 1) % 8);
+       setLoadingVariant((current) => (current + 1) % 9);
     }, 2400);
     const messageTimer = window.setInterval(() => {
       setLoadingMessageIndex((current) => (current + 1) % LOADING_MESSAGES.length);
