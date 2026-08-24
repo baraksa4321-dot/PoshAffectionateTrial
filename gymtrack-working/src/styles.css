@@ -1883,16 +1883,7 @@ html.night-mode .auth-panel {
 }
 
 .loading-micro-stage::before {
-  position: absolute;
-  inset: 18px 20px 12px;
-  display: block;
-  content: "";
-  border-radius: 48% 52% 45% 55%;
-  background:
-    radial-gradient(circle at 35% 35%, rgb(255 255 255 / 80%) 0 5%, transparent 6%),
-    color-mix(in srgb, var(--primary) 10%, transparent);
-  transform: rotate(-5deg);
-  animation: loading-cartoon-stage 1.9s ease-in-out infinite;
+  display: none;
 }
 
 .loading-realistic-image {
@@ -1907,53 +1898,47 @@ html.night-mode .auth-panel {
   animation: loading-realistic-float 1.55s cubic-bezier(0.32, 0.72, 0.45, 1) infinite;
 }
 
-.loading-doodle-streak {
-  position: absolute;
-  z-index: 2;
-  width: 24px;
-  height: 7px;
-  border-top: 2px solid color-mix(in srgb, var(--primary) 78%, var(--rose));
-  border-radius: 50%;
-  opacity: 0;
-  animation: loading-doodle-dash 1.35s ease-out infinite;
+.loading-realistic-dumbbell {
+  animation-name: loading-dumbbell-jump;
 }
 
-.loading-doodle-streak-one {
-  left: 12px;
-  top: 35px;
-  transform: rotate(-18deg);
+.loading-realistic-broccoli {
+  animation-name: loading-broccoli-hop;
 }
 
-.loading-doodle-streak-two {
-  right: 9px;
-  bottom: 29px;
-  width: 18px;
-  animation-delay: -0.68s;
-  transform: rotate(20deg);
+.loading-realistic-apple {
+  animation-name: loading-apple-bounce;
+  animation-delay: -0.15s;
 }
 
-.loading-doodle-spark {
-  position: absolute;
-  z-index: 3;
-  color: var(--primary);
-  font-family: Georgia, serif;
-  font-size: 20px;
-  font-weight: 900;
-  line-height: 1;
-  text-shadow: 1px 2px 0 rgb(92 54 62 / 12%);
-  animation: loading-doodle-pop 1.45s ease-in-out infinite;
+.loading-realistic-egg {
+  animation-name: loading-egg-wobble;
+  animation-delay: -0.35s;
 }
 
-.loading-doodle-spark-one {
-  top: 5px;
-  right: 23px;
+.loading-realistic-muscle {
+  animation-name: loading-muscle-flex;
+  animation-delay: -0.5s;
 }
 
-.loading-doodle-spark-two {
-  bottom: 13px;
-  left: 24px;
-  font-size: 24px;
-  animation-delay: -0.72s;
+.loading-realistic-peach {
+  animation-name: loading-peach-hop;
+  animation-delay: -0.2s;
+}
+
+.loading-realistic-banana {
+  animation-name: loading-banana-sway;
+  animation-delay: -0.65s;
+}
+
+.loading-realistic-avocado {
+  animation-name: loading-avocado-bounce;
+  animation-delay: -0.4s;
+}
+
+.loading-realistic-lifter {
+  animation-name: loading-lifter-lift;
+  animation-delay: -0.3s;
 }
 
 @keyframes loading-realistic-float {
@@ -1972,15 +1957,123 @@ html.night-mode .auth-panel {
   }
 }
 
-@keyframes loading-cartoon-stage {
+@keyframes loading-dumbbell-jump {
   0%,
   100% {
-    transform: rotate(-5deg) scale(0.92);
-    opacity: 0.7;
+    transform: translateY(8px) rotate(-7deg) scale(0.94);
+  }
+  42% {
+    transform: translateY(-14px) rotate(7deg) scale(1.04);
+  }
+  58% {
+    transform: translateY(-8px) rotate(3deg) scale(1.01);
+  }
+}
+
+@keyframes loading-broccoli-hop {
+  0%,
+  100% {
+    transform: translateY(7px) rotate(3deg);
+  }
+  35% {
+    transform: translateY(-12px) rotate(-7deg);
+  }
+  55% {
+    transform: translateY(-5px) rotate(-2deg);
+  }
+}
+
+@keyframes loading-apple-bounce {
+  0%,
+  100% {
+    transform: translateY(5px) rotate(-4deg) scale(0.96, 1.02);
+  }
+  45% {
+    transform: translateY(-16px) rotate(5deg) scale(1.03, 0.96);
+  }
+  62% {
+    transform: translateY(-7px) rotate(2deg) scale(1, 1);
+  }
+}
+
+@keyframes loading-egg-wobble {
+  0%,
+  100% {
+    transform: translateY(6px) rotate(-8deg);
+  }
+  30% {
+    transform: translateY(-10px) rotate(7deg);
   }
   50% {
-    transform: rotate(5deg) scale(1.08);
-    opacity: 1;
+    transform: translateY(-15px) rotate(-4deg);
+  }
+  70% {
+    transform: translateY(-4px) rotate(5deg);
+  }
+}
+
+@keyframes loading-muscle-flex {
+  0%,
+  100% {
+    transform: translateY(6px) rotate(-5deg) scale(0.94);
+  }
+  50% {
+    transform: translateY(-13px) rotate(6deg) scale(1.08);
+  }
+}
+
+@keyframes loading-peach-hop {
+  0%,
+  100% {
+    transform: translateY(8px) rotate(4deg);
+  }
+  38% {
+    transform: translateY(-17px) rotate(-5deg);
+  }
+  58% {
+    transform: translateY(-7px) rotate(-2deg);
+  }
+}
+
+@keyframes loading-banana-sway {
+  0%,
+  100% {
+    transform: translateY(5px) rotate(-10deg);
+  }
+  35% {
+    transform: translateY(-12px) rotate(8deg);
+  }
+  68% {
+    transform: translateY(-4px) rotate(-4deg);
+  }
+}
+
+@keyframes loading-avocado-bounce {
+  0%,
+  100% {
+    transform: translateY(7px) rotate(-2deg) scale(0.95);
+  }
+  42% {
+    transform: translateY(-15px) rotate(4deg) scale(1.04);
+  }
+  61% {
+    transform: translateY(-5px) rotate(1deg) scale(1);
+  }
+}
+
+@keyframes loading-lifter-lift {
+  0%,
+  100% {
+    transform: translateY(7px) rotate(-3deg);
+  }
+  28% {
+    transform: translateY(-8px) rotate(2deg);
+  }
+  48% {
+    transform: translateY(-16px) rotate(-2deg);
+  }
+  66% {
+    transform: translateY(-5px) rotate(1deg);
   }
 }
 
