@@ -373,6 +373,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
     nextData.userProfile = {
       ...nextData.userProfile,
+      fullName: profile.full_name || nextData.userProfile?.fullName,
       weight: profile.weight_kg ? Number(profile.weight_kg) : (nextData.userProfile?.weight ?? 65),
       height: profile.height_cm ? Number(profile.height_cm) : nextData.userProfile?.height,
       age: profile.age_years ? Number(profile.age_years) : nextData.userProfile?.age,
