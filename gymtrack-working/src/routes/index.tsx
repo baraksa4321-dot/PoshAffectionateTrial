@@ -144,10 +144,10 @@ function Dashboard() {
   const [showCardioModal, setShowCardioModal] = useState(false);
   const [editingCardioId, setEditingCardioId] = useState<string | null>(null);
   const [cardioType, setCardioType] = useState(DEFAULT_CARDIO_TYPE);
-  const [cardioDuration, setCardioDuration] = useState("0");
-  const [cardioSpeed, setCardioSpeed] = useState("0");
-  const [cardioIncline, setCardioIncline] = useState("0");
-  const [cardioDistance, setCardioDistance] = useState("0");
+  const [cardioDuration, setCardioDuration] = useState("");
+  const [cardioSpeed, setCardioSpeed] = useState("");
+  const [cardioIncline, setCardioIncline] = useState("");
+  const [cardioDistance, setCardioDistance] = useState("");
   const [cardioError, setCardioError] = useState("");
   const [checklistInput, setChecklistInput] = useState("");
   const [showChecklistModal, setShowChecklistModal] = useState(false);
@@ -372,10 +372,10 @@ function Dashboard() {
   const resetCardioForm = () => {
     setEditingCardioId(null);
     setCardioType(DEFAULT_CARDIO_TYPE);
-    setCardioDuration("0");
-    setCardioSpeed("0");
-    setCardioIncline("0");
-    setCardioDistance("0");
+    setCardioDuration("");
+    setCardioSpeed("");
+    setCardioIncline("");
+    setCardioDistance("");
     setCardioError("");
   };
 
@@ -384,9 +384,9 @@ function Dashboard() {
       setEditingCardioId(entry.id);
       setCardioType(entry.type);
       setCardioDuration(String(entry.durationMin));
-      setCardioSpeed(entry.speed !== undefined ? String(entry.speed) : "0");
-      setCardioIncline(entry.incline !== undefined ? String(entry.incline) : "0");
-      setCardioDistance(entry.distanceKm !== undefined ? String(entry.distanceKm) : "0");
+      setCardioSpeed(entry.speed !== undefined ? String(entry.speed) : "");
+      setCardioIncline(entry.incline !== undefined ? String(entry.incline) : "");
+      setCardioDistance(entry.distanceKm !== undefined ? String(entry.distanceKm) : "");
       setCardioError("");
     } else {
       resetCardioForm();
