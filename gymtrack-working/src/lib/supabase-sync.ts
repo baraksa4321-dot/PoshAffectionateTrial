@@ -8,6 +8,7 @@ import {
   type FoodItem,
   type GymData,
   type HistorySession,
+  type NutritionTargets,
   type NutritionDay,
   type Program,
   type UserProfile,
@@ -26,8 +27,10 @@ export type CoachClientData = {
   programs: Program[];
   workouts: Workout[];
   nutritionDays: NutritionDay[];
+  nutritionTargets: NutritionTargets;
   history: HistorySession[];
   cardioLogs: CardioLog[];
+  bodyMeasurements: BodyMeasurement[];
   profile?: UserProfile;
   error?: string;
 };
@@ -834,8 +837,10 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       programs: programsList,
       workouts: Array.from(workoutsMap.values()),
       nutritionDays: nutritionList,
+      nutritionTargets: {},
       history: historyList,
       cardioLogs: cardioList,
+      bodyMeasurements: [],
       profile: profile
         ? {
               email: profile.email || undefined,
@@ -851,6 +856,15 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
   } catch (err: unknown) {
     const error = err instanceof Error && err.message ? err.message : "Client data pull failed";
     console.error("[Pull Client Data Error]:", error);
-    return { programs: [], workouts: [], nutritionDays: [], history: [], cardioLogs: [], error };
+    return {
+      programs: [],
+      workouts: [],
+      nutritionDays: [],
+      nutritionTargets: {},
+      history: [],
+      cardioLogs: [],
+      bodyMeasurements: [],
+      error,
+    };
   }
 }

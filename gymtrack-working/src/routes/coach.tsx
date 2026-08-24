@@ -364,7 +364,7 @@ export function CoachDashboardPage({
   }, [clientDetails]);
 
   useEffect(() => {
-    setCalTarget(clientDetails?.nutritionTargets.calories ?? 0);
+    setCalTarget(clientDetails?.nutritionTargets?.calories ?? 0);
     const profile = clientDetails?.profile;
     setProfileAge(profile?.age === undefined ? "" : String(profile.age));
     setProfileHeight(profile?.height === undefined ? "" : String(profile.height));
@@ -2823,7 +2823,7 @@ export function CoachDashboardPage({
                         <div className="rounded-xl bg-primary/5 p-2 border border-primary/10">
                           <span className="block text-[10px] text-muted-foreground">קלוריות</span>
                           <span className="font-bold text-ink">
-                             {clientDetails?.nutritionTargets.calories
+                             {clientDetails?.nutritionTargets?.calories
                                ? `${clientDetails.nutritionTargets.calories} kcal`
                                : "לא הוגדר"}
                           </span>

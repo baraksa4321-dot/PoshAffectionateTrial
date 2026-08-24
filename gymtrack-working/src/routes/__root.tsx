@@ -269,9 +269,16 @@ function LoadingIllustration({ variant }: { variant: number }) {
           </g>
         ) : activeShape === 1 ? (
           <g className="loading-food-motion">
-            <path className="loading-broccoli-shell" d="M47 72c-7-7-7-18 1-25 2-2 5-4 8-5-1-11 7-20 18-20 4 0 8 1 11 4 4-10 16-14 25-8 6 4 9 10 8 17 9 2 15 10 14 19-1 12-11 19-23 18-5 10-14 15-25 15s-20-5-25-15c-5 2-9 1-12 0zM66 80h18v17H66z" />
-            <path className="loading-broccoli-fill" d="M55 69c-4-4-4-10 1-14 3-3 7-4 11-2-3-8 3-16 11-16 5 0 9 3 11 7 2-7 9-11 16-8 6 3 8 9 6 15 8-1 14 5 14 12 0 8-7 12-15 11-4 7-10 10-17 10s-13-3-17-10c-4 2-8 1-11-2zM70 77h10v17H70z" />
-            <path className="loading-broccoli-detail" d="M75 78v15M62 55c4 3 8 4 12 2M88 50c2 5 6 8 12 9" />
+            <path className="loading-broccoli-shell" d="M65 76c-10-1-18-8-18-18 0-8 5-15 13-18-1-12 8-22 20-22 6 0 11 3 15 7 3-8 11-13 19-11 10 2 16 11 14 21 8 2 14 9 14 18 0 13-11 23-25 23-4 0-8-1-11-3-5 4-10 6-16 6-5 0-10-1-15-3zM64 76h22l4 21H60z" />
+            <g className="loading-broccoli-fill">
+              <path className="loading-broccoli-stem" d="M65 75h20l4 22H61z" />
+              <circle className="loading-broccoli-floret" cx="60" cy="61" r="13" />
+              <circle className="loading-broccoli-floret" cx="75" cy="43" r="16" />
+              <circle className="loading-broccoli-floret" cx="94" cy="54" r="15" />
+              <circle className="loading-broccoli-floret" cx="111" cy="66" r="12" />
+              <circle className="loading-broccoli-floret" cx="79" cy="66" r="15" />
+            </g>
+            <path className="loading-broccoli-detail" d="M68 80h13M71 86h11M58 58c3 2 5 2 8 1M72 38c3 3 6 4 10 3M90 49c3 3 6 4 10 3M105 63c3 2 5 2 8 1" />
           </g>
         ) : activeShape === 2 ? (
           <g className="loading-food-motion">

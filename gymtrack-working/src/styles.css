@@ -1966,6 +1966,26 @@ html.night-mode .auth-panel {
   animation: loading-dumbbell-fill 2.5s ease-in-out infinite;
 }
 
+.loading-broccoli-floret {
+  fill: #4d9b4d;
+  stroke: #235c3b;
+  stroke-width: 1.6;
+}
+
+.loading-broccoli-floret:nth-of-type(3n + 1) {
+  fill: #68b85d;
+}
+
+.loading-broccoli-floret:nth-of-type(3n + 2) {
+  fill: #3f8848;
+}
+
+.loading-broccoli-stem {
+  fill: #78a94f;
+  stroke: #235c3b;
+  stroke-width: 1.5;
+}
+
 .loading-broccoli-detail {
   fill: none;
   stroke: var(--ink);
