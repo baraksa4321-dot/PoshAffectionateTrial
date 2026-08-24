@@ -1083,7 +1083,7 @@ function RootContent() {
   const [loadingCycle, setLoadingCycle] = useState(() => {
     if (typeof window === "undefined") return 0;
     try {
-      const previousCycle = Number(window.localStorage.getItem("my-routine-loading-cycle"));
+      const previousCycle = Number(window.localStorage.getItem("my-routine-loading-cycle-v2"));
       return Number.isInteger(previousCycle) && previousCycle >= 0 ? previousCycle + 1 : 1;
     } catch {
       return Math.floor(Date.now() / 2400);
@@ -1113,14 +1113,13 @@ function RootContent() {
         console.warn("[App shell cache unavailable]:", error);
       });
     }
-    const storageKey = "my-routine-loading-cycle";
+    const storageKey = "my-routine-loading-cycle-v2";
     try {
       window.localStorage.setItem(storageKey, String(loadingCycle));
     } catch {
       // The in-memory timestamp fallback from the state initializer remains active.
     }
-    const advanceForRestoredPage = (event: PageTransitionEvent) => {
-      if (!event.persisted) return;
+    const advanceForRestoredPage = () => {
       setLoadingCycle((current) => {
         const nextCycle = current + 1;
         try {
