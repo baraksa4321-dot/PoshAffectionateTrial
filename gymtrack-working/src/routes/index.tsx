@@ -46,10 +46,12 @@ import {
   addChecklistItem,
   toggleChecklistItem,
   useGym,
+  useAuthUser,
 } from "@/lib/gym-store";
 import type { CardioLog } from "@/lib/gym-types";
 import { CARDIO_TYPES } from "@/lib/gym-types";
 import { genderText } from "@/lib/gender-copy";
+import { supabase } from "@/lib/supabase";
 
 const DEFAULT_CARDIO_TYPE = CARDIO_TYPES[0] ?? "הליכה";
 type HomeCardId =
@@ -125,6 +127,7 @@ function Dashboard() {
     coachMessages,
     broadcasts,
   } = useGym();
+  const authUser = useAuthUser();
 
   const now = new Date();
 
@@ -352,8 +355,38 @@ function Dashboard() {
     ? programs.find((p) => p.dayIds.includes(nextWorkout.id))
     : undefined;
 
-  const latestCoachMsg = coachMessages && coachMessages.length > 0 ? coachMessages[0] : null;
-  const latestBroadcast = broadcasts && broadcasts.length > 0 ? broadcasts[0] : null;
+  const [dismissedMessageIds, setDismissedMessageIds] = useState<string[]>([]);
+  useEffect(() => {
+    if (!authUser?.id) return;
+    const key = `myroutine-dismissed-broadcasts:${authUser.id}`;
+    try {
+      setDismissedMessageIds(JSON.parse(window.localStorage.getItem(key) || "[]"));
+    } catch {
+      setDismissedMessageIds([]);
+    }
+  }, [authUser?.id]);
+  const latestCoachMsg =
+    coachMessages?.find((message) => !dismissedMessageIds.includes(message.id)) ?? null;
+  const latestBroadcast =
+    broadcasts?.find((message) => !dismissedMessageIds.includes(message.id)) ?? null;
+  const dismissMessage = async (id: string, isBroadcast: boolean) => {
+    if (!isBroadcast && authUser?.id) {
+      const { error } = await supabase
+        .from("coach_messages")
+        .delete()
+        .eq("id", id)
+        .eq("client_id", authUser.id);
+      if (error) return;
+    }
+    const next = [...dismissedMessageIds, id];
+    setDismissedMessageIds(next);
+    if (authUser?.id) {
+      window.localStorage.setItem(
+        `myroutine-dismissed-broadcasts:${authUser.id}`,
+        JSON.stringify(next),
+      );
+    }
+  };
   const latestMeasurement = bodyMeasurements?.[0];
   const gender = userProfile?.gender;
   const cardioDurationValue = Number(cardioDuration) || 0;
@@ -461,9 +494,19 @@ function Dashboard() {
               <span className="flex items-center gap-1.5 font-bold text-xs text-primary">
                 <MessageSquare className="h-4 w-4" /> הודעה מהמאמן שלך
               </span>
-              <span className="text-[10px] text-muted-foreground">
-                {new Date(latestCoachMsg.createdAt).toLocaleDateString("he-IL")}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-muted-foreground">
+                  {new Date(latestCoachMsg.createdAt).toLocaleDateString("he-IL")}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void dismissMessage(latestCoachMsg.id, false)}
+                  aria-label="מחיקת הודעת המאמן"
+                  className="grid h-6 w-6 place-items-center rounded-full text-muted-foreground hover:bg-rose-100 hover:text-rose-700"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
             <p className="text-xs font-semibold text-ink leading-relaxed">
               "{latestCoachMsg.message}"
@@ -480,9 +523,19 @@ function Dashboard() {
               <span className="flex items-center gap-1.5 text-xs font-bold text-ink">
                 <MessageSquare className="h-4 w-4 text-primary" /> הודעה חשובה
               </span>
-              <span className="text-[10px] text-muted-foreground">
-                {new Date(latestBroadcast.createdAt).toLocaleDateString("he-IL")}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-muted-foreground">
+                  {new Date(latestBroadcast.createdAt).toLocaleDateString("he-IL")}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void dismissMessage(latestBroadcast.id, true)}
+                  aria-label="הסתרת הודעת תפוצה"
+                  className="grid h-6 w-6 place-items-center rounded-full text-muted-foreground hover:bg-rose-100 hover:text-rose-700"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
             <p className="text-xs font-semibold leading-relaxed text-ink">
               "{latestBroadcast.message}"
