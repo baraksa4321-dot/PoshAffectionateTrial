@@ -427,25 +427,6 @@ function Dashboard() {
   return (
     <AppShell title={formatNumericDate(now)} subtitle="">
       <div className="home-card-stack">
-      {userProfile?.role !== "client" ? (
-      <section {...homeCardProps("profile")} className="surface-card flex items-center justify-between gap-3 p-3 text-start">
-        <div>
-          <p className="text-[12px] font-bold text-ink">נתוני גוף ומחשבון BMR</p>
-          <p className="mt-0.5 text-[10.5px] text-muted-foreground">
-            {calculateRmr(userProfile)
-              ? `${calculateRmr(userProfile)!.rmr} קק״ל במנוחה`
-              : "מלאי גיל, גובה, משקל, מין ומספר אימונים לחישוב"}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={openBodyProfile}
-          className="press shrink-0 rounded-xl bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground"
-        >
-          עדכון נתונים
-        </button>
-      </section>
-      ) : null}
       {/* Coach Message Banner */}
       {latestCoachMsg && (
         <div {...homeCardProps("coach-message")} className="surface-card space-y-1.5 border-primary/20 bg-primary/5 p-4 text-start">
