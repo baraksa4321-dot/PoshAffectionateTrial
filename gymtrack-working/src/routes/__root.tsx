@@ -8,7 +8,14 @@ import {
   createRootRouteWithContext,
   useRouter,
 } from "@tanstack/react-router";
-import { Component, type ErrorInfo, type ReactNode, useEffect, useState } from "react";
+import {
+  Component,
+  type ErrorInfo,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from "react";
 
 import "../styles.css";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -25,6 +32,8 @@ import {
 import { supabase } from "../lib/supabase";
 import { genderText } from "../lib/gender-copy";
 import { LOADING_MESSAGES } from "../lib/loading-copy";
+
+const useLoadingCycleEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 async function resetAuthSessionAndReload() {
   try {
@@ -133,7 +142,7 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => {
+  useLoadingCycleEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
