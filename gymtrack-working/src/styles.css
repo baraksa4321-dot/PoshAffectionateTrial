@@ -713,6 +713,34 @@ html.night-mode .nav-shell {
   }
 }
 
+/* Lighter editorial type and linework across the product. */
+.font-bold,
+.font-semibold {
+  font-weight: 500 !important;
+}
+
+.font-extrabold,
+.font-black {
+  font-weight: 600 !important;
+}
+
+.font-display {
+  font-weight: 500;
+}
+
+.border-2 {
+  border-width: 1px !important;
+}
+
+.border-t-2,
+.border-b-2,
+.border-s-2,
+.border-e-2,
+.border-x-2,
+.border-y-2 {
+  border-width: 1px !important;
+}
+
 /* --- Surfaces --- */
 .surface-card {
   background:
@@ -1996,7 +2024,7 @@ html.night-mode .auth-panel {
 .loading-simple-illustration .loading-food-generic-shell {
   fill: #fff;
   stroke: var(--ink);
-  stroke-width: 3.4;
+  stroke-width: 1.8;
 }
 
 .loading-simple-illustration .loading-food-fill,
@@ -2009,21 +2037,21 @@ html.night-mode .auth-panel {
 .loading-simple-illustration .loading-food-detail,
 .loading-simple-illustration .loading-broccoli-detail {
   stroke: var(--ink);
-  stroke-width: 2.9;
+  stroke-width: 1.7;
   opacity: 1;
 }
 
 .loading-simple-illustration .loading-food-pit,
 .loading-simple-illustration .loading-food-yolk {
   stroke: var(--ink);
-  stroke-width: 2.2;
+  stroke-width: 1.5;
 }
 
 .loading-simple-illustration .loading-dumbbell-plate,
 .loading-simple-illustration .loading-dumbbell-cap,
 .loading-simple-illustration .loading-dumbbell-grip {
   stroke: var(--ink);
-  stroke-width: 2.2;
+  stroke-width: 1.6;
 }
 
 @keyframes loading-bottom-fill {
