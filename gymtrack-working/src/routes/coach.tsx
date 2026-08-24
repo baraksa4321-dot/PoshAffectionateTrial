@@ -2877,10 +2877,10 @@ export function CoachDashboardPage({
                                             </label>
 
                                             {warmupEnabled || dropSetEnabled || supersetGroup ? (
-                                              <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border/60 bg-background p-3">
+                                              <div className="grid min-w-0 grid-cols-2 gap-2 rounded-2xl border border-border/60 bg-background p-3">
                                                 {warmupEnabled ? (
                                                   <>
-                                                    <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                    <label className="grid min-w-0 gap-1 text-[10px] font-bold text-muted-foreground">
                                                       משקל חימום (ק״ג)
                                                       <input
                                                         type="number"
@@ -3040,7 +3040,7 @@ export function CoachDashboardPage({
                                                         className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
                                                       />
                                                     </label>
-                                                    <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                    <label className="col-span-2 grid min-w-0 gap-1 text-[10px] font-bold text-muted-foreground">
                                                       תרגיל שני בסופר סט
                                                       <select
                                                         required
@@ -3048,7 +3048,7 @@ export function CoachDashboardPage({
                                                         onChange={(event) =>
                                                           setSupersetPartnerId(event.target.value)
                                                         }
-                                                        className="h-9 rounded-lg border border-border bg-white px-2 text-xs text-ink"
+                                                        className="block h-9 w-full min-w-0 max-w-full truncate rounded-lg border border-border bg-white px-2 text-xs text-ink"
                                                       >
                                                         <option value="">
                                                           בחרי תרגיל שמתבצע מיד אחרי הראשון...
