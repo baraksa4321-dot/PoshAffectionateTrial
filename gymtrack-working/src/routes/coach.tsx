@@ -222,6 +222,7 @@ export function CoachDashboardPage({
   const [profileWorkouts, setProfileWorkouts] = useState("");
   const [profileGender, setProfileGender] = useState<"female" | "male" | "">("");
   const [profileNotice, setProfileNotice] = useState("");
+  const showClientOverview = !workspacePage && !openEditor;
 
   const loadCoachClients = useCallback(async () => {
     setManagementError("");
@@ -1808,7 +1809,10 @@ export function CoachDashboardPage({
                   >
                     <button
                       type="button"
-                      onClick={() => setOpenEditor("programs")}
+                      onClick={() => {
+                        setActiveWorkspaceTab("programs");
+                        setOpenEditor("programs");
+                      }}
                       aria-selected={activeWorkspaceTab === "programs"}
                       role="tab"
                       className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors ${
@@ -1822,7 +1826,10 @@ export function CoachDashboardPage({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setOpenEditor("nutrition")}
+                      onClick={() => {
+                        setActiveWorkspaceTab("nutrition");
+                        setOpenEditor("nutrition");
+                      }}
                       aria-selected={activeWorkspaceTab === "nutrition"}
                       role="tab"
                       className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors ${
@@ -1844,7 +1851,7 @@ export function CoachDashboardPage({
                 </div>
               ) : clientDetails ? (
                 <div className="space-y-4">
-                  {!workspacePage ? (
+                  {showClientOverview ? (
                     <>
                       {/* Send Coach Message Panel */}
                       <div className="surface-card p-4 rounded-2xl space-y-2.5 border border-primary/20 bg-primary/5">
@@ -1992,7 +1999,7 @@ export function CoachDashboardPage({
                     </>
                   ) : null}
 
-                  {!workspacePage ? (
+                  {showClientOverview ? (
                     <section className="grid gap-3 lg:grid-cols-2">
                       <div className="surface-card space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.03] p-4">
                         <div className="flex items-start justify-between gap-3 border-b border-primary/15 pb-2">
@@ -2052,7 +2059,10 @@ export function CoachDashboardPage({
                         </div>
                         <button
                           type="button"
-                          onClick={() => setOpenEditor("programs")}
+                          onClick={() => {
+                            setActiveWorkspaceTab("programs");
+                            setOpenEditor("programs");
+                          }}
                           className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary text-xs font-bold text-white"
                         >
                           <Dumbbell className="h-4 w-4" /> תוכנית אימון
@@ -2124,7 +2134,10 @@ export function CoachDashboardPage({
                         </div>
                         <button
                           type="button"
-                          onClick={() => setOpenEditor("nutrition")}
+                          onClick={() => {
+                            setActiveWorkspaceTab("nutrition");
+                            setOpenEditor("nutrition");
+                          }}
                           className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 text-xs font-bold text-white"
                         >
                           <Apple className="h-4 w-4" /> תפריט תזונה
@@ -2270,7 +2283,7 @@ export function CoachDashboardPage({
                   <div
                     id="coach-programs"
                     className={`scroll-mt-24 surface-card space-y-4 rounded-[1.75rem] border-primary/15 bg-primary/[0.02] p-4 ${
-                      (workspaceMode === "nutrition" || openEditor !== "programs") ? "hidden" : ""
+                      workspaceMode === "nutrition" || openEditor !== "programs" ? "hidden" : ""
                     }`}
                   >
                     <div className="flex items-center justify-between border-b pb-2">
@@ -2901,7 +2914,7 @@ export function CoachDashboardPage({
                   <div
                     id="coach-menu"
                     className={`surface-card space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 ${
-                      (workspaceMode === "programs" || openEditor !== "nutrition") ? "hidden" : ""
+                      workspaceMode === "programs" || openEditor !== "nutrition" ? "hidden" : ""
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3 border-b border-emerald-200/70 pb-2">
@@ -3111,7 +3124,7 @@ export function CoachDashboardPage({
                   <div
                     id="coach-nutrition"
                     className={`scroll-mt-24 surface-card space-y-4 rounded-[1.75rem] border-emerald-200/70 bg-emerald-50/30 p-4 ${
-                      (workspaceMode === "programs" || openEditor !== "nutrition") ? "hidden" : ""
+                      workspaceMode === "programs" || openEditor !== "nutrition" ? "hidden" : ""
                     }`}
                   >
                     <div className="flex items-center justify-between border-b pb-2">
@@ -3295,7 +3308,7 @@ export function CoachDashboardPage({
                     )}
                   </div>
 
-                  {!workspacePage ? (
+                  {showClientOverview ? (
                     /* Read-only Client Cardio History */
                     <div className="surface-card p-4 rounded-2xl space-y-3">
                       <div
