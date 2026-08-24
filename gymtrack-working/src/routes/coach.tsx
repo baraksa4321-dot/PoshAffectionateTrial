@@ -2492,51 +2492,52 @@ export function CoachDashboardPage({
                                                 >
                                                   <div className="flex items-start justify-between gap-2">
                                                     <div>
-                                                    <span className="font-bold text-ink">
-                                                      {exMeta?.name || "תרגיל"}
-                                                    </span>
-                                                    <span className="text-muted-foreground mr-1">
-                                                      · {exItem.targetWeight || exItem.weight} ק"ג ·{" "}
-                                                      {exItem.sets}×{exItem.repMin || exItem.reps}
-                                                      {exItem.repMax ? `-${exItem.repMax}` : ""}
-                                                    </span>
-                                                    <div className="mt-1 flex flex-wrap gap-1">
-                                                      {exItem.warmups?.length ? (
-                                                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-                                                          חימום ×{exItem.warmups.length}
-                                                        </span>
-                                                      ) : null}
-                                                      {exItem.dropSetConfig?.enabled ? (
-                                                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                                                          {exItem.dropSetConfig.reductionValue &&
-                                                          exItem.dropSetConfig.reductionMode
-                                                            ? `דרופ סט · −${exItem.dropSetConfig.reductionValue}${
-                                                                exItem.dropSetConfig
-                                                                  .reductionMode === "percent"
-                                                                  ? "%"
-                                                                  : " ק״ג"
-                                                              }`
-                                                            : "דרופ סט"}
-                                                        </span>
-                                                      ) : null}
-                                                      {exItem.supersetId ? (
-                                                        <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-800">
-                                                          סופר סט {exItem.supersetId} ·{" "}
-                                                          {exItem.supersetRepsMin ||
-                                                            exItem.repMin ||
-                                                            exItem.reps}
-                                                          -
-                                                          {exItem.supersetRepsMax ||
-                                                            exItem.repMax ||
-                                                            exItem.reps}
-                                                        </span>
-                                                      ) : null}
-                                                      {exItem.techniqueNotes ? (
-                                                        <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800">
-                                                          יש הערה למתאמן
-                                                        </span>
-                                                      ) : null}
-                                                    </div>
+                                                      <span className="font-bold text-ink">
+                                                        {exMeta?.name || "תרגיל"}
+                                                      </span>
+                                                      <span className="text-muted-foreground mr-1">
+                                                        · {exItem.targetWeight || exItem.weight} ק"ג
+                                                        · {exItem.sets}×
+                                                        {exItem.repMin || exItem.reps}
+                                                        {exItem.repMax ? `-${exItem.repMax}` : ""}
+                                                      </span>
+                                                      <div className="mt-1 flex flex-wrap gap-1">
+                                                        {exItem.warmups?.length ? (
+                                                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                                                            חימום ×{exItem.warmups.length}
+                                                          </span>
+                                                        ) : null}
+                                                        {exItem.dropSetConfig?.enabled ? (
+                                                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                                                            {exItem.dropSetConfig.reductionValue &&
+                                                            exItem.dropSetConfig.reductionMode
+                                                              ? `דרופ סט · −${exItem.dropSetConfig.reductionValue}${
+                                                                  exItem.dropSetConfig
+                                                                    .reductionMode === "percent"
+                                                                    ? "%"
+                                                                    : " ק״ג"
+                                                                }`
+                                                              : "דרופ סט"}
+                                                          </span>
+                                                        ) : null}
+                                                        {exItem.supersetId ? (
+                                                          <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-800">
+                                                            סופר סט {exItem.supersetId} ·{" "}
+                                                            {exItem.supersetRepsMin ||
+                                                              exItem.repMin ||
+                                                              exItem.reps}
+                                                            -
+                                                            {exItem.supersetRepsMax ||
+                                                              exItem.repMax ||
+                                                              exItem.reps}
+                                                          </span>
+                                                        ) : null}
+                                                        {exItem.techniqueNotes ? (
+                                                          <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800">
+                                                            יש הערה למתאמן
+                                                          </span>
+                                                        ) : null}
+                                                      </div>
                                                     </div>
                                                     <button
                                                       onClick={() =>

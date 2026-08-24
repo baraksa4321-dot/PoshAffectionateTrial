@@ -514,6 +514,39 @@ body,
   background-image: none !important;
 }
 
+/* Soft hand-drawn badges for the coach workspace illustrations. */
+.illustrated-mark {
+  position: relative;
+  border: 1.5px solid currentColor;
+  border-radius: 46% 54% 51% 49%;
+  transform: rotate(-3deg);
+  filter: drop-shadow(1px 2px 0 rgb(92 54 62 / 10%));
+}
+
+.illustrated-mark::before,
+.illustrated-mark::after {
+  position: absolute;
+  content: "";
+  pointer-events: none;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  opacity: 0.45;
+}
+
+.illustrated-mark::before {
+  inset: -4px 2px 2px -3px;
+  transform: rotate(7deg);
+}
+
+.illustrated-mark::after {
+  width: 4px;
+  height: 4px;
+  top: -5px;
+  right: 4px;
+  background: currentColor;
+  border: 0;
+}
+
 /*
  * Night mode is a display preference, not a second product theme.
  * The selected palette keeps its accent; only the canvas and neutral
