@@ -2164,7 +2164,7 @@ export function CoachDashboardPage({
                     </section>
                   ) : null}
 
-                  {false ? (
+                  {workspacePage && workspaceMode === "programs" && openEditor === null ? (
                     <section className="surface-card space-y-3 rounded-2xl border border-amber-200 bg-amber-50/35 p-4">
                       <div className="flex items-center justify-between border-b border-amber-200 pb-2">
                         <div>
@@ -2271,7 +2271,7 @@ export function CoachDashboardPage({
                     </section>
                   ) : null}
 
-                  {false ? (
+                  {workspacePage && workspaceMode === "nutrition" && openEditor === null ? (
                     <section className="surface-card space-y-3 rounded-2xl border border-amber-200 bg-amber-50/35 p-4">
                       <div className="flex items-center justify-between border-b border-amber-200 pb-2">
                         <div>
@@ -3076,186 +3076,186 @@ export function CoachDashboardPage({
                           .find((day) => day.date === menuDate)
                           ?.meals.at(mealIndex);
                         return (
-                        <div
-                          key={meal.id}
-                          id={`coach-menu-meal-${meal.id}`}
-                          className="rounded-xl border border-emerald-200/70 bg-white p-3"
-                        >
-                          <div className="flex items-center gap-2">
-                            <input
-                              value={meal.name}
-                              onChange={(event) =>
-                                setPlannedMeals((current) =>
-                                  current.map((item) =>
-                                    item.id === meal.id
-                                      ? { ...item, name: event.target.value }
-                                      : item,
-                                  ),
-                                )
-                              }
-                              className="min-w-0 flex-1 bg-transparent text-xs font-bold text-ink outline-none"
-                              aria-label="שם הארוחה"
-                            />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setMenuFoodMealId(menuFoodMealId === meal.id ? null : meal.id)
-                              }
-                              className="rounded-lg bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800 hover:bg-emerald-200"
-                            >
-                              + מאכל
-                            </button>
-                          </div>
-
-                          {meal.foods.length > 0 ? (
-                            <div className="mt-2 space-y-1">
-                              {meal.foods.map((food) => (
-                                <div
-                                  key={food.id}
-                                  className="flex items-center justify-between rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[11px]"
-                                >
-                                  <span className="truncate font-semibold text-ink">
-                                    {food.name} · כמות {food.quantity}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => removePlannedFood(meal.id, food.id)}
-                                    className="ms-2 shrink-0 text-muted-foreground hover:text-destructive"
-                                    aria-label={`הסר ${food.name}`}
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-                              ))}
+                          <div
+                            key={meal.id}
+                            id={`coach-menu-meal-${meal.id}`}
+                            className="rounded-xl border border-emerald-200/70 bg-white p-3"
+                          >
+                            <div className="flex items-center gap-2">
+                              <input
+                                value={meal.name}
+                                onChange={(event) =>
+                                  setPlannedMeals((current) =>
+                                    current.map((item) =>
+                                      item.id === meal.id
+                                        ? { ...item, name: event.target.value }
+                                        : item,
+                                    ),
+                                  )
+                                }
+                                className="min-w-0 flex-1 bg-transparent text-xs font-bold text-ink outline-none"
+                                aria-label="שם הארוחה"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setMenuFoodMealId(menuFoodMealId === meal.id ? null : meal.id)
+                                }
+                                className="rounded-lg bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800 hover:bg-emerald-200"
+                              >
+                                + מאכל
+                              </button>
                             </div>
-                          ) : (
-                            <p className="mt-2 text-[11px] text-muted-foreground">
-                              אין מאכלים בארוחה עדיין.
-                            </p>
-                          )}
 
-                          {actualMeal?.foods.length ? (
-                            <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/80 p-2 text-[10px]">
-                              <div className="flex items-center justify-between gap-2 font-bold text-amber-900">
-                                <span>מה שהמתאמן אכל בפועל</span>
-                                <span className="font-normal">
-                                  {new Date(`${menuDate}T00:00:00`).toLocaleDateString("he-IL")}
-                                </span>
+                            {meal.foods.length > 0 ? (
+                              <div className="mt-2 space-y-1">
+                                {meal.foods.map((food) => (
+                                  <div
+                                    key={food.id}
+                                    className="flex items-center justify-between rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[11px]"
+                                  >
+                                    <span className="truncate font-semibold text-ink">
+                                      {food.name} · כמות {food.quantity}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => removePlannedFood(meal.id, food.id)}
+                                      className="ms-2 shrink-0 text-muted-foreground hover:text-destructive"
+                                      aria-label={`הסר ${food.name}`}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                ))}
                               </div>
-                              <p className="mt-1 text-amber-950">
-                                {actualMeal.foods
-                                  .map((food) => `${food.name} ×${food.quantity}`)
-                                  .join(" · ")}
+                            ) : (
+                              <p className="mt-2 text-[11px] text-muted-foreground">
+                                אין מאכלים בארוחה עדיין.
                               </p>
-                              {actualMeal.foods.some((food) => food.notes?.trim()) ? (
-                                <p className="mt-1 text-amber-900/80">
-                                  הערה:{" "}
+                            )}
+
+                            {actualMeal?.foods.length ? (
+                              <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/80 p-2 text-[10px]">
+                                <div className="flex items-center justify-between gap-2 font-bold text-amber-900">
+                                  <span>מה שהמתאמן אכל בפועל</span>
+                                  <span className="font-normal">
+                                    {new Date(`${menuDate}T00:00:00`).toLocaleDateString("he-IL")}
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-amber-950">
                                   {actualMeal.foods
-                                    .map((food) => food.notes?.trim())
-                                    .filter(Boolean)
+                                    .map((food) => `${food.name} ×${food.quantity}`)
                                     .join(" · ")}
                                 </p>
-                              ) : null}
-                            </div>
-                          ) : (
-                            <p className="mt-2 rounded-lg bg-amber-50/60 px-2 py-1 text-[10px] text-amber-800">
-                              עדיין אין רישום בפועל לארוחה הזו.
-                            </p>
-                          )}
-
-                          {menuFoodMealId === meal.id ? (
-                            <div className="mt-2 space-y-2 border-t border-emerald-100 pt-2">
-                              <label
-                                className="block text-[11px] font-bold text-emerald-900"
-                                htmlFor={`menu-food-search-${meal.id}`}
-                              >
-                                חיפוש במאגר המאכלים
-                              </label>
-                              <input
-                                id={`menu-food-search-${meal.id}`}
-                                type="search"
-                                value={menuFoodQuery}
-                                onChange={(event) => {
-                                  setMenuFoodQuery(event.target.value);
-                                  setMenuFoodId("");
-                                }}
-                                placeholder={genderText(
-                                  gender,
-                                  "חפשי למשל: חזה עוף, אורז, ביצה...",
-                                  "חפש למשל: חזה עוף, אורז, ביצה...",
-                                )}
-                                className="w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-[13px] outline-none placeholder:text-muted-foreground focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                                aria-describedby={`menu-food-help-${meal.id}`}
-                                autoComplete="off"
-                              />
-                              <p
-                                id={`menu-food-help-${meal.id}`}
-                                className="text-[10px] text-muted-foreground"
-                              >
-                                {genderText(
-                                  gender,
-                                  "בחרי מאכל מהרשימה כדי להוסיף אותו לארוחה.",
-                                  "בחר מאכל מהרשימה כדי להוסיף אותו לארוחה.",
-                                )}
-                              </p>
-                              <div
-                                role="listbox"
-                                aria-label="תוצאות חיפוש מאכלים"
-                                className="max-h-44 space-y-1 overflow-y-auto rounded-lg border border-emerald-100 bg-emerald-50/50 p-1.5"
-                              >
-                                {menuFoodResults.length > 0 ? (
-                                  menuFoodResults.map((food) => (
-                                    <button
-                                      key={food.id}
-                                      type="button"
-                                      role="option"
-                                      aria-selected={menuFoodId === food.id}
-                                      onClick={() => setMenuFoodId(food.id)}
-                                      className={`flex w-full items-center justify-between rounded-md px-2.5 py-2 text-start text-[12px] transition-colors ${
-                                        menuFoodId === food.id
-                                          ? "bg-emerald-700 font-bold text-white"
-                                          : "bg-white font-semibold text-ink hover:bg-emerald-100"
-                                      }`}
-                                    >
-                                      <span className="truncate">{food.name}</span>
-                                      <span className="ms-2 shrink-0 text-[10px] opacity-70">
-                                        {food.calories} קל׳
-                                      </span>
-                                    </button>
-                                  ))
-                                ) : (
-                                  <p className="p-3 text-center text-[11px] text-muted-foreground">
-                                    לא נמצאו מאכלים. נסי מילה אחרת.
+                                {actualMeal.foods.some((food) => food.notes?.trim()) ? (
+                                  <p className="mt-1 text-amber-900/80">
+                                    הערה:{" "}
+                                    {actualMeal.foods
+                                      .map((food) => food.notes?.trim())
+                                      .filter(Boolean)
+                                      .join(" · ")}
                                   </p>
-                                )}
+                                ) : null}
                               </div>
-                              <div className="flex items-end gap-1.5">
-                                <label className="flex-1 text-[10px] font-bold text-muted-foreground">
-                                  כמות
-                                  <input
-                                    type="number"
-                                    min="0.25"
-                                    step="0.25"
-                                    value={menuFoodQuantity}
-                                    onChange={(event) =>
-                                      setMenuFoodQuantity(Number(event.target.value))
-                                    }
-                                    className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-center text-[12px] outline-none focus:border-emerald-500"
-                                    aria-label="כמות המאכל"
-                                  />
-                                </label>
-                                <button
-                                  type="button"
-                                  disabled={!menuFoodId || menuFoodQuantity <= 0}
-                                  onClick={() => addPlannedFood(meal.id)}
-                                  className="rounded-lg bg-emerald-700 px-3 py-2 text-[12px] font-bold text-white disabled:opacity-40"
+                            ) : (
+                              <p className="mt-2 rounded-lg bg-amber-50/60 px-2 py-1 text-[10px] text-amber-800">
+                                עדיין אין רישום בפועל לארוחה הזו.
+                              </p>
+                            )}
+
+                            {menuFoodMealId === meal.id ? (
+                              <div className="mt-2 space-y-2 border-t border-emerald-100 pt-2">
+                                <label
+                                  className="block text-[11px] font-bold text-emerald-900"
+                                  htmlFor={`menu-food-search-${meal.id}`}
                                 >
-                                  {genderText(gender, "הוסיפי לארוחה", "הוסף לארוחה")}
-                                </button>
+                                  חיפוש במאגר המאכלים
+                                </label>
+                                <input
+                                  id={`menu-food-search-${meal.id}`}
+                                  type="search"
+                                  value={menuFoodQuery}
+                                  onChange={(event) => {
+                                    setMenuFoodQuery(event.target.value);
+                                    setMenuFoodId("");
+                                  }}
+                                  placeholder={genderText(
+                                    gender,
+                                    "חפשי למשל: חזה עוף, אורז, ביצה...",
+                                    "חפש למשל: חזה עוף, אורז, ביצה...",
+                                  )}
+                                  className="w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-[13px] outline-none placeholder:text-muted-foreground focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                  aria-describedby={`menu-food-help-${meal.id}`}
+                                  autoComplete="off"
+                                />
+                                <p
+                                  id={`menu-food-help-${meal.id}`}
+                                  className="text-[10px] text-muted-foreground"
+                                >
+                                  {genderText(
+                                    gender,
+                                    "בחרי מאכל מהרשימה כדי להוסיף אותו לארוחה.",
+                                    "בחר מאכל מהרשימה כדי להוסיף אותו לארוחה.",
+                                  )}
+                                </p>
+                                <div
+                                  role="listbox"
+                                  aria-label="תוצאות חיפוש מאכלים"
+                                  className="max-h-44 space-y-1 overflow-y-auto rounded-lg border border-emerald-100 bg-emerald-50/50 p-1.5"
+                                >
+                                  {menuFoodResults.length > 0 ? (
+                                    menuFoodResults.map((food) => (
+                                      <button
+                                        key={food.id}
+                                        type="button"
+                                        role="option"
+                                        aria-selected={menuFoodId === food.id}
+                                        onClick={() => setMenuFoodId(food.id)}
+                                        className={`flex w-full items-center justify-between rounded-md px-2.5 py-2 text-start text-[12px] transition-colors ${
+                                          menuFoodId === food.id
+                                            ? "bg-emerald-700 font-bold text-white"
+                                            : "bg-white font-semibold text-ink hover:bg-emerald-100"
+                                        }`}
+                                      >
+                                        <span className="truncate">{food.name}</span>
+                                        <span className="ms-2 shrink-0 text-[10px] opacity-70">
+                                          {food.calories} קל׳
+                                        </span>
+                                      </button>
+                                    ))
+                                  ) : (
+                                    <p className="p-3 text-center text-[11px] text-muted-foreground">
+                                      לא נמצאו מאכלים. נסי מילה אחרת.
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex items-end gap-1.5">
+                                  <label className="flex-1 text-[10px] font-bold text-muted-foreground">
+                                    כמות
+                                    <input
+                                      type="number"
+                                      min="0.25"
+                                      step="0.25"
+                                      value={menuFoodQuantity}
+                                      onChange={(event) =>
+                                        setMenuFoodQuantity(Number(event.target.value))
+                                      }
+                                      className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-center text-[12px] outline-none focus:border-emerald-500"
+                                      aria-label="כמות המאכל"
+                                    />
+                                  </label>
+                                  <button
+                                    type="button"
+                                    disabled={!menuFoodId || menuFoodQuantity <= 0}
+                                    onClick={() => addPlannedFood(meal.id)}
+                                    className="rounded-lg bg-emerald-700 px-3 py-2 text-[12px] font-bold text-white disabled:opacity-40"
+                                  >
+                                    {genderText(gender, "הוסיפי לארוחה", "הוסף לארוחה")}
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          ) : null}
-                        </div>
+                            ) : null}
+                          </div>
                         );
                       })}
                     </div>
