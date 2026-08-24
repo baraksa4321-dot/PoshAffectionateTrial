@@ -23,7 +23,7 @@ import {
   X,
   Check,
 } from "lucide-react";
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Overlay } from "@/components/ui-app/Overlay";
 import {
@@ -52,8 +52,30 @@ import { CARDIO_TYPES } from "@/lib/gym-types";
 import { genderText } from "@/lib/gender-copy";
 
 const DEFAULT_CARDIO_TYPE = CARDIO_TYPES[0] ?? "הליכה";
-type HomeFeatureId = "workout" | "nutrition";
-const HOME_FEATURE_ORDER_KEY = "myroutine-home-feature-order-v1";
+type HomeCardId =
+  | "profile"
+  | "coach-message"
+  | "consistency"
+  | "workout"
+  | "nutrition"
+  | "checklist"
+  | "check-in"
+  | "activity"
+  | "measurements"
+  | "cardio";
+const HOME_CARD_ORDER_KEY = "myroutine-home-card-order-v2";
+const DEFAULT_HOME_CARD_ORDER: HomeCardId[] = [
+  "profile",
+  "coach-message",
+  "consistency",
+  "workout",
+  "nutrition",
+  "checklist",
+  "check-in",
+  "activity",
+  "measurements",
+  "cardio",
+];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -128,27 +150,52 @@ function Dashboard() {
   const [cardioDistance, setCardioDistance] = useState("0");
   const [cardioError, setCardioError] = useState("");
   const [checklistInput, setChecklistInput] = useState("");
-  const [featureOrder, setFeatureOrder] = useState<HomeFeatureId[]>(() => {
-    if (typeof window === "undefined") return ["workout", "nutrition"];
+  const [homeCardOrder, setHomeCardOrder] = useState<HomeCardId[]>(() => {
+    if (typeof window === "undefined") return DEFAULT_HOME_CARD_ORDER;
     try {
       const saved = JSON.parse(
-        window.localStorage.getItem(HOME_FEATURE_ORDER_KEY) ?? "null",
+        window.localStorage.getItem(HOME_CARD_ORDER_KEY) ?? "null",
       ) as unknown;
-      return Array.isArray(saved) && saved.includes("workout") && saved.includes("nutrition")
-        ? (saved as HomeFeatureId[])
-        : ["workout", "nutrition"];
+      return Array.isArray(saved) &&
+        DEFAULT_HOME_CARD_ORDER.every((id) => saved.includes(id))
+        ? (saved as HomeCardId[])
+        : DEFAULT_HOME_CARD_ORDER;
     } catch {
-      return ["workout", "nutrition"];
+      return DEFAULT_HOME_CARD_ORDER;
     }
   });
-  const [isArrangingFeatures, setIsArrangingFeatures] = useState(false);
-  const [draggingFeature, setDraggingFeature] = useState<HomeFeatureId | null>(null);
+  const [isArrangingHome, setIsArrangingHome] = useState(false);
+  const [draggingHomeCard, setDraggingHomeCard] = useState<HomeCardId | null>(null);
   const holdTimer = useRef<number | null>(null);
-  const suppressFeatureClick = useRef(false);
+  const holdStart = useRef({ x: 0, y: 0 });
+  const suppressHomeClick = useRef(false);
 
   useEffect(() => {
-    window.localStorage.setItem(HOME_FEATURE_ORDER_KEY, JSON.stringify(featureOrder));
-  }, [featureOrder]);
+    window.localStorage.setItem(HOME_CARD_ORDER_KEY, JSON.stringify(homeCardOrder));
+  }, [homeCardOrder]);
+
+  useEffect(() => {
+    if (!draggingHomeCard) return;
+    const handlePointerMove = (event: globalThis.PointerEvent) => {
+      const element = document
+        .elementFromPoint(event.clientX, event.clientY)
+        ?.closest<HTMLElement>("[data-home-card-id]");
+      const target = element?.dataset.homeCardId as HomeCardId | undefined;
+      if (!target || target === draggingHomeCard) return;
+      setHomeCardOrder((current) => {
+        const next = [...current];
+        const from = next.indexOf(draggingHomeCard);
+        const to = next.indexOf(target);
+        if (from < 0 || to < 0) return current;
+        [next[from], next[to]] = [next[to], next[from]];
+        return next;
+      });
+      setDraggingHomeCard(target);
+      navigator.vibrate?.(15);
+    };
+    document.addEventListener("pointermove", handlePointerMove);
+    return () => document.removeEventListener("pointermove", handlePointerMove);
+  }, [draggingHomeCard]);
 
   const clearFeatureHold = () => {
     if (holdTimer.current !== null) {
@@ -157,39 +204,37 @@ function Dashboard() {
     }
   };
 
-  const startFeatureHold = (feature: HomeFeatureId) => {
+  const startHomeCardHold = (card: HomeCardId, event: PointerEvent<HTMLElement>) => {
     clearFeatureHold();
+    holdStart.current = { x: event.clientX, y: event.clientY };
     holdTimer.current = window.setTimeout(() => {
-      setIsArrangingFeatures(true);
-      setDraggingFeature(feature);
-      suppressFeatureClick.current = true;
+      setIsArrangingHome(true);
+      setDraggingHomeCard(card);
+      suppressHomeClick.current = true;
       navigator.vibrate?.(25);
     }, 520);
   };
 
-  const swapFeature = (target: HomeFeatureId) => {
-    if (!isArrangingFeatures || !draggingFeature || target === draggingFeature) return;
-    setFeatureOrder((current) => {
-      const next = [...current];
-      const from = next.indexOf(draggingFeature);
-      const to = next.indexOf(target);
-      if (from < 0 || to < 0) return current;
-      [next[from], next[to]] = [next[to], next[from]];
-      return next;
-    });
-    setDraggingFeature(target);
-    navigator.vibrate?.(15);
+  const moveHomeCard = (event: PointerEvent<HTMLElement>) => {
+    if (
+      !isArrangingHome &&
+      (Math.abs(event.clientX - holdStart.current.x) > 10 ||
+        Math.abs(event.clientY - holdStart.current.y) > 10)
+    ) {
+      clearFeatureHold();
+    }
   };
 
-  const finishFeaturePointer = () => {
+  const finishHomeCardPointer = () => {
     clearFeatureHold();
-    setDraggingFeature(null);
+    setDraggingHomeCard(null);
   };
 
-  const preventFeatureNavigation = (event: MouseEvent) => {
-    if (!suppressFeatureClick.current) return;
+  const preventHomeNavigation = (event: MouseEvent) => {
+    if (!suppressHomeClick.current) return;
     event.preventDefault();
-    suppressFeatureClick.current = false;
+    event.stopPropagation();
+    suppressHomeClick.current = false;
   };
 
   const handleWeeklyWeighIn = () => {
