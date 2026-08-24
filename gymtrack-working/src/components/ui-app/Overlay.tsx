@@ -158,7 +158,7 @@ export function Overlay({
       data-overlay-root="true"
       data-overlay-variant={variant}
       data-keyboard-open={keyboardOffset > 0 ? "true" : undefined}
-      className={`overlay-root fixed inset-0 z-[100] flex ${
+      className={`overlay-root fixed inset-0 z-[100] flex overflow-x-hidden ${
         isFull
           ? "items-stretch justify-center"
           : isBottom
@@ -166,7 +166,7 @@ export function Overlay({
             : isTop
               ? "items-start justify-center"
               : "items-center justify-center"
-      } ${isFull ? "bg-background p-0" : "bg-foreground/40 p-4 backdrop-blur-sm"} ${className}`}
+      } ${isFull ? "bg-background p-0" : "bg-foreground/40 p-4"} ${className}`}
       style={
         viewportHeight !== null
           ? { height: `${viewportHeight}px`, top: `${viewportTop}px` }
