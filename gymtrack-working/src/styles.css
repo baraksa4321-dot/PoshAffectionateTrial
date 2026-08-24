@@ -1815,6 +1815,37 @@ html.night-mode .auth-panel {
   transition: none;
 }
 
+.home-bodyweight-tile {
+  grid-column: 2;
+  align-self: start;
+}
+
+.home-bodyweight-tile .ink-card {
+  min-height: 76px !important;
+  padding: 0.55rem !important;
+  border-radius: 1rem;
+}
+
+.home-bodyweight-tile .ink-card h2 {
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-bodyweight-tile .ink-card p {
+  display: none;
+}
+
+.home-bodyweight-tile .ink-card button {
+  height: 1.55rem;
+  margin-top: 0.35rem;
+  font-size: 0.58rem;
+  border-radius: 0.65rem;
+}
+
 [data-home-card-id].home-feature-dragging {
   opacity: 0.72;
   transform: scale(1.035) rotate(-1deg);

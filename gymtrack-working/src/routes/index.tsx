@@ -342,6 +342,7 @@ function Dashboard() {
       : undefined;
 
   const nextWorkout = workouts[0];
+  const isBodyweightWorkout = Boolean(nextWorkout?.name.includes("משקל גוף"));
   const nextProgram = nextWorkout
     ? programs.find((p) => p.dayIds.includes(nextWorkout.id))
     : undefined;
@@ -491,7 +492,7 @@ function Dashboard() {
          <div className="home-feature-grid grid grid-cols-2 gap-2">
         {nextWorkout ? (
            <div
-             className={`home-feature-item ${draggingHomeCard === "workout" ? "home-feature-dragging" : ""}`}
+              className={`home-feature-item ${isBodyweightWorkout ? "home-bodyweight-tile" : ""} ${draggingHomeCard === "workout" ? "home-feature-dragging" : ""}`}
              data-home-card-id="workout"
              style={{ order: homeCardOrder.indexOf("workout") }}
              onPointerDown={(event) => startHomeCardHold("workout", event)}
@@ -499,7 +500,7 @@ function Dashboard() {
              onPointerUp={finishHomeCardPointer}
              onPointerCancel={finishHomeCardPointer}
            >
-           <div className="ink-card flex min-h-[150px] flex-col p-3 text-start">
+            <div className="ink-card flex min-h-[150px] flex-col p-3 text-start">
             <div className="flex items-center justify-between gap-1">
               <span className="text-[10px] font-bold text-primary-foreground/80">אימון יומי</span>
               <Dumbbell className="h-4 w-4 text-primary-foreground/80" />
