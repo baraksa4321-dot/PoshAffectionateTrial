@@ -332,7 +332,12 @@ function Dashboard() {
   const totalsToday = nutritionToday
     ? dayTotals(nutritionToday)
     : { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
-  const targetCals = nutritionTargets.calories;
+  const targetCals =
+    typeof nutritionTargets.calories === "number" &&
+    Number.isFinite(nutritionTargets.calories) &&
+    nutritionTargets.calories > 0
+      ? nutritionTargets.calories
+      : undefined;
   const remainingCals =
     targetCals === undefined ? undefined : Math.max(0, targetCals - totalsToday.calories);
   const caloriePct =
@@ -603,7 +608,9 @@ function Dashboard() {
                 <span className="ms-1 text-[10px] font-bold text-primary/75">קק״ל</span>
               </p>
               <p className="mt-1 text-[10px] text-muted-foreground">
-                מתוך {targetCals} · {Math.max(0, targetCals - totalsToday.calories)} נשארו
+                {targetCals === undefined
+                  ? "יעד קלוריות עדיין לא הוגדר"
+                  : `מתוך ${targetCals} · ${Math.max(0, targetCals - totalsToday.calories)} נשארו`}
               </p>
               <div className="mt-auto flex items-center justify-between rounded-xl bg-background/80 px-2 py-1.5 text-[10px] font-bold text-ink">
                 <span>{Math.round(totalsToday.protein)} גרם חלבון</span>

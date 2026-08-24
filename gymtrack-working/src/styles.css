@@ -623,6 +623,21 @@ html.night-mode .nav-shell {
   -webkit-backdrop-filter: none;
 }
 
+/* Explicitly restore the app chrome after leaving night mode. The utility
+ * classes use translucent backgrounds, so this prevents a stale night
+ * surface from visually surviving the class toggle on mobile browsers. */
+html:not(.night-mode) .app-topbar,
+html:not(.night-mode) .nav-shell {
+  background: color-mix(in srgb, var(--background) 90%, transparent) !important;
+  background-color: color-mix(in srgb, var(--background) 90%, transparent) !important;
+  border-color: color-mix(in srgb, var(--border) 70%, transparent) !important;
+  box-shadow:
+    0 2px 8px rgb(var(--shadow-color) / 8%),
+    0 10px 24px rgb(var(--shadow-color) / 8%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
 .ink-card {
   background: var(--surface-2);
   color: var(--ink);
