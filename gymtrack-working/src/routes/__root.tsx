@@ -1019,6 +1019,11 @@ function RootContent() {
     document.documentElement.lang = "he";
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
+    if (import.meta.env.PROD && "serviceWorker" in navigator) {
+      void navigator.serviceWorker.register("/sw.js").catch((error) => {
+        console.warn("[App shell cache unavailable]:", error);
+      });
+    }
     try {
       const storageKey = "my-routine-loading-illustration";
       const previousVariant = Number(window.localStorage.getItem(storageKey));
