@@ -1804,19 +1804,13 @@ export function CoachDashboardPage({
                     aria-label="ניווט בסביבת העריכה"
                     className="sticky top-2 z-10 grid grid-cols-2 gap-2 rounded-2xl border border-border/70 bg-background/95 p-1.5 shadow-sm backdrop-blur"
                   >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (selectedClientId) {
-                          navigate({
-                            to: "/coach/clients/$clientId/program",
-                            params: { clientId: selectedClientId },
-                          });
-                        } else {
-                          setActiveWorkspaceTab("programs");
-                        }
-                      }}
+                    <Link
+                      to="/coach/clients/$clientId/program"
+                      params={{ clientId: selectedClientId! }}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       aria-selected={activeWorkspaceTab === "programs"}
+                      role="tab"
                       className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors ${
                         activeWorkspaceTab === "programs"
                           ? "bg-primary text-primary-foreground shadow-sm"
@@ -1825,20 +1819,14 @@ export function CoachDashboardPage({
                     >
                       <Dumbbell className="h-3.5 w-3.5" />
                       תוכנית אימונים
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (selectedClientId) {
-                          navigate({
-                            to: "/coach/clients/$clientId/nutrition",
-                            params: { clientId: selectedClientId },
-                          });
-                        } else {
-                          setActiveWorkspaceTab("nutrition");
-                        }
-                      }}
+                    </Link>
+                    <Link
+                      to="/coach/clients/$clientId/nutrition"
+                      params={{ clientId: selectedClientId! }}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       aria-selected={activeWorkspaceTab === "nutrition"}
+                      role="tab"
                       className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors ${
                         activeWorkspaceTab === "nutrition"
                           ? "bg-emerald-700 text-white shadow-sm"
@@ -1847,7 +1835,7 @@ export function CoachDashboardPage({
                     >
                       <Apple className="h-3.5 w-3.5" />
                       תפריט תזונה
-                    </button>
+                    </Link>
                   </nav>
                 </>
               ) : null}
