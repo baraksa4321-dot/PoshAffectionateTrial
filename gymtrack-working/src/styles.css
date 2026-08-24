@@ -2157,29 +2157,38 @@ html.night-mode .auth-panel {
   animation: loading-dumbbell-motion 1.8s ease-in-out infinite;
 }
 
-.loading-simple-illustration .loading-lifter-head,
-.loading-simple-illustration .loading-lifter-shell {
-  fill: #fff;
+.loading-simple-illustration .loading-lifter-head {
+  fill: #e7b08e;
   stroke: var(--ink);
-  stroke-linejoin: round;
-  stroke-width: 1.8;
+  stroke-width: 1.2;
 }
 
-.loading-simple-illustration .loading-lifter-fill {
+.loading-simple-illustration .loading-lifter-hair {
+  fill: #5b3f3f;
+  stroke: none;
+}
+
+.loading-simple-illustration .loading-lifter-body {
   fill: #e58a9b;
-  opacity: 1;
-  transform-box: fill-box;
-  transform-origin: bottom center;
-  animation: loading-bottom-fill 3.8s cubic-bezier(0.22, 0.75, 0.3, 1) infinite;
+  stroke: var(--ink);
+  stroke-linejoin: round;
+  stroke-width: 1.2;
+}
+
+.loading-simple-illustration .loading-lifter-shorts {
+  fill: #6f5366;
+  stroke: var(--ink);
+  stroke-linejoin: round;
+  stroke-width: 1.2;
 }
 
 .loading-simple-illustration .loading-lifter-arms,
 .loading-simple-illustration .loading-lifter-legs {
   fill: none;
-  stroke: var(--ink);
+  stroke: #e7b08e;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2.5;
+  stroke-width: 6.5;
 }
 
 .loading-simple-illustration .loading-lifter-bar {

@@ -313,10 +313,11 @@ function LoadingIllustration({ variant }: { variant: number }) {
           </g>
         ) : activeShape === 8 ? (
           <g className="loading-lifter-motion">
-            <circle className="loading-lifter-head" cx="75" cy="29" r="9" />
-            <path className="loading-lifter-shell" d="M63 43c4-4 20-4 24 0l5 18-9 3v22H67V64l-9-3z" />
-            <path className="loading-lifter-fill" d="M68 47c4-2 10-2 14 0l3 12-5 2v19H70V61l-5-2z" />
-            <path className="loading-lifter-arms" d="M63 48 50 29M87 48l13-19M50 29 43 19M100 29l7-10" />
+            <path className="loading-lifter-hair" d="M67 28c-2-8 4-14 11-14 8 0 13 6 11 14-2-4-5-6-9-6-4 3-8 5-13 6z" />
+            <circle className="loading-lifter-head" cx="75" cy="29" r="8" />
+            <path className="loading-lifter-body" d="M64 43c3-4 19-4 22 0l6 20c-4 5-8 7-17 7s-13-2-17-7z" />
+            <path className="loading-lifter-shorts" d="M65 66h29l-4 15c-3 3-7 4-11 1-4 3-8 2-11-1z" />
+            <path className="loading-lifter-arms" d="M65 46 51 29 43 19M85 46l14-17 8-10" />
             <path className="loading-lifter-bar" d="M35 15h80" />
             <path className="loading-lifter-plate" d="M32 10v10M38 7v16M112 10v10M118 7v16" />
             <path className="loading-lifter-legs" d="M70 86 62 99M80 86l8 13" />
@@ -566,7 +567,17 @@ function RootContent() {
     document.documentElement.lang = "he";
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
-     setLoadingVariant(Math.floor(Math.random() * 9));
+     try {
+       const storageKey = "my-routine-loading-illustration";
+       const previousVariant = Number(window.localStorage.getItem(storageKey));
+       const nextVariant = Number.isInteger(previousVariant) && previousVariant >= 0
+         ? (previousVariant + 1) % 9
+         : Math.floor(Math.random() * 9);
+       window.localStorage.setItem(storageKey, String(nextVariant));
+       setLoadingVariant(nextVariant);
+     } catch {
+       setLoadingVariant(Math.floor(Math.random() * 9));
+     }
     setLoadingMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
     const illustrationTimer = window.setInterval(() => {
        setLoadingVariant((current) => (current + 1) % 9);
