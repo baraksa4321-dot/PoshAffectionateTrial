@@ -356,11 +356,18 @@ function SimpleLoadingIllustration({ variant }: { variant: number }) {
   const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length];
   return (
     <div className={`loading-micro-stage loading-simple-pose-${variant % 4}`}>
-      <img
+      <video
         className="loading-simple-image"
-        src={`/loading/${illustration.file}`}
-        alt={`איור טעינה: ${illustration.label}`}
-      />
+        autoPlay
+        loop
+        muted
+        preload="auto"
+        playsInline
+        poster={`/loading/${illustration.file.replace(".webm", ".png")}`}
+        aria-label={`איור טעינה: ${illustration.label}`}
+      >
+        <source src={`/loading/${illustration.file}`} type="video/webm" />
+      </video>
     </div>
   );
 }
