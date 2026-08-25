@@ -1415,16 +1415,13 @@ export function CoachDashboardPage({
   );
   const openTrackedPlan = (workoutId: string, exerciseId?: string) => {
     if (!selectedClientId || !clientDetails) return;
-    const program =
-      clientDetails.programs.find((item) => item.dayIds.includes(workoutId)) ??
-      clientDetails.programs.at(-1);
-    if (!program) return;
+    const program = clientDetails.programs.find((item) => item.dayIds.includes(workoutId));
     navigate({
       to: "/coach/clients/$clientId/program",
       params: { clientId: selectedClientId },
       search: {
-        programId: program.id,
         dayId: workoutId,
+        ...(program ? { programId: program.id } : {}),
         ...(exerciseId ? { exerciseId } : {}),
       },
     });

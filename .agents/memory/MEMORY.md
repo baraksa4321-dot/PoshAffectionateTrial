@@ -11,3 +11,4 @@
 - [New-user profile repair](new-user-profile-repair.md) — Auth users can exist without a profiles row; hydrate must create only their own client profile through RLS.
 - [GymTrack release preview](gymtrack-release-preview.md) — Smoke-test the registered Vite dev preview after building; package-level vite preview can target the wrong output layout.
 - [Supabase sync schema contract](supabase-sync-schema-contract.md) — One stale column mapping can abort the shared sync and make unrelated changes appear unsaved.
+- [Coach tracking deep links](coach-tracking-deep-links.md) — Tracking-to-editor navigation must not abort when program/day associations are stale; pass day and exercise IDs independently.
