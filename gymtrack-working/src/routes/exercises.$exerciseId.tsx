@@ -60,6 +60,8 @@ function ExerciseDetail() {
       (existing && !MUSCLE_GROUPS.includes(existing.muscleGroup) ? existing.muscleGroup : "") ||
       "",
   );
+  const [alternativeQuery, setAlternativeQuery] = useState("");
+  const [videoUploadError, setVideoUploadError] = useState("");
 
   // Scroll reset on navigation is handled centrally in __root.tsx (ScrollToTop
   // subscribes to router.subscribe('onResolved')); no per-page effect needed.
@@ -111,6 +113,51 @@ function ExerciseDetail() {
     });
 
   const set = (patch: Partial<Exercise>) => setDraft({ ...draft, ...patch });
+  const selectedAlternativeIds = draft.approvedSubstitutes ?? [];
+  const alternativeOptions = exercises.filter(
+    (exercise) =>
+      exercise.id !== draft.id &&
+      (exercise.name.toLocaleLowerCase().includes(alternativeQuery.toLocaleLowerCase()) ||
+        exercise.equipment.toLocaleLowerCase().includes(alternativeQuery.toLocaleLowerCase())),
+  );
+
+  const toggleAlternative = (exerciseId: string) => {
+    set({
+      approvedSubstitutes: selectedAlternativeIds.includes(exerciseId)
+        ? selectedAlternativeIds.filter((id) => id !== exerciseId)
+        : [...selectedAlternativeIds, exerciseId],
+    });
+  };
+
+  const addExerciseVideos = (files: FileList | null) => {
+    if (!files) return;
+    setVideoUploadError("");
+    const currentVideos = draft.videoUrls?.length
+      ? draft.videoUrls
+      : draft.videoUrl
+        ? [draft.videoUrl]
+        : [];
+    const availableSlots = Math.max(0, 2 - currentVideos.length);
+    const selectedFiles = Array.from(files).filter((file) => file.type.startsWith("video/"));
+    if (selectedFiles.length > availableSlots) {
+      setVideoUploadError("אפשר להוסיף עד שני סרטוני הדגמה לתרגיל.");
+    }
+    const filesToRead = selectedFiles.slice(0, availableSlots);
+    if (filesToRead.length === 0) return;
+    Promise.all(
+      filesToRead.map(
+        (file) =>
+          new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result));
+            reader.onerror = () => reject(new Error("video-read-failed"));
+            reader.readAsDataURL(file);
+          }),
+      ),
+    )
+      .then((newVideos) => set({ videoUrls: [...currentVideos, ...newVideos].slice(0, 2) }))
+      .catch(() => setVideoUploadError("לא ניתן לקרוא את הסרטון שנבחר."));
+  };
 
   const onSave = () => {
     if (!canManageLibrary) return;
@@ -374,13 +421,98 @@ function ExerciseDetail() {
           </div>
 
           <div className="surface-card p-4">
-            <label className={labelCls}>קישור לסרטון הדגמה</label>
+            <label className={labelCls}>סרטוני הדגמה (עד 2)</label>
+            <input
+              type="file"
+              accept="video/*"
+              multiple
+              onChange={(e) => {
+                addExerciseVideos(e.target.files);
+                e.currentTarget.value = "";
+              }}
+              className={`${field} file:me-2 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-primary-foreground`}
+            />
+            <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+              בחרי סרטונים מהגלריה שלך. יישמרו עד שני סרטונים לתרגיל.
+            </p>
+            {videoUploadError ? (
+              <p className="mt-2 text-[11px] font-semibold text-destructive">{videoUploadError}</p>
+            ) : null}
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {(draft.videoUrls?.length ? draft.videoUrls : draft.videoUrl ? [draft.videoUrl] : []).map(
+                (src, index) => (
+                  <div key={`${src.slice(0, 24)}-${index}`} className="relative">
+                    <video
+                      src={src}
+                      controls
+                      preload="metadata"
+                      className="h-36 w-full rounded-xl border border-border/40 bg-black object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        set({
+                          videoUrls: (draft.videoUrls?.length
+                            ? draft.videoUrls
+                            : draft.videoUrl
+                              ? [draft.videoUrl]
+                              : []
+                          ).filter((_, videoIndex) => videoIndex !== index),
+                          ...(index === 0 ? { videoUrl: "" } : {}),
+                        })
+                      }
+                      className="press absolute end-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-destructive text-destructive-foreground"
+                      aria-label={`הסר סרטון ${index + 1}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ),
+              )}
+            </div>
+          </div>
+
+          <div className="surface-card p-4">
+            <label className={labelCls}>קישור לסרטון חיצוני (אופציונלי)</label>
             <input
               className={field}
               value={draft.videoUrl}
               onChange={(e) => set({ videoUrl: e.target.value })}
               placeholder="https://youtube.com/..."
             />
+          </div>
+
+          <div className="surface-card p-4">
+            <label className={labelCls}>תרגילים חלופיים</label>
+            <p className="text-[11.5px] text-muted-foreground">
+              למשל: במקום מוט חופשי אפשר לבחור מכונה או דמבלים.
+            </p>
+            <input
+              className={`${field} mt-2`}
+              value={alternativeQuery}
+              onChange={(event) => setAlternativeQuery(event.target.value)}
+              placeholder="חיפוש תרגיל חלופי..."
+            />
+            <div className="mt-2 max-h-48 space-y-1.5 overflow-y-auto">
+              {alternativeOptions.slice(0, 12).map((exercise) => {
+                const selected = selectedAlternativeIds.includes(exercise.id);
+                return (
+                  <button
+                    type="button"
+                    key={exercise.id}
+                    onClick={() => toggleAlternative(exercise.id)}
+                    className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-start text-xs ${
+                      selected
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border/50 bg-secondary text-ink"
+                    }`}
+                  >
+                    <span className="font-semibold">{exercise.name}</span>
+                    <span className="text-[10px] text-muted-foreground">{exercise.equipment}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <ImagesEditor images={draft.images} onChange={(images) => set({ images })} />
@@ -441,6 +573,18 @@ function ExerciseDetail() {
               <ArrowRight className="h-4 w-4" />
             </a>
           ) : null}
+          {ex.videoUrls?.filter((url) => url && url !== ex.videoUrl).map((url, index) => (
+            <a
+              key={`${url.slice(0, 24)}-${index}`}
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              className="press surface-card flex items-center justify-between gap-3 p-4 text-[14px] font-semibold text-primary"
+            >
+              צפי בסרטון הדגמה {index + 2}
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          ))}
 
           <div className="surface-card p-4">
             <p className={labelCls}>מאפיינים</p>
@@ -469,6 +613,24 @@ function ExerciseDetail() {
                       {m}
                     </span>
                   ))}
+                </div>
+              </div>
+            ) : null}
+            {(ex.approvedSubstitutes ?? []).length > 0 ? (
+              <div className="mt-3">
+                <p className={labelCls}>תרגילים חלופיים</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {(ex.approvedSubstitutes ?? []).map((alternativeId) => {
+                    const alternative = exercises.find((item) => item.id === alternativeId);
+                    return alternative ? (
+                      <span
+                        key={alternative.id}
+                        className="rounded-full bg-secondary px-3 py-1 text-[12px] font-medium text-muted-foreground"
+                      >
+                        {alternative.name} · {alternative.equipment}
+                      </span>
+                    ) : null;
+                  })}
                 </div>
               </div>
             ) : null}

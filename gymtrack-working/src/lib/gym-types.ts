@@ -54,6 +54,8 @@ export type Exercise = {
   customMuscleGroup?: string;
   /** Optional secondary muscles worked. */
   secondaryMuscles?: string[];
+  /** Coach-selected exercises that can replace this movement. */
+  approvedSubstitutes?: string[];
   /** Optional free-form category (e.g. מורכב, בידוד, עזר). */
   category?: string;
   equipment: string;
@@ -61,6 +63,8 @@ export type Exercise = {
   /** Optional step-by-step execution instructions. */
   instructions?: string;
   videoUrl: string;
+  /** Up to two coach-provided demonstration videos. `videoUrl` remains the legacy first URL. */
+  videoUrls?: string[];
   images: string[];
   notes: string;
   /** Optional technique tips / cues. */
