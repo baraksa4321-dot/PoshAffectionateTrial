@@ -450,12 +450,12 @@ html.night-mode textarea::placeholder {
 }
 
 :root[data-theme="cream"] {
-  --background: #ffffff;
+  --background: #f6f2ec;
   --foreground: #493d2d;
-  --surface: #fffdf8;
+  --surface: #fbf8f2;
   --surface-2: #f2e8d3;
-  --cream: #faf3e3;
-  --card: #ffffff;
+  --cream: #f3ece2;
+  --card: #fffdf9;
   --card-foreground: #493d2d;
   --popover: #ffffff;
   --popover-foreground: #493d2d;
@@ -1981,7 +1981,7 @@ html.night-mode .auth-panel {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: #f7f1ec !important;
+  background: #f6f2ec !important;
   color: #171414;
 }
 
@@ -2051,7 +2051,7 @@ html.night-mode .auth-panel {
 }
 
 .loading-simple-video {
-  background: #f7f1ec;
+  background: #f6f2ec;
   filter: saturate(1.04);
   mix-blend-mode: normal;
 }
