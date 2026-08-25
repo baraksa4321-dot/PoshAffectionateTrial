@@ -77,6 +77,11 @@ type ProfileRow = {
   created_at?: string | null;
   approval_status?: "pending" | "approved" | "rejected" | null;
   coach_id?: string | null;
+  age?: number | null;
+  height_cm?: number | null;
+  weight_kg?: number | null;
+  workouts_per_week?: number | null;
+  gender?: string | null;
 };
 
 type ClientFeedbackRow = {
@@ -171,6 +176,10 @@ export function CoachDashboardPage({
   const [approvalCoachByUser, setApprovalCoachByUser] = useState<Record<string, string>>({});
   const [approvalUserId, setApprovalUserId] = useState<string | null>(null);
   const [approvalNotice, setApprovalNotice] = useState("");
+  const [selectedOwnerProfileId, setSelectedOwnerProfileId] = useState<string | null>(null);
+  const [selectedOwnerProfileDetails, setSelectedOwnerProfileDetails] =
+    useState<ClientDetails | null>(null);
+  const [ownerUserActionId, setOwnerUserActionId] = useState<string | null>(null);
   const [clientFeedback, setClientFeedback] = useState<ClientFeedbackRow[]>([]);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMsg, setInviteMsg] = useState("");
@@ -813,6 +822,58 @@ export function CoachDashboardPage({
     }
   };
 
+  const handleRejectClient = async (profile: ProfileRow) => {
+    if (!window.confirm(`לדחות את ההרשמה של ${profileDisplayName(profile)}?`)) return;
+    setApprovalUserId(profile.id);
+    setApprovalNotice("");
+    try {
+      const { data, error } = await supabase.rpc("reject_client_registration", {
+        target_client_id: profile.id,
+      });
+      if (error) throw error;
+      if (data !== true) throw new Error("הדחייה לא התקבלה במסד הנתונים");
+      await Promise.all([loadAllProfilesForOwner(), loadCoachClients()]);
+      setApprovalNotice(`ההרשמה של ${profileDisplayName(profile)} נדחתה.`);
+    } catch (err: unknown) {
+      setApprovalNotice(`דחיית ההרשמה נכשלה: ${errorMessage(err, "שגיאה בדחייה")}`);
+    } finally {
+      setApprovalUserId(null);
+    }
+  };
+
+  const openOwnerProfile = async (profile: ProfileRow) => {
+    setSelectedOwnerProfileId(profile.id);
+    setSelectedOwnerProfileDetails(null);
+    if (profile.role === "client") {
+      const details = await pullClientDataForCoach(profile.id);
+      if (!details.error) setSelectedOwnerProfileDetails(details);
+    }
+  };
+
+  const handleDeleteUser = async (profile: ProfileRow) => {
+    if (profile.id === authUser?.id || profile.role === "owner") return;
+    const confirmed = window.confirm(
+      `למחוק לצמיתות את המשתמש ${profileDisplayName(profile)} וכל הנתונים שלו? לא ניתן לבטל פעולה זו.`,
+    );
+    if (!confirmed) return;
+    setOwnerUserActionId(profile.id);
+    setManagementError("");
+    try {
+      const { data, error } = await supabase.rpc("delete_user_account", {
+        target_user_id: profile.id,
+      });
+      if (error) throw error;
+      if (data !== true) throw new Error("המחיקה לא התקבלה במסד הנתונים");
+      setSelectedOwnerProfileId(null);
+      setSelectedOwnerProfileDetails(null);
+      await Promise.all([loadAllProfilesForOwner(), loadCoachClients()]);
+    } catch (err: unknown) {
+      setManagementError(`מחיקת המשתמש נכשלה: ${errorMessage(err, "שגיאה במחיקה")}`);
+    } finally {
+      setOwnerUserActionId(null);
+    }
+  };
+
   // Send Coach Message to Client
   const handleSendCoachMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1020,6 +1081,13 @@ export function CoachDashboardPage({
     if (!currentDay) return;
 
     if (editingItemId) {
+      const configuredModes = Array.from(
+        { length: Math.max(1, setsCount) },
+        (_, index) => setModes[index] ?? "normal",
+      );
+      const editMode = configuredModes.find((mode) => mode !== "normal") ?? "normal";
+      const hasDropSets = editMode === "drop";
+      const hasSuperset = editMode === "superset";
       const updatedItems = currentDay.items.map((item) =>
         item.id === editingItemId
           ? {
@@ -1032,6 +1100,61 @@ export function CoachDashboardPage({
               targetWeight,
               weight: targetWeight,
               notes: techNotes.trim(),
+               workingSets: Array.from({ length: Math.max(1, setsCount) }, (_, index) => ({
+                 id: item.workingSets?.[index]?.id || uid(),
+                 setNumber: index + 1,
+                 weight:
+                   hasDropSets && index === Math.max(1, setsCount) - 1
+                     ? Number(dropLevel2Weight) || targetWeight
+                     : targetWeight,
+                 reps:
+                   hasDropSets && index === Math.max(1, setsCount) - 1
+                     ? dropLevel2RepsMin
+                     : Math.max(1, repMin),
+                 repMax:
+                   hasDropSets && index === Math.max(1, setsCount) - 1
+                     ? dropLevel2RepsMax
+                     : Math.max(repMin, repMax),
+                 ...(hasDropSets && index === Math.max(1, setsCount) - 1
+                   ? { dropSet: true }
+                   : {}),
+               })),
+               warmups:
+                 editMode === "warmup"
+                   ? Array.from({ length: Math.max(1, warmupSetsCount) }, (_, index) => ({
+                       id: item.warmups?.[index]?.id || uid(),
+                       weight: warmupWeight,
+                       reps: warmupReps,
+                       repsMax: warmupRepsMax,
+                     }))
+                   : [],
+               dropSetConfig: hasDropSets
+                 ? {
+                     enabled: true,
+                     drops: 2,
+                     levels: [
+                       {
+                         weight: Number(dropLevel1Weight) || targetWeight,
+                         repsMin: dropLevel1RepsMin,
+                         repsMax: dropLevel1RepsMax,
+                       },
+                       {
+                         weight: Number(dropLevel2Weight) || targetWeight,
+                         repsMin: dropLevel2RepsMin,
+                         repsMax: dropLevel2RepsMax,
+                       },
+                     ],
+                   }
+                 : { enabled: false, drops: 0, levels: [] },
+               supersetId: hasSuperset ? "A" : "",
+               supersetPartnerId: hasSuperset ? supersetPartnerId : "",
+               ...(hasSuperset ? { supersetTargetWeight: supersetPartnerWeight } : {}),
+               ...(hasSuperset
+                 ? {
+                     supersetRepsMin: Math.max(1, supersetRepsMin),
+                     supersetRepsMax: Math.max(supersetRepsMin, supersetRepsMax),
+                   }
+                 : {}),
             }
           : item,
       );
@@ -1108,6 +1231,7 @@ export function CoachDashboardPage({
             supersetId: supersetGroup.trim(),
             supersetPartnerId,
             supersetOrder: 1 as const,
+            supersetTargetWeight: supersetPartnerWeight,
             supersetRepsMin,
             supersetRepsMax,
           }
@@ -1188,6 +1312,7 @@ export function CoachDashboardPage({
             exerciseId: supersetPartnerId,
             supersetPartnerId: selectedExId,
             supersetOrder: 2 as const,
+            supersetTargetWeight: targetWeight,
           }
         : null;
     const updatedItems = partnerItem
@@ -3319,6 +3444,12 @@ export function CoachDashboardPage({
                                                           );
                                                           setSupersetGroup(exItem.supersetId || "");
                                                           setSupersetPartnerId(exItem.supersetPartnerId || "");
+                                                          setSupersetPartnerWeight(
+                                                            exItem.supersetTargetWeight ||
+                                                              exItem.targetWeight ||
+                                                              exItem.weight ||
+                                                              20,
+                                                          );
                                                           setSupersetRepsMin(exItem.supersetRepsMin || exItem.repMin || 8);
                                                           setSupersetRepsMax(exItem.supersetRepsMax || exItem.repMax || 10);
                                                         }}
@@ -3456,53 +3587,36 @@ export function CoachDashboardPage({
                                                       </span>
                                                       <Search className="h-4 w-4 text-muted-foreground" />
                                                     </button>
-                                                    <div className="rounded-2xl border border-border/50 bg-background/60 p-2">
-                                                      <p className="mb-2 text-right text-[10px] font-bold text-muted-foreground">
-                                                        סוג לכל סט
-                                                      </p>
-                                                      <div className="space-y-1.5">
-                                                        {Array.from(
-                                                          { length: Math.max(1, setsCount) },
-                                                          (_, index) => (
-                                                            <div
-                                                              key={index}
-                                                              className="flex items-center justify-between gap-2 rounded-xl border border-border/50 bg-background px-2 py-1.5"
-                                                            >
-                                                              <span className="text-[11px] font-bold text-ink">
-                                                                סט {index + 1}
-                                                              </span>
-                                                              <select
-                                                                value={setModes[index] ?? "normal"}
-                                                                onChange={(event) => {
-                                                                  const mode = event.target.value as
-                                                                    | "normal"
-                                                                    | "warmup"
-                                                                    | "drop"
-                                                                    | "superset";
-                                                                   if (mode === "warmup") setWarmupEnabled(true);
-                                                                   if (mode === "drop") setDropSetEnabled(true);
-                                                                  setSetModes((current) => {
-                                                                    const next = Array.from(
-                                                                      { length: Math.max(1, setsCount) },
-                                                                      (_, itemIndex) =>
-                                                                        current[itemIndex] ?? "normal",
-                                                                    );
-                                                                    next[index] = mode;
-                                                                    return next;
-                                                                  });
-                                                                }}
-                                                                className="h-8 min-w-32 rounded-lg border border-border/60 bg-background px-2 text-[11px] font-semibold text-ink"
-                                                              >
-                                                                <option value="normal">סט רגיל</option>
-                                                                <option value="warmup">סט חימום</option>
-                                                                <option value="drop">דרופ סט</option>
-                                                                <option value="superset">סופר סט</option>
-                                                              </select>
-                                                            </div>
-                                                          ),
-                                                        )}
-                                                      </div>
-                                                    </div>
+                                                     <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/50 bg-background/60 p-2.5">
+                                                       <p className="text-right text-[10px] font-bold text-muted-foreground">
+                                                         סוג הסט
+                                                       </p>
+                                                       <select
+                                                         value={setModes.find((mode) => mode !== "normal") ?? "normal"}
+                                                         onChange={(event) => {
+                                                           const mode = event.target.value as
+                                                             | "normal"
+                                                             | "warmup"
+                                                             | "drop"
+                                                             | "superset";
+                                                           setSetModes(
+                                                             Array.from(
+                                                               { length: Math.max(1, setsCount) },
+                                                               () => mode,
+                                                             ),
+                                                           );
+                                                           setWarmupEnabled(mode === "warmup");
+                                                           setDropSetEnabled(mode === "drop");
+                                                           setSupersetGroup(mode === "superset" ? "A" : "");
+                                                         }}
+                                                         className="h-9 min-w-36 rounded-xl border border-border/60 bg-background px-2 text-[11px] font-bold text-ink"
+                                                       >
+                                                         <option value="normal">סט רגיל</option>
+                                                         <option value="warmup">סט חימום</option>
+                                                         <option value="drop">דרופ סט</option>
+                                                         <option value="superset">סופר סט</option>
+                                                       </select>
+                                                     </div>
                                                      <div className="grid grid-cols-4 gap-1.5 rounded-xl border border-amber-200 bg-amber-50/60 p-2">
                                                         <label className="text-center text-[9px] font-bold text-amber-900">
                                                           סטי חימום
@@ -3560,7 +3674,7 @@ export function CoachDashboardPage({
                                                           />
                                                         </label>
                                                      </div>
-                                                    {dropSetEnabled ? (
+                                                    {setModes.find((mode) => mode !== "normal") === "drop" ? (
                                                       <div className="grid grid-cols-2 gap-1.5 rounded-xl border border-primary/20 bg-primary/5 p-2">
                                                         <label className="text-center text-[9px] font-bold text-primary">
                                                           משקל דרופ 1
@@ -3650,7 +3764,7 @@ export function CoachDashboardPage({
                                                         </label>
                                                       </div>
                                                     ) : null}
-                                                    {supersetGroup ? (
+                                                    {setModes.find((mode) => mode !== "normal") === "superset" ? (
                                                       <label className="block rounded-xl border border-violet-200 bg-violet-50/60 p-2 text-right text-[9px] font-bold text-violet-900">
                                                         תרגיל בן־זוג לסופר סט
                                                         <select
@@ -3669,7 +3783,22 @@ export function CoachDashboardPage({
                                                               </option>
                                                             ))}
                                                         </select>
-                                                        <div className="mt-2 grid grid-cols-2 gap-1.5">
+                                                         <div className="mt-2 grid grid-cols-3 gap-1.5">
+                                                           <label className="text-center text-[9px] font-bold text-violet-900">
+                                                             משקל תרגיל 2
+                                                             <input
+                                                               type="number"
+                                                               min={0}
+                                                               step={0.5}
+                                                               value={supersetPartnerWeight}
+                                                               onChange={(event) =>
+                                                                 setSupersetPartnerWeight(
+                                                                   Math.max(0, Number(event.target.value)),
+                                                                 )
+                                                               }
+                                                               className="mt-1 h-8 w-full rounded-lg border border-violet-200 bg-background text-center text-xs"
+                                                             />
+                                                           </label>
                                                           <label className="text-center text-[9px] font-bold text-violet-900">
                                                             חזרות מינ׳
                                                             <input
