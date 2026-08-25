@@ -513,6 +513,14 @@ html.night-mode textarea::placeholder {
   --background: #f7f2ec;
 }
 
+/* These four palettes use a clean white page canvas below the app chrome. */
+:root:not(.night-mode)[data-theme="black"],
+:root:not(.night-mode)[data-theme="pink"],
+:root:not(.night-mode)[data-theme="lavender"],
+:root:not(.night-mode)[data-theme="blue"] {
+  --background: #ffffff;
+}
+
 html,
 body,
 #root {
