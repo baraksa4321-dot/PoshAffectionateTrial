@@ -1415,13 +1415,14 @@ export function CoachDashboardPage({
     (day) => day.date === trackingDate,
   );
   const openTrackedPlan = (workoutId: string, exerciseId?: string) => {
-    if (!selectedClientId || !clientDetails) return;
+    const targetClientId = selectedClientId ?? clientId;
+    if (!targetClientId || !clientDetails) return;
     const program = clientDetails.programs.find((item) => item.dayIds.includes(workoutId));
     setActiveWorkspaceTab("programs");
     setOpenEditor("programs");
     navigate({
       to: "/coach/clients/$clientId/program",
-      params: { clientId: selectedClientId },
+      params: { clientId: targetClientId },
       search: {
         dayId: workoutId,
         ...(program ? { programId: program.id } : {}),
@@ -2739,7 +2740,7 @@ export function CoachDashboardPage({
                                       <div className="flex items-start justify-between gap-2">
                                         <Link
                                           to="/coach/clients/$clientId/program"
-                                          params={{ clientId: selectedClientId }}
+                                          params={{ clientId: selectedClientId ?? clientId ?? "" }}
                                           search={{
                                             dayId: selectedTrackingWorkout.id,
                                             ...(clientDetails.programs.find((program) =>
@@ -3388,6 +3389,132 @@ export function CoachDashboardPage({
                                                         )}
                                                       </div>
                                                     </div>
+                                                    <div className="grid grid-cols-3 gap-1.5">
+                                                      <label className="flex items-center justify-center gap-1 rounded-xl border border-border/50 bg-background px-2 py-2 text-[10px] font-bold text-ink">
+                                                        <input
+                                                          type="checkbox"
+                                                          checked={warmupEnabled}
+                                                          onChange={(event) =>
+                                                            setWarmupEnabled(event.target.checked)
+                                                          }
+                                                          className="accent-primary"
+                                                        />
+                                                        חימום
+                                                      </label>
+                                                      <label className="flex items-center justify-center gap-1 rounded-xl border border-border/50 bg-background px-2 py-2 text-[10px] font-bold text-ink">
+                                                        <input
+                                                          type="checkbox"
+                                                          checked={dropSetEnabled}
+                                                          onChange={(event) =>
+                                                            setDropSetEnabled(event.target.checked)
+                                                          }
+                                                          className="accent-primary"
+                                                        />
+                                                        דרופ סט
+                                                      </label>
+                                                      <label className="flex items-center justify-center gap-1 rounded-xl border border-border/50 bg-background px-2 py-2 text-[10px] font-bold text-ink">
+                                                        <input
+                                                          type="checkbox"
+                                                          checked={Boolean(supersetGroup)}
+                                                          onChange={(event) =>
+                                                            setSupersetGroup(event.target.checked ? "A" : "")
+                                                          }
+                                                          className="accent-primary"
+                                                        />
+                                                        סופר סט
+                                                      </label>
+                                                    </div>
+                                                    {warmupEnabled ? (
+                                                      <div className="grid grid-cols-3 gap-1.5 rounded-xl border border-amber-200 bg-amber-50/60 p-2">
+                                                        <label className="text-center text-[9px] font-bold text-amber-900">
+                                                          סטי חימום
+                                                          <input
+                                                            type="number"
+                                                            min={1}
+                                                            value={warmupSetsCount}
+                                                            onChange={(event) =>
+                                                              setWarmupSetsCount(
+                                                                Math.max(1, Number(event.target.value)),
+                                                              )
+                                                            }
+                                                            className="mt-1 h-8 w-full rounded-lg border border-amber-200 bg-background text-center text-xs"
+                                                          />
+                                                        </label>
+                                                        <label className="text-center text-[9px] font-bold text-amber-900">
+                                                          משקל חימום
+                                                          <input
+                                                            type="number"
+                                                            min={0}
+                                                            value={warmupWeight}
+                                                            onChange={(event) =>
+                                                              setWarmupWeight(Number(event.target.value))
+                                                            }
+                                                            className="mt-1 h-8 w-full rounded-lg border border-amber-200 bg-background text-center text-xs"
+                                                          />
+                                                        </label>
+                                                        <label className="text-center text-[9px] font-bold text-amber-900">
+                                                          חזרות
+                                                          <input
+                                                            type="number"
+                                                            min={1}
+                                                            value={warmupReps}
+                                                            onChange={(event) =>
+                                                              setWarmupReps(Number(event.target.value))
+                                                            }
+                                                            className="mt-1 h-8 w-full rounded-lg border border-amber-200 bg-background text-center text-xs"
+                                                          />
+                                                        </label>
+                                                      </div>
+                                                    ) : null}
+                                                    {dropSetEnabled ? (
+                                                      <div className="grid grid-cols-2 gap-1.5 rounded-xl border border-primary/20 bg-primary/5 p-2">
+                                                        <label className="text-center text-[9px] font-bold text-primary">
+                                                          משקל דרופ 1
+                                                          <input
+                                                            type="number"
+                                                            min={0}
+                                                            value={dropLevel1Weight}
+                                                            onChange={(event) =>
+                                                              setDropLevel1Weight(event.target.value)
+                                                            }
+                                                            className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
+                                                          />
+                                                        </label>
+                                                        <label className="text-center text-[9px] font-bold text-primary">
+                                                          משקל דרופ 2
+                                                          <input
+                                                            type="number"
+                                                            min={0}
+                                                            value={dropLevel2Weight}
+                                                            onChange={(event) =>
+                                                              setDropLevel2Weight(event.target.value)
+                                                            }
+                                                            className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
+                                                          />
+                                                        </label>
+                                                      </div>
+                                                    ) : null}
+                                                    {supersetGroup ? (
+                                                      <label className="block rounded-xl border border-violet-200 bg-violet-50/60 p-2 text-right text-[9px] font-bold text-violet-900">
+                                                        תרגיל בן־זוג לסופר סט
+                                                        <select
+                                                          value={supersetPartnerId}
+                                                          onChange={(event) =>
+                                                            setSupersetPartnerId(event.target.value)
+                                                          }
+                                                          className="mt-1 h-9 w-full rounded-lg border border-violet-200 bg-background px-2 text-xs font-normal text-ink"
+                                                        >
+                                                          <option value="">בחרי תרגיל בן־זוג</option>
+                                                          {store.exercises
+                                                            .filter((exercise) => exercise.id !== exItem.exerciseId)
+                                                            .map((exercise) => (
+                                                              <option key={exercise.id} value={exercise.id}>
+                                                                {exercise.name}
+                                                              </option>
+                                                            ))}
+                                                        </select>
+                                                      </label>
+                                                    ) : null}
                                                     <label className="block text-right text-[10px] font-bold text-muted-foreground">
                                                       הערה למתאמן על התרגיל
                                                       <textarea
@@ -3414,6 +3541,41 @@ export function CoachDashboardPage({
                                                             repMin: Math.max(1, repMin),
                                                             repMax: Math.max(repMin, repMax),
                                                             notes: techNotes.trim(),
+                                                            warmups: warmupEnabled
+                                                              ? Array.from(
+                                                                  { length: Math.max(1, warmupSetsCount) },
+                                                                  (_, index) => ({
+                                                                    id:
+                                                                      exItem.warmups?.[index]?.id ||
+                                                                      uid(),
+                                                                    weight: warmupWeight,
+                                                                    reps: warmupReps,
+                                                                    repsMax: warmupRepsMax,
+                                                                  }),
+                                                                )
+                                                              : [],
+                                                            dropSetConfig: dropSetEnabled
+                                                              ? {
+                                                                  enabled: true,
+                                                                  drops: 2,
+                                                                  levels: [
+                                                                    {
+                                                                      weight:
+                                                                        Number(dropLevel1Weight) || targetWeight,
+                                                                      repsMin: dropLevel1RepsMin,
+                                                                      repsMax: dropLevel1RepsMax,
+                                                                    },
+                                                                    {
+                                                                      weight:
+                                                                        Number(dropLevel2Weight) || targetWeight,
+                                                                      repsMin: dropLevel2RepsMin,
+                                                                      repsMax: dropLevel2RepsMax,
+                                                                    },
+                                                                  ],
+                                                                }
+                                                              : { enabled: false, drops: 0, levels: [] },
+                                                            supersetId: supersetGroup || "",
+                                                            supersetPartnerId: supersetGroup ? supersetPartnerId : "",
                                                           },
                                                         );
                                                         setEditingItemId(null);
