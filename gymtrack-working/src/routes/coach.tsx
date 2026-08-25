@@ -1308,6 +1308,12 @@ export function CoachDashboardPage({
   const pendingApprovals = allProfiles.filter(
     (profile) => profile.role === "client" && profile.approval_status === "pending",
   );
+  const trackingClientHref = (clientId: string) => {
+    if (typeof window === "undefined") return `/coach/tracking/${encodeURIComponent(clientId)}`;
+    const coachIndex = window.location.pathname.indexOf("/coach");
+    const artifactPrefix = coachIndex >= 0 ? window.location.pathname.slice(0, coachIndex) : "";
+    return `${artifactPrefix}/coach/tracking/${encodeURIComponent(clientId)}`;
+  };
   const openClientFromOverview = (clientId: string) => {
     navigate({ to: "/coach/tracking/$clientId", params: { clientId } });
   };
@@ -1894,7 +1900,7 @@ export function CoachDashboardPage({
                         key={c.id}
                         onClick={() => {
                           if (!isSelected) {
-                            window.location.assign(`/coach/tracking/${encodeURIComponent(c.client_id)}`);
+                            window.location.assign(trackingClientHref(c.client_id));
                           }
                         }}
                         className={`surface-card p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
@@ -1914,7 +1920,7 @@ export function CoachDashboardPage({
 
                         <div className="flex items-center gap-2">
                           <a
-                            href={`/coach/tracking/${encodeURIComponent(c.client_id)}`}
+                            href={trackingClientHref(c.client_id)}
                             onClick={(event) => {
                               event.stopPropagation();
                             }}
