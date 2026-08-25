@@ -178,6 +178,31 @@ describe("offline store lifecycle", () => {
     expect(store.getGymStoreSnapshot().preExitChecklist[0]?.label).toBe("Local edit wins");
   });
 
+  test("does not let a pending cached edit get overwritten on re-login", async () => {
+    Object.assign(navigator, { onLine: true });
+    storage.set(
+      "gymtrack.v1.user.user-a",
+      JSON.stringify({
+        ...cachedClientData,
+        preExitChecklist: [{ id: "local", label: "Keep this edit" }],
+      }),
+    );
+    storage.set("gymtrack.v1.pending.user-a", "true");
+    pullImplementation = async (_userId, _localState) => ({
+      success: true,
+      data: { ...cachedClientData, preExitChecklist: [{ id: "cloud", label: "Old cloud data" }] },
+    });
+
+    const store = await loadStore("pending-cache-wins");
+    authenticate();
+
+    await eventually(() => syncCalls.length > 0);
+    expect(syncCalls[0]?.localData["preExitChecklist"]).toEqual([
+      expect.objectContaining({ label: "Keep this edit" }),
+    ]);
+    expect(store.getGymStoreSnapshot().preExitChecklist[0]?.label).toBe("Keep this edit");
+  });
+
   test("deduplicates duplicate reconnect events while sync is in flight", async () => {
     storage.set("gymtrack.v1.user.user-a", JSON.stringify(cachedClientData));
     const sync = deferred<{ success: true }>();

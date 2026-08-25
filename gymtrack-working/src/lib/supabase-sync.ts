@@ -73,6 +73,36 @@ async function requireSuccessfulWrite(
   }
 }
 
+async function deleteRowsMissingFromLocal(
+  userId: string,
+  table: string,
+  localIds: string[],
+  label: string,
+  idColumn = "id",
+  ownerColumn = "user_id",
+) {
+  const { data, error } = await supabase
+    .from(table)
+    .select(idColumn)
+    .eq(ownerColumn, userId);
+  if (error) throw new Error(`${label} read failed: ${error.message}`);
+
+  const localIdSet = new Set(localIds);
+  const staleIds = (data ?? [])
+    .map((row) => String((row as unknown as Record<string, unknown>)[idColumn]))
+    .filter((id) => !localIdSet.has(id));
+  if (staleIds.length === 0) return;
+
+  await requireSuccessfulWrite(
+    supabase
+      .from(table)
+      .delete()
+      .eq(ownerColumn, userId)
+      .in(idColumn, staleIds),
+    `${label} deletion`,
+  );
+}
+
 export async function syncLocalToSupabase(
   userId: string,
   localData: GymData,
@@ -126,6 +156,12 @@ export async function syncLocalToSupabase(
         "Custom exercises sync",
       );
     }
+    await deleteRowsMissingFromLocal(
+      userId,
+      "custom_exercises",
+      customExercises.map((exercise) => exercise.id),
+      "Custom exercises",
+    );
 
     // 3. Programs & Program Days
     if (localData.programs.length > 0) {
@@ -163,6 +199,18 @@ export async function syncLocalToSupabase(
         }
       }
     }
+    await deleteRowsMissingFromLocal(
+      userId,
+      "programs",
+      localData.programs.map((program) => program.id),
+      "Programs",
+    );
+    await deleteRowsMissingFromLocal(
+      userId,
+      "program_days",
+      localData.programs.flatMap((program) => program.dayIds),
+      "Program days",
+    );
 
     // 4. Workout Sessions / History (including difficulty rating & discomfort notes)
     if (localData.history.length > 0) {
@@ -184,6 +232,12 @@ export async function syncLocalToSupabase(
         "Workout history sync",
       );
     }
+    await deleteRowsMissingFromLocal(
+      userId,
+      "workout_sessions",
+      localData.history.map((session) => session.id),
+      "Workout history",
+    );
 
     // 4c. Cardio Logs
     // Reconcile deletions as well as upserts so local delete actions persist
@@ -193,11 +247,12 @@ export async function syncLocalToSupabase(
     const cardioPayload = (localData.cardioLogs ?? []).map((log) => ({
       id: cardioCloudId(log.id),
       user_id: userId,
-      activity_type: log.type,
-      duration_minutes: Math.round(log.durationMin),
-      estimated_calories: log.calories,
+      date: log.date,
+      type: log.type,
+      duration_min: log.durationMin,
+      calories: log.calories,
       intensity: log.intensity,
-      recorded_at: `${log.date}T00:00:00.000Z`,
+      updated_at: new Date().toISOString(),
     }));
     let cardioTableAvailable = true;
     try {
@@ -207,6 +262,12 @@ export async function syncLocalToSupabase(
           "Cardio logs sync",
         );
       }
+      await deleteRowsMissingFromLocal(
+        userId,
+        "cardio_logs",
+        cardioPayload.map((log) => log.id),
+        "Cardio logs",
+      );
     } catch (error: unknown) {
       if (isMissingTableInSchemaCache(error, "cardio_logs")) {
         cardioTableAvailable = false;
@@ -220,7 +281,7 @@ export async function syncLocalToSupabase(
     try {
       const weighInPayload = (localData.bodyWeightLogs ?? []).map((log) => ({
         user_id: userId,
-        recorded_at: `${log.date}T00:00:00.000Z`,
+        date: log.date,
         weight_kg: log.weight,
         updated_at: new Date().toISOString(),
       }));
@@ -228,8 +289,27 @@ export async function syncLocalToSupabase(
         await requireSuccessfulWrite(
           supabase
             .from("body_weight_logs")
-            .upsert(weighInPayload, { onConflict: "user_id,recorded_at" }),
+            .upsert(weighInPayload, { onConflict: "user_id,date" }),
           "Body weight log sync",
+        );
+      }
+      const { data: remoteWeighIns, error: weighInReadError } = await supabase
+        .from("body_weight_logs")
+        .select("date")
+        .eq("user_id", userId);
+      if (weighInReadError) throw new Error(`Body weight log read failed: ${weighInReadError.message}`);
+      const localWeightDates = new Set((localData.bodyWeightLogs ?? []).map((log) => log.date));
+      const staleWeightDates = (remoteWeighIns ?? [])
+        .map((row) => String(row.date).slice(0, 10))
+        .filter((date) => !localWeightDates.has(date));
+      if (staleWeightDates.length > 0) {
+        await requireSuccessfulWrite(
+          supabase
+            .from("body_weight_logs")
+            .delete()
+            .eq("user_id", userId)
+            .in("date", staleWeightDates),
+          "Body weight log deletion",
         );
       }
     } catch (error: unknown) {
@@ -264,6 +344,12 @@ export async function syncLocalToSupabase(
         "Body measurements sync",
       );
     }
+    await deleteRowsMissingFromLocal(
+      userId,
+      "body_measurements",
+      measurementPayload.map((measurement) => measurement.id),
+      "Body measurements",
+    );
 
     const habitsPayload = (localData.habits ?? []).map((h) => ({
       id: h.id,
@@ -281,6 +367,12 @@ export async function syncLocalToSupabase(
         "Client habits sync",
       );
     }
+    await deleteRowsMissingFromLocal(
+      userId,
+      "client_habits",
+      habitsPayload.map((habit) => habit.id),
+      "Client habits",
+    );
 
     // 5. Custom Foods (seed = all built-in items including USDA expansion)
     const seedFoodIds = new Set(EVERYDAY_FOOD_DATABASE.map((f) => f.id));
@@ -308,6 +400,12 @@ export async function syncLocalToSupabase(
         "Custom foods sync",
       );
     }
+    await deleteRowsMissingFromLocal(
+      userId,
+      "custom_foods",
+      customFoods.map((food) => food.id),
+      "Custom foods",
+    );
 
     // 6. Nutrition Days
     if (localData.nutritionDays.length > 0) {
@@ -327,6 +425,12 @@ export async function syncLocalToSupabase(
         "Nutrition log sync",
       );
     }
+    await deleteRowsMissingFromLocal(
+      userId,
+      "nutrition_days",
+      localData.nutritionDays.map((day) => day.id ?? `${userId}_${day.date}`),
+      "Nutrition days",
+    );
 
     // 6b. Personal recipe library. Existing RLS keeps these records scoped by owner.
     const recipePayload = (localData.recipes ?? []).map((recipe) => ({
@@ -341,6 +445,14 @@ export async function syncLocalToSupabase(
         "Recipe library sync",
       );
     }
+    await deleteRowsMissingFromLocal(
+      userId,
+      "coach_recipes",
+      recipePayload.map((recipe) => recipe.id),
+      "Recipe library",
+      "id",
+      "coach_id",
+    );
 
     // 7. Food Favorites
     if (localData.favoriteFoods && localData.favoriteFoods.length > 0) {
@@ -351,6 +463,25 @@ export async function syncLocalToSupabase(
       await requireSuccessfulWrite(
         supabase.from("food_favorites").upsert(favPayload, { onConflict: "user_id,food_id" }),
         "Favorites sync",
+      );
+    }
+    const { data: remoteFavorites, error: favoritesReadError } = await supabase
+      .from("food_favorites")
+      .select("food_id")
+      .eq("user_id", userId);
+    if (favoritesReadError) throw new Error(`Favorites read failed: ${favoritesReadError.message}`);
+    const favoriteIds = new Set(localData.favoriteFoods ?? []);
+    const staleFavoriteIds = (remoteFavorites ?? [])
+      .map((row) => String(row.food_id))
+      .filter((foodId) => !favoriteIds.has(foodId));
+    if (staleFavoriteIds.length > 0) {
+      await requireSuccessfulWrite(
+        supabase
+          .from("food_favorites")
+          .delete()
+          .eq("user_id", userId)
+          .in("food_id", staleFavoriteIds),
+        "Favorites deletion",
       );
     }
 
@@ -535,8 +666,10 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (customExercisesError)
       throw new Error(`Custom exercises pull failed: ${customExercisesError.message}`);
 
-    if (dbCustomExercises && dbCustomExercises.length > 0) {
-      const customMap = new Map(nextData.exercises.map((e) => [e.id, e]));
+    if (dbCustomExercises) {
+      const customMap = new Map(
+        nextData.exercises.filter((exercise) => exercise.id.startsWith("ex-")).map((e) => [e.id, e]),
+      );
       for (const row of dbCustomExercises) {
         const exItem: Exercise = {
           id: row.id,
@@ -569,7 +702,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .eq("user_id", userId);
     if (programDaysError) throw new Error(`Program days pull failed: ${programDaysError.message}`);
 
-    if (dbPrograms && dbPrograms.length > 0) {
+    if (dbPrograms) {
       const workoutsMap = new Map(nextData.workouts.map((w) => [w.id, w]));
       const programsList: Program[] = [];
 
@@ -610,7 +743,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .order("date", { ascending: false });
     if (sessionsError) throw new Error(`Workout history pull failed: ${sessionsError.message}`);
 
-    if (dbSessions && dbSessions.length > 0) {
+    if (dbSessions) {
       const historyList: HistorySession[] = dbSessions.map((row) => ({
         id: row.id,
         workoutId: row.workout_id || "",
@@ -629,9 +762,9 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     // 7. Body Weight Logs
     const { data: dbBodyWeightLogs, error: bodyWeightError } = await supabase
       .from("body_weight_logs")
-      .select("id, recorded_at, weight_kg")
+      .select("id, date, weight_kg")
       .eq("user_id", userId)
-      .order("recorded_at", { ascending: false });
+      .order("date", { ascending: false });
     if (bodyWeightError && !isMissingTableInSchemaCache(bodyWeightError, "body_weight_logs")) {
       throw new Error(`Weight logs pull failed: ${bodyWeightError.message}`);
     }
@@ -639,10 +772,10 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       console.warn("[Optional body weight pull skipped]: public.body_weight_logs is unavailable");
     }
 
-    if (dbBodyWeightLogs && dbBodyWeightLogs.length > 0) {
+    if (!bodyWeightError && dbBodyWeightLogs) {
       nextData.bodyWeightLogs = dbBodyWeightLogs.map((row) => ({
         id: row.id,
-        date: typeof row.recorded_at === "string" ? row.recorded_at.slice(0, 10) : row.recorded_at,
+        date: row.date,
         weight: Number(row.weight_kg),
       }));
     }
@@ -653,17 +786,16 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .select("*")
       .eq("user_id", userId);
     if (cardioError) console.warn(`[Optional cardio pull skipped]: ${cardioError.message}`);
-    // Preserve local entries while the optional table is unavailable. Also
-    // preserve them when the cloud table is empty, allowing a failed first
-    // upload to retry instead of losing the user's newly entered history.
-    if (!cardioError && dbCardioLogs && dbCardioLogs.length > 0) {
+    // A successful empty response is authoritative: it represents a cloud
+    // deletion. Preserve local entries only when the optional table failed.
+    if (!cardioError && dbCardioLogs) {
       nextData.cardioLogs = dbCardioLogs.map((row): CardioLog => ({
         id: row.id,
-        date: typeof row.recorded_at === "string" ? row.recorded_at.slice(0, 10) : row.recorded_at,
-        type: row.activity_type,
-        durationMin: Number(row.duration_minutes),
+        date: row.date,
+        type: row.type,
+        durationMin: Number(row.duration_min),
         intensity: row.intensity || undefined,
-        calories: Number(row.estimated_calories ?? 0),
+        calories: Number(row.calories ?? 0),
       }));
     }
 
@@ -721,8 +853,11 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .eq("user_id", userId);
     if (customFoodsError) throw new Error(`Custom foods pull failed: ${customFoodsError.message}`);
 
-    if (dbCustomFoods && dbCustomFoods.length > 0) {
-      const foodMap = new Map(nextData.foods.map((f) => [f.id, f]));
+    if (dbCustomFoods) {
+      const seedFoodIds = new Set(EVERYDAY_FOOD_DATABASE.map((food) => food.id));
+      const foodMap = new Map(
+        nextData.foods.filter((food) => seedFoodIds.has(food.id)).map((f) => [f.id, f]),
+      );
       for (const row of dbCustomFoods) {
         const foodItem: FoodItem = {
           id: row.id,
@@ -749,7 +884,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .eq("user_id", userId);
     if (nutritionDaysError) throw new Error(`Nutrition pull failed: ${nutritionDaysError.message}`);
 
-    if (dbNutritionDays && dbNutritionDays.length > 0) {
+    if (dbNutritionDays) {
       const daysList: NutritionDay[] = dbNutritionDays.map((row) => ({
         id: row.id,
         date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
@@ -925,11 +1060,11 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     }));
     const cardioList: CardioLog[] = (dbCardioLogs || []).map((row) => ({
       id: row.id,
-      date: typeof row.recorded_at === "string" ? row.recorded_at.slice(0, 10) : row.recorded_at,
-      type: row.activity_type,
-      durationMin: Number(row.duration_minutes),
+      date: row.date,
+      type: row.type,
+      durationMin: Number(row.duration_min),
       intensity: row.intensity || undefined,
-      calories: Number(row.estimated_calories ?? 0),
+      calories: Number(row.calories ?? 0),
     }));
 
     return {

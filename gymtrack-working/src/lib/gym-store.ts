@@ -904,11 +904,12 @@ function load() {
 async function handleUserLogin(userId: string, cachedData = loadCachedDataForUser(userId)) {
   const generation = ++hydrationGeneration;
   const trustedOfflineCache = hasUsableOfflineCache(cachedData);
+  const pendingAtPullStart = trustedOfflineCache && hasPersistedPendingChanges(userId);
   if (cachedData && trustedOfflineCache) {
     data = cachedData;
     profileHydrationStatus = "ready";
     profileHydrationError = "";
-    hasPendingCloudChanges = hasPersistedPendingChanges(userId);
+    hasPendingCloudChanges = pendingAtPullStart;
     syncStatus = browserIsOffline() ? "offline" : hasPendingCloudChanges ? "pending" : "synced";
     notifyListeners();
     if (browserIsOffline()) return;
@@ -975,7 +976,7 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
   }
   // A local edit made while the pull was in flight always wins. The next
   // background sync uploads that newer snapshot instead of clobbering it.
-  if (dataRevision === revisionAtPullStart) {
+  if (dataRevision === revisionAtPullStart && !pendingAtPullStart) {
     data = {
       ...pulled.data,
       preExitChecklist: data.preExitChecklist ?? pulled.data.preExitChecklist ?? [],
@@ -984,7 +985,7 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
   }
   profileHydrationStatus = "ready";
   profileHydrationError = "";
-  if (dataRevision !== revisionAtPullStart) {
+  if (dataRevision !== revisionAtPullStart || pendingAtPullStart) {
     hasPendingCloudChanges = true;
     syncStatus = "pending";
     void queueCloudSync();
