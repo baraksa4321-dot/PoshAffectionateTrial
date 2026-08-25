@@ -1089,21 +1089,9 @@ function RootContent() {
   const { queryClient } = Route.useRouteContext();
   const authStatus = useAuthStatus();
   const { userProfile } = useGym();
-  const [loadingCycle, setLoadingCycle] = useState(() => {
-    if (typeof window === "undefined") return 0;
-    const storageKey = "my-routine-loading-cycle-v4";
-    try {
-      const previousCycle = Number(window.localStorage.getItem(storageKey));
-      const nextCycle =
-        Number.isInteger(previousCycle) && previousCycle >= 0 ? previousCycle + 1 : 0;
-      window.localStorage.setItem(storageKey, String(nextCycle));
-      return nextCycle;
-    } catch {
-      // Private browsing can disable storage. A time-based fallback still
-      // prevents every quick load from showing the first illustration.
-      return Math.max(1, Date.now() % 1000);
-    }
-  });
+  // Keep the first SSR and browser render identical. The persisted cycle is
+  // applied after mount so loading media cannot trigger a hydration mismatch.
+  const [loadingCycle, setLoadingCycle] = useState(0);
   const loadingVariant = loadingCycle % SIMPLE_LOADING_ILLUSTRATIONS.length;
   const loadingMessageIndex = (loadingCycle + 1) % LOADING_MESSAGES.length;
   const [minimumLoadingDone, setMinimumLoadingDone] = useState(false);
@@ -1125,6 +1113,20 @@ function RootContent() {
     document.documentElement.lang = "he";
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
+    const storageKey = "my-routine-loading-cycle-v4";
+    setLoadingCycle((current) => {
+      try {
+        const previousCycle = Number(window.localStorage.getItem(storageKey));
+        const nextCycle =
+          Number.isInteger(previousCycle) && previousCycle >= 0 ? previousCycle + 1 : current;
+        window.localStorage.setItem(storageKey, String(nextCycle));
+        return nextCycle;
+      } catch {
+        // Private browsing can disable storage; keep the deterministic
+        // initial value and continue rotating in memory.
+        return current;
+      }
+    });
     // Register the offline app shell in Preview as well as production. The
     // Preview URL is the address users may save on their phones, so it must
     // be able to serve the cached app when Safari is in Airplane Mode.
@@ -1164,7 +1166,6 @@ function RootContent() {
       // listeners and timers.
       routeWarmupCleanupRef.current = cleanupRouteWarmup;
     }
-    const storageKey = "my-routine-loading-cycle-v4";
     const advanceForRestoredPage = (event: PageTransitionEvent) => {
       if (!event.persisted) return;
       setLoadingCycle((current) => {
