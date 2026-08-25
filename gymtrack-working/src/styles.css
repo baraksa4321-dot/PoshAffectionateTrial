@@ -2054,6 +2054,15 @@ html.night-mode .auth-panel {
   background: #f7f1ec;
   filter: saturate(1.04);
   mix-blend-mode: normal;
+  /* Safari can paint a native start button over an autoplaying inline video.
+     Keep the original animation and suppress only that browser chrome. */
+  -webkit-appearance: none;
+}
+
+.loading-simple-video::-webkit-media-controls,
+.loading-simple-video::-webkit-media-controls-start-playback-button {
+  display: none !important;
+  -webkit-appearance: none;
 }
 
 .loading-reference-image {
