@@ -3162,6 +3162,16 @@ export function CoachDashboardPage({
                                                       <span className="block font-display text-[15px] font-extrabold text-ink">
                                                         {exMeta?.name || "תרגיל"}
                                                       </span>
+                                                      {exItem.supersetPartnerId ? (
+                                                        <span className="mt-0.5 block text-[11px] font-bold text-violet-800">
+                                                          +{" "}
+                                                          {store.exercises.find(
+                                                            (exercise) =>
+                                                              exercise.id === exItem.supersetPartnerId,
+                                                          )?.name || "תרגיל בן־זוג"}{" "}
+                                                          · ללא מנוחה
+                                                        </span>
+                                                      ) : null}
                                                       <span className="mt-1 inline-flex rounded-full bg-background/80 px-2.5 py-1 text-[11px] font-bold text-ink">
                                                         {exItem.targetWeight || exItem.weight} ק״ג ·{" "}
                                                         {exItem.sets} סטים × {exItem.repMin || exItem.reps}
@@ -3221,6 +3231,7 @@ export function CoachDashboardPage({
                                                           setSetsCount(exItem.sets);
                                                           setRepMin(exItem.repMin || exItem.reps);
                                                           setRepMax(exItem.repMax || exItem.reps);
+                                                          setRestSec(exItem.rest || 90);
                                                           setTechniqueNotes(exItem.techniqueNotes || exItem.notes);
                                                           const loadedModes = exItem.workingSets?.map((set) =>
                                                             set.dropSet ? "drop" : exItem.supersetId ? "superset" : "normal",
@@ -3247,8 +3258,22 @@ export function CoachDashboardPage({
                                                               ? String(exItem.dropSetConfig.levels[1].weight)
                                                               : "",
                                                           );
+                                                          setDropLevel1RepsMin(
+                                                            exItem.dropSetConfig?.levels?.[0]?.repsMin || 8,
+                                                          );
+                                                          setDropLevel1RepsMax(
+                                                            exItem.dropSetConfig?.levels?.[0]?.repsMax || 10,
+                                                          );
+                                                          setDropLevel2RepsMin(
+                                                            exItem.dropSetConfig?.levels?.[1]?.repsMin || 6,
+                                                          );
+                                                          setDropLevel2RepsMax(
+                                                            exItem.dropSetConfig?.levels?.[1]?.repsMax || 8,
+                                                          );
                                                           setSupersetGroup(exItem.supersetId || "");
                                                           setSupersetPartnerId(exItem.supersetPartnerId || "");
+                                                          setSupersetRepsMin(exItem.supersetRepsMin || exItem.repMin || 8);
+                                                          setSupersetRepsMax(exItem.supersetRepsMax || exItem.repMax || 10);
                                                         }}
                                                         className="rounded-lg bg-background px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/10"
                                                       >
@@ -3309,7 +3334,7 @@ export function CoachDashboardPage({
                                                       />
                                                     </label>
                                                     <label className="text-center text-[9px] font-bold text-muted-foreground">
-                                                      חזרות
+                                                      חזרות מינ׳
                                                       <input
                                                         type="number"
                                                         defaultValue={exItem.repMin || exItem.reps}
@@ -3321,6 +3346,46 @@ export function CoachDashboardPage({
                                                               reps: value,
                                                               repMin: value,
                                                               repMax: value,
+                                                            });
+                                                          }
+                                                        }}
+                                                        className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
+                                                      />
+                                                    </label>
+                                                  </div>
+                                                  <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                                                    <label className="text-center text-[9px] font-bold text-muted-foreground">
+                                                      חזרות מקס׳
+                                                      <input
+                                                        type="number"
+                                                        defaultValue={exItem.repMax || exItem.repMin || exItem.reps}
+                                                        min={exItem.repMin || exItem.reps}
+                                                        onBlur={(event) => {
+                                                          const value = Math.max(
+                                                            exItem.repMin || exItem.reps,
+                                                            Number(event.target.value),
+                                                          );
+                                                          if (Number.isFinite(value)) {
+                                                            void handleUpdateExerciseItem(dayItem.id, exItem.id, {
+                                                              repMax: value,
+                                                            });
+                                                          }
+                                                        }}
+                                                        className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
+                                                      />
+                                                    </label>
+                                                    <label className="text-center text-[9px] font-bold text-muted-foreground">
+                                                      מנוחה (שניות)
+                                                      <input
+                                                        type="number"
+                                                        defaultValue={exItem.rest || 90}
+                                                        min={0}
+                                                        step={5}
+                                                        onBlur={(event) => {
+                                                          const value = Math.max(0, Number(event.target.value));
+                                                          if (Number.isFinite(value)) {
+                                                            void handleUpdateExerciseItem(dayItem.id, exItem.id, {
+                                                              rest: value,
                                                             });
                                                           }
                                                         }}
@@ -3425,7 +3490,7 @@ export function CoachDashboardPage({
                                                       </label>
                                                     </div>
                                                     {warmupEnabled ? (
-                                                      <div className="grid grid-cols-3 gap-1.5 rounded-xl border border-amber-200 bg-amber-50/60 p-2">
+                                                      <div className="grid grid-cols-4 gap-1.5 rounded-xl border border-amber-200 bg-amber-50/60 p-2">
                                                         <label className="text-center text-[9px] font-bold text-amber-900">
                                                           סטי חימום
                                                           <input
@@ -3453,13 +3518,30 @@ export function CoachDashboardPage({
                                                           />
                                                         </label>
                                                         <label className="text-center text-[9px] font-bold text-amber-900">
-                                                          חזרות
+                                                          חזרות מינ׳
                                                           <input
                                                             type="number"
                                                             min={1}
                                                             value={warmupReps}
                                                             onChange={(event) =>
                                                               setWarmupReps(Number(event.target.value))
+                                                            }
+                                                            className="mt-1 h-8 w-full rounded-lg border border-amber-200 bg-background text-center text-xs"
+                                                          />
+                                                        </label>
+                                                        <label className="text-center text-[9px] font-bold text-amber-900">
+                                                          חזרות מקס׳
+                                                          <input
+                                                            type="number"
+                                                            min={warmupReps}
+                                                            value={warmupRepsMax}
+                                                            onChange={(event) =>
+                                                              setWarmupRepsMax(
+                                                                Math.max(
+                                                                  warmupReps,
+                                                                  Number(event.target.value),
+                                                                ),
+                                                              )
                                                             }
                                                             className="mt-1 h-8 w-full rounded-lg border border-amber-200 bg-background text-center text-xs"
                                                           />
@@ -3481,6 +3563,37 @@ export function CoachDashboardPage({
                                                           />
                                                         </label>
                                                         <label className="text-center text-[9px] font-bold text-primary">
+                                                          חזרות דרופ 1 מינ׳
+                                                          <input
+                                                            type="number"
+                                                            min={1}
+                                                            value={dropLevel1RepsMin}
+                                                            onChange={(event) =>
+                                                              setDropLevel1RepsMin(
+                                                                Math.max(1, Number(event.target.value)),
+                                                              )
+                                                            }
+                                                            className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
+                                                          />
+                                                        </label>
+                                                        <label className="text-center text-[9px] font-bold text-primary">
+                                                          חזרות דרופ 1 מקס׳
+                                                          <input
+                                                            type="number"
+                                                            min={dropLevel1RepsMin}
+                                                            value={dropLevel1RepsMax}
+                                                            onChange={(event) =>
+                                                              setDropLevel1RepsMax(
+                                                                Math.max(
+                                                                  dropLevel1RepsMin,
+                                                                  Number(event.target.value),
+                                                                ),
+                                                              )
+                                                            }
+                                                            className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
+                                                          />
+                                                        </label>
+                                                        <label className="text-center text-[9px] font-bold text-primary">
                                                           משקל דרופ 2
                                                           <input
                                                             type="number"
@@ -3488,6 +3601,37 @@ export function CoachDashboardPage({
                                                             value={dropLevel2Weight}
                                                             onChange={(event) =>
                                                               setDropLevel2Weight(event.target.value)
+                                                            }
+                                                            className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
+                                                          />
+                                                        </label>
+                                                        <label className="text-center text-[9px] font-bold text-primary">
+                                                          חזרות דרופ 2 מינ׳
+                                                          <input
+                                                            type="number"
+                                                            min={1}
+                                                            value={dropLevel2RepsMin}
+                                                            onChange={(event) =>
+                                                              setDropLevel2RepsMin(
+                                                                Math.max(1, Number(event.target.value)),
+                                                              )
+                                                            }
+                                                            className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
+                                                          />
+                                                        </label>
+                                                        <label className="text-center text-[9px] font-bold text-primary">
+                                                          חזרות דרופ 2 מקס׳
+                                                          <input
+                                                            type="number"
+                                                            min={dropLevel2RepsMin}
+                                                            value={dropLevel2RepsMax}
+                                                            onChange={(event) =>
+                                                              setDropLevel2RepsMax(
+                                                                Math.max(
+                                                                  dropLevel2RepsMin,
+                                                                  Number(event.target.value),
+                                                                ),
+                                                              )
                                                             }
                                                             className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
                                                           />
@@ -3513,6 +3657,39 @@ export function CoachDashboardPage({
                                                               </option>
                                                             ))}
                                                         </select>
+                                                        <div className="mt-2 grid grid-cols-2 gap-1.5">
+                                                          <label className="text-center text-[9px] font-bold text-violet-900">
+                                                            חזרות מינ׳
+                                                            <input
+                                                              type="number"
+                                                              min={1}
+                                                              value={supersetRepsMin}
+                                                              onChange={(event) =>
+                                                                setSupersetRepsMin(
+                                                                  Math.max(1, Number(event.target.value)),
+                                                                )
+                                                              }
+                                                              className="mt-1 h-8 w-full rounded-lg border border-violet-200 bg-background text-center text-xs"
+                                                            />
+                                                          </label>
+                                                          <label className="text-center text-[9px] font-bold text-violet-900">
+                                                            חזרות מקס׳
+                                                            <input
+                                                              type="number"
+                                                              min={supersetRepsMin}
+                                                              value={supersetRepsMax}
+                                                              onChange={(event) =>
+                                                                setSupersetRepsMax(
+                                                                  Math.max(
+                                                                    supersetRepsMin,
+                                                                    Number(event.target.value),
+                                                                  ),
+                                                                )
+                                                              }
+                                                              className="mt-1 h-8 w-full rounded-lg border border-violet-200 bg-background text-center text-xs"
+                                                            />
+                                                          </label>
+                                                        </div>
                                                       </label>
                                                     ) : null}
                                                     <label className="block text-right text-[10px] font-bold text-muted-foreground">
@@ -3540,6 +3717,7 @@ export function CoachDashboardPage({
                                                             reps: Math.max(1, repMin),
                                                             repMin: Math.max(1, repMin),
                                                             repMax: Math.max(repMin, repMax),
+                                                            rest: Math.max(0, restSec),
                                                             notes: techNotes.trim(),
                                                             warmups: warmupEnabled
                                                               ? Array.from(
@@ -3576,6 +3754,12 @@ export function CoachDashboardPage({
                                                               : { enabled: false, drops: 0, levels: [] },
                                                             supersetId: supersetGroup || "",
                                                             supersetPartnerId: supersetGroup ? supersetPartnerId : "",
+                                                            supersetRepsMin: supersetGroup
+                                                              ? Math.max(1, supersetRepsMin)
+                                                              : 0,
+                                                            supersetRepsMax: supersetGroup
+                                                              ? Math.max(supersetRepsMin, supersetRepsMax)
+                                                              : 0,
                                                           },
                                                         );
                                                         setEditingItemId(null);
