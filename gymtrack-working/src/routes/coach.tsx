@@ -1102,6 +1102,35 @@ export function CoachDashboardPage({
     pullClientDataForCoach(selectedClientId!).then(applyClientDetails);
   };
 
+  const handleUpdateExerciseItem = async (
+    dayId: string,
+    itemId: string,
+    patch: Partial<WorkoutItem>,
+  ) => {
+    if (!isCoach || !selectedClientId) return;
+    const currentDay = clientDetails?.workouts?.find((workout) => workout.id === dayId);
+    if (!currentDay) return;
+    const updatedItems = currentDay.items.map((item) =>
+      item.id === itemId ? { ...item, ...patch } : item,
+    );
+
+    if (isSelfSelected) {
+      saveWorkout({ ...currentDay, items: updatedItems });
+      return;
+    }
+
+    const { error } = await supabase
+      .from("program_days")
+      .update({ items: updatedItems, updated_at: new Date().toISOString() })
+      .eq("id", dayId)
+      .eq("user_id", selectedClientId);
+    if (error) {
+      setManagementError(`עדכון התרגיל נכשל: ${error.message}`);
+      return;
+    }
+    pullClientDataForCoach(selectedClientId).then(applyClientDetails);
+  };
+
   // Save Nutrition Targets for Client
   const handleSaveNutritionTargets = async () => {
     if (!isCoach || !selectedClientId) return;
@@ -2972,14 +3001,13 @@ export function CoachDashboardPage({
                                                 >
                                                   <div className="flex items-start justify-between gap-2">
                                                     <div>
-                                                      <span className="font-bold text-ink">
+                                                      <span className="block font-display text-[15px] font-extrabold text-ink">
                                                         {exMeta?.name || "תרגיל"}
                                                       </span>
-                                                      <span className="text-muted-foreground mr-1">
-                                                        · {exItem.targetWeight || exItem.weight} ק"ג
-                                                        · {exItem.sets}×
-                                                        {exItem.repMin || exItem.reps}
-                                                        {exItem.repMax ? `-${exItem.repMax}` : ""}
+                                                      <span className="mt-1 inline-flex rounded-full bg-background/80 px-2.5 py-1 text-[11px] font-bold text-ink">
+                                                        {exItem.targetWeight || exItem.weight} ק״ג ·{" "}
+                                                        {exItem.sets} סטים × {exItem.repMin || exItem.reps}
+                                                        {exItem.repMax ? `-${exItem.repMax}` : ""} חזרות
                                                       </span>
                                                       <div className="mt-1 flex flex-wrap gap-1">
                                                         {exItem.warmups?.length ? (
@@ -3031,6 +3059,63 @@ export function CoachDashboardPage({
                                                     >
                                                       <Trash2 className="h-3.5 w-3.5" />
                                                     </button>
+                                                  </div>
+                                                  <div className="mt-2 grid grid-cols-3 gap-1.5 border-t border-border/40 pt-2">
+                                                    <label className="text-center text-[9px] font-bold text-muted-foreground">
+                                                      משקל יעד
+                                                      <input
+                                                        type="number"
+                                                        defaultValue={exItem.targetWeight || exItem.weight}
+                                                        min={0}
+                                                        step={0.5}
+                                                        onBlur={(event) => {
+                                                          const value = Number(event.target.value);
+                                                          if (Number.isFinite(value)) {
+                                                            void handleUpdateExerciseItem(dayItem.id, exItem.id, {
+                                                              targetWeight: value,
+                                                              weight: value,
+                                                            });
+                                                          }
+                                                        }}
+                                                        className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
+                                                      />
+                                                    </label>
+                                                    <label className="text-center text-[9px] font-bold text-muted-foreground">
+                                                      סטים
+                                                      <input
+                                                        type="number"
+                                                        defaultValue={exItem.sets}
+                                                        min={1}
+                                                        onBlur={(event) => {
+                                                          const value = Math.max(1, Number(event.target.value));
+                                                          if (Number.isFinite(value)) {
+                                                            void handleUpdateExerciseItem(dayItem.id, exItem.id, {
+                                                              sets: value,
+                                                            });
+                                                          }
+                                                        }}
+                                                        className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
+                                                      />
+                                                    </label>
+                                                    <label className="text-center text-[9px] font-bold text-muted-foreground">
+                                                      חזרות
+                                                      <input
+                                                        type="number"
+                                                        defaultValue={exItem.repMin || exItem.reps}
+                                                        min={1}
+                                                        onBlur={(event) => {
+                                                          const value = Math.max(1, Number(event.target.value));
+                                                          if (Number.isFinite(value)) {
+                                                            void handleUpdateExerciseItem(dayItem.id, exItem.id, {
+                                                              reps: value,
+                                                              repMin: value,
+                                                              repMax: value,
+                                                            });
+                                                          }
+                                                        }}
+                                                        className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
+                                                      />
+                                                    </label>
                                                   </div>
                                                   {false && actualExecutions.length > 0 ? (
                                                     <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/80 p-2 text-[10px]">
