@@ -893,6 +893,26 @@ export function CoachDashboardPage({
     pullClientDataForCoach(selectedClientId).then(applyClientDetails);
   };
 
+  const handleRenameClientProgram = async (program: Program, name: string) => {
+    const nextName = name.trim();
+    if (!nextName || nextName === program.name || !selectedClientId) return;
+    setManagementError("");
+    if (isSelfSelected) {
+      saveProgram({ ...program, name: nextName });
+      return;
+    }
+    const { error } = await supabase
+      .from("programs")
+      .update({ name: nextName, updated_at: new Date().toISOString() })
+      .eq("id", program.id)
+      .eq("user_id", selectedClientId);
+    if (error) {
+      setManagementError(`עדכון שם התוכנית נכשל: ${error.message}`);
+      return;
+    }
+    pullClientDataForCoach(selectedClientId).then(applyClientDetails);
+  };
+
   // Add Program Day for Client
   const handleAddProgramDay = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -922,6 +942,26 @@ export function CoachDashboardPage({
       return;
     }
     setNewDayName("");
+    pullClientDataForCoach(selectedClientId).then(applyClientDetails);
+  };
+
+  const handleRenameWorkoutDay = async (day: Workout, name: string) => {
+    const nextName = name.trim();
+    if (!nextName || nextName === day.name || !selectedClientId) return;
+    setManagementError("");
+    if (isSelfSelected) {
+      saveWorkout({ ...day, name: nextName });
+      return;
+    }
+    const { error } = await supabase
+      .from("program_days")
+      .update({ name: nextName, updated_at: new Date().toISOString() })
+      .eq("id", day.id)
+      .eq("user_id", selectedClientId);
+    if (error) {
+      setManagementError(`עדכון שם יום האימון נכשל: ${error.message}`);
+      return;
+    }
     pullClientDataForCoach(selectedClientId).then(applyClientDetails);
   };
 
@@ -2978,9 +3018,23 @@ export function CoachDashboardPage({
                           >
                             <div className="flex items-center justify-between gap-3 p-3.5">
                               <div className="min-w-0 text-start">
-                                <span className="block truncate font-display text-[15px] font-semibold text-ink">
-                                  {prog.name}
-                                </span>
+                                {isProgActive ? (
+                                  <input
+                                    defaultValue={prog.name}
+                                    aria-label="שם תוכנית האימון"
+                                    onBlur={(event) =>
+                                      void handleRenameClientProgram(prog, event.target.value)
+                                    }
+                                    onKeyDown={(event) => {
+                                      if (event.key === "Enter") event.currentTarget.blur();
+                                    }}
+                                    className="w-full rounded-xl border border-primary/30 bg-background px-3 py-1.5 font-display text-[15px] font-semibold text-ink outline-none focus:border-primary"
+                                  />
+                                ) : (
+                                  <span className="block truncate font-display text-[15px] font-semibold text-ink">
+                                    {prog.name}
+                                  </span>
+                                )}
                                 <span className="mt-0.5 block text-[11px] text-muted-foreground">
                                   {progDays?.length || 0} ימי אימון ·{" "}
                                   {progDays?.reduce((total, day) => total + day.items.length, 0) ||
@@ -3026,10 +3080,27 @@ export function CoachDashboardPage({
                                         key={dayItem.id}
                                         className="rounded-2xl border border-border/60 bg-background p-3.5 shadow-sm"
                                       >
-                                        <div className="flex items-center justify-between">
-                                          <span className="font-bold text-[13px] text-ink">
-                                            {dayItem.name} ({dayItem.items?.length || 0} תרגילים)
-                                          </span>
+                                        <div className="flex items-center justify-between gap-2">
+                                          {isDayActive ? (
+                                            <input
+                                              defaultValue={dayItem.name}
+                                              aria-label="שם יום האימון"
+                                              onBlur={(event) =>
+                                                void handleRenameWorkoutDay(
+                                                  dayItem,
+                                                  event.target.value,
+                                                )
+                                              }
+                                              onKeyDown={(event) => {
+                                                if (event.key === "Enter") event.currentTarget.blur();
+                                              }}
+                                              className="min-w-0 flex-1 rounded-xl border border-primary/30 bg-background px-3 py-1.5 text-[13px] font-bold text-ink outline-none focus:border-primary"
+                                            />
+                                          ) : (
+                                            <span className="font-bold text-[13px] text-ink">
+                                              {dayItem.name} ({dayItem.items?.length || 0} תרגילים)
+                                            </span>
+                                          )}
                                           <button
                                             onClick={() =>
                                               setEditingDayId(isDayActive ? null : dayItem.id)
