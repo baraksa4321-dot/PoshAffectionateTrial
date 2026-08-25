@@ -3637,7 +3637,7 @@ export function CoachDashboardPage({
                                                        הגדירי את המשקל, טווח החזרות וסוג הסט
                                                      </p>
                                                    </div>
-                                                   <div className="grid grid-cols-2 gap-2 border-b border-border/50 pb-4 sm:grid-cols-4">
+                                                   <div className="grid grid-cols-3 gap-2 border-b border-border/50 pb-4">
                                                     <label className="text-center text-[9px] font-bold text-muted-foreground">
                                                       משקל יעד
                                                       <input
@@ -3657,65 +3657,43 @@ export function CoachDashboardPage({
                                                         className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
                                                       />
                                                     </label>
-                                                    <label className="text-center text-[9px] font-bold text-muted-foreground">
-                                                      סטים
+                                                     <label className="text-center text-[9px] font-bold text-muted-foreground">
+                                                       חזרות
                                                       <input
                                                         type="number"
-                                                        defaultValue={exItem.sets}
-                                                        min={1}
+                                                         defaultValue={exItem.repMin || exItem.reps}
+                                                         min={1}
                                                         onBlur={(event) => {
-                                                          const value = Math.max(1, Number(event.target.value));
+                                                           const value = Math.max(1, Number(event.target.value));
                                                           if (Number.isFinite(value)) {
                                                             void handleUpdateExerciseItem(dayItem.id, exItem.id, {
-                                                              sets: value,
+                                                               reps: value,
+                                                               repMin: value,
+                                                               repMax: Math.max(value, exItem.repMax || value),
                                                             });
                                                           }
                                                         }}
                                                         className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
                                                       />
+                                                       <input
+                                                         type="number"
+                                                         defaultValue={exItem.repMax || exItem.repMin || exItem.reps}
+                                                         min={exItem.repMin || exItem.reps}
+                                                         onBlur={(event) => {
+                                                           const value = Math.max(
+                                                             exItem.repMin || exItem.reps,
+                                                             Number(event.target.value),
+                                                           );
+                                                           if (Number.isFinite(value)) {
+                                                             void handleUpdateExerciseItem(dayItem.id, exItem.id, {
+                                                               repMax: value,
+                                                             });
+                                                           }
+                                                         }}
+                                                         className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
+                                                       />
                                                     </label>
-                                                    <label className="text-center text-[9px] font-bold text-muted-foreground">
-                                                      חזרות מינ׳
-                                                      <input
-                                                        type="number"
-                                                        defaultValue={exItem.repMin || exItem.reps}
-                                                        min={1}
-                                                        onBlur={(event) => {
-                                                          const value = Math.max(1, Number(event.target.value));
-                                                          if (Number.isFinite(value)) {
-                                                            void handleUpdateExerciseItem(dayItem.id, exItem.id, {
-                                                              reps: value,
-                                                              repMin: value,
-                                                              repMax: value,
-                                                            });
-                                                          }
-                                                        }}
-                                                        className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
-                                                      />
-                                                    </label>
-                                                  </div>
-                                                   <div className="grid grid-cols-2 gap-2 border-b border-border/50 pb-4">
-                                                    <label className="text-center text-[9px] font-bold text-muted-foreground">
-                                                      חזרות מקס׳
-                                                      <input
-                                                        type="number"
-                                                        defaultValue={exItem.repMax || exItem.repMin || exItem.reps}
-                                                        min={exItem.repMin || exItem.reps}
-                                                        onBlur={(event) => {
-                                                          const value = Math.max(
-                                                            exItem.repMin || exItem.reps,
-                                                            Number(event.target.value),
-                                                          );
-                                                          if (Number.isFinite(value)) {
-                                                            void handleUpdateExerciseItem(dayItem.id, exItem.id, {
-                                                              repMax: value,
-                                                            });
-                                                          }
-                                                        }}
-                                                        className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
-                                                      />
-                                                    </label>
-                                                    <label className="text-center text-[9px] font-bold text-muted-foreground">
+                                                     <label className="text-center text-[9px] font-bold text-muted-foreground">
                                                       מנוחה (שניות)
                                                       <input
                                                         type="number"
@@ -3750,7 +3728,20 @@ export function CoachDashboardPage({
                                                       </span>
                                                       <Search className="h-4 w-4 text-muted-foreground" />
                                                     </button>
-                                                     <div className="flex items-center justify-between gap-3 border-b border-border/50 pb-3">
+                                                     <div className="flex items-end justify-between gap-3 border-b border-border/50 pb-3">
+                                                       <label className="text-center text-[9px] font-bold text-muted-foreground">
+                                                         סטים
+                                                         <input
+                                                           type="number"
+                                                           min={1}
+                                                           value={setsCount}
+                                                           onChange={(event) =>
+                                                             setSetsCount(Math.max(1, Number(event.target.value)))
+                                                           }
+                                                           className="mt-1 h-9 w-16 rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
+                                                         />
+                                                       </label>
+                                                       <div className="flex items-center justify-between gap-3">
                                                        <p className="text-right text-[10px] font-bold text-muted-foreground">
                                                          סוג הסט
                                                        </p>
@@ -4319,6 +4310,7 @@ export function CoachDashboardPage({
                                                           סופר סט — בלי מנוחה
                                                         </option>
                                                       </select>
+                                                       </div>
                                                     </div>
                                                   );
                                                 })}
