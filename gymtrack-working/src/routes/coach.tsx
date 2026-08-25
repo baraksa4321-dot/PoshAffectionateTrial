@@ -270,6 +270,8 @@ export function CoachDashboardPage({
   const [profileNotice, setProfileNotice] = useState("");
   const [showBmrCalculator, setShowBmrCalculator] = useState(false);
   const showClientOverview = !trackingLanding && !workspacePage && !openEditor;
+  const showProgramBuilder =
+    !trackingLanding && (workspaceMode === "programs" || openEditor === "programs");
 
   const loadCoachClients = useCallback(async () => {
     setManagementError("");
@@ -2795,7 +2797,7 @@ export function CoachDashboardPage({
                         ? "bg-background"
                         : "surface-card rounded-[1.75rem] border-primary/15 bg-primary/[0.02] p-4"
                     } ${
-                      trackingLanding || workspaceMode === "nutrition" || openEditor !== "programs"
+                      !showProgramBuilder
                         ? "hidden"
                         : ""
                     }`}
