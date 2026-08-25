@@ -3614,8 +3614,19 @@ export function CoachDashboardPage({
                                                     </div>
                                                   </div>
                                                   {editingItemId === exItem.id ? (
-                                                  <>
-                                                  <div className="mt-2 grid grid-cols-3 gap-1.5 border-t border-border/40 pt-2">
+                                                   <div className="mt-4 space-y-4 rounded-[1.5rem] border border-[#e6d9ca] bg-[#fffaf5] p-4">
+                                                   <div className="border-b border-border/40 pb-3 text-right">
+                                                     <p className="text-[10px] font-bold tracking-[0.16em] text-primary uppercase">
+                                                       עריכת תרגיל
+                                                     </p>
+                                                     <h3 className="mt-1 font-display text-xl font-extrabold text-ink">
+                                                       {exMeta?.name || "תרגיל"}
+                                                     </h3>
+                                                     <p className="mt-1 text-[11px] text-muted-foreground">
+                                                       הגדירי את המשקל, טווח החזרות וסוג הסט
+                                                     </p>
+                                                   </div>
+                                                   <div className="grid grid-cols-2 gap-2 border-b border-border/40 pb-3 sm:grid-cols-4">
                                                     <label className="text-center text-[9px] font-bold text-muted-foreground">
                                                       משקל יעד
                                                       <input
@@ -3672,7 +3683,7 @@ export function CoachDashboardPage({
                                                       />
                                                     </label>
                                                   </div>
-                                                  <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                                                   <div className="grid grid-cols-2 gap-2 border-b border-border/40 pb-3">
                                                     <label className="text-center text-[9px] font-bold text-muted-foreground">
                                                       חזרות מקס׳
                                                       <input
@@ -3712,10 +3723,10 @@ export function CoachDashboardPage({
                                                       />
                                                     </label>
                                                   </div>
-                                                  <div className="mt-3 space-y-2 border-t border-border/40 pt-3">
-                                                    <p className="text-right text-[10px] font-bold text-muted-foreground">
-                                                      בחר תרגיל
-                                                    </p>
+                                                   <div className="space-y-2">
+                                                     <p className="text-right text-xs font-extrabold text-ink">
+                                                       תרגיל וסוג סט
+                                                     </p>
                                                     <button
                                                       type="button"
                                                       onClick={() => setShowExercisePicker(true)}
@@ -3815,8 +3826,10 @@ export function CoachDashboardPage({
                                                           />
                                                         </label>
                                                      </div>
-                                                    {setModes.find((mode) => mode !== "normal") === "drop" ? (
-                                                      <div className="grid grid-cols-2 gap-1.5 rounded-xl border border-primary/20 bg-primary/5 p-2">
+                                                     {setModes.find((mode) => mode !== "normal") === "drop" ? (
+                                                       <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">
+                                                         <p className="text-right text-xs font-extrabold text-primary">דרופ סט</p>
+                                                         <div className="grid grid-cols-2 gap-1.5">
                                                         <label className="text-center text-[9px] font-bold text-primary">
                                                           משקל דרופ 1
                                                           <input
@@ -3903,10 +3916,12 @@ export function CoachDashboardPage({
                                                             className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
                                                           />
                                                         </label>
-                                                      </div>
+                                                         </div>
+                                                       </div>
                                                     ) : null}
                                                     {setModes.find((mode) => mode !== "normal") === "superset" ? (
-                                                      <label className="block rounded-xl border border-violet-200 bg-violet-50/60 p-2 text-right text-[9px] font-bold text-violet-900">
+                                                       <label className="block rounded-2xl border border-violet-200 bg-violet-50/60 p-3 text-right text-[9px] font-bold text-violet-900">
+                                                         <span className="mb-2 block text-xs font-extrabold">סופר סט</span>
                                                         תרגיל בן־זוג לסופר סט
                                                         <select
                                                           value={supersetPartnerId}
@@ -4116,7 +4131,7 @@ export function CoachDashboardPage({
                                                 </div>
                                               );
                                             })}
-                                          </div>
+                                                   </div>
                                         )}
 
                                         {isDayActive && !editingItemId && (
