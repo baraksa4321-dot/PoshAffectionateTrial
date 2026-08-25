@@ -441,8 +441,6 @@ const SIMPLE_LOADING_ILLUSTRATIONS = [
 function SimpleLoadingIllustration({ variant }: { variant: number }) {
   const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length]!;
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isIosDevice, setIsIosDevice] = useState(false);
-  const [deviceResolved, setDeviceResolved] = useState(false);
   const playIllustration = () => {
     const video = videoRef.current;
     if (!video) return;
@@ -452,21 +450,12 @@ function SimpleLoadingIllustration({ variant }: { variant: number }) {
     });
   };
   useEffect(() => {
-    setIsIosDevice(/iPad|iPhone|iPod/.test(navigator.userAgent));
-    setDeviceResolved(true);
     playIllustration();
     const retry = window.setTimeout(playIllustration, 120);
     return () => window.clearTimeout(retry);
   }, [illustration.file]);
   return (
     <div className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4}`}>
-      {isIosDevice || !deviceResolved ? (
-        <img
-          className="loading-simple-image loading-simple-video"
-          src={`/loading/clean/${illustration.file.replace(".png", ".gif")}?v=ios-compat-1`}
-          alt={`איור טעינה: ${illustration.label}`}
-        />
-      ) : (
       <video
         key={illustration.file}
         ref={videoRef}
@@ -491,7 +480,6 @@ function SimpleLoadingIllustration({ variant }: { variant: number }) {
           type="video/webm"
         />
       </video>
-      )}
     </div>
   );
 }
