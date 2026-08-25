@@ -247,7 +247,7 @@ function NutritionLog() {
         const timeout = new Promise<Response>((_, reject) => {
           window.setTimeout(
             () => reject(new DOMException("Meal scan timed out", "AbortError")),
-            50_000,
+            65_000,
           );
         });
         response = await Promise.race([request, timeout]);

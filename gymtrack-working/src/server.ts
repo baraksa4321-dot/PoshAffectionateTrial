@@ -9,7 +9,7 @@ type ServerEntry = {
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 const MAX_MEAL_IMAGE_BYTES = 20 * 1024 * 1024;
-const GEMINI_TIMEOUT_MS = 45_000;
+const GEMINI_TIMEOUT_MS = 60_000;
 const scanTimestamps: number[] = [];
 
 type ScanFood = {
@@ -142,7 +142,7 @@ async function analyzeMealImage(request: Request): Promise<Response> {
         ],
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: 3000,
+          maxOutputTokens: 1800,
           responseMimeType: "application/json",
         },
       }),
