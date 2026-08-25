@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Apple,
   ArrowLeft,
+  Camera,
   BookOpen,
   CheckSquare,
   ChevronLeft,
@@ -17,6 +18,7 @@ import {
   Utensils,
   X,
   Zap,
+  LoaderCircle,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
@@ -121,6 +123,19 @@ function quantityControlFor(food: FoodItem) {
   return { label: "כמות מנות", step: "any", scale: 1 };
 }
 
+type ScannedFood = {
+  name: string;
+  servingSize: string;
+  quantity: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+};
+
+type ScannedMeal = { mealName: string; foods: ScannedFood[] };
+
 function NutritionLog() {
   const gym = useGym();
   const gender = gym.userProfile?.gender;
@@ -154,9 +169,66 @@ function NutritionLog() {
   const [showSavedRecipesOnly, setShowSavedRecipesOnly] = useState(false);
   const [savedRecipeDrafts, setSavedRecipeDrafts] = useState<Record<string, string>>({});
   const [recipeNotice, setRecipeNotice] = useState("");
+  const [showMealScanner, setShowMealScanner] = useState(false);
+  const [scanState, setScanState] = useState<"idle" | "analyzing" | "error">("idle");
+  const [scanError, setScanError] = useState("");
+  const [scannedMeal, setScannedMeal] = useState<ScannedMeal | null>(null);
   const day = nutritionDay(gym, date);
   const totals = dayTotals(day);
   const { nutritionTargets: targets } = gym;
+
+  const openMealScanner = () => {
+    setShowMealScanner(true);
+    setScanState("idle");
+    setScanError("");
+    setScannedMeal(null);
+  };
+
+  const scanMealImage = async (file: File) => {
+    if (!["image/jpeg", "image/jpg", "image/png"].includes(file.type)) {
+      setScanError("אפשר להעלות תמונת JPG או PNG בלבד.");
+      setScanState("error");
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setScanError("התמונה גדולה מדי. הגודל המרבי הוא 20MB.");
+      setScanState("error");
+      return;
+    }
+    setScanState("analyzing");
+    setScanError("");
+    try {
+      const image = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("read"));
+        reader.readAsDataURL(file);
+      });
+      const response = await fetch("/api/nutrition/scan-meal", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ image }),
+      });
+      const result = (await response.json()) as ScannedMeal & { error?: string };
+      if (!response.ok || result.error) throw new Error(result.error || "scan");
+      setScannedMeal(result);
+      setScanState("idle");
+    } catch (error) {
+      setScanError(error instanceof Error ? error.message : "הסריקה נכשלה. נסי שוב.");
+      setScanState("error");
+    }
+  };
+
+  const confirmScannedMeal = () => {
+    if (!scannedMeal) return;
+    const foods: MealFood[] = scannedMeal.foods
+      .filter((food) => food.name.trim() && food.quantity > 0)
+      .map((food) => ({ ...food, id: uid(), notes: "הערכה חכמה מתמונה — לבדיקה" }));
+    if (!foods.length) return;
+    addMealWithFoods(date, scannedMeal.mealName, foods);
+    setShowMealScanner(false);
+    setScannedMeal(null);
+  };
 
   // Compute remaining macros for "What should I eat now?"
   const remainingCal =
@@ -372,6 +444,21 @@ function NutritionLog() {
 
       {/* Quick Action Tools: "What should I eat now?" & "Shopping List" */}
       <div className="order-4 mt-2 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={openMealScanner}
+          className="surface-card col-span-2 flex items-center gap-2 rounded-2xl border border-primary/25 bg-primary/10 p-3 text-start text-xs font-bold text-primary transition-colors hover:bg-primary/15"
+        >
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
+            <Camera className="h-4 w-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block">צילום ארוחה והערכה חכמה</span>
+            <span className="mt-0.5 block text-[10px] font-medium text-muted-foreground">
+              זיהוי מאכלים וערכים — תמיד באישור שלך
+            </span>
+          </span>
+        </button>
         <button
           onClick={() => {
             setSuggestionMealId(day.meals[0]?.id ?? "");
@@ -886,6 +973,192 @@ function NutritionLog() {
           </div>
         </section>
       ) : null}
+
+      {showMealScanner ? (
+        <Overlay
+          open={showMealScanner}
+          onClose={() => setShowMealScanner(false)}
+          ariaLabel="צילום ארוחה והערכה חכמה"
+          variant="bottom"
+          panelClassName="contents"
+          className="fade-in"
+        >
+          <div
+            className="scale-in max-h-[90dvh] w-full max-w-xl overflow-y-auto rounded-t-[2rem] border-t border-border/40 bg-card p-5 text-start shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
+                  הערכה חכמה
+                </p>
+                <h2 className="mt-1 font-display text-[20px] font-semibold text-ink">
+                  {scannedMeal ? "בדקי את הארוחה" : "צלמי את הארוחה שלך"}
+                </h2>
+                <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                  {scannedMeal
+                    ? "הערכים הם הערכה. אפשר לתקן כל שורה לפני השמירה ביומן."
+                    : "התמונה נשלחת לניתוח מאובטח ואינה נשמרת ביומן."}
+                </p>
+              </div>
+              <IconButton aria-label="סגור" onClick={() => setShowMealScanner(false)}>
+                <X className="h-5 w-5" />
+              </IconButton>
+            </div>
+
+            {!scannedMeal ? (
+              <div className="space-y-3">
+                <label className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-primary/40 bg-primary/5 px-5 py-10 text-center transition-colors hover:bg-primary/10">
+                  {scanState === "analyzing" ? (
+                    <>
+                      <LoaderCircle className="h-9 w-9 animate-spin text-primary" />
+                      <span className="mt-3 text-sm font-bold text-ink">מנתחת את התמונה…</span>
+                      <span className="mt-1 text-[11px] text-muted-foreground">
+                        זיהוי מאכלים והערכת כמויות וערכים
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="h-9 w-9 text-primary" />
+                      <span className="mt-3 text-sm font-bold text-ink">צילום או בחירת תמונה</span>
+                      <span className="mt-1 text-[11px] text-muted-foreground">JPG או PNG עד 20MB</span>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png"
+                    capture="environment"
+                    className="sr-only"
+                    disabled={scanState === "analyzing"}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (file) void scanMealImage(file);
+                    }}
+                  />
+                </label>
+                {scanState === "error" ? (
+                  <div className="rounded-2xl bg-destructive/10 px-3 py-2.5 text-[12px] font-semibold text-destructive">
+                    {scanError}
+                  </div>
+                ) : null}
+                <p className="text-center text-[10.5px] leading-relaxed text-muted-foreground">
+                  כדי לקבל הערכה טובה יותר, צלמי את כל הצלחת באור טוב ומזווית עליונה.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <label className="block text-[11px] font-semibold text-muted-foreground">
+                  שם הארוחה
+                  <input
+                    value={scannedMeal.mealName}
+                    onChange={(event) =>
+                      setScannedMeal((current) =>
+                        current ? { ...current, mealName: event.target.value } : current,
+                      )
+                    }
+                    className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm font-semibold text-ink outline-none focus:border-primary"
+                  />
+                </label>
+                <div className="space-y-2">
+                  {scannedMeal.foods.map((food, index) => (
+                    <div key={`${food.name}-${index}`} className="rounded-2xl border border-border/50 bg-secondary/50 p-3">
+                      <div className="flex items-center gap-2">
+                        <input
+                          value={food.name}
+                          onChange={(event) =>
+                            setScannedMeal((current) => {
+                              if (!current) return current;
+                              const foods = [...current.foods];
+                              foods[index] = { ...foods[index], name: event.target.value };
+                              return { ...current, foods };
+                            })
+                          }
+                          className="min-w-0 flex-1 rounded-lg border border-border bg-white px-2.5 py-2 text-[13px] font-semibold text-ink outline-none focus:border-primary"
+                          aria-label={`שם מאכל ${index + 1}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setScannedMeal((current) =>
+                              current
+                                ? { ...current, foods: current.foods.filter((_, itemIndex) => itemIndex !== index) }
+                                : current,
+                            )
+                          }
+                          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-white hover:text-destructive"
+                          aria-label={`הסר ${food.name}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <input
+                        value={food.servingSize}
+                        onChange={(event) =>
+                          setScannedMeal((current) => {
+                            if (!current) return current;
+                            const foods = [...current.foods];
+                            foods[index] = { ...foods[index], servingSize: event.target.value };
+                            return { ...current, foods };
+                          })
+                        }
+                        className="mt-2 w-full rounded-lg border border-border bg-white px-2.5 py-2 text-[11px] text-ink outline-none focus:border-primary"
+                        aria-label={`כמות ${food.name}`}
+                      />
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+                        {(
+                          [
+                            ["quantity", "כמות", 0.1],
+                            ["calories", "קלוריות", 1],
+                            ["protein", "חלבון", 0.1],
+                            ["carbs", "פחמימות", 0.1],
+                            ["fat", "שומן", 0.1],
+                            ["fiber", "סיבים", 0.1],
+                          ] as const
+                        ).map(([key, label, step]) => (
+                          <label key={key} className="text-muted-foreground">
+                            {label}
+                            <input
+                              type="number"
+                              min={key === "quantity" ? 0.1 : 0}
+                              step={step}
+                              value={food[key]}
+                              onChange={(event) =>
+                                setScannedMeal((current) => {
+                                  if (!current) return current;
+                                  const foods = [...current.foods];
+                                  foods[index] = { ...foods[index], [key]: Number(event.target.value) };
+                                  return { ...current, foods };
+                                })
+                              }
+                              className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-ink outline-none focus:border-primary"
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <PrimaryButton className="flex-1" onClick={confirmScannedMeal}>
+                    אישור והוספה ליומן
+                  </PrimaryButton>
+                  <SecondaryButton
+                    onClick={() => {
+                      setScannedMeal(null);
+                      setScanState("idle");
+                    }}
+                  >
+                    סריקה מחדש
+                  </SecondaryButton>
+                </div>
+              </div>
+            )}
+          </div>
+        </Overlay>
+      ) : null}
+
       {/* "What Should I Eat Now?" Modal */}
       {showWhatToEat && (
         <Overlay
