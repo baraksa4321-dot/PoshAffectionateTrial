@@ -1106,6 +1106,7 @@ function RootContent() {
   });
   const loadingVariant = loadingCycle % SIMPLE_LOADING_ILLUSTRATIONS.length;
   const loadingMessageIndex = loadingCycle % LOADING_MESSAGES.length;
+  const [minimumLoadingDone, setMinimumLoadingDone] = useState(false);
   const profileHydrationStatus = useProfileHydrationStatus();
   const profileHydrationError = useProfileHydrationError();
   const hasProfileHydrationError =
@@ -1156,8 +1157,12 @@ function RootContent() {
         return nextCycle;
       });
     }, 800);
+    const minimumLoadingTimer = window.setTimeout(() => {
+      setMinimumLoadingDone(true);
+    }, 1400);
     return () => {
       window.clearInterval(illustrationTimer);
+      window.clearTimeout(minimumLoadingTimer);
       window.removeEventListener("pageshow", advanceForRestoredPage);
     };
   }, []);
@@ -1167,7 +1172,7 @@ function RootContent() {
       <HeadContent />
       <ScrollToTop />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      {authStatus === "loading" || isProfileHydrating ? (
+      {authStatus === "loading" || isProfileHydrating || !minimumLoadingDone ? (
         <div
           className="loading-screen flex min-h-[100dvh] items-center justify-center bg-background px-4"
           dir="rtl"
@@ -1178,7 +1183,7 @@ function RootContent() {
             aria-live="polite"
             aria-label="MY routine נטען"
           >
-            <SimpleLoadingIllustration variant={loadingVariant} />
+            <SimpleLoadingIllustration key={loadingVariant} variant={loadingVariant} />
             <p key={loadingMessageIndex} className="loading-witty-message">
               {LOADING_MESSAGES[loadingMessageIndex]}
             </p>
