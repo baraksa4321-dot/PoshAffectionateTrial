@@ -207,7 +207,7 @@ class RuntimeErrorBoundary extends Component<RuntimeErrorBoundaryProps, RuntimeE
       <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4" dir="rtl">
         <div className="w-full max-w-md rounded-3xl border border-destructive/20 bg-white px-6 py-7 text-center shadow-sm">
           <div className="flex justify-center">
-            <BrandLogo compact />
+            <BrandLogo />
           </div>
           <h1 className="mt-5 text-lg font-bold text-foreground">העמוד לא נטען</h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -258,6 +258,7 @@ function BrowserRuntimeGuard({ children }: RuntimeErrorBoundaryProps) {
       }
     };
     const onRejection = (event: PromiseRejectionEvent) => {
+      if (!isAppLoadingError(event.reason)) return;
       event.preventDefault();
       setError(event.reason instanceof Error ? event.reason : new Error(String(event.reason)));
     };
