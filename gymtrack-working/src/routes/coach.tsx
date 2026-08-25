@@ -1973,7 +1973,7 @@ export function CoachDashboardPage({
             <div
               className={`w-full space-y-4 bg-background ${
                 workspacePage || openEditor
-                  ? "relative left-1/2 w-screen -translate-x-1/2 pb-10"
+                  ? "min-w-0 max-w-full overflow-x-hidden pb-10"
                   : "max-w-2xl rounded-3xl shadow-2xl"
               } ${workspacePage || openEditor ? "" : "p-4 sm:p-6"}`}
             >
