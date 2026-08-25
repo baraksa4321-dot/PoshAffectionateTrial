@@ -224,12 +224,7 @@ function NutritionLog() {
     setScanState("analyzing");
     setScanError("");
     try {
-      const image = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(new Error("read"));
-        void prepareMealImage(file).then(resolve).catch(reject);
-      });
+      const image = await prepareMealImage(file);
       const controller = new AbortController();
       const timeout = window.setTimeout(() => controller.abort(), 60_000);
       let response: Response;
