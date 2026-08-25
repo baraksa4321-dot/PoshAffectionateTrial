@@ -1973,15 +1973,15 @@ export function CoachDashboardPage({
             <div
               className={`w-full space-y-4 bg-background ${
                 workspacePage || openEditor
-                  ? "-mx-4 w-[calc(100%+2rem)] pb-10 sm:-mx-6 sm:w-[calc(100%+3rem)]"
+                  ? "relative left-1/2 w-screen -translate-x-1/2 pb-10"
                   : "max-w-2xl rounded-3xl shadow-2xl"
               } ${workspacePage || openEditor ? "" : "p-4 sm:p-6"}`}
             >
-              <div className="flex items-center justify-between border-b border-border/60 pb-3">
-                <h3 className="font-bold text-base text-ink flex items-center gap-2">
+              <div className="flex min-w-0 items-center justify-between gap-2 overflow-x-hidden border-b border-border/60 px-4 pb-3 sm:px-6">
+                <h3 className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden font-bold text-base text-ink">
                   <Users className="h-5 w-5 text-primary" />
-                  <span>תכנית המתאמן:</span>
-                  <span className="text-primary font-extrabold">
+                  <span className="shrink-0">תכנית המתאמן:</span>
+                  <span className="truncate text-primary font-extrabold">
                     {isSelfSelected
                       ? `התוכנית של ${selfDisplayName}`
                       : profileDisplayName(selectedClientInfo?.profiles)}
