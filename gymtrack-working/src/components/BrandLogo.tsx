@@ -16,7 +16,11 @@ export function BrandLogo({ compact = false }: { compact?: boolean }) {
         height={compact ? 35 : 64}
         decoding="async"
         draggable={false}
-        className={compact ? "h-5 w-[92px] object-contain" : "h-10 w-[180px] object-contain"}
+        className={
+          compact
+            ? "h-5 w-[92px] object-contain object-right"
+            : "h-10 w-[180px] object-contain object-right"
+        }
       />
     </Link>
   );

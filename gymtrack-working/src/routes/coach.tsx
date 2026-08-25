@@ -415,7 +415,6 @@ export function CoachDashboardPage({
 
   useEffect(() => {
     setCalTarget(clientDetails?.nutritionTargets?.calories ?? 0);
-    setShowBmrCalculator(false);
     const profile = clientDetails?.profile;
     setProfileAge(profile?.age === undefined ? "" : String(profile.age));
     setProfileHeight(profile?.height === undefined ? "" : String(profile.height));
