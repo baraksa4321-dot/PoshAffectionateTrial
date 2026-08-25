@@ -24,7 +24,7 @@ let pullImplementation: (
   userId: string,
   localState: Record<string, unknown>,
 ) => Promise<{ success: true; data: Record<string, unknown> }>;
-let syncImplementation: () => Promise<{ success: true }>;
+let syncImplementation: () => Promise<{ success: true } | { success: false; error: string }>;
 
 mock.module("./supabase", () => ({
   supabase: {
@@ -218,5 +218,18 @@ describe("offline store lifecycle", () => {
     sync.resolve({ success: true });
     await eventually(() => store.getGymStoreSyncStatus() === "synced");
     expect(syncCalls).toHaveLength(1);
+  });
+
+  test("keeps failed cloud writes pending and exposes an error status", async () => {
+    Object.assign(navigator, { onLine: true });
+    syncImplementation = async () => ({ success: false, error: "permission denied" });
+    const store = await loadStore("failed-cloud-write");
+    await eventually(() => pullCalls.length > 0);
+
+    store.addChecklistItem("Keep pending");
+    await eventually(() => store.getGymStoreSyncStatus() === "error");
+
+    expect(storage.get("gymtrack.v1.pending.user-a")).toBe("true");
+    expect(store.getGymStoreSnapshot().preExitChecklist[0]?.label).toBe("Keep pending");
   });
 });

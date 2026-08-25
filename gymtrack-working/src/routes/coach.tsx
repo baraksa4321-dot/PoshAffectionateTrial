@@ -812,6 +812,7 @@ export function CoachDashboardPage({
   const handleCreateClientProgram = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isCoach || !selectedClientId || !newProgramName.trim()) return;
+    setManagementError("");
 
     const programId = uid();
     if (isSelfSelected) {
@@ -833,16 +834,19 @@ export function CoachDashboardPage({
       description: "תוכנית נבנתה על ידי המאמן",
     });
 
-    if (!error) {
-      setNewProgramName("");
-      pullClientDataForCoach(selectedClientId).then(applyClientDetails);
+    if (error) {
+      setManagementError(`שמירת התוכנית נכשלה: ${error.message}`);
+      return;
     }
+    setNewProgramName("");
+    pullClientDataForCoach(selectedClientId).then(applyClientDetails);
   };
 
   // Add Program Day for Client
   const handleAddProgramDay = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isCoach || !selectedClientId || !editingProgramId || !newDayName.trim()) return;
+    setManagementError("");
 
     const dayId = uid();
     if (isSelfSelected) {
@@ -862,16 +866,19 @@ export function CoachDashboardPage({
       sort_order: (clientDetails?.workouts?.length || 0) + 1,
     });
 
-    if (!error) {
-      setNewDayName("");
-      pullClientDataForCoach(selectedClientId).then(applyClientDetails);
+    if (error) {
+      setManagementError(`שמירת יום האימון נכשלה: ${error.message}`);
+      return;
     }
+    setNewDayName("");
+    pullClientDataForCoach(selectedClientId).then(applyClientDetails);
   };
 
   // Assign Prescribed Exercise to Program Day
   const handleAddExerciseToDay = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isCoach || !selectedClientId || !editingDayId || !selectedExId) return;
+    setManagementError("");
 
     const currentDay = clientDetails?.workouts?.find((w) => w.id === editingDayId);
     if (!currentDay) return;
@@ -1034,24 +1041,27 @@ export function CoachDashboardPage({
       .update({ items: updatedItems, updated_at: new Date().toISOString() })
       .eq("id", editingDayId);
 
-    if (!error) {
-      setSelectedExId("");
-      setTechniqueNotes("");
-      setSupersetGroup("");
-      setSupersetPartnerId("");
-      setDropSetEnabled(false);
-      setDropLevel1Weight("");
-      setDropLevel2Weight("");
-      setSetModes(["normal", "normal", "normal"]);
-      setApprovedAltIds([]);
-      setBodyweightAlternativeId("");
-      pullClientDataForCoach(selectedClientId).then(applyClientDetails);
+    if (error) {
+      setManagementError(`שמירת התרגיל נכשלה: ${error.message}`);
+      return;
     }
+    setSelectedExId("");
+    setTechniqueNotes("");
+    setSupersetGroup("");
+    setSupersetPartnerId("");
+    setDropSetEnabled(false);
+    setDropLevel1Weight("");
+    setDropLevel2Weight("");
+    setSetModes(["normal", "normal", "normal"]);
+    setApprovedAltIds([]);
+    setBodyweightAlternativeId("");
+    pullClientDataForCoach(selectedClientId).then(applyClientDetails);
   };
 
   // Delete exercise from day
   const handleRemoveExerciseFromDay = async (dayId: string, itemId: string) => {
     if (!isCoach) return;
+    setManagementError("");
     const currentDay = clientDetails?.workouts?.find((w) => w.id === dayId);
     if (!currentDay) return;
 
@@ -1067,14 +1077,17 @@ export function CoachDashboardPage({
       .update({ items: updatedItems, updated_at: new Date().toISOString() })
       .eq("id", dayId);
 
-    if (!error) {
-      pullClientDataForCoach(selectedClientId!).then(applyClientDetails);
+    if (error) {
+      setManagementError(`מחיקת התרגיל נכשלה: ${error.message}`);
+      return;
     }
+    pullClientDataForCoach(selectedClientId!).then(applyClientDetails);
   };
 
   // Save Nutrition Targets for Client
   const handleSaveNutritionTargets = async () => {
     if (!isCoach || !selectedClientId) return;
+    setManagementError("");
     const today = new Date().toISOString().slice(0, 10);
 
     const { error } = await supabase.from("nutrition_days").upsert({
@@ -1085,11 +1098,13 @@ export function CoachDashboardPage({
       updated_at: new Date().toISOString(),
     });
 
-    if (!error) {
-      setEditingNutrition(false);
-      const refreshed = await pullClientDataForCoach(selectedClientId);
-      applyClientDetails(refreshed);
+    if (error) {
+      setManagementError(`שמירת יעד התזונה נכשלה: ${error.message}`);
+      return;
     }
+    setEditingNutrition(false);
+    const refreshed = await pullClientDataForCoach(selectedClientId);
+    applyClientDetails(refreshed);
   };
 
   const addPlannedMeal = () => {
