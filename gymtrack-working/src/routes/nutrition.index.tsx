@@ -125,18 +125,17 @@ function quantityControlFor(food: FoodItem) {
 }
 
 async function prepareMealImage(file: File): Promise<string> {
+  const originalDataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("לא ניתן לקרוא את התמונה."));
+    reader.readAsDataURL(file);
+  });
   const source = await new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
-    const url = URL.createObjectURL(file);
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(image);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("לא ניתן לקרוא את התמונה."));
-    };
-    image.src = url;
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("לא ניתן לקרוא את התמונה."));
+    image.src = originalDataUrl;
   });
   const maxSide = 1280;
   const scale = Math.min(1, maxSide / Math.max(source.naturalWidth, source.naturalHeight));
@@ -144,9 +143,13 @@ async function prepareMealImage(file: File): Promise<string> {
   canvas.width = Math.max(1, Math.round(source.naturalWidth * scale));
   canvas.height = Math.max(1, Math.round(source.naturalHeight * scale));
   const context = canvas.getContext("2d");
-  if (!context) throw new Error("לא ניתן להכין את התמונה לניתוח.");
+  if (!context) return originalDataUrl;
   context.drawImage(source, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL("image/jpeg", 0.74);
+  try {
+    return canvas.toDataURL("image/jpeg", 0.74);
+  } catch {
+    return originalDataUrl;
+  }
 }
 
 type ScannedFood = {
