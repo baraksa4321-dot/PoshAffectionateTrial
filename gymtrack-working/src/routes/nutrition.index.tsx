@@ -1095,7 +1095,7 @@ function NutritionLog() {
             {!scannedMeal ? (
               <div className="space-y-3">
                 {scanState === "analyzing" ? (
-                  <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-primary/40 bg-primary/5 px-5 py-10 text-center">
+                  <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-primary/40 bg-[#f7f2ec] px-5 py-10 text-center">
                     <div
                       className={`loading-micro-stage loading-simple-stage loading-simple-pose-${scanCycle % 4}`}
                     >
