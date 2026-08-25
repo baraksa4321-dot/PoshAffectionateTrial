@@ -157,8 +157,18 @@ function ExerciseDetail() {
       muscleGroup: finalMuscleGroup,
       ...(customValue === undefined ? {} : { customMuscleGroup: customValue }),
     });
-    if (isNew) navigate({ to: "/exercises/$exerciseId", params: { exerciseId: draft.id } });
-    else setEditing(false);
+    if (isNew) {
+      const returnUrl = window.sessionStorage.getItem("gymtrack-exercise-return-url");
+      if (returnUrl) {
+        window.sessionStorage.removeItem("gymtrack-exercise-return-url");
+        window.sessionStorage.setItem("gymtrack-created-exercise-id", draft.id);
+        window.location.assign(returnUrl);
+        return;
+      }
+      navigate({ to: "/exercises/$exerciseId", params: { exerciseId: draft.id } });
+    } else {
+      setEditing(false);
+    }
   };
 
   if (isNew && !canManageLibrary) {

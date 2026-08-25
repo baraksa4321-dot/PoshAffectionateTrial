@@ -1665,10 +1665,9 @@ export function CoachDashboardPage({
 
   const openCreateExercise = () => {
     if (!isCoach) return;
-    setNewExerciseDraft(emptyExercise());
-    setNewExerciseError("");
     setShowExercisePicker(false);
-    setShowCreateExercise(true);
+    window.sessionStorage.setItem("gymtrack-exercise-return-url", window.location.href);
+    navigate({ to: "/exercises/$exerciseId", params: { exerciseId: "new" } });
   };
 
   const handleCreateExercise = (event: React.FormEvent<HTMLFormElement>) => {
