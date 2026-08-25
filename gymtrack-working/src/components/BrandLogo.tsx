@@ -10,8 +10,12 @@ export function BrandLogo({ compact = false }: { compact?: boolean }) {
       }`}
     >
       <img
-        src="/brand-logo.png"
+        src="/myroutine-logo.jpeg"
         alt="MY routine"
+        width={compact ? 92 : 128}
+        height={compact ? 32 : 42}
+        decoding="async"
+        draggable={false}
         className={compact ? "h-5 w-[92px] object-contain" : "h-7 w-[128px] object-contain"}
       />
     </Link>

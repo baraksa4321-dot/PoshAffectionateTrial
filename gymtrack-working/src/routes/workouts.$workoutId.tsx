@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, GripVertical, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { exerciseDisplayName } from "@/lib/exercise-library";
 import { Stepper } from "@/components/Stepper";
 import { Overlay } from "@/components/ui-app/Overlay";
 import { deleteWorkout, emptyItem, emptyWorkout, saveWorkout, useGym } from "@/lib/gym-store";
@@ -58,7 +59,10 @@ function Builder() {
     );
   }
 
-  const nameOf = (id: string) => exercises.find((e) => e.id === id)?.name ?? "תרגיל שהוסר";
+  const nameOf = (id: string) => {
+    const exercise = exercises.find((e) => e.id === id);
+    return exercise ? exerciseDisplayName(exercise) : "תרגיל שהוסר";
+  };
   const patchItem = (id: string, patch: Partial<WorkoutItem>) =>
     setDraft({
       ...draft,
@@ -306,7 +310,7 @@ function Builder() {
                   }}
                   className="w-full rounded-xl bg-secondary p-4 text-start active:scale-[0.99]"
                 >
-                  <p className="font-semibold text-foreground">{e.name}</p>
+                  <p className="font-semibold text-foreground">{exerciseDisplayName(e)}</p>
                   <p className="text-xs text-muted-foreground">
                     {e.muscleGroup} · {e.equipment}
                   </p>

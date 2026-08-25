@@ -44,6 +44,9 @@ export type DropSetConfig = {
 export type Exercise = {
   id: string;
   name: string;
+  /** Optional bilingual labels. `name` remains the legacy display value for saved records. */
+  nameHe?: string;
+  nameEn?: string;
   muscleGroup: string;
   /** Primary and secondary muscle groups worked (multi-select). */
   muscleGroups?: string[];

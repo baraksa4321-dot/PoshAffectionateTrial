@@ -55,6 +55,7 @@ import {
   useGym,
 } from "@/lib/gym-store";
 import { BODYWEIGHT_EXERCISES } from "@/lib/bodyweight-exercises";
+import { exerciseDisplayName } from "@/lib/exercise-library";
 import { genderText } from "@/lib/gender-copy";
 import {
   EQUIPMENT,
@@ -481,7 +482,9 @@ function DayBuilder() {
                     <Dumbbell className="h-4 w-4" strokeWidth={1.8} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] font-semibold text-ink">{exercise.name}</p>
+                    <p className="truncate text-[14px] font-semibold text-ink">
+                      {exerciseDisplayName(exercise)}
+                    </p>
                     <p className="text-[11.5px] text-muted-foreground">{exercise.muscleGroup}</p>
                   </div>
                   <span className="num-pill shrink-0 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">

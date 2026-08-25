@@ -106,7 +106,7 @@ export const THEME_PALETTES: Array<{
   },
 ];
 
-export const DEFAULT_THEME: ThemePalette = "pink";
+export const DEFAULT_THEME: ThemePalette = "cream";
 
 export function applyTheme(theme: ThemePalette | undefined) {
   if (typeof document === "undefined") return;
@@ -121,5 +121,5 @@ export function applyNightMode(enabled: boolean) {
   document.documentElement.classList.toggle("night-mode", enabled);
   document.documentElement.style.colorScheme = enabled ? "dark" : "light";
   const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  themeColor?.setAttribute("content", enabled ? "#19191c" : "#ffffff");
+  themeColor?.setAttribute("content", enabled ? "#232326" : "#ffffff");
 }

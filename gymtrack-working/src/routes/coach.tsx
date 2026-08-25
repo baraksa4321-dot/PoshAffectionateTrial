@@ -20,7 +20,7 @@ import {
   Activity,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "../components/AppShell";
 import { Overlay } from "../components/ui-app/Overlay";
 import {
@@ -40,6 +40,7 @@ import {
 import { pullClientDataForCoach } from "../lib/supabase-sync";
 import { supabase } from "../lib/supabase";
 import { calculateCalorieEstimate } from "../lib/calorie-calculator";
+import { exerciseDisplayName } from "../lib/exercise-library";
 import type {
   BodyMeasurement,
   Exercise,
@@ -220,6 +221,11 @@ export function CoachDashboardPage({
   const [calTarget, setCalTarget] = useState(0);
   const [protTarget, setProtTarget] = useState(0);
   const [menuDate, setMenuDate] = useState(todayKey());
+  // Actual logs are reviewed independently from the plan editor. Keeping a
+  // separate date cursor prevents changing the prescribed menu while browsing
+  // a client's historical entries.
+  const [trackingDate, setTrackingDate] = useState(todayKey());
+  const workspaceSwipeStart = useRef<{ x: number; y: number } | null>(null);
   const [plannedMeals, setPlannedMeals] = useState<Meal[]>([]);
   const [menuFoodMealId, setMenuFoodMealId] = useState<string | null>(null);
   const [menuFoodId, setMenuFoodId] = useState("");
@@ -743,7 +749,7 @@ export function CoachDashboardPage({
   // Create Program for Client
   const handleCreateClientProgram = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClientId || !newProgramName.trim()) return;
+    if (!isCoach || !selectedClientId || !newProgramName.trim()) return;
 
     const programId = uid();
     if (isSelfSelected) {
@@ -774,7 +780,7 @@ export function CoachDashboardPage({
   // Add Program Day for Client
   const handleAddProgramDay = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClientId || !editingProgramId || !newDayName.trim()) return;
+    if (!isCoach || !selectedClientId || !editingProgramId || !newDayName.trim()) return;
 
     const dayId = uid();
     if (isSelfSelected) {
@@ -803,7 +809,7 @@ export function CoachDashboardPage({
   // Assign Prescribed Exercise to Program Day
   const handleAddExerciseToDay = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClientId || !editingDayId || !selectedExId) return;
+    if (!isCoach || !selectedClientId || !editingDayId || !selectedExId) return;
 
     const currentDay = clientDetails?.workouts?.find((w) => w.id === editingDayId);
     if (!currentDay) return;
@@ -983,6 +989,7 @@ export function CoachDashboardPage({
 
   // Delete exercise from day
   const handleRemoveExerciseFromDay = async (dayId: string, itemId: string) => {
+    if (!isCoach) return;
     const currentDay = clientDetails?.workouts?.find((w) => w.id === dayId);
     if (!currentDay) return;
 
@@ -1005,7 +1012,7 @@ export function CoachDashboardPage({
 
   // Save Nutrition Targets for Client
   const handleSaveNutritionTargets = async () => {
-    if (!selectedClientId) return;
+    if (!isCoach || !selectedClientId) return;
     const today = new Date().toISOString().slice(0, 10);
 
     const { error } = await supabase.from("nutrition_days").upsert({
@@ -1024,6 +1031,7 @@ export function CoachDashboardPage({
   };
 
   const addPlannedMeal = () => {
+    if (!isCoach) return;
     setPlannedMeals((current) => [
       ...current,
       { id: uid(), name: `ארוחה ${current.length + 1}`, foods: [] },
@@ -1031,6 +1039,7 @@ export function CoachDashboardPage({
   };
 
   const addPlannedFood = (mealId: string) => {
+    if (!isCoach) return;
     const food = store.foods.find((item) => item.id === menuFoodId);
     if (!food || menuFoodQuantity <= 0) return;
     const scrollContainer = document.scrollingElement;
@@ -1072,6 +1081,7 @@ export function CoachDashboardPage({
   };
 
   const removePlannedFood = (mealId: string, foodId: string) => {
+    if (!isCoach) return;
     setPlannedMeals((current) =>
       current.map((meal) =>
         meal.id === mealId
@@ -1082,7 +1092,7 @@ export function CoachDashboardPage({
   };
 
   const savePlannedMenu = async () => {
-    if (!selectedClientId || plannedMeals.length === 0) return;
+    if (!isCoach || !selectedClientId || plannedMeals.length === 0) return;
     if (isSelfSelected) {
       savePlannedMeals(menuDate, plannedMeals);
       setMenuNotice("התפריט האישי נשמר ויופיע גם באזור התזונה שלך.");
@@ -1143,6 +1153,16 @@ export function CoachDashboardPage({
         .map((food) => ({ date: day.date, meal: meal.name, note: food.notes!.trim() })),
     ),
   );
+  const trackingSessions =
+    clientDetails?.history.filter((session) => session.date.slice(0, 10) === trackingDate) ?? [];
+  const trackingNutritionDay = clientDetails?.nutritionDays.find(
+    (day) => day.date === trackingDate,
+  );
+  const shiftTrackingDate = (amount: number) => {
+    const date = new Date(`${trackingDate}T00:00:00`);
+    date.setDate(date.getDate() + amount);
+    setTrackingDate(date.toISOString().slice(0, 10));
+  };
   const exerciseQueryLower = exerciseQuery.trim().toLocaleLowerCase();
   const exerciseMuscleOptions = [
     "הכל",
@@ -1174,6 +1194,7 @@ export function CoachDashboardPage({
         );
 
   const openCreateExercise = () => {
+    if (!isCoach) return;
     setNewExerciseDraft(emptyExercise());
     setNewExerciseError("");
     setShowExercisePicker(false);
@@ -1182,6 +1203,7 @@ export function CoachDashboardPage({
 
   const handleCreateExercise = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!isCoach) return;
     const name = newExerciseDraft.name.trim();
     if (!name) {
       setNewExerciseError("יש להזין שם תרגיל.");
@@ -1927,6 +1949,22 @@ export function CoachDashboardPage({
                   <nav
                     aria-label="ניווט בסביבת העריכה"
                     className="sticky top-2 z-10 grid grid-cols-2 gap-2 rounded-2xl border border-border/70 bg-background/95 p-1.5 shadow-sm backdrop-blur"
+                    onTouchStart={(event) => {
+                      const touch = event.changedTouches[0];
+                      if (touch) workspaceSwipeStart.current = { x: touch.clientX, y: touch.clientY };
+                    }}
+                    onTouchEnd={(event) => {
+                      const start = workspaceSwipeStart.current;
+                      const touch = event.changedTouches[0];
+                      workspaceSwipeStart.current = null;
+                      if (!start || !touch) return;
+                      const dx = touch.clientX - start.x;
+                      const dy = touch.clientY - start.y;
+                      if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+                      const next = dx < 0 ? "nutrition" : "programs";
+                      setActiveWorkspaceTab(next);
+                      setOpenEditor(next);
+                    }}
                   >
                     <button
                       type="button"
@@ -1955,8 +1993,8 @@ export function CoachDashboardPage({
                       role="tab"
                       className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors ${
                         activeWorkspaceTab === "nutrition"
-                          ? "bg-emerald-700 text-white shadow-sm"
-                          : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-primary/5 text-primary hover:bg-primary/10"
                       }`}
                     >
                       <Apple className="h-3.5 w-3.5" />
@@ -2290,9 +2328,18 @@ export function CoachDashboardPage({
                           <Activity className="h-5 w-5" />
                         </span>
                       </div>
-                      {clientDetails.history.length > 0 ? (
+                       <div className="flex items-center gap-2 rounded-xl bg-white/80 p-2">
+                         <button type="button" onClick={() => shiftTrackingDate(-1)} className="grid h-9 w-9 place-items-center rounded-lg border border-border text-ink" aria-label="היום הקודם">
+                           <ChevronLeft className="h-4 w-4" />
+                         </button>
+                         <input type="date" value={trackingDate} onChange={(event) => setTrackingDate(event.target.value)} className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink" />
+                         <button type="button" onClick={() => shiftTrackingDate(1)} className="grid h-9 w-9 place-items-center rounded-lg border border-border text-ink" aria-label="היום הבא">
+                           <ChevronLeft className="h-4 w-4 rotate-180" />
+                         </button>
+                       </div>
+                       {trackingSessions.length > 0 ? (
                         <div className="grid gap-2 md:grid-cols-2">
-                          {clientDetails.history.map((session) => (
+                           {trackingSessions.map((session) => (
                             <div
                               key={session.id}
                               className="rounded-xl bg-white/80 p-3 text-[11px]"
@@ -2376,7 +2423,7 @@ export function CoachDashboardPage({
                         </div>
                       ) : (
                         <p className="text-center text-xs text-muted-foreground">
-                          אין עדיין ביצועי אימון להצגה.
+                           אין ביצועי אימון בתאריך זה.
                         </p>
                       )}
                     </section>
@@ -2397,8 +2444,18 @@ export function CoachDashboardPage({
                           <Apple className="h-5 w-5" />
                         </span>
                       </div>
-                      <div className="grid gap-2 md:grid-cols-2">
-                        {clientDetails.nutritionDays.map((day) => {
+                       <div className="flex items-center gap-2 rounded-xl bg-white/80 p-2">
+                         <button type="button" onClick={() => shiftTrackingDate(-1)} className="grid h-9 w-9 place-items-center rounded-lg border border-border text-ink" aria-label="היום הקודם">
+                           <ChevronLeft className="h-4 w-4" />
+                         </button>
+                         <input type="date" value={trackingDate} onChange={(event) => setTrackingDate(event.target.value)} className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink" aria-label="תאריך מעקב תזונה" />
+                         <button type="button" onClick={() => shiftTrackingDate(1)} className="grid h-9 w-9 place-items-center rounded-lg border border-border text-ink" aria-label="היום הבא">
+                           <ChevronLeft className="h-4 w-4 rotate-180" />
+                         </button>
+                       </div>
+                       <div className="grid gap-2 md:grid-cols-2">
+                         {trackingNutritionDay ? (() => {
+                           const day = trackingNutritionDay;
                           const actualFoods = day.meals.flatMap((meal) => meal.foods);
                           return (
                             <div
@@ -2426,16 +2483,23 @@ export function CoachDashboardPage({
                               )}
                             </div>
                           );
-                        })}
+                         })() : (
+                           <p className="text-center text-xs text-muted-foreground">אין רישומי תזונה בתאריך זה.</p>
+                         )}
                       </div>
-                      {clientNutritionNotes.length > 0 ? (
+                       {(trackingNutritionDay?.meals.some((meal) =>
+                         meal.foods.some((food) => food.notes?.trim()),
+                       ) ?? false) ? (
                         <div className="space-y-1">
-                          {clientNutritionNotes.map((note) => (
+                           {trackingNutritionDay?.meals.flatMap((meal) =>
+                             meal.foods
+                               .filter((food) => food.notes?.trim())
+                               .map((food) => ({ meal: meal.name, note: food.notes!.trim() })),
+                           ).map((note) => (
                             <p
-                              key={`${note.date}-${note.meal}-${note.note}`}
+                               key={`${note.meal}-${note.note}`}
                               className="rounded-lg bg-white/80 px-2 py-1 text-[11px] text-ink"
                             >
-                              {new Date(`${note.date}T00:00:00`).toLocaleDateString("he-IL")} ·{" "}
                               {note.meal}: {note.note}
                             </p>
                           ))}
@@ -3077,7 +3141,7 @@ export function CoachDashboardPage({
                                                               key={exercise.id}
                                                               value={exercise.id}
                                                             >
-                                                              {exercise.name} (
+                                                              {exerciseDisplayName(exercise)} (
                                                               {exercise.muscleGroup})
                                                             </option>
                                                           ))}
@@ -3847,7 +3911,9 @@ export function CoachDashboardPage({
                       <Dumbbell className="h-4 w-4" strokeWidth={1.8} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-semibold text-ink">{exercise.name}</p>
+                      <p className="truncate text-[14px] font-semibold text-ink">
+                        {exerciseDisplayName(exercise)}
+                      </p>
                       <p className="text-[11.5px] text-muted-foreground">{exercise.muscleGroup}</p>
                     </div>
                     <span className="num-pill shrink-0 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">

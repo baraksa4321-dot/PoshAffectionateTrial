@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { exerciseDisplayName } from "@/lib/exercise-library";
 import { Stepper } from "@/components/Stepper";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
 import { Overlay } from "@/components/ui-app/Overlay";
@@ -205,7 +206,7 @@ function Session() {
       }
       return {
         exerciseId: item.exerciseId,
-        exerciseName: ex?.name ?? "תרגיל שהוסר",
+        exerciseName: ex ? exerciseDisplayName(ex) : "תרגיל שהוסר",
         equipment: ex?.equipment,
         notes: item.notes,
         targetSets: item.sets,
@@ -451,7 +452,10 @@ function Session() {
   const handleFinishConfirm = () => {
     const allSetsCompleted =
       entries.length > 0 &&
-      entries.every((entry) => entry.sets.length > 0 && entry.sets.every((set) => set.done));
+      entries.every((entry) => {
+        const workingSets = entry.sets.filter((set) => !set.warmup);
+        return workingSets.length > 0 && workingSets.every((set) => set.done);
+      });
     saveSession({
       id: uid(),
       workoutId: workout.id,
@@ -907,7 +911,9 @@ function Session() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="font-bold text-base text-ink">{cardExercise.name}</h3>
+              <h3 className="font-bold text-base text-ink">
+                {exerciseDisplayName(cardExercise)}
+              </h3>
               <button
                 onClick={() => setCardExercise(null)}
                 className="text-muted-foreground font-bold text-sm cursor-pointer"

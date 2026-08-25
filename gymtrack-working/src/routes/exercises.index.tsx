@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Dumbbell, Plus, Search, Shield, SlidersHorizontal } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { exerciseDisplayName } from "@/lib/exercise-library";
 import { EmptyState, Pill, SectionHeader } from "@/components/ui-app/primitives";
 import { useGym } from "@/lib/gym-store";
 import { EQUIPMENT, MUSCLE_GROUPS } from "@/lib/gym-types";
@@ -202,7 +203,9 @@ function Library() {
                 <Dumbbell className="h-5 w-5" strokeWidth={1.8} />
               </div>
               <div className="min-w-0 flex-1 text-start">
-                <p className="truncate font-display text-[15px] font-semibold text-ink">{e.name}</p>
+                <p className="truncate font-display text-[15px] font-semibold text-ink">
+                  {exerciseDisplayName(e)}
+                </p>
                 <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
                   {primary}
                   {secondaryCount > 0 ? ` (+${secondaryCount})` : ""}

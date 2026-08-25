@@ -149,7 +149,27 @@ export const BODYWEIGHT_EXERCISES: Exercise[] = [
     notes: "",
     tips: "מומלץ לבצע תנועה קטנה ומבוקרת.",
   },
-];
+].map((exercise) => ({
+  ...exercise,
+  nameHe: exercise.name,
+  nameEn:
+    (
+      {
+        "bw-push-up": "Push-Up",
+        "bw-diamond-push-up": "Diamond Push-Up",
+        "bw-pike-push-up": "Pike Push-Up",
+        "bw-pull-up": "Pull-Up",
+        "bw-inverted-row": "Inverted Row",
+        "bw-bodyweight-squat": "Bodyweight Squat",
+        "bw-reverse-lunge": "Reverse Lunge",
+        "bw-glute-bridge": "Glute Bridge",
+        "bw-calf-raise": "Calf Raise",
+        "bw-plank": "Plank",
+        "bw-dead-bug": "Dead Bug",
+        "bw-superman": "Superman",
+      } as Record<string, string>
+    )[exercise.id] ?? exercise.name,
+}));
 
 const BODYWEIGHT_BY_MUSCLE: Record<string, string> = {
   חזה: "bw-push-up",

@@ -227,11 +227,13 @@ const WORKOUT_PLAYLISTS = [
   {
     label: "Apple Music · גלגל״צ",
     href: "https://music.apple.com/us/search?term=%D7%92%D7%9C%D7%92%D7%9C%D7%A6",
+    fallback: true,
     className: "bg-[#f0f0f0] text-[#222] hover:bg-[#e4e4e4]",
   },
   {
     label: "Apple Music · גלגל״צ LIVE",
     href: "https://music.apple.com/us/search?term=%D7%92%D7%9C%D7%92%D7%9C%D7%A6%20LIVE",
+    fallback: true,
     className: "bg-[#f0f0f0] text-[#222] hover:bg-[#e4e4e4]",
   },
   {
@@ -242,6 +244,7 @@ const WORKOUT_PLAYLISTS = [
   {
     label: "Apple Music · Top 50 ישראל",
     href: "https://music.apple.com/il/search?term=Top%2050%20Israel&l=he",
+    fallback: true,
     className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]",
   },
   {
@@ -252,6 +255,7 @@ const WORKOUT_PLAYLISTS = [
   {
     label: "Apple Music · חדש בישראל",
     href: "https://music.apple.com/il/search?term=New%20in%20Israel&l=he",
+    fallback: true,
     className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]",
   },
   {
@@ -262,6 +266,7 @@ const WORKOUT_PLAYLISTS = [
   {
     label: "Spotify · להיטים ישראליים",
     href: "https://open.spotify.com/search/israeli%20hits/playlists",
+    fallback: true,
     className: "bg-[#eaf2ff] text-[#245ca8] hover:bg-[#dce9ff]",
   },
   {
@@ -271,18 +276,21 @@ const WORKOUT_PLAYLISTS = [
   },
   {
     label: "Spotify · אושר כהן",
-    href: "https://open.spotify.com/artist/2LUB7PhWK2j2obgSTeD3GN",
+    href: "https://open.spotify.com/search/%D7%90%D7%95%D7%A9%D7%A8%20%D7%9B%D7%94%D7%9F/playlists",
+    fallback: true,
     className: "bg-[#fff4df] text-[#a25b00] hover:bg-[#ffeac2]",
   },
   ...EXPANDED_PLAYLIST_STYLES.flatMap(({ style, query, className }) => [
     {
       label: `Spotify · ${style}`,
-      href: `https://open.spotify.com/search/${encodeURIComponent(query)}`,
+      href: `https://open.spotify.com/search/${encodeURIComponent(query)}/playlists`,
+      fallback: true,
       className,
     },
     {
       label: `Apple Music · ${style}`,
       href: `https://music.apple.com/us/search?term=${encodeURIComponent(query)}`,
+      fallback: true,
       className,
     },
   ]),
@@ -467,10 +475,14 @@ function ProgramsPage() {
             title={genderText(gender, "צרי קצב אימונים קבוע", "צור קצב אימונים קבוע")}
             description={genderText(
               gender,
-              "הוסיפי תכנית ראשונה ובני ימי אימון שמתאימים לשגרה שלך.",
-              "הוסף תכנית ראשונה ובנה ימי אימון שמתאימים לשגרה שלך.",
+              isCoach
+                ? "הוסיפי תכנית ראשונה ובני ימי אימון שמתאימים לשגרה שלך."
+                : "התוכניות והאימונים שלך יופיעו כאן לאחר שהמאמן יוסיף אותם.",
+              isCoach
+                ? "הוסף תכנית ראשונה ובנה ימי אימון שמתאימים לשגרה שלך."
+                : "התוכניות והאימונים שלך יופיעו כאן לאחר שהמאמן יוסיף אותם.",
             )}
-            action={
+            action={isCoach ? (
               <button
                 type="button"
                 onClick={() => setAdding(true)}
@@ -479,7 +491,7 @@ function ProgramsPage() {
                 <Plus className="h-4 w-4" strokeWidth={2.4} />
                 יצירת תכנית אימונים
               </button>
-            }
+            ) : undefined}
           />
         )}
       </section>
@@ -534,7 +546,12 @@ function ProgramsPage() {
                       rel="noreferrer"
                       className={`flex items-center justify-between rounded-2xl px-3 py-3 text-xs font-bold transition-colors ${playlist.className}`}
                     >
-                      <span>{playlist.label.split(" · ")[0]}</span>
+                      <span className="flex items-center gap-1.5">
+                        {playlist.label.split(" · ")[0]}
+                        {"fallback" in playlist && playlist.fallback ? (
+                          <span className="font-normal opacity-75">(חיפוש)</span>
+                        ) : null}
+                      </span>
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   ))}

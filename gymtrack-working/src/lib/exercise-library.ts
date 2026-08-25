@@ -2,6 +2,41 @@ import type { Exercise } from "./gym-types";
 
 type SeedNameMigration = { from: string; to: string };
 
+/** Canonical Hebrew labels paired with the stable seed IDs. */
+const SEED_HEBREW_NAMES: Record<string, string> = {
+  "ex-bench": "לחיצת חזה כנגד מוט",
+  "ex-squat": "סקוואט כנגד מוט",
+  "ex-row": "חתירה בכבלים בישיבה",
+  "ex-curl": "כפיפת מרפקים עם משקוליות",
+  "ex-hipthrust": "דחיקת אגן כנגד מוט",
+  "ex-plank": "פלאנק",
+  "ex-ohp": "לחיצת כתפיים בעמידה כנגד מוט",
+  "ex-rdl": "דדליפט רומני",
+  "ex-incline-bench": "לחיצת חזה בשיפוע כנגד מוט",
+  "ex-db-press": "לחיצת חזה כנגד משקוליות",
+  "ex-cable-fly": "קרוס אובר בכבלים",
+  "ex-chest-press": "לחיצת חזה במכונה",
+  "ex-pullup": "מתח",
+  "ex-lat-pulldown": "משיכת פולי עליון",
+  "ex-db-row": "חתירה ביד אחת כנגד משקולית",
+  "ex-face-pull": "משיכת חבל לפנים",
+  "ex-lateral-raise": "הרחקת כתפיים לצדדים",
+  "ex-rear-delt-machine": "פשיטת כתף אחורית במכונה",
+  "ex-triceps-pushdown": "פשיטת מרפקים בפולי",
+  "ex-triceps-extension": "פשיטת מרפקים מעל הראש",
+  "ex-leg-press": "לחיצת רגליים במכונה",
+  "ex-leg-extension": "פשיטת ברך במכונה",
+  "ex-leg-curl": "כפיפת ברך במכונה",
+  "ex-bulgarian-split": "סקוואט בולגרי",
+  "ex-glute-kickback": "בעיטת ישבן בכבל",
+  "ex-calf-raise": "עליות תאומים בעמידה",
+  "ex-hanging-knee-raise": "הרמת ברכיים בתלייה",
+  "ex-dead-bug": "דד באג",
+  "ex-wrist-curl": "כפיפת שורש כף היד",
+  "ex-shrug": "משיכת כתפיים כנגד משקוליות",
+  "ex-back-extension": "פשיטת גב על ספסל",
+};
+
 const EQUIPMENT_LABELS: Record<string, string> = {
   Barbell: "מוט",
   Dumbbells: "משקוליות יד",
@@ -49,7 +84,20 @@ export const SEED_EXERCISE_NAME_MIGRATIONS: Record<string, SeedNameMigration> = 
 
 export function renameSeedExercise(exercise: Exercise): Exercise {
   const migration = SEED_EXERCISE_NAME_MIGRATIONS[exercise.id];
-  return migration ? { ...exercise, name: migration.to } : exercise;
+  const nameEn = migration?.to ?? exercise.nameEn ?? exercise.name;
+  const nameHe = SEED_HEBREW_NAMES[exercise.id] ?? exercise.nameHe;
+  return migration || nameHe
+    ? { ...exercise, name: nameEn, nameEn, ...(nameHe ? { nameHe } : {}) }
+    : exercise;
+}
+
+export function exerciseDisplayName(
+  exercise: Pick<Exercise, "name" | "nameHe" | "nameEn">,
+): string {
+  const hebrew = exercise.nameHe?.trim();
+  const english = exercise.nameEn?.trim() || exercise.name?.trim();
+  if (hebrew && english && hebrew !== english) return `${hebrew} (${english})`;
+  return hebrew || english || "תרגיל";
 }
 
 const makeExercise = (
@@ -63,6 +111,7 @@ const makeExercise = (
 ): Exercise => ({
   id,
   name,
+  nameEn: name,
   muscleGroup,
   muscleGroups: [muscleGroup],
   secondaryMuscles: [],
@@ -75,6 +124,58 @@ const makeExercise = (
   notes: "",
   tips: "",
 });
+
+const ADDITIONAL_HEBREW_NAMES: Record<string, string> = {
+  "ex-cable-pullover": "משיכת פולי בידיים ישרות",
+  "ex-chest-supported-row": "חתירה עם משקוליות בתמיכת חזה",
+  "ex-tbar-row": "חתירת T",
+  "ex-incline-db-press": "לחיצת חזה בשיפוע עם משקוליות",
+  "ex-pushup": "שכיבות סמיכה",
+  "ex-dips": "מקבילים",
+  "ex-arnold-press": "לחיצת ארנולד",
+  "ex-front-raise": "הרמה קדמית עם משקוליות",
+  "ex-reverse-fly": "הרחקה אופקית עם משקוליות",
+  "ex-hammer-curl": "כפיפת מרפקים פטיש",
+  "ex-preacher-curl": "כפיפת מרפקים בכיסא כומר",
+  "ex-skull-crusher": "פשיטת מרפקים בשכיבה",
+  "ex-goblet-squat": "סקוואט גביע",
+  "ex-front-squat": "סקוואט קדמי",
+  "ex-walking-lunge": "לאנג׳ בהליכה",
+  "ex-step-up": "עלייה למדרגה עם משקוליות",
+  "ex-sumo-deadlift": "דדליפט סומו",
+  "ex-glute-bridge": "גשר ישבן",
+  "ex-seated-calf": "הרמת תאומים בישיבה",
+  "ex-cable-woodchop": "חיתוך עץ בכבל",
+  "ex-side-plank": "פלאנק צידי",
+  "ex-bird-dog": "בירד דוג",
+  "ex-mountain-climber": "טיפוס הרים",
+  "ex-kettlebell-swing": "הנפת קטלבל",
+  "ex-battle-rope": "גלי חבל קרב",
+  "ex-jumping-jack": "קפיצות פישוק",
+  "ex-hip-flexor-stretch": "מתיחת כופפי ירך בכריעה",
+  "ex-worlds-greatest-stretch": "המתיחה הגדולה בעולם",
+  "ex-target-hip-thrust": "דחיקת אגן",
+  "ex-target-reverse-lunge": "לאנג׳ אחורי",
+  "ex-target-step-up": "עלייה למדרגה",
+  "ex-target-cable-pull-through": "משיכת כבל בין הרגליים",
+  "ex-target-kickback": "בעיטת ישבן",
+  "ex-target-sumo-squat": "סקוואט סומו",
+  "ex-target-single-leg-hip-thrust": "דחיקת אגן על רגל אחת",
+  "ex-target-frog-pumps": "פמפומי צפרדע",
+  "ex-target-single-leg-deadlift": "דדליפט על רגל אחת",
+  "ex-target-hip-abduction-medius": "הרחקת ירך",
+  "ex-target-hip-abduction-minimus": "הרחקת ירך",
+  "ex-target-good-morning": "בוקר טוב",
+  "ex-target-leg-curl": "כפיפת ברך",
+  "ex-target-squat": "סקוואט",
+  "ex-target-forward-lunge": "לאנג׳ קדמי",
+  "ex-target-calf-raise": "הרמת תאומים",
+  "ex-target-russian-twist": "סיבוב רוסי",
+  "ex-target-bicycle-crunch": "כפיפות אופניים",
+  "ex-target-crunch": "כפיפת בטן",
+  "ex-target-cable-crunch": "כפיפת בטן בכבל",
+  "ex-target-plank": "פלאנק",
+};
 
 export const ADDITIONAL_EXERCISES: Exercise[] = [
   makeExercise(
@@ -498,4 +599,7 @@ export const ADDITIONAL_EXERCISES: Exercise[] = [
     "Brace the abdomen, squeeze the glutes, and keep the hips from sinking or lifting.",
     "בידוד",
   ),
-];
+].map((exercise) => ({
+  ...exercise,
+  ...(ADDITIONAL_HEBREW_NAMES[exercise.id] ? { nameHe: ADDITIONAL_HEBREW_NAMES[exercise.id] } : {}),
+}));

@@ -625,6 +625,11 @@ let syncStatus: SyncStatus = "idle";
 let hasPendingCloudChanges = false;
 let syncInFlight: { userId: string; promise: Promise<void> } | null = null;
 let syncRetryTimer: ReturnType<typeof setTimeout> | null = null;
+
+function canManageAssignedPlans() {
+  const role = data.userProfile?.role;
+  return role === "coach" || role === "owner";
+}
 let syncRetryAttempts = 0;
 let dataRevision = 0;
 const listeners = new Set<() => void>();
@@ -1246,6 +1251,7 @@ export function emptyExercise(): Exercise {
 
 /* ---------- workout days ---------- */
 export function saveWorkout(w: Workout) {
+  if (!canManageAssignedPlans()) return;
   const exists = data.workouts.some((x) => x.id === w.id);
   set({
     ...data,
@@ -1254,6 +1260,7 @@ export function saveWorkout(w: Workout) {
 }
 
 export function saveWorkoutInProgram(programId: string, w: Workout) {
+  if (!canManageAssignedPlans()) return;
   const exists = data.workouts.some((x) => x.id === w.id);
   const workouts = exists
     ? data.workouts.map((x) => (x.id === w.id ? w : x))
@@ -1265,6 +1272,7 @@ export function saveWorkoutInProgram(programId: string, w: Workout) {
 }
 
 export function deleteWorkout(id: string) {
+  if (!canManageAssignedPlans()) return;
   set({
     ...data,
     workouts: data.workouts.filter((w) => w.id !== id),
@@ -1276,6 +1284,7 @@ export function deleteWorkout(id: string) {
 }
 
 export function duplicateWorkoutDay(programId: string, dayId: string) {
+  if (!canManageAssignedPlans()) return;
   const day = data.workouts.find((w) => w.id === dayId);
   const program = data.programs.find((p) => p.id === programId);
   if (!day || !program) return;
@@ -1296,6 +1305,7 @@ export function duplicateWorkoutDay(programId: string, dayId: string) {
 }
 
 export function reorderProgramDays(programId: string, dayIds: string[]) {
+  if (!canManageAssignedPlans()) return;
   set({
     ...data,
     programs: data.programs.map((p) => (p.id === programId ? { ...p, dayIds } : p)),
@@ -1332,6 +1342,7 @@ export function emptyWarmup(): WarmupSet {
 
 /* ---------- programs ---------- */
 export function saveProgram(p: Program) {
+  if (!canManageAssignedPlans()) return;
   const exists = data.programs.some((x) => x.id === p.id);
   set({
     ...data,
@@ -1376,11 +1387,13 @@ export function clearChecklist() {
 
 export function createProgram(name: string): Program {
   const p: Program = { id: uid(), name: name.trim() || "תכנית חדשה", notes: "", dayIds: [] };
+  if (!canManageAssignedPlans()) return p;
   set({ ...data, programs: [...data.programs, p] });
   return p;
 }
 
 export function deleteProgram(id: string) {
+  if (!canManageAssignedPlans()) return;
   const program = data.programs.find((p) => p.id === id);
   const orphan = new Set(program?.dayIds ?? []);
   set({
@@ -1391,6 +1404,7 @@ export function deleteProgram(id: string) {
 }
 
 export function duplicateProgram(id: string) {
+  if (!canManageAssignedPlans()) return;
   const program = data.programs.find((p) => p.id === id);
   if (!program) return;
   const newDays: Workout[] = [];
@@ -1649,10 +1663,12 @@ export function emptyFood(): FoodItem {
 }
 
 export function saveNutritionTargets(targets: NutritionTargets) {
+  if (!canManageAssignedPlans()) return;
   set({ ...data, nutritionTargets: targets });
 }
 
 export function savePlannedMeals(date: string, plannedMeals: Meal[]) {
+  if (!canManageAssignedPlans()) return;
   withDay(date, (day) => ({ ...day, plannedMeals }));
 }
 
