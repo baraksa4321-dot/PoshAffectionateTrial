@@ -18,6 +18,7 @@ import {
   UserCog,
   ArrowRightLeft,
   Activity,
+  Calculator,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -258,6 +259,7 @@ export function CoachDashboardPage({
   const [profileWorkouts, setProfileWorkouts] = useState("");
   const [profileGender, setProfileGender] = useState<"female" | "male" | "">("");
   const [profileNotice, setProfileNotice] = useState("");
+  const [showBmrCalculator, setShowBmrCalculator] = useState(false);
   const showClientOverview = !workspacePage && !openEditor;
 
   const loadCoachClients = useCallback(async () => {
@@ -413,6 +415,7 @@ export function CoachDashboardPage({
 
   useEffect(() => {
     setCalTarget(clientDetails?.nutritionTargets?.calories ?? 0);
+    setShowBmrCalculator(false);
     const profile = clientDetails?.profile;
     setProfileAge(profile?.age === undefined ? "" : String(profile.age));
     setProfileHeight(profile?.height === undefined ? "" : String(profile.height));
@@ -1171,9 +1174,7 @@ export function CoachDashboardPage({
   const clientSearchQuery = clientSearch.trim().toLocaleLowerCase();
   const selfMatchesSearch =
     Boolean(clientSearchQuery) &&
-    [selfDisplayName, store.userProfile?.email ?? ""].some((value) =>
-      value.toLocaleLowerCase().includes(clientSearchQuery),
-    );
+    selfDisplayName.toLocaleLowerCase().includes(clientSearchQuery);
   const selectedClientInfo = clients.find((c) => c.client_id === selectedClientId);
   const latestProgram = clientDetails?.programs?.[clientDetails.programs.length - 1];
   const latestNutritionDay = [...(clientDetails?.nutritionDays ?? [])].sort((a, b) =>
@@ -1837,7 +1838,7 @@ export function CoachDashboardPage({
                 />
               </div>
 
-              {authUser ? (
+              {authUser && selfMatchesSearch ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -1872,7 +1873,7 @@ export function CoachDashboardPage({
                 </button>
               ) : null}
 
-              {filteredClients.length === 0 ? (
+              {clientSearchQuery && filteredClients.length === 0 ? (
                 <div className="surface-card p-6 text-center text-muted-foreground rounded-2xl text-xs space-y-2">
                   <p>לא נמצאו מתאמנים רשומים.</p>
                   <button
@@ -1886,7 +1887,7 @@ export function CoachDashboardPage({
                     )}
                   </button>
                 </div>
-              ) : (
+              ) : clientSearchQuery ? (
                 <div className="grid grid-cols-1 gap-2.5">
                   {filteredClients.map((c) => {
                     const isSelected = c.client_id === selectedClientId;
@@ -1941,7 +1942,7 @@ export function CoachDashboardPage({
                     );
                   })}
                 </div>
-              )}
+              ) : null}
             </section>
           </>
         ) : null}
@@ -3647,9 +3648,28 @@ export function CoachDashboardPage({
                       </button>
                     </div>
 
+                    <button
+                      type="button"
+                      onClick={() => setShowBmrCalculator(true)}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-primary/20 bg-primary/5 px-3 text-[11px] font-bold text-primary"
+                    >
+                      <Calculator className="h-3.5 w-3.5" />
+                      מחשבון BMR
+                    </button>
+                    {showBmrCalculator ? (
                     <div className="rounded-2xl border border-primary/15 bg-card/80 p-3">
                       <div className="mb-3">
-                        <p className="text-[11px] font-bold text-ink">מחשבון BMR למאמן בלבד</p>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[11px] font-bold text-ink">מחשבון BMR למאמן בלבד</p>
+                          <button
+                            type="button"
+                            onClick={() => setShowBmrCalculator(false)}
+                            className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-ink"
+                            aria-label="סגירת מחשבון BMR"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                         <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
                           החישוב הוא אומדן לפי Mifflin–St Jeor. הוא לא מוצג למתאמן ולא משנה יעד
                           קלורי אוטומטית.
@@ -3760,6 +3780,7 @@ export function CoachDashboardPage({
                         <p className="mt-2 text-[10px] font-semibold text-ink">{profileNotice}</p>
                       ) : null}
                     </div>
+                    ) : null}
 
                     {editingNutrition ? (
                       <div className="space-y-3 pt-1">
