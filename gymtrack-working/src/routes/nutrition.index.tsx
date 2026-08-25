@@ -253,25 +253,24 @@ function NutritionLog() {
       const image = await prepareMealImage(file);
       const controller = new AbortController();
       let response: Response;
-      try {
-        const request = fetch("/nutrition-scan-meal", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ image }),
-          signal: controller.signal,
-        });
-        const timeout = new Promise<Response>((_, reject) => {
-          window.setTimeout(
-            () => {
-              controller.abort();
-              reject(new DOMException("Meal scan timed out", "AbortError"));
-            },
-            65_000,
-          );
-        });
-        response = await Promise.race([request, timeout]);
-      } finally {
-      }
+      const request = fetch("/nutrition-scan-meal", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ image }),
+        signal: controller.signal,
+      });
+      let timeoutId: number | undefined;
+      const timeout = new Promise<Response>((_, reject) => {
+        timeoutId = window.setTimeout(
+          () => {
+            controller.abort();
+            reject(new DOMException("Meal scan timed out", "AbortError"));
+          },
+          65_000,
+        );
+      });
+      response = await Promise.race([request, timeout]);
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
       const result = (await response.json()) as ScannedMeal & { error?: string };
       if (!response.ok || result.error) throw new Error(result.error || "scan");
       setScannedMeal(result);
