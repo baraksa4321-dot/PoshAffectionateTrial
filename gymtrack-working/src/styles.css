@@ -718,6 +718,8 @@ html:not(.night-mode) .nav-shell {
     lang: he;
     scroll-behavior: smooth;
     overflow-x: clip;
+    /* Let iOS handle taps without the legacy 300ms click delay. */
+    touch-action: manipulation;
   }
 
   body {
@@ -761,6 +763,7 @@ html:not(.night-mode) .nav-shell {
   button,
   a {
     -webkit-touch-callout: none;
+    touch-action: manipulation;
   }
 
   ::selection {
@@ -815,9 +818,10 @@ html:not(.night-mode) .nav-shell {
     0 18px 36px rgb(var(--shadow-color) / 14%),
     0 4px 10px rgb(var(--shadow-color) / 10%);
   transition:
-    border-color 200ms ease,
-    box-shadow 200ms ease,
-    transform 200ms ease;
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+  will-change: transform;
 }
 
 .surface-card:hover {
@@ -1023,6 +1027,53 @@ html.night-mode .auth-panel {
 .overlay-root:focus-within {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+/* Shared native-feeling overlay entrance. The panel is already mounted only
+   while open, so this avoids an abrupt jump without needing exit-state
+   bookkeeping in every caller. */
+@keyframes overlay-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlay-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes overlay-bottom-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.overlay-root {
+  animation: overlay-backdrop-in 150ms ease-out both;
+}
+
+.overlay-root > [data-overlay-panel] {
+  animation: overlay-panel-in 180ms cubic-bezier(0.2, 0.85, 0.25, 1) both;
+  transform-origin: center bottom;
+}
+
+.overlay-root[data-overlay-variant="bottom"] > [data-overlay-panel] {
+  animation-name: overlay-bottom-in;
 }
 
 .app-nav-link {
@@ -3907,7 +3958,19 @@ html.night-mode .auth-panel {
 }
 
 .page-enter {
-  animation: fade-in 300ms ease both;
+  animation: page-enter-in 180ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+  contain: layout paint;
+}
+
+@keyframes page-enter-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .fade-in {
@@ -3937,17 +4000,66 @@ html.night-mode .auth-panel {
 /* --- Soft pressed state --- */
 .press {
   transition:
-    transform 160ms ease,
-    box-shadow 160ms ease,
-    filter 160ms ease;
+    transform 120ms cubic-bezier(0.2, 0.8, 0.25, 1),
+    box-shadow 120ms ease,
+    filter 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform;
 }
 
-.press:hover {
-  transform: translateY(-1px);
-  filter: saturate(1.04);
+@media (hover: hover) {
+  .press:hover {
+    transform: translateY(-1px);
+    filter: saturate(1.04);
+  }
 }
+
+.press:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 .press:active {
   transform: translateY(1px) scale(0.985);
+  transition-duration: 70ms;
+}
+
+/* Keep touch feedback immediate on iOS where hover can be synthesized. */
+@media (hover: none) {
+  .press:hover {
+    transform: none;
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Avoid browser focus scrolling from moving the whole page after a tap. */
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-user-select: none;
+}
+
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* --- Divider --- */
