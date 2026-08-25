@@ -440,18 +440,36 @@ const SIMPLE_LOADING_ILLUSTRATIONS = [
 
 function SimpleLoadingIllustration({ variant }: { variant: number }) {
   const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length]!;
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const playIllustration = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = true;
+    void video.play().catch(() => {
+      // Safari may defer playback for one frame; the next media event retries it.
+    });
+  };
+  useEffect(() => {
+    playIllustration();
+    const retry = window.setTimeout(playIllustration, 120);
+    return () => window.clearTimeout(retry);
+  }, [illustration.file]);
   return (
     <div className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4}`}>
       <video
         key={illustration.file}
+        ref={videoRef}
         className="loading-simple-image loading-simple-video"
         autoPlay
         loop
         muted
         playsInline
         preload="auto"
+        controls={false}
         poster={`/loading/${illustration.file}`}
         aria-label={`איור טעינה: ${illustration.label}`}
+        onLoadedData={playIllustration}
+        onCanPlay={playIllustration}
       >
         <source
           src={`/loading/tinted/${illustration.file.replace(".png", ".webm")}?v=cream-bg-2`}
