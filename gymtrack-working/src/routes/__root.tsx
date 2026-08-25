@@ -444,7 +444,7 @@ function SimpleLoadingIllustration({ variant }: { variant: number }) {
       <img
         key={illustration.file}
         className="loading-simple-image loading-simple-video"
-        src={`/loading/${illustration.file.replace(".png", ".webp")}`}
+        src={`/loading/normalized/${illustration.file.replace(".png", ".gif")}`}
         aria-label={`איור טעינה: ${illustration.label}`}
       />
     </div>
