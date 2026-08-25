@@ -1902,7 +1902,7 @@ export function CoachDashboardPage({
                         onClick={() => {
                           if (!isSelected) {
                             navigate({
-                              to: "/coach/clients/$clientId",
+                              to: "/coach/tracking/$clientId",
                               params: { clientId: c.client_id },
                             });
                           }
@@ -1927,13 +1927,13 @@ export function CoachDashboardPage({
                             to={
                               trackingLanding
                                 ? "/coach/tracking/$clientId"
-                                : "/coach/clients/$clientId"
+                                : "/coach/tracking/$clientId"
                             }
                             params={{ clientId: c.client_id }}
                             onClick={(event) => event.stopPropagation()}
                             className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-primary/20"
                             >
-                            {trackingLanding ? "פתח מעקב" : "פתח וערוך"}
+                            פתח דוח
                           </Link>
                           <ChevronLeft
                             className={`h-5 w-5 text-muted-foreground transition-transform ${
