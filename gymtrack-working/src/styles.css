@@ -2003,7 +2003,7 @@ html.night-mode .auth-panel {
   bottom: max(16px, env(safe-area-inset-bottom));
   z-index: 2;
   display: block;
-  width: 88px;
+  width: min(170px, 52vw);
   height: auto;
   margin: 0;
   object-fit: contain;
