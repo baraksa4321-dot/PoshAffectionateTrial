@@ -50,6 +50,25 @@ function isMilkOrDrink(food: FoodItem) {
   );
 }
 
+function isBread(food: Pick<FoodItem, "name" | "englishName" | "category">) {
+  return /לחם|טוסט|bread|toast/i.test(
+    `${food.name} ${food.englishName ?? ""} ${food.category ?? ""}`,
+  );
+}
+
+function isPita(food: Pick<FoodItem, "name" | "englishName" | "category">) {
+  return /פיתה|pita/i.test(`${food.name} ${food.englishName ?? ""} ${food.category ?? ""}`);
+}
+
+function gramsPerBreadSlice(food: FoodItem) {
+  const totalGrams = gramsFromServing(food.servingSize);
+  const slices = food.servingSize.match(/(\d+(?:[.,]\d+)?)\s*(?:פרוסות?|slices?)/i)?.[1];
+  const sliceCount = slices ? Number(slices.replace(",", ".")) : 1;
+  return totalGrams && Number.isFinite(sliceCount) && sliceCount > 0
+    ? totalGrams / sliceCount
+    : 30;
+}
+
 function isCucumber(food: FoodItem) {
   return /מלפפון|cucumber/i.test(`${food.name} ${food.englishName ?? ""}`);
 }
@@ -74,6 +93,20 @@ export function foodQuantityOptions(food: FoodItem): FoodQuantityOption[] {
   if (isCherryTomato(food)) {
     return [
       { value: "unit", label: "עגבניות שרי" },
+      { value: "g", label: unitLabels.g },
+    ];
+  }
+
+  if (isBread(food)) {
+    return [
+      { value: "slice", label: unitLabels.slice },
+      { value: "g", label: unitLabels.g },
+    ];
+  }
+
+  if (isPita(food)) {
+    return [
+      { value: "unit", label: unitLabels.unit },
       { value: "g", label: unitLabels.g },
     ];
   }
@@ -146,6 +179,8 @@ export function defaultFoodQuantity(food: FoodItem): {
   unit: FoodQuantityUnit;
 } {
   if (isCherryTomato(food)) return { quantity: 12, unit: "unit" };
+  if (isBread(food)) return { quantity: 1, unit: "slice" };
+  if (isPita(food)) return { quantity: 1, unit: "unit" };
   if (isMilkOrDrink(food)) return { quantity: 100, unit: "ml" };
   if (isBellPepper(food)) return { quantity: 1, unit: "medium" };
   if (isCucumber(food)) return { quantity: 1, unit: "unit" };
@@ -161,6 +196,8 @@ function gramsForUnit(food: FoodItem, unit: FoodQuantityUnit) {
   if (unit === "tbsp") return 15;
   if (unit === "tsp") return 5;
   if (unit === "cup") return 240;
+  if (unit === "slice" && isBread(food)) return gramsPerBreadSlice(food);
+  if (unit === "unit" && isPita(food)) return gramsFromServing(food.servingSize) ?? 60;
   if (unit === "unit" && isCherryTomato(food)) return 15;
   if (unit === "unit" && isCucumber(food)) return 200;
   if (unit === "small" && isBellPepper(food)) return 75;
@@ -183,6 +220,8 @@ function servingMultiplier(food: FoodItem, unit: FoodQuantityUnit) {
     unit === "small" ||
     unit === "medium" ||
     unit === "large" ||
+    (unit === "slice" && isBread(food)) ||
+    (unit === "unit" && isPita(food)) ||
     (unit === "unit" && (isCherryTomato(food) || isCucumber(food) || isBellPepper(food)))
   ) {
     const grams = gramsForUnit(food, unit);
@@ -213,6 +252,14 @@ export function mealFoodFromPortion(
   };
 }
 
-export function mealFoodQuantityLabel(food: Pick<MealFood, "quantity" | "servingSize">) {
-  return `${food.quantity} ${food.servingSize.replace(/\s+למנה$/, "")}`;
+export function mealFoodQuantityLabel(
+  food: Pick<MealFood, "name" | "quantity" | "servingSize">,
+) {
+  const legacyUnit = food.servingSize.replace(/\s+למנה$/, "");
+  const normalizedUnit = isBread(food)
+    ? unitLabels.slice
+    : isPita(food)
+      ? unitLabels.unit
+      : legacyUnit;
+  return `${food.quantity} ${normalizedUnit}`;
 }
