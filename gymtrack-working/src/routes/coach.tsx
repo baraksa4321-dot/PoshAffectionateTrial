@@ -4066,7 +4066,7 @@ export function CoachDashboardPage({
                                                       שמור תרגיל ליום אימון
                                                     </button>
                                                   </div>
-                                                  </>
+                                                   </div>
                                                   ) : null}
                                                   {false && actualExecutions.length > 0 ? (
                                                     <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/80 p-2 text-[10px]">
