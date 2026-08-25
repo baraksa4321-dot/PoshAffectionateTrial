@@ -56,7 +56,7 @@ import type { FoodItem, MealFood } from "@/lib/gym-types";
 import { nutritionSourceFor } from "@/lib/nutrition-integrity";
 import { RECIPE_LIBRARY, type RecipeDefinition } from "@/lib/recipe-library";
 import { genderText } from "@/lib/gender-copy";
-import { LOADING_MESSAGES } from "@/lib/loading-copy";
+import { loadingMessageForGender } from "@/lib/loading-copy";
 
 export const Route = createFileRoute("/nutrition/")({
   head: () => ({
@@ -1112,7 +1112,7 @@ function NutritionLog() {
                     </div>
                     <span className="mt-3 text-sm font-bold text-ink">מנתחת את התמונה…</span>
                     <span className="mt-1 text-[11px] text-muted-foreground">
-                      {LOADING_MESSAGES[scanCycle % LOADING_MESSAGES.length]}
+                      {loadingMessageForGender(scanCycle, gender)}
                     </span>
                   </div>
                 ) : (

@@ -31,7 +31,7 @@ import {
 } from "../lib/gym-store";
 import { supabase } from "../lib/supabase";
 import { genderText } from "../lib/gender-copy";
-import { LOADING_MESSAGES } from "../lib/loading-copy";
+import { LOADING_MESSAGES, loadingMessageForGender } from "../lib/loading-copy";
 
 const useLoadingCycleEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
@@ -1220,7 +1220,7 @@ function RootContent() {
           >
             <SimpleLoadingIllustration key={loadingVariant} variant={loadingVariant} />
             <p key={loadingMessageIndex} className="loading-witty-message">
-              {LOADING_MESSAGES[loadingMessageIndex]}
+              {loadingMessageForGender(loadingMessageIndex, userProfile?.gender)}
             </p>
             <img className="loading-wordmark" src="/myroutine-logo.png" alt="MY routine" />
           </div>

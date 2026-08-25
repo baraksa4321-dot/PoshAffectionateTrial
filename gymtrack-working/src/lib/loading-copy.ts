@@ -37,3 +37,18 @@ export const LOADING_MESSAGES = [
   "סופרים חלבון. ומתעלמים מהעוגייה.",
   "שנייה, אנחנו נותנים לפיצה את הכבוד שמגיע לה",
 ] as const;
+
+export function loadingMessageForGender(
+  index: number,
+  gender: "female" | "male" | undefined,
+) {
+  const message = LOADING_MESSAGES[index % LOADING_MESSAGES.length] ?? LOADING_MESSAGES[0];
+  if (gender === "female") return message;
+
+  return message
+    .replaceAll("אל תעשי", "אל תעשה")
+    .replaceAll("תירגעי", "תירגע")
+    .replaceAll("אם את מחכה", "אם אתה מחכה")
+    .replaceAll("אל תדאגי", "אל תדאג")
+    .replaceAll("תעמידי פנים", "תעמיד פנים");
+}
