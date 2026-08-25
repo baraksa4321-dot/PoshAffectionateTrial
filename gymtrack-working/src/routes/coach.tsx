@@ -651,9 +651,22 @@ export function CoachDashboardPage({
         latestProgram.dayIds.includes(workout.id),
       );
       setEditingDayId(firstWorkoutDay?.id ?? null);
+      const requestedItem = initialExerciseId
+        ? firstWorkoutDay?.items.find((item) => item.exerciseId === initialExerciseId)
+        : undefined;
+      setEditingItemId(requestedItem?.id ?? null);
+      if (requestedItem) {
+        setSelectedExId(requestedItem.exerciseId);
+        setTargetWeight(requestedItem.targetWeight || requestedItem.weight);
+        setSetsCount(requestedItem.sets);
+        setRepMin(requestedItem.repMin || requestedItem.reps);
+        setRepMax(requestedItem.repMax || requestedItem.reps);
+        setTechniqueNotes(requestedItem.techniqueNotes || requestedItem.notes);
+      }
     } else {
       setEditingProgramId(null);
       setEditingDayId(null);
+      setEditingItemId(null);
     }
     const latestNutritionDay = [...clientDetails.nutritionDays].sort((a, b) =>
       b.date.localeCompare(a.date),
@@ -1498,7 +1511,7 @@ export function CoachDashboardPage({
 
   return (
     <AppShell
-      title={clientsOnly ? (trackingLanding ? "מעקב" : "מתאמנים") : ""}
+      title={clientsOnly ? (trackingLanding ? "מעקב" : "עריכה") : ""}
       kicker={clientsOnly ? (trackingLanding ? "ביצועי מתאמנים בפועל" : "בניית תוכניות ותפריטים") : ""}
       compactHeader
     >
