@@ -1835,16 +1835,8 @@ export function CoachDashboardPage({
         {clientsOnly ? (
           <>
             {trackingLanding ? (
-              <section className="surface-card mb-3 border-primary/20 bg-primary/5 p-4 text-start">
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
-                  מעקב יומי
-                </p>
-                <h2 className="mt-1 text-base font-extrabold text-ink">
-                  בחרי מתאמן כדי לראות מה בוצע בפועל
-                </h2>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  צפייה באימונים, סטים, משקלים, חזרות, משוב, כאבים ומעקב תזונה לפי יום.
-                </p>
+              <section className="surface-card mb-2 border-primary/15 bg-primary/5 px-3 py-2 text-start">
+                <p className="text-xs font-bold text-ink">בחרי מתאמן כדי לצפות במעקב היומי.</p>
               </section>
             ) : null}
             {/* Client Search & List */}
@@ -2015,7 +2007,9 @@ export function CoachDashboardPage({
               <div className="flex min-w-0 items-center justify-between gap-2 overflow-x-hidden border-b border-border/60 px-4 pb-3 sm:px-6">
                 <h3 className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden font-bold text-base text-ink">
                   <Users className="h-5 w-5 text-primary" />
-                  <span className="shrink-0">תכנית המתאמן:</span>
+                  <span className="shrink-0">
+                    {trackingLanding ? "דוח המעקב:" : "תכנית המתאמן:"}
+                  </span>
                   <span className="truncate text-primary font-extrabold">
                     {isSelfSelected
                       ? `התוכנית של ${selfDisplayName}`
@@ -2103,7 +2097,7 @@ export function CoachDashboardPage({
                       }`}
                     >
                       <Apple className="h-3.5 w-3.5" />
-                      {trackingLanding ? "תפריט" : "תפריט תזונה"}
+                      {trackingLanding ? "תזונה" : "תפריט תזונה"}
                     </button>
                   </nav>
                   {trackingLanding && activeWorkspaceTab === "programs" ? (
@@ -2161,8 +2155,10 @@ export function CoachDashboardPage({
                   className="workspace-tab-content space-y-4"
                   data-active-tab={activeWorkspaceTab}
                 >
-                  {showClientOverview ? (
+                  {showClientOverview && !trackingLanding ? (
                     <>
+                      {!trackingLanding ? (
+                        <>
                       {/* Send Coach Message Panel */}
                       <div className="surface-card p-4 rounded-2xl space-y-2.5 border border-primary/20 bg-primary/5">
                         <h4 className="font-bold text-xs text-primary flex items-center gap-1.5">
@@ -2306,10 +2302,12 @@ export function CoachDashboardPage({
                           </div>
                         ) : null}
                       </div>
+                        </>
+                      ) : null}
                     </>
                   ) : null}
 
-                  {showClientOverview ? (
+                  {showClientOverview && !trackingLanding ? (
                     <section className="grid gap-3 lg:grid-cols-2">
                       <div className="surface-card space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.03] p-4">
                         <div className="flex items-start justify-between gap-3 border-b border-primary/15 pb-2">
