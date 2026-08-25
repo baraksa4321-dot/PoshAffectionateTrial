@@ -2327,7 +2327,7 @@ export function CoachDashboardPage({
                             setActiveWorkspaceTab("nutrition");
                             setOpenEditor("nutrition");
                           }}
-                          className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 text-xs font-bold text-white"
+                          className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary text-xs font-bold text-primary-foreground"
                         >
                           <Apple className="h-4 w-4" /> תפריט תזונה
                         </button>

@@ -745,7 +745,11 @@ export function AppShell({
                   disabled={loading}
                   className="w-full rounded-sm bg-primary py-3 text-[14px] font-bold uppercase tracking-wider text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50 cursor-pointer transition-colors mt-2"
                 >
-                  {loading ? "מעבד..." : isSignUp ? "צור חשבון" : "התחבר"}
+                  {loading
+                    ? genderText(gender, "מעבדת...", "מעבד...")
+                    : isSignUp
+                      ? genderText(gender, "צרי חשבון", "צור חשבון")
+                      : genderText(gender, "התחברי", "התחבר")}
                 </button>
               </form>
             )}

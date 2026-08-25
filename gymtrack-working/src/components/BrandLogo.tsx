@@ -10,7 +10,7 @@ export function BrandLogo({ compact = false }: { compact?: boolean }) {
       }`}
     >
       <img
-        src="/myroutine-logo.jpeg"
+        src="/myroutine-logo.png"
         alt="MY routine"
         width={compact ? 92 : 128}
         height={compact ? 32 : 42}

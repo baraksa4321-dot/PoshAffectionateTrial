@@ -1222,7 +1222,7 @@ function RootContent() {
             <p key={loadingMessageIndex} className="loading-witty-message">
               {LOADING_MESSAGES[loadingMessageIndex]}
             </p>
-            <img className="loading-wordmark" src="/myroutine-logo.jpeg" alt="MY routine" />
+            <img className="loading-wordmark" src="/myroutine-logo.png" alt="MY routine" />
           </div>
         </div>
       ) : hasProfileHydrationError ? (

@@ -3,5 +3,8 @@ export function genderText(
   feminine: string,
   masculine: string,
 ) {
-  return gender === "male" ? masculine : feminine;
+  // Hebrew's masculine form is the concise generic fallback when a profile
+  // has not selected a gender; never silently address an unknown user as
+  // feminine.
+  return gender === "female" ? feminine : masculine;
 }

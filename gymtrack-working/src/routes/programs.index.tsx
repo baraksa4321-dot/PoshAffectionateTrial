@@ -544,7 +544,7 @@ function ProgramsPage() {
                       href={playlist.href}
                       target="_blank"
                       rel="noreferrer"
-                      className={`flex items-center justify-between rounded-2xl px-3 py-3 text-xs font-bold transition-colors ${playlist.className}`}
+                      className="flex items-center justify-between rounded-2xl bg-primary/5 px-3 py-3 text-xs font-bold text-primary transition-colors hover:bg-primary/10"
                     >
                       <span className="flex items-center gap-1.5">
                         {playlist.label.split(" · ")[0]}

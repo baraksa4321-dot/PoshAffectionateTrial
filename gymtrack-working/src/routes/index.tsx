@@ -560,7 +560,11 @@ function Dashboard() {
             <p className="mt-0.5 text-xs text-muted-foreground">
               {weeklyWorkoutTarget
                 ? `${thisWeek.length} מתוך ${weeklyWorkoutTarget} אימונים השבוע`
-                : `${thisWeek.length} אימונים השבוע · הוסיפי יעד שבועי כדי לראות עקביות`}
+                : genderText(
+                    gender,
+                    `${thisWeek.length} אימונים השבוע · הוסיפי יעד שבועי כדי לראות עקביות`,
+                    `${thisWeek.length} אימונים השבוע · הוסף יעד שבועי כדי לראות עקביות`,
+                  )}
             </p>
             <div
               className="progress-track mt-3"
