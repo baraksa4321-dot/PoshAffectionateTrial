@@ -21,6 +21,7 @@ type ScanFood = {
   carbs: number;
   fat: number;
   fiber: number;
+  eggCount?: number;
 };
 
 function jsonResponse(body: unknown, status = 200) {
@@ -76,6 +77,15 @@ function normalizeQuantity(name: string, servingSize: string, quantity: number):
   return quantity;
 }
 
+function normalizeEggCount(name: string, servingSize: string, value: unknown): number | undefined {
+  if (!/(חביתה|אומלט|omelet|omelette)/i.test(name)) return undefined;
+  const explicit = Number(value);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  const match = `${name} ${servingSize}`.match(/(\d+(?:[.,]\d+)?)\s*(?:ביצים?|ביצי|eggs?)/i);
+  const parsed = match?.[1] ? Number(match[1].replace(",", ".")) : 2;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 2;
+}
+
 function isImageDataUrl(value: unknown): value is string {
   return (
     typeof value === "string" &&
@@ -94,6 +104,7 @@ function normalizeScanResult(value: unknown): { mealName: string; foods: ScanFoo
       const name = String(food.name ?? "").trim();
       const originalServingSize = String(food.servingSize ?? "מנה משוערת").trim();
       const quantity = Number(food.quantity);
+      const eggCount = normalizeEggCount(name, originalServingSize, food.eggCount);
       return {
         name,
         servingSize: normalizeServingSize(name, originalServingSize),
@@ -103,6 +114,7 @@ function normalizeScanResult(value: unknown): { mealName: string; foods: ScanFoo
         carbs: Number(food.carbs),
         fat: Number(food.fat),
         fiber: Number(food.fiber ?? 0),
+        ...(eggCount ? { eggCount } : {}),
       };
     })
     .filter(
@@ -184,7 +196,7 @@ async function analyzeMealImage(request: Request): Promise<Response> {
           parts: [
             {
               text:
-                "אתה תזונאי שמבצע הערכה חכמה מתמונת ארוחה. החזר JSON בלבד במבנה {mealName:string, foods:Array<{name:string,servingSize:string,quantity:number,calories:number,protein:number,carbs:number,fat:number,fiber:number}>}. זהה רק מאכלים שנראים בתמונה והערך כמויות אכילות. quantity הוא מספר היחידות שנראות: אם יש 2 ביצים החזר servingSize:'1 יחידה' ו-quantity:2; אם יש 2 פרוסות לחם החזר servingSize:'1 פרוסה' ו-quantity:2. עבור עוף, בשר, דגים, צ'יפס בטטה, ירקות, אורז ופסטה השתמש ב-servingSize של גרמים, למשל '150 גרם', ובדרך כלל quantity:1. עבור פיתה או טורטייה השתמש ב-'1 יחידה'. עבור פירות שלמים השתמש ב-'1 יחידה' ובכמות המתאימה. הערכים התזונתיים צריכים להתאים ל-servingSize ולכמות. השתמש בשמות עבריים. אם אינך בטוח, עדיין החזר את ההערכה הטובה ביותר, ללא טקסט נוסף.",
+                "אתה תזונאי שמבצע הערכה חכמה מתמונת ארוחה. החזר JSON בלבד במבנה {mealName:string, foods:Array<{name:string,servingSize:string,quantity:number,eggCount?:number,calories:number,protein:number,carbs:number,fat:number,fiber:number}>}. זהה רק מאכלים שנראים בתמונה והערך כמויות אכילות. quantity הוא מספר היחידות שנראות: אם יש 2 ביצים החזר servingSize:'1 יחידה' ו-quantity:2; אם יש 2 פרוסות לחם החזר servingSize:'1 פרוסה' ו-quantity:2. עבור חביתה או אומלט, החזר eggCount כמספר הביצים המשוער (למשל 2), servingSize:'1 יחידה' ו-quantity:1. עבור עוף, בשר, דגים, צ'יפס בטטה, ירקות, אורז ופסטה השתמש ב-servingSize של גרמים, למשל '150 גרם', ובדרך כלל quantity:1. עבור פיתה או טורטייה השתמש ב-'1 יחידה'. עבור פירות שלמים השתמש ב-'1 יחידה' ובכמות המתאימה. הערכים התזונתיים צריכים להתאים ל-servingSize ולכמות. השתמש בשמות עבריים. אם אינך בטוח, עדיין החזר את ההערכה הטובה ביותר, ללא טקסט נוסף.",
             },
           ],
         },
