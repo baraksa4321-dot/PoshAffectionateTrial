@@ -3474,6 +3474,8 @@ export function CoachDashboardPage({
                                                                     | "warmup"
                                                                     | "drop"
                                                                     | "superset";
+                                                                   if (mode === "warmup") setWarmupEnabled(true);
+                                                                   if (mode === "drop") setDropSetEnabled(true);
                                                                   setSetModes((current) => {
                                                                     const next = Array.from(
                                                                       { length: Math.max(1, setsCount) },
@@ -3496,43 +3498,7 @@ export function CoachDashboardPage({
                                                         )}
                                                       </div>
                                                     </div>
-                                                    <div className="grid grid-cols-3 gap-1.5">
-                                                      <label className="flex items-center justify-center gap-1 rounded-xl border border-border/50 bg-background px-2 py-2 text-[10px] font-bold text-ink">
-                                                        <input
-                                                          type="checkbox"
-                                                          checked={warmupEnabled}
-                                                          onChange={(event) =>
-                                                            setWarmupEnabled(event.target.checked)
-                                                          }
-                                                          className="accent-primary"
-                                                        />
-                                                        חימום
-                                                      </label>
-                                                      <label className="flex items-center justify-center gap-1 rounded-xl border border-border/50 bg-background px-2 py-2 text-[10px] font-bold text-ink">
-                                                        <input
-                                                          type="checkbox"
-                                                          checked={dropSetEnabled}
-                                                          onChange={(event) =>
-                                                            setDropSetEnabled(event.target.checked)
-                                                          }
-                                                          className="accent-primary"
-                                                        />
-                                                        דרופ סט
-                                                      </label>
-                                                      <label className="flex items-center justify-center gap-1 rounded-xl border border-border/50 bg-background px-2 py-2 text-[10px] font-bold text-ink">
-                                                        <input
-                                                          type="checkbox"
-                                                          checked={Boolean(supersetGroup)}
-                                                          onChange={(event) =>
-                                                            setSupersetGroup(event.target.checked ? "A" : "")
-                                                          }
-                                                          className="accent-primary"
-                                                        />
-                                                        סופר סט
-                                                      </label>
-                                                    </div>
-                                                    {warmupEnabled ? (
-                                                      <div className="grid grid-cols-4 gap-1.5 rounded-xl border border-amber-200 bg-amber-50/60 p-2">
+                                                     <div className="grid grid-cols-4 gap-1.5 rounded-xl border border-amber-200 bg-amber-50/60 p-2">
                                                         <label className="text-center text-[9px] font-bold text-amber-900">
                                                           סטי חימום
                                                           <input
@@ -3588,8 +3554,7 @@ export function CoachDashboardPage({
                                                             className="mt-1 h-8 w-full rounded-lg border border-amber-200 bg-background text-center text-xs"
                                                           />
                                                         </label>
-                                                      </div>
-                                                    ) : null}
+                                                     </div>
                                                     {dropSetEnabled ? (
                                                       <div className="grid grid-cols-2 gap-1.5 rounded-xl border border-primary/20 bg-primary/5 p-2">
                                                         <label className="text-center text-[9px] font-bold text-primary">
