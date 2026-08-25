@@ -231,8 +231,8 @@ export function CoachDashboardPage({
 
   // Nutrition Prescription state
   const [editingNutrition, setEditingNutrition] = useState(false);
-  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"programs" | "nutrition">(
-    "programs",
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"programs" | "nutrition" | null>(
+    null,
   );
   const [selectedTrackingWorkoutId, setSelectedTrackingWorkoutId] = useState<string | null>(null);
   const [calTarget, setCalTarget] = useState(0);
@@ -362,7 +362,15 @@ export function CoachDashboardPage({
     setSelectedClientId(clientId);
     setShowClientWorkspace(true);
     setOpenEditor(trackingLanding || workspaceMode === "all" ? null : workspaceMode);
-    setActiveWorkspaceTab(workspaceMode === "nutrition" ? "nutrition" : "programs");
+    setActiveWorkspaceTab(
+      trackingLanding
+        ? "programs"
+        : workspaceMode === "nutrition"
+          ? "nutrition"
+          : workspaceMode === "programs"
+            ? "programs"
+            : null,
+    );
     setSelectedTrackingWorkoutId(null);
   }, [trackingLanding, workspacePage, clientId, workspaceMode]);
 
