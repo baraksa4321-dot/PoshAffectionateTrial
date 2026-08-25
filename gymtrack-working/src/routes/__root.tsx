@@ -422,34 +422,41 @@ const REFERENCE_LOADING_IMAGES = [
 ] as const;
 
 const SIMPLE_LOADING_ILLUSTRATIONS = [
-  { src: null, label: "בננה מצוירת" },
-  { src: "/loading/clean/user-lemon.gif", label: "לימון מצויר" },
-  { src: "/loading/clean/user-tomato.gif", label: "עגבנייה מצוירת" },
-  { src: "/loading/clean/user-character-01.gif", label: "דמות מצוירת" },
-  { src: "/loading/clean/user-character-02.gif", label: "דמות מצוירת" },
-  { src: "/loading/clean/user-character-03.gif", label: "דמות מצוירת" },
-  { src: "/loading/clean/user-character-04.gif", label: "דמות מצוירת" },
-  { src: "/loading/clean/user-character-05.gif", label: "דמות מצוירת" },
-  { src: "/loading/clean/user-character-06.gif", label: "דמות מצוירת" },
-  { src: "/loading/clean/user-character-07.gif", label: "דמות מצוירת" },
-  { src: "/loading/clean/user-character-08.gif", label: "דמות מצוירת" },
-  { src: "/loading/clean/user-character-09.gif", label: "דמות מצוירת" },
-  { src: "/loading/clean/user-character-10.gif", label: "דמות מצוירת" },
+  { file: "user-strawberry.png", label: "תות מצויר" },
+  { file: "user-tomato.png", label: "עגבנייה מצוירת" },
+  { file: "user-character-01.png", label: "דמות מצוירת" },
+  { file: "user-character-02.png", label: "דמות מצוירת" },
+  { file: "user-lemon.png", label: "לימון מצויר" },
+  { file: "user-character-03.png", label: "דמות מצוירת" },
+  { file: "user-character-04.png", label: "דמות מצוירת" },
+  { file: "user-character-05.png", label: "דמות מצוירת" },
+  { file: "user-character-06.png", label: "דמות מצוירת" },
+  { file: "user-character-07.png", label: "דמות מצוירת" },
+  { file: "user-character-08.png", label: "דמות מצוירת" },
+  { file: "user-character-09.png", label: "דמות מצוירת" },
+  { file: "user-character-10.png", label: "דמות מצוירת" },
 ] as const;
 
 function SimpleLoadingIllustration({ variant }: { variant: number }) {
   const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length]!;
-  if (!illustration.src) {
-    return <LegacyLoadingIllustration variant={6} />;
-  }
   return (
     <div className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4}`}>
-      <img
-        key={illustration.src}
+      <video
+        key={illustration.file}
         className="loading-simple-image loading-simple-video"
-        src={illustration.src}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        poster={`/loading/${illustration.file}`}
         aria-label={`איור טעינה: ${illustration.label}`}
-      />
+      >
+        <source
+          src={`/loading/tinted/${illustration.file.replace(".png", ".webm")}?v=cream-bg-2`}
+          type="video/webm"
+        />
+      </video>
     </div>
   );
 }
