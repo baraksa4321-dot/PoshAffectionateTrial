@@ -2623,7 +2623,11 @@ export function CoachDashboardPage({
                   {/* Client Programs & Full Exercise Prescription Builder */}
                   <div
                     id="coach-programs"
-                    className={`scroll-mt-24 surface-card space-y-4 rounded-[1.75rem] border-primary/15 bg-primary/[0.02] p-4 ${
+                    className={`scroll-mt-24 space-y-4 ${
+                      workspacePage
+                        ? "bg-background"
+                        : "surface-card rounded-[1.75rem] border-primary/15 bg-primary/[0.02] p-4"
+                    } ${
                       trackingLanding || workspaceMode === "nutrition" || openEditor !== "programs"
                         ? "hidden"
                         : ""
@@ -3325,7 +3329,11 @@ export function CoachDashboardPage({
                   {/* Coach-prescribed menu builder */}
                   <div
                     id="coach-menu"
-                    className={`surface-card space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 ${
+                    className={`space-y-3 ${
+                      workspacePage
+                        ? "bg-background"
+                        : "surface-card rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4"
+                    } ${
                       trackingLanding || workspaceMode === "programs" || openEditor !== "nutrition"
                         ? "hidden"
                         : ""
@@ -3628,7 +3636,11 @@ export function CoachDashboardPage({
                   {/* Client Nutrition Targets Editor */}
                   <div
                     id="coach-nutrition"
-                    className={`scroll-mt-24 surface-card space-y-4 rounded-[1.75rem] border-emerald-200/70 bg-emerald-50/30 p-4 ${
+                    className={`scroll-mt-24 space-y-4 ${
+                      workspacePage
+                        ? "bg-background"
+                        : "surface-card rounded-[1.75rem] border-emerald-200/70 bg-emerald-50/30 p-4"
+                    } ${
                       trackingLanding || workspaceMode === "programs" || openEditor !== "nutrition"
                         ? "hidden"
                         : ""

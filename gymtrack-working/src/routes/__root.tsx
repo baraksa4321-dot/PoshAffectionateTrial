@@ -472,6 +472,10 @@ function SimpleLoadingIllustration({ variant }: { variant: number }) {
         onCanPlay={playIllustration}
       >
         <source
+          src={`/loading/tinted/${illustration.file.replace(".png", ".mp4")}?v=ios-compat-1`}
+          type="video/mp4"
+        />
+        <source
           src={`/loading/tinted/${illustration.file.replace(".png", ".webm")}?v=cream-bg-2`}
           type="video/webm"
         />
