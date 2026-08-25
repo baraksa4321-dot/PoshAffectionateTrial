@@ -4768,7 +4768,7 @@ export function CoachDashboardPage({
                             </label>
                             <input
                               type="number"
-                              value={calTarget}
+                              value={calTarget || ""}
                               onChange={(e) => setCalTarget(Number(e.target.value))}
                               className="w-full rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
                             />
@@ -4779,7 +4779,7 @@ export function CoachDashboardPage({
                             </label>
                             <input
                               type="number"
-                              value={protTarget}
+                              value={protTarget || ""}
                               onChange={(e) => setProtTarget(Number(e.target.value))}
                               className="w-full rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
                             />

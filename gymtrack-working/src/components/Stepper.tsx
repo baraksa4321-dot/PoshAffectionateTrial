@@ -41,7 +41,7 @@ export function Stepper({
         <div className="num-pill flex h-11 min-w-0 flex-1 items-center justify-center px-1">
           <input
             inputMode="decimal"
-            value={Number.isFinite(value) ? value : 0}
+            value={Number.isFinite(value) && value !== 0 ? value : ""}
             onChange={(e) => {
               const raw = e.target.value.replace(",", ".");
               if (raw === "" || raw === "-") {
