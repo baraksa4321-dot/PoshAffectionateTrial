@@ -588,7 +588,7 @@ function SortableItem({
     id: item.id,
   });
   const [advanced, setAdvanced] = useState(false);
-  const name = exercise?.name ?? "תרגיל שהוסר";
+  const name = exercise?.name ?? item.exerciseName ?? "תרגיל שהוסר";
   const isRange = item.repType === "range";
   const warmups = item.warmups ?? [];
   const workingSets =

@@ -59,9 +59,9 @@ function Builder() {
     );
   }
 
-  const nameOf = (id: string) => {
+  const nameOf = (id: string, snapshot?: string) => {
     const exercise = exercises.find((e) => e.id === id);
-    return exercise ? exerciseDisplayName(exercise) : "תרגיל שהוסר";
+    return exercise ? exerciseDisplayName(exercise) : snapshot || "תרגיל שהוסר";
   };
   const patchItem = (id: string, patch: Partial<WorkoutItem>) =>
     setDraft({
@@ -146,7 +146,9 @@ function Builder() {
               >
                 <GripVertical className="h-4 w-4" />
               </button>
-              <p className="truncate font-semibold text-foreground">{nameOf(item.exerciseId)}</p>
+              <p className="truncate font-semibold text-foreground">
+                {nameOf(item.exerciseId, item.exerciseName)}
+              </p>
               <button
                 type="button"
                 aria-label="הסר תרגיל"

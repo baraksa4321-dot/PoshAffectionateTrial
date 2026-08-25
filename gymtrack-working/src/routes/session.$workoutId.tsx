@@ -207,7 +207,7 @@ function Session() {
       }
       return {
         exerciseId: item.exerciseId,
-        exerciseName: ex ? exerciseDisplayName(ex) : "תרגיל שהוסר",
+        exerciseName: ex ? exerciseDisplayName(ex) : item.exerciseName || "תרגיל שהוסר",
         equipment: ex?.equipment,
         notes: item.notes,
         targetSets: item.sets,
@@ -504,7 +504,7 @@ function Session() {
         return {
           index,
           exerciseId: item.exerciseId,
-          exerciseName: source?.name ?? "תרגיל",
+          exerciseName: source?.name ?? item.exerciseName ?? "תרגיל",
           equipment: source?.equipment,
         };
       });

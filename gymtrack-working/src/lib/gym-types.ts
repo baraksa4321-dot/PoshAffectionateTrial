@@ -95,6 +95,8 @@ export type WorkingSet = {
 export type WorkoutItem = {
   id: string;
   exerciseId: string;
+  /** Snapshot used when a custom exercise is not present in the viewer's catalog yet. */
+  exerciseName?: string;
   sets: number;
   reps: number;
   repType?: RepType;

@@ -1089,6 +1089,8 @@ export function CoachDashboardPage({
 
     const currentDay = clientDetails?.workouts?.find((w) => w.id === editingDayId);
     if (!currentDay) return;
+    const selectedExerciseName =
+      store.exercises.find((exercise) => exercise.id === selectedExId)?.name?.trim() || undefined;
 
     if (editingItemId) {
       const configuredModes = Array.from(
@@ -1103,6 +1105,7 @@ export function CoachDashboardPage({
           ? {
               ...item,
               exerciseId: selectedExId,
+              ...(selectedExerciseName ? { exerciseName: selectedExerciseName } : {}),
               sets: Math.max(1, setsCount),
               reps: Math.max(1, repMin),
               repMin: Math.max(1, repMin),
@@ -1224,6 +1227,7 @@ export function CoachDashboardPage({
     const newWorkoutItem: WorkoutItem = {
       id: uid(),
       exerciseId: selectedExId,
+      ...(selectedExerciseName ? { exerciseName: selectedExerciseName } : {}),
       sets: workingModeCount,
       reps: repMin,
       repType: "range",
