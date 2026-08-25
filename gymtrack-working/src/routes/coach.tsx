@@ -483,6 +483,7 @@ export function CoachDashboardPage({
       return;
     }
     const firstProgram = clientDetails.programs[0];
+    if (!firstProgram) return;
     const firstDay = clientDetails.workouts.find((workout) =>
       firstProgram.dayIds.includes(workout.id),
     );
