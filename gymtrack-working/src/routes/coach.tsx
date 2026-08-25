@@ -271,9 +271,15 @@ export function CoachDashboardPage({
   const [showBmrCalculator, setShowBmrCalculator] = useState(false);
   const showClientOverview = !trackingLanding && !workspacePage && !openEditor;
   const showProgramBuilder =
-    !trackingLanding && (workspaceMode === "programs" || openEditor === "programs");
+    !trackingLanding &&
+    (workspaceMode === "programs" ||
+      openEditor === "programs" ||
+      (workspaceMode === "all" && activeWorkspaceTab === "programs"));
   const showNutritionBuilder =
-    !trackingLanding && (workspaceMode === "nutrition" || openEditor === "nutrition");
+    !trackingLanding &&
+    (workspaceMode === "nutrition" ||
+      openEditor === "nutrition" ||
+      (workspaceMode === "all" && activeWorkspaceTab === "nutrition"));
 
   const loadCoachClients = useCallback(async () => {
     setManagementError("");
