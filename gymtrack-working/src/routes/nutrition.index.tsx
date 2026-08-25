@@ -238,7 +238,7 @@ function NutritionLog() {
       const controller = new AbortController();
       let response: Response;
       try {
-        const request = fetch("/api/nutrition/scan-meal", {
+        const request = fetch("/nutrition-scan-meal", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ image }),

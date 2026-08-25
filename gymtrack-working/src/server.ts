@@ -216,7 +216,7 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const url = new URL(request.url);
-      if (url.pathname === "/api/nutrition/scan-meal") {
+      if (url.pathname === "/nutrition-scan-meal") {
         return await analyzeMealImage(request);
       }
       const handler = await getServerEntry();
