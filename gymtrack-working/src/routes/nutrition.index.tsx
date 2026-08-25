@@ -1062,20 +1062,25 @@ function NutritionLog() {
               <div className="space-y-3">
                 {scanState === "analyzing" ? (
                   <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-primary/40 bg-primary/5 px-5 py-10 text-center">
-                    <video
-                      key={MEAL_SCAN_ILLUSTRATIONS[scanCycle % MEAL_SCAN_ILLUSTRATIONS.length]}
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      aria-label="אנימציית ניתוח תמונה"
-                      className="h-28 w-28 object-contain"
+                    <div
+                      className={`loading-micro-stage loading-simple-stage loading-simple-pose-${scanCycle % 4}`}
                     >
-                      <source
-                        src={`/loading/tinted/${MEAL_SCAN_ILLUSTRATIONS[scanCycle % MEAL_SCAN_ILLUSTRATIONS.length]}.webm?v=meal-scan-${scanCycle}`}
-                        type="video/webm"
-                      />
-                    </video>
+                      <video
+                        key={MEAL_SCAN_ILLUSTRATIONS[scanCycle % MEAL_SCAN_ILLUSTRATIONS.length]}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        preload="auto"
+                        aria-label="אנימציית ניתוח תמונה"
+                        className="loading-simple-image loading-simple-video"
+                      >
+                        <source
+                          src={`/loading/tinted/${MEAL_SCAN_ILLUSTRATIONS[scanCycle % MEAL_SCAN_ILLUSTRATIONS.length]}.webm?v=meal-scan-${scanCycle}`}
+                          type="video/webm"
+                        />
+                      </video>
+                    </div>
                     <span className="mt-3 text-sm font-bold text-ink">מנתחת את התמונה…</span>
                     <span className="mt-1 text-[11px] text-muted-foreground">
                       {LOADING_MESSAGES[scanCycle % LOADING_MESSAGES.length]}
