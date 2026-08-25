@@ -116,6 +116,7 @@ export type WorkoutItem = {
   supersetId?: string;
   supersetPartnerId?: string;
   supersetOrder?: 1 | 2;
+  supersetTargetWeight?: number;
   supersetRepsMin?: number;
   supersetRepsMax?: number;
 };

@@ -231,6 +231,7 @@ export function CoachDashboardPage({
   const [techNotes, setTechniqueNotes] = useState("");
   const [supersetGroup, setSupersetGroup] = useState("");
   const [supersetPartnerId, setSupersetPartnerId] = useState("");
+  const [supersetPartnerWeight, setSupersetPartnerWeight] = useState(20);
   const [dropSetEnabled, setDropSetEnabled] = useState(false);
   const [dropLevel1Weight, setDropLevel1Weight] = useState("");
   const [dropLevel1RepsMin, setDropLevel1RepsMin] = useState(8);
