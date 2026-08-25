@@ -960,23 +960,27 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       .select("*")
       .eq("user_id", clientId)
       .order("date", { ascending: false });
-    if (nutritionError) throw new Error(`Client nutrition pull failed: ${nutritionError.message}`);
+    if (nutritionError) {
+      console.warn(`[Optional client nutrition pull skipped]: ${nutritionError.message}`);
+    }
 
     const { data: dbMeasurements, error: measurementsError } = await supabase
       .from("body_measurements")
       .select("*")
       .eq("user_id", clientId)
       .order("date", { ascending: false });
-    if (measurementsError)
-      throw new Error(`Client measurements pull failed: ${measurementsError.message}`);
+    if (measurementsError) {
+      console.warn(`[Optional client measurements pull skipped]: ${measurementsError.message}`);
+    }
 
     const { data: dbSessions, error: sessionsError } = await supabase
       .from("workout_sessions")
       .select("*")
       .eq("user_id", clientId)
       .order("date", { ascending: false });
-    if (sessionsError)
-      throw new Error(`Client workout history pull failed: ${sessionsError.message}`);
+    if (sessionsError) {
+      console.warn(`[Optional client workout history pull skipped]: ${sessionsError.message}`);
+    }
 
     const { data: dbCardioLogs, error: cardioError } = await supabase
       .from("cardio_logs")
