@@ -7,5 +7,5 @@ export const Route = createFileRoute("/coach/clients/$clientId")({
 
 function CoachClientWorkspaceRoute() {
   const { clientId } = Route.useParams();
-  return <CoachDashboardPage clientsOnly clientId={clientId} />;
+  return <CoachDashboardPage clientsOnly workspacePage clientId={clientId} />;
 }

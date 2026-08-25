@@ -1956,6 +1956,7 @@ export function CoachDashboardPage({
               setEditingDayId(null);
             }}
             ariaLabel="בניית תוכנית ותפריט למתאמן"
+            inline={clientsOnly}
             variant={workspacePage || openEditor ? "full" : "center"}
             className={workspacePage || openEditor ? "bg-background" : ""}
             panelClassName={workspacePage || openEditor ? "bg-background" : ""}

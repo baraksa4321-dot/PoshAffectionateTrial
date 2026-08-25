@@ -17,6 +17,7 @@ export function Overlay({
   panelClassName = "",
   className = "",
   ariaLabel,
+  inline = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -26,6 +27,7 @@ export function Overlay({
   panelClassName?: string;
   className?: string;
   ariaLabel?: string;
+  inline?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
@@ -42,7 +44,7 @@ export function Overlay({
   }, []);
 
   useEffect(() => {
-    if (!open || typeof document === "undefined") return;
+    if (!open || inline || typeof document === "undefined") return;
 
     const overlayToken = ++activeOverlayToken;
     openOverlayTokens.push(overlayToken);
@@ -142,7 +144,7 @@ export function Overlay({
       }
       previousActiveElement?.focus();
     };
-  }, [open]);
+  }, [inline, open]);
 
   if (!open || !mounted || typeof document === "undefined") return null;
 
@@ -154,6 +156,14 @@ export function Overlay({
     viewportHeight === null
       ? `calc(100dvh - ${panelBottomGap}px)`
       : `${Math.max(0, viewportHeight - panelBottomGap)}px`;
+
+  if (inline) {
+    return (
+      <div className={`w-full ${className}`}>
+        <div className={`w-full overflow-x-hidden ${panelClassName}`}>{children}</div>
+      </div>
+    );
+  }
 
   return createPortal(
     <div
