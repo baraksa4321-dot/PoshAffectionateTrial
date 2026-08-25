@@ -769,41 +769,6 @@ function Session() {
                 </div>
               ) : null}
 
-              <div className="mt-2.5">
-                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/35 bg-primary/5 px-3 py-2 text-[11px] font-semibold text-primary transition-colors hover:bg-primary/10">
-                  <Video className="h-4 w-4" />
-                  <span>{entry.videoUrl ? "החלפת סרטון לתרגיל" : "העלאת סרטון לתרגיל"}</span>
-                  <input
-                    type="file"
-                    accept="video/*"
-                    capture="environment"
-                    className="sr-only"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (!file) return;
-                      const nextUrl = URL.createObjectURL(file);
-                      if (entry.videoUrl?.startsWith("blob:")) URL.revokeObjectURL(entry.videoUrl);
-                      setEntries((prev) =>
-                        prev.map((current, index) =>
-                          index === ei ? { ...current, videoUrl: nextUrl } : current,
-                        ),
-                      );
-                      event.currentTarget.value = "";
-                    }}
-                  />
-                </label>
-                {entry.videoUrl ? (
-                  <video
-                    className="mt-2 max-h-52 w-full rounded-xl bg-black object-contain"
-                    src={entry.videoUrl}
-                    controls
-                    playsInline
-                    preload="metadata"
-                    aria-label={`סרטון ביצוע ${entry.exerciseName}`}
-                  />
-                ) : null}
-              </div>
-
               <div className="mt-3">
                 <p className="mb-2 text-[10px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
                   ביצוע בפועל
@@ -875,6 +840,43 @@ function Session() {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* The athlete's demonstration video is intentionally last:
+                  it belongs to the completed exercise, after all sets. */}
+              <div className="mt-3 rounded-2xl border border-dashed border-primary/35 bg-primary/5 p-3">
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-2 text-[11px] font-semibold text-primary transition-colors hover:bg-primary/10">
+                  <Video className="h-4 w-4" />
+                  <span>{entry.videoUrl ? "החלפת סרטון ביצוע" : "העלאת סרטון ביצוע מהגלריה"}</span>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    capture="environment"
+                    className="sr-only"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      const nextUrl = URL.createObjectURL(file);
+                      if (entry.videoUrl?.startsWith("blob:")) URL.revokeObjectURL(entry.videoUrl);
+                      setEntries((prev) =>
+                        prev.map((current, index) =>
+                          index === ei ? { ...current, videoUrl: nextUrl } : current,
+                        ),
+                      );
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+                {entry.videoUrl ? (
+                  <video
+                    className="mt-2 max-h-52 w-full rounded-xl bg-black object-contain"
+                    src={entry.videoUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    aria-label={`סרטון ביצוע ${entry.exerciseName}`}
+                  />
+                ) : null}
               </div>
 
               <div className="mt-3 rounded-2xl border border-border/60 bg-background p-3">
