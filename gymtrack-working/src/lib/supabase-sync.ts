@@ -803,11 +803,11 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 7. Body Weight Logs
-    if (bodyWeightError && !isMissingTableInSchemaCache(bodyWeightError, "body_weight_logs")) {
-      throw new Error(`Weight logs pull failed: ${bodyWeightError.message}`);
-    }
     if (bodyWeightError) {
-      console.warn("[Optional body weight pull skipped]: public.body_weight_logs is unavailable");
+      // Weight tracking is optional. Schema drift (for example, an older
+      // table without the `date` column) must not block the account's
+      // programs, history, or profile from becoming available.
+      console.warn(`[Optional body weight pull skipped]: ${bodyWeightError.message}`);
     }
 
     if (!bodyWeightError && dbBodyWeightLogs) {
