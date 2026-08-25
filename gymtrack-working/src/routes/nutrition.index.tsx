@@ -141,8 +141,11 @@ async function prepareMealImage(file: File): Promise<string> {
 }
 
 const MEAL_SCAN_ILLUSTRATIONS = [
+  "user-strawberry",
+  "user-tomato",
   "user-character-01",
   "user-character-02",
+  "user-lemon",
   "user-character-03",
   "user-character-04",
   "user-character-05",
