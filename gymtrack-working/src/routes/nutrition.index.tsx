@@ -300,7 +300,7 @@ function NutritionLog() {
 
   useEffect(() => {
     if (scanState !== "analyzing") return;
-    const interval = window.setInterval(() => setScanCycle((cycle) => cycle + 1), 3_500);
+    const interval = window.setInterval(() => setScanCycle((cycle) => cycle + 1), 1_500);
     return () => window.clearInterval(interval);
   }, [scanState]);
 

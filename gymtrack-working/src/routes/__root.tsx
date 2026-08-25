@@ -1156,7 +1156,7 @@ function RootContent() {
         }
         return nextCycle;
       });
-    }, 800);
+    }, 1_500);
     const minimumLoadingTimer = window.setTimeout(() => {
       setMinimumLoadingDone(true);
     }, 1400);
