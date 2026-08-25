@@ -3221,6 +3221,33 @@ export function CoachDashboardPage({
                                                           setRepMin(exItem.repMin || exItem.reps);
                                                           setRepMax(exItem.repMax || exItem.reps);
                                                           setTechniqueNotes(exItem.techniqueNotes || exItem.notes);
+                                                          const loadedModes = exItem.workingSets?.map((set) =>
+                                                            set.dropSet ? "drop" : exItem.supersetId ? "superset" : "normal",
+                                                          ) ?? [];
+                                                          setSetModes(
+                                                            Array.from(
+                                                              { length: Math.max(1, exItem.sets) },
+                                                              (_, index) => loadedModes[index] ?? "normal",
+                                                            ),
+                                                          );
+                                                          setWarmupEnabled(Boolean(exItem.warmups?.length));
+                                                          setWarmupSetsCount(exItem.warmups?.length || 1);
+                                                          setWarmupWeight(exItem.warmups?.[0]?.weight || 10);
+                                                          setWarmupReps(exItem.warmups?.[0]?.reps || 10);
+                                                          setWarmupRepsMax(exItem.warmups?.[0]?.repsMax || 12);
+                                                          setDropSetEnabled(Boolean(exItem.dropSetConfig?.enabled));
+                                                          setDropLevel1Weight(
+                                                            exItem.dropSetConfig?.levels?.[0]?.weight
+                                                              ? String(exItem.dropSetConfig.levels[0].weight)
+                                                              : "",
+                                                          );
+                                                          setDropLevel2Weight(
+                                                            exItem.dropSetConfig?.levels?.[1]?.weight
+                                                              ? String(exItem.dropSetConfig.levels[1].weight)
+                                                              : "",
+                                                          );
+                                                          setSupersetGroup(exItem.supersetId || "");
+                                                          setSupersetPartnerId(exItem.supersetPartnerId || "");
                                                         }}
                                                         className="rounded-lg bg-background px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/10"
                                                       >
