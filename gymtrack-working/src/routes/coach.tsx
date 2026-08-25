@@ -103,6 +103,7 @@ export const Route = createFileRoute("/coach")({
 
 export function CoachDashboardPage({
   clientsOnly = false,
+  trackingLanding = false,
   workspacePage = false,
   clientId,
   workspaceMode = "all",
@@ -110,6 +111,7 @@ export function CoachDashboardPage({
   initialDayId,
 }: {
   clientsOnly?: boolean;
+  trackingLanding?: boolean;
   workspacePage?: boolean;
   clientId?: string;
   workspaceMode?: "all" | "programs" | "nutrition";
@@ -1296,8 +1298,8 @@ export function CoachDashboardPage({
 
   return (
     <AppShell
-      title={clientsOnly ? "מתאמנים" : ""}
-      kicker={clientsOnly ? "בניית תוכניות ותפריטים" : ""}
+      title={clientsOnly ? (trackingLanding ? "מעקב" : "מתאמנים") : ""}
+      kicker={clientsOnly ? (trackingLanding ? "ביצועי מתאמנים בפועל" : "בניית תוכניות ותפריטים") : ""}
       compactHeader
     >
       {!clientsOnly ? (
@@ -1769,6 +1771,19 @@ export function CoachDashboardPage({
 
         {clientsOnly ? (
           <>
+            {trackingLanding ? (
+              <section className="surface-card mb-3 border-primary/20 bg-primary/5 p-4 text-start">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                  מעקב יומי
+                </p>
+                <h2 className="mt-1 text-base font-extrabold text-ink">
+                  בחרי מתאמן כדי לראות מה בוצע בפועל
+                </h2>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  צפייה באימונים, סטים, משקלים, חזרות, משוב, כאבים ומעקב תזונה לפי יום.
+                </p>
+              </section>
+            ) : null}
             {/* Client Search & List */}
             <section className="space-y-3 rounded-3xl border border-border/70 bg-surface p-4 shadow-sm">
               <div className="flex items-end justify-between gap-3">
@@ -1888,8 +1903,8 @@ export function CoachDashboardPage({
                             target="_blank"
                             rel="noopener noreferrer"
                             className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-primary/20"
-                          >
-                            פתח וערוך
+                            >
+                            {trackingLanding ? "פתח מעקב" : "פתח וערוך"}
                           </Link>
                           <ChevronLeft
                             className={`h-5 w-5 text-muted-foreground transition-transform ${

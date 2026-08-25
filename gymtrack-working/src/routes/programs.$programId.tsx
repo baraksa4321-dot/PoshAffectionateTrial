@@ -266,6 +266,7 @@ function SortableDayCard({
   programId: string;
   onRequestDelete: (id: string, name: string) => void;
 }) {
+  const { exercises } = useGym();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: day.id,
   });
@@ -279,7 +280,7 @@ function SortableDayCard({
   const onDuplicate = () => duplicateWorkoutDay(day.id, programId);
 
   return (
-    <article ref={setNodeRef} style={style} className="surface-card p-4">
+    <article ref={setNodeRef} style={style} className="surface-card overflow-hidden p-3">
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -290,7 +291,7 @@ function SortableDayCard({
         >
           <GripVertical className="h-4 w-4" />
         </button>
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-sage-soft font-display text-[15px] font-semibold text-primary">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-sage-soft font-display text-[13px] font-semibold text-primary">
           {String(index + 1).padStart(2, "0")}
         </div>
         <Link
@@ -298,10 +299,19 @@ function SortableDayCard({
           params={{ programId, dayId: day.id }}
           className="min-w-0 flex-1 text-start"
         >
-          <p className="truncate font-display text-[16px] font-semibold text-ink">
+          <p className="truncate font-display text-[15px] font-semibold text-ink">
             {day.name || "יום ללא שם"}
           </p>
-          <p className="mt-0.5 text-[12.5px] text-muted-foreground">{day.items.length} תרגילים</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            {day.items.length} תרגילים
+            {day.items.length > 0
+              ? ` · ${day.items
+                  .slice(0, 3)
+                  .map((item) => exercises.find((exercise) => exercise.id === item.exerciseId)?.name)
+                  .filter(Boolean)
+                  .join(" · ")}`
+              : ""}
+          </p>
         </Link>
         <button
           type="button"
@@ -312,7 +322,7 @@ function SortableDayCard({
           <Play className="h-4 w-4 fill-current" />
         </button>
       </div>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-1.5 border-t border-border/50 pt-3">
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-1.5 border-t border-border/50 pt-2">
         <div className="flex gap-1">
           <Link
             to="/programs/$programId/$dayId"

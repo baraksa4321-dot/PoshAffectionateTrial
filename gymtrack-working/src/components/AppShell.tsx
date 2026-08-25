@@ -1,6 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   Apple,
+  Activity,
   Cloud,
   CloudOff,
   Dumbbell,
@@ -143,6 +144,13 @@ export function AppShell({
           label: "מתאמנים",
           id: "coach",
           icon: Users,
+          onClick: () => setWorkspace("management"),
+        },
+        {
+          to: "/coach/tracking",
+          label: "מעקב",
+          id: "tracking",
+          icon: Activity,
           onClick: () => setWorkspace("management"),
         },
         {
