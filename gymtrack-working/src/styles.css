@@ -4001,6 +4001,44 @@ html.night-mode .auth-panel {
   contain: layout paint;
 }
 
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.22, 0.8, 0.24, 1);
+}
+
+::view-transition-old(root) {
+  animation-name: route-slide-out;
+  transform-origin: center center;
+}
+
+::view-transition-new(root) {
+  animation-name: route-slide-in;
+  transform-origin: center center;
+}
+
+@keyframes route-slide-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0.86;
+    transform: translate3d(-2.25rem, 0, 0) scale(0.985);
+  }
+}
+
+@keyframes route-slide-in {
+  from {
+    opacity: 0.86;
+    transform: translate3d(2.25rem, 0, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
 @keyframes page-enter-in {
   from {
     opacity: 0;
@@ -4111,6 +4149,11 @@ button:disabled.primary-shadow {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
   }
 }
 

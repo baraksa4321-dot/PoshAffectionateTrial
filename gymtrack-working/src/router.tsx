@@ -15,6 +15,10 @@ export const getRouter = () => {
     // bottom when the user was deep-scrolled on the source list page.
     scrollRestoration: false,
     defaultPreloadStaleTime: 0,
+    // Use the browser View Transitions API when available so route changes
+    // animate as a continuous slide instead of replacing the whole page.
+    // TanStack Router falls back to its normal navigation automatically.
+    defaultViewTransition: true,
   });
 
   return router;
