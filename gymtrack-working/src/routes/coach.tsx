@@ -1894,10 +1894,7 @@ export function CoachDashboardPage({
                         key={c.id}
                         onClick={() => {
                           if (!isSelected) {
-                            navigate({
-                              to: "/coach/tracking/$clientId",
-                              params: { clientId: c.client_id },
-                            });
+                            window.location.assign(`/coach/tracking/${encodeURIComponent(c.client_id)}`);
                           }
                         }}
                         className={`surface-card p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
@@ -1916,19 +1913,15 @@ export function CoachDashboardPage({
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <button
-                            type="button"
+                          <a
+                            href={`/coach/tracking/${encodeURIComponent(c.client_id)}`}
                             onClick={(event) => {
                               event.stopPropagation();
-                              navigate({
-                                to: "/coach/tracking/$clientId",
-                                params: { clientId: c.client_id },
-                              });
                             }}
                             className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-primary/20"
                           >
                             פתח דוח
-                          </button>
+                          </a>
                           <ChevronLeft
                             className={`h-5 w-5 text-muted-foreground transition-transform ${
                               isSelected ? "-rotate-90 text-primary" : ""
