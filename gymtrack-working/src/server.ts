@@ -109,6 +109,7 @@ async function analyzeMealImage(request: Request): Promise<Response> {
   let payload: { image?: unknown };
   try {
     payload = (await request.json()) as { image?: unknown };
+    console.info("Meal scan payload read", scanId, typeof payload.image === "string" ? payload.image.length : 0);
   } catch {
     return scanResponse({ error: "לא ניתן לקרוא את התמונה." }, 400, scanId, startedAt);
   }
@@ -127,6 +128,7 @@ async function analyzeMealImage(request: Request): Promise<Response> {
     if (!apiKey) {
       return scanResponse({ error: "חיבור ניתוח התמונות עדיין לא הוגדר." }, 503, scanId, startedAt);
     }
+    console.info("Meal scan sending to Gemini", scanId, imageData.length);
     const geminiRequest = fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${encodeURIComponent(apiKey)}`,
       {
@@ -168,6 +170,7 @@ async function analyzeMealImage(request: Request): Promise<Response> {
       );
     });
     response = await Promise.race([geminiRequest, timeoutResponse]);
+    console.info("Meal scan Gemini response", scanId, response.status);
   } catch (error) {
     console.error("Gemini meal scan request failed", error);
     return scanResponse({ error: "שירות ניתוח התמונות לא זמין כרגע. נסי שוב בעוד רגע." }, 504, scanId, startedAt);
