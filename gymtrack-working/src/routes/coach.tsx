@@ -3143,6 +3143,7 @@ export function CoachDashboardPage({
                                                     </div>
                                                   </div>
                                                   {editingItemId === exItem.id ? (
+                                                  <>
                                                   <div className="mt-2 grid grid-cols-3 gap-1.5 border-t border-border/40 pt-2">
                                                     <label className="text-center text-[9px] font-bold text-muted-foreground">
                                                       משקל יעד
@@ -3200,6 +3201,103 @@ export function CoachDashboardPage({
                                                       />
                                                     </label>
                                                   </div>
+                                                  <div className="mt-3 space-y-2 border-t border-border/40 pt-3">
+                                                    <p className="text-right text-[10px] font-bold text-muted-foreground">
+                                                      בחר תרגיל
+                                                    </p>
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => setShowExercisePicker(true)}
+                                                      className="flex h-10 w-full items-center justify-between rounded-xl border border-border/60 bg-background px-3 text-right text-xs font-semibold text-ink"
+                                                    >
+                                                      <span>
+                                                        {store.exercises.find(
+                                                          (exercise) => exercise.id === selectedExId,
+                                                        )?.name || exMeta?.name || "חיפוש ובחירת תרגיל"}
+                                                      </span>
+                                                      <Search className="h-4 w-4 text-muted-foreground" />
+                                                    </button>
+                                                    <div className="rounded-2xl border border-border/50 bg-background/60 p-2">
+                                                      <p className="mb-2 text-right text-[10px] font-bold text-muted-foreground">
+                                                        סוג לכל סט
+                                                      </p>
+                                                      <div className="space-y-1.5">
+                                                        {Array.from(
+                                                          { length: Math.max(1, setsCount) },
+                                                          (_, index) => (
+                                                            <div
+                                                              key={index}
+                                                              className="flex items-center justify-between gap-2 rounded-xl border border-border/50 bg-background px-2 py-1.5"
+                                                            >
+                                                              <span className="text-[11px] font-bold text-ink">
+                                                                סט {index + 1}
+                                                              </span>
+                                                              <select
+                                                                value={setModes[index] ?? "normal"}
+                                                                onChange={(event) => {
+                                                                  const mode = event.target.value as
+                                                                    | "normal"
+                                                                    | "warmup"
+                                                                    | "drop"
+                                                                    | "superset";
+                                                                  setSetModes((current) => {
+                                                                    const next = Array.from(
+                                                                      { length: Math.max(1, setsCount) },
+                                                                      (_, itemIndex) =>
+                                                                        current[itemIndex] ?? "normal",
+                                                                    );
+                                                                    next[index] = mode;
+                                                                    return next;
+                                                                  });
+                                                                }}
+                                                                className="h-8 min-w-32 rounded-lg border border-border/60 bg-background px-2 text-[11px] font-semibold text-ink"
+                                                              >
+                                                                <option value="normal">סט רגיל</option>
+                                                                <option value="warmup">סט חימום</option>
+                                                                <option value="drop">דרופ סט</option>
+                                                                <option value="superset">סופר סט</option>
+                                                              </select>
+                                                            </div>
+                                                          ),
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                    <label className="block text-right text-[10px] font-bold text-muted-foreground">
+                                                      הערה למתאמן על התרגיל
+                                                      <textarea
+                                                        rows={2}
+                                                        value={techNotes}
+                                                        onChange={(event) =>
+                                                          setTechniqueNotes(event.target.value)
+                                                        }
+                                                        placeholder="למשל: לשמור על גב ישר ולבצע לאט..."
+                                                        className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-right text-xs font-normal text-ink outline-none focus:border-primary"
+                                                      />
+                                                    </label>
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        void handleUpdateExerciseItem(
+                                                          dayItem.id,
+                                                          exItem.id,
+                                                          {
+                                                            targetWeight,
+                                                            weight: targetWeight,
+                                                            sets: Math.max(1, setsCount),
+                                                            reps: Math.max(1, repMin),
+                                                            repMin: Math.max(1, repMin),
+                                                            repMax: Math.max(repMin, repMax),
+                                                            notes: techNotes.trim(),
+                                                          },
+                                                        );
+                                                        setEditingItemId(null);
+                                                      }}
+                                                      className="h-11 w-full rounded-full bg-primary text-sm font-bold text-primary-foreground shadow-sm"
+                                                    >
+                                                      שמור תרגיל ליום אימון
+                                                    </button>
+                                                  </div>
+                                                  </>
                                                   ) : null}
                                                   {false && actualExecutions.length > 0 ? (
                                                     <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/80 p-2 text-[10px]">
