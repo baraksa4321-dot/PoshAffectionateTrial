@@ -63,6 +63,8 @@ function Builder() {
     const exercise = exercises.find((e) => e.id === id);
     return exercise ? exerciseDisplayName(exercise) : snapshot || "תרגיל שהוסר";
   };
+  const itemMode = (item: WorkoutItem) =>
+    item.supersetId ? "superset" : item.dropSetConfig?.enabled ? "drop" : "normal";
   const patchItem = (id: string, patch: Partial<WorkoutItem>) =>
     setDraft({
       ...draft,
@@ -134,9 +136,27 @@ function Builder() {
         placeholder="הערות ודגשים לאימון..."
       />
 
-      <div className="mt-5 space-y-3.5 text-start">
-        {draft.items.map((item, index) => (
-          <div key={item.id} className="surface-card p-4">
+      <div className="mt-6 space-y-5 text-start">
+        {draft.items.map((item, index) => {
+          const mode = itemMode(item);
+          const previous = draft.items[index - 1];
+          const startsSuperset = mode === "superset" && previous?.supersetId !== item.supersetId;
+          return (
+          <div key={item.id} className="space-y-2">
+            {mode === "normal" ? (
+              <h2 className="px-1 text-xl font-extrabold text-foreground">תרגיל רגיל:</h2>
+            ) : startsSuperset ? (
+              <h2 className="px-1 text-xl font-extrabold text-foreground">סופר סט:</h2>
+            ) : mode === "drop" ? (
+              <h2 className="px-1 text-xl font-extrabold text-foreground">דרופ סט:</h2>
+            ) : null}
+          <div className={`surface-card rounded-[1.5rem] p-4 ${
+            mode === "superset"
+              ? "border-violet-200 bg-violet-50/40"
+              : mode === "drop"
+                ? "border-primary/20 bg-primary/5"
+                : ""
+          }`}>
             <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
               <button
                 type="button"
@@ -146,7 +166,7 @@ function Builder() {
               >
                 <GripVertical className="h-4 w-4" />
               </button>
-              <p className="truncate font-semibold text-foreground">
+              <p className="truncate text-lg font-extrabold text-foreground">
                 {nameOf(item.exerciseId, item.exerciseName)}
               </p>
               <button
@@ -164,7 +184,7 @@ function Builder() {
               </button>
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-3">
+            <div className="mt-4 grid grid-cols-2 gap-2 border-b border-border/50 pb-3 sm:grid-cols-4">
               <Stepper
                 label="סטים"
                 value={item.sets}
@@ -186,6 +206,24 @@ function Builder() {
                 onChange={(v) => patchItem(item.id, { rest: v })}
               />
             </div>
+
+            {mode === "drop" && item.dropSetConfig?.levels?.length ? (
+              <div className="mt-3 space-y-2 rounded-2xl border border-primary/20 bg-background/70 p-3">
+                {item.dropSetConfig.levels.map((level, levelIndex) => (
+                  <div key={`${item.id}-drop-${levelIndex}`} className="grid grid-cols-3 items-center gap-2 text-center">
+                    <span className="text-xs font-bold text-primary">
+                      {levelIndex === 0 ? "לפני הדרופ" : `דרופ ${levelIndex}`}
+                    </span>
+                    <span className="text-xs font-semibold text-foreground">
+                      {level.weight} ק״ג
+                    </span>
+                    <span className="text-xs font-semibold text-foreground">
+                      {level.repsMin}-{level.repsMax} חזרות
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
 
             <div className="mt-3">
               <div className="mb-2 flex items-center justify-between">
@@ -249,7 +287,9 @@ function Builder() {
               placeholder="הערה לתרגיל זה..."
             />
           </div>
-        ))}
+          </div>
+          );
+        })}
       </div>
 
       <button
