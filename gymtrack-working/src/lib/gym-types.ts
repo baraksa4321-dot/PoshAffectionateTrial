@@ -151,6 +151,7 @@ export type HistoryEntry = {
   exerciseId: string;
   exerciseName: string;
   equipment?: string;
+  videoUrl?: string;
   sets: LoggedSet[];
   notes: string;
   targetSets?: number;

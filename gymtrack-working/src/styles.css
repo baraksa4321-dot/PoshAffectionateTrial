@@ -453,30 +453,30 @@ html.night-mode textarea::placeholder {
   --background: #f8f7f3;
   --foreground: #493d2d;
   --surface: #fbf8f2;
-  --surface-2: #f2e8d3;
-  --cream: #f3ece2;
+  --surface-2: #eee8df;
+  --cream: #f1ebe4;
   --card: #fffdf9;
   --card-foreground: #493d2d;
   --popover: #ffffff;
   --popover-foreground: #493d2d;
-  --primary: #c9aa72;
+  --primary: #b9a38b;
   --primary-foreground: #302818;
-  --secondary: #eee1c6;
+  --secondary: #e9e3da;
   --secondary-foreground: #5b492c;
-  --rose: #b89458;
-  --rose-soft: #f3e8cf;
-  --accent: #e2cca0;
+  --rose: #ad9478;
+  --rose-soft: #eae1d7;
+  --accent: #d8c7b4;
   --accent-foreground: #493d2d;
   --ink: #493d2d;
   --ink-soft: #77684e;
-  --muted: #faf3e3;
+  --muted: #f1ebe4;
   --muted-foreground: #796d57;
-  --border: #e3d1aa;
-  --input: #e3d1aa;
-  --ring: #b89458;
-  --gradient-start: #c9aa72;
-  --gradient-mid: #dfc99b;
-  --gradient-end: #f2e8d3;
+  --border: #d9cabb;
+  --input: #d9cabb;
+  --ring: #ad9478;
+  --gradient-start: #b9a38b;
+  --gradient-mid: #d0bfae;
+  --gradient-end: #eee7df;
 }
 
 :root[data-theme="black"] {
