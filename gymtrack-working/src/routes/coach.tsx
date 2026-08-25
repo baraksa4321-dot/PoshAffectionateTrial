@@ -469,6 +469,40 @@ export function CoachDashboardPage({
     setMeasurementNotice("");
   }, [clientDetails]);
 
+  // The edit entry point opens the workout editor itself, rather than
+  // stopping at the program list. This mirrors the mobile editing flow:
+  // first program → first workout day → first exercise card.
+  useEffect(() => {
+    if (
+      !workspacePage ||
+      workspaceMode !== "all" ||
+      !clientDetails ||
+      editingProgramId ||
+      clientDetails.programs.length === 0
+    ) {
+      return;
+    }
+    const firstProgram = clientDetails.programs[0];
+    const firstDay = clientDetails.workouts.find((workout) =>
+      firstProgram.dayIds.includes(workout.id),
+    );
+    if (!firstDay) return;
+    setActiveWorkspaceTab("programs");
+    setEditingProgramId(firstProgram.id);
+    setEditingDayId(firstDay.id);
+    const firstExercise = firstDay.items[0];
+    if (firstExercise) {
+      setEditingItemId(firstExercise.id);
+      setSelectedExId(firstExercise.exerciseId);
+      setTargetWeight(firstExercise.targetWeight || firstExercise.weight);
+      setSetsCount(firstExercise.sets);
+      setRepMin(firstExercise.repMin || firstExercise.reps);
+      setRepMax(firstExercise.repMax || firstExercise.reps);
+      setRestSec(firstExercise.rest || 90);
+      setTechniqueNotes(firstExercise.techniqueNotes || firstExercise.notes);
+    }
+  }, [clientDetails, editingProgramId, workspaceMode, workspacePage]);
+
   useEffect(() => {
     setCalTarget(clientDetails?.nutritionTargets?.calories ?? 0);
     const profile = clientDetails?.profile;
@@ -3158,9 +3192,9 @@ export function CoachDashboardPage({
                                                 <div
                                                   key={exItem.id}
                                                   id={`coach-exercise-${exItem.exerciseId}`}
-                                                  className={`rounded-xl bg-secondary/50 p-2.5 text-xs transition-colors ${
+                                                   className={`rounded-[1.75rem] border border-[#e6d9ca] bg-[#faf2e8] p-3.5 text-xs shadow-sm transition-colors ${
                                                     focusedExerciseId === exItem.exerciseId
-                                                      ? "ring-2 ring-primary/40 bg-primary/5"
+                                                       ? "ring-2 ring-primary/40 bg-[#f8ecdf]"
                                                       : ""
                                                   }`}
                                                 >
