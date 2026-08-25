@@ -1808,7 +1808,11 @@ export function CoachDashboardPage({
               </section>
             ) : null}
             {/* Client Search & List */}
-            <section className="space-y-3 rounded-3xl border border-border/70 bg-surface p-4 shadow-sm">
+            <section
+              className={`space-y-3 rounded-3xl border border-border/70 bg-surface p-4 shadow-sm ${
+                selectedClientId ? "hidden" : ""
+              }`}
+            >
               <div className="flex items-end justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
@@ -1967,11 +1971,11 @@ export function CoachDashboardPage({
             panelClassName={workspacePage || openEditor ? "bg-background" : ""}
           >
             <div
-              className={`w-full space-y-4 bg-background p-4 sm:p-6 ${
+              className={`w-full space-y-4 bg-background ${
                 workspacePage || openEditor
-                  ? "mx-auto max-w-5xl pb-10"
+                  ? "-mx-4 w-[calc(100%+2rem)] pb-10 sm:-mx-6 sm:w-[calc(100%+3rem)]"
                   : "max-w-2xl rounded-3xl shadow-2xl"
-              }`}
+              } ${workspacePage || openEditor ? "" : "p-4 sm:p-6"}`}
             >
               <div className="flex items-center justify-between border-b border-border/60 pb-3">
                 <h3 className="font-bold text-base text-ink flex items-center gap-2">
