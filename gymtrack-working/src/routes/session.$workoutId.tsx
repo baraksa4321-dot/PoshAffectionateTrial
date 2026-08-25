@@ -35,7 +35,7 @@ import {
   SecondaryButton,
   SectionHeader,
 } from "@/components/ui-app/primitives";
-import { lastPerformance, repLabel, saveSession, uid, useGym } from "@/lib/gym-store";
+import { lastPerformance, saveSession, uid, useGym } from "@/lib/gym-store";
 import { BODYWEIGHT_EXERCISES, replaceWithBodyweight } from "@/lib/bodyweight-exercises";
 import type { Exercise, HistoryEntry, LoggedSet, WorkoutItem } from "@/lib/gym-types";
 import { genderText } from "@/lib/gender-copy";
@@ -702,11 +702,8 @@ function Session() {
       <div className="mt-5 space-y-4">
         {entries.map((entry, ei) => {
           const item = workout.items[ei];
-          const targetLabel = item ? repLabel(item) : String(entry.targetReps ?? "");
           const supersetLabel = labels[ei];
           const fullExercise = exerciseCatalog.find((e) => e.id === entry.exerciseId);
-          const workingCount = entry.sets.filter((s) => !s.warmup && !s.dropSet).length;
-          const prescribedWeight = item?.targetWeight || item?.weight || 0;
           const isSupersetFirst =
             item?.supersetOrder === 1 || Boolean(supersetLabel?.endsWith("1"));
 
