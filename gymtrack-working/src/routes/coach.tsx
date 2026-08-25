@@ -96,7 +96,17 @@ type ClientFeedbackRow = {
 type ClientDetails = Awaited<ReturnType<typeof pullClientDataForCoach>>;
 
 function errorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message ? error.message : fallback;
+  if (error instanceof Error && error.message) return error.message;
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string" &&
+    error.message
+  ) {
+    return error.message;
+  }
+  return fallback;
 }
 
 function normalizeProfileIdentity(value?: string | null): string {
@@ -1677,6 +1687,17 @@ export function CoachDashboardPage({
     setExerciseQuery("");
     setShowCreateExercise(false);
     setExerciseBuilderNotice(`התרגיל "${exercise.name}" נוסף למאגר ונבחר לאימון.`);
+  };
+  const addNewExerciseVideo = (
+    file: File | undefined,
+    field: "videoMaleUrl" | "videoFemaleUrl",
+  ) => {
+    if (!file || !file.type.startsWith("video/")) return;
+    const reader = new FileReader();
+    reader.onload = () =>
+      setNewExerciseDraft((current) => ({ ...current, [field]: String(reader.result) }));
+    reader.onerror = () => setNewExerciseError("לא ניתן לקרוא את הסרטון שנבחר.");
+    reader.readAsDataURL(file);
   };
   const programQueryLower = programQuery.trim().toLocaleLowerCase();
   const filteredPrograms = programQueryLower
@@ -5391,6 +5412,33 @@ export function CoachDashboardPage({
                   className="mt-1.5 w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary"
                 />
               </label>
+              <div className="rounded-2xl border border-border/60 bg-secondary/40 p-3">
+                <p className="mb-2 text-xs font-bold text-ink">סרטוני הדגמה לפי מגדר</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {(
+                    [
+                      ["videoMaleUrl", "סרטון הדגמה לגבר"],
+                      ["videoFemaleUrl", "סרטון הדגמה לאישה"],
+                    ] as const
+                  ).map(([videoField, title]) => (
+                    <label key={videoField} className="grid gap-1 text-[11px] font-bold text-muted-foreground">
+                      {title}
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={(event) => {
+                          addNewExerciseVideo(event.target.files?.[0], videoField);
+                          event.currentTarget.value = "";
+                        }}
+                        className="w-full text-[10px] file:me-2 file:rounded-lg file:border-0 file:bg-primary file:px-2 file:py-1.5 file:text-[10px] file:font-bold file:text-primary-foreground"
+                      />
+                      {newExerciseDraft[videoField] ? (
+                        <span className="text-[10px] text-emerald-700">סרטון נבחר</span>
+                      ) : null}
+                    </label>
+                  ))}
+                </div>
+              </div>
               {newExerciseError ? (
                 <p className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs font-semibold text-destructive">
                   {newExerciseError}

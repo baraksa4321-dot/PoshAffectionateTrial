@@ -65,6 +65,9 @@ export type Exercise = {
   videoUrl: string;
   /** Up to two coach-provided demonstration videos. `videoUrl` remains the legacy first URL. */
   videoUrls?: string[];
+  /** Gender-specific demonstration videos shown to the matching user. */
+  videoMaleUrl?: string;
+  videoFemaleUrl?: string;
   images: string[];
   notes: string;
   /** Optional technique tips / cues. */
