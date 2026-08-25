@@ -124,6 +124,16 @@ function quantityControlFor(food: FoodItem) {
   return { label: "כמות מנות", step: "any", scale: 1 };
 }
 
+function quantityLabelForServing(servingSize: string): string {
+  const serving = servingSize.toLocaleLowerCase();
+  if (/(גרם|g)\b/.test(serving)) return "גרמים";
+  if (/(פרוסה|פרוסות)/.test(serving)) return "פרוסות";
+  if (/(יחידה|יחידות)/.test(serving)) return "יחידות";
+  if (/(כף|כפות)/.test(serving)) return "כפות";
+  if (/(כוס|כוסות)/.test(serving)) return "כוסות";
+  return "כמות";
+}
+
 async function prepareMealImage(file: File): Promise<string> {
   return await new Promise<string>((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
@@ -1215,7 +1225,7 @@ function NutritionLog() {
                       <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
                         {(
                           [
-                            ["quantity", "כמות", 0.1],
+                            ["quantity", quantityLabelForServing(food.servingSize), 0.1],
                             ["calories", "קלוריות", 1],
                             ["protein", "חלבון", 0.1],
                             ["carbs", "פחמימות", 0.1],

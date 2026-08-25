@@ -56,6 +56,26 @@ function normalizeServingSize(name: string, servingSize: string): string {
   return servingSize || "מנה משוערת";
 }
 
+function normalizeQuantity(name: string, servingSize: string, quantity: number): number {
+  const food = name.toLocaleLowerCase();
+  const text = `${food} ${servingSize.toLocaleLowerCase()}`;
+  if (/(ביצה|ביצים|egg)/i.test(food)) {
+    const countMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(?:ביצים?|ביצי|eggs?)/i);
+    if (countMatch?.[1]) {
+      const count = Number(countMatch[1].replace(",", "."));
+      if (Number.isFinite(count) && count > 0) return count;
+    }
+  }
+  if (/(לחם|טוסט|פרוסה|bread|toast)/i.test(food)) {
+    const countMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(?:פרוסות?|slices?)/i);
+    if (countMatch?.[1]) {
+      const count = Number(countMatch[1].replace(",", "."));
+      if (Number.isFinite(count) && count > 0) return count;
+    }
+  }
+  return quantity;
+}
+
 function isImageDataUrl(value: unknown): value is string {
   return (
     typeof value === "string" &&
@@ -70,19 +90,21 @@ function normalizeScanResult(value: unknown): { mealName: string; foods: ScanFoo
   if (!Array.isArray(input.foods)) return null;
   const foods = input.foods
     .filter((food): food is Record<string, unknown> => Boolean(food) && typeof food === "object")
-    .map((food) => ({
-      name: String(food.name ?? "").trim(),
-      servingSize: normalizeServingSize(
-        String(food.name ?? "").trim(),
-        String(food.servingSize ?? "מנה משוערת").trim(),
-      ),
-      quantity: Number(food.quantity),
-      calories: Number(food.calories),
-      protein: Number(food.protein),
-      carbs: Number(food.carbs),
-      fat: Number(food.fat),
-      fiber: Number(food.fiber ?? 0),
-    }))
+    .map((food) => {
+      const name = String(food.name ?? "").trim();
+      const originalServingSize = String(food.servingSize ?? "מנה משוערת").trim();
+      const quantity = Number(food.quantity);
+      return {
+        name,
+        servingSize: normalizeServingSize(name, originalServingSize),
+        quantity: normalizeQuantity(name, originalServingSize, quantity),
+        calories: Number(food.calories),
+        protein: Number(food.protein),
+        carbs: Number(food.carbs),
+        fat: Number(food.fat),
+        fiber: Number(food.fiber ?? 0),
+      };
+    })
     .filter(
       (food) =>
         food.name &&
@@ -162,7 +184,7 @@ async function analyzeMealImage(request: Request): Promise<Response> {
           parts: [
             {
               text:
-                "אתה תזונאי שמבצע הערכה חכמה מתמונת ארוחה. החזר JSON בלבד במבנה {mealName:string, foods:Array<{name:string,servingSize:string,quantity:number,calories:number,protein:number,carbs:number,fat:number,fiber:number}>}. זהה רק מאכלים שנראים בתמונה והערך כמויות אכילות. עבור עוף, בשר, דגים, צ'יפס בטטה, ירקות, אורז ופסטה השתמש ב-servingSize של גרמים, למשל '150 גרם'. עבור לחם וטוסט השתמש ב-'1 פרוסה', עבור ביצה ב-'1 יחידה', ועבור פיתה או טורטייה ב-'1 יחידה'. עבור פירות שלמים השתמש ב-'1 יחידה'. הערכים התזונתיים צריכים להתאים ל-servingSize ולכמות. השתמש בשמות עבריים. אם אינך בטוח, עדיין החזר את ההערכה הטובה ביותר, ללא טקסט נוסף.",
+                "אתה תזונאי שמבצע הערכה חכמה מתמונת ארוחה. החזר JSON בלבד במבנה {mealName:string, foods:Array<{name:string,servingSize:string,quantity:number,calories:number,protein:number,carbs:number,fat:number,fiber:number}>}. זהה רק מאכלים שנראים בתמונה והערך כמויות אכילות. quantity הוא מספר היחידות שנראות: אם יש 2 ביצים החזר servingSize:'1 יחידה' ו-quantity:2; אם יש 2 פרוסות לחם החזר servingSize:'1 פרוסה' ו-quantity:2. עבור עוף, בשר, דגים, צ'יפס בטטה, ירקות, אורז ופסטה השתמש ב-servingSize של גרמים, למשל '150 גרם', ובדרך כלל quantity:1. עבור פיתה או טורטייה השתמש ב-'1 יחידה'. עבור פירות שלמים השתמש ב-'1 יחידה' ובכמות המתאימה. הערכים התזונתיים צריכים להתאים ל-servingSize ולכמות. השתמש בשמות עבריים. אם אינך בטוח, עדיין החזר את ההערכה הטובה ביותר, ללא טקסט נוסף.",
             },
           ],
         },
