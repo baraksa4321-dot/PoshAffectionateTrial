@@ -2737,19 +2737,31 @@ export function CoachDashboardPage({
                                       } cursor-pointer text-start transition-colors hover:border-primary/50 hover:bg-primary/5`}
                                     >
                                       <div className="flex items-start justify-between gap-2">
-                                        <button
-                                          type="button"
+                                        <Link
+                                          to="/coach/clients/$clientId/program"
+                                          params={{ clientId: selectedClientId }}
+                                          search={{
+                                            dayId: selectedTrackingWorkout.id,
+                                            ...(clientDetails.programs.find((program) =>
+                                              program.dayIds.includes(selectedTrackingWorkout.id),
+                                            )
+                                              ? {
+                                                  programId: clientDetails.programs.find((program) =>
+                                                    program.dayIds.includes(
+                                                      selectedTrackingWorkout.id,
+                                                    ),
+                                                  )!.id,
+                                                }
+                                              : {}),
+                                            exerciseId: item.exerciseId,
+                                          }}
                                           className="text-start font-bold text-ink hover:text-primary hover:underline"
                                           onClick={(event) => {
                                             event.stopPropagation();
-                                            openTrackedPlan(
-                                              selectedTrackingWorkout.id,
-                                              item.exerciseId,
-                                            );
                                           }}
                                         >
                                           {actualEntry?.exerciseName || exercise?.name || "תרגיל"}
-                                        </button>
+                                        </Link>
                                         <span
                                           className={`shrink-0 text-[10px] font-bold ${
                                             actualEntry ? "text-emerald-700" : "text-muted-foreground"
