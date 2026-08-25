@@ -1978,7 +1978,10 @@ html.night-mode .auth-panel {
 
 /* Compact loading screen: one clean moment, with many tiny animation variations. */
 .loading-screen {
-  background: #f3ece2;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #f7f1ec !important;
   color: #171414;
 }
 
@@ -2050,7 +2053,7 @@ html.night-mode .auth-panel {
 }
 
 .loading-simple-video {
-  background: #f7f2ec;
+  background: #f7f1ec;
   filter: saturate(1.04);
   mix-blend-mode: normal;
 }
