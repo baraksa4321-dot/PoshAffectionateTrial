@@ -294,6 +294,7 @@ export function CoachDashboardPage({
     !trackingLanding &&
     (workspaceMode === "programs" ||
       openEditor === "programs" ||
+      (workspacePage && activeWorkspaceTab === "programs") ||
       (workspaceMode === "all" && activeWorkspaceTab === "programs"));
   const showNutritionBuilder =
     !trackingLanding &&
@@ -1416,6 +1417,8 @@ export function CoachDashboardPage({
   const openTrackedPlan = (workoutId: string, exerciseId?: string) => {
     if (!selectedClientId || !clientDetails) return;
     const program = clientDetails.programs.find((item) => item.dayIds.includes(workoutId));
+    setActiveWorkspaceTab("programs");
+    setOpenEditor("programs");
     navigate({
       to: "/coach/clients/$clientId/program",
       params: { clientId: selectedClientId },
