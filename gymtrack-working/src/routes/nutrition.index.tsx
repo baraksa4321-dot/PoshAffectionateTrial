@@ -1071,7 +1071,10 @@ function NutritionLog() {
                       aria-label="אנימציית ניתוח תמונה"
                       className="h-28 w-28 object-contain"
                     >
-                      <source src="/loading/tinted/user-character-01.webm?v=meal-scan-1" type="video/webm" />
+                      <source
+                        src={`/loading/tinted/${MEAL_SCAN_ILLUSTRATIONS[scanCycle % MEAL_SCAN_ILLUSTRATIONS.length]}.webm?v=meal-scan-${scanCycle}`}
+                        type="video/webm"
+                      />
                     </video>
                     <span className="mt-3 text-sm font-bold text-ink">מנתחת את התמונה…</span>
                     <span className="mt-1 text-[11px] text-muted-foreground">
