@@ -1309,14 +1309,7 @@ export function CoachDashboardPage({
     (profile) => profile.role === "client" && profile.approval_status === "pending",
   );
   const openClientFromOverview = (clientId: string) => {
-    if (!workspacePage) {
-      navigate({ to: "/coach/clients/$clientId", params: { clientId } });
-      return;
-    }
-    setSelectedClientId(clientId);
-    setShowClientWorkspace(true);
-    setEditingProgramId(null);
-    setEditingDayId(null);
+    navigate({ to: "/coach/tracking/$clientId", params: { clientId } });
   };
 
   return (
@@ -1923,18 +1916,19 @@ export function CoachDashboardPage({
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Link
-                            to={
-                              trackingLanding
-                                ? "/coach/tracking/$clientId"
-                                : "/coach/tracking/$clientId"
-                            }
-                            params={{ clientId: c.client_id }}
-                            onClick={(event) => event.stopPropagation()}
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              navigate({
+                                to: "/coach/tracking/$clientId",
+                                params: { clientId: c.client_id },
+                              });
+                            }}
                             className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-primary/20"
-                            >
+                          >
                             פתח דוח
-                          </Link>
+                          </button>
                           <ChevronLeft
                             className={`h-5 w-5 text-muted-foreground transition-transform ${
                               isSelected ? "-rotate-90 text-primary" : ""
