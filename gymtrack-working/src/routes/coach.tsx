@@ -1161,14 +1161,19 @@ export function CoachDashboardPage({
 
   if (!isCoach) return <Navigate to="/" replace />;
 
+  const selfDisplayName = store.userProfile?.fullName?.trim() || "אני";
   const filteredClients = clients.filter((c) => {
     const emailStr = (c.profiles?.email || "").toLowerCase();
     const nameStr = (c.profiles?.full_name || "").toLowerCase();
     const q = clientSearch.toLowerCase();
-    return !q || emailStr.includes(q) || nameStr.includes(q);
+    return Boolean(q) && (emailStr.includes(q) || nameStr.includes(q));
   });
-  const selfDisplayName = store.userProfile?.fullName?.trim() || "אני";
-
+  const clientSearchQuery = clientSearch.trim().toLocaleLowerCase();
+  const selfMatchesSearch =
+    Boolean(clientSearchQuery) &&
+    [selfDisplayName, store.userProfile?.email ?? ""].some((value) =>
+      value.toLocaleLowerCase().includes(clientSearchQuery),
+    );
   const selectedClientInfo = clients.find((c) => c.client_id === selectedClientId);
   const latestProgram = clientDetails?.programs?.[clientDetails.programs.length - 1];
   const latestNutritionDay = [...(clientDetails?.nutritionDays ?? [])].sort((a, b) =>
