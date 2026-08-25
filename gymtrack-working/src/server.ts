@@ -142,7 +142,7 @@ async function analyzeMealImage(request: Request): Promise<Response> {
         ],
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: 1800,
+          maxOutputTokens: 3000,
           responseMimeType: "application/json",
         },
       }),
