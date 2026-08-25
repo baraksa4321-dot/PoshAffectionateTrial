@@ -82,8 +82,9 @@ function normalizeEggCount(name: string, servingSize: string, value: unknown): n
   const explicit = Number(value);
   if (Number.isFinite(explicit) && explicit > 0) return explicit;
   const match = `${name} ${servingSize}`.match(/(\d+(?:[.,]\d+)?)\s*(?:ביצים?|ביצי|eggs?)/i);
-  const parsed = match?.[1] ? Number(match[1].replace(",", ".")) : 2;
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 2;
+  if (!match?.[1]) return undefined;
+  const parsed = Number(match[1].replace(",", "."));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function isImageDataUrl(value: unknown): value is string {

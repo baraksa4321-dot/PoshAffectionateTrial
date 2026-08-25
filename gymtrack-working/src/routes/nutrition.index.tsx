@@ -1225,7 +1225,7 @@ function NutritionLog() {
                       />
                       {food.eggCount !== undefined ? (
                         <label className="mt-2 block text-[11px] text-muted-foreground">
-                          מספר ביצים בחביתה
+                          ביצים
                           <input
                             type="number"
                             min={1}
@@ -1254,7 +1254,7 @@ function NutritionLog() {
                               });
                             }}
                             className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-ink outline-none focus:border-primary"
-                            aria-label="מספר ביצים בחביתה"
+                            aria-label="ביצים"
                           />
                         </label>
                       ) : null}
