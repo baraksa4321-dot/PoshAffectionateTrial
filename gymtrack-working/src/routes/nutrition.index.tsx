@@ -18,7 +18,6 @@ import {
   Utensils,
   X,
   Zap,
-  LoaderCircle,
   ImageIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -1037,10 +1036,19 @@ function NutritionLog() {
               <div className="space-y-3">
                 {scanState === "analyzing" ? (
                   <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-primary/40 bg-primary/5 px-5 py-10 text-center">
-                    <LoaderCircle className="h-9 w-9 animate-spin text-primary" />
+                    <video
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      aria-label="אנימציית ניתוח תמונה"
+                      className="h-28 w-28 object-contain"
+                    >
+                      <source src="/loading/tinted/user-character-01.webm?v=meal-scan-1" type="video/webm" />
+                    </video>
                     <span className="mt-3 text-sm font-bold text-ink">מנתחת את התמונה…</span>
                     <span className="mt-1 text-[11px] text-muted-foreground">
-                      זיהוי מאכלים והערכת כמויות וערכים — בדרך כלל עד 20 שניות
+                      זיהוי מאכלים והערכת כמויות וערכים
                     </span>
                   </div>
                 ) : (
