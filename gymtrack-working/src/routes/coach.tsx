@@ -2550,11 +2550,28 @@ export function CoachDashboardPage({
                                   return (
                                     <div
                                       key={item.id}
+                                      role="button"
+                                      tabIndex={0}
+                                      onClick={() =>
+                                        openTrackedPlan(
+                                          selectedTrackingWorkout.id,
+                                          item.exerciseId,
+                                        )
+                                      }
+                                      onKeyDown={(event) => {
+                                        if (event.key === "Enter" || event.key === " ") {
+                                          event.preventDefault();
+                                          openTrackedPlan(
+                                            selectedTrackingWorkout.id,
+                                            item.exerciseId,
+                                          );
+                                        }
+                                      }}
                                       className={`rounded-xl border px-3 py-2.5 text-[11px] ${
                                         actualEntry
                                           ? "border-emerald-200 bg-emerald-50/70"
                                           : "border-border/60 bg-white/80"
-                                      }`}
+                                      } cursor-pointer text-start transition-colors hover:border-primary/50 hover:bg-primary/5`}
                                     >
                                       <div className="flex items-start justify-between gap-2">
                                         <button
@@ -2621,6 +2638,7 @@ export function CoachDashboardPage({
                                           href={videoUrl}
                                           target="_blank"
                                           rel="noreferrer"
+                                          onClick={(event) => event.stopPropagation()}
                                           className="mt-1 inline-flex items-center rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20"
                                         >
                                           סרטון לתרגיל
