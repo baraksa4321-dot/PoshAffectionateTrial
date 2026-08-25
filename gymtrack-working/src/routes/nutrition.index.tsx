@@ -191,6 +191,7 @@ type ScannedFood = {
   carbs: number;
   fat: number;
   fiber: number;
+  eggCount?: number;
 };
 
 type ScannedMeal = { mealName: string; foods: ScannedFood[] };
@@ -1222,6 +1223,41 @@ function NutritionLog() {
                         className="mt-2 w-full rounded-lg border border-border bg-white px-2.5 py-2 text-[11px] text-ink outline-none focus:border-primary"
                         aria-label={`כמות ${food.name}`}
                       />
+                      {food.eggCount !== undefined ? (
+                        <label className="mt-2 block text-[11px] text-muted-foreground">
+                          מספר ביצים בחביתה
+                          <input
+                            type="number"
+                            min={1}
+                            step={1}
+                            value={food.eggCount}
+                            onChange={(event) => {
+                              const nextEggCount = Number(event.target.value);
+                              if (!Number.isFinite(nextEggCount) || nextEggCount < 1) return;
+                              setScannedMeal((current) => {
+                                if (!current) return current;
+                                const foods = [...current.foods];
+                                const currentFood = foods[index];
+                                if (!currentFood) return current;
+                                const previousEggCount = currentFood.eggCount ?? 2;
+                                const ratio = nextEggCount / previousEggCount;
+                                foods[index] = {
+                                  ...currentFood,
+                                  eggCount: nextEggCount,
+                                  calories: Math.round(currentFood.calories * ratio),
+                                  protein: Math.round(currentFood.protein * ratio * 10) / 10,
+                                  carbs: Math.round(currentFood.carbs * ratio * 10) / 10,
+                                  fat: Math.round(currentFood.fat * ratio * 10) / 10,
+                                  fiber: Math.round(currentFood.fiber * ratio * 10) / 10,
+                                };
+                                return { ...current, foods };
+                              });
+                            }}
+                            className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-ink outline-none focus:border-primary"
+                            aria-label="מספר ביצים בחביתה"
+                          />
+                        </label>
+                      ) : null}
                       <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
                         {(
                           [
