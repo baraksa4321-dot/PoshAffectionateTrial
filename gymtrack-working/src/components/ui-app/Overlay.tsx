@@ -179,7 +179,10 @@ export function Overlay({
         data-overlay-panel="true"
         style={{
           maxHeight: panelMaxHeight,
-          marginBottom: isBottom ? keyboardOffset : 0,
+          // The root is already resized to the visual viewport above. Adding
+          // the keyboard height here as well double-counts the keyboard and
+          // pushes bottom sheets off-screen on mobile Safari.
+          marginBottom: 0,
         }}
         className={`w-full ${
           isFull
