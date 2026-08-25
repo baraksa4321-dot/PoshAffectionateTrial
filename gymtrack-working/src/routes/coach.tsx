@@ -357,10 +357,10 @@ export function CoachDashboardPage({
     if (!clientId) return;
     setSelectedClientId(clientId);
     setShowClientWorkspace(true);
-    setOpenEditor(workspaceMode === "all" ? null : workspaceMode);
+    setOpenEditor(workspacePage || trackingLanding || workspaceMode === "all" ? null : workspaceMode);
     setActiveWorkspaceTab(workspaceMode === "nutrition" ? "nutrition" : "programs");
     setSelectedTrackingWorkoutId(null);
-  }, [workspacePage, clientId, workspaceMode]);
+  }, [trackingLanding, workspacePage, clientId, workspaceMode]);
 
   useEffect(() => {
     if (!selectedClientId) {
