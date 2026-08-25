@@ -3,6 +3,7 @@ import {
   Apple,
   Award,
   ChevronLeft,
+  ChevronRight,
   Crown,
   Dumbbell,
   Edit2,
@@ -1487,7 +1488,10 @@ export function CoachDashboardPage({
   const shiftTrackingDate = (amount: number) => {
     const date = new Date(`${trackingDate}T00:00:00`);
     date.setDate(date.getDate() + amount);
-    setTrackingDate(date.toISOString().slice(0, 10));
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    setTrackingDate(`${year}-${month}-${day}`);
   };
   const exerciseQueryLower = exerciseQuery.trim().toLocaleLowerCase();
   const exerciseMuscleOptions = [
@@ -2712,11 +2716,11 @@ export function CoachDashboardPage({
                       </div>
                        <div className="flex items-center gap-2 rounded-xl bg-white/80 p-2">
                          <button type="button" onClick={() => shiftTrackingDate(-1)} className="grid h-9 w-9 place-items-center rounded-lg border border-border text-ink" aria-label="היום הקודם">
-                           <ChevronLeft className="h-4 w-4" />
+                           <ChevronRight className="h-4 w-4" />
                          </button>
                          <input type="date" value={trackingDate} onChange={(event) => setTrackingDate(event.target.value)} className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink" />
                          <button type="button" onClick={() => shiftTrackingDate(1)} className="grid h-9 w-9 place-items-center rounded-lg border border-border text-ink" aria-label="היום הבא">
-                           <ChevronLeft className="h-4 w-4 rotate-180" />
+                           <ChevronLeft className="h-4 w-4" />
                          </button>
                        </div>
                         {selectedTrackingWorkoutId && selectedTrackingWorkout ? (
@@ -2910,11 +2914,11 @@ export function CoachDashboardPage({
                       </div>
                        <div className="flex items-center gap-2 rounded-xl bg-white/80 p-2">
                          <button type="button" onClick={() => shiftTrackingDate(-1)} className="grid h-9 w-9 place-items-center rounded-lg border border-border text-ink" aria-label="היום הקודם">
-                           <ChevronLeft className="h-4 w-4" />
+                           <ChevronRight className="h-4 w-4" />
                          </button>
                          <input type="date" value={trackingDate} onChange={(event) => setTrackingDate(event.target.value)} className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink" aria-label="תאריך מעקב תזונה" />
                          <button type="button" onClick={() => shiftTrackingDate(1)} className="grid h-9 w-9 place-items-center rounded-lg border border-border text-ink" aria-label="היום הבא">
-                           <ChevronLeft className="h-4 w-4 rotate-180" />
+                           <ChevronLeft className="h-4 w-4" />
                          </button>
                        </div>
                         <div className="grid gap-2 md:grid-cols-2">
