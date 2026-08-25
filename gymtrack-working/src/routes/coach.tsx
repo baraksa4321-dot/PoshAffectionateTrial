@@ -106,11 +106,15 @@ export function CoachDashboardPage({
   workspacePage = false,
   clientId,
   workspaceMode = "all",
+  initialProgramId,
+  initialDayId,
 }: {
   clientsOnly?: boolean;
   workspacePage?: boolean;
   clientId?: string;
   workspaceMode?: "all" | "programs" | "nutrition";
+  initialProgramId?: string;
+  initialDayId?: string;
 }) {
   const store = useGym();
   const navigate = useNavigate();
@@ -577,10 +581,18 @@ export function CoachDashboardPage({
 
   useEffect(() => {
     if (!clientDetails) return;
-    const latestProgram = clientDetails.programs.at(-1);
+    const requestedProgram = initialProgramId
+      ? clientDetails.programs.find((program) => program.id === initialProgramId)
+      : undefined;
+    const latestProgram = requestedProgram ?? clientDetails.programs.at(-1);
     if (latestProgram) {
       setEditingProgramId(latestProgram.id);
-      const firstWorkoutDay = clientDetails.workouts.find((workout) =>
+      const requestedDay = initialDayId
+        ? clientDetails.workouts.find(
+            (workout) => workout.id === initialDayId && latestProgram.dayIds.includes(workout.id),
+          )
+        : undefined;
+      const firstWorkoutDay = requestedDay ?? clientDetails.workouts.find((workout) =>
         latestProgram.dayIds.includes(workout.id),
       );
       setEditingDayId(firstWorkoutDay?.id ?? null);
@@ -594,7 +606,7 @@ export function CoachDashboardPage({
     if (latestNutritionDay) {
       setMenuDate(latestNutritionDay.date);
     }
-  }, [clientDetails]);
+  }, [clientDetails, initialDayId, initialProgramId]);
 
   // OWNER RPC: change a target user's role. The database function remains the
   // only authority for role changes; this UI never writes profiles.role.
@@ -1158,6 +1170,16 @@ export function CoachDashboardPage({
   const trackingNutritionDay = clientDetails?.nutritionDays.find(
     (day) => day.date === trackingDate,
   );
+  const openTrackedPlan = (workoutId: string) => {
+    if (!selectedClientId || !clientDetails) return;
+    const program = clientDetails.programs.find((item) => item.dayIds.includes(workoutId));
+    if (!program) return;
+    navigate({
+      to: "/coach/clients/$clientId/program",
+      params: { clientId: selectedClientId },
+      search: { programId: program.id, dayId: workoutId },
+    });
+  };
   const shiftTrackingDate = (amount: number) => {
     const date = new Date(`${trackingDate}T00:00:00`);
     date.setDate(date.getDate() + amount);
@@ -2372,6 +2394,20 @@ export function CoachDashboardPage({
                                   >
                                     <div className="flex items-center justify-between gap-2">
                                       <strong className="text-ink">{entry.exerciseName}</strong>
+                                      {clientDetails.workouts
+                                        .find((workout) => workout.id === session.workoutId)
+                                        ?.items.some((item) => item.exerciseId === entry.exerciseId) &&
+                                      clientDetails.programs.some((program) =>
+                                        program.dayIds.includes(session.workoutId),
+                                      ) ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => openTrackedPlan(session.workoutId)}
+                                          className="shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/10"
+                                        >
+                                          פתח בתוכנית
+                                        </button>
+                                      ) : null}
                                       <span className="text-[10px] text-muted-foreground">
                                         {entry.feedback?.rating === "easy"
                                           ? "קל"
