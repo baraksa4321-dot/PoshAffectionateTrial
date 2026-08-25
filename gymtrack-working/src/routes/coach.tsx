@@ -234,6 +234,7 @@ export function CoachDashboardPage({
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"programs" | "nutrition">(
     "programs",
   );
+  const [selectedTrackingWorkoutId, setSelectedTrackingWorkoutId] = useState<string | null>(null);
   const [calTarget, setCalTarget] = useState(0);
   const [protTarget, setProtTarget] = useState(0);
   const [menuDate, setMenuDate] = useState(todayKey());
@@ -358,6 +359,7 @@ export function CoachDashboardPage({
     setShowClientWorkspace(true);
     setOpenEditor(workspaceMode === "all" ? null : workspaceMode);
     setActiveWorkspaceTab(workspaceMode === "nutrition" ? "nutrition" : "programs");
+    setSelectedTrackingWorkoutId(null);
   }, [workspacePage, clientId, workspaceMode]);
 
   useEffect(() => {
@@ -1218,6 +1220,9 @@ export function CoachDashboardPage({
   );
   const trackingSessions =
     clientDetails?.history.filter((session) => session.date.slice(0, 10) === trackingDate) ?? [];
+  const visibleTrackingSessions = selectedTrackingWorkoutId
+    ? trackingSessions.filter((session) => session.workoutId === selectedTrackingWorkoutId)
+    : [];
   const trackingNutritionDay = clientDetails?.nutritionDays.find(
     (day) => day.date === trackingDate,
   );
