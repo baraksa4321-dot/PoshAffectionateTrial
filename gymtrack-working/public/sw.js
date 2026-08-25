@@ -1,7 +1,21 @@
-const CACHE_NAME = "myroutine-app-shell-v3";
+const CACHE_NAME = "myroutine-app-shell-v4";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(self.skipWaiting());
+  event.waitUntil(
+    (async () => {
+      await self.skipWaiting();
+      const cache = await caches.open(CACHE_NAME);
+      // The Preview app is served below the Service Worker's scope. Cache
+      // that exact scope URL so a fresh Safari navigation has an HTML shell
+      // available even when it is already in Airplane Mode.
+      try {
+        await cache.add(new URL("./", self.registration.scope).toString());
+      } catch {
+        // The normal fetch handler can populate the shell on the first
+        // online visit if the proxy rejects the install-time request.
+      }
+    })(),
+  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -30,7 +44,7 @@ self.addEventListener("fetch", (event) => {
       const cached = await caches.match(request);
       try {
         const response = await fetch(request);
-        if (response.ok && response.type === "basic") {
+        if (response.ok || response.type === "opaque") {
           const cache = await caches.open(CACHE_NAME);
           await cache.put(request, response.clone());
         }
@@ -38,7 +52,12 @@ self.addEventListener("fetch", (event) => {
       } catch {
         if (cached) return cached;
         if (request.mode === "navigate") {
-          return (await caches.match("/")) ?? new Response("Offline", { status: 503 });
+          const scopeShell = await caches.match(self.registration.scope);
+          return (
+            scopeShell ??
+            (await caches.match("/", { ignoreSearch: true })) ??
+            new Response("Offline", { status: 503 })
+          );
         }
         throw new Error("Offline and no cached app asset is available");
       }
