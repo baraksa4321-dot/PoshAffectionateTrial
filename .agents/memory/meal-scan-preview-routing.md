@@ -10,3 +10,5 @@ Keep app-specific server endpoints off a shared `/api` prefix when another regis
 **How to apply:** Test mutation endpoints through the external Preview URL, not only localhost, whenever multiple artifacts register overlapping paths.
 
 The Gemini request also needs an independent timeout race; aborting the controller immediately after receiving a response can cancel `response.json()` before the body is read.
+
+Resize and JPEG-compress phone images in the browser before sending them; raw camera files can make otherwise healthy model calls appear hung.

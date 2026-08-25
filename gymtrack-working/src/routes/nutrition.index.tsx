@@ -126,17 +126,33 @@ function quantityControlFor(food: FoodItem) {
 
 async function prepareMealImage(file: File): Promise<string> {
   return await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result !== "string" || !/^data:image\/(?:jpeg|jpg|png);base64,/i.test(result)) {
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const maxDimension = 1600;
+      const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = canvas.getContext("2d");
+      if (!context) {
+        reject(new Error("לא ניתן להכין את התמונה לניתוח."));
+        return;
+      }
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const result = canvas.toDataURL("image/jpeg", 0.82);
+      if (!/^data:image\/jpeg;base64,/i.test(result)) {
         reject(new Error("פורמט התמונה אינו נתמך. נסי לבחור JPG או PNG."));
         return;
       }
       resolve(result);
     };
-    reader.onerror = () => reject(new Error("לא ניתן לקרוא את התמונה."));
-    reader.readAsDataURL(file);
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("לא ניתן לקרוא את התמונה."));
+    };
+    image.src = objectUrl;
   });
 }
 
