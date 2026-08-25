@@ -26,7 +26,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd gymtrack-working && npx tsc --noEmit"
+args = "pnpm run release:check"
 
 [workflows.workflow.metadata]
 isValidation = true

@@ -9,3 +9,4 @@
 - [Preferred visual direction](preferred-visual-direction.md) — The user approved the selected clean, ordered premium My Routine direction as the visual baseline.
 - [Offline route chunks](offline-route-chunks.md) — Offline navigation needs route-module warmup; caching only the initial HTML shell is insufficient for code-split TanStack pages.
 - [New-user profile repair](new-user-profile-repair.md) — Auth users can exist without a profiles row; hydrate must create only their own client profile through RLS.
+- [GymTrack release preview](gymtrack-release-preview.md) — Smoke-test the registered Vite dev preview after building; package-level vite preview can target the wrong output layout.
