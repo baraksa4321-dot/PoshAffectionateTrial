@@ -595,15 +595,19 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (
       authTheme === "pink" ||
       authTheme === "blue" ||
-      authTheme === "beige" ||
       authTheme === "green" ||
-      authTheme === "yellow" ||
       authTheme === "black" ||
       authTheme === "lavender" ||
       authTheme === "peach" ||
-      authTheme === "mint"
+      authTheme === "mint" ||
+      authTheme === "beige" ||
+      authTheme === "yellow"
     ) {
-      nextData.userProfile = { ...(nextData.userProfile ?? { weight: 0 }), theme: authTheme };
+      const safeTheme =
+        authTheme === "mint" || authTheme === "beige" || authTheme === "yellow"
+          ? "light-brown"
+          : authTheme;
+      nextData.userProfile = { ...(nextData.userProfile ?? { weight: 0 }), theme: safeTheme };
     }
 
     // 2. Independent account-level queries run together so login does not

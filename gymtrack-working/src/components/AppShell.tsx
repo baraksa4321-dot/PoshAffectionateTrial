@@ -296,7 +296,11 @@ export function AppShell({
           }
           if (error.message.toLowerCase().includes("invalid login credentials")) {
             throw new Error(
-              "האימייל או הסיסמה אינם נכונים. בדקי את הפרטים או השתמשי ב'שכחתי את הסיסמה'.",
+              genderText(
+                gender,
+                "האימייל או הסיסמה אינם נכונים. בדקי את הפרטים או השתמשי ב'שכחתי את הסיסמה'.",
+                "האימייל או הסיסמה אינם נכונים. בדוק את הפרטים או השתמש ב'שכחתי את הסיסמה'.",
+              ),
             );
           }
           throw error;
@@ -817,11 +821,11 @@ export function AppShell({
                 }}
                 className="text-[12px] font-bold text-primary hover:underline cursor-pointer"
               >
-                {isResettingPassword
-                  ? "חזרה להתחברות"
-                  : isSignUp
-                    ? "כבר יש לך חשבון? התחבר כאן"
-                    : "אין לך חשבון? הירשם כאן"}
+                 {isResettingPassword
+                   ? "חזרה להתחברות"
+                   : isSignUp
+                     ? genderText(gender, "כבר יש לך חשבון? התחברי כאן", "כבר יש לך חשבון? התחבר כאן")
+                     : genderText(gender, "אין לך חשבון? הירשמי כאן", "אין לך חשבון? הירשם כאן")}
               </button>
               {!isSignUp && !isResettingPassword ? (
                 <button

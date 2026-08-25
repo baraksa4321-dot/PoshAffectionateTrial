@@ -813,7 +813,9 @@ function NutritionLog() {
                 </label>
               ) : null}
               <PrimaryButton className="mt-3" onClick={addSelectedRecipeToLog}>
-                {recipeMealId ? "הוסיפי לארוחה" : "תעדי כארוחה"}
+                {recipeMealId
+                  ? genderText(gender, "הוסיפי לארוחה", "הוסף לארוחה")
+                  : genderText(gender, "תעדי כארוחה", "תעד כארוחה")}
               </PrimaryButton>
               <SecondaryButton className="mt-2 w-full" onClick={saveSelectedRecipe}>
                 שמרי בספרייה האישית
@@ -1078,7 +1080,9 @@ function NutritionLog() {
                   הערכה חכמה
                 </p>
                 <h2 className="mt-1 font-display text-[20px] font-semibold text-ink">
-                  {scannedMeal ? "בדקי את הארוחה" : "צלמי את הארוחה שלך"}
+                  {scannedMeal
+                    ? genderText(gender, "בדקי את הארוחה", "בדוק את הארוחה")
+                    : genderText(gender, "צלמי את הארוחה שלך", "צלם את הארוחה שלך")}
                 </h2>
                 <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
                   {scannedMeal
@@ -1162,7 +1166,11 @@ function NutritionLog() {
                   </div>
                 ) : null}
                 <p className="text-center text-[10.5px] leading-relaxed text-muted-foreground">
-                  כדי לקבל הערכה טובה יותר, צלמי את כל הצלחת באור טוב ומזווית עליונה.
+                  {genderText(
+                    gender,
+                    "כדי לקבל הערכה טובה יותר, צלמי את כל הצלחת באור טוב ומזווית עליונה.",
+                    "כדי לקבל הערכה טובה יותר, צלם את כל הצלחת באור טוב ומזווית עליונה.",
+                  )}
                 </p>
               </div>
             ) : (

@@ -1954,7 +1954,7 @@ export function CoachDashboardPage({
             <div className="surface-card p-4 text-sm text-muted-foreground">
               {clients.length === 0
                 ? "עדיין אין מתאמנים משויכים. עברי ללשונית מתאמנים כדי להוסיף מתאמן."
-                : "טוענת את סיכום המתאמנים..."}
+                : genderText(gender, "טוענת את סיכום המתאמנים...", "טוען את סיכום המתאמנים...")}
             </div>
           ) : (
             <div className="surface-card space-y-3 p-4">
@@ -2080,7 +2080,11 @@ export function CoachDashboardPage({
                     </span>
                   </div>
                   <p className="mt-1 text-[11px] leading-relaxed text-amber-900/75">
-                    בדקי את השם המלא ובחרי מאמן לפני שהחשבון נכנס למערכת.
+                    {genderText(
+                      gender,
+                      "בדקי את השם המלא ובחרי מאמן לפני שהחשבון נכנס למערכת.",
+                      "בדוק את השם המלא ובחר מאמן לפני שהחשבון נכנס למערכת.",
+                    )}
                   </p>
                   <div className="mt-3 space-y-2">
                     {pendingApprovals.map((profile) => (
@@ -2353,7 +2357,9 @@ export function CoachDashboardPage({
           <>
             {trackingLanding ? (
               <section className="surface-card mb-2 border-primary/15 bg-primary/5 px-3 py-2 text-start">
-                <p className="text-xs font-bold text-ink">בחרי מתאמן כדי לצפות במעקב היומי.</p>
+                <p className="text-xs font-bold text-ink">
+                  {genderText(gender, "בחרי מתאמן כדי לצפות במעקב היומי.", "בחר מתאמן כדי לצפות במעקב היומי.")}
+                </p>
               </section>
             ) : null}
             {/* Client Search & List */}
@@ -2624,7 +2630,7 @@ export function CoachDashboardPage({
                           בחירת אימון
                         </p>
                         <p className="mt-1 text-xs font-semibold text-ink">
-                          בחרי אימון כדי לראות את הדוח המלא שלו
+                          {genderText(gender, "בחרי אימון כדי לראות את הדוח המלא שלו", "בחר אימון כדי לראות את הדוח המלא שלו")}
                         </p>
                       </div>
                       <div className="grid gap-2 sm:grid-cols-2">
@@ -2664,7 +2670,7 @@ export function CoachDashboardPage({
 
               {loadingDetails ? (
                 <div className="surface-card p-6 text-center text-xs text-muted-foreground animate-pulse">
-                  טוען נתוני מתאמן מ-Supabase...
+                  {genderText(gender, "טוענת נתוני מתאמן מ-Supabase...", "טוען נתוני מתאמן מ-Supabase...")}
                 </div>
               ) : clientDetails ? (
                 <div
@@ -3167,7 +3173,11 @@ export function CoachDashboardPage({
                           </div>
                       ) : (
                         <p className="text-center text-xs text-muted-foreground">
-                            "בחרי אימון מהרשימה כדי לראות את הדוח שלו."
+                            genderText(
+                              gender,
+                              "בחרי אימון מהרשימה כדי לראות את הדוח שלו.",
+                              "בחר אימון מהרשימה כדי לראות את הדוח שלו.",
+                            )
                         </p>
                       )}
                     </section>
@@ -3937,7 +3947,9 @@ export function CoachDashboardPage({
                                                           }
                                                           className="mt-1 h-9 w-full rounded-lg border border-violet-200 bg-background px-2 text-xs font-normal text-ink"
                                                         >
-                                                          <option value="">בחרי תרגיל בן־זוג</option>
+                                                          <option value="">
+                                                            {genderText(gender, "בחרי תרגיל בן־זוג", "בחר תרגיל בן־זוג")}
+                                                          </option>
                                                           {store.exercises
                                                             .filter((exercise) => exercise.id !== exItem.exerciseId)
                                                             .map((exercise) => (
@@ -4166,7 +4178,7 @@ export function CoachDashboardPage({
                                               </div>
                                             <div>
                                               <label className="block text-[10px] font-bold text-muted-foreground mb-1">
-                                                בחר תרגיל מספרייה
+                                                {genderText(gender, "בחרי תרגיל מספרייה", "בחר תרגיל מספרייה")}
                                               </label>
                                               <button
                                                 type="button"
@@ -4498,7 +4510,11 @@ export function CoachDashboardPage({
                                                         className="block h-9 w-full min-w-0 max-w-full truncate rounded-lg border border-border bg-white px-2 text-xs text-ink"
                                                       >
                                                         <option value="">
-                                                          בחרי תרגיל שמתבצע מיד אחרי הראשון...
+                                                          {genderText(
+                                                            gender,
+                                                            "בחרי תרגיל שמתבצע מיד אחרי הראשון...",
+                                                            "בחר תרגיל שמתבצע מיד אחרי הראשון...",
+                                                          )}
                                                         </option>
                                                         {filteredExerciseOptions
                                                           .filter(
@@ -5180,7 +5196,7 @@ export function CoachDashboardPage({
                     }}
                     className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground"
                   >
-                    נסי שוב
+                    {genderText(gender, "נסי שוב", "נסה שוב")}
                   </button>
                 </div>
               )}

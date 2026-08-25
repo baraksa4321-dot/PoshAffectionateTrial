@@ -25,28 +25,12 @@ export const THEME_PALETTES: Array<{
     previewAccent: "#bfe5f5",
   },
   {
-    id: "beige",
-    label: "בז׳",
-    description: "בז׳ חם עם גוונים טבעיים",
-    swatch: "#c3a47b",
-    previewSurface: "#fffdf9",
-    previewAccent: "#eadbc5",
-  },
-  {
     id: "green",
     label: "ירוק",
     description: "ירוק טבעי עם גוונים בהירים ועמוקים",
     swatch: "#3f8a67",
     previewSurface: "#ffffff",
     previewAccent: "#c5ead5",
-  },
-  {
-    id: "yellow",
-    label: "צהוב",
-    description: "צהוב עדין עם גוונים בהירים",
-    swatch: "#d7b54a",
-    previewSurface: "#fffdf4",
-    previewAccent: "#f2e4a9",
   },
   {
     id: "black",
@@ -106,13 +90,18 @@ export const THEME_PALETTES: Array<{
   },
 ];
 
-export const DEFAULT_THEME: ThemePalette = "cream";
+export const DEFAULT_THEME: ThemePalette = "light-brown";
 
 export function applyTheme(theme: ThemePalette | undefined) {
   if (typeof document === "undefined") return;
-  // "mint" was removed from the chooser; old profiles should fall back
-  // gracefully instead of leaving the document without a matching palette.
-  const safeTheme = theme === ("mint" as ThemePalette) ? DEFAULT_THEME : theme || DEFAULT_THEME;
+  // Removed palettes and legacy values fall back safely without overwriting
+  // an existing valid palette selected by the user.
+  const safeTheme =
+    theme === ("mint" as ThemePalette) ||
+    theme === ("beige" as ThemePalette) ||
+    theme === ("yellow" as ThemePalette)
+      ? DEFAULT_THEME
+      : theme || DEFAULT_THEME;
   document.documentElement.dataset["theme"] = safeTheme;
 }
 

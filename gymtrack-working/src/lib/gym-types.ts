@@ -2,9 +2,7 @@ export type UserRole = "owner" | "coach" | "client";
 export type ThemePalette =
   | "pink"
   | "blue"
-  | "beige"
   | "green"
-  | "yellow"
   | "black"
   | "lavender"
   | "peach"

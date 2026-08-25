@@ -142,6 +142,7 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const { userProfile } = useGym();
   useLoadingCycleEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
@@ -163,7 +164,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            נסה שוב
+             {genderText(userProfile?.gender, "נסי שוב", "נסה שוב")}
           </button>
           <a
             href="/"
@@ -1235,7 +1236,7 @@ function RootContent() {
                 onClick={retryProfileHydration}
                 className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
               >
-                נסי שוב
+                 {genderText(userProfile?.gender, "נסי שוב", "נסה שוב")}
               </button>
               <button
                 type="button"

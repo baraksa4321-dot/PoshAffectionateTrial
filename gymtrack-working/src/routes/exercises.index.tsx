@@ -44,7 +44,7 @@ function Library() {
     return (
       <AppShell title="ספריית תרגילים" kicker="בודקת הרשאות">
         <div className="surface-card mt-4 rounded-3xl p-6 text-center text-sm text-muted-foreground">
-          טוענת את תפקיד החשבון המאומת...
+           {genderText(gender, "טוענת את תפקיד החשבון המאומת...", "טוען את תפקיד החשבון המאומת...")}
         </div>
       </AppShell>
     );
@@ -90,7 +90,7 @@ function Library() {
         <Link
           to="/exercises/$exerciseId"
           params={{ exerciseId: "new" }}
-          aria-label="הוסף תרגיל"
+          aria-label={genderText(gender, "הוסיפי תרגיל", "הוסף תרגיל")}
           className="press grid h-11 w-11 place-items-center rounded-2xl bg-primary text-primary-foreground cursor-pointer"
         >
           <Plus className="h-5 w-5" strokeWidth={2.4} />
