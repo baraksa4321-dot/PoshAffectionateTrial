@@ -19,6 +19,7 @@ import {
   X,
   Zap,
   LoaderCircle,
+  ImageIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
@@ -1009,35 +1010,49 @@ function NutritionLog() {
 
             {!scannedMeal ? (
               <div className="space-y-3">
-                <label className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-primary/40 bg-primary/5 px-5 py-10 text-center transition-colors hover:bg-primary/10">
-                  {scanState === "analyzing" ? (
-                    <>
-                      <LoaderCircle className="h-9 w-9 animate-spin text-primary" />
-                      <span className="mt-3 text-sm font-bold text-ink">מנתחת את התמונה…</span>
-                      <span className="mt-1 text-[11px] text-muted-foreground">
-                        זיהוי מאכלים והערכת כמויות וערכים
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <Camera className="h-9 w-9 text-primary" />
-                      <span className="mt-3 text-sm font-bold text-ink">צילום או בחירת תמונה</span>
-                      <span className="mt-1 text-[11px] text-muted-foreground">JPG או PNG עד 20MB</span>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png"
-                    capture="environment"
-                    className="sr-only"
-                    disabled={scanState === "analyzing"}
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      event.target.value = "";
-                      if (file) void scanMealImage(file);
-                    }}
-                  />
-                </label>
+                {scanState === "analyzing" ? (
+                  <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-primary/40 bg-primary/5 px-5 py-10 text-center">
+                    <LoaderCircle className="h-9 w-9 animate-spin text-primary" />
+                    <span className="mt-3 text-sm font-bold text-ink">מנתחת את התמונה…</span>
+                    <span className="mt-1 text-[11px] text-muted-foreground">
+                      זיהוי מאכלים והערכת כמויות וערכים
+                    </span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-primary/40 bg-primary/5 px-3 py-8 text-center transition-colors hover:bg-primary/10">
+                      <Camera className="h-8 w-8 text-primary" />
+                      <span className="mt-3 text-sm font-bold text-ink">צילום חדש</span>
+                      <span className="mt-1 text-[10px] text-muted-foreground">פתיחת המצלמה</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png"
+                        capture="environment"
+                        className="sr-only"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = "";
+                          if (file) void scanMealImage(file);
+                        }}
+                      />
+                    </label>
+                    <label className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-primary/40 bg-primary/5 px-3 py-8 text-center transition-colors hover:bg-primary/10">
+                      <ImageIcon className="h-8 w-8 text-primary" />
+                      <span className="mt-3 text-sm font-bold text-ink">מהגלריה</span>
+                      <span className="mt-1 text-[10px] text-muted-foreground">בחירת תמונה קיימת</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png"
+                        className="sr-only"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = "";
+                          if (file) void scanMealImage(file);
+                        }}
+                      />
+                    </label>
+                  </div>
+                )}
                 {scanState === "error" ? (
                   <div className="rounded-2xl bg-destructive/10 px-3 py-2.5 text-[12px] font-semibold text-destructive">
                     {scanError}
