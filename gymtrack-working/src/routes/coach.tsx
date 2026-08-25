@@ -269,7 +269,7 @@ export function CoachDashboardPage({
   const [profileGender, setProfileGender] = useState<"female" | "male" | "">("");
   const [profileNotice, setProfileNotice] = useState("");
   const [showBmrCalculator, setShowBmrCalculator] = useState(false);
-  const showClientOverview = !workspacePage && !openEditor;
+  const showClientOverview = !trackingLanding && !workspacePage && !openEditor;
 
   const loadCoachClients = useCallback(async () => {
     setManagementError("");
@@ -2072,7 +2072,7 @@ export function CoachDashboardPage({
                 </button>
               </div>
 
-              {(workspacePage || openEditor) && clientDetails ? (
+              {(trackingLanding || workspacePage || openEditor) && clientDetails ? (
                 <>
                   <nav
                     aria-label="ניווט בסביבת העריכה"
@@ -2487,7 +2487,7 @@ export function CoachDashboardPage({
                     </section>
                   ) : null}
 
-                  {workspacePage &&
+                  {(trackingLanding || workspacePage) &&
                   ((trackingLanding && activeWorkspaceTab === "programs") ||
                     (!trackingLanding && workspaceMode === "programs" && openEditor === null)) ? (
                     <section className="surface-card space-y-3 rounded-2xl border border-amber-200 bg-amber-50/35 p-4">
@@ -2654,7 +2654,7 @@ export function CoachDashboardPage({
                     </section>
                   ) : null}
 
-                  {workspacePage &&
+                  {(trackingLanding || workspacePage) &&
                   ((trackingLanding && activeWorkspaceTab === "nutrition") ||
                     (!trackingLanding && workspaceMode === "nutrition" && openEditor === null)) ? (
                     <section className="surface-card space-y-3 rounded-2xl border border-amber-200 bg-amber-50/35 p-4">
