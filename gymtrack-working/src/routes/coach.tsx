@@ -234,6 +234,14 @@ export function CoachDashboardPage({
   const [programQuery, setProgramQuery] = useState("");
   const [targetWeight, setTargetWeight] = useState(20);
   const [setsCount, setSetsCount] = useState(3);
+  useEffect(() => {
+    const createdExerciseId = window.sessionStorage.getItem("gymtrack-created-exercise-id");
+    if (!createdExerciseId) return;
+    if (!store.exercises.some((exercise) => exercise.id === createdExerciseId)) return;
+    setSelectedExId(createdExerciseId);
+    setExerciseBuilderNotice("התרגיל החדש נבחר להוספה לאימון.");
+    window.sessionStorage.removeItem("gymtrack-created-exercise-id");
+  }, [store.exercises]);
   const [setModes, setSetModes] = useState<Array<"normal" | "warmup" | "drop" | "superset">>([
     "normal",
     "normal",
