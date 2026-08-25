@@ -37,6 +37,25 @@ function scanResponse(body: unknown, status: number, scanId: string, startedAt: 
   return response;
 }
 
+function normalizeServingSize(name: string, servingSize: string): string {
+  const food = name.toLocaleLowerCase();
+  const gramsMatch = servingSize.match(/(\d+(?:[.,]\d+)?)\s*(?:g|גרם)/i);
+  const grams = gramsMatch?.[1]?.replace(",", ".");
+  const weightBased =
+    /(עוף|חזה עוף|פרגית|בשר|בקר|הודו|דג|סלמון|טונה|שניצל|קציצה|צ'יפס|ציפס|בטטה|תפוח אדמה|ירק|סלט|אורז|פסטה|קוסקוס|קינואה|chicken|beef|turkey|fish|salmon|tuna|fries|sweet potato|potato|vegetable|rice|pasta|quinoa)/i.test(
+      food,
+    );
+  if (weightBased) return `${grams ?? "100"} גרם`;
+  if (/(לחם|לחמנייה|לחמניה|טוסט|פרוסת לחם|פיתה|טורטייה|bread|toast|bun|pita|tortilla)/i.test(food)) {
+    return /פיתה|טורטייה|pita|tortilla/i.test(food) ? "1 יחידה" : "1 פרוסה";
+  }
+  if (/(ביצה|ביצים|egg)/i.test(food)) return "1 יחידה";
+  if (/(בננה|תפוח|תפוז|פרי|אפרסק|אגס|banana|apple|orange|peach|pear|fruit)/i.test(food)) {
+    return "1 יחידה";
+  }
+  return servingSize || "מנה משוערת";
+}
+
 function isImageDataUrl(value: unknown): value is string {
   return (
     typeof value === "string" &&
@@ -53,7 +72,10 @@ function normalizeScanResult(value: unknown): { mealName: string; foods: ScanFoo
     .filter((food): food is Record<string, unknown> => Boolean(food) && typeof food === "object")
     .map((food) => ({
       name: String(food.name ?? "").trim(),
-      servingSize: String(food.servingSize ?? "מנה משוערת").trim(),
+      servingSize: normalizeServingSize(
+        String(food.name ?? "").trim(),
+        String(food.servingSize ?? "מנה משוערת").trim(),
+      ),
       quantity: Number(food.quantity),
       calories: Number(food.calories),
       protein: Number(food.protein),
@@ -140,7 +162,7 @@ async function analyzeMealImage(request: Request): Promise<Response> {
           parts: [
             {
               text:
-                "אתה תזונאי שמבצע הערכה חכמה מתמונת ארוחה. החזר JSON בלבד במבנה {mealName:string, foods:Array<{name:string,servingSize:string,quantity:number,calories:number,protein:number,carbs:number,fat:number,fiber:number}>}. זהה רק מאכלים שנראים בתמונה, הערך כמויות אכילות, והערך ערכים תזונתיים למנה אחת. השתמש בשמות עבריים. אם אינך בטוח, עדיין החזר את ההערכה הטובה ביותר, ללא טקסט נוסף.",
+                "אתה תזונאי שמבצע הערכה חכמה מתמונת ארוחה. החזר JSON בלבד במבנה {mealName:string, foods:Array<{name:string,servingSize:string,quantity:number,calories:number,protein:number,carbs:number,fat:number,fiber:number}>}. זהה רק מאכלים שנראים בתמונה והערך כמויות אכילות. עבור עוף, בשר, דגים, צ'יפס בטטה, ירקות, אורז ופסטה השתמש ב-servingSize של גרמים, למשל '150 גרם'. עבור לחם וטוסט השתמש ב-'1 פרוסה', עבור ביצה ב-'1 יחידה', ועבור פיתה או טורטייה ב-'1 יחידה'. עבור פירות שלמים השתמש ב-'1 יחידה'. הערכים התזונתיים צריכים להתאים ל-servingSize ולכמות. השתמש בשמות עבריים. אם אינך בטוח, עדיין החזר את ההערכה הטובה ביותר, ללא טקסט נוסף.",
             },
           ],
         },
