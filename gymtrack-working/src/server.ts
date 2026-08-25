@@ -117,7 +117,7 @@ async function analyzeMealImage(request: Request): Promise<Response> {
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   let response: Response;
   try {
     const imageMatch = payload.image.match(/^data:(image\/(?:jpeg|jpg|png));base64,(.+)$/i);
@@ -127,8 +127,8 @@ async function analyzeMealImage(request: Request): Promise<Response> {
     if (!apiKey) {
       return scanResponse({ error: "חיבור ניתוח התמונות עדיין לא הוגדר." }, 503, scanId, startedAt);
     }
-    response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
+    const geminiRequest = fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${encodeURIComponent(apiKey)}`,
       {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -158,11 +158,21 @@ async function analyzeMealImage(request: Request): Promise<Response> {
       }),
       },
     );
+    const timeoutResponse = new Promise<Response>((_, reject) => {
+      timeout = setTimeout(
+        () => {
+          controller.abort();
+          reject(new DOMException("Gemini request timed out", "TimeoutError"));
+        },
+        GEMINI_TIMEOUT_MS,
+      );
+    });
+    response = await Promise.race([geminiRequest, timeoutResponse]);
   } catch (error) {
     console.error("Gemini meal scan request failed", error);
     return scanResponse({ error: "שירות ניתוח התמונות לא זמין כרגע. נסי שוב בעוד רגע." }, 504, scanId, startedAt);
   } finally {
-    clearTimeout(timeout);
+    if (timeout) clearTimeout(timeout);
   }
   if (!response.ok) {
     console.error("Gemini meal scan failed", response.status, (await response.clone().text()).slice(0, 1000));
