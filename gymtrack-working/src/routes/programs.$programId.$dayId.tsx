@@ -690,7 +690,7 @@ function SortableItem({
         <Stepper
           label="מנוחה"
           value={item.rest}
-          step="any"
+          step={0.1}
           suffix="שניות"
           onChange={(value) => onPatch(item.id, { rest: value })}
         />
@@ -773,7 +773,7 @@ function SortableItem({
                 <Stepper
                   label="משקל"
                   value={set.weight}
-                  step="any"
+                  step={0.1}
                   suffix="ק״ג"
                   onChange={(weight) =>
                     onPatch(item.id, {
@@ -844,7 +844,7 @@ function SortableItem({
                   <Stepper
                     label="ק״ג"
                     value={w.weight}
-                    step="any"
+                    step={0.1}
                     onChange={(value) => patchWarmup(w.id, { weight: value })}
                   />
                   <Stepper

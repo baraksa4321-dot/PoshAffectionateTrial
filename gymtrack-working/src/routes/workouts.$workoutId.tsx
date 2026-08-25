@@ -168,14 +168,14 @@ function Builder() {
               <Stepper
                 label="משקל"
                 value={item.weight}
-                step="any"
+                step={0.1}
                 suffix="ק״ג"
                 onChange={(v) => patchItem(item.id, { weight: v })}
               />
               <Stepper
                 label="מנוחה"
                 value={item.rest}
-                step="any"
+                step={0.1}
                 suffix="ש׳"
                 onChange={(v) => patchItem(item.id, { rest: v })}
               />

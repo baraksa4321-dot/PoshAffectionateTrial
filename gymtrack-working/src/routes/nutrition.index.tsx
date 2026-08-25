@@ -793,7 +793,7 @@ function NutritionLog() {
               <Stepper
                 label="מנות"
                 value={recipeServings}
-                step="any"
+                step={0.1}
                 min={0.5}
                 onChange={setRecipeServings}
               />
@@ -1027,7 +1027,7 @@ function NutritionLog() {
                             <Stepper
                               label="כמות"
                               value={food.quantity}
-                              step="any"
+                              step={0.1}
                               onChange={(v) =>
                                 updateMealFood(date, meal.id, { id: food.id, quantity: v })
                               }
@@ -1547,7 +1547,7 @@ function NutritionLog() {
                     <Stepper
                       label={quantityControl.label}
                       value={pickerQuantity * quantityControl.scale}
-                      step="any"
+                      step={0.1}
                       min={quantityControl.step}
                       onChange={(value) => setPickerQuantity(value / quantityControl.scale)}
                     />

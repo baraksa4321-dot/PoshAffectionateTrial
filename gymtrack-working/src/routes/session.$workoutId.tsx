@@ -820,7 +820,7 @@ function Session() {
                           <Stepper
                             label="משקל בפועל"
                             value={s.weight}
-                            step="any"
+                            step={0.1}
                             suffix="ק״ג"
                             onChange={(v) => patchSet(ei, si, { weight: v })}
                           />

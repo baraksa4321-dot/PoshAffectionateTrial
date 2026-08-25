@@ -102,19 +102,19 @@ function normalizeScanResult(value: unknown): { mealName: string; foods: ScanFoo
   const foods = input.foods
     .filter((food): food is Record<string, unknown> => Boolean(food) && typeof food === "object")
     .map((food) => {
-      const name = String(food.name ?? "").trim();
-      const originalServingSize = String(food.servingSize ?? "מנה משוערת").trim();
-      const quantity = Number(food.quantity);
-      const eggCount = normalizeEggCount(name, originalServingSize, food.eggCount);
+      const name = String(food["name"] ?? "").trim();
+      const originalServingSize = String(food["servingSize"] ?? "מנה משוערת").trim();
+      const quantity = Number(food["quantity"]);
+      const eggCount = normalizeEggCount(name, originalServingSize, food["eggCount"]);
       return {
         name,
         servingSize: normalizeServingSize(name, originalServingSize),
         quantity: normalizeQuantity(name, originalServingSize, quantity),
-        calories: Number(food.calories),
-        protein: Number(food.protein),
-        carbs: Number(food.carbs),
-        fat: Number(food.fat),
-        fiber: Number(food.fiber ?? 0),
+        calories: Number(food["calories"]),
+        protein: Number(food["protein"]),
+        carbs: Number(food["carbs"]),
+        fat: Number(food["fat"]),
+        fiber: Number(food["fiber"] ?? 0),
         ...(eggCount ? { eggCount } : {}),
       };
     })
@@ -181,10 +181,11 @@ async function analyzeMealImage(request: Request): Promise<Response> {
     const imageMatch = payload.image.match(/^data:(image\/(?:jpeg|jpg|png));base64,(.+)$/i);
     if (!imageMatch) return scanResponse({ error: "פורמט התמונה אינו נתמך." }, 400, scanId, startedAt);
     const [, mimeType, imageData] = imageMatch;
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env["GEMINI_API_KEY"];
     if (!apiKey) {
       return scanResponse({ error: "חיבור ניתוח התמונות עדיין לא הוגדר." }, 503, scanId, startedAt);
     }
+    if (!imageData) return scanResponse({ error: "התמונה אינה תקינה." }, 400, scanId, startedAt);
     console.info("Meal scan sending to Gemini", scanId, imageData.length);
     const geminiRequest = fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${encodeURIComponent(apiKey)}`,
