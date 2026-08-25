@@ -368,13 +368,55 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
   const nextData: GymData = { ...localState };
 
   try {
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+
     // 1. Profile
-    const { data: profile, error: profileError } = await supabase
+    let { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", userId)
       .maybeSingle();
     if (profileError) throw new Error(`Profile pull failed: ${profileError.message}`);
+
+    // Some Supabase projects do not have the usual auth -> profiles trigger.
+    // A newly authenticated user must still be able to enter the app, so
+    // create only their own minimal client profile through the normal RLS path.
+    if (!profile && authUser?.id === userId) {
+      const metadata = authUser.user_metadata ?? {};
+      const { error: createProfileError } = await supabase.from("profiles").upsert(
+        {
+          id: userId,
+          email: authUser.email,
+          full_name:
+            typeof metadata["full_name"] === "string" ? metadata["full_name"] : undefined,
+          gender:
+            metadata["gender"] === "male" || metadata["gender"] === "female"
+              ? metadata["gender"]
+              : undefined,
+          role: "client",
+          weight_kg: 65,
+          today_routine_enabled: true,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" },
+      );
+      if (createProfileError) {
+        throw new Error(`Profile creation failed: ${createProfileError.message}`);
+      }
+
+      const refreshedProfile = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+      profile = refreshedProfile.data;
+      profileError = refreshedProfile.error;
+      if (profileError) {
+        throw new Error(`Profile pull failed: ${profileError.message}`);
+      }
+    }
 
     if (!profile) throw new Error("Profile pull failed: authenticated user has no profile");
     if (profile.role !== "owner" && profile.role !== "coach" && profile.role !== "client") {
@@ -404,9 +446,6 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       ...(coachId === undefined ? {} : { coachId }),
     };
 
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
     const authTheme = authUser?.user_metadata?.["theme"];
     if (
       authTheme === "pink" ||
