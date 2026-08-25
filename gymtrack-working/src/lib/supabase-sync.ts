@@ -606,12 +606,23 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       nextData.userProfile = { ...(nextData.userProfile ?? { weight: 0 }), theme: authTheme };
     }
 
-    // 2. Fetch Coach Messages if Client
-    const { data: messages, error: messagesError } = await supabase
-      .from("coach_messages")
-      .select("*")
-      .eq("client_id", userId)
-      .order("created_at", { ascending: false });
+    // 2. Independent account-level queries run together so login does not
+    // wait for each table one after another.
+    const [
+      { data: messages, error: messagesError },
+      { data: broadcasts, error: broadcastsError },
+    ] = await Promise.all([
+      supabase
+        .from("coach_messages")
+        .select("*")
+        .eq("client_id", userId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("broadcast_announcements")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(30),
+    ]);
     if (messagesError) throw new Error(`Messages pull failed: ${messagesError.message}`);
 
     if (messages && messages.length > 0) {
@@ -625,11 +636,6 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       }));
     }
 
-    const { data: broadcasts, error: broadcastsError } = await supabase
-      .from("broadcast_announcements")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(30);
     if (
       broadcastsError &&
       !isMissingTableInSchemaCache(broadcastsError, "broadcast_announcements")
@@ -705,16 +711,14 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 5. Programs & Days
-    const { data: dbPrograms, error: programsError } = await supabase
-      .from("programs")
-      .select("*")
-      .eq("user_id", userId);
+    const [
+      { data: dbPrograms, error: programsError },
+      { data: dbProgramDays, error: programDaysError },
+    ] = await Promise.all([
+      supabase.from("programs").select("*").eq("user_id", userId),
+      supabase.from("program_days").select("*").eq("user_id", userId),
+    ]);
     if (programsError) throw new Error(`Programs pull failed: ${programsError.message}`);
-
-    const { data: dbProgramDays, error: programDaysError } = await supabase
-      .from("program_days")
-      .select("*")
-      .eq("user_id", userId);
     if (programDaysError) throw new Error(`Program days pull failed: ${programDaysError.message}`);
 
     if (dbPrograms) {
@@ -750,12 +754,36 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       nextData.workouts = Array.from(workoutsMap.values());
     }
 
-    // 6. History Sessions
-    const { data: dbSessions, error: sessionsError } = await supabase
-      .from("workout_sessions")
-      .select("*")
-      .eq("user_id", userId)
-      .order("date", { ascending: false });
+    // 6–7c. Independent logs are fetched in one batch.
+    const [
+      { data: dbSessions, error: sessionsError },
+      { data: dbBodyWeightLogs, error: bodyWeightError },
+      { data: dbCardioLogs, error: cardioError },
+      { data: dbMeasurements, error: measurementsError },
+      { data: dbHabits, error: habitsError },
+    ] = await Promise.all([
+      supabase
+        .from("workout_sessions")
+        .select("*")
+        .eq("user_id", userId)
+        .order("date", { ascending: false }),
+      supabase
+        .from("body_weight_logs")
+        .select("id, date, weight_kg")
+        .eq("user_id", userId)
+        .order("date", { ascending: false }),
+      supabase.from("cardio_logs").select("*").eq("user_id", userId),
+      supabase
+        .from("body_measurements")
+        .select("*")
+        .eq("user_id", userId)
+        .order("date", { ascending: false }),
+      supabase
+        .from("client_habits")
+        .select("*")
+        .eq("user_id", userId)
+        .order("date", { ascending: false }),
+    ]);
     if (sessionsError) throw new Error(`Workout history pull failed: ${sessionsError.message}`);
 
     if (dbSessions) {
@@ -775,11 +803,6 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 7. Body Weight Logs
-    const { data: dbBodyWeightLogs, error: bodyWeightError } = await supabase
-      .from("body_weight_logs")
-      .select("id, date, weight_kg")
-      .eq("user_id", userId)
-      .order("date", { ascending: false });
     if (bodyWeightError && !isMissingTableInSchemaCache(bodyWeightError, "body_weight_logs")) {
       throw new Error(`Weight logs pull failed: ${bodyWeightError.message}`);
     }
@@ -796,10 +819,6 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 7b. Cardio Logs
-    const { data: dbCardioLogs, error: cardioError } = await supabase
-      .from("cardio_logs")
-      .select("*")
-      .eq("user_id", userId);
     if (cardioError) console.warn(`[Optional cardio pull skipped]: ${cardioError.message}`);
     // A successful empty response is authoritative: it represents a cloud
     // deletion. Preserve local entries only when the optional table failed.
@@ -815,11 +834,6 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 7c. The body-measurement schema uses `date` (not `recorded_at`).
-    const { data: dbMeasurements, error: measurementsError } = await supabase
-      .from("body_measurements")
-      .select("*")
-      .eq("user_id", userId)
-      .order("date", { ascending: false });
     if (measurementsError && !isMissingTableInSchemaCache(measurementsError, "body_measurements")) {
       throw new Error(`Body measurements pull failed: ${measurementsError.message}`);
     }
@@ -841,11 +855,6 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 7d. The client-habits schema also uses `date`.
-    const { data: dbHabits, error: habitsError } = await supabase
-      .from("client_habits")
-      .select("*")
-      .eq("user_id", userId)
-      .order("date", { ascending: false });
     if (habitsError && !isMissingTableInSchemaCache(habitsError, "client_habits")) {
       throw new Error(`Client habits pull failed: ${habitsError.message}`);
     }

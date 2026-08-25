@@ -1186,7 +1186,7 @@ function RootContent() {
     }, 1_500);
     const minimumLoadingTimer = window.setTimeout(() => {
       setMinimumLoadingDone(true);
-    }, 1400);
+    }, 350);
     return () => {
       routeWarmupCleanupRef.current?.();
       routeWarmupCleanupRef.current = null;
