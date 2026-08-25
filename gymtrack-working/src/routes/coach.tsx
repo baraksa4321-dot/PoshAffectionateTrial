@@ -412,17 +412,6 @@ export function CoachDashboardPage({
     setClientDetailsError("");
     setManagementError("");
     if (isSelfSelected) {
-      setClientDetails({
-        programs: store.programs,
-        workouts: store.workouts,
-        nutritionDays: store.nutritionDays,
-        nutritionTargets: store.nutritionTargets,
-        history: store.history,
-        cardioLogs: store.cardioLogs ?? [],
-        bodyMeasurements: store.bodyMeasurements ?? [],
-        ...(store.userProfile ? { profile: store.userProfile } : {}),
-      });
-      setLoadingDetails(false);
       return;
     }
 
@@ -436,6 +425,24 @@ export function CoachDashboardPage({
     };
   }, [
     applyClientDetails,
+    isSelfSelected,
+    selectedClientId,
+  ]);
+
+  useEffect(() => {
+    if (!isSelfSelected || !selectedClientId) return;
+    setClientDetails({
+      programs: store.programs,
+      workouts: store.workouts,
+      nutritionDays: store.nutritionDays,
+      nutritionTargets: store.nutritionTargets,
+      history: store.history,
+      cardioLogs: store.cardioLogs ?? [],
+      bodyMeasurements: store.bodyMeasurements ?? [],
+      ...(store.userProfile ? { profile: store.userProfile } : {}),
+    });
+    setLoadingDetails(false);
+  }, [
     isSelfSelected,
     selectedClientId,
     store.cardioLogs,

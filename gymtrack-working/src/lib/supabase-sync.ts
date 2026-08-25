@@ -935,57 +935,45 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
 
 export async function pullClientDataForCoach(clientId: string): Promise<CoachClientData> {
   try {
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", clientId)
-      .maybeSingle();
+    const [
+      profileResult,
+      programsResult,
+      programDaysResult,
+      nutritionResult,
+      measurementsResult,
+      sessionsResult,
+      cardioResult,
+    ] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", clientId).maybeSingle(),
+      supabase.from("programs").select("*").eq("user_id", clientId),
+      supabase.from("program_days").select("*").eq("user_id", clientId),
+      supabase.from("nutrition_days").select("*").eq("user_id", clientId).order("date", { ascending: false }),
+      supabase.from("body_measurements").select("*").eq("user_id", clientId).order("date", { ascending: false }),
+      supabase.from("workout_sessions").select("*").eq("user_id", clientId).order("date", { ascending: false }),
+      supabase.from("cardio_logs").select("*").eq("user_id", clientId),
+    ]);
+
+    const { data: profile, error: profileError } = profileResult;
     if (profileError) throw new Error(`Client profile pull failed: ${profileError.message}`);
-
-    const { data: dbPrograms, error: programsError } = await supabase
-      .from("programs")
-      .select("*")
-      .eq("user_id", clientId);
+    const { data: dbPrograms, error: programsError } = programsResult;
     if (programsError) throw new Error(`Client programs pull failed: ${programsError.message}`);
-
-    const { data: dbProgramDays, error: programDaysError } = await supabase
-      .from("program_days")
-      .select("*")
-      .eq("user_id", clientId);
-    if (programDaysError)
+    const { data: dbProgramDays, error: programDaysError } = programDaysResult;
+    if (programDaysError) {
       throw new Error(`Client program days pull failed: ${programDaysError.message}`);
-
-    const { data: dbNutritionDays, error: nutritionError } = await supabase
-      .from("nutrition_days")
-      .select("*")
-      .eq("user_id", clientId)
-      .order("date", { ascending: false });
+    }
+    const { data: dbNutritionDays, error: nutritionError } = nutritionResult;
     if (nutritionError) {
       console.warn(`[Optional client nutrition pull skipped]: ${nutritionError.message}`);
     }
-
-    const { data: dbMeasurements, error: measurementsError } = await supabase
-      .from("body_measurements")
-      .select("*")
-      .eq("user_id", clientId)
-      .order("date", { ascending: false });
+    const { data: dbMeasurements, error: measurementsError } = measurementsResult;
     if (measurementsError) {
       console.warn(`[Optional client measurements pull skipped]: ${measurementsError.message}`);
     }
-
-    const { data: dbSessions, error: sessionsError } = await supabase
-      .from("workout_sessions")
-      .select("*")
-      .eq("user_id", clientId)
-      .order("date", { ascending: false });
+    const { data: dbSessions, error: sessionsError } = sessionsResult;
     if (sessionsError) {
       console.warn(`[Optional client workout history pull skipped]: ${sessionsError.message}`);
     }
-
-    const { data: dbCardioLogs, error: cardioError } = await supabase
-      .from("cardio_logs")
-      .select("*")
-      .eq("user_id", clientId);
+    const { data: dbCardioLogs, error: cardioError } = cardioResult;
     if (cardioError) {
       console.warn(`[Optional client cardio pull skipped]: ${cardioError.message}`);
     }
