@@ -165,7 +165,6 @@ export function Overlay({
               ? "items-start justify-center"
               : "items-center justify-center"
       } ${isFull ? "bg-background p-0" : backdrop ? "bg-foreground/40 p-4" : "bg-transparent p-4"} ${className}`}
-      style={viewportHeight !== null ? { height: `${viewportHeight}px`, top: 0 } : undefined}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -179,10 +178,10 @@ export function Overlay({
         data-overlay-panel="true"
         style={{
           maxHeight: panelMaxHeight,
-          // The root is already resized to the visual viewport above. Adding
-          // the keyboard height here as well double-counts the keyboard and
-          // pushes bottom sheets off-screen on mobile Safari.
-          marginBottom: 0,
+          // Keep the fixed root anchored to the layout viewport. On iOS,
+          // moving the sheet above the keyboard via bottom margin is more
+          // reliable than resizing a fixed ancestor to visualViewport.height.
+          marginBottom: isBottom ? keyboardOffset : 0,
         }}
         className={`w-full ${
           isFull
