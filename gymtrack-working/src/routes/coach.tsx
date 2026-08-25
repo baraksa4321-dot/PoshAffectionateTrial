@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Link, Navigate, Outlet, createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Apple,

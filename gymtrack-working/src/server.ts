@@ -47,7 +47,9 @@ function normalizeServingSize(name: string, servingSize: string): string {
       food,
     );
   if (weightBased) return `${grams ?? "100"} גרם`;
-  if (/(לחם|לחמנייה|לחמניה|טוסט|פרוסת לחם|פיתה|טורטייה|bread|toast|bun|pita|tortilla)/i.test(food)) {
+  if (
+    /(לחם|לחמנייה|לחמניה|טוסט|פרוסת לחם|פיתה|טורטייה|bread|toast|bun|pita|tortilla)/i.test(food)
+  ) {
     return /פיתה|טורטייה|pita|tortilla/i.test(food) ? "1 יחידה" : "1 פרוסה";
   }
   if (/(ביצה|ביצים|egg)/i.test(food)) return "1 יחידה";
@@ -166,12 +168,21 @@ async function analyzeMealImage(request: Request): Promise<Response> {
   let payload: { image?: unknown };
   try {
     payload = (await request.json()) as { image?: unknown };
-    console.info("Meal scan payload read", scanId, typeof payload.image === "string" ? payload.image.length : 0);
+    console.info(
+      "Meal scan payload read",
+      scanId,
+      typeof payload.image === "string" ? payload.image.length : 0,
+    );
   } catch {
     return scanResponse({ error: "לא ניתן לקרוא את התמונה." }, 400, scanId, startedAt);
   }
   if (!isImageDataUrl(payload.image)) {
-    return scanResponse({ error: "יש להעלות תמונת PNG או JPG תקינה, עד 20MB." }, 400, scanId, startedAt);
+    return scanResponse(
+      { error: "יש להעלות תמונת PNG או JPG תקינה, עד 20MB." },
+      400,
+      scanId,
+      startedAt,
+    );
   }
 
   const controller = new AbortController();
@@ -179,7 +190,8 @@ async function analyzeMealImage(request: Request): Promise<Response> {
   let response: Response;
   try {
     const imageMatch = payload.image.match(/^data:(image\/(?:jpeg|jpg|png));base64,(.+)$/i);
-    if (!imageMatch) return scanResponse({ error: "פורמט התמונה אינו נתמך." }, 400, scanId, startedAt);
+    if (!imageMatch)
+      return scanResponse({ error: "פורמט התמונה אינו נתמך." }, 400, scanId, startedAt);
     const [, mimeType, imageData] = imageMatch;
     const apiKey = process.env["GEMINI_API_KEY"];
     if (!apiKey) {
@@ -190,54 +202,64 @@ async function analyzeMealImage(request: Request): Promise<Response> {
     const geminiRequest = fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${encodeURIComponent(apiKey)}`,
       {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      signal: controller.signal,
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [
-            {
-              text:
-                "אתה תזונאי שמבצע הערכה חכמה מתמונת ארוחה. החזר JSON בלבד במבנה {mealName:string, foods:Array<{name:string,servingSize:string,quantity:number,eggCount?:number,calories:number,protein:number,carbs:number,fat:number,fiber:number}>}. זהה רק מאכלים שנראים בתמונה והערך כמויות אכילות. quantity הוא מספר היחידות שנראות: אם יש 2 ביצים החזר servingSize:'1 יחידה' ו-quantity:2; אם יש 2 פרוסות לחם החזר servingSize:'1 פרוסה' ו-quantity:2. עבור חביתה או אומלט, החזר eggCount כמספר הביצים המשוער (למשל 2), servingSize:'1 יחידה' ו-quantity:1. עבור עוף, בשר, דגים, צ'יפס בטטה, ירקות, אורז ופסטה השתמש ב-servingSize של גרמים, למשל '150 גרם', ובדרך כלל quantity:1. עבור פיתה או טורטייה השתמש ב-'1 יחידה'. עבור פירות שלמים השתמש ב-'1 יחידה' ובכמות המתאימה. הערכים התזונתיים צריכים להתאים ל-servingSize ולכמות. השתמש בשמות עבריים. אם אינך בטוח, עדיין החזר את ההערכה הטובה ביותר, ללא טקסט נוסף.",
-            },
-          ],
-        },
-        contents: [
-          {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          systemInstruction: {
             parts: [
-              { text: "נתח את הארוחה בתמונה. זו הערכה בלבד והמשתמשת תאשר ותתקן לפני שמירה." },
-              { inlineData: { mimeType, data: imageData } },
+              {
+                text: "אתה תזונאי שמבצע הערכה חכמה מתמונת ארוחה. החזר JSON בלבד במבנה {mealName:string, foods:Array<{name:string,servingSize:string,quantity:number,eggCount?:number,calories:number,protein:number,carbs:number,fat:number,fiber:number}>}. זהה רק מאכלים שנראים בתמונה והערך כמויות אכילות. quantity הוא מספר היחידות שנראות: אם יש 2 ביצים החזר servingSize:'1 יחידה' ו-quantity:2; אם יש 2 פרוסות לחם החזר servingSize:'1 פרוסה' ו-quantity:2. עבור חביתה או אומלט, החזר eggCount כמספר הביצים המשוער (למשל 2), servingSize:'1 יחידה' ו-quantity:1. עבור עוף, בשר, דגים, צ'יפס בטטה, ירקות, אורז ופסטה השתמש ב-servingSize של גרמים, למשל '150 גרם', ובדרך כלל quantity:1. עבור פיתה או טורטייה השתמש ב-'1 יחידה'. עבור פירות שלמים השתמש ב-'1 יחידה' ובכמות המתאימה. הערכים התזונתיים צריכים להתאים ל-servingSize ולכמות. השתמש בשמות עבריים. אם אינך בטוח, עדיין החזר את ההערכה הטובה ביותר, ללא טקסט נוסף.",
+              },
             ],
           },
-        ],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 3000,
-          responseMimeType: "application/json",
-        },
-      }),
+          contents: [
+            {
+              parts: [
+                { text: "נתח את הארוחה בתמונה. זו הערכה בלבד והמשתמשת תאשר ותתקן לפני שמירה." },
+                { inlineData: { mimeType, data: imageData } },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 3000,
+            responseMimeType: "application/json",
+          },
+        }),
       },
     );
     const timeoutResponse = new Promise<Response>((_, reject) => {
-      timeout = setTimeout(
-        () => {
-          controller.abort();
-          reject(new DOMException("Gemini request timed out", "TimeoutError"));
-        },
-        GEMINI_TIMEOUT_MS,
-      );
+      timeout = setTimeout(() => {
+        controller.abort();
+        reject(new DOMException("Gemini request timed out", "TimeoutError"));
+      }, GEMINI_TIMEOUT_MS);
     });
     response = await Promise.race([geminiRequest, timeoutResponse]);
     console.info("Meal scan Gemini response", scanId, response.status);
   } catch (error) {
     console.error("Gemini meal scan request failed", error);
-    return scanResponse({ error: "שירות ניתוח התמונות לא זמין כרגע. נסי שוב בעוד רגע." }, 504, scanId, startedAt);
+    return scanResponse(
+      { error: "שירות ניתוח התמונות לא זמין כרגע. נסי שוב בעוד רגע." },
+      504,
+      scanId,
+      startedAt,
+    );
   } finally {
     if (timeout) clearTimeout(timeout);
   }
   if (!response.ok) {
-    console.error("Gemini meal scan failed", response.status, (await response.clone().text()).slice(0, 1000));
-    return scanResponse({ error: "ניתוח התמונה לא הצליח כרגע. נסי שוב בעוד רגע." }, 502, scanId, startedAt);
+    console.error(
+      "Gemini meal scan failed",
+      response.status,
+      (await response.clone().text()).slice(0, 1000),
+    );
+    return scanResponse(
+      { error: "ניתוח התמונה לא הצליח כרגע. נסי שוב בעוד רגע." },
+      502,
+      scanId,
+      startedAt,
+    );
   }
   let completion: {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
@@ -251,7 +273,12 @@ async function analyzeMealImage(request: Request): Promise<Response> {
     completion = JSON.parse(bodyText) as typeof completion;
   } catch (error) {
     console.error("Gemini meal scan body failed", scanId, error);
-    return scanResponse({ error: "תשובת הניתוח לא התקבלה במלואה. נסי שוב." }, 502, scanId, startedAt);
+    return scanResponse(
+      { error: "תשובת הניתוח לא התקבלה במלואה. נסי שוב." },
+      502,
+      scanId,
+      startedAt,
+    );
   }
   const content = completion.candidates?.[0]?.content?.parts
     ?.map((part) => part.text ?? "")
@@ -262,7 +289,12 @@ async function analyzeMealImage(request: Request): Promise<Response> {
     const result = normalizeScanResult(parseModelJson(content));
     const finalResponse = result
       ? scanResponse(result, 200, scanId, startedAt)
-      : scanResponse({ error: "לא זוהו מאכלים בתמונה. נסי תמונה ברורה יותר." }, 422, scanId, startedAt);
+      : scanResponse(
+          { error: "לא זוהו מאכלים בתמונה. נסי תמונה ברורה יותר." },
+          422,
+          scanId,
+          startedAt,
+        );
     console.info("Meal scan completed", scanId, finalResponse.status);
     return finalResponse;
   } catch {

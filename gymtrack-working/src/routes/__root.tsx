@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   HeadContent,
@@ -1092,7 +1091,7 @@ function RootContent() {
   const { userProfile } = useGym();
   const [loadingCycle, setLoadingCycle] = useState(() => {
     if (typeof window === "undefined") return 0;
-      const storageKey = "my-routine-loading-cycle-v4";
+    const storageKey = "my-routine-loading-cycle-v4";
     try {
       const previousCycle = Number(window.localStorage.getItem(storageKey));
       const nextCycle =

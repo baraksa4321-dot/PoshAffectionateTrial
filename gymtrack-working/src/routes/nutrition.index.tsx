@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Apple,
@@ -263,7 +262,6 @@ function NutritionLog() {
     try {
       const image = await prepareMealImage(file);
       const controller = new AbortController();
-      let response: Response;
       const request = fetch("/nutrition-scan-meal", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -272,15 +270,12 @@ function NutritionLog() {
       });
       let timeoutId: number | undefined;
       const timeout = new Promise<Response>((_, reject) => {
-        timeoutId = window.setTimeout(
-          () => {
-            controller.abort();
-            reject(new DOMException("Meal scan timed out", "AbortError"));
-          },
-          65_000,
-        );
+        timeoutId = window.setTimeout(() => {
+          controller.abort();
+          reject(new DOMException("Meal scan timed out", "AbortError"));
+        }, 65_000);
       });
-      response = await Promise.race([request, timeout]);
+      const response = await Promise.race([request, timeout]);
       if (timeoutId !== undefined) window.clearTimeout(timeoutId);
       const result = (await response.json()) as ScannedMeal & { error?: string };
       if (!response.ok || result.error) throw new Error(result.error || "scan");
@@ -1141,7 +1136,9 @@ function NutritionLog() {
                     <label className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-primary/40 bg-primary/5 px-3 py-8 text-center transition-colors hover:bg-primary/10">
                       <ImageIcon className="h-8 w-8 text-primary" />
                       <span className="mt-3 text-sm font-bold text-ink">מהגלריה</span>
-                      <span className="mt-1 text-[10px] text-muted-foreground">בחירת תמונה קיימת</span>
+                      <span className="mt-1 text-[10px] text-muted-foreground">
+                        בחירת תמונה קיימת
+                      </span>
                       <input
                         type="file"
                         accept="image/jpeg,image/jpg,image/png"
@@ -1180,7 +1177,10 @@ function NutritionLog() {
                 </label>
                 <div className="space-y-2">
                   {scannedMeal.foods.map((food, index) => (
-                    <div key={`${food.name}-${index}`} className="rounded-2xl border border-border/50 bg-secondary/50 p-3">
+                    <div
+                      key={`${food.name}-${index}`}
+                      className="rounded-2xl border border-border/50 bg-secondary/50 p-3"
+                    >
                       <div className="flex items-center gap-2">
                         <input
                           value={food.name}
@@ -1200,7 +1200,12 @@ function NutritionLog() {
                           onClick={() =>
                             setScannedMeal((current) =>
                               current
-                                ? { ...current, foods: current.foods.filter((_, itemIndex) => itemIndex !== index) }
+                                ? {
+                                    ...current,
+                                    foods: current.foods.filter(
+                                      (_, itemIndex) => itemIndex !== index,
+                                    ),
+                                  }
                                 : current,
                             )
                           }
@@ -1263,7 +1268,13 @@ function NutritionLog() {
                           [
                             ...(quantityLabelForServing(food.servingSize) === "גרמים"
                               ? []
-                              : [["quantity", quantityLabelForServing(food.servingSize), 0.1] as const]),
+                              : [
+                                  [
+                                    "quantity",
+                                    quantityLabelForServing(food.servingSize),
+                                    0.1,
+                                  ] as const,
+                                ]),
                             ["calories", "קלוריות", 1],
                             ["protein", "חלבון", 0.1],
                             ["carbs", "פחמימות", 0.1],
@@ -1282,7 +1293,10 @@ function NutritionLog() {
                                 setScannedMeal((current) => {
                                   if (!current) return current;
                                   const foods = [...current.foods];
-                                  foods[index] = { ...foods[index], [key]: Number(event.target.value) };
+                                  foods[index] = {
+                                    ...foods[index],
+                                    [key]: Number(event.target.value),
+                                  };
                                   return { ...current, foods };
                                 })
                               }

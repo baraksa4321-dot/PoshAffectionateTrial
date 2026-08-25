@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import {
   ArrowRight,

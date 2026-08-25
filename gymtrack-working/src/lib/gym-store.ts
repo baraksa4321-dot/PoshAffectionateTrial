@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useSyncExternalStore } from "react";
 import { EVERYDAY_FOOD_DATABASE } from "./israeli-food-db";
 import { assertValidFoodNutrition, assertValidMealFood } from "./nutrition-integrity";

@@ -1,7 +1,7 @@
 declare module "bun:test" {
   export const beforeEach: (fn: () => void | Promise<void>) => void;
   export const describe: (name: string, fn: () => void) => void;
-  export const expect: Object;
+  export const expect: object;
   export const mock: {
     module(path: string, factory: () => unknown): void;
   };

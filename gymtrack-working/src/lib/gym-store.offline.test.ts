@@ -1,6 +1,5 @@
 // The standalone package is executed by Bun; its runtime matcher types are
 // supplied by Bun rather than the browser TypeScript environment.
-// @ts-nocheck
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 type Deferred<T> = {

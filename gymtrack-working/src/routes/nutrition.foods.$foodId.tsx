@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Apple, ArrowRight, Check, Shuffle, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
