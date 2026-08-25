@@ -1261,7 +1261,9 @@ function NutritionLog() {
                       <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
                         {(
                           [
-                            ["quantity", quantityLabelForServing(food.servingSize), 0.1],
+                            ...(quantityLabelForServing(food.servingSize) === "גרמים"
+                              ? []
+                              : [["quantity", quantityLabelForServing(food.servingSize), 0.1] as const]),
                             ["calories", "קלוריות", 1],
                             ["protein", "חלבון", 0.1],
                             ["carbs", "פחמימות", 0.1],
