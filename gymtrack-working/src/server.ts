@@ -181,9 +181,20 @@ async function analyzeMealImage(request: Request): Promise<Response> {
     console.error("Gemini meal scan failed", response.status, (await response.clone().text()).slice(0, 1000));
     return scanResponse({ error: "ניתוח התמונה לא הצליח כרגע. נסי שוב בעוד רגע." }, 502, scanId, startedAt);
   }
-  const completion = (await response.json()) as {
+  let completion: {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
   };
+  try {
+    const bodyTimeout = new Promise<string>((_, reject) =>
+      setTimeout(() => reject(new Error("Gemini response body timed out")), 10_000),
+    );
+    const bodyText = await Promise.race([response.text(), bodyTimeout]);
+    console.info("Meal scan Gemini body read", scanId, bodyText.length);
+    completion = JSON.parse(bodyText) as typeof completion;
+  } catch (error) {
+    console.error("Gemini meal scan body failed", scanId, error);
+    return scanResponse({ error: "תשובת הניתוח לא התקבלה במלואה. נסי שוב." }, 502, scanId, startedAt);
+  }
   const content = completion.candidates?.[0]?.content?.parts
     ?.map((part) => part.text ?? "")
     .join("")
@@ -191,9 +202,11 @@ async function analyzeMealImage(request: Request): Promise<Response> {
   if (!content) return scanResponse({ error: "לא התקבלה תוצאה מהניתוח." }, 502, scanId, startedAt);
   try {
     const result = normalizeScanResult(parseModelJson(content));
-    return result
+    const finalResponse = result
       ? scanResponse(result, 200, scanId, startedAt)
       : scanResponse({ error: "לא זוהו מאכלים בתמונה. נסי תמונה ברורה יותר." }, 422, scanId, startedAt);
+    console.info("Meal scan completed", scanId, finalResponse.status);
+    return finalResponse;
   } catch {
     console.error("Gemini meal scan returned invalid JSON", content.slice(0, 2000));
     return scanResponse({ error: "תוצאת הניתוח לא הייתה תקינה. נסי שוב." }, 502, scanId, startedAt);
