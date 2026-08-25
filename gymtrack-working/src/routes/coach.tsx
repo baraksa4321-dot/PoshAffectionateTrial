@@ -357,7 +357,7 @@ export function CoachDashboardPage({
     if (!clientId) return;
     setSelectedClientId(clientId);
     setShowClientWorkspace(true);
-    setOpenEditor(workspacePage || trackingLanding || workspaceMode === "all" ? null : workspaceMode);
+    setOpenEditor(trackingLanding || workspaceMode === "all" ? null : workspaceMode);
     setActiveWorkspaceTab(workspaceMode === "nutrition" ? "nutrition" : "programs");
     setSelectedTrackingWorkoutId(null);
   }, [trackingLanding, workspacePage, clientId, workspaceMode]);
