@@ -935,7 +935,7 @@ export function CoachDashboardPage({
       }
       setEditingItemId(null);
       setSelectedExId("");
-      setTechNotes("");
+      setTechniqueNotes("");
       return;
     }
 
@@ -3099,7 +3099,7 @@ export function CoachDashboardPage({
                                                           setSetsCount(exItem.sets);
                                                           setRepMin(exItem.repMin || exItem.reps);
                                                           setRepMax(exItem.repMax || exItem.reps);
-                                                          setTechNotes(exItem.techniqueNotes || exItem.notes);
+                                                          setTechniqueNotes(exItem.techniqueNotes || exItem.notes);
                                                         }}
                                                         className="rounded-lg bg-background px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/10"
                                                       >
