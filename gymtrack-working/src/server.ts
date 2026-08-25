@@ -30,6 +30,13 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
+function scanResponse(body: unknown, status: number, scanId: string, startedAt: number) {
+  const response = jsonResponse(body, status);
+  response.headers.set("x-meal-scan-id", scanId);
+  response.headers.set("x-meal-scan-ms", String(Date.now() - startedAt));
+  return response;
+}
+
 function isImageDataUrl(value: unknown): value is string {
   return (
     typeof value === "string" &&
@@ -88,11 +95,14 @@ function parseModelJson(content: string): unknown {
 }
 
 async function analyzeMealImage(request: Request): Promise<Response> {
+  const scanId = crypto.randomUUID().slice(0, 8);
+  const startedAt = Date.now();
+  console.info("Meal scan started", scanId);
   if (request.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
   const now = Date.now();
   while (scanTimestamps[0] && scanTimestamps[0] < now - 60_000) scanTimestamps.shift();
   if (scanTimestamps.length >= 10) {
-    return jsonResponse({ error: "יותר מדי ניסיונות. נסי שוב בעוד דקה." }, 429);
+    return scanResponse({ error: "יותר מדי ניסיונות. נסי שוב בעוד דקה." }, 429, scanId, startedAt);
   }
   scanTimestamps.push(now);
 
@@ -100,10 +110,10 @@ async function analyzeMealImage(request: Request): Promise<Response> {
   try {
     payload = (await request.json()) as { image?: unknown };
   } catch {
-    return jsonResponse({ error: "לא ניתן לקרוא את התמונה." }, 400);
+    return scanResponse({ error: "לא ניתן לקרוא את התמונה." }, 400, scanId, startedAt);
   }
   if (!isImageDataUrl(payload.image)) {
-    return jsonResponse({ error: "יש להעלות תמונת PNG או JPG תקינה, עד 20MB." }, 400);
+    return scanResponse({ error: "יש להעלות תמונת PNG או JPG תקינה, עד 20MB." }, 400, scanId, startedAt);
   }
 
   const controller = new AbortController();
@@ -111,11 +121,11 @@ async function analyzeMealImage(request: Request): Promise<Response> {
   let response: Response;
   try {
     const imageMatch = payload.image.match(/^data:(image\/(?:jpeg|jpg|png));base64,(.+)$/i);
-    if (!imageMatch) return jsonResponse({ error: "פורמט התמונה אינו נתמך." }, 400);
+    if (!imageMatch) return scanResponse({ error: "פורמט התמונה אינו נתמך." }, 400, scanId, startedAt);
     const [, mimeType, imageData] = imageMatch;
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return jsonResponse({ error: "חיבור ניתוח התמונות עדיין לא הוגדר." }, 503);
+      return scanResponse({ error: "חיבור ניתוח התמונות עדיין לא הוגדר." }, 503, scanId, startedAt);
     }
     response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
@@ -150,13 +160,13 @@ async function analyzeMealImage(request: Request): Promise<Response> {
     );
   } catch (error) {
     console.error("Gemini meal scan request failed", error);
-    return jsonResponse({ error: "שירות ניתוח התמונות לא זמין כרגע. נסי שוב בעוד רגע." }, 504);
+    return scanResponse({ error: "שירות ניתוח התמונות לא זמין כרגע. נסי שוב בעוד רגע." }, 504, scanId, startedAt);
   } finally {
     clearTimeout(timeout);
   }
   if (!response.ok) {
     console.error("Gemini meal scan failed", response.status, (await response.clone().text()).slice(0, 1000));
-    return jsonResponse({ error: "ניתוח התמונה לא הצליח כרגע. נסי שוב בעוד רגע." }, 502);
+    return scanResponse({ error: "ניתוח התמונה לא הצליח כרגע. נסי שוב בעוד רגע." }, 502, scanId, startedAt);
   }
   const completion = (await response.json()) as {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
@@ -165,15 +175,15 @@ async function analyzeMealImage(request: Request): Promise<Response> {
     ?.map((part) => part.text ?? "")
     .join("")
     .trim();
-  if (!content) return jsonResponse({ error: "לא התקבלה תוצאה מהניתוח." }, 502);
+  if (!content) return scanResponse({ error: "לא התקבלה תוצאה מהניתוח." }, 502, scanId, startedAt);
   try {
     const result = normalizeScanResult(parseModelJson(content));
     return result
-      ? jsonResponse(result)
-      : jsonResponse({ error: "לא זוהו מאכלים בתמונה. נסי תמונה ברורה יותר." }, 422);
+      ? scanResponse(result, 200, scanId, startedAt)
+      : scanResponse({ error: "לא זוהו מאכלים בתמונה. נסי תמונה ברורה יותר." }, 422, scanId, startedAt);
   } catch {
     console.error("Gemini meal scan returned invalid JSON", content.slice(0, 2000));
-    return jsonResponse({ error: "תוצאת הניתוח לא הייתה תקינה. נסי שוב." }, 502);
+    return scanResponse({ error: "תוצאת הניתוח לא הייתה תקינה. נסי שוב." }, 502, scanId, startedAt);
   }
 }
 
