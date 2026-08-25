@@ -132,36 +132,39 @@ export async function syncLocalToSupabase(
     }
 
     // 2. Custom Exercises
-    // Built-in exercises use stable `ex-` identifiers. Custom exercises use
-    // generated ids and are synced per user; this keeps an expanded library
-    // from being needlessly copied into each account.
-    const customExercises = localData.exercises.filter(
-      (exercise) => !exercise.id.startsWith("ex-"),
-    );
-
-    if (customExercises.length > 0) {
-      const payload = customExercises.map((e) => ({
-        id: e.id,
-        user_id: userId,
-        name: e.name,
-        muscle_group: e.muscleGroup,
-        equipment: e.equipment,
-        category: e.category,
-        description: e.description,
-        instructions: e.instructions,
-        updated_at: new Date().toISOString(),
-      }));
-      await requireSuccessfulWrite(
-        supabase.from("custom_exercises").upsert(payload, { onConflict: "id" }),
-        "Custom exercises sync",
+    // Built-in exercises use stable `ex-` identifiers. A failure in this
+    // secondary library must not prevent the user's plans from syncing below.
+    try {
+      const customExercises = localData.exercises.filter(
+        (exercise) => !exercise.id.startsWith("ex-"),
       );
+
+      if (customExercises.length > 0) {
+        const payload = customExercises.map((e) => ({
+          id: e.id,
+          user_id: userId,
+          name: e.name,
+          muscle_group: e.muscleGroup,
+          equipment: e.equipment,
+          category: e.category,
+          description: e.description,
+          instructions: e.instructions,
+          updated_at: new Date().toISOString(),
+        }));
+        await requireSuccessfulWrite(
+          supabase.from("custom_exercises").upsert(payload, { onConflict: "id" }),
+          "Custom exercises sync",
+        );
+      }
+      await deleteRowsMissingFromLocal(
+        userId,
+        "custom_exercises",
+        customExercises.map((exercise) => exercise.id),
+        "Custom exercises",
+      );
+    } catch (error) {
+      console.warn("[Optional custom exercises sync skipped]:", error);
     }
-    await deleteRowsMissingFromLocal(
-      userId,
-      "custom_exercises",
-      customExercises.map((exercise) => exercise.id),
-      "Custom exercises",
-    );
 
     // 3. Programs & Program Days
     if (localData.programs.length > 0) {
@@ -375,37 +378,41 @@ export async function syncLocalToSupabase(
     );
 
     // 5. Custom Foods (seed = all built-in items including USDA expansion)
-    const seedFoodIds = new Set(EVERYDAY_FOOD_DATABASE.map((f) => f.id));
-    const customFoods = localData.foods.filter((f) => !seedFoodIds.has(f.id));
+    try {
+      const seedFoodIds = new Set(EVERYDAY_FOOD_DATABASE.map((f) => f.id));
+      const customFoods = localData.foods.filter((f) => !seedFoodIds.has(f.id));
 
-    if (customFoods.length > 0) {
-      const customFoodPayload = customFoods.map((f) => ({
-        id: f.id,
-        user_id: userId,
-        name: f.name,
-        english_name: f.englishName,
-        category: f.category ?? "כללי",
-        brand: f.brand,
-        serving_unit: f.servingSize ?? "100g",
-        serving_grams: 100,
-        calories: f.calories,
-        protein: f.protein,
-        carbs: f.carbs,
-        fat: f.fat,
-        fiber: f.fiber ?? 0,
-        updated_at: new Date().toISOString(),
-      }));
-      await requireSuccessfulWrite(
-        supabase.from("custom_foods").upsert(customFoodPayload, { onConflict: "id" }),
-        "Custom foods sync",
+      if (customFoods.length > 0) {
+        const customFoodPayload = customFoods.map((f) => ({
+          id: f.id,
+          user_id: userId,
+          name: f.name,
+          english_name: f.englishName,
+          category: f.category ?? "כללי",
+          brand: f.brand,
+          serving_unit: f.servingSize ?? "100g",
+          serving_grams: 100,
+          calories: f.calories,
+          protein: f.protein,
+          carbs: f.carbs,
+          fat: f.fat,
+          fiber: f.fiber ?? 0,
+          updated_at: new Date().toISOString(),
+        }));
+        await requireSuccessfulWrite(
+          supabase.from("custom_foods").upsert(customFoodPayload, { onConflict: "id" }),
+          "Custom foods sync",
+        );
+      }
+      await deleteRowsMissingFromLocal(
+        userId,
+        "custom_foods",
+        customFoods.map((food) => food.id),
+        "Custom foods",
       );
+    } catch (error) {
+      console.warn("[Optional custom foods sync skipped]:", error);
     }
-    await deleteRowsMissingFromLocal(
-      userId,
-      "custom_foods",
-      customFoods.map((food) => food.id),
-      "Custom foods",
-    );
 
     // 6. Nutrition Days
     if (localData.nutritionDays.length > 0) {
@@ -433,56 +440,64 @@ export async function syncLocalToSupabase(
     );
 
     // 6b. Personal recipe library. Existing RLS keeps these records scoped by owner.
-    const recipePayload = (localData.recipes ?? []).map((recipe) => ({
-      id: recipe.id,
-      coach_id: userId,
-      name: recipe.name,
-      foods: recipe.foods,
-    }));
-    if (recipePayload.length > 0) {
-      await requireSuccessfulWrite(
-        supabase.from("coach_recipes").upsert(recipePayload, { onConflict: "id" }),
-        "Recipe library sync",
+    try {
+      const recipePayload = (localData.recipes ?? []).map((recipe) => ({
+        id: recipe.id,
+        coach_id: userId,
+        name: recipe.name,
+        foods: recipe.foods,
+      }));
+      if (recipePayload.length > 0) {
+        await requireSuccessfulWrite(
+          supabase.from("coach_recipes").upsert(recipePayload, { onConflict: "id" }),
+          "Recipe library sync",
+        );
+      }
+      await deleteRowsMissingFromLocal(
+        userId,
+        "coach_recipes",
+        recipePayload.map((recipe) => recipe.id),
+        "Recipe library",
+        "id",
+        "coach_id",
       );
+    } catch (error) {
+      console.warn("[Optional recipe library sync skipped]:", error);
     }
-    await deleteRowsMissingFromLocal(
-      userId,
-      "coach_recipes",
-      recipePayload.map((recipe) => recipe.id),
-      "Recipe library",
-      "id",
-      "coach_id",
-    );
 
     // 7. Food Favorites
-    if (localData.favoriteFoods && localData.favoriteFoods.length > 0) {
-      const favPayload = localData.favoriteFoods.map((foodId) => ({
-        user_id: userId,
-        food_id: foodId,
-      }));
-      await requireSuccessfulWrite(
-        supabase.from("food_favorites").upsert(favPayload, { onConflict: "user_id,food_id" }),
-        "Favorites sync",
-      );
-    }
-    const { data: remoteFavorites, error: favoritesReadError } = await supabase
-      .from("food_favorites")
-      .select("food_id")
-      .eq("user_id", userId);
-    if (favoritesReadError) throw new Error(`Favorites read failed: ${favoritesReadError.message}`);
-    const favoriteIds = new Set(localData.favoriteFoods ?? []);
-    const staleFavoriteIds = (remoteFavorites ?? [])
-      .map((row) => String(row.food_id))
-      .filter((foodId) => !favoriteIds.has(foodId));
-    if (staleFavoriteIds.length > 0) {
-      await requireSuccessfulWrite(
-        supabase
-          .from("food_favorites")
-          .delete()
-          .eq("user_id", userId)
-          .in("food_id", staleFavoriteIds),
-        "Favorites deletion",
-      );
+    try {
+      if (localData.favoriteFoods && localData.favoriteFoods.length > 0) {
+        const favPayload = localData.favoriteFoods.map((foodId) => ({
+          user_id: userId,
+          food_id: foodId,
+        }));
+        await requireSuccessfulWrite(
+          supabase.from("food_favorites").upsert(favPayload, { onConflict: "user_id,food_id" }),
+          "Favorites sync",
+        );
+      }
+      const { data: remoteFavorites, error: favoritesReadError } = await supabase
+        .from("food_favorites")
+        .select("food_id")
+        .eq("user_id", userId);
+      if (favoritesReadError) throw new Error(`Favorites read failed: ${favoritesReadError.message}`);
+      const favoriteIds = new Set(localData.favoriteFoods ?? []);
+      const staleFavoriteIds = (remoteFavorites ?? [])
+        .map((row) => String(row.food_id))
+        .filter((foodId) => !favoriteIds.has(foodId));
+      if (staleFavoriteIds.length > 0) {
+        await requireSuccessfulWrite(
+          supabase
+            .from("food_favorites")
+            .delete()
+            .eq("user_id", userId)
+            .in("food_id", staleFavoriteIds),
+          "Favorites deletion",
+        );
+      }
+    } catch (error) {
+      console.warn("[Optional food favorites sync skipped]:", error);
     }
 
     return { success: true };
