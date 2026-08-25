@@ -644,7 +644,7 @@ export function CoachDashboardPage({
       setEditingProgramId(latestProgram.id);
       const requestedDay = initialDayId
         ? clientDetails.workouts.find(
-            (workout) => workout.id === initialDayId && latestProgram.dayIds.includes(workout.id),
+            (workout) => workout.id === initialDayId,
           )
         : undefined;
       const firstWorkoutDay = requestedDay ?? clientDetails.workouts.find((workout) =>
@@ -1415,7 +1415,9 @@ export function CoachDashboardPage({
   );
   const openTrackedPlan = (workoutId: string, exerciseId?: string) => {
     if (!selectedClientId || !clientDetails) return;
-    const program = clientDetails.programs.find((item) => item.dayIds.includes(workoutId));
+    const program =
+      clientDetails.programs.find((item) => item.dayIds.includes(workoutId)) ??
+      clientDetails.programs.at(-1);
     if (!program) return;
     navigate({
       to: "/coach/clients/$clientId/program",
