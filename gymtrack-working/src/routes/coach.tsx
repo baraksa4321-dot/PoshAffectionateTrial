@@ -3792,6 +3792,7 @@ export function CoachDashboardPage({
                                                           משקל חימום
                                                           <input
                                                             type="number"
+                                                            step={0.5}
                                                             min={0}
                                                             value={warmupWeight}
                                                             onChange={(event) =>
@@ -3838,6 +3839,7 @@ export function CoachDashboardPage({
                                                           משקל דרופ 1
                                                           <input
                                                             type="number"
+                                                            step={0.5}
                                                             min={0}
                                                             value={dropLevel1Weight}
                                                             onChange={(event) =>
@@ -3881,6 +3883,7 @@ export function CoachDashboardPage({
                                                           משקל דרופ 2
                                                           <input
                                                             type="number"
+                                                            step={0.5}
                                                             min={0}
                                                             value={dropLevel2Weight}
                                                             onChange={(event) =>
@@ -4199,6 +4202,7 @@ export function CoachDashboardPage({
                                                 </label>
                                                 <input
                                                   type="number"
+                                                  step={0.5}
                                                   value={targetWeight}
                                                   onChange={(e) =>
                                                     setTargetWeight(Number(e.target.value))
@@ -4341,7 +4345,7 @@ export function CoachDashboardPage({
                                                       <input
                                                         type="number"
                                                         min="0"
-                                                        step={0.1}
+                                                        step={0.5}
                                                         value={warmupWeight}
                                                         onChange={(event) =>
                                                           setWarmupWeight(
@@ -4406,7 +4410,7 @@ export function CoachDashboardPage({
                                                       <input
                                                         type="number"
                                                         min="0.1"
-                                                        step={0.1}
+                                                        step={0.5}
                                                         inputMode="decimal"
                                                         value={dropLevel1Weight}
                                                         onChange={(event) =>
@@ -4422,7 +4426,7 @@ export function CoachDashboardPage({
                                                       <input
                                                         type="number"
                                                         min="0.1"
-                                                        step={0.1}
+                                                        step={0.5}
                                                         inputMode="decimal"
                                                         value={dropLevel2Weight}
                                                         onChange={(event) =>

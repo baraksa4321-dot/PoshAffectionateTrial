@@ -145,7 +145,9 @@ function Session() {
                   (item?.exerciseName && item.exerciseName !== "תרגיל שהוסר"
                     ? item.exerciseName
                     : "") ||
-                  (savedName && savedName !== "תרגיל שהוסר" ? savedName : "תרגיל"),
+                  (savedName && savedName !== "תרגיל שהוסר" ? savedName : "") ||
+                  item?.exerciseId ||
+                  "תרגיל",
               };
             });
         }
@@ -223,7 +225,7 @@ function Session() {
       }
       return {
         exerciseId: item.exerciseId,
-        exerciseName: ex ? exerciseDisplayName(ex) : item.exerciseName || "תרגיל שהוסר",
+        exerciseName: ex ? exerciseDisplayName(ex) : item.exerciseName || item.exerciseId || "תרגיל",
         equipment: ex?.equipment,
         notes: item.notes,
         targetSets: item.sets,
@@ -236,6 +238,19 @@ function Session() {
   }, [workout, exercises, history, workoutId]);
 
   const [entries, setEntries] = useState<HistoryEntry[]>(initial);
+  useEffect(() => {
+    setEntries((current) =>
+      current.map((entry, index) => {
+        const refreshed = initial[index];
+        if (!refreshed) return entry;
+        const hasPlaceholder =
+          !entry.exerciseName ||
+          entry.exerciseName === "תרגיל" ||
+          entry.exerciseName === "תרגיל שהוסר";
+        return hasPlaceholder ? { ...entry, exerciseName: refreshed.exerciseName } : entry;
+      }),
+    );
+  }, [initial]);
   const [startedAt] = useState(() => Date.now());
   const [rest, setRest] = useState(0);
   const [restFinished, setRestFinished] = useState(false);
@@ -807,8 +822,8 @@ function Session() {
                             <p className="break-words text-[12.5px] leading-snug font-semibold text-ink">
                               {s.dropSet ? `דרופ סט ${s.dropLevel ?? ""}` : setLabel}
                               <span className="ms-1 text-[11px] font-normal text-muted-foreground">
-                                · יעד {s.targetReps}
-                                {s.targetRepMax ? `–${s.targetRepMax}` : ""}
+                                · {s.weight} ק״ג · {s.targetReps}
+                                {s.targetRepMax ? `–${s.targetRepMax}` : ""} חזרות
                               </span>
                             </p>
                           </div>
@@ -830,7 +845,7 @@ function Session() {
                           <Stepper
                             label="משקל בפועל"
                             value={s.weight}
-                            step={0.1}
+                             step={0.5}
                             suffix="ק״ג"
                             onChange={(v) => patchSet(ei, si, { weight: v })}
                           />
