@@ -1,4 +1,4 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   Apple,
   Activity,
@@ -15,7 +15,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { saveTheme, useAuthUser, useCloudSyncStatus, useGym } from "../lib/gym-store";
 import { supabase } from "../lib/supabase";
 import { applyNightMode, applyTheme, DEFAULT_THEME, THEME_PALETTES } from "../lib/theme";
@@ -62,7 +62,9 @@ export function AppShell({
   const isCoach = role === "coach" || isOwner;
   const profileGender = store.userProfile?.gender;
   const location = useLocation();
+  const navigate = useNavigate();
   const isManagementRoute = isManagementPath(location.pathname);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const [activeMode, setActiveMode] = useState<"personal" | "management">(() => {
     if (typeof window === "undefined") return "personal";
@@ -184,6 +186,43 @@ export function AppShell({
           onClick: () => setWorkspace("personal"),
         },
       ];
+
+  const handleMainTouchStart = (event: React.TouchEvent<HTMLElement>) => {
+    if (event.touches.length !== 1) {
+      touchStartRef.current = null;
+      return;
+    }
+    touchStartRef.current = {
+      x: event.touches[0]?.clientX ?? 0,
+      y: event.touches[0]?.clientY ?? 0,
+    };
+  };
+
+  const handleMainTouchEnd = (event: React.TouchEvent<HTMLElement>) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start || event.changedTouches.length !== 1) return;
+
+    const end = event.changedTouches[0];
+    if (!end) return;
+    const deltaX = end.clientX - start.x;
+    const deltaY = end.clientY - start.y;
+    if (Math.abs(deltaX) < 55 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.2) return;
+
+    const currentIndex = NAV.findIndex((item) =>
+      item.to === "/"
+        ? location.pathname === "/"
+        : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
+    );
+    if (currentIndex < 0) return;
+
+    // In RTL layouts, a left swipe advances to the next tab.
+    const nextIndex = deltaX < 0 ? currentIndex + 1 : currentIndex - 1;
+    const nextItem = NAV[nextIndex];
+    if (!nextItem) return;
+    nextItem.onClick?.();
+    void navigate({ to: nextItem.to });
+  };
 
   const [showAuthModal, setShowAuthModal] = useState(authOnly);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -506,6 +545,8 @@ export function AppShell({
         className={`page-enter mx-auto w-full max-w-3xl px-4 pb-8 sm:px-6 ${
           compactHeader ? "flex flex-col pt-1.5" : "pt-5 sm:pt-7"
         }`}
+        onTouchStart={handleMainTouchStart}
+        onTouchEnd={handleMainTouchEnd}
         style={{
           paddingBottom: "calc(6.5rem + env(safe-area-inset-bottom))",
         }}
