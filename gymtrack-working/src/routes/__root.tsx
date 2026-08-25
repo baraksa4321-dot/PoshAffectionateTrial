@@ -1158,7 +1158,7 @@ function RootContent() {
     // be able to serve the cached app when Safari is in Airplane Mode.
     if ("serviceWorker" in navigator) {
       void navigator.serviceWorker
-        .register("/sw.js", { updateViaCache: "none" })
+        .register("/sw.js?v=6", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch((error) => {
           console.warn("[App shell cache unavailable]:", error);

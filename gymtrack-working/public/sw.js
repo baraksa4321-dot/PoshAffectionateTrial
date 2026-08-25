@@ -1,4 +1,4 @@
-const CACHE_NAME = "myroutine-app-shell-v5";
+const CACHE_NAME = "myroutine-app-shell-v6";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
