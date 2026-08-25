@@ -71,6 +71,22 @@ function normalizeScanResult(value: unknown): { mealName: string; foods: ScanFoo
   };
 }
 
+function parseModelJson(content: string): unknown {
+  const cleaned = content
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start < 0 || end <= start) throw new Error("Model did not return JSON");
+    return JSON.parse(cleaned.slice(start, end + 1));
+  }
+}
+
 async function analyzeMealImage(request: Request): Promise<Response> {
   if (request.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
   const now = Date.now();
@@ -126,7 +142,7 @@ async function analyzeMealImage(request: Request): Promise<Response> {
         ],
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: 1000,
+          maxOutputTokens: 3000,
           responseMimeType: "application/json",
         },
       }),
@@ -151,11 +167,12 @@ async function analyzeMealImage(request: Request): Promise<Response> {
     .trim();
   if (!content) return jsonResponse({ error: "לא התקבלה תוצאה מהניתוח." }, 502);
   try {
-    const result = normalizeScanResult(JSON.parse(content));
+    const result = normalizeScanResult(parseModelJson(content));
     return result
       ? jsonResponse(result)
       : jsonResponse({ error: "לא זוהו מאכלים בתמונה. נסי תמונה ברורה יותר." }, 422);
   } catch {
+    console.error("Gemini meal scan returned invalid JSON", content.slice(0, 2000));
     return jsonResponse({ error: "תוצאת הניתוח לא הייתה תקינה. נסי שוב." }, 502);
   }
 }

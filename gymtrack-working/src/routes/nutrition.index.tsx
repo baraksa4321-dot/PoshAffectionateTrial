@@ -1082,7 +1082,7 @@ function NutritionLog() {
                         className="loading-simple-image loading-simple-video"
                       >
                         <source
-                          src={`/loading/tinted/${MEAL_SCAN_ILLUSTRATIONS[scanCycle % MEAL_SCAN_ILLUSTRATIONS.length]}.webm?v=meal-scan-${scanCycle}`}
+                          src={`/loading/meal-scan/${MEAL_SCAN_ILLUSTRATIONS[scanCycle % MEAL_SCAN_ILLUSTRATIONS.length]}.webm?v=meal-scan-${scanCycle}`}
                           type="video/webm"
                         />
                       </video>
