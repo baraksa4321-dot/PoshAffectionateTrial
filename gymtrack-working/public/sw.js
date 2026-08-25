@@ -1,4 +1,4 @@
-const CACHE_NAME = "myroutine-app-shell-v6";
+const CACHE_NAME = "myroutine-app-shell-v7";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -42,6 +42,23 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     (async () => {
       const cached = await caches.match(request);
+      // A home-screen launch is a navigation request. If the shell is
+      // available, return it immediately instead of waiting on a slow or
+      // unavailable network connection. The request is still refreshed in
+      // the background so the next launch receives the newest app shell.
+      if (request.mode === "navigate" && cached) {
+        event.waitUntil(
+          fetch(request)
+            .then(async (response) => {
+              if (response.ok || response.type === "opaque") {
+                const cache = await caches.open(CACHE_NAME);
+                await cache.put(request, response.clone());
+              }
+            })
+            .catch(() => undefined),
+        );
+        return cached;
+      }
       try {
         const response = await fetch(request);
         if (response.ok || response.type === "opaque") {

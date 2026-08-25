@@ -1,6 +1,7 @@
 {
   "short_name": "MY routine",
   "name": "MY routine — מעקב אימונים ותזונה",
+  "id": "/",
   "icons": [
     {
       "src": "/brand-icon-180.png",
@@ -22,6 +23,7 @@
     }
   ],
   "start_url": "/",
+  "scope": "/",
   "background_color": "#f8f7f3",
   "theme_color": "#f8f7f3",
   "display": "standalone",
