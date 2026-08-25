@@ -81,7 +81,7 @@ export async function syncLocalToSupabase(
   try {
     // 1. Profile
     if (localData.userProfile || userEmail) {
-      const p = localData.userProfile ?? { weight: 65 };
+      const p = localData.userProfile ?? { weight: 0 };
       await requireSuccessfulWrite(
         supabase.from("profiles").upsert(
           {
@@ -396,7 +396,6 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
               ? metadata["gender"]
               : undefined,
           role: "client",
-          weight_kg: 65,
           today_routine_enabled: true,
           updated_at: new Date().toISOString(),
         },
@@ -435,7 +434,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     const coachId = profile.coach_id || undefined;
     nextData.userProfile = {
       ...nextData.userProfile,
-      weight: profile.weight_kg ? Number(profile.weight_kg) : (nextData.userProfile?.weight ?? 65),
+      weight: profile.weight_kg ? Number(profile.weight_kg) : (nextData.userProfile?.weight ?? 0),
       role: profile.role as UserRole,
       todayRoutineEnabled: profile.today_routine_enabled ?? true,
       ...(fullName === undefined ? {} : { fullName }),
@@ -458,7 +457,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       authTheme === "peach" ||
       authTheme === "mint"
     ) {
-      nextData.userProfile = { ...(nextData.userProfile ?? { weight: 65 }), theme: authTheme };
+      nextData.userProfile = { ...(nextData.userProfile ?? { weight: 0 }), theme: authTheme };
     }
 
     // 2. Fetch Coach Messages if Client

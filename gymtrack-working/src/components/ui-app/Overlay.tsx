@@ -165,10 +165,7 @@ export function Overlay({
               ? "items-start justify-center"
               : "items-center justify-center"
       } ${isFull ? "bg-background p-0" : backdrop ? "bg-foreground/40 p-4" : "bg-transparent p-4"} ${className}`}
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-      onTouchStart={(event) => {
+      onPointerDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
@@ -192,8 +189,7 @@ export function Overlay({
                 ? "max-h-[calc(100dvh-2rem)] max-w-lg rounded-3xl"
                 : "max-h-[calc(100dvh-2rem)] max-w-lg rounded-3xl"
         } overflow-y-auto overscroll-contain bg-card shadow-2xl ${panelClassName}`}
-        onMouseDown={(event) => event.stopPropagation()}
-        onTouchStart={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
       >
         {children}
       </div>
