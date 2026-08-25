@@ -272,6 +272,8 @@ export function CoachDashboardPage({
   const showClientOverview = !trackingLanding && !workspacePage && !openEditor;
   const showProgramBuilder =
     !trackingLanding && (workspaceMode === "programs" || openEditor === "programs");
+  const showNutritionBuilder =
+    !trackingLanding && (workspaceMode === "nutrition" || openEditor === "nutrition");
 
   const loadCoachClients = useCallback(async () => {
     setManagementError("");
@@ -1387,7 +1389,10 @@ export function CoachDashboardPage({
     (profile) => profile.role === "client" && profile.approval_status === "pending",
   );
   const openClientFromOverview = (clientId: string) => {
-    navigate({ to: "/coach/tracking/$clientId", params: { clientId } });
+    navigate({
+      to: trackingLanding ? "/coach/tracking/$clientId" : "/coach/clients/$clientId",
+      params: { clientId },
+    });
   };
 
   return (
@@ -3503,7 +3508,7 @@ export function CoachDashboardPage({
                         ? "bg-background"
                         : "surface-card rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4"
                     } ${
-                      trackingLanding || workspaceMode === "programs" || openEditor !== "nutrition"
+                      !showNutritionBuilder
                         ? "hidden"
                         : ""
                     }`}
@@ -3825,7 +3830,7 @@ export function CoachDashboardPage({
                         ? "bg-background"
                         : "surface-card rounded-[1.75rem] border-emerald-200/70 bg-emerald-50/30 p-4"
                     } ${
-                      trackingLanding || workspaceMode === "programs" || openEditor !== "nutrition"
+                      !showNutritionBuilder
                         ? "hidden"
                         : ""
                     }`}
