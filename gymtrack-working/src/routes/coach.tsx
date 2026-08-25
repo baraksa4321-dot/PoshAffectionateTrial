@@ -2106,6 +2106,48 @@ export function CoachDashboardPage({
                       {trackingLanding ? "תפריט" : "תפריט תזונה"}
                     </button>
                   </nav>
+                  {trackingLanding && activeWorkspaceTab === "programs" ? (
+                    <section className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
+                      <div className="mb-2">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                          בחירת אימון
+                        </p>
+                        <p className="mt-1 text-xs font-semibold text-ink">
+                          בחרי אימון כדי לראות את הדוח המלא שלו
+                        </p>
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {clientDetails.workouts.map((workout) => (
+                          <button
+                            key={workout.id}
+                            type="button"
+                            onClick={() => setSelectedTrackingWorkoutId(workout.id)}
+                            className={`rounded-xl border px-3 py-2.5 text-start text-xs font-bold transition-colors ${
+                              selectedTrackingWorkoutId === workout.id
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-primary/20 bg-white text-ink hover:border-primary/50"
+                            }`}
+                          >
+                            <span className="block">{workout.name}</span>
+                            <span
+                              className={`mt-0.5 block text-[10px] ${
+                                selectedTrackingWorkoutId === workout.id
+                                  ? "text-primary-foreground/80"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              {workout.items.length} תרגילים
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                      {clientDetails.workouts.length === 0 ? (
+                        <p className="rounded-xl bg-white/80 p-3 text-center text-xs text-muted-foreground">
+                          עדיין לא נבנו אימונים למתאמן הזה.
+                        </p>
+                      ) : null}
+                    </section>
+                  ) : null}
                 </>
               ) : null}
 
@@ -2444,9 +2486,9 @@ export function CoachDashboardPage({
                            <ChevronLeft className="h-4 w-4 rotate-180" />
                          </button>
                        </div>
-                       {trackingSessions.length > 0 ? (
+                        {selectedTrackingWorkoutId && visibleTrackingSessions.length > 0 ? (
                         <div className="grid gap-2 md:grid-cols-2">
-                           {trackingSessions.map((session) => (
+                            {visibleTrackingSessions.map((session) => (
                             <div
                               key={session.id}
                               className="rounded-xl bg-white/80 p-3 text-[11px]"
@@ -2584,7 +2626,9 @@ export function CoachDashboardPage({
                         </div>
                       ) : (
                         <p className="text-center text-xs text-muted-foreground">
-                           אין ביצועי אימון בתאריך זה.
+                            {selectedTrackingWorkoutId
+                              ? "אין ביצועי אימון ביום זה."
+                              : "בחרי אימון מהרשימה כדי לראות את הדוח שלו."}
                         </p>
                       )}
                     </section>
