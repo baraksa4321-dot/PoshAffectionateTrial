@@ -1223,6 +1223,20 @@ export function CoachDashboardPage({
   const visibleTrackingSessions = selectedTrackingWorkoutId
     ? trackingSessions.filter((session) => session.workoutId === selectedTrackingWorkoutId)
     : [];
+  const selectedTrackingWorkout = clientDetails?.workouts.find(
+    (workout) => workout.id === selectedTrackingWorkoutId,
+  );
+  const trackingPlanRows =
+    selectedTrackingWorkout?.items.map((item) => {
+      const actualEntry = visibleTrackingSessions
+        .flatMap((session) => session.entries)
+        .find((entry) => entry.exerciseId === item.exerciseId);
+      return {
+        item,
+        actualEntry,
+        exercise: store.exercises.find((exercise) => exercise.id === item.exerciseId),
+      };
+    }) ?? [];
   const trackingNutritionDay = clientDetails?.nutritionDays.find(
     (day) => day.date === trackingDate,
   );
@@ -2484,149 +2498,142 @@ export function CoachDashboardPage({
                            <ChevronLeft className="h-4 w-4 rotate-180" />
                          </button>
                        </div>
-                        {selectedTrackingWorkoutId && visibleTrackingSessions.length > 0 ? (
-                        <div className="grid gap-2 md:grid-cols-2">
-                            {visibleTrackingSessions.map((session) => (
-                            <div
-                              key={session.id}
-                              className="rounded-xl bg-white/80 p-3 text-[11px]"
-                            >
+                        {selectedTrackingWorkoutId && selectedTrackingWorkout ? (
+                          <div className="space-y-2">
+                            <div className="rounded-xl bg-white/80 p-3 text-[11px]">
                               <div className="flex items-center justify-between gap-2">
                                 <strong className="text-ink">
-                                  {session.workoutName || "אימון"}
+                                  {selectedTrackingWorkout.name || "אימון"}
                                 </strong>
                                 <span className="text-muted-foreground">
-                                  {new Date(session.date).toLocaleDateString("he-IL")}
+                                  {visibleTrackingSessions.length > 0
+                                    ? `${visibleTrackingSessions.length} ביצועים בתאריך`
+                                    : "אין ביצוע בתאריך"}
                                 </span>
                               </div>
-                              <p className="mt-1 text-muted-foreground">
-                                {session.entries.reduce(
-                                  (total, entry) =>
-                                    total + entry.sets.filter((set) => set.done).length,
-                                  0,
-                                )}{" "}
-                                סטים בוצעו מתוך{" "}
-                                {session.entries.reduce(
-                                  (total, entry) => total + entry.sets.length,
-                                  0,
-                                )}
-                              </p>
-                              <div className="mt-2 space-y-1.5 border-t border-amber-100 pt-2">
-                               {session.entries.map((entry) => {
-                                 const exercise = store.exercises.find(
-                                   (item) => item.id === entry.exerciseId,
-                                 );
-                                 const videoUrl = entry.videoUrl || exercise?.videoUrl;
-                                 return (
-                                   <div
-                                     key={`${session.id}-${entry.exerciseId}`}
-                                    className="rounded-lg bg-amber-50/70 px-2 py-1.5"
-                                  >
-                                    <div className="flex items-center justify-between gap-2">
-                                      {clientDetails.workouts
-                                        .find((workout) => workout.id === session.workoutId)
-                                        ?.items.some((item) => item.exerciseId === entry.exerciseId) ? (
+                              {visibleTrackingSessions.length > 0 ? (
+                                <p className="mt-1 text-muted-foreground">
+                                  {visibleTrackingSessions.reduce(
+                                    (total, session) =>
+                                      total +
+                                      session.entries.reduce(
+                                        (entryTotal, entry) =>
+                                          entryTotal + entry.sets.filter((set) => set.done).length,
+                                        0,
+                                      ),
+                                    0,
+                                  )}{" "}
+                                  סטים בוצעו בפועל
+                                </p>
+                              ) : null}
+                            </div>
+
+                            {trackingPlanRows.length > 0 ? (
+                              <div className="space-y-1.5">
+                                {trackingPlanRows.map(({ item, actualEntry, exercise }) => {
+                                  const videoUrl = actualEntry?.videoUrl || exercise?.videoUrl;
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      className={`rounded-xl border px-3 py-2.5 text-[11px] ${
+                                        actualEntry
+                                          ? "border-emerald-200 bg-emerald-50/70"
+                                          : "border-border/60 bg-white/80"
+                                      }`}
+                                    >
+                                      <div className="flex items-start justify-between gap-2">
                                         <button
                                           type="button"
                                           className="text-start font-bold text-ink hover:text-primary hover:underline"
                                           onClick={() =>
-                                            openTrackedPlan(session.workoutId, entry.exerciseId)
-                                          }
-                                        >
-                                          {entry.exerciseName}
-                                        </button>
-                                      ) : (
-                                        <strong className="text-ink">{entry.exerciseName}</strong>
-                                      )}
-                                      {clientDetails.workouts
-                                        .find((workout) => workout.id === session.workoutId)
-                                        ?.items.some((item) => item.exerciseId === entry.exerciseId) &&
-                                      clientDetails.programs.some((program) =>
-                                        program.dayIds.includes(session.workoutId),
-                                      ) ? (
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            openTrackedPlan(session.workoutId, entry.exerciseId)
-                                          }
-                                          className="shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/10"
-                                        >
-                                          פתח בתוכנית
-                                        </button>
-                                      ) : null}
-                                      <span className="text-[10px] text-muted-foreground">
-                                        {entry.feedback?.rating === "easy"
-                                          ? "קל"
-                                          : entry.feedback?.rating === "difficult"
-                                            ? "כבד"
-                                            : entry.feedback?.rating === "appropriate"
-                                              ? "מתאים"
-                                              : ""}
-                                      </span>
-                                    </div>
-                                    <p className="mt-1 text-[10px] text-muted-foreground">
-                                      {entry.sets.length > 0
-                                        ? entry.sets
-                                            .map(
-                                              (set, index) =>
-                                                `סט ${index + 1}: ${set.weight} ק״ג × ${set.reps}${
-                                                  set.done ? " ✓" : " — לא בוצע"
-                                                }`,
+                                            openTrackedPlan(
+                                              selectedTrackingWorkout.id,
+                                              item.exerciseId,
                                             )
-                                            .join(" · ")
-                                        : "לא נרשמו סטים"}
-                                    </p>
-                                    {entry.feedback?.notes || entry.notes ? (
-                                      <div className="mt-1 text-[10px] text-ink">
-                                        <button
-                                          type="button"
-                                          className="text-start hover:text-primary hover:underline"
-                                          onClick={() =>
-                                            openTrackedPlan(session.workoutId, entry.exerciseId)
                                           }
                                         >
-                                          הערה: {entry.feedback?.notes || entry.notes}
+                                          {actualEntry?.exerciseName || exercise?.name || "תרגיל"}
                                         </button>
+                                        <span
+                                          className={`shrink-0 text-[10px] font-bold ${
+                                            actualEntry ? "text-emerald-700" : "text-muted-foreground"
+                                          }`}
+                                        >
+                                          {actualEntry ? "בוצע בפועל" : "טרם בוצע"}
+                                        </span>
                                       </div>
-                                    ) : null}
-                                     {videoUrl ? (
-                                       <a
-                                         href={videoUrl}
-                                         target="_blank"
-                                         rel="noreferrer"
-                                         className="mt-1 inline-flex items-center rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20"
-                                       >
-                                         סרטון לתרגיל
-                                       </a>
-                                     ) : null}
-                                  </div>
-                                 );
-                               })}
+                                      {actualEntry ? (
+                                        <>
+                                          <p className="mt-1 text-muted-foreground">
+                                            {actualEntry.sets.length > 0
+                                              ? actualEntry.sets
+                                                  .map(
+                                                    (set, index) =>
+                                                      `סט ${index + 1}: ${set.weight} ק״ג × ${
+                                                        set.reps
+                                                      }${set.done ? " ✓" : " — לא בוצע"}`,
+                                                  )
+                                                  .join(" · ")
+                                              : "לא נרשמו סטים"}
+                                          </p>
+                                          {actualEntry.feedback?.notes || actualEntry.notes ? (
+                                            <p className="mt-1 text-ink">
+                                              הערה:{" "}
+                                              {actualEntry.feedback?.notes || actualEntry.notes}
+                                            </p>
+                                          ) : null}
+                                          {actualEntry.feedback?.rating ? (
+                                            <p className="mt-1 text-muted-foreground">
+                                              דירוג:{" "}
+                                              {actualEntry.feedback.rating === "easy"
+                                                ? "קל"
+                                                : actualEntry.feedback.rating === "difficult"
+                                                  ? "כבד"
+                                                  : "מתאים"}
+                                            </p>
+                                          ) : null}
+                                        </>
+                                      ) : (
+                                        <p className="mt-1 text-muted-foreground">
+                                          תוכנן: {item.sets} סטים ×{" "}
+                                          {item.repMin || item.reps}
+                                          {item.repMax ? `-${item.repMax}` : ""} חזרות ·{" "}
+                                          {item.targetWeight || item.weight} ק״ג
+                                        </p>
+                                      )}
+                                      {videoUrl ? (
+                                        <a
+                                          href={videoUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="mt-1 inline-flex items-center rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20"
+                                        >
+                                          סרטון לתרגיל
+                                        </a>
+                                      ) : null}
+                                    </div>
+                                  );
+                                })}
                               </div>
-                              {session.entries
-                                .filter((entry) => entry.feedback?.notes || entry.notes)
-                                .slice(0, 3)
-                                .map((entry) => (
-                                  <p
-                                    key={`${session.id}-${entry.exerciseId}`}
-                                    className="mt-1 text-ink"
-                                  >
-                                    {entry.exerciseName}: {entry.feedback?.notes || entry.notes}
-                                  </p>
-                                ))}
-                              {session.discomfortNotes ? (
-                                <p className="mt-1 rounded-lg bg-rose-50 px-2 py-1 font-semibold text-rose-800">
+                            ) : (
+                              <p className="rounded-xl bg-white/80 p-3 text-center text-xs text-muted-foreground">
+                                באימון הזה עדיין לא הוגדרו תרגילים.
+                              </p>
+                            )}
+                            {visibleTrackingSessions.map((session) =>
+                              session.discomfortNotes ? (
+                                <p
+                                  key={`${session.id}-discomfort`}
+                                  className="rounded-lg bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-800"
+                                >
                                   כאב / אי־נוחות: {session.discomfortNotes}
                                 </p>
-                              ) : null}
-                            </div>
-                          ))}
-                        </div>
+                              ) : null,
+                            )}
+                          </div>
                       ) : (
                         <p className="text-center text-xs text-muted-foreground">
-                            {selectedTrackingWorkoutId
-                              ? "אין ביצועי אימון ביום זה."
-                              : "בחרי אימון מהרשימה כדי לראות את הדוח שלו."}
+                            "בחרי אימון מהרשימה כדי לראות את הדוח שלו."
                         </p>
                       )}
                     </section>
