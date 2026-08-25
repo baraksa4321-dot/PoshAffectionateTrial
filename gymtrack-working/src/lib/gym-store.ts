@@ -1771,7 +1771,7 @@ export function replacePlannedMealFood(
                     id: food.id,
                     sourcePlanMealId: plannedMealId,
                     sourcePlanFoodId: plannedFoodId,
-                    timeLogged: food.timeLogged,
+                    ...(food.timeLogged === undefined ? {} : { timeLogged: food.timeLogged }),
                   }
                 : food,
             ),

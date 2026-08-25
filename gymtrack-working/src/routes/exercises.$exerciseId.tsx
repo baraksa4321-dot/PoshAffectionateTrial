@@ -122,7 +122,7 @@ function ExerciseDetail() {
     saveExercise({
       ...draft,
       muscleGroup: finalMuscleGroup,
-      customMuscleGroup: customValue,
+      ...(customValue === undefined ? {} : { customMuscleGroup: customValue }),
     });
     if (isNew) navigate({ to: "/exercises/$exerciseId", params: { exerciseId: draft.id } });
     else setEditing(false);

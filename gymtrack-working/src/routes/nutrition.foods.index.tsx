@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Apple, ArrowRight, Heart, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { EmptyState, Pill, SectionHeader } from "@/components/ui-app/primitives";
+import { EmptyState, SectionHeader } from "@/components/ui-app/primitives";
 import { searchFoods, toggleFavoriteFood, useGym } from "@/lib/gym-store";
 import { nutritionSourceFor } from "@/lib/nutrition-integrity";
 import { genderText } from "@/lib/gender-copy";
@@ -22,7 +22,13 @@ function FoodLibrary() {
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const categories = useMemo(
     () =>
-      Array.from(new Set(foods.map((food) => food.category).filter(Boolean))).sort((a, b) =>
+      Array.from(
+        new Set(
+          foods
+            .map((food) => food.category)
+            .filter((category): category is string => Boolean(category)),
+        ),
+      ).sort((a, b) =>
         a.localeCompare(b, "he"),
       ),
     [foods],
@@ -200,9 +206,6 @@ function FoodLibrary() {
         />
       ) : null}
 
-      <div className="mt-6 hidden">
-        <Pill />
-      </div>
     </AppShell>
   );
 }

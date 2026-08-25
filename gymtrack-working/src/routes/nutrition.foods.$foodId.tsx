@@ -12,9 +12,9 @@ import { nutritionSourceFor } from "@/lib/nutrition-integrity";
 import type { FoodItem } from "@/lib/gym-types";
 
 type FoodSearch = {
-  mealDate?: string;
-  mealId?: string;
-  logFoodId?: string;
+  mealDate?: string | undefined;
+  mealId?: string | undefined;
+  logFoodId?: string | undefined;
 };
 
 export const Route = createFileRoute("/nutrition/foods/$foodId")({
@@ -22,9 +22,9 @@ export const Route = createFileRoute("/nutrition/foods/$foodId")({
     meta: [{ title: "פרטי מאכל — MY routine" }],
   }),
   validateSearch: (search: Record<string, unknown>): FoodSearch => ({
-    mealDate: typeof search.mealDate === "string" ? search.mealDate : undefined,
-    mealId: typeof search.mealId === "string" ? search.mealId : undefined,
-    logFoodId: typeof search.logFoodId === "string" ? search.logFoodId : undefined,
+    mealDate: typeof search["mealDate"] === "string" ? search["mealDate"] : undefined,
+    mealId: typeof search["mealId"] === "string" ? search["mealId"] : undefined,
+    logFoodId: typeof search["logFoodId"] === "string" ? search["logFoodId"] : undefined,
   }),
   component: FoodDetail,
 });
@@ -58,7 +58,10 @@ function FoodDetail() {
 
   const replacements = useMemo(() => {
     if (!existing) return [];
-    return findFoodReplacements(foods, existing, swapQuery).slice(0, 10);
+    return findFoodReplacements(foods, { ...existing, quantity: 1 }, swapQuery).slice(
+      0,
+      10,
+    );
   }, [foods, existing, swapQuery]);
 
   if (!isNew && !existing && foodId !== "custom") {
@@ -98,7 +101,7 @@ function FoodDetail() {
       saveFood({
         ...draft,
         name: draft.name.trim(),
-        approvalStatus: isNew ? "pending" : draft.approvalStatus,
+        ...(isNew ? { approvalStatus: "pending" as const } : {}),
       });
       setSaveError("");
     } catch (error) {

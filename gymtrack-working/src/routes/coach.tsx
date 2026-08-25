@@ -419,7 +419,22 @@ export function CoachDashboardPage({
         gender: profileGender === "" ? undefined : profileGender,
       }
     : null;
-  const calorieEstimate = calorieProfile ? calculateCalorieEstimate(calorieProfile) : null;
+  const calorieEstimate =
+    calorieProfile &&
+    profileAge !== "" &&
+    profileHeight !== "" &&
+    profileWeight !== "" &&
+    profileWorkouts !== "" &&
+    profileGender !== ""
+      ? calculateCalorieEstimate({
+          ...calorieProfile,
+          age: Number(profileAge),
+          height: Number(profileHeight),
+          weight: Number(profileWeight),
+          workoutsPerWeek: Number(profileWorkouts),
+          gender: profileGender as "male" | "female",
+        })
+      : null;
 
   const saveClientCalorieProfile = async () => {
     if (!selectedClientId || !clientDetails?.profile) return;
@@ -461,16 +476,16 @@ export function CoachDashboardPage({
       current
         ? {
             ...current,
-            profile: current.profile
+            ...(current.profile
               ? {
                   ...current.profile,
-                  age,
-                  height,
+                  ...(age === undefined ? {} : { age }),
+                  ...(height === undefined ? {} : { height }),
                   weight: weight ?? 0,
-                  workoutsPerWeek: workouts,
-                  gender,
+                  ...(workouts === undefined ? {} : { workoutsPerWeek: workouts }),
+                  ...(gender === undefined ? {} : { gender }),
                 }
-              : current.profile,
+              : {}),
           }
         : current,
     );
@@ -2652,7 +2667,7 @@ export function CoachDashboardPage({
                                                         <span>ביצוע אחרון של המתאמן</span>
                                                         <span className="font-normal text-amber-800">
                                                           {new Date(
-                                                            actualExecutions[0].date,
+                                                            actualExecutions[0]!.date,
                                                           ).toLocaleDateString("he-IL")}
                                                         </span>
                                                       </div>

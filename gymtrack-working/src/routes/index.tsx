@@ -184,14 +184,18 @@ function Dashboard() {
       const element = document
         .elementFromPoint(event.clientX, event.clientY)
         ?.closest<HTMLElement>("[data-home-card-id]");
-      const target = element?.dataset.homeCardId as HomeCardId | undefined;
+      const target = element?.dataset["homeCardId"] as HomeCardId | undefined;
       if (!target || target === draggingHomeCard) return;
       setHomeCardOrder((current) => {
         const next = [...current];
         const from = next.indexOf(draggingHomeCard);
         const to = next.indexOf(target);
         if (from < 0 || to < 0) return current;
-        [next[from], next[to]] = [next[to], next[from]];
+        const fromCard = next[from];
+        const toCard = next[to];
+        if (!fromCard || !toCard) return current;
+        next[from] = toCard;
+        next[to] = fromCard;
         return next;
       });
       setDraggingHomeCard(target);
@@ -994,7 +998,7 @@ function Dashboard() {
                     onChange={(event) =>
                       setBodyProfileDraft((current) => ({
                         ...current,
-                        [field]: event.target.value,
+                        [field as keyof typeof bodyProfileDraft]: event.target.value,
                       }))
                     }
                     className="mt-1 w-full rounded-xl border border-border bg-background p-2.5 text-sm font-bold text-ink outline-none focus:border-primary"

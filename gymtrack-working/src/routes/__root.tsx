@@ -309,7 +309,7 @@ function BrowserRuntimeGuard({ children }: RuntimeErrorBoundaryProps) {
   );
 }
 
-const LOADING_FOOD_ILLUSTRATIONS = [
+const LOADING_FOOD_ILLUSTRATIONS: Array<{ color: string; shell: string; growth?: boolean }> = [
   { color: "#f3a24b", shell: "M75 12c23 0 37 16 37 39s-14 40-37 40S38 74 38 51 52 12 75 12z" },
   {
     color: "#f3cf5b",

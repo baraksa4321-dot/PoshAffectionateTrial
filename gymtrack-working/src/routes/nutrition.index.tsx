@@ -108,19 +108,19 @@ function recipeAsMealFood(recipe: RecipeDefinition, servings: number): MealFood 
 
 function quantityControlFor(food: FoodItem) {
   const serving = food.servingSize.toLocaleLowerCase();
-  if (/(כף|כפות)/.test(serving)) return { label: "כמות בכפות", step: "any", scale: 1 };
-  if (/(כוס|כוסות)/.test(serving)) return { label: "כמות בכוסות", step: "any", scale: 1 };
+  if (/(כף|כפות)/.test(serving)) return { label: "כמות בכפות", step: 0.1, scale: 1 };
+  if (/(כוס|כוסות)/.test(serving)) return { label: "כמות בכוסות", step: 0.1, scale: 1 };
   if (/(יחידה|יחידות|ביצה|פרוסה|קופסה|חצי)/.test(serving)) {
-    return { label: "כמות ביחידות", step: "any", scale: 1 };
+    return { label: "כמות ביחידות", step: 0.1, scale: 1 };
   }
   const gramsMatch = serving.match(/(\d+(?:[.,]\d+)?)\s*(?:גרם|g)\b/);
   if (gramsMatch) {
     const grams = Number(gramsMatch[1]!.replace(",", "."));
     if (Number.isFinite(grams) && grams > 0) {
-      return { label: "כמות בגרמים", step: "any", scale: grams };
+      return { label: "כמות בגרמים", step: 0.1, scale: grams };
     }
   }
-  return { label: "כמות מנות", step: "any", scale: 1 };
+  return { label: "כמות מנות", step: 0.1, scale: 1 };
 }
 
 function quantityLabelForServing(servingSize: string): string {
@@ -459,8 +459,8 @@ function NutritionLog() {
       protein: lib.protein,
       carbs: lib.carbs,
       fat: lib.fat,
-      fiber: lib.fiber,
-      notes: current.notes,
+      ...(lib.fiber === undefined ? {} : { fiber: lib.fiber }),
+      ...(current.notes === undefined ? {} : { notes: current.notes }),
     });
     setSubstituteFor(null);
     setSubstituteQuery("");
@@ -713,7 +713,7 @@ function NutritionLog() {
                 ))}
                 {filteredSavedRecipes.length === 0 ? (
                   <p className="py-3 text-center text-[11px] font-semibold text-muted-foreground">
-                    {savedRecipes.length === 0
+                    {(gym.recipes ?? []).length === 0
                       ? "עדיין אין מתכונים אישיים שמורים."
                       : "לא נמצאו מתכונים אישיים לפי החיפוש והסינון."}
                   </p>
@@ -1188,7 +1188,9 @@ function NutritionLog() {
                             setScannedMeal((current) => {
                               if (!current) return current;
                               const foods = [...current.foods];
-                              foods[index] = { ...foods[index], name: event.target.value };
+                              const currentFood = foods[index];
+                              if (!currentFood) return current;
+                              foods[index] = { ...currentFood, name: event.target.value };
                               return { ...current, foods };
                             })
                           }
@@ -1221,7 +1223,9 @@ function NutritionLog() {
                           setScannedMeal((current) => {
                             if (!current) return current;
                             const foods = [...current.foods];
-                            foods[index] = { ...foods[index], servingSize: event.target.value };
+                            const currentFood = foods[index];
+                            if (!currentFood) return current;
+                            foods[index] = { ...currentFood, servingSize: event.target.value };
                             return { ...current, foods };
                           })
                         }
@@ -1293,8 +1297,10 @@ function NutritionLog() {
                                 setScannedMeal((current) => {
                                   if (!current) return current;
                                   const foods = [...current.foods];
+                                  const currentFood = foods[index];
+                                  if (!currentFood) return current;
                                   foods[index] = {
-                                    ...foods[index],
+                                    ...currentFood,
                                     [key]: Number(event.target.value),
                                   };
                                   return { ...current, foods };
@@ -1722,27 +1728,52 @@ function NutritionLog() {
               <TargetField
                 label="קלוריות"
                 value={targetsDraft.calories}
-                onChange={(v) => setTargetsDraft({ ...targetsDraft, calories: v })}
+                onChange={(v) =>
+                  setTargetsDraft(({ calories: _old, ...rest }) => ({
+                    ...rest,
+                    ...(v === undefined ? {} : { calories: v }),
+                  }))
+                }
               />
               <TargetField
                 label="חלבון (g)"
                 value={targetsDraft.protein}
-                onChange={(v) => setTargetsDraft({ ...targetsDraft, protein: v })}
+                onChange={(v) =>
+                  setTargetsDraft(({ protein: _old, ...rest }) => ({
+                    ...rest,
+                    ...(v === undefined ? {} : { protein: v }),
+                  }))
+                }
               />
               <TargetField
                 label="פחמימות (g)"
                 value={targetsDraft.carbs}
-                onChange={(v) => setTargetsDraft({ ...targetsDraft, carbs: v })}
+                onChange={(v) =>
+                  setTargetsDraft(({ carbs: _old, ...rest }) => ({
+                    ...rest,
+                    ...(v === undefined ? {} : { carbs: v }),
+                  }))
+                }
               />
               <TargetField
                 label="שומן (g)"
                 value={targetsDraft.fat}
-                onChange={(v) => setTargetsDraft({ ...targetsDraft, fat: v })}
+                onChange={(v) =>
+                  setTargetsDraft(({ fat: _old, ...rest }) => ({
+                    ...rest,
+                    ...(v === undefined ? {} : { fat: v }),
+                  }))
+                }
               />
               <TargetField
                 label="סיבים (g)"
                 value={targetsDraft.fiber}
-                onChange={(v) => setTargetsDraft({ ...targetsDraft, fiber: v })}
+                onChange={(v) =>
+                  setTargetsDraft(({ fiber: _old, ...rest }) => ({
+                    ...rest,
+                    ...(v === undefined ? {} : { fiber: v }),
+                  }))
+                }
               />
             </div>
             <div className="mt-4 flex gap-2">
@@ -1771,7 +1802,7 @@ function MacroPill({
 }: {
   label: string;
   value: number;
-  target?: number;
+  target?: number | undefined;
   unit: string;
 }) {
   return (
@@ -1828,7 +1859,7 @@ function TargetField({
   onChange,
 }: {
   label: string;
-  value?: number;
+  value?: number | undefined;
   onChange: (v: number | undefined) => void;
 }) {
   return (

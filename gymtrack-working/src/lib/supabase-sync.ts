@@ -380,28 +380,34 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (profile.role !== "owner" && profile.role !== "coach" && profile.role !== "client") {
       throw new Error("Profile pull failed: authenticated user has an invalid role");
     }
+    const fullName = profile.full_name || nextData.userProfile?.fullName;
+    const height = profile.height_cm ? Number(profile.height_cm) : nextData.userProfile?.height;
+    const age = profile.age_years ? Number(profile.age_years) : nextData.userProfile?.age;
+    const workoutsPerWeek = profile.workouts_per_week
+      ? Number(profile.workouts_per_week)
+      : nextData.userProfile?.workoutsPerWeek;
+    const gender =
+      profile.gender === "male" || profile.gender === "female"
+        ? profile.gender
+        : nextData.userProfile?.gender;
+    const coachId = profile.coach_id || undefined;
     nextData.userProfile = {
       ...nextData.userProfile,
-      fullName: profile.full_name || nextData.userProfile?.fullName,
       weight: profile.weight_kg ? Number(profile.weight_kg) : (nextData.userProfile?.weight ?? 65),
-      height: profile.height_cm ? Number(profile.height_cm) : nextData.userProfile?.height,
-      age: profile.age_years ? Number(profile.age_years) : nextData.userProfile?.age,
-      workoutsPerWeek: profile.workouts_per_week
-        ? Number(profile.workouts_per_week)
-        : nextData.userProfile?.workoutsPerWeek,
-      gender:
-        profile.gender === "male" || profile.gender === "female"
-          ? profile.gender
-          : nextData.userProfile?.gender,
       role: profile.role as UserRole,
-      coachId: profile.coach_id || undefined,
       todayRoutineEnabled: profile.today_routine_enabled ?? true,
+      ...(fullName === undefined ? {} : { fullName }),
+      ...(height === undefined ? {} : { height }),
+      ...(age === undefined ? {} : { age }),
+      ...(workoutsPerWeek === undefined ? {} : { workoutsPerWeek }),
+      ...(gender === undefined ? {} : { gender }),
+      ...(coachId === undefined ? {} : { coachId }),
     };
 
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser();
-    const authTheme = authUser?.user_metadata?.theme;
+    const authTheme = authUser?.user_metadata?.["theme"];
     if (
       authTheme === "pink" ||
       authTheme === "blue" ||
@@ -476,8 +482,8 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         nextData.clients = clientLinks.map((link) => ({
           id: link.id,
           clientId: link.client_id,
-          clientEmail: link.profiles?.email || undefined,
-          clientName: link.profiles?.full_name || undefined,
+          clientEmail: link.profiles?.[0]?.email || undefined,
+          clientName: link.profiles?.[0]?.full_name || undefined,
           createdAt: link.created_at,
         }));
       }
@@ -503,6 +509,9 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
           equipment: row.equipment || "מוט",
           description: row.description || "",
           instructions: row.instructions || "",
+          videoUrl: "",
+          images: [],
+          notes: "",
         };
         customMap.set(row.id, exItem);
       }
@@ -633,16 +642,16 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       nextData.bodyMeasurements = dbMeasurements.map((row): BodyMeasurement => ({
         id: row.id,
         date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
-        chestCm: row.chest_cm == null ? undefined : Number(row.chest_cm),
-        waistCm: row.waist_cm == null ? undefined : Number(row.waist_cm),
-        hipsCm: row.hips_cm == null ? undefined : Number(row.hips_cm),
-        bicepsCm: row.biceps_cm == null ? undefined : Number(row.biceps_cm),
-        thighsCm: row.thighs_cm == null ? undefined : Number(row.thighs_cm),
-        calvesCm: row.calves_cm == null ? undefined : Number(row.calves_cm),
-        neckCm: row.neck_cm == null ? undefined : Number(row.neck_cm),
-        bodyFatPct: row.body_fat_pct == null ? undefined : Number(row.body_fat_pct),
-        muscleMassKg: row.muscle_mass_kg == null ? undefined : Number(row.muscle_mass_kg),
-        notes: row.notes || undefined,
+        ...(row.chest_cm == null ? {} : { chestCm: Number(row.chest_cm) }),
+        ...(row.waist_cm == null ? {} : { waistCm: Number(row.waist_cm) }),
+        ...(row.hips_cm == null ? {} : { hipsCm: Number(row.hips_cm) }),
+        ...(row.biceps_cm == null ? {} : { bicepsCm: Number(row.biceps_cm) }),
+        ...(row.thighs_cm == null ? {} : { thighsCm: Number(row.thighs_cm) }),
+        ...(row.calves_cm == null ? {} : { calvesCm: Number(row.calves_cm) }),
+        ...(row.neck_cm == null ? {} : { neckCm: Number(row.neck_cm) }),
+        ...(row.body_fat_pct == null ? {} : { bodyFatPct: Number(row.body_fat_pct) }),
+        ...(row.muscle_mass_kg == null ? {} : { muscleMassKg: Number(row.muscle_mass_kg) }),
+        ...(row.notes ? { notes: row.notes } : {}),
       }));
     }
 
@@ -708,9 +717,10 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
         meals: row.meals || [],
         plannedMeals: row.planned_meals || [],
-        waterMl: row.water_ml === null ? undefined : Number(row.water_ml ?? 0),
-        waterTargetMl:
-          row.water_target_ml === null ? undefined : Number(row.water_target_ml ?? 2500),
+        ...(row.water_ml === null ? {} : { waterMl: Number(row.water_ml ?? 0) }),
+        ...(row.water_target_ml === null
+          ? {}
+          : { waterTargetMl: Number(row.water_target_ml ?? 2500) }),
       }));
       nextData.nutritionDays = daysList;
     }
@@ -840,8 +850,10 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
           : (row.date ?? row.recorded_at),
       meals: row.meals || [],
       plannedMeals: row.planned_meals || [],
-      waterMl: row.water_ml === null ? undefined : Number(row.water_ml ?? 0),
-      waterTargetMl: row.water_target_ml === null ? undefined : Number(row.water_target_ml ?? 2500),
+      ...(row.water_ml === null ? {} : { waterMl: Number(row.water_ml ?? 0) }),
+      ...(row.water_target_ml === null
+        ? {}
+        : { waterTargetMl: Number(row.water_target_ml ?? 2500) }),
     }));
     const latestNutritionTarget = (dbNutritionDays || []).find(
       (row) => row.target_calories !== null && row.target_calories !== undefined,
@@ -849,16 +861,16 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     const measurementList: BodyMeasurement[] = (dbMeasurements || []).map((row) => ({
       id: row.id,
       date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
-      chestCm: row.chest_cm === null ? undefined : Number(row.chest_cm),
-      waistCm: row.waist_cm === null ? undefined : Number(row.waist_cm),
-      hipsCm: row.hips_cm === null ? undefined : Number(row.hips_cm),
-      bicepsCm: row.biceps_cm === null ? undefined : Number(row.biceps_cm),
-      thighsCm: row.thighs_cm === null ? undefined : Number(row.thighs_cm),
-      calvesCm: row.calves_cm === null ? undefined : Number(row.calves_cm),
-      neckCm: row.neck_cm === null ? undefined : Number(row.neck_cm),
-      bodyFatPct: row.body_fat_pct === null ? undefined : Number(row.body_fat_pct),
-      muscleMassKg: row.muscle_mass_kg === null ? undefined : Number(row.muscle_mass_kg),
-      notes: row.notes || undefined,
+      ...(row.chest_cm === null ? {} : { chestCm: Number(row.chest_cm) }),
+      ...(row.waist_cm === null ? {} : { waistCm: Number(row.waist_cm) }),
+      ...(row.hips_cm === null ? {} : { hipsCm: Number(row.hips_cm) }),
+      ...(row.biceps_cm === null ? {} : { bicepsCm: Number(row.biceps_cm) }),
+      ...(row.thighs_cm === null ? {} : { thighsCm: Number(row.thighs_cm) }),
+      ...(row.calves_cm === null ? {} : { calvesCm: Number(row.calves_cm) }),
+      ...(row.neck_cm === null ? {} : { neckCm: Number(row.neck_cm) }),
+      ...(row.body_fat_pct === null ? {} : { bodyFatPct: Number(row.body_fat_pct) }),
+      ...(row.muscle_mass_kg === null ? {} : { muscleMassKg: Number(row.muscle_mass_kg) }),
+      ...(row.notes ? { notes: row.notes } : {}),
     }));
 
     const historyList: HistorySession[] = (dbSessions || []).map((row) => ({
@@ -891,19 +903,20 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       history: historyList,
       cardioLogs: cardioList,
       bodyMeasurements: measurementList,
-      profile: profile
+      ...(profile
         ? {
-            email: profile.email || undefined,
-            name: profile.full_name || undefined,
             weight: Number(profile.weight_kg || 65),
             height: Number(profile.height_cm || 165),
-            gender:
-              profile.gender === "male" || profile.gender === "female" ? profile.gender : undefined,
             role: profile.role as UserRole,
-            coachId: profile.coach_id || undefined,
             todayRoutineEnabled: profile.today_routine_enabled ?? true,
+            ...(profile.email ? { email: profile.email } : {}),
+            ...(profile.full_name ? { name: profile.full_name } : {}),
+            ...(profile.gender === "male" || profile.gender === "female"
+              ? { gender: profile.gender }
+              : {}),
+            ...(profile.coach_id ? { coachId: profile.coach_id } : {}),
           }
-        : undefined,
+        : {}),
     };
   } catch (err: unknown) {
     const error = err instanceof Error && err.message ? err.message : "Client data pull failed";
