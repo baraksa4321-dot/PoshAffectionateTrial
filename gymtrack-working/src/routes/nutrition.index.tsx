@@ -217,7 +217,7 @@ function NutritionLog() {
     try {
       const image = await prepareMealImage(file);
       const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 60_000);
+      const timeout = window.setTimeout(() => controller.abort(), 15_000);
       let response: Response;
       try {
         response = await fetch("/api/nutrition/scan-meal", {
@@ -236,7 +236,7 @@ function NutritionLog() {
     } catch (error) {
       setScanError(
         error instanceof DOMException && error.name === "AbortError"
-          ? "הניתוח לקח יותר מדי זמן. נסי שוב — התמונה הוכנה מחדש בגודל קטן יותר."
+          ? "הניתוח לקח יותר מדי זמן. שירות ניתוח התמונות אולי לא זמין כרגע. נסי שוב בעוד רגע."
           : error instanceof Error
             ? error.message
             : "הסריקה נכשלה. נסי שוב.",

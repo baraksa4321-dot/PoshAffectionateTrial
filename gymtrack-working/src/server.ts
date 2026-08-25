@@ -11,7 +11,7 @@ type ServerEntry = {
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 const xaiConnectors = new ReplitConnectors();
 const MAX_MEAL_IMAGE_BYTES = 20 * 1024 * 1024;
-const XAI_TIMEOUT_MS = 25_000;
+const XAI_TIMEOUT_MS = 10_000;
 const scanTimestamps: number[] = [];
 
 type ScanFood = {
@@ -123,7 +123,7 @@ async function analyzeMealImage(request: Request): Promise<Response> {
     });
   } catch (error) {
     console.error("xAI meal scan request failed", error);
-    return jsonResponse({ error: "הניתוח לקח יותר מדי זמן. נסי שוב עם תמונה קטנה וברורה יותר." }, 504);
+    return jsonResponse({ error: "שירות ניתוח התמונות לא זמין כרגע. נסי שוב בעוד רגע." }, 504);
   } finally {
     clearTimeout(timeout);
   }
