@@ -93,7 +93,26 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
-function profileDisplayName(profile?: { full_name?: string | null } | null): string {
+function normalizeProfileIdentity(value?: string | null): string {
+  return (value ?? "").trim().toLocaleLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function profileDisplayName(
+  profile?: { full_name?: string | null; email?: string | null } | null,
+): string {
+  const identities = [
+    normalizeProfileIdentity(profile?.email?.split("@")[0]),
+    normalizeProfileIdentity(profile?.full_name),
+  ];
+  const knownNames: Record<string, string> = {
+    maya2003yo: "מאיה בדיקה 1",
+    maya2003yos: "מאיה בדיקה 1",
+    mayayy2345: "מאיה בדיקה 2",
+    michalyosfan: "מיכל יוספן",
+    mayayosfan234: "מאיה יוספן",
+  };
+  const knownName = identities.map((identity) => knownNames[identity]).find(Boolean);
+  if (knownName) return knownName;
   const name = profile?.full_name?.trim();
   return name || "שם לא הוגדר";
 }
@@ -1299,7 +1318,7 @@ export function CoachDashboardPage({
   const selfDisplayName = store.userProfile?.fullName?.trim() || "אני";
   const filteredClients = clients.filter((c) => {
     const emailStr = (c.profiles?.email || "").toLowerCase();
-    const nameStr = (c.profiles?.full_name || "").toLowerCase();
+    const nameStr = profileDisplayName(c.profiles).toLowerCase();
     const q = clientSearch.toLowerCase();
     return Boolean(q) && (emailStr.includes(q) || nameStr.includes(q));
   });
@@ -3091,7 +3110,10 @@ export function CoachDashboardPage({
                                                         type="button"
                                                         onClick={() => {
                                                           setEditingDayId(dayItem.id);
-                                                          setEditingItemId(exItem.id);
+                                                          setEditingItemId((current) =>
+                                                            current === exItem.id ? null : exItem.id,
+                                                          );
+                                                          if (editingItemId === exItem.id) return;
                                                           setSelectedExId(exItem.exerciseId);
                                                           setTargetWeight(
                                                             exItem.targetWeight || exItem.weight,
@@ -3103,7 +3125,7 @@ export function CoachDashboardPage({
                                                         }}
                                                         className="rounded-lg bg-background px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/10"
                                                       >
-                                                        עריכה
+                                                        {editingItemId === exItem.id ? "סגירה" : "עריכה"}
                                                       </button>
                                                       <button
                                                         type="button"
@@ -3120,6 +3142,7 @@ export function CoachDashboardPage({
                                                       </button>
                                                     </div>
                                                   </div>
+                                                  {editingItemId === exItem.id ? (
                                                   <div className="mt-2 grid grid-cols-3 gap-1.5 border-t border-border/40 pt-2">
                                                     <label className="text-center text-[9px] font-bold text-muted-foreground">
                                                       משקל יעד
@@ -3177,6 +3200,7 @@ export function CoachDashboardPage({
                                                       />
                                                     </label>
                                                   </div>
+                                                  ) : null}
                                                   {false && actualExecutions.length > 0 ? (
                                                     <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/80 p-2 text-[10px]">
                                                       <div className="flex items-center justify-between gap-2 font-bold text-amber-900">
@@ -3243,7 +3267,7 @@ export function CoachDashboardPage({
                                           </div>
                                         )}
 
-                                        {isDayActive && (
+                                        {isDayActive && !editingItemId && (
                                             <form
                                             onSubmit={handleAddExerciseToDay}
                                             className="pt-2 border-t border-border/40 space-y-2 text-xs"
