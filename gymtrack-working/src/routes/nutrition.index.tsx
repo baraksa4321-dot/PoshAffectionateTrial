@@ -1099,21 +1099,12 @@ function NutritionLog() {
                     <div
                       className={`loading-micro-stage loading-simple-stage loading-simple-pose-${scanCycle % 4}`}
                     >
-                      <video
+                      <img
                         key={MEAL_SCAN_ILLUSTRATIONS[scanCycle % MEAL_SCAN_ILLUSTRATIONS.length]}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        preload="auto"
+                        src={`/loading/clean/${MEAL_SCAN_ILLUSTRATIONS[scanCycle % MEAL_SCAN_ILLUSTRATIONS.length]}.gif`}
                         aria-label="אנימציית ניתוח תמונה"
                         className="loading-simple-image loading-simple-video"
-                      >
-                        <source
-                          src={`/loading/meal-scan/${MEAL_SCAN_ILLUSTRATIONS[scanCycle % MEAL_SCAN_ILLUSTRATIONS.length]}.webm?v=meal-scan-${scanCycle}`}
-                          type="video/webm"
-                        />
-                      </video>
+                      />
                     </div>
                     <span className="mt-3 text-sm font-bold text-ink">מנתחת את התמונה…</span>
                     <span className="mt-1 text-[11px] text-muted-foreground">

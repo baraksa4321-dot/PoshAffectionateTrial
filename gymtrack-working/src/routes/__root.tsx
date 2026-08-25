@@ -441,22 +441,12 @@ function SimpleLoadingIllustration({ variant }: { variant: number }) {
   const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length]!;
   return (
     <div className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4}`}>
-      <video
+      <img
         key={illustration.file}
         className="loading-simple-image loading-simple-video"
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        poster={`/loading/${illustration.file}`}
+        src={`/loading/clean/${illustration.file.replace(".png", ".gif")}`}
         aria-label={`איור טעינה: ${illustration.label}`}
-      >
-        <source
-          src={`/loading/tinted/${illustration.file.replace(".png", ".webm")}?v=cream-bg-2`}
-          type="video/webm"
-        />
-      </video>
+      />
     </div>
   );
 }
