@@ -2740,12 +2740,13 @@ export function CoachDashboardPage({
                                         <button
                                           type="button"
                                           className="text-start font-bold text-ink hover:text-primary hover:underline"
-                                          onClick={() =>
+                                          onClick={(event) => {
+                                            event.stopPropagation();
                                             openTrackedPlan(
                                               selectedTrackingWorkout.id,
                                               item.exerciseId,
-                                            )
-                                          }
+                                            );
+                                          }}
                                         >
                                           {actualEntry?.exerciseName || exercise?.name || "תרגיל"}
                                         </button>
