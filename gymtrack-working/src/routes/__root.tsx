@@ -422,7 +422,7 @@ const REFERENCE_LOADING_IMAGES = [
 ] as const;
 
 const SIMPLE_LOADING_ILLUSTRATIONS = [
-  { src: "/loading/loading-banana.png", label: "בננה מצוירת" },
+  { src: null, label: "בננה מצוירת" },
   { src: "/loading/clean/user-lemon.gif", label: "לימון מצויר" },
   { src: "/loading/clean/user-tomato.gif", label: "עגבנייה מצוירת" },
   { src: "/loading/clean/user-character-01.gif", label: "דמות מצוירת" },
@@ -439,6 +439,9 @@ const SIMPLE_LOADING_ILLUSTRATIONS = [
 
 function SimpleLoadingIllustration({ variant }: { variant: number }) {
   const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length]!;
+  if (!illustration.src) {
+    return <LegacyLoadingIllustration variant={6} />;
+  }
   return (
     <div className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4}`}>
       <img
