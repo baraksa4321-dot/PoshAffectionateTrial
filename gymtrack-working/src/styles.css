@@ -609,6 +609,14 @@ html.night-mode .bg-background {
   -webkit-transform: translateZ(0);
 }
 
+/* Installed iOS PWAs draw under the translucent status bar. Keep the top
+   controls comfortably below it without changing the normal browser layout. */
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  .app-topbar {
+    padding-top: max(1.25rem, env(safe-area-inset-top)) !important;
+  }
+}
+
 html.night-mode .app-topbar {
   box-shadow: 0 10px 26px rgb(0 0 0 / 0.34) !important;
 }
