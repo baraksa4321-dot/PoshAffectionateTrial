@@ -124,6 +124,31 @@ function quantityControlFor(food: FoodItem) {
   return { label: "כמות מנות", step: "any", scale: 1 };
 }
 
+async function prepareMealImage(file: File): Promise<string> {
+  const source = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    const url = URL.createObjectURL(file);
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("לא ניתן לקרוא את התמונה."));
+    };
+    image.src = url;
+  });
+  const maxSide = 1280;
+  const scale = Math.min(1, maxSide / Math.max(source.naturalWidth, source.naturalHeight));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(source.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(source.naturalHeight * scale));
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("לא ניתן להכין את התמונה לניתוח.");
+  context.drawImage(source, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.74);
+}
+
 type ScannedFood = {
   name: string;
   servingSize: string;
@@ -203,7 +228,7 @@ function NutritionLog() {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result));
         reader.onerror = () => reject(new Error("read"));
-        reader.readAsDataURL(file);
+        void prepareMealImage(file).then(resolve).catch(reject);
       });
       const controller = new AbortController();
       const timeout = window.setTimeout(() => controller.abort(), 60_000);
@@ -225,7 +250,7 @@ function NutritionLog() {
     } catch (error) {
       setScanError(
         error instanceof DOMException && error.name === "AbortError"
-          ? "הניתוח לקח יותר מדי זמן. נסי שוב עם תמונה קטנה וברורה יותר."
+          ? "הניתוח לקח יותר מדי זמן. נסי שוב — התמונה הוכנה מחדש בגודל קטן יותר."
           : error instanceof Error
             ? error.message
             : "הסריקה נכשלה. נסי שוב.",
@@ -1029,7 +1054,7 @@ function NutritionLog() {
                     <LoaderCircle className="h-9 w-9 animate-spin text-primary" />
                     <span className="mt-3 text-sm font-bold text-ink">מנתחת את התמונה…</span>
                     <span className="mt-1 text-[11px] text-muted-foreground">
-                      זיהוי מאכלים והערכת כמויות וערכים
+                      זיהוי מאכלים והערכת כמויות וערכים — בדרך כלל עד 20 שניות
                     </span>
                   </div>
                 ) : (

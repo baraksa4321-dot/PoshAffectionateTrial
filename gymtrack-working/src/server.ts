@@ -11,7 +11,7 @@ type ServerEntry = {
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 const xaiConnectors = new ReplitConnectors();
 const MAX_MEAL_IMAGE_BYTES = 20 * 1024 * 1024;
-const XAI_TIMEOUT_MS = 45_000;
+const XAI_TIMEOUT_MS = 25_000;
 const scanTimestamps: number[] = [];
 
 type ScanFood = {
@@ -103,7 +103,7 @@ async function analyzeMealImage(request: Request): Promise<Response> {
       body: JSON.stringify({
         model: "grok-2-vision-1212",
         temperature: 0.1,
-        max_tokens: 1800,
+        max_tokens: 1000,
         response_format: { type: "json_object" },
         messages: [
           {
@@ -115,7 +115,7 @@ async function analyzeMealImage(request: Request): Promise<Response> {
             role: "user",
             content: [
               { type: "text", text: "נתח את הארוחה בתמונה. זו הערכה בלבד והמשתמשת תאשר ותתקן לפני שמירה." },
-              { type: "image_url", image_url: { url: payload.image, detail: "high" } },
+              { type: "image_url", image_url: { url: payload.image, detail: "low" } },
             ],
           },
         ],
