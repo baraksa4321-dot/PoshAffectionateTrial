@@ -131,7 +131,23 @@ function Session() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length === workout.items.length) {
-          return parsed;
+            return parsed.map((entry, index) => {
+              const item = workout.items[index];
+              const source = item
+                ? [...exercises, ...BODYWEIGHT_EXERCISES].find((e) => e.id === item.exerciseId)
+                : undefined;
+              const savedName =
+                typeof entry?.exerciseName === "string" ? entry.exerciseName.trim() : "";
+              return {
+                ...entry,
+                exerciseName:
+                  source?.name ||
+                  (item?.exerciseName && item.exerciseName !== "תרגיל שהוסר"
+                    ? item.exerciseName
+                    : "") ||
+                  (savedName && savedName !== "תרגיל שהוסר" ? savedName : "תרגיל"),
+              };
+            });
         }
       }
     } catch {
@@ -752,14 +768,6 @@ function Session() {
                     </button>
                   ) : null}
                 </div>
-              </div>
-
-              <div className="mt-3 rounded-2xl border border-primary/15 bg-primary/5 px-3 py-2.5">
-                <p className="mt-1 font-display text-[16px] font-semibold tabular-nums text-ink">
-                  {prescribedWeight} ק״ג
-                  <span className="mx-1.5 text-muted-foreground">·</span>
-                  {entry.targetSets ?? workingCount} סטים × {targetLabel} חזרות
-                </p>
               </div>
 
               {item?.techniqueNotes ? (
