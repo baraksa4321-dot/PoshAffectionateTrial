@@ -93,13 +93,20 @@ export function Overlay({
     const visualViewport = window.visualViewport;
     const keepFocusedFieldVisible = () => {
       const activeElement = document.activeElement;
-      if (!(activeElement instanceof HTMLElement) || !panelRef.current?.contains(activeElement)) {
+      const panel = panelRef.current;
+      if (!(activeElement instanceof HTMLElement) || !panel?.contains(activeElement)) {
         return;
       }
       window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => {
-          activeElement.scrollIntoView({ block: "center", behavior: "auto" });
-        });
+        const panelRect = panel.getBoundingClientRect();
+        const fieldRect = activeElement.getBoundingClientRect();
+        const topGap = fieldRect.top - panelRect.top;
+        const bottomGap = fieldRect.bottom - panelRect.bottom;
+        if (topGap < 12) {
+          panel.scrollTop += topGap - 12;
+        } else if (bottomGap > -12) {
+          panel.scrollTop += bottomGap + 12;
+        }
       });
     };
     const updateKeyboardOffset = () => {
