@@ -236,7 +236,7 @@ function NutritionLog() {
     try {
       const image = await prepareMealImage(file);
       const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 15_000);
+      const timeout = window.setTimeout(() => controller.abort(), 50_000);
       let response: Response;
       try {
         response = await fetch("/api/nutrition/scan-meal", {

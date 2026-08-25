@@ -9,7 +9,7 @@ type ServerEntry = {
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 const MAX_MEAL_IMAGE_BYTES = 20 * 1024 * 1024;
-const GEMINI_TIMEOUT_MS = 15_000;
+const GEMINI_TIMEOUT_MS = 45_000;
 const scanTimestamps: number[] = [];
 
 type ScanFood = {
@@ -102,7 +102,7 @@ async function analyzeMealImage(request: Request): Promise<Response> {
       return jsonResponse({ error: "חיבור ניתוח התמונות עדיין לא הוגדר." }, 503);
     }
     response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
       {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -123,6 +123,7 @@ async function analyzeMealImage(request: Request): Promise<Response> {
               { inlineData: { mimeType, data: imageData } },
             ],
           },
+        ],
         generationConfig: {
           temperature: 0.1,
           maxOutputTokens: 1000,
@@ -138,7 +139,7 @@ async function analyzeMealImage(request: Request): Promise<Response> {
     clearTimeout(timeout);
   }
   if (!response.ok) {
-    console.error("Gemini meal scan failed", response.status);
+    console.error("Gemini meal scan failed", response.status, (await response.clone().text()).slice(0, 1000));
     return jsonResponse({ error: "ניתוח התמונה לא הצליח כרגע. נסי שוב בעוד רגע." }, 502);
   }
   const completion = (await response.json()) as {
