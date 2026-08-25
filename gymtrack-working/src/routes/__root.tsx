@@ -1124,7 +1124,10 @@ function RootContent() {
     document.documentElement.lang = "he";
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
-    if (import.meta.env.PROD && "serviceWorker" in navigator) {
+    // Register the offline app shell in Preview as well as production. The
+    // Preview URL is the address users may save on their phones, so it must
+    // be able to serve the cached app when Safari is in Airplane Mode.
+    if ("serviceWorker" in navigator) {
       void navigator.serviceWorker
         .register("/sw.js", { updateViaCache: "none" })
         .then((registration) => registration.update())
