@@ -1091,7 +1091,7 @@ function RootContent() {
   const { userProfile } = useGym();
   const [loadingCycle, setLoadingCycle] = useState(() => {
     if (typeof window === "undefined") return 0;
-    const storageKey = "my-routine-loading-cycle-v2";
+    const storageKey = "my-routine-loading-cycle-v3";
     try {
       const previousCycle = Number(window.localStorage.getItem(storageKey));
       const nextCycle =
@@ -1124,11 +1124,14 @@ function RootContent() {
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
     if (import.meta.env.PROD && "serviceWorker" in navigator) {
-      void navigator.serviceWorker.register("/sw.js").catch((error) => {
-        console.warn("[App shell cache unavailable]:", error);
-      });
+      void navigator.serviceWorker
+        .register("/sw.js", { updateViaCache: "none" })
+        .then((registration) => registration.update())
+        .catch((error) => {
+          console.warn("[App shell cache unavailable]:", error);
+        });
     }
-    const storageKey = "my-routine-loading-cycle-v2";
+    const storageKey = "my-routine-loading-cycle-v3";
     const advanceForRestoredPage = (event: PageTransitionEvent) => {
       if (!event.persisted) return;
       setLoadingCycle((current) => {
@@ -1152,7 +1155,7 @@ function RootContent() {
         }
         return nextCycle;
       });
-    }, 2400);
+    }, 800);
     return () => {
       window.clearInterval(illustrationTimer);
       window.removeEventListener("pageshow", advanceForRestoredPage);
