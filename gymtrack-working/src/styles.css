@@ -450,7 +450,7 @@ html.night-mode textarea::placeholder {
 }
 
 :root[data-theme="cream"] {
-  --background: #f6f2ec;
+  --background: #f8f7f3;
   --foreground: #493d2d;
   --surface: #fbf8f2;
   --surface-2: #f2e8d3;
@@ -1981,7 +1981,7 @@ html.night-mode .auth-panel {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: #f6f2ec !important;
+  background: #f8f7f3 !important;
   color: #171414;
 }
 
@@ -2051,7 +2051,7 @@ html.night-mode .auth-panel {
 }
 
 .loading-simple-video {
-  background: #f6f2ec;
+  background: #f8f7f3;
   filter: saturate(1.04);
   mix-blend-mode: normal;
 }
