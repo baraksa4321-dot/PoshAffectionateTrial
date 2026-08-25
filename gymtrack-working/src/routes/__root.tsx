@@ -1119,6 +1119,7 @@ function RootContent() {
     authStatus === "authenticated" &&
     profileHydrationStatus === "ready" &&
     !userProfile?.fullName?.trim();
+  let routeWarmupCleanup: (() => void) | null = null;
 
   useEffect(() => {
     document.documentElement.lang = "he";
@@ -1134,6 +1135,34 @@ function RootContent() {
         .catch((error) => {
           console.warn("[App shell cache unavailable]:", error);
         });
+    }
+    // Route modules are code-split by TanStack Start. Warm them while online
+    // so a later in-app navigation does not request an uncached chunk in
+    // Airplane Mode. The imports are intentionally deferred until after the
+    // first paint and never block the current screen.
+    if (navigator.onLine) {
+      const routeModules = import.meta.glob("./**/*.tsx", { eager: false });
+      const warmRouteModules = () =>
+        Promise.all(
+          Object.entries(routeModules)
+            .filter(([path]) => !path.endsWith("/__root.tsx"))
+            .map(([, loadModule]) => loadModule().catch(() => undefined)),
+        );
+      const routeWarmupTimer = window.setTimeout(() => {
+        void warmRouteModules();
+      }, 1_000);
+      window.addEventListener("online", warmRouteModules);
+      window.addEventListener("pageshow", warmRouteModules);
+      // Keep the listeners lightweight and avoid retaining the warmup
+      // callback after the root component is replaced.
+      const cleanupRouteWarmup = () => {
+        window.clearTimeout(routeWarmupTimer);
+        window.removeEventListener("online", warmRouteModules);
+        window.removeEventListener("pageshow", warmRouteModules);
+      };
+      // The main effect cleanup below invokes this alongside its other
+      // listeners and timers.
+      routeWarmupCleanup = cleanupRouteWarmup;
     }
     const storageKey = "my-routine-loading-cycle-v4";
     const advanceForRestoredPage = (event: PageTransitionEvent) => {
@@ -1164,6 +1193,8 @@ function RootContent() {
       setMinimumLoadingDone(true);
     }, 1400);
     return () => {
+      routeWarmupCleanup?.();
+      routeWarmupCleanup = null;
       window.clearInterval(illustrationTimer);
       window.clearTimeout(minimumLoadingTimer);
       window.removeEventListener("pageshow", advanceForRestoredPage);

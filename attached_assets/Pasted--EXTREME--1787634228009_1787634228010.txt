@@ -1,0 +1,501 @@
+אני רוצה לבצע שדרוג EXTREME לזרימה, לתחושת השימוש ולחלקות של כל האתר.
+
+המטרה היא שהאתר ירגיש כמו אפליקציית iPhone native ברמה הכי גבוהה שיש, ולא כמו אתר אינטרנט בתוך דפדפן.
+
+המטרה המרכזית
+
+אני רוצה חוויית שימוש שהיא:
+
+* EXTREMELY smooth
+* EXTREMELY responsive
+* EXTREMELY fast-feeling
+* טבעית ואינטואיטיבית
+* ללא קפיצות
+* ללא הבהובים
+* ללא שינויי layout פתאומיים
+* ללא תחושה של “עמוד שנטען”
+* ללא תחושה של מעבר בין דפים באתר
+* עם אנימציות עדינות, קצרות ומדויקות
+* עם feedback מיידי לכל פעולה
+* עם transitions שמרגישים פיזיים וטבעיים
+* עם תחושה של אפליקציה native ולא Web App
+
+תחשוב על אפליקציות Apple / iOS מודרניות בתור רף האיכות.
+לא להעתיק עיצוב של Apple — אלא להגיע לאותה רמת polish, responsiveness ו-fluidity.
+
+⸻
+
+1. ZERO JANK
+
+לעבור על כל האתר ולחפש כל דבר שעלול לגרום ל:
+
+* קפיצה
+* stutter
+* lag
+* flickering
+* layout shift
+* re-render מיותר
+* שינוי פתאומי בגודל
+* שינוי פתאומי במיקום
+* scroll שקופץ
+* modal שקופץ
+* כפתור שמגיב באיחור
+* content שמופיע בבת אחת בצורה לא טבעית
+
+כל פעולה צריכה להרגיש מיידית וחלקה.
+
+אם המשתמש לוחץ על משהו — חייב להיות feedback מיידי.
+
+⸻
+
+2. PAGE / VIEW TRANSITIONS
+
+מעברים בין views / screens צריכים להרגיש כמו מעבר בתוך אפליקציה.
+
+לא:
+
+“עמוד אחד נעלם → מסך לבן → עמוד חדש נטען”
+
+אלא:
+
+“מסך אחד זורם בצורה טבעית לתוך המסך הבא.”
+
+השתמש באנימציות קצרות ועדינות בלבד.
+
+האנימציות צריכות להיות:
+
+* fast
+* subtle
+* smooth
+* consistent
+* physics-inspired
+
+לא להשתמש באנימציות מוגזמות או איטיות.
+
+המטרה היא שהמשתמש כמעט לא ישים לב לאנימציה — הוא פשוט ירגיש שהאפליקציה זורמת.
+
+⸻
+
+3. BUTTONS & INTERACTIONS
+
+כל אינטראקציה צריכה להרגיש responsive.
+
+לדוגמה:
+
+לחיצה על button:
+
+1. מיידית תגובה ויזואלית.
+2. תחושת press קטנה.
+3. הפעולה עצמה מתבצעת בלי delay מורגש.
+4. אין “תקיעה” בין הלחיצה לתוצאה.
+
+להוסיף micro-interactions היכן שזה באמת משפר את התחושה.
+
+אבל:
+
+NO excessive animations.
+
+לא להפוך כל דבר לקרקס.
+
+⸻
+
+4. MODALS / SHEETS
+
+כל modal, popup, bottom sheet, picker, confirmation וכו’ צריכים להרגיש כמו רכיב native של iPhone.
+
+פתיחה:
+
+* smooth
+* fast
+* natural
+* עם תחושת depth
+
+סגירה:
+
+* equally smooth
+* בלי snap
+* בלי flicker
+
+Bottom sheets צריכים להרגיש כאילו הם באמת “מחליקים” מתוך המסך.
+
+אם יש אפשרות לגרור sheet — התנועה צריכה להרגיש טבעית ו-responsive.
+
+⸻
+
+5. SCROLLING
+
+Scrolling הוא קריטי.
+
+אני רוצה scrolling שמרגיש native לחלוטין.
+
+לבדוק:
+
+* אין scroll lag
+* אין jumping
+* אין שינויי scroll position לא צפויים
+* אין layout shifts בזמן scroll
+* אין רכיבים שנטענים בצורה שגורמת למסך לקפוץ
+* אין sticky elements שמרצדים
+* אין overscroll מוזר
+* אין nested scrolling בעייתי
+
+במיוחד במובייל.
+
+⸻
+
+6. LOADING STATES
+
+אסור שהמשתמש יראה:
+
+* מסך לבן
+* מסך ריק
+* content שקופץ פתאום
+* spinner שמופיע ונעלם בצורה מכוערת
+* layout שמשנה גובה לאחר הטעינה
+
+במקום זה להשתמש ב-loading states חכמים כאשר צריך.
+
+אבל לא להוסיף loading animations סתם.
+
+אם מידע כבר קיים — להציג אותו מיד.
+
+⸻
+
+7. OPTIMISTIC UI
+
+איפה שזה בטוח ומתאים, פעולות צריכות להרגיש מיידיות.
+
+לדוגמה:
+
+אם המשתמש מסמן משהו / משנה ערך / מוסיף פריט / שומר נתון:
+
+ה-UI צריך להגיב מיד ולא לחכות לשרת אם אין סיבה שהמשתמש יחכה.
+
+המערכת יכולה לבצע את העבודה ברקע.
+
+המטרה:
+
+The user should feel that the app reacts instantly.
+
+⸻
+
+8. INPUTS
+
+כל input צריך להרגיש native.
+
+במיוחד:
+
+* מספרים
+* משקל
+* reps
+* חיפוש
+* בחירת תרגילים
+* בחירת מזון
+* טפסים
+* filters
+
+להימנע מ:
+
+* keyboard causing layout jumps
+* input losing focus
+* cursor jumping
+* values disappearing
+* delayed typing
+* unnecessary rerenders
+
+הקלדה צריכה להיות חלקה לחלוטין גם במכשיר מובייל.
+
+⸻
+
+9. SEARCH
+
+Search צריך להרגיש instantaneous.
+
+כאשר המשתמש מתחיל להקליד:
+
+* לא להקפיץ את המסך
+* לא לסגור keyboard
+* לא לאבד focus
+* לא לרענן את כל ה-page
+* להציג תוצאות בצורה חלקה
+* debounce רק אם באמת צריך
+* לאפשר חיפוש רציף ומהיר
+
+⸻
+
+10. NAVIGATION
+
+הניווט צריך להרגיש כמו אפליקציה.
+
+לא ליצור תחושה שכל click עושה refresh.
+
+לשמור state היכן שמתאים.
+
+לשמור scroll position היכן שמתאים.
+
+לאפס state רק כאשר באמת צריך.
+
+המשתמש צריך להרגיש שהוא נמצא בתוך אפליקציה אחת רציפה, ולא עובר בין pages.
+
+⸻
+
+11. GESTURES
+
+במקומות שבהם זה מתאים, לחשוב כמו mobile-native app:
+
+* swipe
+* drag
+* pull
+* tap
+* long press
+
+אבל לא להוסיף gestures רק בשביל “וואו”.
+
+כל gesture צריך להיות ברור, צפוי ושימושי.
+
+⸻
+
+12. MICRO-INTERACTIONS
+
+לעבור על המערכת ולמצוא מקומות שבהם micro-interactions יכולים לשפר משמעותית את התחושה.
+
+לדוגמה:
+
+* button press
+* checkbox
+* toggle
+* selection
+* adding exercise
+* deleting item
+* saving
+* completing workout
+* changing weight
+* changing reps
+* opening menu
+* closing menu
+* selecting food
+* changing tabs
+
+המטרה היא ליצור תחושה של:
+
+“Everything responds.”
+
+⸻
+
+13. PERFORMANCE
+
+זה חלק קריטי.
+
+אל תפתור בעיות חלקות רק באמצעות עוד animations.
+
+בדוק גם את ה-performance האמיתי.
+
+לחפש:
+
+* unnecessary React re-renders
+* expensive components
+* unnecessary state updates
+* unnecessary network requests
+* duplicated requests
+* large components
+* expensive calculations
+* blocking JavaScript
+* unnecessary DOM work
+* excessive event listeners
+* inefficient lists
+* image loading problems
+
+אם יש מקום שבו אפשר לשפר performance בלי לשנות את ההתנהגות או המראה — לעשות זאת.
+
+⸻
+
+14. MOBILE FIRST
+
+העדיפות היא MOBILE.
+
+במיוחד iPhone.
+
+החוויה צריכה להיות מצוינת במסכים קטנים.
+
+לבדוק:
+
+* safe areas
+* bottom navigation
+* keyboard
+* viewport changes
+* scrolling
+* touch targets
+* modals
+* sheets
+* sticky elements
+* fixed elements
+* orientation
+* narrow screens
+
+⸻
+
+15. TOUCH FEEL
+
+כל touch target צריך להרגיש טוב.
+
+לא ללחוץ על משהו ולגלות שהתגובה הגיעה אחרי רגע.
+
+להוסיף touch feedback היכן שמתאים.
+
+אבל לא להשתמש ב-hover patterns של desktop במקום touch interactions.
+
+⸻
+
+16. NO VISUAL REGRESSIONS
+
+חשוב מאוד:
+
+אסור לשנות את העיצוב הקיים בצורה לא מכוונת.
+
+אל תשנה:
+
+* layout
+* colors
+* typography
+* spacing
+* component structure
+* content
+* functionality
+* navigation structure
+
+אלא אם השינוי נחוץ ישירות כדי לשפר את ה-flow וה-performance.
+
+המטרה היא:
+
+אותו אתר, אותה פונקציונליות, אותו design language — אבל מרגיש פי 10 יותר חלק.
+
+⸻
+
+17. PRESERVE EVERYTHING
+
+לפני כל שינוי:
+
+להבין איך המערכת עובדת.
+
+לא לבצע rewrite.
+
+לא לבנות מחדש components סתם.
+
+לא להחליף architecture בלי צורך.
+
+לא לשבור שום workflow קיים.
+
+כל הפיצ’רים הקיימים חייבים להמשיך לעבוד בדיוק כפי שהם עובדים עכשיו.
+
+⸻
+
+18. CONSISTENCY
+
+כל האתר צריך להרגיש כאילו הוא נבנה על ידי אותה מערכת design אחת.
+
+לא:
+
+Modal אחד עם animation אחד,
+Modal אחר עם animation אחר,
+button אחד עם transition אחר,
+screen אחר שמתנהג אחרת.
+
+צריך ליצור consistency ב:
+
+* animation timing
+* easing
+* transitions
+* touch feedback
+* sheets
+* modals
+* navigation
+* loading
+* interactions
+
+⸻
+
+19. IMPORTANT: DON’T OVER-ANIMATE
+
+אני לא רוצה אתר עם מלא אנימציות.
+
+אני רוצה אתר חלק.
+
+יש הבדל.
+
+המשתמש לא אמור לחשוב:
+
+“וואו איזו אנימציה.”
+
+הוא אמור לחשוב:
+
+“וואו, האפליקציה הזאת מרגישה ממש טובה.”
+
+⸻
+
+20. FINAL QUALITY BAR
+
+בסיום השדרוג, תעשה pass מלא על כל האפליקציה כאילו אתה משתמש בה בפעם הראשונה באייפון.
+
+תעבור על:
+
+Home
+Programs
+Exercises
+Workout flow
+History
+Nutrition
+Food search
+Modals
+Bottom sheets
+Forms
+Inputs
+Buttons
+Navigation
+Loading states
+Saving
+Deleting
+Editing
+Adding
+Searching
+Scrolling
+Keyboard interactions
+
+בכל מקום תשאל:
+
+“האם זה מרגיש כמו אתר — או כמו אפליקציה?”
+
+אם זה מרגיש כמו אתר — תשפר אותו.
+
+אם משהו מרגיש איטי — תמצא למה ותתקן את הסיבה, לא רק תוסיף animation.
+
+אם משהו קופץ — תמצא מה גורם ל-layout shift ותפתור אותו.
+
+אם פעולה מרגישה לא מיידית — תבדוק האם אפשר להפוך אותה ל-optimistic.
+
+אם מעבר מרגיש קשיח — תשפר את transition.
+
+אם רכיב מרגיש שונה משאר המערכת — תיישר אותו.
+
+⸻
+
+THE ULTIMATE GOAL
+
+אני רוצה להגיע למצב שבו משתמש פותח את GymTrack באייפון ואחרי כמה דקות שימוש שוכח שזה אתר.
+
+הוא צריך להרגיש שהוא משתמש באפליקציית iPhone אמיתית.
+
+Instant response.
+Zero jank.
+Zero unnecessary loading.
+Zero awkward transitions.
+Zero layout jumps.
+Native-feeling scrolling.
+Native-feeling interactions.
+Beautiful micro-interactions.
+Extremely polished.
+Extremely smooth.
+Extremely responsive.
+
+תעשה את זה ברמה הכי גבוהה שאתה מסוגל להגיע אליה, אבל בלי לפגוע בשום דבר שכבר עובד ובלי לשנות את העיצוב או הפונקציונליות הקיימים שלא לצורך.
+
+בסיום, הרץ את כל הבדיקות הרלוונטיות וודא שה-build עובד ושלא נוצרו regressions.
