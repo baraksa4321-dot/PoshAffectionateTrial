@@ -1897,11 +1897,13 @@ export function CoachDashboardPage({
 
                         <div className="flex items-center gap-2">
                           <Link
-                            to="/coach/clients/$clientId"
+                            to={
+                              trackingLanding
+                                ? "/coach/tracking/$clientId"
+                                : "/coach/clients/$clientId"
+                            }
                             params={{ clientId: c.client_id }}
                             onClick={(event) => event.stopPropagation()}
-                            target="_blank"
-                            rel="noopener noreferrer"
                             className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-primary/20"
                             >
                             {trackingLanding ? "פתח מעקב" : "פתח וערוך"}
@@ -2007,7 +2009,7 @@ export function CoachDashboardPage({
                       type="button"
                       onClick={() => {
                         setActiveWorkspaceTab("programs");
-                        setOpenEditor("programs");
+                        setOpenEditor(trackingLanding ? null : "programs");
                       }}
                       aria-selected={activeWorkspaceTab === "programs"}
                       role="tab"
@@ -2018,13 +2020,13 @@ export function CoachDashboardPage({
                       }`}
                     >
                       <Dumbbell className="h-3.5 w-3.5" />
-                      תוכנית אימונים
+                      {trackingLanding ? "אימונים" : "תוכנית אימונים"}
                     </button>
                     <button
                       type="button"
                       onClick={() => {
                         setActiveWorkspaceTab("nutrition");
-                        setOpenEditor("nutrition");
+                        setOpenEditor(trackingLanding ? null : "nutrition");
                       }}
                       aria-selected={activeWorkspaceTab === "nutrition"}
                       role="tab"
@@ -2035,7 +2037,7 @@ export function CoachDashboardPage({
                       }`}
                     >
                       <Apple className="h-3.5 w-3.5" />
-                      תפריט תזונה
+                      {trackingLanding ? "תפריט" : "תפריט תזונה"}
                     </button>
                   </nav>
                 </>
