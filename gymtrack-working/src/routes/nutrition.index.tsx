@@ -198,6 +198,8 @@ type ScannedMeal = { mealName: string; foods: ScannedFood[] };
 function NutritionLog() {
   const gym = useGym();
   const gender = gym.userProfile?.gender;
+  const canManageTargets =
+    gym.userProfile?.role === "coach" || gym.userProfile?.role === "owner";
   const [date, setDate] = useState(todayKey());
   const [pickerMealId, setPickerMealId] = useState<string | null>(null);
   const [pickerQuery, setPickerQuery] = useState("");
@@ -486,15 +488,17 @@ function NutritionLog() {
           >
             <BookOpen className="h-5 w-5" />
           </Link>
-          <IconButton
-            aria-label="הגדר יעדים"
-            onClick={() => {
-              setTargetsDraft(gym.nutritionTargets);
-              setShowTargets(true);
-            }}
-          >
-            <Settings2 className="h-5 w-5" />
-          </IconButton>
+          {canManageTargets ? (
+            <IconButton
+              aria-label="הגדר יעדים"
+              onClick={() => {
+                setTargetsDraft(gym.nutritionTargets);
+                setShowTargets(true);
+              }}
+            >
+              <Settings2 className="h-5 w-5" />
+            </IconButton>
+          ) : null}
         </div>
       }
     >
@@ -1704,7 +1708,7 @@ function NutritionLog() {
       ) : null}
 
       {/* Targets modal */}
-      {showTargets ? (
+      {showTargets && canManageTargets ? (
         <Overlay
           open={showTargets}
           onClose={() => setShowTargets(false)}
