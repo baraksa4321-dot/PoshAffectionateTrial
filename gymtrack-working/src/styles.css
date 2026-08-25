@@ -832,6 +832,17 @@ html:not(.night-mode) .nav-shell {
     0 22px 42px rgb(var(--shadow-color) / 18%);
 }
 
+@media (hover: none) {
+  .surface-card:hover {
+    border-color: color-mix(in srgb, var(--border) 82%, white);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 86%),
+      var(--elevation-1),
+      0 18px 36px rgb(var(--shadow-color) / 14%),
+      0 4px 10px rgb(var(--shadow-color) / 10%);
+  }
+}
+
 .auth-panel {
   border-color: color-mix(in srgb, var(--primary) 24%, var(--border));
   box-shadow:
@@ -4022,6 +4033,17 @@ html.night-mode .auth-panel {
 .press:active {
   transform: translateY(1px) scale(0.985);
   transition-duration: 70ms;
+}
+
+button:disabled,
+a[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+button:disabled.press,
+button:disabled.primary-shadow {
+  transform: none;
+  filter: none;
 }
 
 /* Keep touch feedback immediate on iOS where hover can be synthesized. */

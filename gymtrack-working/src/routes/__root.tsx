@@ -14,6 +14,7 @@ import {
   type ReactNode,
   useEffect,
   useLayoutEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -1119,7 +1120,7 @@ function RootContent() {
     authStatus === "authenticated" &&
     profileHydrationStatus === "ready" &&
     !userProfile?.fullName?.trim();
-  let routeWarmupCleanup: (() => void) | null = null;
+  const routeWarmupCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     document.documentElement.lang = "he";
@@ -1162,7 +1163,7 @@ function RootContent() {
       };
       // The main effect cleanup below invokes this alongside its other
       // listeners and timers.
-      routeWarmupCleanup = cleanupRouteWarmup;
+      routeWarmupCleanupRef.current = cleanupRouteWarmup;
     }
     const storageKey = "my-routine-loading-cycle-v4";
     const advanceForRestoredPage = (event: PageTransitionEvent) => {
@@ -1193,8 +1194,8 @@ function RootContent() {
       setMinimumLoadingDone(true);
     }, 1400);
     return () => {
-      routeWarmupCleanup?.();
-      routeWarmupCleanup = null;
+      routeWarmupCleanupRef.current?.();
+      routeWarmupCleanupRef.current = null;
       window.clearInterval(illustrationTimer);
       window.clearTimeout(minimumLoadingTimer);
       window.removeEventListener("pageshow", advanceForRestoredPage);

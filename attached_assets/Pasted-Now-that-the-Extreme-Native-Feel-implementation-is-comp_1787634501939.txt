@@ -1,0 +1,150 @@
+Now that the Extreme Native Feel implementation is complete, I want you to perform one final EXTREME POLISH + QA PASS over the entire app.
+
+Do NOT assume the task is finished simply because the build and tests pass.
+
+The goal of this pass is to find and improve anything that still makes the app feel even slightly less smooth, responsive, polished, or native-like than it could be.
+
+Use the app like a real iPhone user
+
+Go through the actual app and all major flows yourself.
+
+Pay attention to every tiny interaction:
+
+* Opening and closing screens
+* Bottom navigation
+* Buttons
+* Tabs
+* Toggles
+* Selecting exercises
+* Adding exercises
+* Editing exercises
+* Starting workouts
+* Recording sets
+* Changing weight
+* Changing reps
+* Completing sets
+* Saving
+* Editing
+* Deleting
+* Searching
+* Selecting food
+* Nutrition interactions
+* Modals
+* Bottom sheets
+* Pickers
+* Confirmations
+* Keyboard interactions
+* Scrolling
+* Returning to previous screens
+* Offline → online transitions
+* Reloading
+* Reopening previously visited screens
+
+Be extremely critical
+
+For every interaction, ask:
+
+Does this feel like a polished native iPhone app, or does it still feel like a website?
+
+If something works correctly but feels:
+
+* slightly delayed
+* stiff
+* abrupt
+* jumpy
+* slow
+* inconsistent
+* visually distracting
+* unnecessarily animated
+* too animated
+* unresponsive
+* “web-like”
+
+then improve it.
+
+Pay special attention to micro-details
+
+Look specifically for:
+
+* Tap feedback that starts too late
+* Animations that are too slow
+* Animations that are too abrupt
+* Inconsistent easing
+* Inconsistent animation durations
+* Elements appearing suddenly
+* Elements disappearing suddenly
+* Layout shifts
+* Scroll position changes
+* Focus being lost unexpectedly
+* Keyboard causing jumps
+* Content flashing during navigation
+* Loading states causing content to move
+* Sheets/modals feeling disconnected from the user’s action
+* Buttons feeling unresponsive
+* Repeated interactions becoming slower
+* Unnecessary rerenders
+* Delayed UI updates
+* Unnecessary network waits
+* Any moment where the UI could respond optimistically and safely
+
+The most important rule
+
+Do not optimize only for technical correctness.
+
+Optimize for perceived responsiveness.
+
+The user should feel that the app responds immediately, even when work is happening in the background.
+
+If an action can safely update the UI immediately and synchronize afterward, do that.
+
+If something is technically fast but visually feels slow, improve the perceived interaction.
+
+If something is technically correct but feels awkward, improve it.
+
+Keep the existing product intact
+
+Do NOT:
+
+* Change the visual identity
+* Change colors
+* Change typography
+* Change the information architecture
+* Change routes
+* Remove functionality
+* Change data contracts
+* Replace Supabase
+* Replace the offline system
+* Rewrite the application
+* Add unnecessary libraries
+* Add decorative animations
+* Introduce broad gesture systems without a clear UX reason
+
+The goal is:
+
+Same GymTrack. Same features. Same design language. Same behavior.
+
+But it should feel dramatically more polished, fluid, responsive and native.
+
+Final quality bar
+
+I want you to push the polish as far as reasonably possible.
+
+Do not stop at:
+
+“Everything works.”
+
+Stop when:
+
+Everything works AND everything feels exceptionally good to use.
+
+The ideal result is that someone using GymTrack on an iPhone does not think:
+
+“This is a website that was made mobile-friendly.”
+
+They should think:
+
+“This feels like a real iPhone app.”
+
+After making any improvements, run the relevant tests/build and verify that you introduced no regressions.
+
+If you find nothing meaningful to improve, do not make changes just for the sake of changing things. But be genuinely critical before reaching that conclusion.

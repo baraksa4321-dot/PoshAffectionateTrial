@@ -329,6 +329,7 @@ export function LinkPill({
   const Comp: React.ElementType = href ? "a" : "button";
   return (
     <Comp
+      type={href ? undefined : "button"}
       href={href}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full bg-transparent px-2.5 py-1 text-[13px] font-bold text-primary hover:bg-primary/5 transition-colors cursor-pointer",
