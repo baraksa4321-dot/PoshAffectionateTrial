@@ -1089,7 +1089,21 @@ function RootContent() {
   const { queryClient } = Route.useRouteContext();
   const authStatus = useAuthStatus();
   const { userProfile } = useGym();
-  const [loadingCycle, setLoadingCycle] = useState(0);
+  const [loadingCycle, setLoadingCycle] = useState(() => {
+    if (typeof window === "undefined") return 0;
+    const storageKey = "my-routine-loading-cycle-v2";
+    try {
+      const previousCycle = Number(window.localStorage.getItem(storageKey));
+      const nextCycle =
+        Number.isInteger(previousCycle) && previousCycle >= 0 ? previousCycle + 1 : 1;
+      window.localStorage.setItem(storageKey, String(nextCycle));
+      return nextCycle;
+    } catch {
+      // Private browsing can disable storage. A time-based fallback still
+      // prevents every quick load from showing the first illustration.
+      return Math.max(1, Date.now() % 1000);
+    }
+  });
   const loadingVariant = loadingCycle % SIMPLE_LOADING_ILLUSTRATIONS.length;
   const loadingMessageIndex = loadingCycle % LOADING_MESSAGES.length;
   const profileHydrationStatus = useProfileHydrationStatus();
@@ -1115,15 +1129,6 @@ function RootContent() {
       });
     }
     const storageKey = "my-routine-loading-cycle-v2";
-    try {
-      const previousCycle = Number(window.localStorage.getItem(storageKey));
-      const nextCycle =
-        Number.isInteger(previousCycle) && previousCycle >= 0 ? previousCycle + 1 : 1;
-      window.localStorage.setItem(storageKey, String(nextCycle));
-      setLoadingCycle(nextCycle);
-    } catch {
-      setLoadingCycle(1);
-    }
     const advanceForRestoredPage = (event: PageTransitionEvent) => {
       if (!event.persisted) return;
       setLoadingCycle((current) => {
