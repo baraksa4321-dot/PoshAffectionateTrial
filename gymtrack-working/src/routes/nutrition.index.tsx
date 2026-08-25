@@ -20,7 +20,7 @@ import {
   Zap,
   ImageIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Stepper } from "@/components/Stepper";
 import { Overlay } from "@/components/ui-app/Overlay";
@@ -57,6 +57,7 @@ import type { FoodItem, MealFood } from "@/lib/gym-types";
 import { nutritionSourceFor } from "@/lib/nutrition-integrity";
 import { RECIPE_LIBRARY, type RecipeDefinition } from "@/lib/recipe-library";
 import { genderText } from "@/lib/gender-copy";
+import { LOADING_MESSAGES } from "@/lib/loading-copy";
 
 export const Route = createFileRoute("/nutrition/")({
   head: () => ({
@@ -139,6 +140,22 @@ async function prepareMealImage(file: File): Promise<string> {
   });
 }
 
+const MEAL_SCAN_ILLUSTRATIONS = [
+  "user-strawberry",
+  "user-tomato",
+  "user-character-01",
+  "user-character-02",
+  "user-lemon",
+  "user-character-03",
+  "user-character-04",
+  "user-character-05",
+  "user-character-06",
+  "user-character-07",
+  "user-character-08",
+  "user-character-09",
+  "user-character-10",
+] as const;
+
 type ScannedFood = {
   name: string;
   servingSize: string;
@@ -189,6 +206,7 @@ function NutritionLog() {
   const [scanState, setScanState] = useState<"idle" | "analyzing" | "error">("idle");
   const [scanError, setScanError] = useState("");
   const [scannedMeal, setScannedMeal] = useState<ScannedMeal | null>(null);
+  const [scanCycle, setScanCycle] = useState(0);
   const day = nutritionDay(gym, date);
   const totals = dayTotals(day);
   const { nutritionTargets: targets } = gym;
@@ -198,6 +216,7 @@ function NutritionLog() {
     setScanState("idle");
     setScanError("");
     setScannedMeal(null);
+    setScanCycle(0);
   };
 
   const scanMealImage = async (file: File) => {
@@ -213,6 +232,7 @@ function NutritionLog() {
     }
     setScanState("analyzing");
     setScanError("");
+    setScanCycle(0);
     try {
       const image = await prepareMealImage(file);
       const controller = new AbortController();
@@ -243,6 +263,12 @@ function NutritionLog() {
       setScanState("error");
     }
   };
+
+  useEffect(() => {
+    if (scanState !== "analyzing") return;
+    const interval = window.setInterval(() => setScanCycle((cycle) => cycle + 1), 3_500);
+    return () => window.clearInterval(interval);
+  }, [scanState]);
 
   const confirmScannedMeal = () => {
     if (!scannedMeal) return;
@@ -1037,6 +1063,7 @@ function NutritionLog() {
                 {scanState === "analyzing" ? (
                   <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-primary/40 bg-primary/5 px-5 py-10 text-center">
                     <video
+                      key={MEAL_SCAN_ILLUSTRATIONS[scanCycle % MEAL_SCAN_ILLUSTRATIONS.length]}
                       autoPlay
                       loop
                       muted
@@ -1048,7 +1075,7 @@ function NutritionLog() {
                     </video>
                     <span className="mt-3 text-sm font-bold text-ink">מנתחת את התמונה…</span>
                     <span className="mt-1 text-[11px] text-muted-foreground">
-                      זיהוי מאכלים והערכת כמויות וערכים
+                      {LOADING_MESSAGES[scanCycle % LOADING_MESSAGES.length]}
                     </span>
                   </div>
                 ) : (
