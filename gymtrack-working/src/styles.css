@@ -2011,8 +2011,6 @@ html.night-mode .auth-panel {
   margin: 0;
   object-fit: contain;
   transform: translateX(-50%);
-  filter: contrast(1.08) drop-shadow(0.35px 0 0 rgb(42 33 35 / 42%))
-    drop-shadow(-0.35px 0 0 rgb(42 33 35 / 42%));
 }
 
 .loading-micro-stage {
