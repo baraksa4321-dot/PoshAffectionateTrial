@@ -11,6 +11,7 @@ type ServerEntry = {
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 const xaiConnectors = new ReplitConnectors();
 const MAX_MEAL_IMAGE_BYTES = 20 * 1024 * 1024;
+const XAI_TIMEOUT_MS = 45_000;
 const scanTimestamps: number[] = [];
 
 type ScanFood = {
@@ -91,30 +92,41 @@ async function analyzeMealImage(request: Request): Promise<Response> {
     return jsonResponse({ error: "יש להעלות תמונת PNG או JPG תקינה, עד 20MB." }, 400);
   }
 
-  const response = await xaiConnectors.proxy("xai", "/v1/chat/completions", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      model: "grok-2-vision-1212",
-      temperature: 0.1,
-      max_tokens: 1800,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            "אתה תזונאי שמבצע הערכה חכמה מתמונת ארוחה. החזר JSON בלבד במבנה {mealName:string, foods:Array<{name:string,servingSize:string,quantity:number,calories:number,protein:number,carbs:number,fat:number,fiber:number}>}. זהה רק מאכלים שנראים בתמונה, הערך כמויות אכילות, והערך ערכים תזונתיים למנה אחת. השתמש בשמות עבריים. אם אינך בטוח, עדיין החזר את ההערכה הטובה ביותר, ללא טקסט נוסף.",
-        },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "נתח את הארוחה בתמונה. זו הערכה בלבד והמשתמשת תאשר ותתקן לפני שמירה." },
-            { type: "image_url", image_url: { url: payload.image, detail: "high" } },
-          ],
-        },
-      ],
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), XAI_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await xaiConnectors.proxy("xai", "/v1/chat/completions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: "grok-2-vision-1212",
+        temperature: 0.1,
+        max_tokens: 1800,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "אתה תזונאי שמבצע הערכה חכמה מתמונת ארוחה. החזר JSON בלבד במבנה {mealName:string, foods:Array<{name:string,servingSize:string,quantity:number,calories:number,protein:number,carbs:number,fat:number,fiber:number}>}. זהה רק מאכלים שנראים בתמונה, הערך כמויות אכילות, והערך ערכים תזונתיים למנה אחת. השתמש בשמות עבריים. אם אינך בטוח, עדיין החזר את ההערכה הטובה ביותר, ללא טקסט נוסף.",
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "נתח את הארוחה בתמונה. זו הערכה בלבד והמשתמשת תאשר ותתקן לפני שמירה." },
+              { type: "image_url", image_url: { url: payload.image, detail: "high" } },
+            ],
+          },
+        ],
+      }),
+    });
+  } catch (error) {
+    console.error("xAI meal scan request failed", error);
+    return jsonResponse({ error: "הניתוח לקח יותר מדי זמן. נסי שוב עם תמונה קטנה וברורה יותר." }, 504);
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!response.ok) {
     console.error("xAI meal scan failed", response.status);
     return jsonResponse({ error: "ניתוח התמונה לא הצליח כרגע. נסי שוב בעוד רגע." }, 502);

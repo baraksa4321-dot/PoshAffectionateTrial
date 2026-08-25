@@ -205,17 +205,31 @@ function NutritionLog() {
         reader.onerror = () => reject(new Error("read"));
         reader.readAsDataURL(file);
       });
-      const response = await fetch("/api/nutrition/scan-meal", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ image }),
-      });
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 60_000);
+      let response: Response;
+      try {
+        response = await fetch("/api/nutrition/scan-meal", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ image }),
+          signal: controller.signal,
+        });
+      } finally {
+        window.clearTimeout(timeout);
+      }
       const result = (await response.json()) as ScannedMeal & { error?: string };
       if (!response.ok || result.error) throw new Error(result.error || "scan");
       setScannedMeal(result);
       setScanState("idle");
     } catch (error) {
-      setScanError(error instanceof Error ? error.message : "הסריקה נכשלה. נסי שוב.");
+      setScanError(
+        error instanceof DOMException && error.name === "AbortError"
+          ? "הניתוח לקח יותר מדי זמן. נסי שוב עם תמונה קטנה וברורה יותר."
+          : error instanceof Error
+            ? error.message
+            : "הסריקה נכשלה. נסי שוב.",
+      );
       setScanState("error");
     }
   };
