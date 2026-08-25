@@ -185,6 +185,7 @@ export function CoachDashboardPage({
 
   // Exercise Assignment Editor state
   const [selectedExId, setSelectedExId] = useState("");
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [exerciseQuery, setExerciseQuery] = useState("");
   const [exerciseMuscleFilter, setExerciseMuscleFilter] = useState("הכל");
@@ -901,6 +902,43 @@ export function CoachDashboardPage({
     const currentDay = clientDetails?.workouts?.find((w) => w.id === editingDayId);
     if (!currentDay) return;
 
+    if (editingItemId) {
+      const updatedItems = currentDay.items.map((item) =>
+        item.id === editingItemId
+          ? {
+              ...item,
+              exerciseId: selectedExId,
+              sets: Math.max(1, setsCount),
+              reps: Math.max(1, repMin),
+              repMin: Math.max(1, repMin),
+              repMax: Math.max(repMin, repMax),
+              targetWeight,
+              weight: targetWeight,
+              notes: techNotes.trim(),
+            }
+          : item,
+      );
+
+      if (isSelfSelected) {
+        saveWorkout({ ...currentDay, items: updatedItems });
+      } else {
+        const { error } = await supabase
+          .from("program_days")
+          .update({ items: updatedItems, updated_at: new Date().toISOString() })
+          .eq("id", editingDayId)
+          .eq("user_id", selectedClientId);
+        if (error) {
+          setManagementError(`עדכון התרגיל נכשל: ${error.message}`);
+          return;
+        }
+        pullClientDataForCoach(selectedClientId).then(applyClientDetails);
+      }
+      setEditingItemId(null);
+      setSelectedExId("");
+      setTechNotes("");
+      return;
+    }
+
     const configuredModes = Array.from(
       { length: setsCount },
       (_, index) => setModes[index] ?? "normal",
@@ -1064,6 +1102,7 @@ export function CoachDashboardPage({
       return;
     }
     setSelectedExId("");
+    setEditingItemId(null);
     setTechniqueNotes("");
     setSupersetGroup("");
     setSupersetPartnerId("");
@@ -3047,18 +3086,39 @@ export function CoachDashboardPage({
                                                         ) : null}
                                                       </div>
                                                     </div>
-                                                    <button
-                                                      onClick={() =>
-                                                        handleRemoveExerciseFromDay(
-                                                          dayItem.id,
-                                                          exItem.id,
-                                                        )
-                                                      }
-                                                      className="shrink-0 p-1 text-muted-foreground hover:text-red-600 cursor-pointer"
-                                                      aria-label={`הסר את ${exMeta?.name || "התרגיל"}`}
-                                                    >
-                                                      <Trash2 className="h-3.5 w-3.5" />
-                                                    </button>
+                                                    <div className="flex shrink-0 items-center gap-1">
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                          setEditingDayId(dayItem.id);
+                                                          setEditingItemId(exItem.id);
+                                                          setSelectedExId(exItem.exerciseId);
+                                                          setTargetWeight(
+                                                            exItem.targetWeight || exItem.weight,
+                                                          );
+                                                          setSetsCount(exItem.sets);
+                                                          setRepMin(exItem.repMin || exItem.reps);
+                                                          setRepMax(exItem.repMax || exItem.reps);
+                                                          setTechNotes(exItem.techniqueNotes || exItem.notes);
+                                                        }}
+                                                        className="rounded-lg bg-background px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/10"
+                                                      >
+                                                        עריכה
+                                                      </button>
+                                                      <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                          handleRemoveExerciseFromDay(
+                                                            dayItem.id,
+                                                            exItem.id,
+                                                          )
+                                                        }
+                                                        className="rounded-lg p-1 text-muted-foreground hover:text-red-600 cursor-pointer"
+                                                        aria-label={`הסר את ${exMeta?.name || "התרגיל"}`}
+                                                      >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                      </button>
+                                                    </div>
                                                   </div>
                                                   <div className="mt-2 grid grid-cols-3 gap-1.5 border-t border-border/40 pt-2">
                                                     <label className="text-center text-[9px] font-bold text-muted-foreground">
@@ -3184,10 +3244,27 @@ export function CoachDashboardPage({
                                         )}
 
                                         {isDayActive && (
-                                          <form
+                                            <form
                                             onSubmit={handleAddExerciseToDay}
                                             className="pt-2 border-t border-border/40 space-y-2 text-xs"
                                           >
+                                              <div className="flex items-center justify-between">
+                                                <p className="text-[11px] font-bold text-primary">
+                                                  {editingItemId ? "עריכת תרגיל באימון" : "הוספת תרגיל לאימון"}
+                                                </p>
+                                                {editingItemId ? (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      setEditingItemId(null);
+                                                      setSelectedExId("");
+                                                    }}
+                                                    className="text-[10px] font-bold text-muted-foreground hover:text-ink"
+                                                  >
+                                                    ביטול עריכה
+                                                  </button>
+                                                ) : null}
+                                              </div>
                                             <div>
                                               <label className="block text-[10px] font-bold text-muted-foreground mb-1">
                                                 בחר תרגיל מספרייה
@@ -3583,7 +3660,7 @@ export function CoachDashboardPage({
                                               type="submit"
                                               className="w-full rounded-lg bg-primary py-1.5 font-bold text-white shadow-xs cursor-pointer"
                                             >
-                                              שמור תרגיל ליום אימון
+                                              {editingItemId ? "שמור שינויי תרגיל" : "שמור תרגיל ליום אימון"}
                                             </button>
                                           </form>
                                         )}
