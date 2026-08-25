@@ -156,6 +156,7 @@ export function Overlay({
       data-overlay-root="true"
       data-overlay-variant={variant}
       data-keyboard-open={keyboardOffset > 0 ? "true" : undefined}
+      style={viewportHeight !== null ? { height: `${viewportHeight}px` } : undefined}
       className={`overlay-root fixed inset-0 z-[100] flex overflow-x-hidden ${
         isFull
           ? "items-stretch justify-center"
@@ -175,10 +176,6 @@ export function Overlay({
         data-overlay-panel="true"
         style={{
           maxHeight: panelMaxHeight,
-          // Keep the fixed root anchored to the layout viewport. On iOS,
-          // moving the sheet above the keyboard via bottom margin is more
-          // reliable than resizing a fixed ancestor to visualViewport.height.
-          marginBottom: isBottom ? keyboardOffset : 0,
         }}
         className={`w-full ${
           isFull

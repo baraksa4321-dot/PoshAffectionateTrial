@@ -1981,7 +1981,7 @@ html.night-mode .auth-panel {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: #f8f7f3 !important;
+  background: #f7f1ec !important;
   color: #171414;
 }
 
@@ -2051,7 +2051,7 @@ html.night-mode .auth-panel {
 }
 
 .loading-simple-video {
-  background: #f8f7f3;
+  background: #f7f1ec;
   filter: saturate(1.04);
   mix-blend-mode: normal;
 }
