@@ -3624,8 +3624,9 @@ export function CoachDashboardPage({
                                                       </button>
                                                     </div>
                                                   </div>
-                                                  {editingItemId === exItem.id ? (
-                                                   <div className="mt-4 space-y-5 border-t border-border/50 pt-4">
+                                                   {editingItemId === exItem.id ? (
+                                                     <>
+                                                    <div className="mt-4 space-y-5 border-t border-border/50 pt-4">
                                                    <div className="border-b border-border/50 pb-4 text-right">
                                                      <p className="text-[10px] font-bold tracking-[0.16em] text-primary uppercase">
                                                        עריכת תרגיל
@@ -3770,8 +3771,9 @@ export function CoachDashboardPage({
                                                          <option value="drop">דרופ סט</option>
                                                          <option value="superset">סופר סט</option>
                                                        </select>
-                                                     </div>
-                                                      <div className="grid grid-cols-4 gap-1.5 border-b border-amber-200 pb-3">
+                                                      </div>
+                                                      </div>
+                                                       <div className="grid grid-cols-4 gap-1.5 border-b border-amber-200 pb-3">
                                                         <label className="text-center text-[9px] font-bold text-amber-900">
                                                           סטי חימום
                                                           <input
@@ -4067,8 +4069,9 @@ export function CoachDashboardPage({
                                                     >
                                                       שמור תרגיל ליום אימון
                                                     </button>
-                                                  </div>
                                                    </div>
+                                                   </div>
+                                                   </>
                                                   ) : null}
                                                   {false && actualExecutions.length > 0 ? (
                                                     <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/80 p-2 text-[10px]">
@@ -4311,7 +4314,6 @@ export function CoachDashboardPage({
                                                         </option>
                                                       </select>
                                                        </div>
-                                                    </div>
                                                   );
                                                 })}
                                               </div>
