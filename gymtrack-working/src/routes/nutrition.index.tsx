@@ -141,11 +141,8 @@ async function prepareMealImage(file: File): Promise<string> {
 }
 
 const MEAL_SCAN_ILLUSTRATIONS = [
-  "user-strawberry",
-  "user-tomato",
   "user-character-01",
   "user-character-02",
-  "user-lemon",
   "user-character-03",
   "user-character-04",
   "user-character-05",
@@ -236,17 +233,23 @@ function NutritionLog() {
     try {
       const image = await prepareMealImage(file);
       const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 50_000);
       let response: Response;
       try {
-        response = await fetch("/api/nutrition/scan-meal", {
+        const request = fetch("/api/nutrition/scan-meal", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ image }),
           signal: controller.signal,
         });
+        const timeout = new Promise<Response>((_, reject) => {
+          window.setTimeout(
+            () => reject(new DOMException("Meal scan timed out", "AbortError")),
+            50_000,
+          );
+        });
+        response = await Promise.race([request, timeout]);
       } finally {
-        window.clearTimeout(timeout);
+        controller.abort();
       }
       const result = (await response.json()) as ScannedMeal & { error?: string };
       if (!response.ok || result.error) throw new Error(result.error || "scan");
