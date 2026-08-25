@@ -396,7 +396,7 @@ export function AppShell({
                     to="/"
                     onClick={() => setWorkspace("personal")}
                     aria-current={activeMode === "personal" ? "page" : undefined}
-                    className={`min-w-20 rounded-full px-3 ${
+                    className={`press min-w-20 rounded-full px-3 ${
                       compactHeader ? "py-1 text-[10px]" : "py-1.5 text-[11px]"
                     } text-center font-bold transition-colors ${
                       activeMode === "personal"
@@ -410,7 +410,7 @@ export function AppShell({
                     to="/coach"
                     onClick={() => setWorkspace("management")}
                     aria-current={activeMode === "management" ? "page" : undefined}
-                    className={`min-w-20 rounded-full px-3 ${
+                    className={`press min-w-20 rounded-full px-3 ${
                       compactHeader ? "py-1 text-[10px]" : "py-1.5 text-[11px]"
                     } text-center font-bold transition-colors ${
                       activeMode === "management"
@@ -826,11 +826,11 @@ export function AppShell({
                 onClick={onClick}
                 activeOptions={{ exact: to === "/" || to === "/coach" }}
                 data-testid={`link-nav-${id}`}
-                className="app-nav-link group relative flex min-h-[3.1rem] flex-1 flex-col items-center justify-center gap-0.5 py-1 text-muted-foreground transition-colors data-[status=active]:text-primary hover:text-ink"
+                className="app-nav-link press group relative flex min-h-[3.1rem] flex-1 flex-col items-center justify-center gap-0.5 py-1 text-muted-foreground transition-colors data-[status=active]:text-primary hover:text-ink"
               >
                 <span className="absolute inset-x-0 top-0 h-[2px] bg-primary opacity-0 transition-opacity group-data-[status=active]:opacity-100" />
                 <Icon
-                  className="h-[20px] w-[20px] transition-transform group-active:scale-95"
+                  className="h-[20px] w-[20px] transition-transform duration-200 group-data-[status=active]:scale-110 group-active:scale-95"
                   strokeWidth={2}
                 />
                 <span className="max-w-full truncate px-1 text-[10px] font-medium tracking-wide">

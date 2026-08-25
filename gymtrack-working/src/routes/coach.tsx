@@ -1956,7 +1956,11 @@ export function CoachDashboardPage({
                   טוען נתוני מתאמן מ-Supabase...
                 </div>
               ) : clientDetails ? (
-                <div className="space-y-4">
+                <div
+                  key={activeWorkspaceTab}
+                  className="workspace-tab-content space-y-4"
+                  data-active-tab={activeWorkspaceTab}
+                >
                   {showClientOverview ? (
                     <>
                       {/* Send Coach Message Panel */}
