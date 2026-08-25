@@ -109,6 +109,7 @@ export function CoachDashboardPage({
   workspaceMode = "all",
   initialProgramId,
   initialDayId,
+  initialExerciseId,
 }: {
   clientsOnly?: boolean;
   trackingLanding?: boolean;
@@ -117,6 +118,7 @@ export function CoachDashboardPage({
   workspaceMode?: "all" | "programs" | "nutrition";
   initialProgramId?: string;
   initialDayId?: string;
+  initialExerciseId?: string;
 }) {
   const store = useGym();
   const navigate = useNavigate();
@@ -171,6 +173,7 @@ export function CoachDashboardPage({
   const [newProgramName, setNewProgramName] = useState("");
   const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
   const [editingDayId, setEditingDayId] = useState<string | null>(null);
+  const [focusedExerciseId, setFocusedExerciseId] = useState<string | null>(null);
   const [newDayName, setNewDayName] = useState("");
 
   // Exercise Assignment Editor state
@@ -608,7 +611,18 @@ export function CoachDashboardPage({
     if (latestNutritionDay) {
       setMenuDate(latestNutritionDay.date);
     }
-  }, [clientDetails, initialDayId, initialProgramId]);
+    setFocusedExerciseId(initialExerciseId ?? null);
+  }, [clientDetails, initialDayId, initialExerciseId, initialProgramId]);
+
+  useEffect(() => {
+    if (!focusedExerciseId) return;
+    const frame = window.requestAnimationFrame(() => {
+      document
+        .getElementById(`coach-exercise-${focusedExerciseId}`)
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusedExerciseId, editingDayId]);
 
   // OWNER RPC: change a target user's role. The database function remains the
   // only authority for role changes; this UI never writes profiles.role.
@@ -1172,14 +1186,18 @@ export function CoachDashboardPage({
   const trackingNutritionDay = clientDetails?.nutritionDays.find(
     (day) => day.date === trackingDate,
   );
-  const openTrackedPlan = (workoutId: string) => {
+  const openTrackedPlan = (workoutId: string, exerciseId?: string) => {
     if (!selectedClientId || !clientDetails) return;
     const program = clientDetails.programs.find((item) => item.dayIds.includes(workoutId));
     if (!program) return;
     navigate({
       to: "/coach/clients/$clientId/program",
       params: { clientId: selectedClientId },
-      search: { programId: program.id, dayId: workoutId },
+      search: {
+        programId: program.id,
+        dayId: workoutId,
+        ...(exerciseId ? { exerciseId } : {}),
+      },
     });
   };
   const shiftTrackingDate = (amount: number) => {
@@ -1929,7 +1947,7 @@ export function CoachDashboardPage({
             open={showClientWorkspace}
             onClose={() => {
               if (clientId) {
-                navigate({ to: "/coach/clients" });
+                navigate({ to: trackingLanding ? "/coach/tracking" : "/coach/clients" });
                 return;
               }
               setShowClientWorkspace(false);
@@ -1968,7 +1986,10 @@ export function CoachDashboardPage({
                           to: "/coach/clients/$clientId",
                           params: { clientId: selectedClientId },
                         });
-                      } else navigate({ to: "/coach/clients" });
+                      } else
+                        navigate({
+                          to: trackingLanding ? "/coach/tracking" : "/coach/clients",
+                        });
                       return;
                     }
                     setShowClientWorkspace(false);
@@ -2002,7 +2023,7 @@ export function CoachDashboardPage({
                       if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
                       const next = dx < 0 ? "nutrition" : "programs";
                       setActiveWorkspaceTab(next);
-                      setOpenEditor(next);
+                      setOpenEditor(trackingLanding ? null : next);
                     }}
                   >
                     <button
@@ -2352,7 +2373,9 @@ export function CoachDashboardPage({
                     </section>
                   ) : null}
 
-                  {workspacePage && workspaceMode === "programs" && openEditor === null ? (
+                  {workspacePage &&
+                  ((trackingLanding && activeWorkspaceTab === "programs") ||
+                    (!trackingLanding && workspaceMode === "programs" && openEditor === null)) ? (
                     <section className="surface-card space-y-3 rounded-2xl border border-amber-200 bg-amber-50/35 p-4">
                       <div className="flex items-center justify-between border-b border-amber-200 pb-2">
                         <div>
@@ -2410,7 +2433,21 @@ export function CoachDashboardPage({
                                     className="rounded-lg bg-amber-50/70 px-2 py-1.5"
                                   >
                                     <div className="flex items-center justify-between gap-2">
-                                      <strong className="text-ink">{entry.exerciseName}</strong>
+                                      {clientDetails.workouts
+                                        .find((workout) => workout.id === session.workoutId)
+                                        ?.items.some((item) => item.exerciseId === entry.exerciseId) ? (
+                                        <button
+                                          type="button"
+                                          className="text-start font-bold text-ink hover:text-primary hover:underline"
+                                          onClick={() =>
+                                            openTrackedPlan(session.workoutId, entry.exerciseId)
+                                          }
+                                        >
+                                          {entry.exerciseName}
+                                        </button>
+                                      ) : (
+                                        <strong className="text-ink">{entry.exerciseName}</strong>
+                                      )}
                                       {clientDetails.workouts
                                         .find((workout) => workout.id === session.workoutId)
                                         ?.items.some((item) => item.exerciseId === entry.exerciseId) &&
@@ -2419,7 +2456,9 @@ export function CoachDashboardPage({
                                       ) ? (
                                         <button
                                           type="button"
-                                          onClick={() => openTrackedPlan(session.workoutId)}
+                                          onClick={() =>
+                                            openTrackedPlan(session.workoutId, entry.exerciseId)
+                                          }
                                           className="shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/10"
                                         >
                                           פתח בתוכנית
@@ -2448,9 +2487,17 @@ export function CoachDashboardPage({
                                         : "לא נרשמו סטים"}
                                     </p>
                                     {entry.feedback?.notes || entry.notes ? (
-                                      <p className="mt-1 text-[10px] text-ink">
-                                        הערה: {entry.feedback?.notes || entry.notes}
-                                      </p>
+                                      <div className="mt-1 text-[10px] text-ink">
+                                        <button
+                                          type="button"
+                                          className="text-start hover:text-primary hover:underline"
+                                          onClick={() =>
+                                            openTrackedPlan(session.workoutId, entry.exerciseId)
+                                          }
+                                        >
+                                          הערה: {entry.feedback?.notes || entry.notes}
+                                        </button>
+                                      </div>
                                     ) : null}
                                   </div>
                                 ))}
@@ -2482,7 +2529,9 @@ export function CoachDashboardPage({
                     </section>
                   ) : null}
 
-                  {workspacePage && workspaceMode === "nutrition" && openEditor === null ? (
+                  {workspacePage &&
+                  ((trackingLanding && activeWorkspaceTab === "nutrition") ||
+                    (!trackingLanding && workspaceMode === "nutrition" && openEditor === null)) ? (
                     <section className="surface-card space-y-3 rounded-2xl border border-amber-200 bg-amber-50/35 p-4">
                       <div className="flex items-center justify-between border-b border-amber-200 pb-2">
                         <div>
@@ -2569,7 +2618,9 @@ export function CoachDashboardPage({
                   <div
                     id="coach-programs"
                     className={`scroll-mt-24 surface-card space-y-4 rounded-[1.75rem] border-primary/15 bg-primary/[0.02] p-4 ${
-                      workspaceMode === "nutrition" || openEditor !== "programs" ? "hidden" : ""
+                      trackingLanding || workspaceMode === "nutrition" || openEditor !== "programs"
+                        ? "hidden"
+                        : ""
                     }`}
                   >
                     <div className="flex items-center justify-between border-b pb-2">
@@ -2714,7 +2765,12 @@ export function CoachDashboardPage({
                                               return (
                                                 <div
                                                   key={exItem.id}
-                                                  className="rounded-xl bg-secondary/50 p-2.5 text-xs"
+                                                  id={`coach-exercise-${exItem.exerciseId}`}
+                                                  className={`rounded-xl bg-secondary/50 p-2.5 text-xs transition-colors ${
+                                                    focusedExerciseId === exItem.exerciseId
+                                                      ? "ring-2 ring-primary/40 bg-primary/5"
+                                                      : ""
+                                                  }`}
                                                 >
                                                   <div className="flex items-start justify-between gap-2">
                                                     <div>
@@ -2778,7 +2834,7 @@ export function CoachDashboardPage({
                                                       <Trash2 className="h-3.5 w-3.5" />
                                                     </button>
                                                   </div>
-                                                  {actualExecutions.length > 0 ? (
+                                                  {false && actualExecutions.length > 0 ? (
                                                     <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/80 p-2 text-[10px]">
                                                       <div className="flex items-center justify-between gap-2 font-bold text-amber-900">
                                                         <span>ביצוע אחרון של המתאמן</span>
@@ -3264,7 +3320,9 @@ export function CoachDashboardPage({
                   <div
                     id="coach-menu"
                     className={`surface-card space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 ${
-                      workspaceMode === "programs" || openEditor !== "nutrition" ? "hidden" : ""
+                      trackingLanding || workspaceMode === "programs" || openEditor !== "nutrition"
+                        ? "hidden"
+                        : ""
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3 border-b border-emerald-200/70 pb-2">
@@ -3565,7 +3623,9 @@ export function CoachDashboardPage({
                   <div
                     id="coach-nutrition"
                     className={`scroll-mt-24 surface-card space-y-4 rounded-[1.75rem] border-emerald-200/70 bg-emerald-50/30 p-4 ${
-                      workspaceMode === "programs" || openEditor !== "nutrition" ? "hidden" : ""
+                      trackingLanding || workspaceMode === "programs" || openEditor !== "nutrition"
+                        ? "hidden"
+                        : ""
                     }`}
                   >
                     <div className="flex items-center justify-between border-b pb-2">
