@@ -111,6 +111,9 @@ export function CoachDashboardPage({
   initialProgramId,
   initialDayId,
   initialExerciseId,
+  initialNutritionDate,
+  initialNutritionMealId,
+  initialNutritionFoodId,
 }: {
   clientsOnly?: boolean;
   trackingLanding?: boolean;
@@ -120,6 +123,9 @@ export function CoachDashboardPage({
   initialProgramId?: string;
   initialDayId?: string;
   initialExerciseId?: string;
+  initialNutritionDate?: string;
+  initialNutritionMealId?: string;
+  initialNutritionFoodId?: string;
 }) {
   const store = useGym();
   const navigate = useNavigate();
@@ -243,6 +249,8 @@ export function CoachDashboardPage({
   const [menuFoodQuantity, setMenuFoodQuantity] = useState(1);
   const [menuFoodUnit, setMenuFoodUnit] = useState<FoodQuantityUnit>("serving");
   const [menuNotice, setMenuNotice] = useState("");
+  const [focusedNutritionFoodId, setFocusedNutritionFoodId] = useState<string | null>(null);
+  const [focusedNutritionMealId, setFocusedNutritionMealId] = useState<string | null>(null);
   const isSelfSelected = Boolean(authUser?.id && selectedClientId === authUser.id);
   const [overviewRows, setOverviewRows] = useState<
     Array<{ client: CoachClientRow; details: ClientDetails }>
@@ -610,11 +618,23 @@ export function CoachDashboardPage({
     const latestNutritionDay = [...clientDetails.nutritionDays].sort((a, b) =>
       b.date.localeCompare(a.date),
     )[0];
-    if (latestNutritionDay) {
+    if (initialNutritionDate) {
+      setMenuDate(initialNutritionDate);
+    } else if (latestNutritionDay) {
       setMenuDate(latestNutritionDay.date);
     }
     setFocusedExerciseId(initialExerciseId ?? null);
-  }, [clientDetails, initialDayId, initialExerciseId, initialProgramId]);
+    setFocusedNutritionFoodId(initialNutritionFoodId ?? null);
+    setFocusedNutritionMealId(initialNutritionMealId ?? null);
+  }, [
+    clientDetails,
+    initialDayId,
+    initialExerciseId,
+    initialNutritionDate,
+    initialNutritionFoodId,
+    initialNutritionMealId,
+    initialProgramId,
+  ]);
 
   useEffect(() => {
     if (!focusedExerciseId) return;
@@ -625,6 +645,16 @@ export function CoachDashboardPage({
     });
     return () => window.cancelAnimationFrame(frame);
   }, [focusedExerciseId, editingDayId]);
+
+  useEffect(() => {
+    if (!focusedNutritionFoodId) return;
+    const frame = window.requestAnimationFrame(() => {
+      document
+        .getElementById(`coach-menu-food-${focusedNutritionFoodId}`)
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusedNutritionFoodId, menuDate, plannedMeals]);
 
   // OWNER RPC: change a target user's role. The database function remains the
   // only authority for role changes; this UI never writes profiles.role.
@@ -1202,6 +1232,18 @@ export function CoachDashboardPage({
         programId: program.id,
         dayId: workoutId,
         ...(exerciseId ? { exerciseId } : {}),
+      },
+    });
+  };
+  const openTrackedNutrition = (date: string, mealId: string, foodId?: string) => {
+    if (!selectedClientId) return;
+    navigate({
+      to: "/coach/clients/$clientId/nutrition",
+      params: { clientId: selectedClientId },
+      search: {
+        date,
+        ...(mealId ? { mealId } : {}),
+        ...(foodId ? { foodId } : {}),
       },
     });
   };
@@ -2425,9 +2467,14 @@ export function CoachDashboardPage({
                                 )}
                               </p>
                               <div className="mt-2 space-y-1.5 border-t border-amber-100 pt-2">
-                                {session.entries.map((entry) => (
-                                  <div
-                                    key={`${session.id}-${entry.exerciseId}`}
+                               {session.entries.map((entry) => {
+                                 const exercise = store.exercises.find(
+                                   (item) => item.id === entry.exerciseId,
+                                 );
+                                 const videoUrl = entry.videoUrl || exercise?.videoUrl;
+                                 return (
+                                   <div
+                                     key={`${session.id}-${entry.exerciseId}`}
                                     className="rounded-lg bg-amber-50/70 px-2 py-1.5"
                                   >
                                     <div className="flex items-center justify-between gap-2">
@@ -2497,8 +2544,19 @@ export function CoachDashboardPage({
                                         </button>
                                       </div>
                                     ) : null}
+                                     {videoUrl ? (
+                                       <a
+                                         href={videoUrl}
+                                         target="_blank"
+                                         rel="noreferrer"
+                                         className="mt-1 inline-flex items-center rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20"
+                                       >
+                                         סרטון לתרגיל
+                                       </a>
+                                     ) : null}
                                   </div>
-                                ))}
+                                 );
+                               })}
                               </div>
                               {session.entries
                                 .filter((entry) => entry.feedback?.notes || entry.notes)
@@ -2553,39 +2611,69 @@ export function CoachDashboardPage({
                            <ChevronLeft className="h-4 w-4 rotate-180" />
                          </button>
                        </div>
-                       <div className="grid gap-2 md:grid-cols-2">
-                         {trackingNutritionDay ? (() => {
-                           const day = trackingNutritionDay;
-                          const actualFoods = day.meals.flatMap((meal) => meal.foods);
-                          return (
-                            <div
-                              key={day.id || day.date}
-                              className="rounded-xl bg-white/80 p-3 text-[11px]"
-                            >
+                        <div className="grid gap-2 md:grid-cols-2">
+                          {trackingNutritionDay ? (
+                            <div className="rounded-xl bg-white/80 p-3 text-[11px]">
                               <div className="flex items-center justify-between gap-2">
                                 <strong className="text-ink">
-                                  {new Date(`${day.date}T00:00:00`).toLocaleDateString("he-IL")}
+                                  {new Date(
+                                    `${trackingNutritionDay.date}T00:00:00`,
+                                  ).toLocaleDateString("he-IL")}
                                 </strong>
                                 <span className="text-muted-foreground">
-                                  {actualFoods.length} מאכלים בפועל
+                                  {trackingNutritionDay.meals.reduce(
+                                    (total, meal) => total + meal.foods.length,
+                                    0,
+                                  )}{" "}
+                                  מאכלים בפועל
                                 </span>
                               </div>
-                              {actualFoods.length > 0 ? (
-                                <p className="mt-1 text-muted-foreground">
-                                  {actualFoods
-                                    .map((food) => `${food.name} ×${food.quantity}`)
-                                    .join(" · ")}
-                                </p>
-                              ) : (
-                                <p className="mt-1 text-muted-foreground">
-                                  לא נרשמו מאכלים ביום זה.
-                                </p>
-                              )}
+                              <div className="mt-2 space-y-2">
+                                {trackingNutritionDay.meals.map((meal) => (
+                                  <div
+                                    key={meal.id}
+                                    className="rounded-lg border border-amber-100 bg-amber-50/50 p-2"
+                                  >
+                                    <div className="font-bold text-ink">{meal.name}</div>
+                                    {meal.foods.length > 0 ? (
+                                      <div className="mt-1 space-y-1">
+                                        {meal.foods.map((food) => (
+                                          <button
+                                            key={food.id}
+                                            type="button"
+                                            onClick={() =>
+                                              openTrackedNutrition(
+                                                trackingNutritionDay.date,
+                                                meal.id,
+                                                food.id,
+                                              )
+                                            }
+                                            className="block w-full rounded-md px-1.5 py-1 text-start text-muted-foreground hover:bg-amber-100 hover:text-primary"
+                                          >
+                                            {food.name} ×{food.quantity}
+                                            {food.notes?.trim() ? ` · ${food.notes.trim()}` : ""}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className="mt-1 text-muted-foreground">
+                                        לא נרשמו מאכלים בארוחה זו.
+                                      </p>
+                                    )}
+                                  </div>
+                                ))}
+                                {trackingNutritionDay.meals.length === 0 ? (
+                                  <p className="text-center text-muted-foreground">
+                                    לא נרשמו מאכלים ביום זה.
+                                  </p>
+                                ) : null}
+                              </div>
                             </div>
-                          );
-                         })() : (
-                           <p className="text-center text-xs text-muted-foreground">אין רישומי תזונה בתאריך זה.</p>
-                         )}
+                          ) : (
+                            <p className="text-center text-xs text-muted-foreground">
+                              אין רישומי תזונה בתאריך זה.
+                            </p>
+                          )}
                       </div>
                        {(trackingNutritionDay?.meals.some((meal) =>
                          meal.foods.some((food) => food.notes?.trim()),
@@ -3445,27 +3533,42 @@ export function CoachDashboardPage({
                             )}
 
                             {actualMeal?.foods.length ? (
-                              <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/80 p-2 text-[10px]">
+                              <div
+                                className={`mt-2 rounded-lg border border-amber-200 bg-amber-50/80 p-2 text-[10px] ${
+                                  focusedNutritionMealId &&
+                                  (focusedNutritionMealId === actualMeal.id ||
+                                    focusedNutritionMealId === meal.id)
+                                    ? "ring-2 ring-primary/35"
+                                    : ""
+                                }`}
+                              >
                                 <div className="flex items-center justify-between gap-2 font-bold text-amber-900">
                                   <span>מה שהמתאמן אכל בפועל</span>
                                   <span className="font-normal">
                                     {new Date(`${menuDate}T00:00:00`).toLocaleDateString("he-IL")}
                                   </span>
                                 </div>
-                                <p className="mt-1 text-amber-950">
-                                  {actualMeal.foods
-                                    .map((food) => `${food.name} ×${food.quantity}`)
-                                    .join(" · ")}
-                                </p>
-                                {actualMeal.foods.some((food) => food.notes?.trim()) ? (
-                                  <p className="mt-1 text-amber-900/80">
-                                    הערה:{" "}
-                                    {actualMeal.foods
-                                      .map((food) => food.notes?.trim())
-                                      .filter(Boolean)
-                                      .join(" · ")}
-                                  </p>
-                                ) : null}
+                                <div className="mt-1 space-y-1">
+                                  {actualMeal.foods.map((food) => (
+                                    <div
+                                      key={food.id}
+                                      id={`coach-menu-food-${food.id}`}
+                                      className={`rounded-md px-1.5 py-1 text-amber-950 ${
+                                        focusedNutritionFoodId === food.id
+                                          ? "bg-primary/10 font-bold ring-1 ring-primary/30"
+                                          : ""
+                                      }`}
+                                    >
+                                      {food.name} ×{food.quantity}
+                                      {food.notes?.trim() ? (
+                                        <span className="text-amber-900/80">
+                                          {" "}
+                                          · הערה: {food.notes.trim()}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             ) : (
                               <p className="mt-2 rounded-lg bg-amber-50/60 px-2 py-1 text-[10px] text-amber-800">
