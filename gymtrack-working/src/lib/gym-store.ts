@@ -637,9 +637,60 @@ function canManageAssignedPlans() {
 let syncRetryAttempts = 0;
 let dataRevision = 0;
 const listeners = new Set<() => void>();
+let planRealtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+let planRealtimeUserId: string | null = null;
 
 function notifyListeners() {
   listeners.forEach((listener) => listener());
+}
+
+function stopPlanRealtime() {
+  if (planRealtimeChannel) {
+    void supabase.removeChannel(planRealtimeChannel);
+    planRealtimeChannel = null;
+  }
+  planRealtimeUserId = null;
+}
+
+function startPlanRealtime(userId: string) {
+  if (planRealtimeUserId === userId || typeof supabase.channel !== "function") return;
+
+  stopPlanRealtime();
+  planRealtimeUserId = userId;
+  const refreshFromRemotePlanChange = () => {
+    if (currentUser?.id !== userId) return;
+    // The refresh keeps the trainee's pending offline edits authoritative and
+    // only replaces the cache when the remote snapshot is safe to accept.
+    refreshCurrentUserData(true);
+  };
+
+  planRealtimeChannel = supabase
+    .channel(`gymtrack-plan-sync-${userId}`)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "profiles", filter: `id=eq.${userId}` },
+      refreshFromRemotePlanChange,
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "programs", filter: `user_id=eq.${userId}` },
+      refreshFromRemotePlanChange,
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "program_days", filter: `user_id=eq.${userId}` },
+      refreshFromRemotePlanChange,
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "nutrition_days", filter: `user_id=eq.${userId}` },
+      refreshFromRemotePlanChange,
+    )
+    .subscribe((status) => {
+      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        console.warn(`[Plan realtime ${status.toLowerCase()}]: background polling remains active`);
+      }
+    });
 }
 
 function browserIsOffline() {
@@ -863,6 +914,7 @@ function load() {
         authStatus = session?.user ? "authenticated" : "unauthenticated";
         if (session?.user) {
           const cachedData = resetDataForUser(session.user.id);
+          startPlanRealtime(session.user.id);
           void handleUserLogin(session.user.id, cachedData);
           return;
         }
@@ -891,13 +943,16 @@ function load() {
       if (session?.user) {
         // If user changed, reset memory state first to avoid leaking previous user data
         if (prevUserId && prevUserId !== session.user.id) {
+          stopPlanRealtime();
           data = seed();
         }
         const cachedData = resetDataForUser(session.user.id);
+        startPlanRealtime(session.user.id);
         void handleUserLogin(session.user.id, cachedData);
         return;
       } else {
         // On sign-out, reset memory state to clean seed data
+        stopPlanRealtime();
         hydrationGeneration += 1;
         profileHydrationStatus = "loading";
         profileHydrationError = "";

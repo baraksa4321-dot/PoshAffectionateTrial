@@ -44,6 +44,13 @@ import {
 } from "../lib/gym-store";
 import { pullClientDataForCoach } from "../lib/supabase-sync";
 import { supabase } from "../lib/supabase";
+import {
+  clientNutritionTargetUpsertPayload,
+  clientPlannedMenuRpcPayload,
+  clientProgramDayInsertPayload,
+  clientProgramDayItemsUpdatePayload,
+  clientProgramInsertPayload,
+} from "../lib/coach-plan-payloads";
 import { calculateCalorieEstimate } from "../lib/calorie-calculator";
 import { exerciseDisplayName } from "../lib/exercise-library";
 import { loadCoachMessages, sendCoachMessage } from "../lib/coach-messages";
@@ -1643,15 +1650,10 @@ export function CoachDashboardPage({
   };
 
   useEffect(() => {
-    setPlannedMeals(
-      clientDetails?.plannedMeals?.length
-        ? clientDetails.plannedMeals
-        : [
-            { id: uid(), name: "ארוחת בוקר", foods: [] },
-            { id: uid(), name: "ארוחת צהריים", foods: [] },
-            { id: uid(), name: "ארוחת ערב", foods: [] },
-          ],
-    );
+    // An empty cloud menu is authoritative. Do not recreate defaults after a
+    // coach intentionally removes every meal, otherwise the empty save can
+    // never reach the trainee.
+    setPlannedMeals(clientDetails?.plannedMeals ?? []);
     setMenuFoodMealId(null);
     setMenuFoodId("");
     setMenuFoodQuery("");
@@ -2079,12 +2081,9 @@ export function CoachDashboardPage({
       return;
     }
 
-    const { error } = await supabase.from("programs").insert({
-      id: programId,
-      user_id: selectedClientId,
-      name: newProgramName.trim(),
-      description: "תוכנית נבנתה על ידי המאמן",
-    });
+    const { error } = await supabase
+      .from("programs")
+      .insert(clientProgramInsertPayload(programId, selectedClientId, newProgramName.trim()));
 
     if (error) {
       setManagementError(`שמירת התוכנית נכשלה: ${error.message}`);
@@ -2129,14 +2128,17 @@ export function CoachDashboardPage({
       return;
     }
 
-    const { error } = await supabase.from("program_days").insert({
-      id: dayId,
-      program_id: editingProgramId,
-      user_id: selectedClientId,
-      name: newDayName.trim(),
-      items: [],
-      sort_order: (clientDetails?.workouts?.length || 0) + 1,
-    });
+    const { error } = await supabase
+      .from("program_days")
+      .insert(
+        clientProgramDayInsertPayload(
+          dayId,
+          editingProgramId,
+          selectedClientId,
+          newDayName.trim(),
+          (clientDetails?.workouts?.length || 0) + 1,
+        ),
+      );
 
     if (error) {
       setManagementError(`שמירת יום האימון נכשלה: ${error.message}`);
@@ -2268,7 +2270,7 @@ export function CoachDashboardPage({
       } else {
         const { error } = await supabase
           .from("program_days")
-          .update({ items: updatedItems, updated_at: new Date().toISOString() })
+          .update(clientProgramDayItemsUpdatePayload(updatedItems))
           .eq("id", editingDayId)
           .eq("user_id", selectedClientId);
         if (error) {
@@ -2452,8 +2454,9 @@ export function CoachDashboardPage({
 
     const { error } = await supabase
       .from("program_days")
-      .update({ items: updatedItems, updated_at: new Date().toISOString() })
-      .eq("id", editingDayId);
+      .update(clientProgramDayItemsUpdatePayload(updatedItems))
+      .eq("id", editingDayId)
+      .eq("user_id", selectedClientId);
 
     if (error) {
       setManagementError(`שמירת התרגיל נכשלה: ${error.message}`);
@@ -2511,7 +2514,8 @@ export function CoachDashboardPage({
     const { error } = await supabase
       .from("program_days")
       .update({ items: updatedItems, updated_at: new Date().toISOString() })
-      .eq("id", dayId);
+      .eq("id", dayId)
+      .eq("user_id", selectedClientId);
 
     if (error) {
       setManagementError(`מחיקת התרגיל נכשלה: ${error.message}`);
@@ -2539,7 +2543,7 @@ export function CoachDashboardPage({
 
     const { error } = await supabase
       .from("program_days")
-      .update({ items: updatedItems, updated_at: new Date().toISOString() })
+      .update(clientProgramDayItemsUpdatePayload(updatedItems))
       .eq("id", dayId)
       .eq("user_id", selectedClientId);
     if (error) {
@@ -2555,13 +2559,16 @@ export function CoachDashboardPage({
     setManagementError("");
     const today = new Date().toISOString().slice(0, 10);
 
-    const { error } = await supabase.from("nutrition_days").upsert({
-      id: `${selectedClientId}_${today}`,
-      user_id: selectedClientId,
-      date: today,
-      target_calories: calTarget,
-      updated_at: new Date().toISOString(),
-    });
+    const { error } = await supabase
+      .from("nutrition_days")
+      .upsert(
+        clientNutritionTargetUpsertPayload(
+          `${selectedClientId}_${today}`,
+          selectedClientId,
+          today,
+          calTarget,
+        ),
+      );
 
     if (error) {
       setManagementError(`שמירת יעד התזונה נכשלה: ${error.message}`);
@@ -2634,17 +2641,17 @@ export function CoachDashboardPage({
   };
 
   const savePlannedMenu = async () => {
-    if (!isCoach || !selectedClientId || plannedMeals.length === 0) return;
+    if (!isCoach || !selectedClientId) return;
     if (isSelfSelected) {
       savePlannedMeals(plannedMeals);
       setMenuNotice("התפריט האישי נשמר ויופיע גם באזור התזונה שלך.");
       return;
     }
 
-    const { error } = await supabase.rpc("save_user_planned_menu", {
-      target_user_id: selectedClientId,
-      next_planned_menu: plannedMeals,
-    });
+    const { error } = await supabase.rpc(
+      "save_user_planned_menu",
+      clientPlannedMenuRpcPayload(selectedClientId, plannedMeals),
+    );
     if (error) {
       setMenuNotice(`שמירת התפריט נכשלה: ${error.message}`);
       return;
@@ -3926,7 +3933,6 @@ export function CoachDashboardPage({
                 </div>
               ) : clientDetails ? (
                 <div
-                  key={activeWorkspaceTab}
                   className="workspace-tab-content space-y-4"
                   data-active-tab={activeWorkspaceTab}
                 >
