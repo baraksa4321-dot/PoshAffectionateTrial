@@ -943,6 +943,10 @@ export function CoachDashboardPage({
   const [msgSendError, setMsgSendError] = useState("");
   const [sentCoachMessages, setSentCoachMessages] = useState<CoachMessage[]>([]);
   const [sentCoachMessagesError, setSentCoachMessagesError] = useState("");
+  const [failedCoachMessage, setFailedCoachMessage] = useState<{
+    message: string;
+    createdAt: string;
+  } | null>(null);
   const [broadcastText, setBroadcastText] = useState("");
   const [broadcastAudience, setBroadcastAudience] = useState<
     "assigned_clients" | "coaches" | "clients" | "everyone"
@@ -968,6 +972,7 @@ export function CoachDashboardPage({
   useEffect(() => {
     let active = true;
     setSentCoachMessagesError("");
+    setFailedCoachMessage(null);
     if (!authUser?.id || !isCoach || !selectedClientId) {
       setSentCoachMessages([]);
       return () => {
@@ -1919,7 +1924,8 @@ export function CoachDashboardPage({
   const handleSendCoachMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     const message = coachMsgText.trim();
-    if (!selectedClientId || !message) return;
+    const clientIdForMessage = selectedClientId;
+    if (!clientIdForMessage || !message) return;
     setMsgSentNotice("");
     setMsgSendError("");
 
@@ -1927,23 +1933,30 @@ export function CoachDashboardPage({
       await sendCoachMessage(
         () => supabase.auth.getUser(),
         async (payload) => await supabase.from("coach_messages").insert(payload),
-        selectedClientId,
+        clientIdForMessage,
         message,
       );
       setMsgSentNotice("הודעת החיזוק נשלחה בהצלחה למתאמן!");
       setCoachMsgText("");
-      void fetchSentCoachMessages(selectedClientId)
+      setFailedCoachMessage(null);
+      void fetchSentCoachMessages(clientIdForMessage)
         .then((messages) => {
           setSentCoachMessagesError("");
-          setSentCoachMessages(messages);
+          if (selectedClientId === clientIdForMessage) setSentCoachMessages(messages);
         })
         .catch((error: unknown) => {
-          setSentCoachMessagesError(
-            `טעינת היסטוריית ההודעות נכשלה: ${errorMessage(error, "שגיאה בטעינת ההודעות")}`,
-          );
+          if (selectedClientId === clientIdForMessage) {
+            setSentCoachMessagesError(
+              `ההודעה נשמרה, אך רענון ההיסטוריה נכשל: ${errorMessage(
+                error,
+                "שגיאה בטעינת ההודעות",
+              )}`,
+            );
+          }
         });
       setTimeout(() => setMsgSentNotice(""), 3000);
     } catch (err: unknown) {
+      setFailedCoachMessage({ message, createdAt: new Date().toISOString() });
       setMsgSendError(`שליחת הודעת החיזוק נכשלה: ${errorMessage(err, "שגיאה בשליחת ההודעה")}`);
     }
   };
@@ -3957,6 +3970,27 @@ export function CoachDashboardPage({
                             שלח
                           </button>
                         </form>
+                        {failedCoachMessage && (
+                          <div className="rounded-xl border border-amber-200 bg-amber-50 p-2.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[10px] font-bold text-amber-900">
+                                ניסיון אחרון — לא אושר
+                              </span>
+                              <span className="shrink-0 text-[10px] text-amber-800">
+                                {new Date(failedCoachMessage.createdAt).toLocaleString("he-IL", {
+                                  dateStyle: "short",
+                                  timeStyle: "short",
+                                })}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-xs leading-relaxed text-amber-950">
+                              {failedCoachMessage.message}
+                            </p>
+                            <p className="mt-1 text-[10px] font-semibold text-amber-800">
+                              לא התקבלה אישור שמירה — הטיוטה נשמרה בטופס ואפשר לנסות שוב.
+                            </p>
+                          </div>
+                        )}
                         {sentCoachMessagesError && (
                           <p
                             role="alert"
@@ -3967,9 +4001,14 @@ export function CoachDashboardPage({
                         )}
                         {sentCoachMessages.length > 0 && (
                           <div className="space-y-2 rounded-xl border border-border/60 bg-white/70 p-3">
-                            <p className="text-[11px] font-bold tracking-wide text-muted-foreground">
-                              הודעות שנשלחו לאחרונה
-                            </p>
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-[11px] font-bold tracking-wide text-muted-foreground">
+                                הודעות שנשמרו בהצלחה
+                              </p>
+                              <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-emerald-800">
+                                נשמרו ב־Supabase
+                              </span>
+                            </div>
                             {sentCoachMessages.slice(0, 5).map((message) => (
                               <div
                                 key={message.id}
@@ -3978,17 +4017,22 @@ export function CoachDashboardPage({
                                 <p className="min-w-0 flex-1 text-xs leading-relaxed text-ink">
                                   {message.message}
                                 </p>
-                                <time
-                                  dateTime={message.createdAt}
-                                  className="shrink-0 text-[10px] text-muted-foreground"
-                                >
-                                  {new Date(message.createdAt).toLocaleString("he-IL", {
-                                    day: "numeric",
-                                    month: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </time>
+                                <div className="shrink-0 text-end">
+                                  <span className="block text-[9px] font-bold text-emerald-700">
+                                    נשמרה
+                                  </span>
+                                  <time
+                                    dateTime={message.createdAt}
+                                    className="text-[10px] text-muted-foreground"
+                                  >
+                                    {new Date(message.createdAt).toLocaleString("he-IL", {
+                                      day: "numeric",
+                                      month: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </time>
+                                </div>
                               </div>
                             ))}
                           </div>

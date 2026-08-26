@@ -9,7 +9,7 @@ import type {
   Program,
   Workout,
 } from "./gym-types";
-import { loadCoachMessages, sendCoachMessage } from "./coach-messages";
+import { fetchCoachMessages, loadCoachMessages, sendCoachMessage } from "./coach-messages";
 
 type QueryResult = {
   data: unknown;
@@ -251,6 +251,42 @@ describe("cross-browser Supabase sync boundaries", () => {
         clientId: "client-b",
         message: "Great work",
         createdAt: "2026-08-26T08:00:00.000Z",
+        isRead: false,
+      },
+    ]);
+  });
+
+  test("maps only the selected client's saved messages for the current coach", async () => {
+    const selected: Array<[string, string]> = [];
+    const messages = await fetchCoachMessages(
+      async (clientId, coachId) => {
+        selected.push([clientId, coachId]);
+        return {
+          data: [
+            {
+              id: "message-2",
+              coach_id: coachId,
+              client_id: clientId,
+              message: "Keep going",
+              created_at: "2026-08-26T06:30:00.000Z",
+              is_read: false,
+            },
+          ],
+          error: null,
+        };
+      },
+      "client-b",
+      "coach-a",
+    );
+
+    expect(selected).toEqual([["client-b", "coach-a"]]);
+    expect(messages).toEqual([
+      {
+        id: "message-2",
+        coachId: "coach-a",
+        clientId: "client-b",
+        message: "Keep going",
+        createdAt: "2026-08-26T06:30:00.000Z",
         isRead: false,
       },
     ]);

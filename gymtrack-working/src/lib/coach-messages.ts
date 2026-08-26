@@ -6,6 +6,15 @@ export type CoachMessagePayload = {
   message: string;
 };
 
+export type CoachMessageRecord = {
+  id: string;
+  coach_id: string;
+  client_id: string;
+  message: string;
+  created_at: string;
+  is_read?: boolean | null;
+};
+
 type UserResult = {
   data: { user: { id: string } | null };
 };
@@ -15,18 +24,15 @@ type InsertResult = {
 };
 
 type MessageQueryResult = {
-  data: Array<{
-    id: string;
-    coach_id: string;
-    client_id: string;
-    message: string;
-    created_at: string;
-    is_read?: boolean | null;
-  }> | null;
+  data: CoachMessageRecord[] | null;
   error: unknown | null;
 };
 
-function messageError(error: unknown): Error {
+type SelectResult = MessageQueryResult;
+
+export type SelectCoachMessages = (clientId: string, coachId: string) => Promise<SelectResult>;
+
+function messageError(error: unknown, fallback: string): Error {
   if (error instanceof Error) return error;
   if (
     typeof error === "object" &&
@@ -37,7 +43,7 @@ function messageError(error: unknown): Error {
   ) {
     return new Error(error.message);
   }
-  return new Error("שגיאה בגישה להודעות המאמן.");
+  return new Error(fallback);
 }
 
 export async function sendCoachMessage(
@@ -57,7 +63,7 @@ export async function sendCoachMessage(
     message,
   });
   if (error) {
-    throw messageError(error);
+    throw messageError(error, "שגיאה בשמירת ההודעה במסד הנתונים.");
   }
 }
 
@@ -65,7 +71,7 @@ export async function loadCoachMessages(
   fetchMessages: () => Promise<MessageQueryResult>,
 ): Promise<CoachMessage[]> {
   const { data, error } = await fetchMessages();
-  if (error) throw messageError(error);
+  if (error) throw messageError(error, "שגיאה בטעינת היסטוריית ההודעות.");
   return (data ?? []).map((row) => {
     const message: CoachMessage = {
       id: row.id,
@@ -77,4 +83,12 @@ export async function loadCoachMessages(
     if (row.is_read !== null && row.is_read !== undefined) message.isRead = row.is_read;
     return message;
   });
+}
+
+export async function fetchCoachMessages(
+  select: SelectCoachMessages,
+  clientId: string,
+  coachId: string,
+): Promise<CoachMessage[]> {
+  return loadCoachMessages(() => select(clientId, coachId));
 }
