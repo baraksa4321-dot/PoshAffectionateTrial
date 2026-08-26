@@ -239,6 +239,12 @@ function WorkoutWeeklyReport({
       exercise: exercises.find((exercise) => exercise.id === item.exerciseId),
     };
   });
+  const plannedExerciseIds = new Set(workout.items.map((item) => item.exerciseId));
+  const additionalEntries = sessions.flatMap((session) =>
+    session.entries
+      .filter((entry) => !plannedExerciseIds.has(entry.exerciseId))
+      .map((entry) => ({ date: session.date.slice(0, 10), entry })),
+  );
   const completedDays = weekDays.filter((day) => day.sessions.length > 0).length;
   const completedSets = weekDays.reduce((total, day) => total + day.completedSets, 0);
   const reportNotes = sessions.flatMap((session) => [
@@ -450,6 +456,48 @@ function WorkoutWeeklyReport({
           </p>
         )}
       </div>
+
+      {additionalEntries.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-[11px] font-extrabold text-ink">תרגילים שבוצעו ואינם בתוכנית הנוכחית</p>
+          {additionalEntries.map(({ date, entry }, index) => (
+            <div
+              key={`additional-${date}-${entry.exerciseId}-${index}`}
+              className="rounded-xl border border-sky-200 bg-sky-50/65 p-2.5 text-[10px]"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <strong className="text-start text-ink">{entry.exerciseName || "תרגיל"}</strong>
+                <span className="shrink-0 text-muted-foreground">{reportDateLabel(date)}</span>
+              </div>
+              <p className="mt-1 text-muted-foreground">
+                {entry.sets.length > 0
+                  ? entry.sets
+                      .map(
+                        (set, setIndex) =>
+                          `סט ${setIndex + 1}: ${set.weight} ק״ג × ${set.reps}${
+                            set.done ? " ✓" : " — לא בוצע"
+                          }`,
+                      )
+                      .join(" · ")
+                  : "לא נרשמו סטים"}
+              </p>
+              {entry.notes?.trim() || entry.feedback?.notes?.trim() ? (
+                <p className="mt-1 font-semibold text-ink">
+                  הערה: {entry.feedback?.notes?.trim() || entry.notes.trim()}
+                </p>
+              ) : null}
+              {entry.videoUrl ? (
+                <video
+                  src={entry.videoUrl}
+                  controls
+                  preload="metadata"
+                  className="mt-1.5 max-h-52 w-full rounded-md bg-black object-contain"
+                />
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {workout.notes?.trim() ? (
         <p className="rounded-lg bg-secondary/60 px-2 py-1 text-[10px] text-ink">
@@ -4095,7 +4143,7 @@ export function CoachDashboardPage({
                                              }
                                              aria-expanded={openWorkoutReportId === dayItem.id}
                                              aria-controls={`workout-report-${dayItem.id}`}
-                                             className={`absolute -start-2 top-4 z-[2] flex min-h-14 items-center rounded-e-lg border border-primary/30 px-1.5 py-2 text-[10px] font-extrabold shadow-sm transition-colors ${
+                                             className={`absolute end-1 top-4 z-[2] flex min-h-14 items-center rounded-lg border border-primary/30 px-1.5 py-2 text-[10px] font-extrabold shadow-sm transition-colors ${
                                                openWorkoutReportId === dayItem.id
                                                  ? "bg-primary text-primary-foreground"
                                                  : "bg-background text-primary hover:bg-primary/10"
@@ -4109,14 +4157,19 @@ export function CoachDashboardPage({
                                              <span style={{ writingMode: "vertical-rl" }}>דוח</span>
                                            </button>
                                            <button
+                                             type="button"
                                             onClick={() =>
-                                               setEditingDayId((current) => {
-                                                 const next = current === dayItem.id ? null : dayItem.id;
-                                                 if (next && next !== dayItem.id) {
+                                               (() => {
+                                                 const nextDayId = isDayActive ? null : dayItem.id;
+                                                 if (
+                                                   nextDayId &&
+                                                   openWorkoutReportId &&
+                                                   openWorkoutReportId !== nextDayId
+                                                 ) {
                                                    setOpenWorkoutReportId(null);
                                                  }
-                                                 return next;
-                                               })
+                                                 setEditingDayId(nextDayId);
+                                               })()
                                             }
                                             className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
                                           >
