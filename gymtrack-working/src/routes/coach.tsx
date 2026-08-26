@@ -4039,11 +4039,14 @@ export function CoachDashboardPage({
                         const progDays = clientDetails?.workouts?.filter((w: Workout) =>
                           prog.dayIds?.includes(w.id),
                         );
+                        const reportWorkout = progDays?.find(
+                          (day) => day.id === openWorkoutReportId,
+                        );
 
                         return (
                           <div
                             key={prog.id}
-                            className={`surface-card overflow-hidden border p-0 transition-colors ${
+                            className={`surface-card overflow-visible border p-0 transition-colors ${
                               isProgActive
                                 ? "border-primary/50 bg-primary/[0.03]"
                                 : "border-border/60 hover:border-primary/30"
@@ -4104,6 +4107,19 @@ export function CoachDashboardPage({
                                   </button>
                                 </form>
 
+                                {reportWorkout ? (
+                                  <div
+                                    id={`workout-report-${reportWorkout.id}`}
+                                    className="surface-card border border-primary/30 bg-background p-1 shadow-md"
+                                  >
+                                    <WorkoutWeeklyReport
+                                      workout={reportWorkout}
+                                      history={clientDetails.history}
+                                      exercises={store.exercises}
+                                    />
+                                  </div>
+                                ) : null}
+
                                 <div className="space-y-2">
                                   {progDays?.map((dayItem: Workout) => {
                                     const isDayActive = editingDayId === dayItem.id;
@@ -4143,7 +4159,7 @@ export function CoachDashboardPage({
                                              }
                                              aria-expanded={openWorkoutReportId === dayItem.id}
                                              aria-controls={`workout-report-${dayItem.id}`}
-                                             className={`absolute end-1 top-4 z-[2] flex min-h-14 items-center rounded-lg border border-primary/30 px-1.5 py-2 text-[10px] font-extrabold shadow-sm transition-colors ${
+                                             className={`absolute -end-2 top-4 z-[2] flex min-h-14 items-center rounded-lg border border-primary/30 px-1.5 py-2 text-[10px] font-extrabold shadow-sm transition-colors ${
                                                openWorkoutReportId === dayItem.id
                                                  ? "bg-primary text-primary-foreground"
                                                  : "bg-background text-primary hover:bg-primary/10"
@@ -4176,16 +4192,6 @@ export function CoachDashboardPage({
                                             {isDayActive ? "סגור" : "+ שייך תרגיל מותאם"}
                                           </button>
                                         </div>
-
-                                         {openWorkoutReportId === dayItem.id ? (
-                                           <div id={`workout-report-${dayItem.id}`}>
-                                             <WorkoutWeeklyReport
-                                               workout={dayItem}
-                                               history={clientDetails.history}
-                                               exercises={store.exercises}
-                                             />
-                                           </div>
-                                         ) : null}
 
                                         {dayItem.items?.length > 0 && (
                                           <div className="space-y-1.5 pt-1">
