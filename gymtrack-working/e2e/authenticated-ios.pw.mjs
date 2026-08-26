@@ -338,10 +338,14 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await page.keyboard.press("Tab");
   await expect(repsInput).toHaveValue("123");
 
+  await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
   const workoutNote = page.getByPlaceholder("למשל: עומס קל במרפק ימין בסט האחרון...");
+  await expect(workoutNote).toBeVisible();
   await workoutNote.fill("הערת בדיקה 123");
   await assertKeyboardVisible(workoutNote);
   await expect(workoutNote).toHaveValue("הערת בדיקה 123");
+  await page.keyboard.press("Escape");
+  await expect(workoutNote).toBeHidden();
 
   await page.getByRole("button", { name: "סמן סט כבוצע" }).first().click();
   await expect(page.getByText("4%", { exact: true })).toBeVisible();
@@ -360,4 +364,38 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
 
   await page.locator("article").last().scrollIntoViewIfNeeded();
   await expect(page.locator("article").last()).toBeInViewport();
+});
+
+
+test("active workout values survive leaving and reopening the session", async ({ page }) => {
+  await installFixture(page);
+
+  await page.goto(`/session/${WORKOUT_ID}`);
+  await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
+
+  const repsInput = page.locator('input[type="number"]').first();
+  await repsInput.fill("123");
+  await page.keyboard.press("Tab");
+  await expect(repsInput).toHaveValue("123");
+
+  // Completion feedback is intentionally local to the active page. It is not
+  // part of the entries draft that is restored after navigation.
+  await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
+  const workoutNote = page.getByPlaceholder("למשל: עומס קל במרפק ימין בסט האחרון...");
+  await expect(workoutNote).toBeVisible();
+  await workoutNote.fill("הערת סיום שלא נשמרת בטיוטה");
+  await expect(workoutNote).toHaveValue("הערת סיום שלא נשמרת בטיוטה");
+  await page.keyboard.press("Escape");
+  await expect(workoutNote).toBeHidden();
+
+  await page.goto("/programs");
+  await page.goto(`/session/${WORKOUT_ID}`);
+  await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
+  await expect(page.locator('input[type="number"]').first()).toHaveValue("123");
+
+  // Reopening the completion sheet documents its intended persistence
+  // boundary: the note is only saved when the workout is finished.
+  await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
+  const reopenedWorkoutNote = page.getByPlaceholder("למשל: עומס קל במרפק ימין בסט האחרון...");
+  await expect(reopenedWorkoutNote).toHaveValue("");
 });
