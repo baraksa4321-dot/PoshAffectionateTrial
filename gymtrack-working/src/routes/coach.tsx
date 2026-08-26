@@ -23,6 +23,9 @@ import {
   Activity,
   Calculator,
   X,
+  RefreshCw,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -44,6 +47,7 @@ import {
 } from "../lib/gym-store";
 import {
   pullClientDataForCoach,
+  type RealtimeConnectionStatus,
   subscribeToCoachClientChanges,
   subscribeToCoachManagementChanges,
 } from "../lib/supabase-sync";
@@ -947,47 +951,50 @@ export function CoachDashboardPage({
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMsg, setInviteMsg] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
-  const applyClientDetails = useCallback((result: ClientDetails) => {
-    if (result.error) {
-      setClientDetails(null);
-      setClientDetailsError(result.error);
-      setManagementError(result.error);
-      return;
-    }
-    // Older coach-built plans may contain the exercise name in the plan item
-    // but not have the matching custom_exercises row anymore. Rehydrate those
-    // catalog entries before rendering so they can be selected and edited
-    // again instead of appearing as an unnamed exercise.
-    for (const workout of result.workouts) {
-      for (const item of workout.items) {
-        const name = item.exerciseName?.trim();
-        if (
-          !name ||
-          name === "תרגיל" ||
-          name === "תרגיל שהוסר" ||
-          store.exercises.some((exercise) => exercise.id === item.exerciseId)
-        ) {
-          continue;
-        }
-        saveExercise({
-          id: item.exerciseId,
-          name,
-          nameEn: name,
-          muscleGroup: "אחר",
-          muscleGroups: ["אחר"],
-          equipment: "ללא ציוד",
-          category: "מותאם אישית",
-          description: "",
-          instructions: "",
-          videoUrl: "",
-          images: [],
-          notes: "",
-        });
+  const applyClientDetails = useCallback(
+    (result: ClientDetails, options?: { preserveOnError?: boolean }) => {
+      if (result.error) {
+        if (!options?.preserveOnError) setClientDetails(null);
+        setClientDetailsError(result.error);
+        setManagementError(result.error);
+        return;
       }
-    }
-    setClientDetailsError("");
-    setClientDetails(result);
-  }, [store.exercises]);
+      // Older coach-built plans may contain the exercise name in the plan item
+      // but not have the matching custom_exercises row anymore. Rehydrate those
+      // catalog entries before rendering so they can be selected and edited
+      // again instead of appearing as an unnamed exercise.
+      for (const workout of result.workouts) {
+        for (const item of workout.items) {
+          const name = item.exerciseName?.trim();
+          if (
+            !name ||
+            name === "תרגיל" ||
+            name === "תרגיל שהוסר" ||
+            store.exercises.some((exercise) => exercise.id === item.exerciseId)
+          ) {
+            continue;
+          }
+          saveExercise({
+            id: item.exerciseId,
+            name,
+            nameEn: name,
+            muscleGroup: "אחר",
+            muscleGroups: ["אחר"],
+            equipment: "ללא ציוד",
+            category: "מותאם אישית",
+            description: "",
+            instructions: "",
+            videoUrl: "",
+            images: [],
+            notes: "",
+          });
+        }
+      }
+      setClientDetailsError("");
+      setClientDetails(result);
+    },
+    [store.exercises],
+  );
 
   // Coach Message sender state
   const [coachMsgText, setCoachMsgText] = useState("");
@@ -1224,6 +1231,11 @@ export function CoachDashboardPage({
   const [overviewRows, setOverviewRows] = useState<
     Array<{ client: CoachClientRow; details: ClientDetails }>
   >([]);
+  const [clientRealtimeStatus, setClientRealtimeStatus] =
+    useState<RealtimeConnectionStatus>("connecting");
+  const [lastClientRefreshAt, setLastClientRefreshAt] = useState<number | null>(null);
+  const [clientRefreshInFlight, setClientRefreshInFlight] = useState(false);
+  const [clientDataStale, setClientDataStale] = useState(false);
   const [editingMeasurements, setEditingMeasurements] = useState(false);
   const [measurementDraft, setMeasurementDraft] = useState<BodyMeasurement>({
     id: "",
@@ -1249,6 +1261,46 @@ export function CoachDashboardPage({
     (workspaceMode === "nutrition" ||
       openEditor === "nutrition" ||
       (workspaceMode === "all" && activeWorkspaceTab === "nutrition"));
+  const formattedLastClientRefresh = lastClientRefreshAt
+    ? new Date(lastClientRefreshAt).toLocaleTimeString("he-IL", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+  const clientFreshnessLabel =
+    clientRealtimeStatus === "disconnected"
+      ? formattedLastClientRefresh
+        ? `החיבור לא זמין · מוצג עותק מ־${formattedLastClientRefresh}`
+        : "החיבור לא זמין · ממתין לנתונים"
+      : clientRealtimeStatus === "reconnecting"
+        ? formattedLastClientRefresh
+          ? `החיבור מתחדש · עודכן ב־${formattedLastClientRefresh}`
+          : "החיבור מתחדש…"
+        : clientDataStale
+          ? formattedLastClientRefresh
+            ? `הנתונים לא עודכנו · מוצג עותק מ־${formattedLastClientRefresh}`
+            : "הנתונים לא עודכנו · ממתין לנתונים"
+          : clientRealtimeStatus === "connecting"
+            ? "מתחבר לנתוני המתאמן…"
+            : clientRefreshInFlight
+              ? "מסנכרן נתוני מתאמן…"
+              : formattedLastClientRefresh
+                ? `מחובר · עודכן ב־${formattedLastClientRefresh}`
+                : "מחובר לנתוני המתאמן";
+  const clientFreshnessClass =
+    clientRealtimeStatus === "disconnected" ||
+    clientRealtimeStatus === "reconnecting" ||
+    clientDataStale
+      ? "border-amber-200 bg-amber-50 text-amber-700"
+      : clientRefreshInFlight || clientRealtimeStatus === "connecting"
+        ? "border-blue-200 bg-blue-50 text-blue-700"
+        : "border-emerald-200 bg-emerald-50 text-emerald-700";
+  const ClientFreshnessIcon =
+    clientRealtimeStatus === "disconnected"
+      ? WifiOff
+      : clientRefreshInFlight || clientRealtimeStatus === "connecting" || clientDataStale
+        ? RefreshCw
+        : Wifi;
 
   const loadCoachClients = useCallback(async () => {
     setManagementError("");
@@ -1336,7 +1388,11 @@ export function CoachDashboardPage({
   useEffect(() => {
     if (!isCoach || !authUser?.id) return;
 
-    const refreshManagementRealtime = (table?: string) => {
+    const refreshManagementRealtime = (
+      table?: string,
+      status?: RealtimeConnectionStatus,
+    ) => {
+      if (status && status !== "connected") return;
       if (document.visibilityState === "hidden") return;
       void loadCoachClients();
       if (isOwner) void loadAllProfilesForOwner();
@@ -1408,6 +1464,10 @@ export function CoachDashboardPage({
   useEffect(() => {
     if (!selectedClientId) {
       setClientDetails(null);
+      setClientRealtimeStatus("connecting");
+      setLastClientRefreshAt(null);
+      setClientRefreshInFlight(false);
+      setClientDataStale(false);
       return;
     }
 
@@ -1415,15 +1475,33 @@ export function CoachDashboardPage({
     setLoadingDetails(true);
     setClientDetailsError("");
     setManagementError("");
+    setClientRealtimeStatus(isSelfSelected ? "connected" : "connecting");
+    setLastClientRefreshAt(isSelfSelected ? Date.now() : null);
+    setClientRefreshInFlight(!isSelfSelected);
+    setClientDataStale(false);
     if (isSelfSelected) {
+      setClientRefreshInFlight(false);
       return;
     }
 
-    pullClientDataForCoach(selectedClientId).then((res) => {
-      if (!active) return;
-      applyClientDetails(res);
-      setLoadingDetails(false);
-    });
+    void pullClientDataForCoach(selectedClientId)
+      .then((res) => {
+        if (!active) return;
+        applyClientDetails(res);
+        setLoadingDetails(false);
+        setClientRefreshInFlight(false);
+        setClientDataStale(Boolean(res.error));
+        if (!res.error) {
+          setLastClientRefreshAt(Date.now());
+        }
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setLoadingDetails(false);
+        setClientRefreshInFlight(false);
+        setClientDataStale(true);
+        setClientDetailsError(errorMessage(error, "טעינת נתוני המתאמן נכשלה"));
+      });
     return () => {
       active = false;
     };
@@ -1438,11 +1516,19 @@ export function CoachDashboardPage({
 
     let active = true;
     let refreshTimer: number | null = null;
-    const refreshSelectedClient = (table?: string) => {
+    const refreshSelectedClient = (
+      table?: string,
+      status?: RealtimeConnectionStatus,
+    ) => {
+      if (status) {
+        if (active) setClientRealtimeStatus(status);
+        if (status !== "connected") return;
+      }
       if (!active || document.visibilityState === "hidden" || refreshTimer !== null) return;
       refreshTimer = window.setTimeout(() => {
         refreshTimer = null;
         if (!active || document.visibilityState === "hidden") return;
+        setClientRefreshInFlight(true);
 
         if (table === "coach_clients") {
           void loadCoachClients();
@@ -1451,9 +1537,22 @@ export function CoachDashboardPage({
           void loadClientFeedback();
         }
 
-        void pullClientDataForCoach(selectedClientId).then((result) => {
-          if (active) applyClientDetails(result);
-        });
+        void pullClientDataForCoach(selectedClientId)
+          .then((result) => {
+            if (!active) return;
+            applyClientDetails(result, { preserveOnError: true });
+            setClientRefreshInFlight(false);
+            setClientDataStale(Boolean(result.error));
+            if (!result.error) {
+              setLastClientRefreshAt(Date.now());
+            }
+          })
+          .catch((error: unknown) => {
+            if (!active) return;
+            setClientRefreshInFlight(false);
+            setClientDataStale(true);
+            setClientDetailsError(errorMessage(error, "רענון נתוני המתאמן נכשל"));
+          });
         void fetchSentCoachMessages(selectedClientId)
           .then((messages) => {
             if (active) setSentCoachMessages(messages);
@@ -1469,10 +1568,12 @@ export function CoachDashboardPage({
     };
 
     const unsubscribe = subscribeToCoachClientChanges(selectedClientId, refreshSelectedClient);
+    const fallbackPoll = window.setInterval(() => refreshSelectedClient("poll"), 15_000);
     return () => {
       active = false;
       unsubscribe();
       if (refreshTimer !== null) window.clearTimeout(refreshTimer);
+      window.clearInterval(fallbackPoll);
     };
   }, [
     applyClientDetails,
@@ -3934,6 +4035,29 @@ export function CoachDashboardPage({
                   <X className="h-4 w-4" />
                 </button>
               </div>
+              {selectedClientId && !isSelfSelected ? (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  data-client-freshness="true"
+                  title={
+                    lastClientRefreshAt
+                      ? `רענון מוצלח אחרון: ${new Date(lastClientRefreshAt).toLocaleString("he-IL")}`
+                      : "מצב החיבור לנתוני המתאמן"
+                  }
+                  className={`mx-4 mt-2 flex min-w-0 max-w-full items-center gap-1.5 self-start rounded-full border px-2.5 py-1 text-[11px] font-bold sm:mx-6 ${clientFreshnessClass}`}
+                >
+                  <ClientFreshnessIcon
+                    aria-hidden="true"
+                    className={`h-3.5 w-3.5 shrink-0 ${
+                      clientRefreshInFlight || clientRealtimeStatus === "connecting"
+                        ? "animate-spin"
+                        : ""
+                    }`}
+                  />
+                  <span className="min-w-0 truncate">{clientFreshnessLabel}</span>
+                </div>
+              ) : null}
 
               {(trackingLanding || workspacePage || openEditor) && clientDetails ? (
                 <>

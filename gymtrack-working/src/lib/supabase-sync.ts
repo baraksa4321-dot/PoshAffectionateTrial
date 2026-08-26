@@ -39,6 +39,11 @@ export type CoachClientData = {
 };
 
 export type RealtimeCleanup = () => void;
+export type RealtimeConnectionStatus =
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "disconnected";
 
 type RealtimeTableSubscription = {
   table: string;
@@ -48,7 +53,7 @@ type RealtimeTableSubscription = {
 function subscribeToRealtimeTables(
   channelName: string,
   subscriptions: RealtimeTableSubscription[],
-  onChange: (table?: string) => void,
+  onChange: (table?: string, status?: RealtimeConnectionStatus) => void,
 ): RealtimeCleanup {
   if (typeof supabase.channel !== "function") return () => undefined;
 
@@ -57,8 +62,15 @@ function subscribeToRealtimeTables(
   let reconnectAttempts = 0;
   let stopped = false;
 
+  const notifyConnectionStatus = (status: RealtimeConnectionStatus) => {
+    if (!stopped) onChange(undefined, status);
+  };
+
   const scheduleReconnect = () => {
     if (stopped || reconnectTimer || typeof supabase.channel !== "function") return;
+    notifyConnectionStatus(
+      typeof navigator !== "undefined" && !navigator.onLine ? "disconnected" : "reconnecting",
+    );
     const delay = Math.min(30_000, 1_000 * 2 ** reconnectAttempts);
     reconnectAttempts += 1;
     reconnectTimer = setTimeout(() => {
@@ -69,6 +81,13 @@ function subscribeToRealtimeTables(
 
   const subscribe = () => {
     if (stopped) return;
+    notifyConnectionStatus(
+      typeof navigator !== "undefined" && !navigator.onLine
+        ? "disconnected"
+        : reconnectAttempts > 0
+          ? "reconnecting"
+          : "connecting",
+    );
     const nextChannel = supabase.channel(channelName);
     const addSubscription = (table: string, filter?: string) => {
       const notify = () => {
@@ -91,7 +110,7 @@ function subscribeToRealtimeTables(
     channel = nextChannel.subscribe((status) => {
       if (status === "SUBSCRIBED") {
         reconnectAttempts = 0;
-        onChange();
+        notifyConnectionStatus("connected");
         return;
       }
       if (status !== "CHANNEL_ERROR" && status !== "TIMED_OUT" && status !== "CLOSED") return;
@@ -105,9 +124,24 @@ function subscribeToRealtimeTables(
     });
   };
 
+  const handleOffline = () => notifyConnectionStatus("disconnected");
+  const handleOnline = () => {
+    if (stopped) return;
+    notifyConnectionStatus("reconnecting");
+    if (!channel && !reconnectTimer) scheduleReconnect();
+  };
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+  }
   subscribe();
   return () => {
     stopped = true;
+    if (typeof window !== "undefined") {
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+    }
     if (reconnectTimer) {
       clearTimeout(reconnectTimer);
       reconnectTimer = null;
@@ -127,7 +161,7 @@ function subscribeToRealtimeTables(
  */
 export function subscribeToCoachClientChanges(
   clientId: string,
-  onChange: (table?: string) => void,
+  onChange: (table?: string, status?: RealtimeConnectionStatus) => void,
 ): RealtimeCleanup {
   return subscribeToRealtimeTables(
     `gymtrack-coach-client-sync-${clientId}`,
@@ -155,7 +189,7 @@ export function subscribeToCoachClientChanges(
  */
 export function subscribeToCoachManagementChanges(
   userId: string,
-  onChange: (table?: string) => void,
+  onChange: (table?: string, status?: RealtimeConnectionStatus) => void,
 ): RealtimeCleanup {
   return subscribeToRealtimeTables(
     `gymtrack-coach-management-sync-${userId}`,
