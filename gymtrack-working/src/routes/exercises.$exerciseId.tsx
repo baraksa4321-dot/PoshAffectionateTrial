@@ -43,6 +43,156 @@ const field =
 const labelCls =
   "mb-1.5 block text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase";
 
+function SearchOptionField({
+  label,
+  value,
+  options,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  placeholder: string;
+  onChange: (value: string) => void;
+}) {
+  const [query, setQuery] = useState(value);
+  const filtered = options
+    .filter((option) => option.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
+    .slice(0, 8);
+
+  return (
+    <div>
+      <label className={labelCls}>{label}</label>
+      <input
+        className={field}
+        value={query}
+        onChange={(event) => {
+          const next = event.target.value;
+          setQuery(next);
+          onChange(next);
+        }}
+        placeholder={placeholder}
+        role="combobox"
+        aria-label={label}
+        autoComplete="off"
+      />
+      {query.trim() && filtered.length > 0 ? (
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {filtered.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => {
+                setQuery(option);
+                onChange(option);
+              }}
+              className={`press rounded-full px-3 py-1.5 text-[12px] font-semibold ${
+                option === value
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground"
+              }`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {query.trim() && !options.some((option) => option === query.trim()) ? (
+        <p className="mt-1 text-[10px] text-muted-foreground">
+          הערך החדש יתווסף למאגר בעת שמירת התרגיל.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function SearchMultiOptionField({
+  label,
+  selected,
+  options,
+  placeholder,
+  onToggle,
+}: {
+  label: string;
+  selected: string[];
+  options: string[];
+  placeholder: string;
+  onToggle: (value: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const filtered = options
+    .filter((option) => option.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
+    .slice(0, 8);
+  const customValue = query.trim();
+  const hasCustomValue = customValue && !options.includes(customValue);
+
+  return (
+    <div>
+      <label className={labelCls}>{label}</label>
+      <p className="text-[11.5px] text-muted-foreground">
+        כתבי לחיפוש ובחרי ערך קיים, או הוסיפי ערך חדש.
+      </p>
+      <input
+        className={`${field} mt-2`}
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder={placeholder}
+        role="combobox"
+        aria-label={label}
+        autoComplete="off"
+      />
+      {selected.length > 0 ? (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {selected.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => onToggle(option)}
+              className="press rounded-full bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground"
+            >
+              {option} ×
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {query.trim() && filtered.length > 0 ? (
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {filtered.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => {
+                onToggle(option);
+                setQuery("");
+              }}
+              className={`press rounded-full px-3 py-1.5 text-[12px] font-semibold ${
+                selected.includes(option)
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground"
+              }`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {hasCustomValue ? (
+        <button
+          type="button"
+          onClick={() => {
+            onToggle(customValue);
+            setQuery("");
+          }}
+          className="press mt-1 rounded-full bg-primary/10 px-3 py-1.5 text-[12px] font-semibold text-primary"
+        >
+          + הוסיפי ״{customValue}״ למאגר
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function ExerciseDetail() {
   const { exerciseId } = Route.useParams();
   const navigate = useNavigate();
@@ -123,6 +273,23 @@ function ExerciseDetail() {
       exercise.id !== draft.id &&
       (exercise.name.toLocaleLowerCase().includes(alternativeQuery.toLocaleLowerCase()) ||
         exercise.equipment.toLocaleLowerCase().includes(alternativeQuery.toLocaleLowerCase())),
+  );
+  const customMuscleOptions = exercises.flatMap((exercise) => [
+    exercise.muscleGroup,
+    ...(exercise.muscleGroups ?? []),
+    ...(exercise.secondaryMuscles ?? []),
+  ]);
+  const muscleOptions = Array.from(
+    new Set([...MUSCLE_GROUPS, ...customMuscleOptions].filter(Boolean)),
+  );
+  const equipmentOptions = Array.from(
+    new Set([...EQUIPMENT, ...exercises.map((exercise) => exercise.equipment)].filter(Boolean)),
+  );
+  const categoryOptions = Array.from(
+    new Set([
+      ...EXERCISE_CATEGORIES,
+      ...exercises.map((exercise) => exercise.category),
+    ].filter((value): value is string => Boolean(value))),
   );
 
   const toggleAlternative = (exerciseId: string) => {
@@ -241,150 +408,54 @@ function ExerciseDetail() {
           </div>
 
           <div className="surface-card space-y-4 p-4">
-            <div>
-              <label className={labelCls}>קבוצת שרירים ראשית</label>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {[...MUSCLE_GROUPS, "אחר"].map((g) => {
-                  const active =
-                    g === "אחר"
-                      ? !MUSCLE_GROUPS.includes(draft.muscleGroup) || draft.muscleGroup === "אחר"
-                      : draft.muscleGroup === g;
-                  return (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => set({ muscleGroup: g })}
-                      className={`press rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-                        active
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-muted-foreground"
-                      }`}
-                    >
-                      {g}
-                    </button>
-                  );
-                })}
-              </div>
-              {draft.muscleGroup === "אחר" ? (
-                <input
-                  className={`${field} mt-2`}
-                  value={customMuscle}
-                  onChange={(e) => setCustomMuscle(e.target.value)}
-                  placeholder="הקלד קבוצת שרירים"
-                />
-              ) : null}
-            </div>
-
-            <div>
-              <label className={labelCls}>ציוד</label>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {EQUIPMENT.map((g) => {
-                  const active = draft.equipment === g;
-                  return (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => set({ equipment: g })}
-                      className={`press rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-                        active
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-muted-foreground"
-                      }`}
-                    >
-                      {g}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <SearchOptionField
+              label="קבוצת שרירים ראשית"
+              value={draft.muscleGroup}
+              options={muscleOptions}
+              placeholder="חיפוש או כתיבת קבוצת שרירים חדשה..."
+              onChange={(value) =>
+                set({
+                  muscleGroup: value,
+                })
+              }
+            />
+            <SearchOptionField
+              label="ציוד"
+              value={draft.equipment}
+              options={equipmentOptions}
+              placeholder="חיפוש או כתיבת ציוד חדש..."
+              onChange={(value) => set({ equipment: value })}
+            />
           </div>
 
           <div className="surface-card p-4">
-            <label className={labelCls}>קטגוריה</label>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <button
-                key="none"
-                type="button"
-                onClick={() => set({ category: "" })}
-                className={`press rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-                  !draft.category
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-muted-foreground"
-                }`}
-              >
-                — ללא —
-              </button>
-              {EXERCISE_CATEGORIES.map((c) => {
-                const active = draft.category === c;
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => set({ category: c })}
-                    className={`press rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-                      active
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-muted-foreground"
-                    }`}
-                  >
-                    {c}
-                  </button>
-                );
-              })}
-            </div>
+            <SearchOptionField
+              label="קטגוריה"
+              value={draft.category ?? ""}
+              options={categoryOptions}
+              placeholder="חיפוש או כתיבת קטגוריה חדשה..."
+              onChange={(value) => set({ category: value })}
+            />
           </div>
 
           <div className="surface-card p-4">
-            <label className={labelCls}>קבוצות שרירים עובדות</label>
-            <p className="text-[11.5px] text-muted-foreground">
-              {genderText(
-                gender,
-                "בחרי את כל קבוצות השרירים שהתרגיל מעסיק.",
-                "בחר את כל קבוצות השרירים שהתרגיל מעסיק.",
-              )}
-            </p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {MUSCLE_GROUPS.map((m) => {
-                const active = (draft.muscleGroups ?? [draft.muscleGroup]).includes(m);
-                return (
-                  <button
-                    type="button"
-                    key={m}
-                    onClick={() => toggleMuscleGroup(m)}
-                    className={`press rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                      active
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-muted-foreground"
-                    }`}
-                  >
-                    {m}
-                  </button>
-                );
-              })}
-            </div>
+            <SearchMultiOptionField
+              label="קבוצות שרירים עובדות"
+              selected={draft.muscleGroups ?? [draft.muscleGroup].filter(Boolean)}
+              options={muscleOptions}
+              placeholder="חיפוש קבוצת שרירים עובדת..."
+              onToggle={(value) => toggleMuscleGroup(value)}
+            />
           </div>
 
           <div className="surface-card p-4">
-            <label className={labelCls}>שרירים משניים (עוזרים)</label>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {MUSCLE_GROUPS.map((m) => {
-                const active = (draft.secondaryMuscles ?? []).includes(m);
-                return (
-                  <button
-                    type="button"
-                    key={m}
-                    onClick={() => toggleSecondary(m)}
-                    className={`press rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                      active
-                        ? "bg-rose text-primary-foreground"
-                        : "bg-secondary text-muted-foreground"
-                    }`}
-                  >
-                    {m}
-                  </button>
-                );
-              })}
-            </div>
+            <SearchMultiOptionField
+              label="שרירים משניים (עוזרים)"
+              selected={draft.secondaryMuscles ?? []}
+              options={muscleOptions}
+              placeholder="חיפוש שריר משני..."
+              onToggle={(value) => toggleSecondary(value)}
+            />
           </div>
 
           <div className="surface-card p-4">
