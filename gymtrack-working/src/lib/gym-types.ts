@@ -87,6 +87,7 @@ export type WorkingSet = {
   weight: number;
   reps: number;
   repMax?: number;
+  rest?: number;
   dropSet?: boolean;
 };
 

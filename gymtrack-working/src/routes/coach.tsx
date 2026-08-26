@@ -268,6 +268,7 @@ export function CoachDashboardPage({
   const [setWeights, setSetWeights] = useState<number[]>([20, 20, 20]);
   const [setRepMins, setSetRepMins] = useState<number[]>([8, 8, 8]);
   const [setRepMaxes, setSetRepMaxes] = useState<number[]>([10, 10, 10]);
+  const [setRests, setSetRests] = useState<number[]>([90, 90, 90]);
   useEffect(() => {
     const createdExerciseId = window.sessionStorage.getItem("gymtrack-created-exercise-id");
     if (!createdExerciseId) return;
@@ -319,6 +320,9 @@ export function CoachDashboardPage({
     );
     setSetRepMaxes((current) =>
       Array.from({ length: nextCount }, (_, index) => current[index] ?? repMax),
+    );
+    setSetRests((current) =>
+      Array.from({ length: nextCount }, (_, index) => current[index] ?? restSec),
     );
   };
   const [supersetRepsMin, setSupersetRepsMin] = useState(10);
@@ -594,6 +598,12 @@ export function CoachDashboardPage({
           (_, index) => firstExercise.workingSets?.[index]?.repMax ?? firstExercise.repMax ?? firstExercise.reps,
         ),
       );
+      setSetRests(
+        Array.from(
+          { length: Math.max(1, firstExercise.sets) },
+          (_, index) => firstExercise.workingSets?.[index]?.rest ?? firstExercise.rest ?? 90,
+        ),
+      );
       setRestSec(firstExercise.rest || 90);
       setTechniqueNotes(firstExercise.techniqueNotes || firstExercise.notes);
     }
@@ -815,6 +825,12 @@ export function CoachDashboardPage({
           Array.from(
             { length: Math.max(1, requestedItem.sets) },
             (_, index) => requestedItem.workingSets?.[index]?.repMax ?? requestedItem.repMax ?? requestedItem.reps,
+          ),
+        );
+        setSetRests(
+          Array.from(
+            { length: Math.max(1, requestedItem.sets) },
+            (_, index) => requestedItem.workingSets?.[index]?.rest ?? requestedItem.rest ?? 90,
           ),
         );
         setTechniqueNotes(requestedItem.techniqueNotes || requestedItem.notes);
@@ -3682,6 +3698,15 @@ export function CoachDashboardPage({
                                                                  exItem.workingSets?.[index]?.repMax ??
                                                                  exItem.repMax ??
                                                                  exItem.reps,
+                                                             ),
+                                                           );
+                                                           setSetRests(
+                                                             Array.from(
+                                                               { length: Math.max(1, exItem.sets) },
+                                                               (_, index) =>
+                                                                 exItem.workingSets?.[index]?.rest ??
+                                                                 exItem.rest ??
+                                                                 90,
                                                              ),
                                                            );
                                                           setWarmupEnabled(Boolean(exItem.warmups?.length));
