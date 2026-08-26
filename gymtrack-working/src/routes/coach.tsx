@@ -1612,6 +1612,25 @@ export function CoachDashboardPage({
     pullClientDataForCoach(selectedClientId).then(applyClientDetails);
   };
 
+  useEffect(() => {
+    const pending = pendingCreatedExercise;
+    if (!pending || !clientDetails || !selectedClientId || !editingDayId) return;
+    if (pending.context.clientId && selectedClientId !== pending.context.clientId) return;
+    if (editingDayId !== pending.context.dayId || selectedExId !== pending.exerciseId) return;
+
+    setPendingCreatedExercise(null);
+    void handleAddExerciseToDay({ preventDefault: () => undefined } as React.FormEvent);
+    if (Number.isFinite(pending.context.scrollY)) {
+      window.requestAnimationFrame(() => window.scrollTo(0, pending.context.scrollY));
+    }
+  }, [
+    clientDetails,
+    editingDayId,
+    pendingCreatedExercise,
+    selectedClientId,
+    selectedExId,
+  ]);
+
   // Delete exercise from day
   const handleRemoveExerciseFromDay = async (dayId: string, itemId: string) => {
     if (!isCoach) return;
