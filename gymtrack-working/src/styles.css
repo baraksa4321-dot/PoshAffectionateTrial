@@ -4161,7 +4161,9 @@ select,
   position: sticky;
   /* The main scroll container already starts below the app header.
      Including the header height here pins the progress card too low. */
-  top: 0.5rem;
+  /* The page's top padding supplies the breathing room at scroll position 0.
+     Once the card reaches the app chrome, it should touch its lower divider. */
+  top: 0;
   z-index: 22;
   margin-inline: -0.15rem;
   box-shadow:
