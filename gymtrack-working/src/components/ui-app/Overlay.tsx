@@ -5,6 +5,9 @@ type OverlayVariant = "center" | "bottom" | "top" | "full";
 
 let scrollLockCount = 0;
 let previousBodyOverflow = "";
+let previousBodyOverscrollBehavior = "";
+let previousDocumentOverflow = "";
+let previousDocumentOverscrollBehavior = "";
 let activeOverlayToken = 0;
 const openOverlayTokens: number[] = [];
 
@@ -44,6 +47,35 @@ export function Overlay({
   }, []);
 
   useEffect(() => {
+    if (!open || !inline || typeof window === "undefined") return;
+
+    const visualViewport = window.visualViewport;
+    const keepFocusedFieldVisible = () => {
+      const activeElement = document.activeElement;
+      if (!(activeElement instanceof HTMLElement)) return;
+
+      window.requestAnimationFrame(() => {
+        if (document.activeElement !== activeElement) return;
+        activeElement.scrollIntoView({
+          block: "center",
+          inline: "nearest",
+          behavior: "auto",
+        });
+      });
+    };
+
+    visualViewport?.addEventListener("resize", keepFocusedFieldVisible);
+    visualViewport?.addEventListener("scroll", keepFocusedFieldVisible);
+    window.addEventListener("focusin", keepFocusedFieldVisible);
+
+    return () => {
+      visualViewport?.removeEventListener("resize", keepFocusedFieldVisible);
+      visualViewport?.removeEventListener("scroll", keepFocusedFieldVisible);
+      window.removeEventListener("focusin", keepFocusedFieldVisible);
+    };
+  }, [inline, open]);
+
+  useEffect(() => {
     if (!open || inline || typeof document === "undefined") return;
 
     const overlayToken = ++activeOverlayToken;
@@ -52,7 +84,13 @@ export function Overlay({
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (scrollLockCount === 0) {
       previousBodyOverflow = document.body.style.overflow;
+      previousBodyOverscrollBehavior = document.body.style.overscrollBehavior;
+      previousDocumentOverflow = document.documentElement.style.overflow;
+      previousDocumentOverscrollBehavior = document.documentElement.style.overscrollBehavior;
       document.body.style.overflow = "hidden";
+      document.body.style.overscrollBehavior = "none";
+      document.documentElement.style.overflow = "hidden";
+      document.documentElement.style.overscrollBehavior = "none";
     }
     scrollLockCount += 1;
 
@@ -141,6 +179,9 @@ export function Overlay({
       activeOverlayToken = openOverlayTokens.at(-1) ?? 0;
       if (scrollLockCount === 0) {
         document.body.style.overflow = previousBodyOverflow;
+        document.body.style.overscrollBehavior = previousBodyOverscrollBehavior;
+        document.documentElement.style.overflow = previousDocumentOverflow;
+        document.documentElement.style.overscrollBehavior = previousDocumentOverscrollBehavior;
       }
       previousActiveElement?.focus();
     };
@@ -173,7 +214,11 @@ export function Overlay({
       data-overlay-root="true"
       data-overlay-variant={variant}
       data-keyboard-open={keyboardOffset > 0 ? "true" : undefined}
-      style={viewportHeight !== null ? { height: `${viewportHeight}px` } : undefined}
+      style={
+        viewportHeight !== null && !isBottom
+          ? { height: `${viewportHeight}px` }
+          : undefined
+      }
       className={`overlay-root fixed inset-0 z-[100] flex overflow-x-hidden ${
         isFull
           ? "items-stretch justify-center"
@@ -193,6 +238,9 @@ export function Overlay({
         data-overlay-panel="true"
         style={{
           maxHeight: panelMaxHeight,
+          ...(isBottom && keyboardOffset > 0
+            ? { marginBottom: `${keyboardOffset}px` }
+            : {}),
         }}
         className={`w-full ${
           isFull

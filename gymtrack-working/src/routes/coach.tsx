@@ -5386,6 +5386,18 @@ export function CoachDashboardPage({
                                           <ExerciseBuilderPlacement exerciseId={editingItemId}>
                                             <form
                                             onSubmit={handleAddExerciseToDay}
+                                            onKeyDown={(event) => {
+                                              // Number inputs submit a form when the mobile
+                                              // keyboard's action key is pressed. Saving here
+                                              // unmounts the builder and makes it look as if
+                                              // the tab closed while entering a set.
+                                              if (
+                                                event.key === "Enter" &&
+                                                !(event.target instanceof HTMLTextAreaElement)
+                                              ) {
+                                                event.preventDefault();
+                                              }
+                                            }}
                                             className="pt-2 border-t border-border/40 space-y-2 text-xs"
                                           >
                                               <div className="flex items-center justify-between">
