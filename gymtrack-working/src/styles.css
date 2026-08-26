@@ -4154,7 +4154,9 @@ select,
 
 .workout-progress-sticky {
   position: sticky;
-  top: calc(var(--app-topbar-height, 5rem) + 0.5rem);
+  /* The main scroll container already starts below the app header.
+     Including the header height here pins the progress card too low. */
+  top: 0.5rem;
   z-index: 22;
   margin-inline: -0.15rem;
   box-shadow:
