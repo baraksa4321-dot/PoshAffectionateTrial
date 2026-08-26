@@ -49,6 +49,7 @@ import { exerciseDisplayName } from "../lib/exercise-library";
 import {
   getNextWorkoutReportWeekOffset,
   getWorkoutReportSessions,
+  getWorkoutSessionsForDate,
   getWorkoutReportWeekDates,
   reportDateKey,
   reportSessionDateKey,
@@ -2534,8 +2535,9 @@ export function CoachDashboardPage({
         .map((food) => ({ date: day.date, meal: meal.name, note: food.notes!.trim() })),
     ),
   );
-  const trackingSessions =
-    clientDetails?.history.filter((session) => session.date.slice(0, 10) === trackingDate) ?? [];
+  const trackingSessions = clientDetails
+    ? getWorkoutSessionsForDate(clientDetails.history, trackingDate)
+    : [];
   const visibleTrackingSessions = selectedTrackingWorkoutId
     ? trackingSessions.filter((session) => session.workoutId === selectedTrackingWorkoutId)
     : [];

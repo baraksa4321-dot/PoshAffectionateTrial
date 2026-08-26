@@ -402,6 +402,13 @@ export function reportSessionDateKey(sessionDate: string): string {
   return reportDateKey(date);
 }
 
+export function getWorkoutSessionsForDate(
+  history: HistorySession[],
+  reportDate: string,
+): HistorySession[] {
+  return history.filter((session) => reportSessionDateKey(session.date) === reportDate);
+}
+
 export function getWorkoutReportWeekDates(weekOffset = 0, referenceDate = new Date()): string[] {
   const weekStart = new Date(referenceDate);
   weekStart.setHours(0, 0, 0, 0);

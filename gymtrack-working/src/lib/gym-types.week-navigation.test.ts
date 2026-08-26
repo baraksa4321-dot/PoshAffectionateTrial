@@ -3,6 +3,7 @@ import {
   getNextWorkoutReportWeekOffset,
   getWorkoutReportSessions,
   getWorkoutReportWeekDates,
+  getWorkoutSessionsForDate,
   reportSessionDateKey,
   type HistorySession,
   type Workout,
@@ -87,6 +88,22 @@ describe("workout report week navigation", () => {
   test("does not move forward beyond the current week", () => {
     expect(getNextWorkoutReportWeekOffset(0)).toBe(0);
     expect(getNextWorkoutReportWeekOffset(-1)).toBe(0);
+  });
+
+  test("assigns sessions on either side of local midnight to the expected tracking date", () => {
+    const beforeMidnight = new Date(2026, 7, 25, 23, 59, 59, 999);
+    const afterMidnight = new Date(2026, 7, 26, 0, 0, 0, 1);
+    const trackingSessions = getWorkoutSessionsForDate(
+      [
+        session("before-midnight", beforeMidnight.toISOString()),
+        session("after-midnight", afterMidnight.toISOString()),
+      ],
+      "2026-08-26",
+    );
+
+    expect(reportSessionDateKey(beforeMidnight.toISOString())).toBe("2026-08-25");
+    expect(reportSessionDateKey(afterMidnight.toISOString())).toBe("2026-08-26");
+    expect(trackingSessions.map(({ id }) => id)).toEqual(["after-midnight"]);
   });
 
   test("keeps seven local dates consecutive across the spring DST transition", () => {
