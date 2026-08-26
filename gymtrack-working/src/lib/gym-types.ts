@@ -84,6 +84,7 @@ export type WarmupSet = {
 export type WorkingSet = {
   id: string;
   setNumber: number;
+  setType?: "normal" | "warmup" | "drop" | "superset";
   weight: number;
   reps: number;
   repMax?: number;

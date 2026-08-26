@@ -1210,8 +1210,8 @@ export function CoachDashboardPage({
         (_, index) => setModes[index] ?? "normal",
       );
       const editMode = configuredModes.find((mode) => mode !== "normal") ?? "normal";
-      const hasDropSets = editMode === "drop";
-      const hasSuperset = editMode === "superset";
+      const hasDropSets = configuredModes.includes("drop");
+      const hasSuperset = configuredModes.includes("superset");
       const updatedItems = currentDay.items.map((item) =>
         item.id === editingItemId
           ? {
@@ -1225,12 +1225,10 @@ export function CoachDashboardPage({
               targetWeight,
               weight: targetWeight,
               notes: techNotes.trim(),
-                workingSets: configuredModes
-                  .map((mode, index) => ({ mode, index }))
-                  .filter(({ mode }) => mode !== "warmup")
-                  .map(({ mode, index }, workingIndex) => ({
-                    id: item.workingSets?.[workingIndex]?.id || uid(),
-                    setNumber: workingIndex + 1,
+                workingSets: configuredModes.map((mode, index) => ({
+                    id: item.workingSets?.[index]?.id || uid(),
+                    setNumber: index + 1,
+                    setType: mode,
                     weight: setWeights[index] ?? targetWeight,
                     reps: setRepMins[index] ?? repMin,
                     repMax: setRepMaxes[index] ?? repMax,
@@ -1377,10 +1375,7 @@ export function CoachDashboardPage({
         : {}),
       workingSets: (() => {
         let dropOccurrence = 0;
-        return configuredModes
-          .map((mode, index) => ({ mode, index }))
-          .filter(({ mode }) => mode !== "warmup")
-          .map(({ mode, index: sourceIndex }, i) => {
+        return configuredModes.map((mode, sourceIndex, ) => {
             let weight = setWeights[sourceIndex] ?? targetWeight;
             let reps = setRepMins[sourceIndex] ?? repMin;
             let repMaxForSet = setRepMaxes[sourceIndex] ?? repMax;
@@ -1404,7 +1399,8 @@ export function CoachDashboardPage({
             }
             return {
               id: uid(),
-              setNumber: i + 1,
+              setNumber: sourceIndex + 1,
+              setType: mode,
               weight,
               reps,
               repMax: repMaxForSet,
@@ -3666,8 +3662,9 @@ export function CoachDashboardPage({
                                                           setRepMax(exItem.repMax || exItem.reps);
                                                           setRestSec(exItem.rest || 90);
                                                           setTechniqueNotes(exItem.techniqueNotes || exItem.notes);
-                                                          const loadedModes = exItem.workingSets?.map((set) =>
-                                                            set.dropSet ? "drop" : exItem.supersetId ? "superset" : "normal",
+                                                           const loadedModes = exItem.workingSets?.map((set) =>
+                                                             set.setType ??
+                                                             (set.dropSet ? "drop" : exItem.supersetId ? "superset" : "normal"),
                                                           ) ?? [];
                                                           setSetModes(
                                                             Array.from(
@@ -3711,11 +3708,11 @@ export function CoachDashboardPage({
                                                                  90,
                                                              ),
                                                            );
-                                                          setWarmupEnabled(Boolean(exItem.warmups?.length));
-                                                          setWarmupSetsCount(exItem.warmups?.length || 1);
-                                                          setWarmupWeight(exItem.warmups?.[0]?.weight || 10);
-                                                          setWarmupReps(exItem.warmups?.[0]?.reps || 10);
-                                                          setWarmupRepsMax(exItem.warmups?.[0]?.repsMax || 12);
+                                                           setWarmupEnabled(loadedModes.includes("warmup"));
+                                                           setWarmupSetsCount(loadedModes.filter((mode) => mode === "warmup").length || 1);
+                                                           setWarmupWeight(exItem.warmups?.[0]?.weight || 10);
+                                                           setWarmupReps(exItem.warmups?.[0]?.reps || 10);
+                                                           setWarmupRepsMax(exItem.warmups?.[0]?.repsMax || 12);
                                                           setDropSetEnabled(Boolean(exItem.dropSetConfig?.enabled));
                                                           setDropLevel1Weight(
                                                             exItem.dropSetConfig?.levels?.[0]?.weight
@@ -3769,7 +3766,7 @@ export function CoachDashboardPage({
                                                       </button>
                                                     </div>
                                                   </div>
-                                                   {editingItemId === exItem.id ? (
+                                                   {false && editingItemId === exItem.id ? (
                                                      <>
                                                     <div className="mt-4 space-y-5 border-t border-border/50 pt-4">
                                                    <div className="grid grid-cols-3 gap-2 border-b border-border/50 pb-4">
@@ -4278,7 +4275,7 @@ export function CoachDashboardPage({
                                                    </div>
                                         )}
 
-                                        {isDayActive && !editingItemId && (
+                                        {isDayActive && (
                                             <form
                                             onSubmit={handleAddExerciseToDay}
                                             className="pt-2 border-t border-border/40 space-y-2 text-xs"
