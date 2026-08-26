@@ -169,13 +169,27 @@ describe("offline store lifecycle", () => {
     await eventually(() => pullCalls.length > 0);
 
     store.addChecklistItem("Local edit wins");
+    store.addMeal("2026-08-26", "Local trainee edit wins");
     pull.resolve({
       success: true,
-      data: { ...cachedClientData, preExitChecklist: [{ id: "cloud", label: "Cloud edit" }] },
+      data: {
+        ...cachedClientData,
+        preExitChecklist: [{ id: "cloud", label: "Cloud edit" }],
+        nutritionDays: [
+          {
+            id: "cloud-day",
+            date: "2026-08-26",
+            meals: [{ id: "cloud-meal", name: "Cloud edit", foods: [] }],
+          },
+        ],
+      },
     });
     await eventually(() => store.getGymStoreSnapshot().preExitChecklist.length === 1);
 
     expect(store.getGymStoreSnapshot().preExitChecklist[0]?.label).toBe("Local edit wins");
+    expect(store.getGymStoreSnapshot().nutritionDays[0]?.meals[0]?.name).toBe(
+      "Local trainee edit wins",
+    );
   });
 
   test("does not let a pending cached edit get overwritten on re-login", async () => {
