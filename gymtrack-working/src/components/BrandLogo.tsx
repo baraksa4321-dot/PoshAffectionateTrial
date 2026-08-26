@@ -1,6 +1,12 @@
 import { Link } from "@tanstack/react-router";
 
-export function BrandLogo({ compact = false }: { compact?: boolean }) {
+export function BrandLogo({
+  compact = false,
+  auth = false,
+}: {
+  compact?: boolean;
+  auth?: boolean;
+}) {
   return (
     <Link
       to="/"
@@ -12,13 +18,15 @@ export function BrandLogo({ compact = false }: { compact?: boolean }) {
       <img
         src="/myroutine-logo.png"
         alt="MY routine"
-        width={compact ? 92 : 180}
-        height={compact ? 35 : 64}
+        width={auth ? 132 : compact ? 92 : 180}
+        height={auth ? 48 : compact ? 35 : 64}
         decoding="async"
         draggable={false}
         className={
           compact
-            ? "h-5 w-[92px] object-contain object-right"
+            ? auth
+              ? "h-8 w-[132px] object-contain object-right"
+              : "h-5 w-[92px] object-contain object-right"
             : "h-10 w-[180px] object-contain object-right"
         }
       />

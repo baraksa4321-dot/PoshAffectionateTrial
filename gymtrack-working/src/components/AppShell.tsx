@@ -569,7 +569,7 @@ export function AppShell({
         >
           <div className="auth-panel w-full max-w-sm space-y-6 rounded-2xl border border-border bg-surface p-6 shadow-xl">
             <div className="flex justify-center">
-              <BrandLogo compact />
+              <BrandLogo compact auth />
             </div>
             <div className="flex items-center justify-between border-b border-border/60 pb-4">
               <div className="flex items-center gap-3">
