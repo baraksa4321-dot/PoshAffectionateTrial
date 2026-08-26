@@ -4402,6 +4402,7 @@ export function CoachDashboardPage({
                                                         <option value="superset">סופר־סט</option>
                                                       </select>
                                                     </div>
+                                                    {mode === "normal" || mode === "warmup" ? (
                                                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                                       <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                         משקל (ק״ג)
@@ -4478,8 +4479,64 @@ export function CoachDashboardPage({
                                                         />
                                                       </label>
                                                     </div>
+                                                    ) : null}
                                                     {mode === "superset" ? (
                                                       <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50/70 p-2.5">
+                                                        <p className="mb-2 text-[10px] font-extrabold text-violet-900">
+                                                          {store.exercises.find((exercise) => exercise.id === selectedExId)?.name ||
+                                                            "תרגיל ראשון"}
+                                                        </p>
+                                                        <div className="mb-3 grid grid-cols-3 gap-1.5">
+                                                          <input
+                                                            aria-label="תרגיל ראשון משקל"
+                                                            type="number"
+                                                            min={0}
+                                                            step={0.5}
+                                                            value={weight}
+                                                            onChange={(event) => {
+                                                              const value = Math.max(0, Number(event.target.value));
+                                                              setSetWeights((current) => {
+                                                                const next = [...current];
+                                                                next[index] = value;
+                                                                return next;
+                                                              });
+                                                            }}
+                                                            placeholder="משקל"
+                                                            className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
+                                                          />
+                                                          <input
+                                                            aria-label="תרגיל ראשון חזרות מינימום"
+                                                            type="number"
+                                                            min={1}
+                                                            value={minReps}
+                                                            onChange={(event) => {
+                                                              const value = Math.max(1, Number(event.target.value));
+                                                              setSetRepMins((current) => {
+                                                                const next = [...current];
+                                                                next[index] = value;
+                                                                return next;
+                                                              });
+                                                            }}
+                                                            placeholder="חזרות מינ׳"
+                                                            className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
+                                                          />
+                                                          <input
+                                                            aria-label="תרגיל ראשון חזרות מקסימום"
+                                                            type="number"
+                                                            min={minReps}
+                                                            value={maxReps}
+                                                            onChange={(event) => {
+                                                              const value = Math.max(minReps, Number(event.target.value));
+                                                              setSetRepMaxes((current) => {
+                                                                const next = [...current];
+                                                                next[index] = value;
+                                                                return next;
+                                                              });
+                                                            }}
+                                                            placeholder="חזרות מקס׳"
+                                                            className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
+                                                          />
+                                                        </div>
                                                         <p className="mb-2 text-[10px] font-extrabold text-violet-900">
                                                           תרגיל שני בסופר־סט
                                                         </p>
