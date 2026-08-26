@@ -46,6 +46,7 @@ import { pullClientDataForCoach } from "../lib/supabase-sync";
 import { supabase } from "../lib/supabase";
 import { calculateCalorieEstimate } from "../lib/calorie-calculator";
 import { exerciseDisplayName } from "../lib/exercise-library";
+import { sendCoachMessage } from "../lib/coach-messages";
 import {
   getNextWorkoutReportWeekOffset,
   getWorkoutReportSessions,
@@ -938,6 +939,7 @@ export function CoachDashboardPage({
   // Coach Message sender state
   const [coachMsgText, setCoachMsgText] = useState("");
   const [msgSentNotice, setMsgSentNotice] = useState("");
+  const [msgSendError, setMsgSendError] = useState("");
   const [broadcastText, setBroadcastText] = useState("");
   const [broadcastAudience, setBroadcastAudience] = useState<
     "assigned_clients" | "coaches" | "clients" | "everyone"
@@ -1871,27 +1873,23 @@ export function CoachDashboardPage({
   // Send Coach Message to Client
   const handleSendCoachMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClientId || !coachMsgText.trim()) return;
+    const message = coachMsgText.trim();
+    if (!selectedClientId || !message) return;
+    setMsgSentNotice("");
+    setMsgSendError("");
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { error } = await supabase.from("coach_messages").insert({
-        coach_id: user.id,
-        client_id: selectedClientId,
-        message: coachMsgText.trim(),
-      });
-
-      if (!error) {
-        setMsgSentNotice("הודעת החיזוק נשלחה בהצלחה למתאמן!");
-        setCoachMsgText("");
-        setTimeout(() => setMsgSentNotice(""), 3000);
-      }
+      await sendCoachMessage(
+        () => supabase.auth.getUser(),
+        async (payload) => await supabase.from("coach_messages").insert(payload),
+        selectedClientId,
+        message,
+      );
+      setMsgSentNotice("הודעת החיזוק נשלחה בהצלחה למתאמן!");
+      setCoachMsgText("");
+      setTimeout(() => setMsgSentNotice(""), 3000);
     } catch (err: unknown) {
-      setMsgSentNotice(`שליחת הודעת החיזוק נכשלה: ${errorMessage(err, "שגיאה בשליחת ההודעה")}`);
+      setMsgSendError(`שליחת הודעת החיזוק נכשלה: ${errorMessage(err, "שגיאה בשליחת ההודעה")}`);
     }
   };
 
@@ -3877,6 +3875,14 @@ export function CoachDashboardPage({
                         {msgSentNotice && (
                           <p className="text-xs font-bold text-emerald-700 bg-emerald-50 p-2 rounded-xl border border-emerald-200">
                             {msgSentNotice}
+                          </p>
+                        )}
+                        {msgSendError && (
+                          <p
+                            role="alert"
+                            className="text-xs font-bold text-rose-700 bg-rose-50 p-2 rounded-xl border border-rose-200"
+                          >
+                            {msgSendError}
                           </p>
                         )}
 

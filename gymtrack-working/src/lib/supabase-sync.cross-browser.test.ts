@@ -9,6 +9,7 @@ import type {
   Program,
   Workout,
 } from "./gym-types";
+import { sendCoachMessage } from "./coach-messages";
 
 type QueryResult = {
   data: unknown;
@@ -184,6 +185,50 @@ function resetResponses() {
 beforeEach(resetResponses);
 
 describe("cross-browser Supabase sync boundaries", () => {
+  test("clears the draft path only after a successful coach message insert", async () => {
+    const inserted: unknown[] = [];
+
+    await sendCoachMessage(
+      async () => ({ data: { user: { id: "coach-a" } } }),
+      async (payload) => {
+        inserted.push(payload);
+        return { error: null };
+      },
+      "client-b",
+      "  Keep going  ",
+    );
+
+    expect(inserted).toEqual([
+      {
+        coach_id: "coach-a",
+        client_id: "client-b",
+        message: "  Keep going  ",
+      },
+    ]);
+  });
+
+  test("surfaces database and network failures without swallowing them", async () => {
+    await expect(
+      sendCoachMessage(
+        async () => ({ data: { user: { id: "coach-a" } } }),
+        async () => ({ error: { message: "permission denied", code: "42501" } }),
+        "client-b",
+        "Keep going",
+      ),
+    ).rejects.toThrow("permission denied");
+
+    await expect(
+      sendCoachMessage(
+        async () => ({ data: { user: { id: "coach-a" } } }),
+        async () => {
+          throw new Error("network unavailable");
+        },
+        "client-b",
+        "Keep going",
+      ),
+    ).rejects.toThrow("network unavailable");
+  });
+
   test("clears cached messages and client links after authoritative empty responses", async () => {
     setResponse("profiles", {
       id: "coach-a",
