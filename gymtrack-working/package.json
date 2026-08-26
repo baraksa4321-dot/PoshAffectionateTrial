@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "test": "bun test",
+    "check:status-colors": "bun run scripts/status-color-check.ts",
     "smoke:live-plan": "bun run scripts/live-plan-smoke.ts",
     "typecheck": "npx tsc --noEmit",
     "preview": "vite preview",
