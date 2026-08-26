@@ -1174,25 +1174,17 @@ export function CoachDashboardPage({
               targetWeight,
               weight: targetWeight,
               notes: techNotes.trim(),
-               workingSets: Array.from({ length: Math.max(1, setsCount) }, (_, index) => ({
-                 id: item.workingSets?.[index]?.id || uid(),
-                 setNumber: index + 1,
-                 weight:
-                   hasDropSets && index === Math.max(1, setsCount) - 1
-                     ? Number(dropLevel2Weight) || targetWeight
-                     : targetWeight,
-                 reps:
-                   hasDropSets && index === Math.max(1, setsCount) - 1
-                     ? dropLevel2RepsMin
-                     : Math.max(1, repMin),
-                 repMax:
-                   hasDropSets && index === Math.max(1, setsCount) - 1
-                     ? dropLevel2RepsMax
-                     : Math.max(repMin, repMax),
-                 ...(hasDropSets && index === Math.max(1, setsCount) - 1
-                   ? { dropSet: true }
-                   : {}),
-               })),
+                workingSets: configuredModes
+                  .map((mode, index) => ({ mode, index }))
+                  .filter(({ mode }) => mode !== "warmup")
+                  .map(({ mode, index }, workingIndex) => ({
+                    id: item.workingSets?.[workingIndex]?.id || uid(),
+                    setNumber: workingIndex + 1,
+                    weight: setWeights[index] ?? targetWeight,
+                    reps: setRepMins[index] ?? repMin,
+                    repMax: setRepMaxes[index] ?? repMax,
+                    ...(mode === "drop" ? { dropSet: true } : {}),
+                  })),
                warmups:
                  editMode === "warmup"
                    ? Array.from({ length: Math.max(1, warmupSetsCount) }, (_, index) => ({
@@ -1334,11 +1326,12 @@ export function CoachDashboardPage({
       workingSets: (() => {
         let dropOccurrence = 0;
         return configuredModes
-          .filter((mode) => mode !== "warmup")
-          .map((mode, i) => {
-            let weight = targetWeight;
-            let reps = repMin;
-            let repMaxForSet = repMax;
+          .map((mode, index) => ({ mode, index }))
+          .filter(({ mode }) => mode !== "warmup")
+          .map(({ mode, index: sourceIndex }, i) => {
+            let weight = setWeights[sourceIndex] ?? targetWeight;
+            let reps = setRepMins[sourceIndex] ?? repMin;
+            let repMaxForSet = setRepMaxes[sourceIndex] ?? repMax;
             if (mode === "drop") {
               dropOccurrence += 1;
               const level =
@@ -3629,6 +3622,33 @@ export function CoachDashboardPage({
                                                               (_, index) => loadedModes[index] ?? "normal",
                                                             ),
                                                           );
+                                                           setSetWeights(
+                                                             Array.from(
+                                                               { length: Math.max(1, exItem.sets) },
+                                                               (_, index) =>
+                                                                 exItem.workingSets?.[index]?.weight ??
+                                                                 exItem.targetWeight ??
+                                                                 exItem.weight,
+                                                             ),
+                                                           );
+                                                           setSetRepMins(
+                                                             Array.from(
+                                                               { length: Math.max(1, exItem.sets) },
+                                                               (_, index) =>
+                                                                 exItem.workingSets?.[index]?.reps ??
+                                                                 exItem.repMin ??
+                                                                 exItem.reps,
+                                                             ),
+                                                           );
+                                                           setSetRepMaxes(
+                                                             Array.from(
+                                                               { length: Math.max(1, exItem.sets) },
+                                                               (_, index) =>
+                                                                 exItem.workingSets?.[index]?.repMax ??
+                                                                 exItem.repMax ??
+                                                                 exItem.reps,
+                                                             ),
+                                                           );
                                                           setWarmupEnabled(Boolean(exItem.warmups?.length));
                                                           setWarmupSetsCount(exItem.warmups?.length || 1);
                                                           setWarmupWeight(exItem.warmups?.[0]?.weight || 10);
@@ -3800,7 +3820,7 @@ export function CoachDashboardPage({
                                                            min={1}
                                                            value={setsCount}
                                                            onChange={(event) =>
-                                                             setSetsCount(Math.max(1, Number(event.target.value)))
+                                                             resizeSetFields(Math.max(1, Number(event.target.value)))
                                                            }
                                                            className="mt-1 h-9 w-16 rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
                                                          />
@@ -4260,75 +4280,45 @@ export function CoachDashboardPage({
                                               </p>
                                             ) : null}
 
-                                            <div className="grid grid-cols-4 gap-1.5">
-                                              <div>
-                                                <label className="block text-[9px] font-bold text-muted-foreground">
-                                                  משקל יעד (kg)
-                                                </label>
-                                                <input
-                                                  type="number"
-                                                  step={0.5}
-                                                  value={targetWeight}
-                                                  onChange={(e) =>
-                                                    setTargetWeight(Number(e.target.value))
-                                                  }
-                                                  className="w-full rounded-md border p-1 text-center"
-                                                />
-                                              </div>
-                                              <div>
-                                                <label className="block text-[9px] font-bold text-muted-foreground">
-                                                  סטים
-                                                </label>
-                                                <input
-                                                  type="number"
-                                                  value={setsCount}
-                                                  onChange={(e) =>
-                                                    setSetsCount(Number(e.target.value))
-                                                  }
-                                                  className="w-full rounded-md border p-1 text-center"
-                                                />
-                                              </div>
-                                              <div>
-                                                <label className="block text-[9px] font-bold text-muted-foreground">
-                                                  חזרות מינ'
-                                                </label>
-                                                <input
-                                                  type="number"
-                                                  value={repMin}
-                                                  onChange={(e) =>
-                                                    setRepMin(Number(e.target.value))
-                                                  }
-                                                  className="w-full rounded-md border p-1 text-center"
-                                                />
-                                              </div>
-                                              <div>
-                                                <label className="block text-[9px] font-bold text-muted-foreground">
-                                                  חזרות מקס'
-                                                </label>
-                                                <input
-                                                  type="number"
-                                                  value={repMax}
-                                                  onChange={(e) =>
-                                                    setRepMax(Number(e.target.value))
-                                                  }
-                                                  className="w-full rounded-md border p-1 text-center"
-                                                />
-                                              </div>
-                                            </div>
-
-                                            <div className="rounded-2xl border border-border/60 bg-background p-2.5">
-                                              <p className="mb-2 text-[10px] font-bold text-muted-foreground">
-                                                סוג לכל סט
+                                            <div className="flex items-center justify-between gap-2">
+                                              <p className="text-[10px] font-bold text-muted-foreground">
+                                                הגדרת סטים
                                               </p>
-                                              <div className="space-y-1.5">
-                                                {Array.from({ length: setsCount }, (_, index) => {
-                                                  const mode = setModes[index] ?? "normal";
-                                                  return (
-                                                    <div
-                                                      key={index}
-                                                      className="flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-white px-2 py-1.5"
-                                                    >
-                                                      <span className="text-[11px] font-bold text-ink">
+                                              <label className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
+                                                מספר סטים
+                                                <input
+                                                  type="number"
+                                                  min={1}
+                                                  max={20}
+                                                  value={setsCount}
+                                                  onChange={(event) =>
+                                                    resizeSetFields(Number(event.target.value))
+                                                  }
+                                                  className="h-8 w-16 rounded-lg border border-border bg-white text-center text-xs text-ink"
+                                                />
+                                              </label>
+                                            </div>
+                                            <div className="space-y-2">
+                                              {Array.from({ length: Math.max(1, setsCount) }, (_, index) => {
+                                                const mode = setModes[index] ?? "normal";
+                                                const weight = setWeights[index] ?? targetWeight;
+                                                const minReps = setRepMins[index] ?? repMin;
+                                                const maxReps = setRepMaxes[index] ?? repMax;
+                                                return (
+                                                  <div
+                                                    key={index}
+                                                    className={`rounded-2xl border p-3 shadow-sm ${
+                                                      mode === "warmup"
+                                                        ? "border-amber-200 bg-amber-50/70"
+                                                        : mode === "drop"
+                                                          ? "border-primary/30 bg-primary/5"
+                                                          : mode === "superset"
+                                                            ? "border-violet-200 bg-violet-50/60"
+                                                            : "border-border/70 bg-white"
+                                                    }`}
+                                                  >
+                                                    <div className="mb-2 flex items-center justify-between gap-2">
+                                                      <span className="rounded-full bg-foreground/10 px-2.5 py-1 text-[11px] font-extrabold text-ink">
                                                         סט {index + 1}
                                                       </span>
                                                       <select
@@ -4341,51 +4331,86 @@ export function CoachDashboardPage({
                                                             | "superset";
                                                           setSetModes((current) => {
                                                             const next = Array.from(
-                                                              { length: setsCount },
-                                                              (_, itemIndex) =>
-                                                                current[itemIndex] ?? "normal",
+                                                              { length: Math.max(1, setsCount) },
+                                                              (_, itemIndex) => current[itemIndex] ?? "normal",
                                                             );
                                                             next[index] = nextMode;
+                                                            setWarmupEnabled(next.includes("warmup"));
+                                                            setDropSetEnabled(next.includes("drop"));
+                                                            if (nextMode === "superset" && !supersetGroup) {
+                                                              setSupersetGroup("A");
+                                                            }
                                                             return next;
                                                           });
-                                                          setWarmupEnabled(
-                                                            nextMode === "warmup" ||
-                                                              setModes.some((item, itemIndex) =>
-                                                                itemIndex === index
-                                                                  ? false
-                                                                  : item === "warmup",
-                                                              ),
-                                                          );
-                                                          setDropSetEnabled(
-                                                            nextMode === "drop" ||
-                                                              setModes.some((item, itemIndex) =>
-                                                                itemIndex === index
-                                                                  ? false
-                                                                  : item === "drop",
-                                                              ),
-                                                          );
-                                                          if (
-                                                            nextMode === "superset" &&
-                                                            !supersetGroup
-                                                          ) {
-                                                            setSupersetGroup("A");
-                                                          }
                                                         }}
-                                                        className="h-8 min-w-32 rounded-lg border border-border bg-white px-2 text-[11px] font-semibold text-ink"
+                                                        className="h-9 min-w-36 rounded-xl border border-border bg-white px-2 text-[11px] font-bold text-ink"
                                                       >
                                                         <option value="normal">סט רגיל</option>
                                                         <option value="warmup">סט חימום</option>
-                                                        <option value="drop">
-                                                          דרופ סט — הורדת משקל
-                                                        </option>
-                                                        <option value="superset">
-                                                          סופר סט — בלי מנוחה
-                                                        </option>
+                                                        <option value="drop">דרופ סט</option>
+                                                        <option value="superset">סופר־סט</option>
                                                       </select>
-                                                       </div>
-                                                  );
-                                                })}
-                                              </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                                      <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                        משקל (ק״ג)
+                                                        <input
+                                                          type="number"
+                                                          min={0}
+                                                          step={0.5}
+                                                          value={weight}
+                                                          onChange={(event) => {
+                                                            const value = Math.max(0, Number(event.target.value));
+                                                            setSetWeights((current) => {
+                                                              const next = [...current];
+                                                              next[index] = value;
+                                                              return next;
+                                                            });
+                                                            if (index === 0) setTargetWeight(value);
+                                                          }}
+                                                          className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink"
+                                                        />
+                                                      </label>
+                                                      <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                        חזרות מינ׳
+                                                        <input
+                                                          type="number"
+                                                          min={1}
+                                                          value={minReps}
+                                                          onChange={(event) => {
+                                                            const value = Math.max(1, Number(event.target.value));
+                                                            setSetRepMins((current) => {
+                                                              const next = [...current];
+                                                              next[index] = value;
+                                                              return next;
+                                                            });
+                                                            if (index === 0) setRepMin(value);
+                                                          }}
+                                                          className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink"
+                                                        />
+                                                      </label>
+                                                      <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground sm:col-span-1">
+                                                        חזרות מקס׳
+                                                        <input
+                                                          type="number"
+                                                          min={minReps}
+                                                          value={maxReps}
+                                                          onChange={(event) => {
+                                                            const value = Math.max(minReps, Number(event.target.value));
+                                                            setSetRepMaxes((current) => {
+                                                              const next = [...current];
+                                                              next[index] = value;
+                                                              return next;
+                                                            });
+                                                            if (index === 0) setRepMax(value);
+                                                          }}
+                                                          className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink"
+                                                        />
+                                                      </label>
+                                                    </div>
+                                                  </div>
+                                                );
+                                              })}
                                             </div>
 
                                             <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
