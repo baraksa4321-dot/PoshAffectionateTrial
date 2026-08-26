@@ -1,4 +1,5 @@
 import { Minus, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export function Stepper({
   label,
@@ -23,6 +24,29 @@ export function Stepper({
     if (max != null) n = Math.min(max, n);
     return n;
   };
+  const displayValue = Number.isFinite(value) && value !== 0 ? String(value) : "";
+  const [draftValue, setDraftValue] = useState(displayValue);
+  const [editing, setEditing] = useState(false);
+
+  useEffect(() => {
+    if (!editing) setDraftValue(displayValue);
+  }, [displayValue, editing]);
+
+  const commitDraft = () => {
+    const normalized = draftValue.replace(",", ".").trim();
+    if (!normalized || normalized === "-") {
+      setDraftValue(displayValue);
+      return;
+    }
+    const nextValue = Number(normalized);
+    if (Number.isNaN(nextValue)) {
+      setDraftValue(displayValue);
+      return;
+    }
+    const next = clamp(nextValue);
+    onChange(next);
+    setDraftValue(next === 0 ? "" : String(next));
+  };
 
   return (
     <div className="min-w-0">
@@ -41,15 +65,20 @@ export function Stepper({
         <div className="num-pill flex h-11 min-w-0 flex-1 items-center justify-center px-1">
           <input
             inputMode="decimal"
-            value={Number.isFinite(value) && value !== 0 ? value : ""}
-            onChange={(e) => {
-              const raw = e.target.value.replace(",", ".");
-              if (raw === "" || raw === "-") {
-                onChange(min);
-                return;
-              }
-              const n = Number(raw);
-              if (!Number.isNaN(n)) onChange(clamp(n));
+            enterKeyHint="done"
+            value={editing ? draftValue : displayValue}
+            onFocus={(event) => {
+              setEditing(true);
+              setDraftValue(displayValue);
+              window.requestAnimationFrame(() => event.currentTarget.select());
+            }}
+            onChange={(event) => setDraftValue(event.target.value)}
+            onBlur={() => {
+              commitDraft();
+              setEditing(false);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") commitDraft();
             }}
             className="w-full min-w-0 bg-transparent text-center text-base font-semibold outline-none"
           />

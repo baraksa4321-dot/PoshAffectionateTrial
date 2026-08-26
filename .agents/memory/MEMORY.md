@@ -4,7 +4,7 @@
 - [Optional activity-log schema drift](supabase-optional-logs.md) — the connected Supabase project lacks weight and cardio log tables; these must not block authenticated role hydration.
 - [Body measurement schema compatibility](body-measurement-schema.md) — measurement writes require the extended columns in Supabase; keep code and schema aligned.
 - [Live role RPC safeguard](live-role-rpc-safeguard.md) — Owners may change another user’s role, never their own; preserve the approved live-only security guard.
-- [Mobile overlay keyboard sizing](mobile-overlay-keyboard-sizing.md) — Bottom sheets must size from the visual viewport and apply keyboard offset only as a bottom margin.
+- [Mobile keyboard and scrolling](mobile-overlay-keyboard-sizing.md) — Keep one document scroll path; use the visual viewport and nearest scroll parent to expose focused fields.
 - [Offline cache ownership](offline-cache-ownership.md) — Store offline data by immutable user key; never migrate shared caches without verifiable ownership.
 - [Preferred visual direction](preferred-visual-direction.md) — The user approved the selected clean, ordered premium My Routine direction as the visual baseline.
 - [Offline route chunks](offline-route-chunks.md) — Offline navigation needs route-module warmup; caching only the initial HTML shell is insufficient for code-split TanStack pages.

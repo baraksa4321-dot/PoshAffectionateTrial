@@ -11,6 +11,31 @@ let previousDocumentOverscrollBehavior = "";
 let activeOverlayToken = 0;
 const openOverlayTokens: number[] = [];
 
+function scrollFocusedFieldWithinPanel(field: HTMLElement, panel: HTMLElement) {
+  const fieldRect = field.getBoundingClientRect();
+  const panelRect = panel.getBoundingClientRect();
+  const safeTop = panelRect.top + 16;
+  const safeBottom = panelRect.bottom - 20;
+  let delta = 0;
+  if (fieldRect.top < safeTop) delta = fieldRect.top - safeTop;
+  else if (fieldRect.bottom > safeBottom) delta = fieldRect.bottom - safeBottom;
+  if (!delta) return;
+
+  let scrollParent: HTMLElement | null = field.parentElement;
+  while (scrollParent && scrollParent !== panel) {
+    const overflowY = window.getComputedStyle(scrollParent).overflowY;
+    if (
+      /(auto|scroll)/.test(overflowY) &&
+      scrollParent.scrollHeight > scrollParent.clientHeight + 1
+    ) {
+      scrollParent.scrollTop += delta;
+      return;
+    }
+    scrollParent = scrollParent.parentElement;
+  }
+  panel.scrollTop += delta;
+}
+
 export function Overlay({
   open,
   onClose,
@@ -56,11 +81,9 @@ export function Overlay({
 
       window.requestAnimationFrame(() => {
         if (document.activeElement !== activeElement) return;
-        activeElement.scrollIntoView({
-          block: "center",
-          inline: "nearest",
-          behavior: "auto",
-        });
+        const inlinePanel = activeElement.closest<HTMLElement>('[data-overlay-inline-panel="true"]');
+        if (inlinePanel) scrollFocusedFieldWithinPanel(activeElement, inlinePanel);
+        else activeElement.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
       });
     };
 
@@ -138,15 +161,8 @@ export function Overlay({
         return;
       }
       window.requestAnimationFrame(() => {
-        const panelRect = panel.getBoundingClientRect();
-        const fieldRect = activeElement.getBoundingClientRect();
-        const topGap = fieldRect.top - panelRect.top;
-        const bottomGap = fieldRect.bottom - panelRect.bottom;
-        if (topGap < 12) {
-          panel.scrollTop += topGap - 12;
-        } else if (bottomGap > -12) {
-          panel.scrollTop += bottomGap + 12;
-        }
+        if (document.activeElement !== activeElement) return;
+        scrollFocusedFieldWithinPanel(activeElement, panel);
       });
     };
     const updateKeyboardOffset = () => {
@@ -161,8 +177,7 @@ export function Overlay({
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("focusin", keepFocusedFieldVisible);
     const focusFrame = window.requestAnimationFrame(() => {
-      const firstFocusable = panelRef.current?.querySelector<HTMLElement>(focusableSelector);
-      (firstFocusable ?? panelRef.current)?.focus();
+      panelRef.current?.focus({ preventScroll: true });
     });
 
     return () => {
@@ -183,7 +198,7 @@ export function Overlay({
         document.documentElement.style.overflow = previousDocumentOverflow;
         document.documentElement.style.overscrollBehavior = previousDocumentOverscrollBehavior;
       }
-      previousActiveElement?.focus();
+      if (previousActiveElement?.isConnected) previousActiveElement.focus({ preventScroll: true });
     };
   }, [inline, open]);
 
@@ -201,7 +216,12 @@ export function Overlay({
   if (inline) {
     return (
       <div className={`w-full ${className}`}>
-        <div className={`w-full overflow-x-hidden ${panelClassName}`}>{children}</div>
+        <div
+          data-overlay-inline-panel="true"
+          className={`w-full overflow-x-hidden ${panelClassName}`}
+        >
+          {children}
+        </div>
       </div>
     );
   }

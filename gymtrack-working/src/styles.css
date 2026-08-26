@@ -807,6 +807,7 @@ html:not(.night-mode) .nav-shell {
     scroll-behavior: smooth;
     overflow-x: clip;
     overflow-y: auto;
+    min-height: 100%;
     /* Let iOS handle taps without the legacy 300ms click delay. */
     touch-action: pan-y;
   }
@@ -822,7 +823,7 @@ html:not(.night-mode) .nav-shell {
     overscroll-behavior-y: none;
     min-height: 100dvh;
     overflow-x: clip;
-    overflow-y: auto;
+    overflow-y: visible;
     direction: rtl;
     text-align: start;
     background-image: none;
@@ -834,7 +835,7 @@ html:not(.night-mode) .nav-shell {
   }
 
   #root {
-    min-height: 100dvh;
+    min-height: 100svh;
   }
 
   input,
@@ -4123,6 +4124,44 @@ html.night-mode .auth-panel {
   -webkit-overflow-scrolling: touch;
 }
 
+.page-scroll-container {
+  min-height: 0;
+  overflow: visible;
+  overscroll-behavior-y: auto;
+  scroll-padding-top: calc(var(--app-topbar-height, 5rem) + 1rem);
+  scroll-padding-bottom: calc(6.5rem + var(--keyboard-inset, 0px));
+}
+
+[data-coach-workspace="true"] {
+  min-height: 0;
+  touch-action: pan-y;
+  overflow: visible;
+}
+
+input:not([type="hidden"]):not([type="file"]),
+textarea,
+select,
+[contenteditable="true"] {
+  scroll-margin-top: calc(var(--app-topbar-height, 5rem) + 1rem);
+  scroll-margin-bottom: calc(6.5rem + var(--keyboard-inset, 0px));
+}
+
+.workout-progress-sticky {
+  position: sticky;
+  top: calc(var(--app-topbar-height, 5rem) + 0.5rem);
+  z-index: 22;
+  margin-inline: -0.15rem;
+  box-shadow:
+    0 8px 24px rgb(var(--shadow-color) / 12%),
+    0 1px 0 color-mix(in srgb, var(--border) 75%, transparent);
+}
+
+html[data-keyboard-open] .workout-progress-sticky,
+html[data-keyboard-open] .nav-shell {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 [data-overlay-panel="true"] {
   overscroll-behavior-y: contain;
 }
@@ -4172,7 +4211,7 @@ html.night-mode .auth-panel {
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: none;
   }
 }
 

@@ -1,10 +1,12 @@
 ---
-name: Mobile overlay keyboard sizing
-description: Prevent bottom sheets from collapsing or hiding their inputs behind a mobile keyboard.
+name: Mobile keyboard and scrolling
+description: Keep focused fields visible without creating competing mobile scroll containers.
 ---
 
 For bottom-sheet overlays, calculate the panel's maximum height from `window.visualViewport.height` when it is available. Use the difference between the layout viewport and visual viewport only to lift the sheet above the keyboard.
 
-**Why:** On mobile browsers, `100dvh` can already shrink to the visual viewport when the keyboard opens. Subtracting the keyboard offset from it again makes the available panel height far too small, which can hide a search field or selected-food card.
+Long application pages should retain one native document scroll path. When the keyboard or visual viewport changes, move the nearest genuinely scrollable ancestor of the focused field; do not assume the outer overlay panel owns the scroll.
 
-**How to apply:** Keep the keyboard offset as `margin-bottom` for bottom sheets, but do not subtract it a second time from a dynamic viewport-based maximum height. Re-test any overlay that contains a focused search or form input at a mobile viewport.
+**Why:** On mobile browsers, `100dvh` can already shrink to the visual viewport when the keyboard opens. Subtracting the keyboard offset twice collapses sheets, while nested `overflow` regions and competing body/page scrollers can leave fields hidden or stop long coach pages from moving.
+
+**How to apply:** Keep the keyboard offset as `margin-bottom` for bottom sheets, but do not subtract it again from a visual-viewport maximum height. For regular pages, leave vertical scrolling to the document and add temporary keyboard clearance. For nested sheets, scroll the closest ancestor whose content actually overflows. Re-test focused fields near the bottom of long pages and nested overlays.

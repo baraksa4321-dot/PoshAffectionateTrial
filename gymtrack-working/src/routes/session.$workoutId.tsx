@@ -730,7 +730,7 @@ function Session() {
       )}
 
       {/* Progress bar */}
-      <div className="surface-card flex items-center gap-3 px-4 py-3">
+      <div className="workout-progress-sticky surface-card flex items-center gap-3 px-4 py-3">
         <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground">
           <Play className="h-3.5 w-3.5 fill-current" />
         </div>

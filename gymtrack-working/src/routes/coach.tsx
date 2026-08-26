@@ -3758,6 +3758,7 @@ export function CoachDashboardPage({
             panelClassName={workspacePage || openEditor ? "bg-background" : ""}
           >
             <div
+              data-coach-workspace="true"
                 className={`w-full ${
                   trackingLanding ? "space-y-2.5" : "space-y-4"
                 } bg-background ${

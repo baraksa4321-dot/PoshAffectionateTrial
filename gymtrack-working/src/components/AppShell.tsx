@@ -73,6 +73,8 @@ export function AppShell({
   const navigate = useNavigate();
   const isManagementRoute = isManagementPath(location.pathname);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
+  const topbarRef = useRef<HTMLElement>(null);
 
   const [activeMode, setActiveMode] = useState<"personal" | "management">(() => {
     if (typeof window === "undefined") return "personal";
@@ -137,6 +139,85 @@ export function AppShell({
       window.localStorage.setItem("gymtrack.night-mode", String(isNightMode));
     }
   }, [isNightMode]);
+
+  useEffect(() => {
+    const shell = shellRef.current;
+    const topbar = topbarRef.current;
+    if (!shell || !topbar || typeof window === "undefined") return;
+
+    const updateTopbarHeight = () => {
+      shell.style.setProperty("--app-topbar-height", `${topbar.offsetHeight}px`);
+    };
+    updateTopbarHeight();
+    const observer = new ResizeObserver(updateTopbarHeight);
+    observer.observe(topbar);
+    window.addEventListener("resize", updateTopbarHeight);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateTopbarHeight);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const visualViewport = window.visualViewport;
+    let focusTimer = 0;
+
+    const updateKeyboardMetrics = () => {
+      const visibleHeight = visualViewport?.height ?? window.innerHeight;
+      const viewportTop = visualViewport?.offsetTop ?? 0;
+      const keyboardInset = Math.max(0, window.innerHeight - visibleHeight - viewportTop);
+      document.documentElement.style.setProperty("--keyboard-inset", `${keyboardInset}px`);
+      document.documentElement.toggleAttribute("data-keyboard-open", keyboardInset > 80);
+    };
+
+    const keepDocumentFieldVisible = () => {
+      window.clearTimeout(focusTimer);
+      focusTimer = window.setTimeout(() => {
+        const field = document.activeElement;
+        if (
+          !(field instanceof HTMLElement) ||
+          !field.matches('input:not([type="hidden"]):not([type="file"]), textarea, select, [contenteditable="true"]') ||
+          field.closest('[data-overlay-panel="true"]')
+        ) {
+          return;
+        }
+
+        const viewportTop = visualViewport?.offsetTop ?? 0;
+        const viewportHeight = visualViewport?.height ?? window.innerHeight;
+        const headerHeight = topbarRef.current?.offsetHeight ?? 0;
+        const navHeight =
+          shellRef.current?.querySelector<HTMLElement>(".nav-shell")?.offsetHeight ?? 0;
+        const visibleTop = viewportTop + headerHeight + 12;
+        const visibleBottom = viewportTop + viewportHeight - navHeight - 16;
+        const rect = field.getBoundingClientRect();
+
+        if (rect.bottom > visibleBottom) {
+          window.scrollBy({ top: rect.bottom - visibleBottom, behavior: "auto" });
+        } else if (rect.top < visibleTop) {
+          window.scrollBy({ top: rect.top - visibleTop, behavior: "auto" });
+        }
+      }, 120);
+    };
+
+    const onViewportChange = () => {
+      updateKeyboardMetrics();
+      keepDocumentFieldVisible();
+    };
+    updateKeyboardMetrics();
+    window.addEventListener("focusin", keepDocumentFieldVisible);
+    visualViewport?.addEventListener("resize", onViewportChange);
+    visualViewport?.addEventListener("scroll", onViewportChange);
+
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener("focusin", keepDocumentFieldVisible);
+      visualViewport?.removeEventListener("resize", onViewportChange);
+      visualViewport?.removeEventListener("scroll", onViewportChange);
+      document.documentElement.style.removeProperty("--keyboard-inset");
+      document.documentElement.removeAttribute("data-keyboard-open");
+    };
+  }, []);
 
   const toggleNightMode = () => {
     const nextNightMode = !isNightMode;
@@ -401,6 +482,7 @@ export function AppShell({
 
   return (
     <div
+      ref={shellRef}
       className={
         authOnly
           ? "fixed inset-0 z-[100] min-h-[100dvh] w-full overflow-auto bg-background text-foreground"
@@ -409,6 +491,7 @@ export function AppShell({
       dir="rtl"
     >
       <header
+        ref={topbarRef}
         className="app-topbar sticky top-0 z-30 border-b border-border/70 bg-background/90 shadow-[0_8px_24px_oklch(0.2_0.03_35_/_0.035)] backdrop-blur-xl"
         style={{ paddingTop: "max(0.35rem, env(safe-area-inset-top))" }}
       >
@@ -564,7 +647,8 @@ export function AppShell({
         onTouchStart={handleMainTouchStart}
         onTouchEnd={handleMainTouchEnd}
         style={{
-          paddingBottom: "calc(6.5rem + env(safe-area-inset-bottom))",
+          paddingBottom:
+            "calc(6.5rem + env(safe-area-inset-bottom) + var(--keyboard-inset, 0px))",
         }}
       >
         {user ? <span className="sr-only">{syncTitle}</span> : null}
