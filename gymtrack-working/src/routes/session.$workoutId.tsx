@@ -539,7 +539,7 @@ function Session() {
     setShowFeedbackModal(false);
     if (allSetsCompleted) {
       setShowCompletionConfetti(true);
-      window.setTimeout(() => navigate({ to: "/programs" }), 1800);
+      window.setTimeout(() => navigate({ to: "/programs" }), 3200);
     } else {
       navigate({ to: "/programs" });
     }
@@ -673,33 +673,42 @@ function Session() {
         </div>
       }
     >
-      {showCompletionConfetti ? (
-        <div
-          className="pointer-events-none fixed inset-0 z-[100] overflow-hidden"
-          aria-live="polite"
-        >
-          <div className="absolute inset-x-0 top-[22%] text-center">
-            <div className="inline-flex rounded-2xl bg-white/95 px-5 py-3 text-lg font-extrabold text-ink shadow-xl">
-              כל הכבוד! האימון הושלם
-            </div>
-          </div>
-          {Array.from({ length: 42 }, (_, index) => (
-            <span
-              key={index}
-              className="confetti-piece"
-              style={{
-                left: `${(index * 37) % 101}%`,
-                animationDelay: `${(index % 9) * 35}ms`,
-                animationDuration: `${1200 + (index % 5) * 150}ms`,
-                backgroundColor: ["var(--primary)", "var(--rose)", "var(--accent)", "#111111"][
-                  index % 4
-                ],
-                transform: `rotate(${(index * 47) % 360}deg)`,
-              }}
-            />
-          ))}
-        </div>
-      ) : null}
+      {showCompletionConfetti && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="pointer-events-none fixed inset-0 z-[100] overflow-hidden"
+              aria-live="polite"
+            >
+              <div className="absolute inset-x-0 top-[22%] text-center">
+                <div className="inline-flex rounded-2xl bg-white/95 px-5 py-3 text-lg font-extrabold text-ink shadow-xl">
+                  כל הכבוד! האימון הושלם
+                </div>
+              </div>
+              {Array.from({ length: 160 }, (_, index) => (
+                <span
+                  key={index}
+                  className="confetti-piece"
+                  style={{
+                    left: `${(index * 47 + (index % 7) * 3) % 101}%`,
+                    animationDelay: `${(index % 22) * 35}ms`,
+                    animationDuration: `${2200 + (index % 7) * 180}ms`,
+                    backgroundColor: [
+                      "var(--primary)",
+                      "var(--rose)",
+                      "var(--accent)",
+                      "#111111",
+                      "#f59e0b",
+                    ][index % 5],
+                    "--confetti-x": `${((index * 29) % 180) - 90}px`,
+                    "--confetti-rotate": `${540 + ((index * 61) % 900)}deg`,
+                    "--confetti-scale": `${0.8 + (index % 4) * 0.15}`,
+                  } as React.CSSProperties}
+                />
+              ))}
+            </div>,
+            document.body,
+          )
+        : null}
 
       {/* Pause Banner */}
       {isPaused && (
