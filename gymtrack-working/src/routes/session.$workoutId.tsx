@@ -961,11 +961,11 @@ function Session() {
         <Overlay
           open={Boolean(cardExercise)}
           onClose={() => setCardExercise(null)}
-          variant="top"
+          variant="center"
           ariaLabel="פרטי תרגיל"
         >
           <div
-            className="w-full max-w-sm rounded-3xl border border-white/80 bg-white p-5 shadow-2xl space-y-3 text-start"
+            className="w-full max-w-lg rounded-3xl border border-white/80 bg-white p-5 shadow-2xl space-y-4 text-start"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b pb-2">
@@ -979,17 +979,69 @@ function Session() {
                 ✕
               </button>
             </div>
-            <div className="space-y-2 text-xs">
-              <p className="font-bold text-primary">קבוצת שרירים: {cardExercise.muscleGroup}</p>
-              <p className="text-muted-foreground">{cardExercise.description}</p>
-              {cardExercise.instructions && (
-                <div className="rounded-xl bg-secondary/50 p-2.5 space-y-1">
-                  <p className="font-bold text-ink">הוראות ביצוע:</p>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {cardExercise.instructions}
-                  </p>
+            <div className="max-h-[min(70dvh,38rem)] space-y-3 overflow-y-auto overscroll-contain pe-1 text-xs">
+              <div className="flex flex-wrap gap-1.5">
+                <span className="rounded-full bg-primary/10 px-2.5 py-1 font-bold text-primary">
+                  שריר עיקרי: {cardExercise.muscleGroup}
+                </span>
+                {(cardExercise.muscleGroups ?? [])
+                  .filter((group) => group !== cardExercise.muscleGroup)
+                  .map((group) => (
+                    <span key={group} className="rounded-full bg-secondary px-2.5 py-1 text-muted-foreground">
+                      {group}
+                    </span>
+                  ))}
+                <span className="rounded-full bg-secondary px-2.5 py-1 text-muted-foreground">
+                  ציוד: {cardExercise.equipment}
+                </span>
+                {cardExercise.category ? (
+                  <span className="rounded-full bg-secondary px-2.5 py-1 text-muted-foreground">
+                    {cardExercise.category}
+                  </span>
+                ) : null}
+              </div>
+              {cardExercise.description ? (
+                <div className="rounded-xl bg-secondary/50 p-3 space-y-1">
+                  <p className="font-bold text-ink">על התרגיל</p>
+                  <p className="text-muted-foreground leading-relaxed">{cardExercise.description}</p>
                 </div>
-              )}
+              ) : null}
+              {cardExercise.instructions ? (
+                <div className="rounded-xl bg-secondary/50 p-3 space-y-1">
+                  <p className="font-bold text-ink">הוראות ביצוע</p>
+                  <p className="text-muted-foreground leading-relaxed">{cardExercise.instructions}</p>
+                </div>
+              ) : null}
+              {cardExercise.tips ? (
+                <div className="rounded-xl bg-secondary/50 p-3 space-y-1">
+                  <p className="font-bold text-ink">דגשי טכניקה וטיפים</p>
+                  <p className="text-muted-foreground leading-relaxed">{cardExercise.tips}</p>
+                </div>
+              ) : null}
+              {(() => {
+                const videos = [
+                  gender === "female" ? cardExercise.videoFemaleUrl : cardExercise.videoMaleUrl,
+                  cardExercise.videoUrl,
+                  ...(cardExercise.videoUrls ?? []),
+                ].filter((url, index, all): url is string => Boolean(url) && all.indexOf(url) === index);
+                return videos.length ? (
+                  <div className="space-y-2">
+                    <p className="font-bold text-ink">סרטון הדגמה</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {videos.map((url, index) => (
+                        <video
+                          key={`${url}-${index}`}
+                          src={url}
+                          controls
+                          preload="metadata"
+                          playsInline
+                          className="aspect-video w-full rounded-2xl border border-border/60 bg-black object-cover"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : null;
+              })()}
             </div>
           </div>
         </Overlay>
