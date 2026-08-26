@@ -364,7 +364,10 @@ function Dashboard() {
     if (!authUser?.id) return;
     const key = `myroutine-dismissed-broadcasts:${authUser.id}`;
     try {
-      setDismissedMessageIds(JSON.parse(window.localStorage.getItem(key) || "[]"));
+      const stored = JSON.parse(window.localStorage.getItem(key) || "[]");
+      setDismissedMessageIds((current) =>
+        Array.from(new Set([...stored, ...current])),
+      );
     } catch {
       setDismissedMessageIds([]);
     }

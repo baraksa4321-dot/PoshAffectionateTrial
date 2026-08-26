@@ -46,6 +46,7 @@ import { calculateCalorieEstimate } from "../lib/calorie-calculator";
 import { exerciseDisplayName } from "../lib/exercise-library";
 import type {
   BodyMeasurement,
+  BroadcastAnnouncement,
   Exercise,
   Meal,
   MealFood,
@@ -269,6 +270,36 @@ export function CoachDashboardPage({
   >("assigned_clients");
   const [broadcastNotice, setBroadcastNotice] = useState("");
   const [broadcastError, setBroadcastError] = useState("");
+  const [sentBroadcasts, setSentBroadcasts] = useState<BroadcastAnnouncement[]>([]);
+
+  useEffect(() => {
+    if (!authUser?.id || !isCoach) {
+      setSentBroadcasts([]);
+      return;
+    }
+    let active = true;
+    void supabase
+      .from("broadcast_announcements")
+      .select("id, sender_id, audience, message, created_at")
+      .eq("sender_id", authUser.id)
+      .order("created_at", { ascending: false })
+      .limit(30)
+      .then(({ data }) => {
+        if (!active || !data) return;
+        setSentBroadcasts(
+          data.map((row) => ({
+            id: row.id,
+            senderId: row.sender_id,
+            audience: row.audience,
+            message: row.message,
+            createdAt: row.created_at,
+          })),
+        );
+      });
+    return () => {
+      active = false;
+    };
+  }, [authUser?.id, isCoach]);
 
   // Coach Program & Day Builder state
   const [newProgramName, setNewProgramName] = useState("");
@@ -1062,11 +1093,47 @@ export function CoachDashboardPage({
       if (error) throw error;
       setBroadcastText("");
       setBroadcastNotice("ההודעה נשלחה בהצלחה.");
+      const { data: created } = await supabase
+        .from("broadcast_announcements")
+        .select("id, sender_id, audience, message, created_at")
+        .eq("sender_id", user.id)
+        .eq("message", message)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (created) {
+        setSentBroadcasts((current) => [
+          {
+            id: created.id,
+            senderId: created.sender_id,
+            audience: created.audience,
+            message: created.message,
+            createdAt: created.created_at,
+          },
+          ...current.filter((item) => item.id !== created.id),
+        ]);
+      }
     } catch (err: unknown) {
       setBroadcastError(
         `שליחת ההודעה נכשלה: ${errorMessage(err, "יש לוודא שמיגרציית ההודעות הוחלה ב־Supabase.")}`,
       );
     }
+  };
+
+  const handleDeleteBroadcast = async (broadcast: BroadcastAnnouncement) => {
+    if (!authUser?.id || broadcast.senderId !== authUser.id) return;
+    setBroadcastError("");
+    const { error } = await supabase
+      .from("broadcast_announcements")
+      .delete()
+      .eq("id", broadcast.id)
+      .eq("sender_id", authUser.id);
+    if (error) {
+      setBroadcastError(`מחיקת ההודעה נכשלה: ${error.message}`);
+      return;
+    }
+    setSentBroadcasts((current) => current.filter((item) => item.id !== broadcast.id));
+    setBroadcastNotice("ההודעה נמחקה לכולם.");
   };
 
   // Add Client by Email via RPC lookup
