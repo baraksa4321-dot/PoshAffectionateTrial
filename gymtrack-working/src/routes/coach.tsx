@@ -2,6 +2,7 @@ import { Link, Navigate, Outlet, createFileRoute, useNavigate } from "@tanstack/
 import {
   Apple,
   Award,
+  ClipboardList,
   ChevronLeft,
   ChevronRight,
   Crown,
@@ -14,6 +15,7 @@ import {
   UserCheck,
   UserPlus,
   Users,
+  Video,
   MessageSquare,
   Search,
   UserCog,
@@ -48,6 +50,7 @@ import type {
   BodyMeasurement,
   BroadcastAnnouncement,
   Exercise,
+  HistorySession,
   Meal,
   MealFood,
   Program,
@@ -132,6 +135,334 @@ function ExerciseBuilderPlacement({
 
   if (!exerciseId) return children;
   return anchor ? createPortal(children, anchor) : null;
+}
+
+type WorkoutReportDay = {
+  date: string;
+  sessions: HistorySession[];
+  completedSets: number;
+  totalSets: number;
+};
+
+function reportDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getCurrentWeekDates(): string[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  today.setDate(today.getDate() - today.getDay());
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() + index);
+    return reportDateKey(date);
+  });
+}
+
+function reportDateLabel(date: string, options?: Intl.DateTimeFormatOptions): string {
+  return new Date(`${date}T00:00:00`).toLocaleDateString(
+    "he-IL",
+    options ?? { day: "numeric", month: "numeric" },
+  );
+}
+
+function workoutReportSessionMatches(session: HistorySession, workout: Workout): boolean {
+  return (
+    session.workoutId === workout.id ||
+    (!session.workoutId && session.workoutName === workout.name)
+  );
+}
+
+function WorkoutWeeklyReport({
+  workout,
+  history,
+  exercises,
+}: {
+  workout: Workout;
+  history: HistorySession[];
+  exercises: Exercise[];
+}) {
+  const weekDates = getCurrentWeekDates();
+  const weekStart = weekDates[0]!;
+  const weekEnd = weekDates[weekDates.length - 1]!;
+  const sessions = history
+    .filter(
+      (session) =>
+        workoutReportSessionMatches(session, workout) &&
+        session.date.slice(0, 10) >= weekStart &&
+        session.date.slice(0, 10) <= weekEnd,
+    )
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const sessionsByDate = new Map<string, HistorySession[]>();
+
+  for (const session of sessions) {
+    const date = session.date.slice(0, 10);
+    const existing = sessionsByDate.get(date) ?? [];
+    existing.push(session);
+    sessionsByDate.set(date, existing);
+  }
+
+  const weekDays: WorkoutReportDay[] = weekDates.map((date) => {
+    const daySessions = sessionsByDate.get(date) ?? [];
+    return {
+      date,
+      sessions: daySessions,
+      completedSets: daySessions.reduce(
+        (total, session) =>
+          total +
+          session.entries.reduce(
+            (entryTotal, entry) => entryTotal + entry.sets.filter((set) => set.done).length,
+            0,
+          ),
+        0,
+      ),
+      totalSets: daySessions.reduce(
+        (total, session) =>
+          total + session.entries.reduce((entryTotal, entry) => entryTotal + entry.sets.length, 0),
+        0,
+      ),
+    };
+  });
+
+  const exerciseRows = workout.items.map((item) => {
+    const entries = sessions.flatMap((session) =>
+      session.entries
+        .filter((entry) => entry.exerciseId === item.exerciseId)
+        .map((entry) => ({ date: session.date.slice(0, 10), entry })),
+    );
+    return {
+      item,
+      entries,
+      exercise: exercises.find((exercise) => exercise.id === item.exerciseId),
+    };
+  });
+  const completedDays = weekDays.filter((day) => day.sessions.length > 0).length;
+  const completedSets = weekDays.reduce((total, day) => total + day.completedSets, 0);
+  const reportNotes = sessions.flatMap((session) => [
+    ...(session.notes?.trim()
+      ? [{ key: `${session.id}-notes`, label: "הערת אימון", text: session.notes.trim() }]
+      : []),
+    ...(session.discomfortNotes?.trim()
+      ? [
+          {
+            key: `${session.id}-discomfort`,
+            label: "כאב / אי־נוחות",
+            text: session.discomfortNotes.trim(),
+          },
+        ]
+      : []),
+  ]);
+  const hasEntryNotes = exerciseRows.some(({ entries }) =>
+    entries.some(({ entry }) => entry.notes?.trim() || entry.feedback?.notes?.trim()),
+  );
+  const hasVideos = exerciseRows.some(({ entries }) =>
+    entries.some(({ entry }) => Boolean(entry.videoUrl)),
+  );
+
+  return (
+    <section
+      className="mt-3 space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.035] p-3"
+      aria-label={`דוח שבועי עבור ${workout.name}`}
+    >
+      <div className="flex items-start justify-between gap-2 border-b border-primary/15 pb-2">
+        <div className="min-w-0 text-start">
+          <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
+            <ClipboardList className="h-3.5 w-3.5" />
+            דוח שבועי
+          </p>
+          <h4 className="mt-1 truncate text-sm font-extrabold text-ink">{workout.name}</h4>
+          <p className="mt-0.5 text-[10px] text-muted-foreground">
+            {reportDateLabel(weekStart)}–{reportDateLabel(weekEnd)} · {completedDays} מתוך 7 ימים
+            עם ביצוע · {completedSets} סטים הושלמו
+          </p>
+        </div>
+        <span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+          {sessions.length} ביצועים
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 lg:grid-cols-7">
+        {weekDays.map((day) => (
+          <div
+            key={day.date}
+            className={`rounded-xl border p-2 text-center ${
+              day.sessions.length > 0
+                ? "border-emerald-200 bg-emerald-50/75"
+                : "border-border/60 bg-white/70"
+            }`}
+          >
+            <p className="text-[10px] font-bold text-ink">{reportDateLabel(day.date)}</p>
+            <p
+              className={`mt-1 text-[10px] font-semibold ${
+                day.sessions.length > 0 ? "text-emerald-700" : "text-muted-foreground"
+              }`}
+            >
+              {day.sessions.length > 0
+                ? `${day.completedSets}/${day.totalSets} סטים`
+                : "לא בוצע"}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {sessions.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-[11px] font-extrabold text-ink">סיכום ביצוע והערות לפי תאריך</p>
+          {sessions.map((session) => (
+            <div key={session.id} className="rounded-xl border border-border/60 bg-white/80 p-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[10px]">
+                <strong className="text-ink">
+                  {reportDateLabel(session.date.slice(0, 10), {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
+                </strong>
+                <span className="text-muted-foreground">
+                  {session.durationSec > 0
+                    ? `${Math.round(session.durationSec / 60)} דקות`
+                    : "משך לא צוין"}
+                  {session.difficultyRating
+                    ? ` · ${
+                        session.difficultyRating === "easy"
+                          ? "קל"
+                          : session.difficultyRating === "difficult"
+                            ? "כבד"
+                            : "מתאים"
+                      }`
+                    : ""}
+                </span>
+              </div>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                {session.entries.length} תרגילים ·{" "}
+                {session.entries.reduce(
+                  (total, entry) => total + entry.sets.filter((set) => set.done).length,
+                  0,
+                )}{" "}
+                סטים הושלמו
+              </p>
+              {session.notes?.trim() ? (
+                <p className="mt-1 rounded-lg bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-900">
+                  הערת אימון: {session.notes.trim()}
+                </p>
+              ) : null}
+              {session.discomfortNotes?.trim() ? (
+                <p className="mt-1 rounded-lg bg-rose-50 px-2 py-1 text-[10px] font-semibold text-rose-800">
+                  כאב / אי־נוחות: {session.discomfortNotes.trim()}
+                </p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="rounded-xl bg-white/75 p-3 text-center text-[11px] text-muted-foreground">
+          עדיין לא נרשם ביצוע של האימון הזה בשבוע הנוכחי.
+        </p>
+      )}
+
+      <div className="space-y-2">
+        <p className="text-[11px] font-extrabold text-ink">כל תרגילי האימון</p>
+        {exerciseRows.length > 0 ? (
+          exerciseRows.map(({ item, entries, exercise }) => (
+            <div
+              key={item.id}
+              className={`rounded-xl border p-2.5 text-[10px] ${
+                entries.length > 0
+                  ? "border-emerald-200 bg-emerald-50/55"
+                  : "border-border/60 bg-white/75"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <strong className="text-start text-ink">
+                  {entries[0]?.entry.exerciseName || item.exerciseName || exercise?.name || "תרגיל"}
+                </strong>
+                <span
+                  className={`shrink-0 font-bold ${
+                    entries.length > 0 ? "text-emerald-700" : "text-muted-foreground"
+                  }`}
+                >
+                  {entries.length > 0 ? "בוצע" : "לא בוצע"}
+                </span>
+              </div>
+              {entries.length === 0 ? (
+                <p className="mt-1 text-muted-foreground">
+                  תוכנן: {item.sets} סטים × {item.repMin || item.reps}
+                  {item.repMax ? `–${item.repMax}` : ""} חזרות ·{" "}
+                  {item.targetWeight || item.weight} ק״ג
+                </p>
+              ) : (
+                <div className="mt-1.5 space-y-1.5">
+                  {entries.map(({ date, entry }, index) => (
+                    <div key={`${date}-${entry.exerciseId}-${index}`} className="border-t border-current/10 pt-1.5 first:border-t-0 first:pt-0">
+                      <p className="text-muted-foreground">
+                        {reportDateLabel(date)} ·{" "}
+                        {entry.sets.length > 0
+                          ? entry.sets
+                              .map(
+                                (set, setIndex) =>
+                                  `סט ${setIndex + 1}: ${set.weight} ק״ג × ${set.reps}${
+                                    set.done ? " ✓" : " — לא בוצע"
+                                  }`,
+                              )
+                              .join(" · ")
+                          : "לא נרשמו סטים"}
+                      </p>
+                      {entry.notes?.trim() || entry.feedback?.notes?.trim() ? (
+                        <p className="mt-1 font-semibold text-ink">
+                          הערה: {entry.feedback?.notes?.trim() || entry.notes.trim()}
+                        </p>
+                      ) : null}
+                      {entry.feedback?.rating ? (
+                        <p className="mt-1 text-muted-foreground">
+                          דירוג:{" "}
+                          {entry.feedback.rating === "easy"
+                            ? "קל"
+                            : entry.feedback.rating === "difficult"
+                              ? "כבד"
+                              : "מתאים"}
+                        </p>
+                      ) : null}
+                      {entry.videoUrl ? (
+                        <div className="mt-1.5 rounded-lg border border-primary/15 bg-background p-1.5">
+                          <p className="mb-1 flex items-center gap-1 font-bold text-primary">
+                            <Video className="h-3 w-3" /> סרטון ביצוע
+                          </p>
+                          <video
+                            src={entry.videoUrl}
+                            controls
+                            preload="metadata"
+                            className="max-h-52 w-full rounded-md bg-black object-contain"
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <p className="rounded-xl bg-white/75 p-3 text-center text-[11px] text-muted-foreground">
+            עדיין לא הוגדרו תרגילים באימון הזה.
+          </p>
+        )}
+      </div>
+
+      {workout.notes?.trim() ? (
+        <p className="rounded-lg bg-secondary/60 px-2 py-1 text-[10px] text-ink">
+          הערת תכנון: {workout.notes.trim()}
+        </p>
+      ) : null}
+      {!reportNotes.length && !hasEntryNotes && !hasVideos ? (
+        <p className="rounded-lg bg-white/70 px-2 py-1 text-center text-[10px] text-muted-foreground">
+          אין הערות, משוב או סרטוני ביצוע נוספים בשבוע הזה.
+        </p>
+      ) : null}
+    </section>
+  );
 }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -319,6 +650,7 @@ export function CoachDashboardPage({
   const [newProgramName, setNewProgramName] = useState("");
   const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
   const [editingDayId, setEditingDayId] = useState<string | null>(null);
+  const [openWorkoutReportId, setOpenWorkoutReportId] = useState<string | null>(null);
   const [focusedExerciseId, setFocusedExerciseId] = useState<string | null>(null);
   const [newDayName, setNewDayName] = useState("");
 
@@ -367,6 +699,11 @@ export function CoachDashboardPage({
     }
     window.sessionStorage.removeItem("gymtrack-created-exercise-id");
   }, [store.exercises]);
+  useEffect(() => {
+    setOpenWorkoutReportId((current) =>
+      current && editingDayId && current !== editingDayId ? null : current,
+    );
+  }, [editingDayId]);
   const [setModes, setSetModes] = useState<Array<"normal" | "warmup" | "drop" | "superset">>([
     "normal",
     "normal",
@@ -3726,7 +4063,7 @@ export function CoachDashboardPage({
                                     return (
                                       <div
                                         key={dayItem.id}
-                                        className="rounded-2xl border border-border/60 bg-background p-3.5 shadow-sm"
+                                        className="relative overflow-visible rounded-2xl border border-border/60 bg-background p-3.5 shadow-sm"
                                       >
                                         <div className="flex items-center justify-between gap-2">
                                           {isDayActive ? (
@@ -3750,14 +4087,52 @@ export function CoachDashboardPage({
                                             </span>
                                           )}
                                           <button
+                                             type="button"
+                                             onClick={() =>
+                                               setOpenWorkoutReportId((current) =>
+                                                 current === dayItem.id ? null : dayItem.id,
+                                               )
+                                             }
+                                             aria-expanded={openWorkoutReportId === dayItem.id}
+                                             aria-controls={`workout-report-${dayItem.id}`}
+                                             className={`absolute -start-2 top-4 z-[2] flex min-h-14 items-center rounded-e-lg border border-primary/30 px-1.5 py-2 text-[10px] font-extrabold shadow-sm transition-colors ${
+                                               openWorkoutReportId === dayItem.id
+                                                 ? "bg-primary text-primary-foreground"
+                                                 : "bg-background text-primary hover:bg-primary/10"
+                                             }`}
+                                             title={
+                                               openWorkoutReportId === dayItem.id
+                                                 ? "סגירת דוח"
+                                                 : "פתיחת דוח שבועי"
+                                             }
+                                           >
+                                             <span style={{ writingMode: "vertical-rl" }}>דוח</span>
+                                           </button>
+                                           <button
                                             onClick={() =>
-                                              setEditingDayId(isDayActive ? null : dayItem.id)
+                                               setEditingDayId((current) => {
+                                                 const next = current === dayItem.id ? null : dayItem.id;
+                                                 if (next && next !== dayItem.id) {
+                                                   setOpenWorkoutReportId(null);
+                                                 }
+                                                 return next;
+                                               })
                                             }
                                             className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
                                           >
                                             {isDayActive ? "סגור" : "+ שייך תרגיל מותאם"}
                                           </button>
                                         </div>
+
+                                         {openWorkoutReportId === dayItem.id ? (
+                                           <div id={`workout-report-${dayItem.id}`}>
+                                             <WorkoutWeeklyReport
+                                               workout={dayItem}
+                                               history={clientDetails.history}
+                                               exercises={store.exercises}
+                                             />
+                                           </div>
+                                         ) : null}
 
                                         {dayItem.items?.length > 0 && (
                                           <div className="space-y-1.5 pt-1">
