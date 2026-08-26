@@ -391,6 +391,7 @@ test("active workout values survive leaving and reopening the session", async ({
 
   await page.goto("/programs");
   await page.goto(`/session/${WORKOUT_ID}`);
+  await page.reload();
   await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
   await expect(page.locator('input[type="number"]').first()).toHaveValue("123");
 

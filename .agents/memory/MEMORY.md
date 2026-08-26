@@ -15,6 +15,7 @@
 - [Coach-to-trainee synchronization](coach-trainee-sync.md) — Remote coach edits need explicit trainee rehydration, without overwriting pending offline-first local changes.
 - [iOS loading scroll lock](loading-scroll-lock.md) — A fixed splash layer does not stop Safari body dragging; lock html/body overflow and touch behavior during loading.
 - [Targeted formatting checks](targeted-formatting-checks.md) — Compare formatting against the baseline and avoid broad rewrites when a large UI file already has style drift.
+- [Remote refresh draft ownership](remote-refresh-draft-ownership.md) — Keep user-edited controlled fields in a local draft so periodic server refreshes cannot erase in-progress input.
 - [Supabase MCP fallback](supabase-mcp-fallback.md) — If generated Supabase MCP callbacks are unavailable, the installed custom MCP connection may still expose the streamable `/mcp` endpoint.
 - [Live Supabase sync drift](live-supabase-sync-drift.md) — Local realtime mocks can pass while the live schema or publication is behind; verify both before declaring cross-user sync ready.
 - [Playwright WebKit runtime](playwright-webkit-nix.md) — The bundled Linux WebKit may require Debian ABI libraries unavailable in stable Nix; keep the release gate explicit rather than silently skipping it.
