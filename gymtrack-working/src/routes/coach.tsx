@@ -71,6 +71,14 @@ type CoachClientRow = {
   profiles?: { email?: string | null; full_name?: string | null; weight_kg?: number | null } | null;
 };
 
+type ExerciseBuilderReturnContext = {
+  returnUrl: string;
+  clientId: string | null;
+  programId: string | null;
+  dayId: string | null;
+  scrollY: number;
+};
+
 type ProfileRow = {
   id: string;
   email?: string | null;
@@ -317,6 +325,10 @@ export function CoachDashboardPage({
   const [showCreateExercise, setShowCreateExercise] = useState(false);
   const [newExerciseDraft, setNewExerciseDraft] = useState<Exercise>(() => emptyExercise());
   const [newExerciseError, setNewExerciseError] = useState("");
+  const [pendingCreatedExercise, setPendingCreatedExercise] = useState<{
+    exerciseId: string;
+    context: ExerciseBuilderReturnContext;
+  } | null>(null);
   const [programQuery, setProgramQuery] = useState("");
   const [targetWeight, setTargetWeight] = useState(20);
   const [setsCount, setSetsCount] = useState(3);
@@ -328,8 +340,25 @@ export function CoachDashboardPage({
     const createdExerciseId = window.sessionStorage.getItem("gymtrack-created-exercise-id");
     if (!createdExerciseId) return;
     if (!store.exercises.some((exercise) => exercise.id === createdExerciseId)) return;
+    let context: ExerciseBuilderReturnContext | null = null;
+    try {
+      const rawContext = window.sessionStorage.getItem("gymtrack-exercise-return-context");
+      if (rawContext) context = JSON.parse(rawContext) as ExerciseBuilderReturnContext;
+    } catch {
+      context = null;
+    }
+    if (context?.clientId) {
+      setSelectedClientId(context.clientId);
+      setShowClientWorkspace(true);
+    }
+    if (context?.programId) setEditingProgramId(context.programId);
+    if (context?.dayId) setEditingDayId(context.dayId);
     setSelectedExId(createdExerciseId);
     setExerciseBuilderNotice("התרגיל החדש נבחר להוספה לאימון.");
+    if (context) {
+      setPendingCreatedExercise({ exerciseId: createdExerciseId, context });
+      window.sessionStorage.removeItem("gymtrack-exercise-return-context");
+    }
     window.sessionStorage.removeItem("gymtrack-created-exercise-id");
   }, [store.exercises]);
   const [setModes, setSetModes] = useState<Array<"normal" | "warmup" | "drop" | "superset">>([
@@ -915,6 +944,24 @@ export function CoachDashboardPage({
     initialNutritionMealId,
     initialProgramId,
   ]);
+
+  useEffect(() => {
+    const pending = pendingCreatedExercise;
+    if (!pending || !clientDetails) return;
+    if (pending.context.clientId && selectedClientId !== pending.context.clientId) return;
+    if (!pending.context.dayId) return;
+
+    const day = clientDetails.workouts.find((workout) => workout.id === pending.context.dayId);
+    if (!day) return;
+    const program = clientDetails.programs.find((item) => item.dayIds.includes(day.id));
+
+    setActiveWorkspaceTab("programs");
+    setOpenEditor("programs");
+    setEditingProgramId(program?.id ?? pending.context.programId);
+    setEditingDayId(day.id);
+    setEditingItemId(null);
+    setSelectedExId(pending.exerciseId);
+  }, [clientDetails, pendingCreatedExercise, selectedClientId]);
 
   useEffect(() => {
     if (!focusedExerciseId) return;
@@ -1861,6 +1908,16 @@ export function CoachDashboardPage({
     if (!isCoach) return;
     setShowExercisePicker(false);
     window.sessionStorage.setItem("gymtrack-exercise-return-url", window.location.href);
+    window.sessionStorage.setItem(
+      "gymtrack-exercise-return-context",
+      JSON.stringify({
+        returnUrl: window.location.href,
+        clientId: selectedClientId,
+        programId: editingProgramId,
+        dayId: editingDayId,
+        scrollY: window.scrollY,
+      } satisfies ExerciseBuilderReturnContext),
+    );
     navigate({ to: "/exercises/$exerciseId", params: { exerciseId: "new" } });
   };
 

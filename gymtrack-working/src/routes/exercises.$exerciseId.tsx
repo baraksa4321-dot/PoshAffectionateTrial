@@ -333,6 +333,8 @@ function ExerciseDetail() {
       if (returnUrl) {
         window.sessionStorage.removeItem("gymtrack-exercise-return-url");
         window.sessionStorage.setItem("gymtrack-created-exercise-id", draft.id);
+        // The coach screen reads this together with the created id and restores
+        // the exact client/program/day context before assigning the exercise.
         window.location.assign(returnUrl);
         return;
       }
