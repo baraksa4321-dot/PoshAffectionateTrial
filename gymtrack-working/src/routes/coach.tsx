@@ -997,6 +997,7 @@ export function CoachDashboardPage({
   const [newProgramName, setNewProgramName] = useState("");
   const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
   const [editingDayId, setEditingDayId] = useState<string | null>(null);
+  const [showExerciseForm, setShowExerciseForm] = useState(false);
   const [openWorkoutReportId, setOpenWorkoutReportId] = useState<string | null>(null);
   const [focusedExerciseId, setFocusedExerciseId] = useState<string | null>(null);
   const [newDayName, setNewDayName] = useState("");
@@ -1038,7 +1039,10 @@ export function CoachDashboardPage({
       setShowClientWorkspace(true);
     }
     if (context?.programId) setEditingProgramId(context.programId);
-    if (context?.dayId) setEditingDayId(context.dayId);
+    if (context?.dayId) {
+      setEditingDayId(context.dayId);
+      setShowExerciseForm(true);
+    }
     setSelectedExId(createdExerciseId);
     setExerciseBuilderNotice("התרגיל החדש נבחר להוספה לאימון.");
     if (context) {
@@ -1049,6 +1053,7 @@ export function CoachDashboardPage({
   }, [store.exercises]);
   useEffect(() => {
     if (editingDayId) setReportBookmarkWorkoutId(editingDayId);
+    else setShowExerciseForm(false);
     setOpenWorkoutReportId((current) =>
       current && editingDayId && current !== editingDayId ? null : current,
     );
@@ -1350,6 +1355,7 @@ export function CoachDashboardPage({
     setEditingDayId(firstDay.id);
     const firstExercise = firstDay.items[0];
     if (firstExercise) {
+      setShowExerciseForm(true);
       setEditingItemId(firstExercise.id);
       setSelectedExId(firstExercise.exerciseId);
       setTargetWeight(firstExercise.targetWeight || firstExercise.weight);
@@ -1579,6 +1585,7 @@ export function CoachDashboardPage({
         ? firstWorkoutDay?.items.find((item) => item.exerciseId === initialExerciseId)
         : undefined;
       setEditingItemId(requestedItem?.id ?? null);
+      setShowExerciseForm(Boolean(requestedItem));
       if (requestedItem) {
         setSelectedExId(requestedItem.exerciseId);
         setTargetWeight(requestedItem.targetWeight || requestedItem.weight);
@@ -1651,6 +1658,7 @@ export function CoachDashboardPage({
     setOpenEditor("programs");
     setEditingProgramId(program?.id ?? pending.context.programId);
     setEditingDayId(day.id);
+      setShowExerciseForm(true);
     setEditingItemId(null);
     setSelectedExId(pending.exerciseId);
   }, [clientDetails, pendingCreatedExercise, selectedClientId]);
@@ -2122,6 +2130,7 @@ export function CoachDashboardPage({
       setEditingItemId(null);
       setSelectedExId("");
       setEditingDayId(null);
+      setShowExerciseForm(false);
       setTechniqueNotes("");
       return;
     }
@@ -2271,6 +2280,7 @@ export function CoachDashboardPage({
       saveWorkout({ ...currentDay, items: updatedItems });
       setSelectedExId("");
       setEditingDayId(null);
+      setShowExerciseForm(false);
       setTechniqueNotes("");
       setSupersetGroup("");
       setSupersetPartnerId("");
@@ -2295,6 +2305,7 @@ export function CoachDashboardPage({
     setSelectedExId("");
     setEditingItemId(null);
     setEditingDayId(null);
+    setShowExerciseForm(false);
     setTechniqueNotes("");
     setSupersetGroup("");
     setSupersetPartnerId("");
@@ -4448,13 +4459,22 @@ export function CoachDashboardPage({
                                             onClick={() =>
                                                (() => {
                                                  const nextDayId = isDayActive ? null : dayItem.id;
-                                                 if (nextDayId) setReportBookmarkWorkoutId(nextDayId);
+                                                 if (nextDayId) {
+                                                   setReportBookmarkWorkoutId(nextDayId);
+                                                   setShowExerciseForm(true);
+                                                 } else {
+                                                   setShowExerciseForm(false);
+                                                   setEditingItemId(null);
+                                                   setSelectedExId("");
+                                                 }
                                                  setEditingDayId(nextDayId);
                                                })()
                                             }
                                             className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
                                           >
-                                            {isDayActive ? "סגור" : "+ שייך תרגיל מותאם"}
+                                             {isDayActive
+                                               ? "סגור"
+                                               : genderText(gender, "+ הוסיפי תרגיל", "+ הוסף תרגיל")}
                                           </button>
                                         </div>
 
@@ -4551,6 +4571,7 @@ export function CoachDashboardPage({
                                                         type="button"
                                                         onClick={() => {
                                                           setEditingDayId(dayItem.id);
+                                                          setShowExerciseForm(true);
                                                           setEditingItemId((current) =>
                                                             current === exItem.id ? null : exItem.id,
                                                           );
@@ -5181,7 +5202,7 @@ export function CoachDashboardPage({
                                                    </div>
                                         )}
 
-                                        {isDayActive && (
+                                         {isDayActive && showExerciseForm && (
                                           <ExerciseBuilderPlacement exerciseId={editingItemId}>
                                             <form
                                             onSubmit={handleAddExerciseToDay}
