@@ -40,5 +40,17 @@ to read all three new values without reload and checks that a pending trainee-lo
 still present. The original menu is restored and the temporary program (and its day through the
 foreign-key cascade) is deleted in `finally`, including when an assertion fails after setup.
 
-The normal release check does not run this command because it requires live test-account
-configuration and intentionally exercises the external Supabase service.
+## Release validation
+
+The repository release check invokes a guarded wrapper after the local preview check:
+
+```bash
+pnpm run release:check
+```
+
+When none of the four `GYMTRACK_SMOKE_*EMAIL` or `GYMTRACK_SMOKE_*PASSWORD` settings are
+provided, the wrapper prints a safe `SKIP` message and continues. When any disposable
+smoke-account setting is present, it requires all smoke settings plus
+`GYMTRACK_SMOKE_ALLOW_LIVE=true`, runs this command, and fails the release if the live
+check fails. Passwords, emails, keys, and tokens are never printed by the wrapper or the
+smoke script.
