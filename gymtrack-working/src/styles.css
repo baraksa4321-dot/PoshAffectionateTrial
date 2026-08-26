@@ -4137,11 +4137,16 @@ html.night-mode .auth-panel {
 [data-coach-workspace="true"] {
   max-height: calc(100dvh - var(--app-topbar-height, 5rem) - 0.5rem);
   min-height: 0;
+  /* This workspace is its own iOS scroll container on tracking/client pages.
+     The global main padding cannot expose content inside this nested scroller
+     above the fixed bottom navigation. */
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+  scroll-padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
 }
 
 input:not([type="hidden"]):not([type="file"]),
