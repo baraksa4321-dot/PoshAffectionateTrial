@@ -79,6 +79,12 @@ type ExerciseBuilderReturnContext = {
   scrollY: number;
 };
 
+function moveArrayItemToFirst<T>(values: T[], index: number): T[] {
+  if (index <= 0 || index >= values.length) return [...values];
+  const selected = values[index]!;
+  return [selected, ...values.slice(0, index), ...values.slice(index + 1)];
+}
+
 type ProfileRow = {
   id: string;
   email?: string | null;
@@ -4577,17 +4583,47 @@ export function CoachDashboardPage({
                                                             | "drop"
                                                             | "superset";
                                                           setSetModes((current) => {
-                                                            const next = Array.from(
-                                                              { length: Math.max(1, setsCount) },
+                                                             const count = Math.max(1, setsCount);
+                                                             const next = Array.from(
+                                                               { length: count },
                                                               (_, itemIndex) => current[itemIndex] ?? "normal",
                                                             );
                                                             next[index] = nextMode;
-                                                            setWarmupEnabled(next.includes("warmup"));
-                                                            setDropSetEnabled(next.includes("drop"));
+                                                             const ordered =
+                                                               nextMode === "warmup"
+                                                                 ? moveArrayItemToFirst(next, index)
+                                                                 : next;
+                                                             if (nextMode === "warmup" && index > 0) {
+                                                               const reorderFields = <T,>(
+                                                                 values: T[],
+                                                                 fallback: T,
+                                                               ) =>
+                                                                 moveArrayItemToFirst(
+                                                                   Array.from(
+                                                                     { length: count },
+                                                                     (_, itemIndex) => values[itemIndex] ?? fallback,
+                                                                   ),
+                                                                   index,
+                                                                 );
+                                                               setSetWeights((values) =>
+                                                                 reorderFields(values, targetWeight),
+                                                               );
+                                                               setSetRepMins((values) =>
+                                                                 reorderFields(values, repMin),
+                                                               );
+                                                               setSetRepMaxes((values) =>
+                                                                 reorderFields(values, repMax),
+                                                               );
+                                                               setSetRests((values) =>
+                                                                 reorderFields(values, restSec),
+                                                               );
+                                                             }
+                                                             setWarmupEnabled(ordered.includes("warmup"));
+                                                             setDropSetEnabled(ordered.includes("drop"));
                                                             if (nextMode === "superset" && !supersetGroup) {
                                                               setSupersetGroup("A");
                                                             }
-                                                            return next;
+                                                             return ordered;
                                                           });
                                                         }}
                                                         className="h-9 min-w-36 rounded-xl border border-border bg-white px-2 text-[11px] font-bold text-ink"
