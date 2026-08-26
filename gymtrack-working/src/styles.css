@@ -806,8 +806,9 @@ html:not(.night-mode) .nav-shell {
     lang: he;
     scroll-behavior: smooth;
     overflow-x: clip;
+    overflow-y: auto;
     /* Let iOS handle taps without the legacy 300ms click delay. */
-    touch-action: manipulation;
+    touch-action: pan-y;
   }
 
   body {
@@ -821,12 +822,19 @@ html:not(.night-mode) .nav-shell {
     overscroll-behavior-y: none;
     min-height: 100dvh;
     overflow-x: clip;
+    overflow-y: auto;
     direction: rtl;
     text-align: start;
     background-image: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     font-feature-settings:
       "kern" 1,
       "ss01" 1;
+  }
+
+  #root {
+    min-height: 100dvh;
   }
 
   input,
@@ -4106,7 +4114,17 @@ html.night-mode .auth-panel {
 
 .page-enter {
   animation: page-enter-in 260ms cubic-bezier(0.22, 0.8, 0.24, 1) both;
-  contain: layout paint;
+}
+
+/* Keep the document and nested mobile sheets explicitly pannable vertically. */
+.page-scroll-container,
+[data-overlay-panel="true"] {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+[data-overlay-panel="true"] {
+  overscroll-behavior-y: contain;
 }
 
 ::view-transition-old(root),

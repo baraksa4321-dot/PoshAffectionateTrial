@@ -558,7 +558,7 @@ export function AppShell({
       </header>
 
       <main
-        className={`page-enter mx-auto w-full max-w-3xl px-4 pb-8 sm:px-6 ${
+        className={`page-enter page-scroll-container mx-auto w-full max-w-3xl px-4 pb-8 sm:px-6 ${
           compactHeader ? "flex flex-col pt-1.5" : "pt-5 sm:pt-7"
         }`}
         onTouchStart={handleMainTouchStart}

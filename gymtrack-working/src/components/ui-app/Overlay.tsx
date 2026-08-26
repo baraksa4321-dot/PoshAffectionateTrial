@@ -219,7 +219,7 @@ export function Overlay({
           ? { height: `${viewportHeight}px` }
           : undefined
       }
-      className={`overlay-root fixed inset-0 z-[100] flex overflow-x-hidden ${
+      className={`overlay-root fixed inset-0 z-[100] flex touch-pan-y overflow-x-hidden ${
         isFull
           ? "items-stretch justify-center"
           : isBottom
@@ -242,7 +242,7 @@ export function Overlay({
             ? { marginBottom: `${keyboardOffset}px` }
             : {}),
         }}
-        className={`w-full ${
+        className={`w-full touch-pan-y ${
           isFull
             ? "h-full max-h-full max-w-none rounded-none"
             : isBottom
