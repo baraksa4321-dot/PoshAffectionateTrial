@@ -3772,17 +3772,6 @@ export function CoachDashboardPage({
                                                    {editingItemId === exItem.id ? (
                                                      <>
                                                     <div className="mt-4 space-y-5 border-t border-border/50 pt-4">
-                                                   <div className="border-b border-border/50 pb-4 text-right">
-                                                     <p className="text-[10px] font-bold tracking-[0.16em] text-primary uppercase">
-                                                       עריכת תרגיל
-                                                     </p>
-                                                     <h3 className="mt-1 font-display text-xl font-extrabold text-ink">
-                                                       {exMeta?.name || "תרגיל"}
-                                                     </h3>
-                                                     <p className="mt-1 text-[11px] text-muted-foreground">
-                                                       הגדירי את המשקל, טווח החזרות וסוג הסט
-                                                     </p>
-                                                   </div>
                                                    <div className="grid grid-cols-3 gap-2 border-b border-border/50 pb-4">
                                                     <label className="text-center text-[9px] font-bold text-muted-foreground">
                                                       משקל יעד
@@ -4630,7 +4619,7 @@ export function CoachDashboardPage({
                                               />
                                             </label>
 
-                                            {warmupEnabled || dropSetEnabled || supersetGroup ? (
+                                            {false && (warmupEnabled || dropSetEnabled || supersetGroup) ? (
                                               <div className="grid min-w-0 grid-cols-2 gap-2 rounded-2xl border border-border/60 bg-background p-3">
                                                 {warmupEnabled ? (
                                                   <>
