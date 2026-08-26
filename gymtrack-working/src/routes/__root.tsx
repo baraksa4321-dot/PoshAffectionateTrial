@@ -1108,18 +1108,19 @@ function RootContent() {
     document.documentElement.lang = "he";
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
-    const storageKey = "my-routine-loading-cycle-v4";
+    const storageKey = "my-routine-loading-cycle-v5";
     setLoadingCycle((current) => {
       try {
         const previousCycle = Number(window.localStorage.getItem(storageKey));
-        const nextCycle =
-          Number.isInteger(previousCycle) && previousCycle >= 0 ? previousCycle + 1 : current;
+        const nextCycle = Number.isInteger(previousCycle) && previousCycle >= 0
+          ? previousCycle + 1
+          : Math.floor(Math.random() * 1_000_000);
         window.localStorage.setItem(storageKey, String(nextCycle));
         return nextCycle;
       } catch {
-        // Private browsing can disable storage; keep the deterministic
-        // initial value and continue rotating in memory.
-        return current;
+        // Private browsing can disable storage. Use a per-open seed instead
+        // of falling back to the same first illustration and message.
+        return Math.floor(Math.random() * 1_000_000) || current + 1;
       }
     });
     // Register the offline app shell in Preview as well as production. The
