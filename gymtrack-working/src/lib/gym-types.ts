@@ -386,6 +386,49 @@ export type GymData = {
   preExitChecklist?: ChecklistItem[];
 };
 
+export function reportDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function getWorkoutReportWeekDates(weekOffset = 0, referenceDate = new Date()): string[] {
+  const weekStart = new Date(referenceDate);
+  weekStart.setHours(0, 0, 0, 0);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setDate(weekStart.getDate() + weekOffset * 7);
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate() + index);
+    return reportDateKey(date);
+  });
+}
+
+export function getNextWorkoutReportWeekOffset(weekOffset: number): number {
+  return Math.min(0, weekOffset + 1);
+}
+
+export function getWorkoutReportSessions(
+  history: HistorySession[],
+  workout: Workout,
+  weekDates: string[],
+): HistorySession[] {
+  const weekStart = weekDates[0]!;
+  const weekEnd = weekDates[weekDates.length - 1]!;
+
+  return history
+    .filter(
+      (session) =>
+        (session.workoutId === workout.id ||
+          (!session.workoutId && session.workoutName === workout.name)) &&
+        session.date.slice(0, 10) >= weekStart &&
+        session.date.slice(0, 10) <= weekEnd,
+    )
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
 export const MUSCLE_GROUPS = [
   "חזה",
   "חזה עליון",

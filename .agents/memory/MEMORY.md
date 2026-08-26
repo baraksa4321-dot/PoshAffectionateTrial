@@ -13,3 +13,4 @@
 - [Supabase sync schema contract](supabase-sync-schema-contract.md) — One stale column mapping can abort the shared sync and make unrelated changes appear unsaved.
 - [Coach tracking deep links](coach-tracking-deep-links.md) — Tracking-to-editor navigation must not abort when program/day associations are stale; pass day and exercise IDs independently.
 - [iOS loading scroll lock](loading-scroll-lock.md) — A fixed splash layer does not stop Safari body dragging; lock html/body overflow and touch behavior during loading.
+- [Targeted formatting checks](targeted-formatting-checks.md) — Compare formatting against the baseline and avoid broad rewrites when a large UI file already has style drift.

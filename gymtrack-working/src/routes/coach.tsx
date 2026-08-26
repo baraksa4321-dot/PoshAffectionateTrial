@@ -46,6 +46,12 @@ import { pullClientDataForCoach } from "../lib/supabase-sync";
 import { supabase } from "../lib/supabase";
 import { calculateCalorieEstimate } from "../lib/calorie-calculator";
 import { exerciseDisplayName } from "../lib/exercise-library";
+import {
+  getNextWorkoutReportWeekOffset,
+  getWorkoutReportSessions,
+  getWorkoutReportWeekDates,
+  reportDateKey,
+} from "../lib/gym-types";
 import type {
   BodyMeasurement,
   BroadcastAnnouncement,
@@ -144,24 +150,6 @@ type WorkoutReportDay = {
   totalSets: number;
 };
 
-function reportDateKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function getWeekDates(weekOffset = 0): string[] {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  today.setDate(today.getDate() - today.getDay());
-  today.setDate(today.getDate() + weekOffset * 7);
-  return Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(today);
-    date.setDate(today.getDate() + index);
-    return reportDateKey(date);
-  });
-}
 function reportDateLabel(date: string, options?: Intl.DateTimeFormatOptions): string {
   return new Date(`${date}T00:00:00`).toLocaleDateString(
     "he-IL",
@@ -175,13 +163,6 @@ function reportWeekdayLabel(date: string): string {
     .replace(".", "");
 }
 
-function workoutReportSessionMatches(session: HistorySession, workout: Workout): boolean {
-  return (
-    session.workoutId === workout.id ||
-    (!session.workoutId && session.workoutName === workout.name)
-  );
-}
-
 function WorkoutWeeklyReportWeek({
   workout,
   history,
@@ -192,18 +173,11 @@ function WorkoutWeeklyReportWeek({
   exercises: Exercise[];
 }) {
   const [weekOffset, setWeekOffset] = useState(0);
-  const weekDates = useMemo(() => getWeekDates(weekOffset), [weekOffset]);
+  const weekDates = useMemo(() => getWorkoutReportWeekDates(weekOffset), [weekOffset]);
   const weekStart = weekDates[0]!;
   const weekEnd = weekDates[weekDates.length - 1]!;
   const isCurrentWeek = weekOffset === 0;
-  const sessions = history
-    .filter(
-      (session) =>
-        workoutReportSessionMatches(session, workout) &&
-        session.date.slice(0, 10) >= weekStart &&
-        session.date.slice(0, 10) <= weekEnd,
-    )
-    .sort((a, b) => b.date.localeCompare(a.date));
+  const sessions = getWorkoutReportSessions(history, workout, weekDates);
   const sessionsByDate = new Map<string, HistorySession[]>();
 
   for (const session of sessions) {
@@ -315,7 +289,7 @@ function WorkoutWeeklyReportWeek({
               aria-label="שבוע הבא"
               title="שבוע הבא"
               disabled={isCurrentWeek}
-              onClick={() => setWeekOffset((offset) => Math.min(0, offset + 1))}
+              onClick={() => setWeekOffset(getNextWorkoutReportWeekOffset)}
               className="grid h-7 w-7 place-items-center rounded-lg text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-30"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -571,7 +545,7 @@ function reportShiftDate(date: string, amount: number): string {
   return reportDateKey(nextDate);
 }
 
-function WorkoutWeeklyReport({
+function WorkoutDailyReport({
   workout,
   history,
   exercises,
@@ -583,14 +557,7 @@ function WorkoutWeeklyReport({
   const [reportDate, setReportDate] = useState(() => reportDateKey(new Date()));
   const today = reportDateKey(new Date());
   const sessions = useMemo(
-    () =>
-      history
-        .filter(
-          (session) =>
-            workoutReportSessionMatches(session, workout) &&
-            session.date.slice(0, 10) === reportDate,
-        )
-        .sort((a, b) => b.date.localeCompare(a.date)),
+    () => getWorkoutReportSessions(history, workout, [reportDate]),
     [history, reportDate, workout],
   );
   const exerciseRows = workout.items.map((item) => ({
@@ -6815,7 +6782,7 @@ export function CoachDashboardPage({
                 aria-hidden={openWorkoutReportId !== reportBookmarkWorkout.id}
               >
                 {openWorkoutReportId === reportBookmarkWorkout.id ? (
-                  <WorkoutWeeklyReport
+                  <WorkoutWeeklyReportWeek
                     workout={reportBookmarkWorkout}
                     history={clientDetails?.history ?? []}
                     exercises={store.exercises}
