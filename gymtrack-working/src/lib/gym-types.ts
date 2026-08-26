@@ -160,6 +160,9 @@ export type LoggedSet = {
 export type HistoryEntry = {
   exerciseId: string;
   exerciseName: string;
+  /** Original planned exercise when this entry was replaced during a session. */
+  replacedExerciseId?: string;
+  replacedExerciseName?: string;
   equipment?: string;
   videoUrl?: string;
   sets: LoggedSet[];

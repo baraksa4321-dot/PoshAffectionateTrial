@@ -472,6 +472,8 @@ function Session() {
   };
 
   const replaceExercise = (ei: number, newEx: Exercise) => {
+    const currentEntry = entries[ei];
+    if (!currentEntry) return;
     setEntries((prev) =>
       prev.map((e, i) =>
         i === ei
@@ -480,6 +482,8 @@ function Session() {
               exerciseId: newEx.id,
               exerciseName: newEx.name,
               equipment: newEx.equipment,
+              replacedExerciseId: e.replacedExerciseId ?? e.exerciseId,
+              replacedExerciseName: e.replacedExerciseName ?? e.exerciseName,
             }
           : e,
       ),

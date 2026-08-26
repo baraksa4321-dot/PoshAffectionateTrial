@@ -67,6 +67,7 @@ import type {
   BroadcastAnnouncement,
   CoachMessage,
   Exercise,
+  HistoryEntry,
   HistorySession,
   Meal,
   MealFood,
@@ -172,6 +173,15 @@ type WorkoutReportDay = {
   completedSets: number;
   totalSets: number;
 };
+
+function findReplacementEntry(item: WorkoutItem, entries: HistoryEntry[]) {
+  return entries.find(
+    (entry) =>
+      entry.exerciseId !== item.exerciseId &&
+      (entry.replacedExerciseId === item.exerciseId ||
+        item.approvedAlternatives?.includes(entry.exerciseId)),
+  );
+}
 
 function reportDateLabel(date: string, options?: Intl.DateTimeFormatOptions): string {
   return new Date(`${date}T00:00:00`).toLocaleDateString(
