@@ -577,6 +577,8 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       profile.gender === "male" || profile.gender === "female"
         ? profile.gender
         : nextData.userProfile?.gender;
+    // `coach_id` is nullable and an explicit null means the assignment was
+    // removed. Do not preserve the old cached pointer in that case.
     const coachId = profile.coach_id || undefined;
     const approvalStatus =
       profile.approval_status === "pending" ||
@@ -584,8 +586,13 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       profile.approval_status === "rejected"
         ? profile.approval_status
         : undefined;
+    const {
+      coachId: _cachedCoachId,
+      approvalStatus: _cachedApprovalStatus,
+      ...profileWithoutAssignments
+    } = nextData.userProfile ?? { weight: 0 };
     nextData.userProfile = {
-      ...nextData.userProfile,
+      ...profileWithoutAssignments,
       weight: profile.weight_kg ? Number(profile.weight_kg) : (nextData.userProfile?.weight ?? 0),
       role: profile.role as UserRole,
       todayRoutineEnabled: profile.today_routine_enabled ?? true,
@@ -636,7 +643,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     ]);
     if (messagesError) throw new Error(`Messages pull failed: ${messagesError.message}`);
 
-    if (messages && messages.length > 0) {
+    if (messages) {
       nextData.coachMessages = messages.map((m) => ({
         id: m.id,
         coachId: m.coach_id,
@@ -688,6 +695,10 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
           createdAt: link.created_at,
         }));
       }
+    } else {
+      // A role change can happen while a coach's old cache is still loaded.
+      // Never leave the previous management list attached to a client session.
+      nextData.clients = [];
     }
 
     // 4. Custom Exercises
@@ -990,6 +1001,9 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
 
     const { data: profile, error: profileError } = profileResult;
     if (profileError) throw new Error(`Client profile pull failed: ${profileError.message}`);
+    if (!profile || profile.role !== "client") {
+      throw new Error("Client data pull failed: the client is no longer available to this coach");
+    }
     const { data: dbPrograms, error: programsError } = programsResult;
     if (programsError) throw new Error(`Client programs pull failed: ${programsError.message}`);
     const { data: dbProgramDays, error: programDaysError } = programDaysResult;

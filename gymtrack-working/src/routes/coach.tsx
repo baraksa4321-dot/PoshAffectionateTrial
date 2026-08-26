@@ -882,6 +882,8 @@ export function CoachDashboardPage({
   const [selectedOwnerProfileId, setSelectedOwnerProfileId] = useState<string | null>(null);
   const [selectedOwnerProfileDetails, setSelectedOwnerProfileDetails] =
     useState<ClientDetails | null>(null);
+  const [assignmentCoachByUser, setAssignmentCoachByUser] = useState<Record<string, string>>({});
+  const [assignmentUserId, setAssignmentUserId] = useState<string | null>(null);
   const [ownerUserActionId, setOwnerUserActionId] = useState<string | null>(null);
   const [clientFeedback, setClientFeedback] = useState<ClientFeedbackRow[]>([]);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -1194,14 +1196,50 @@ export function CoachDashboardPage({
   }, [isCoach]);
 
   useEffect(() => {
-    if (isCoach) {
-      loadCoachClients();
+    if (!isCoach) return;
+
+    const refreshManagementData = () => {
+      if (document.visibilityState === "hidden") return;
+      void loadCoachClients();
+      if (isOwner) void loadAllProfilesForOwner();
+      void loadClientFeedback();
+    };
+
+    refreshManagementData();
+    window.addEventListener("focus", refreshManagementData);
+    window.addEventListener("pageshow", refreshManagementData);
+    document.addEventListener("visibilitychange", refreshManagementData);
+    const interval = window.setInterval(refreshManagementData, 15_000);
+
+    return () => {
+      window.removeEventListener("focus", refreshManagementData);
+      window.removeEventListener("pageshow", refreshManagementData);
+      document.removeEventListener("visibilitychange", refreshManagementData);
+      window.clearInterval(interval);
+    };
+  }, [
+    isCoach,
+    isOwner,
+    loadAllProfilesForOwner,
+    loadCoachClients,
+    loadClientFeedback,
+  ]);
+
+  useEffect(() => {
+    if (
+      isOwner ||
+      isSelfSelected ||
+      !selectedClientId ||
+      clients.length === 0 ||
+      clients.some((client) => client.client_id === selectedClientId)
+    ) {
+      return;
     }
-    if (isOwner) {
-      loadAllProfilesForOwner();
-    }
-    loadClientFeedback();
-  }, [isCoach, isOwner, loadAllProfilesForOwner, loadCoachClients, loadClientFeedback]);
+    setSelectedClientId(null);
+    setShowClientWorkspace(false);
+    setClientDetails(null);
+    setClientDetailsError("השיוך למתאמן השתנה. רשימת המתאמנים עודכנה.");
+  }, [clients, isOwner, isSelfSelected, selectedClientId]);
 
   useEffect(() => {
     if (clientsOnly || clients.length === 0) {
@@ -1679,6 +1717,7 @@ export function CoachDashboardPage({
 
       const refreshed = await loadAllProfilesForOwner();
       if (!refreshed) return;
+      await loadCoachClients();
       setRoleChangeNotice(`תפקיד המשתמש עודכן בהצלחה ל-${newRole === "coach" ? "מאמן" : "מתאמן"}`);
     } catch (err: unknown) {
       setManagementError(`שינוי התפקיד נכשל: ${errorMessage(err, "שגיאה בשינוי תפקיד")}`);
@@ -1740,9 +1779,39 @@ export function CoachDashboardPage({
   const openOwnerProfile = async (profile: ProfileRow) => {
     setSelectedOwnerProfileId(profile.id);
     setSelectedOwnerProfileDetails(null);
+    setAssignmentCoachByUser((current) => ({
+      ...current,
+      [profile.id]: profile.coach_id ?? "",
+    }));
     if (profile.role === "client") {
       const details = await pullClientDataForCoach(profile.id);
       if (!details.error) setSelectedOwnerProfileDetails(details);
+    }
+  };
+
+  const handleOwnerAssignClient = async (profile: ProfileRow) => {
+    const newCoachId = assignmentCoachByUser[profile.id] || "";
+    if (profile.role !== "client" || profile.approval_status !== "approved" || !newCoachId) {
+      setManagementError("יש לבחור מאמן למתאמן מאושר לפני השמירה.");
+      return;
+    }
+    setAssignmentUserId(profile.id);
+    setManagementError("");
+    try {
+      const { data, error } = await supabase.rpc("assign_client_to_coach", {
+        target_client_id: profile.id,
+        new_coach_id: newCoachId,
+      });
+      if (error) throw error;
+      if (data !== true) throw new Error("השינוי לא התקבל במסד הנתונים");
+      await Promise.all([loadAllProfilesForOwner(), loadCoachClients()]);
+      const refreshedDetails = await pullClientDataForCoach(profile.id);
+      if (!refreshedDetails.error) setSelectedOwnerProfileDetails(refreshedDetails);
+      setRoleChangeNotice("שיוך המתאמן למאמן עודכן בהצלחה.");
+    } catch (err: unknown) {
+      setManagementError(`עדכון שיוך המתאמן נכשל: ${errorMessage(err, "שגיאה בעדכון השיוך")}`);
+    } finally {
+      setAssignmentUserId(null);
     }
   };
 
@@ -1792,8 +1861,8 @@ export function CoachDashboardPage({
         setCoachMsgText("");
         setTimeout(() => setMsgSentNotice(""), 3000);
       }
-    } catch {
-      /* ignore */
+    } catch (err: unknown) {
+      setMsgSentNotice(`שליחת הודעת החיזוק נכשלה: ${errorMessage(err, "שגיאה בשליחת ההודעה")}`);
     }
   };
 
@@ -1881,9 +1950,8 @@ export function CoachDashboardPage({
 
       const foundClientId = lookupRes[0].client_id;
 
-      const { error: linkErr } = await supabase.from("coach_clients").insert({
-        coach_id: user.id,
-        client_id: foundClientId,
+      const { error: linkErr } = await supabase.rpc("link_client_to_current_coach", {
+        target_client_id: foundClientId,
       });
 
       if (linkErr) throw linkErr;
@@ -3250,6 +3318,49 @@ export function CoachDashboardPage({
                         <p className="mt-2 text-[11px] text-muted-foreground">
                           מאמן משויך: <strong>{profileDisplayName(assignedCoach)}</strong>
                         </p>
+                      ) : null}
+                      {selectedProfile.role === "client" &&
+                      selectedProfile.approval_status === "approved" ? (
+                        <div className="mt-3 flex gap-2">
+                          <select
+                            value={
+                              assignmentCoachByUser[selectedProfile.id] ??
+                              selectedProfile.coach_id ??
+                              ""
+                            }
+                            onChange={(event) =>
+                              setAssignmentCoachByUser((current) => ({
+                                ...current,
+                                [selectedProfile.id]: event.target.value,
+                              }))
+                            }
+                            className="min-w-0 flex-1 rounded-xl border border-purple-200 bg-white px-2 py-2 text-xs font-semibold text-purple-950 outline-none focus:border-purple-500"
+                            aria-label={`בחירת מאמן עבור ${profileDisplayName(selectedProfile)}`}
+                          >
+                            <option value="">בחירת מאמן...</option>
+                            {allProfiles
+                              .filter(
+                                (candidate) =>
+                                  candidate.role === "coach" ||
+                                  (candidate.id === authUser?.id && candidate.role === "owner"),
+                              )
+                              .map((coach) => (
+                                <option key={coach.id} value={coach.id}>
+                                  {coach.id === authUser?.id
+                                    ? "אני (בעלים)"
+                                    : profileDisplayName(coach)}
+                                </option>
+                              ))}
+                          </select>
+                          <button
+                            type="button"
+                            disabled={assignmentUserId === selectedProfile.id}
+                            onClick={() => void handleOwnerAssignClient(selectedProfile)}
+                            className="shrink-0 rounded-xl bg-purple-700 px-3 py-2 text-[11px] font-bold text-white disabled:opacity-50"
+                          >
+                            {assignmentUserId === selectedProfile.id ? "שומר..." : "שמירת שיוך"}
+                          </button>
+                        </div>
                       ) : null}
                       {latestMeasurement ? (
                         <div className="mt-2 rounded-xl border border-border/60 bg-surface-2 p-2 text-[11px]">
