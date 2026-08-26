@@ -523,58 +523,139 @@ html.night-mode textarea::placeholder {
 
 /*
  * Palette consistency:
- * Components use semantic Tailwind colors for success, warm-up, supersets
- * and destructive actions. In daytime mode those semantic colors must still
- * belong to the selected palette instead of introducing unrelated hues.
+ * A few feature screens intentionally use Tailwind's status utility names
+ * (emerald for success, amber for warnings, blue/violet for information and
+ * rose/red for destructive actions). Keep those semantic roles, but resolve
+ * their actual colors from the active palette. Attribute substring matching
+ * also covers responsive, hover, focus and disabled utility variants.
  */
-:root:not(.night-mode)[data-theme] [class~="bg-emerald-50"],
-:root:not(.night-mode)[data-theme] [class~="bg-emerald-100"],
-:root:not(.night-mode)[data-theme] [class~="bg-green-50"],
-:root:not(.night-mode)[data-theme] [class~="bg-green-100"],
-:root:not(.night-mode)[data-theme] [class~="bg-amber-50"],
-:root:not(.night-mode)[data-theme] [class~="bg-amber-100"],
-:root:not(.night-mode)[data-theme] [class~="bg-yellow-50"],
-:root:not(.night-mode)[data-theme] [class~="bg-violet-50"],
-:root:not(.night-mode)[data-theme] [class~="bg-violet-100"],
-:root:not(.night-mode)[data-theme] [class~="bg-rose-50"],
-:root:not(.night-mode)[data-theme] [class~="bg-rose-100"],
-:root:not(.night-mode)[data-theme] [class~="bg-red-50"],
-:root:not(.night-mode)[data-theme] [class~="bg-red-100"],
-:root:not(.night-mode)[data-theme] [class~="bg-orange-50"],
-:root:not(.night-mode)[data-theme] [class~="bg-pink-50"] {
-  background-color: color-mix(in srgb, var(--primary) 11%, var(--background)) !important;
+:root[data-theme] {
+  --destructive: var(--rose);
+  --destructive-foreground: var(--primary-foreground);
+  --status-success: color-mix(in srgb, var(--primary) 78%, var(--ink));
+  --status-success-soft: color-mix(in srgb, var(--primary) 11%, var(--background));
+  --status-success-border: color-mix(in srgb, var(--primary) 35%, var(--border));
+  --status-warning: color-mix(in srgb, var(--accent) 78%, var(--ink));
+  --status-warning-soft: color-mix(in srgb, var(--accent) 14%, var(--background));
+  --status-warning-border: color-mix(in srgb, var(--accent) 38%, var(--border));
+  --status-info: color-mix(in srgb, var(--primary) 78%, var(--ink));
+  --status-info-soft: color-mix(in srgb, var(--primary) 11%, var(--background));
+  --status-info-border: color-mix(in srgb, var(--primary) 35%, var(--border));
+  --status-danger: color-mix(in srgb, var(--rose) 82%, var(--ink));
+  --status-danger-soft: color-mix(in srgb, var(--rose) 12%, var(--background));
+  --status-danger-border: color-mix(in srgb, var(--rose) 38%, var(--border));
 }
 
-:root:not(.night-mode)[data-theme] [class~="text-emerald-700"],
-:root:not(.night-mode)[data-theme] [class~="text-emerald-800"],
-:root:not(.night-mode)[data-theme] [class~="text-emerald-900"],
-:root:not(.night-mode)[data-theme] [class~="text-green-700"],
-:root:not(.night-mode)[data-theme] [class~="text-green-800"],
-:root:not(.night-mode)[data-theme] [class~="text-amber-700"],
-:root:not(.night-mode)[data-theme] [class~="text-amber-800"],
-:root:not(.night-mode)[data-theme] [class~="text-amber-900"],
-:root:not(.night-mode)[data-theme] [class~="text-yellow-700"],
-:root:not(.night-mode)[data-theme] [class~="text-violet-700"],
-:root:not(.night-mode)[data-theme] [class~="text-violet-800"],
-:root:not(.night-mode)[data-theme] [class~="text-violet-900"],
-:root:not(.night-mode)[data-theme] [class~="text-rose-700"],
-:root:not(.night-mode)[data-theme] [class~="text-rose-800"],
-:root:not(.night-mode)[data-theme] [class~="text-red-600"],
-:root:not(.night-mode)[data-theme] [class~="text-red-700"],
-:root:not(.night-mode)[data-theme] [class~="text-red-800"],
-:root:not(.night-mode)[data-theme] [class~="text-orange-700"] {
-  color: color-mix(in srgb, var(--primary) 78%, var(--ink)) !important;
+:root[data-theme] [class*="bg-emerald-"],
+:root[data-theme] [class*="bg-green-"],
+:root[data-theme] [class*="bg-teal-"],
+:root[data-theme] [class*="bg-lime-"] {
+  background-color: var(--status-success-soft) !important;
 }
 
-:root:not(.night-mode)[data-theme] [class~="border-emerald-200"],
-:root:not(.night-mode)[data-theme] [class~="border-green-200"],
-:root:not(.night-mode)[data-theme] [class~="border-amber-200"],
-:root:not(.night-mode)[data-theme] [class~="border-yellow-200"],
-:root:not(.night-mode)[data-theme] [class~="border-violet-200"],
-:root:not(.night-mode)[data-theme] [class~="border-rose-200"],
-:root:not(.night-mode)[data-theme] [class~="border-red-200"],
-:root:not(.night-mode)[data-theme] [class~="border-orange-200"] {
-  border-color: color-mix(in srgb, var(--primary) 35%, var(--border)) !important;
+:root[data-theme] [class*="bg-amber-"],
+:root[data-theme] [class*="bg-yellow-"],
+:root[data-theme] [class*="bg-orange-"] {
+  background-color: var(--status-warning-soft) !important;
+}
+
+:root[data-theme] [class*="bg-blue-"],
+:root[data-theme] [class*="bg-sky-"],
+:root[data-theme] [class*="bg-cyan-"],
+:root[data-theme] [class*="bg-indigo-"],
+:root[data-theme] [class*="bg-purple-"],
+:root[data-theme] [class*="bg-violet-"] {
+  background-color: var(--status-info-soft) !important;
+}
+
+:root[data-theme] [class*="bg-rose-"],
+:root[data-theme] [class*="bg-red-"],
+:root[data-theme] [class*="bg-pink-"] {
+  background-color: var(--status-danger-soft) !important;
+}
+
+:root[data-theme] [class*="text-emerald-"],
+:root[data-theme] [class*="text-green-"],
+:root[data-theme] [class*="text-teal-"],
+:root[data-theme] [class*="text-lime-"] {
+  color: var(--status-success) !important;
+}
+
+:root[data-theme] [class*="text-amber-"],
+:root[data-theme] [class*="text-yellow-"],
+:root[data-theme] [class*="text-orange-"] {
+  color: var(--status-warning) !important;
+}
+
+:root[data-theme] [class*="text-blue-"],
+:root[data-theme] [class*="text-sky-"],
+:root[data-theme] [class*="text-cyan-"],
+:root[data-theme] [class*="text-indigo-"],
+:root[data-theme] [class*="text-purple-"],
+:root[data-theme] [class*="text-violet-"] {
+  color: var(--status-info) !important;
+}
+
+:root[data-theme] [class*="text-rose-"],
+:root[data-theme] [class*="text-red-"],
+:root[data-theme] [class*="text-pink-"] {
+  color: var(--status-danger) !important;
+}
+
+:root[data-theme] [class*="border-emerald-"],
+:root[data-theme] [class*="border-green-"],
+:root[data-theme] [class*="border-teal-"],
+:root[data-theme] [class*="border-lime-"] {
+  border-color: var(--status-success-border) !important;
+}
+
+:root[data-theme] [class*="border-amber-"],
+:root[data-theme] [class*="border-yellow-"],
+:root[data-theme] [class*="border-orange-"] {
+  border-color: var(--status-warning-border) !important;
+}
+
+:root[data-theme] [class*="border-blue-"],
+:root[data-theme] [class*="border-sky-"],
+:root[data-theme] [class*="border-cyan-"],
+:root[data-theme] [class*="border-indigo-"],
+:root[data-theme] [class*="border-purple-"],
+:root[data-theme] [class*="border-violet-"] {
+  border-color: var(--status-info-border) !important;
+}
+
+:root[data-theme] [class*="border-rose-"],
+:root[data-theme] [class*="border-red-"],
+:root[data-theme] [class*="border-pink-"] {
+  border-color: var(--status-danger-border) !important;
+}
+
+:root[data-theme] [class*="ring-emerald-"],
+:root[data-theme] [class*="ring-green-"],
+:root[data-theme] [class*="ring-teal-"],
+:root[data-theme] [class*="ring-lime-"] {
+  --tw-ring-color: var(--status-success-border) !important;
+}
+
+:root[data-theme] [class*="ring-amber-"],
+:root[data-theme] [class*="ring-yellow-"],
+:root[data-theme] [class*="ring-orange-"] {
+  --tw-ring-color: var(--status-warning-border) !important;
+}
+
+:root[data-theme] [class*="ring-blue-"],
+:root[data-theme] [class*="ring-sky-"],
+:root[data-theme] [class*="ring-cyan-"],
+:root[data-theme] [class*="ring-indigo-"],
+:root[data-theme] [class*="ring-purple-"],
+:root[data-theme] [class*="ring-violet-"] {
+  --tw-ring-color: var(--status-info-border) !important;
+}
+
+:root[data-theme] [class*="ring-rose-"],
+:root[data-theme] [class*="ring-red-"],
+:root[data-theme] [class*="ring-pink-"] {
+  --tw-ring-color: var(--status-danger-border) !important;
 }
 
 html,
