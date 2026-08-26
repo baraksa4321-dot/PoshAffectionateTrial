@@ -182,7 +182,7 @@ function workoutReportSessionMatches(session: HistorySession, workout: Workout):
   );
 }
 
-function WorkoutWeeklyReport({
+function WorkoutWeeklyReportWeek({
   workout,
   history,
   exercises,
@@ -565,6 +565,253 @@ function WorkoutWeeklyReport({
   );
 }
 
+function reportShiftDate(date: string, amount: number): string {
+  const nextDate = new Date(`${date}T00:00:00`);
+  nextDate.setDate(nextDate.getDate() + amount);
+  return reportDateKey(nextDate);
+}
+
+function WorkoutWeeklyReport({
+  workout,
+  history,
+  exercises,
+}: {
+  workout: Workout;
+  history: HistorySession[];
+  exercises: Exercise[];
+}) {
+  const [reportDate, setReportDate] = useState(() => reportDateKey(new Date()));
+  const today = reportDateKey(new Date());
+  const sessions = useMemo(
+    () =>
+      history
+        .filter(
+          (session) =>
+            workoutReportSessionMatches(session, workout) &&
+            session.date.slice(0, 10) === reportDate,
+        )
+        .sort((a, b) => b.date.localeCompare(a.date)),
+    [history, reportDate, workout],
+  );
+  const exerciseRows = workout.items.map((item) => ({
+    item,
+    entries: sessions.flatMap((session) =>
+      session.entries
+        .filter((entry) => entry.exerciseId === item.exerciseId)
+        .map((entry) => ({ entry, sessionId: session.id })),
+    ),
+    exercise: exercises.find((exercise) => exercise.id === item.exerciseId),
+  }));
+  const plannedExerciseIds = new Set(workout.items.map((item) => item.exerciseId));
+  const additionalEntries = sessions.flatMap((session) =>
+    session.entries
+      .filter((entry) => !plannedExerciseIds.has(entry.exerciseId))
+      .map((entry, index) => ({ entry, sessionId: session.id, index })),
+  );
+  const completedSets = sessions.reduce(
+    (total, session) =>
+      total +
+      session.entries.reduce(
+        (entryTotal, entry) => entryTotal + entry.sets.filter((set) => set.done).length,
+        0,
+      ),
+    0,
+  );
+  const totalSets = sessions.reduce(
+    (total, session) =>
+      total + session.entries.reduce((entryTotal, entry) => entryTotal + entry.sets.length, 0),
+    0,
+  );
+
+  return (
+    <section
+      className="mt-3 space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.035] p-3"
+      aria-label={`היסטוריית אימונים והערות עבור ${workout.name}`}
+    >
+      <div className="flex items-start gap-3 border-b border-primary/15 pb-3">
+        <span className="illustrated-mark inline-grid h-11 w-11 shrink-0 place-items-center text-primary">
+          <Activity className="h-6 w-6" />
+        </span>
+        <div className="min-w-0 text-start">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+            מה המתאמן ביצע בפועל
+          </p>
+          <h4 className="mt-1 text-base font-extrabold text-ink">היסטוריית אימונים והערות</h4>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 rounded-xl bg-white/80 p-2" dir="ltr">
+        <button
+          type="button"
+          onClick={() => setReportDate((date) => reportShiftDate(date, -1))}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border text-ink transition-colors hover:border-primary hover:text-primary"
+          aria-label="היום הקודם"
+          title="היום הקודם"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+        <input
+          type="date"
+          value={reportDate}
+          max={today}
+          onChange={(event) => setReportDate(event.target.value || today)}
+          className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
+          aria-label="תאריך הדוח"
+        />
+        <button
+          type="button"
+          disabled={reportDate >= today}
+          onClick={() => setReportDate((date) => reportShiftDate(date, 1))}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border text-ink transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-30"
+          aria-label="היום הבא"
+          title="היום הבא"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="rounded-xl bg-white/80 p-3 text-[11px]">
+        <div className="flex items-center justify-between gap-2">
+          <strong className="text-ink">{workout.name || "אימון"}</strong>
+          <span className="text-muted-foreground">
+            {sessions.length > 0 ? `${sessions.length} ביצועים בתאריך` : "אין ביצוע בתאריך"}
+          </span>
+        </div>
+        {sessions.length > 0 ? (
+          <p className="mt-1 text-muted-foreground">
+            {completedSets} מתוך {totalSets} סטים בוצעו בפועל
+          </p>
+        ) : null}
+      </div>
+
+      <div className="space-y-1.5">
+        {exerciseRows.length > 0 ? (
+          exerciseRows.map(({ item, entries, exercise }) => (
+            <div
+              key={item.id}
+              className={`rounded-xl border px-3 py-2.5 text-[11px] ${
+                entries.length > 0
+                  ? "border-emerald-200 bg-emerald-50/70"
+                  : "border-border/60 bg-white/80"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 text-start">
+                  <strong className="block truncate text-ink">
+                    {entries[0]?.entry.exerciseName || item.exerciseName || exercise?.name || "תרגיל"}
+                  </strong>
+                  {entries.length === 0 ? (
+                    <p className="mt-1 text-muted-foreground">
+                      תוכנן: {item.sets} סטים × {item.repMin || item.reps}
+                      {item.repMax ? `–${item.repMax}` : ""} חזרות ·{" "}
+                      {item.targetWeight || item.weight} ק״ג
+                    </p>
+                  ) : (
+                    entries.map(({ entry, sessionId }, entryIndex) => (
+                      <div key={`${sessionId}-${entry.exerciseId}-${entryIndex}`}>
+                        <p className="mt-1 text-muted-foreground">
+                          {entry.sets.length > 0
+                            ? entry.sets
+                                .map(
+                                  (set, setIndex) =>
+                                    `סט ${setIndex + 1}: ${set.weight} ק״ג × ${set.reps}${
+                                      set.done ? " ✓" : " — לא בוצע"
+                                    }`,
+                                )
+                                .join(" · ")
+                            : "לא נרשמו סטים"}
+                        </p>
+                        {entry.notes?.trim() || entry.feedback?.notes?.trim() ? (
+                          <p className="mt-1 text-ink">
+                            הערה: {entry.feedback?.notes?.trim() || entry.notes.trim()}
+                          </p>
+                        ) : null}
+                        {entry.videoUrl ? (
+                          <video
+                            src={entry.videoUrl}
+                            controls
+                            preload="metadata"
+                            className="mt-1.5 max-h-52 w-full rounded-lg bg-black object-contain"
+                          />
+                        ) : null}
+                      </div>
+                    ))
+                  )}
+                </div>
+                <span
+                  className={`shrink-0 text-[10px] font-bold ${
+                    entries.length > 0 ? "text-emerald-700" : "text-muted-foreground"
+                  }`}
+                >
+                  {entries.length > 0 ? "בוצע בפועל" : "טרם בוצע"}
+                </span>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="rounded-xl bg-white/80 p-3 text-center text-xs text-muted-foreground">
+            באימון הזה עדיין לא הוגדרו תרגילים.
+          </p>
+        )}
+      </div>
+
+      {additionalEntries.length > 0 ? (
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-extrabold text-ink">תרגילים שבוצעו ואינם בתוכנית</p>
+          {additionalEntries.map(({ entry, sessionId, index }) => (
+            <div
+              key={`additional-${sessionId}-${entry.exerciseId}-${index}`}
+              className="rounded-xl border border-sky-200 bg-sky-50/65 p-2.5 text-[10px]"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <strong className="text-start text-ink">{entry.exerciseName || "תרגיל"}</strong>
+                <span className="shrink-0 font-bold text-sky-800">בוצע בפועל</span>
+              </div>
+              <p className="mt-1 text-muted-foreground">
+                {entry.sets.length > 0
+                  ? entry.sets
+                      .map(
+                        (set, setIndex) =>
+                          `סט ${setIndex + 1}: ${set.weight} ק״ג × ${set.reps}${
+                            set.done ? " ✓" : " — לא בוצע"
+                          }`,
+                      )
+                      .join(" · ")
+                  : "לא נרשמו סטים"}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {sessions.some((session) => session.notes?.trim() || session.discomfortNotes?.trim()) ? (
+        <div className="space-y-1.5">
+          {sessions.map((session) => (
+            <div key={`${session.id}-notes`}>
+              {session.notes?.trim() ? (
+                <p className="rounded-lg bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-900">
+                  הערת אימון: {session.notes.trim()}
+                </p>
+              ) : null}
+              {session.discomfortNotes?.trim() ? (
+                <p className="mt-1 rounded-lg bg-rose-50 px-2 py-1 text-[10px] font-semibold text-rose-800">
+                  כאב / אי־נוחות: {session.discomfortNotes.trim()}
+                </p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {sessions.length === 0 ? (
+        <p className="rounded-xl bg-white/75 p-3 text-center text-[11px] text-muted-foreground">
+          אין ביצוע של האימון בתאריך הזה.
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 function errorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message) return error.message;
   if (
@@ -768,6 +1015,7 @@ export function CoachDashboardPage({
     context: ExerciseBuilderReturnContext;
   } | null>(null);
   const [programQuery, setProgramQuery] = useState("");
+  const [reportBookmarkWorkoutId, setReportBookmarkWorkoutId] = useState<string | null>(null);
   const [targetWeight, setTargetWeight] = useState(20);
   const [setsCount, setSetsCount] = useState(3);
   const [setWeights, setSetWeights] = useState<number[]>([20, 20, 20]);
@@ -800,6 +1048,7 @@ export function CoachDashboardPage({
     window.sessionStorage.removeItem("gymtrack-created-exercise-id");
   }, [store.exercises]);
   useEffect(() => {
+    if (editingDayId) setReportBookmarkWorkoutId(editingDayId);
     setOpenWorkoutReportId((current) =>
       current && editingDayId && current !== editingDayId ? null : current,
     );
@@ -2288,6 +2537,14 @@ export function CoachDashboardPage({
     : [];
   const selectedTrackingWorkout = clientDetails?.workouts.find(
     (workout) => workout.id === selectedTrackingWorkoutId,
+  );
+  const activeProgram =
+    clientDetails?.programs.find((program) => program.id === editingProgramId) ??
+    clientDetails?.programs.at(-1);
+  const reportBookmarkId =
+    reportBookmarkWorkoutId ?? editingDayId ?? activeProgram?.dayIds?.[0] ?? null;
+  const reportBookmarkWorkout = clientDetails?.workouts.find(
+    (workout) => workout.id === reportBookmarkId,
   );
   const trackingPlanRows =
     selectedTrackingWorkout?.items.map((item) => {
@@ -4091,9 +4348,6 @@ export function CoachDashboardPage({
                         const progDays = clientDetails?.workouts?.filter((w: Workout) =>
                           prog.dayIds?.includes(w.id),
                         );
-                        const reportWorkout = progDays?.find(
-                          (day) => day.id === openWorkoutReportId,
-                        );
 
                         return (
                           <div
@@ -4159,19 +4413,6 @@ export function CoachDashboardPage({
                                   </button>
                                 </form>
 
-                                {reportWorkout ? (
-                                  <div
-                                    id={`workout-report-${reportWorkout.id}`}
-                                    className="surface-card border border-primary/30 bg-background p-1 shadow-md"
-                                  >
-                                    <WorkoutWeeklyReport
-                                      workout={reportWorkout}
-                                      history={clientDetails.history}
-                                      exercises={store.exercises}
-                                    />
-                                  </div>
-                                ) : null}
-
                                 <div className="space-y-2">
                                   {progDays?.map((dayItem: Workout) => {
                                     const isDayActive = editingDayId === dayItem.id;
@@ -4202,40 +4443,12 @@ export function CoachDashboardPage({
                                               {dayItem.name} ({dayItem.items?.length || 0} תרגילים)
                                             </span>
                                           )}
-                                          <button
-                                             type="button"
-                                             onClick={() =>
-                                               setOpenWorkoutReportId((current) =>
-                                                 current === dayItem.id ? null : dayItem.id,
-                                               )
-                                             }
-                                             aria-expanded={openWorkoutReportId === dayItem.id}
-                                             aria-controls={`workout-report-${dayItem.id}`}
-                                             className={`absolute right-0 top-4 z-[2] flex min-h-14 translate-x-1/2 items-center rounded-r-lg rounded-l-none border border-primary/30 px-1.5 py-2 text-[10px] font-extrabold shadow-sm transition-colors ${
-                                               openWorkoutReportId === dayItem.id
-                                                 ? "bg-primary text-primary-foreground"
-                                                 : "bg-background text-primary hover:bg-primary/10"
-                                             }`}
-                                             title={
-                                               openWorkoutReportId === dayItem.id
-                                                 ? "סגירת דוח"
-                                                 : "פתיחת דוח שבועי"
-                                             }
-                                           >
-                                             <span style={{ writingMode: "vertical-rl" }}>דוח</span>
-                                           </button>
                                            <button
                                              type="button"
                                             onClick={() =>
                                                (() => {
                                                  const nextDayId = isDayActive ? null : dayItem.id;
-                                                 if (
-                                                   nextDayId &&
-                                                   openWorkoutReportId &&
-                                                   openWorkoutReportId !== nextDayId
-                                                 ) {
-                                                   setOpenWorkoutReportId(null);
-                                                 }
+                                                 if (nextDayId) setReportBookmarkWorkoutId(nextDayId);
                                                  setEditingDayId(nextDayId);
                                                })()
                                             }
@@ -6544,6 +6757,54 @@ export function CoachDashboardPage({
           </div>
         </Overlay>
       </div>
+      {reportBookmarkWorkout && showProgramBuilder
+        ? createPortal(
+            <aside
+              dir="rtl"
+              className={`workout-report-drawer ${
+                openWorkoutReportId === reportBookmarkWorkout.id ? "is-open" : ""
+              }`}
+              aria-label={`דוח עבור ${reportBookmarkWorkout.name}`}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setOpenWorkoutReportId((current) =>
+                    current === reportBookmarkWorkout.id ? null : reportBookmarkWorkout.id,
+                  )
+                }
+                aria-expanded={openWorkoutReportId === reportBookmarkWorkout.id}
+                aria-controls={`workout-report-${reportBookmarkWorkout.id}`}
+                className={`workout-report-bookmark ${
+                  openWorkoutReportId === reportBookmarkWorkout.id
+                    ? "workout-report-bookmark-open"
+                    : ""
+                }`}
+                title={
+                  openWorkoutReportId === reportBookmarkWorkout.id
+                    ? "סגירת דוח"
+                    : "פתיחת דוח"
+                }
+              >
+                <span>דוח</span>
+              </button>
+              <div
+                id={`workout-report-${reportBookmarkWorkout.id}`}
+                className="workout-report-drawer-panel"
+                aria-hidden={openWorkoutReportId !== reportBookmarkWorkout.id}
+              >
+                {openWorkoutReportId === reportBookmarkWorkout.id ? (
+                  <WorkoutWeeklyReport
+                    workout={reportBookmarkWorkout}
+                    history={clientDetails?.history ?? []}
+                    exercises={store.exercises}
+                  />
+                ) : null}
+              </div>
+            </aside>,
+            document.body,
+          )
+        : null}
     </AppShell>
   );
 }
