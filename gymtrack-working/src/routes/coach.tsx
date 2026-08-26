@@ -99,6 +99,10 @@ type ExerciseBuilderReturnContext = {
   scrollY: number;
 };
 
+function getAppScrollContainer() {
+  return document.querySelector<HTMLElement>('[data-app-scroll-container="true"]');
+}
+
 type WorkoutSetMode = "normal" | "warmup" | "drop" | "superset";
 
 function warmupFirstIndexes(modes: WorkoutSetMode[]) {
@@ -2487,7 +2491,11 @@ export function CoachDashboardPage({
     setPendingCreatedExercise(null);
     void handleAddExerciseToDay({ preventDefault: () => undefined } as React.FormEvent);
     if (Number.isFinite(pending.context.scrollY)) {
-      window.requestAnimationFrame(() => window.scrollTo(0, pending.context.scrollY));
+      window.requestAnimationFrame(() => {
+        const appScrollContainer = getAppScrollContainer();
+        if (appScrollContainer) appScrollContainer.scrollTop = pending.context.scrollY;
+        else window.scrollTo(0, pending.context.scrollY);
+      });
     }
   }, [
     clientDetails,
@@ -2591,7 +2599,7 @@ export function CoachDashboardPage({
     if (!isCoach) return;
     const food = store.foods.find((item) => item.id === menuFoodId);
     if (!food || menuFoodQuantity <= 0) return;
-    const scrollContainer = document.scrollingElement;
+    const scrollContainer = getAppScrollContainer() ?? document.scrollingElement;
     const scrollTop = scrollContainer?.scrollTop ?? window.scrollY;
     const mealElement = document.getElementById(`coach-menu-meal-${mealId}`);
     const mealTop = mealElement?.getBoundingClientRect().top ?? null;
@@ -2617,12 +2625,12 @@ export function CoachDashboardPage({
         if (scrollContainer) {
           scrollContainer.scrollTop = scrollTop;
         }
-        window.scrollTo({ top: scrollTop, behavior: "auto" });
+        scrollContainer?.scrollTo({ top: scrollTop, behavior: "auto" });
         const updatedMealElement = document.getElementById(`coach-menu-meal-${mealId}`);
         if (mealTop !== null && updatedMealElement) {
           const topDelta = updatedMealElement.getBoundingClientRect().top - mealTop;
           if (Math.abs(topDelta) > 1) {
-            window.scrollBy({ top: topDelta, behavior: "auto" });
+              scrollContainer?.scrollBy({ top: topDelta, behavior: "auto" });
           }
         }
       });
@@ -2807,7 +2815,7 @@ export function CoachDashboardPage({
         clientId: selectedClientId,
         programId: editingProgramId,
         dayId: editingDayId,
-        scrollY: window.scrollY,
+        scrollY: getAppScrollContainer()?.scrollTop ?? window.scrollY,
       } satisfies ExerciseBuilderReturnContext),
     );
     navigate({ to: "/exercises/$exerciseId", params: { exerciseId: "new" } });

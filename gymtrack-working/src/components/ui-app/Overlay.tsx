@@ -36,6 +36,36 @@ function scrollFocusedFieldWithinPanel(field: HTMLElement, panel: HTMLElement) {
   panel.scrollTop += delta;
 }
 
+function scrollFocusedFieldInDocument(field: HTMLElement) {
+  let scrollParent: HTMLElement | null = field.parentElement;
+  while (scrollParent) {
+    const overflowY = window.getComputedStyle(scrollParent).overflowY;
+    if (
+      /(auto|scroll)/.test(overflowY) &&
+      scrollParent.scrollHeight > scrollParent.clientHeight + 1
+    ) {
+      const fieldRect = field.getBoundingClientRect();
+      const parentRect = scrollParent.getBoundingClientRect();
+      const safeTop = Math.max(parentRect.top, 12);
+      const safeBottom = Math.min(parentRect.bottom, window.innerHeight) - 20;
+      if (fieldRect.top < safeTop) {
+        scrollParent.scrollTop += fieldRect.top - safeTop;
+      } else if (fieldRect.bottom > safeBottom) {
+        scrollParent.scrollTop += fieldRect.bottom - safeBottom;
+      }
+      return;
+    }
+    scrollParent = scrollParent.parentElement;
+  }
+
+  const fieldRect = field.getBoundingClientRect();
+  if (fieldRect.bottom > window.innerHeight - 20) {
+    window.scrollBy({ top: fieldRect.bottom - (window.innerHeight - 20), behavior: "auto" });
+  } else if (fieldRect.top < 12) {
+    window.scrollBy({ top: fieldRect.top - 12, behavior: "auto" });
+  }
+}
+
 export function Overlay({
   open,
   onClose,
@@ -82,7 +112,7 @@ export function Overlay({
       window.requestAnimationFrame(() => {
         if (document.activeElement !== activeElement) return;
         const inlinePanel = activeElement.closest<HTMLElement>('[data-overlay-inline-panel="true"]');
-        if (inlinePanel) scrollFocusedFieldWithinPanel(activeElement, inlinePanel);
+        if (inlinePanel) scrollFocusedFieldInDocument(activeElement);
         else activeElement.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
       });
     };

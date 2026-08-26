@@ -1067,9 +1067,11 @@ function ScrollToTop() {
 
   useEffect(() => {
     const resetScroll = () => {
+      const appScrollContainer =
+        document.querySelector<HTMLElement>('[data-app-scroll-container="true"]');
+      appScrollContainer?.scrollTo({ top: 0, behavior: "auto" });
       window.scrollTo(0, 0);
-      // Belt-and-braces for engines where `window.scrollTo` doesn't reach
-      // document scrolling element when the html/body set `overflow: clip`.
+      // Keep the document fallback for loading and non-AppShell routes.
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
     };
@@ -1161,7 +1163,7 @@ function RootContent() {
     // be able to serve the cached app when Safari is in Airplane Mode.
     if ("serviceWorker" in navigator) {
       void navigator.serviceWorker
-        .register("/sw.js?v=7", { updateViaCache: "none" })
+        .register("/sw.js?v=8", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch((error) => {
           console.warn("[App shell cache unavailable]:", error);

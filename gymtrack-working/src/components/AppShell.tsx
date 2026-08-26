@@ -75,6 +75,7 @@ export function AppShell({
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const topbarRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
   const [activeMode, setActiveMode] = useState<"personal" | "management">(() => {
     if (typeof window === "undefined") return "personal";
@@ -191,11 +192,12 @@ export function AppShell({
         const visibleTop = viewportTop + headerHeight + 12;
         const visibleBottom = viewportTop + viewportHeight - navHeight - 16;
         const rect = field.getBoundingClientRect();
+        const scrollContainer = mainRef.current;
 
         if (rect.bottom > visibleBottom) {
-          window.scrollBy({ top: rect.bottom - visibleBottom, behavior: "auto" });
+          scrollContainer?.scrollBy({ top: rect.bottom - visibleBottom, behavior: "auto" });
         } else if (rect.top < visibleTop) {
-          window.scrollBy({ top: rect.top - visibleTop, behavior: "auto" });
+          scrollContainer?.scrollBy({ top: rect.top - visibleTop, behavior: "auto" });
         }
       }, 120);
     };
@@ -486,13 +488,13 @@ export function AppShell({
       className={
         authOnly
           ? "fixed inset-0 z-[100] min-h-[100dvh] w-full overflow-auto bg-background text-foreground"
-          : "min-h-[100dvh] w-full bg-background text-foreground"
+          : "flex h-[100dvh] min-h-0 w-full flex-col overflow-hidden bg-background text-foreground"
       }
       dir="rtl"
     >
       <header
         ref={topbarRef}
-        className="app-topbar sticky top-0 z-30 border-b border-border/70 bg-background/90 shadow-[0_8px_24px_oklch(0.2_0.03_35_/_0.035)] backdrop-blur-xl"
+        className="app-topbar shrink-0 sticky top-0 z-30 border-b border-border/70 bg-background/90 shadow-[0_8px_24px_oklch(0.2_0.03_35_/_0.035)] backdrop-blur-xl"
         style={{ paddingTop: "max(0.35rem, env(safe-area-inset-top))" }}
       >
         <div
@@ -641,6 +643,8 @@ export function AppShell({
       </header>
 
       <main
+        ref={mainRef}
+        data-app-scroll-container="true"
         className={`page-enter page-scroll-container mx-auto w-full max-w-3xl px-4 pb-8 sm:px-6 ${
           compactHeader ? "flex flex-col pt-1.5" : "pt-5 sm:pt-7"
         }`}
