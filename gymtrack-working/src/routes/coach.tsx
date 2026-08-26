@@ -1267,8 +1267,9 @@ export function CoachDashboardPage({
         minute: "2-digit",
       })
     : null;
-  const clientFreshnessLabel =
-    clientRealtimeStatus === "disconnected"
+  const clientFreshnessLabel = clientRefreshInFlight
+    ? "מרענן נתוני מתאמן…"
+    : clientRealtimeStatus === "disconnected"
       ? formattedLastClientRefresh
         ? `החיבור לא זמין · מוצג עותק מ־${formattedLastClientRefresh}`
         : "החיבור לא זמין · ממתין לנתונים"
@@ -1301,6 +1302,18 @@ export function CoachDashboardPage({
       : clientRefreshInFlight || clientRealtimeStatus === "connecting" || clientDataStale
         ? RefreshCw
         : Wifi;
+
+  const applySelectedClientRefreshResult = useCallback(
+    (result: ClientDetails) => {
+      applyClientDetails(result, { preserveOnError: true });
+      setClientRefreshInFlight(false);
+      setClientDataStale(Boolean(result.error));
+      if (!result.error) {
+        setLastClientRefreshAt(Date.now());
+      }
+    },
+    [applyClientDetails],
+  );
 
   const loadCoachClients = useCallback(async () => {
     setManagementError("");
@@ -1540,12 +1553,7 @@ export function CoachDashboardPage({
         void pullClientDataForCoach(selectedClientId)
           .then((result) => {
             if (!active) return;
-            applyClientDetails(result, { preserveOnError: true });
-            setClientRefreshInFlight(false);
-            setClientDataStale(Boolean(result.error));
-            if (!result.error) {
-              setLastClientRefreshAt(Date.now());
-            }
+            applySelectedClientRefreshResult(result);
           })
           .catch((error: unknown) => {
             if (!active) return;
@@ -1577,11 +1585,39 @@ export function CoachDashboardPage({
     };
   }, [
     applyClientDetails,
+    applySelectedClientRefreshResult,
     fetchSentCoachMessages,
     isCoach,
     isSelfSelected,
     loadClientFeedback,
     loadCoachClients,
+    selectedClientId,
+  ]);
+
+  const retrySelectedClientRefresh = useCallback(() => {
+    if (!selectedClientId || isSelfSelected || clientRefreshInFlight) return;
+
+    setClientDetailsError("");
+    setClientRefreshInFlight(true);
+    void pullClientDataForCoach(selectedClientId)
+      .then(applySelectedClientRefreshResult)
+      .catch((error: unknown) => {
+        setClientRefreshInFlight(false);
+        setClientDataStale(true);
+        setClientDetailsError(errorMessage(error, "רענון נתוני המתאמן נכשל"));
+      });
+    void fetchSentCoachMessages(selectedClientId)
+      .then(setSentCoachMessages)
+      .catch((error: unknown) => {
+        setSentCoachMessagesError(
+          `טעינת היסטוריית ההודעות נכשלה: ${errorMessage(error, "שגיאה בטעינת ההודעות")}`,
+        );
+      });
+  }, [
+    applySelectedClientRefreshResult,
+    clientRefreshInFlight,
+    fetchSentCoachMessages,
+    isSelfSelected,
     selectedClientId,
   ]);
 
@@ -4037,8 +4073,6 @@ export function CoachDashboardPage({
               </div>
               {selectedClientId && !isSelfSelected ? (
                 <div
-                  role="status"
-                  aria-live="polite"
                   data-client-freshness="true"
                   title={
                     lastClientRefreshAt
@@ -4047,15 +4081,34 @@ export function CoachDashboardPage({
                   }
                   className={`mx-4 mt-2 flex min-w-0 max-w-full items-center gap-1.5 self-start rounded-full border px-2.5 py-1 text-[11px] font-bold sm:mx-6 ${clientFreshnessClass}`}
                 >
-                  <ClientFreshnessIcon
-                    aria-hidden="true"
-                    className={`h-3.5 w-3.5 shrink-0 ${
-                      clientRefreshInFlight || clientRealtimeStatus === "connecting"
-                        ? "animate-spin"
-                        : ""
-                    }`}
-                  />
-                  <span className="min-w-0 truncate">{clientFreshnessLabel}</span>
+                  <span
+                    role="status"
+                    aria-live="polite"
+                    className="flex min-w-0 items-center gap-1.5"
+                  >
+                    <ClientFreshnessIcon
+                      aria-hidden="true"
+                      className={`h-3.5 w-3.5 shrink-0 ${
+                        clientRefreshInFlight || clientRealtimeStatus === "connecting"
+                          ? "animate-spin"
+                          : ""
+                      }`}
+                    />
+                    <span className="min-w-0 truncate">{clientFreshnessLabel}</span>
+                  </span>
+                  {clientDataStale ||
+                  clientRealtimeStatus === "disconnected" ||
+                  clientRealtimeStatus === "reconnecting" ? (
+                    <button
+                      type="button"
+                      onClick={retrySelectedClientRefresh}
+                      disabled={clientRefreshInFlight}
+                      aria-label="נסה שוב לרענן את נתוני המתאמן"
+                      className="shrink-0 rounded-full border border-current/25 px-2 py-0.5 text-[10px] font-extrabold whitespace-nowrap transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-55"
+                    >
+                      נסה שוב
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
 
