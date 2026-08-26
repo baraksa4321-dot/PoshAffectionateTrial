@@ -4873,19 +4873,6 @@ export function CoachDashboardPage({
                                               const exMeta = store.exercises.find(
                                                 (e) => e.id === exItem.exerciseId,
                                               );
-                                              const actualExecutions = clientDetails.history
-                                                .flatMap((session) =>
-                                                  session.entries
-                                                    .filter(
-                                                      (entry) =>
-                                                        entry.exerciseId === exItem.exerciseId,
-                                                    )
-                                                    .map((entry) => ({
-                                                      entry,
-                                                      date: session.date,
-                                                    })),
-                                                )
-                                                .slice(0, 3);
 
                                               return (
                                                 <div
@@ -5577,66 +5564,6 @@ export function CoachDashboardPage({
                                                    </div>
                                                    </>
                                                   ) : null}
-                                                  {false && actualExecutions.length > 0 ? (
-                                                    <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/80 p-2 text-[10px]">
-                                                      <div className="flex items-center justify-between gap-2 font-bold text-amber-900">
-                                                        <span>ביצוע אחרון של המתאמן</span>
-                                                        <span className="font-normal text-amber-800">
-                                                          {new Date(
-                                                            actualExecutions[0]!.date,
-                                                          ).toLocaleDateString("he-IL")}
-                                                        </span>
-                                                      </div>
-                                                      {actualExecutions.map(({ entry }) => (
-                                                        <div
-                                                          key={`${entry.exerciseId}-${entry.notes}-${entry.sets.length}`}
-                                                          className="mt-1.5 border-t border-amber-200/70 pt-1.5"
-                                                        >
-                                                          <p className="text-amber-950">
-                                                            {entry.sets.length > 0
-                                                              ? entry.sets
-                                                                  .map(
-                                                                    (set, index) =>
-                                                                      `סט ${index + 1}: ${
-                                                                        set.weight
-                                                                      } ק״ג × ${set.reps}${
-                                                                        set.done
-                                                                          ? " ✓"
-                                                                          : " — לא בוצע"
-                                                                      }`,
-                                                                  )
-                                                                  .join(" · ")
-                                                              : "לא נרשמו סטים"}
-                                                          </p>
-                                                          {entry.feedback?.rating ||
-                                                          entry.feedback?.notes ||
-                                                          entry.notes ? (
-                                                            <p className="mt-1 text-amber-900/80">
-                                                              {entry.feedback?.rating === "easy"
-                                                                ? "קל"
-                                                                : entry.feedback?.rating ===
-                                                                    "difficult"
-                                                                  ? "כבד"
-                                                                  : entry.feedback?.rating ===
-                                                                      "appropriate"
-                                                                    ? "מתאים"
-                                                                    : ""}
-                                                              {entry.feedback?.notes || entry.notes
-                                                                ? ` · ${
-                                                                    entry.feedback?.notes ||
-                                                                    entry.notes
-                                                                  }`
-                                                                : ""}
-                                                            </p>
-                                                          ) : null}
-                                                        </div>
-                                                      ))}
-                                                    </div>
-                                                  ) : (
-                                                    <p className="mt-2 rounded-lg bg-white/60 px-2 py-1 text-[10px] text-muted-foreground">
-                                                      עדיין אין ביצוע בפועל לתרגיל הזה.
-                                                    </p>
-                                                  )}
                                                 </div>
                                               );
                                             })}
