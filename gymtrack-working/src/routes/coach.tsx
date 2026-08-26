@@ -234,6 +234,9 @@ export function CoachDashboardPage({
   const [programQuery, setProgramQuery] = useState("");
   const [targetWeight, setTargetWeight] = useState(20);
   const [setsCount, setSetsCount] = useState(3);
+  const [setWeights, setSetWeights] = useState<number[]>([20, 20, 20]);
+  const [setRepMins, setSetRepMins] = useState<number[]>([8, 8, 8]);
+  const [setRepMaxes, setSetRepMaxes] = useState<number[]>([10, 10, 10]);
   useEffect(() => {
     const createdExerciseId = window.sessionStorage.getItem("gymtrack-created-exercise-id");
     if (!createdExerciseId) return;
@@ -273,6 +276,20 @@ export function CoachDashboardPage({
   const [dropRepsMin, setDropRepsMin] = useState(10);
   const [dropRepsMax, setDropRepsMax] = useState(12);
   const [exerciseBuilderNotice, setExerciseBuilderNotice] = useState("");
+
+  const resizeSetFields = (count: number) => {
+    const nextCount = Math.max(1, count);
+    setSetsCount(nextCount);
+    setSetWeights((current) =>
+      Array.from({ length: nextCount }, (_, index) => current[index] ?? targetWeight),
+    );
+    setSetRepMins((current) =>
+      Array.from({ length: nextCount }, (_, index) => current[index] ?? repMin),
+    );
+    setSetRepMaxes((current) =>
+      Array.from({ length: nextCount }, (_, index) => current[index] ?? repMax),
+    );
+  };
   const [supersetRepsMin, setSupersetRepsMin] = useState(10);
   const [supersetRepsMax, setSupersetRepsMax] = useState(12);
   const [approvedAltIds, setApprovedAltIds] = useState<string[]>([]);
@@ -528,6 +545,24 @@ export function CoachDashboardPage({
       setSetsCount(firstExercise.sets);
       setRepMin(firstExercise.repMin || firstExercise.reps);
       setRepMax(firstExercise.repMax || firstExercise.reps);
+      setSetWeights(
+        Array.from(
+          { length: Math.max(1, firstExercise.sets) },
+          (_, index) => firstExercise.workingSets?.[index]?.weight ?? firstExercise.targetWeight ?? firstExercise.weight,
+        ),
+      );
+      setSetRepMins(
+        Array.from(
+          { length: Math.max(1, firstExercise.sets) },
+          (_, index) => firstExercise.workingSets?.[index]?.reps ?? firstExercise.repMin ?? firstExercise.reps,
+        ),
+      );
+      setSetRepMaxes(
+        Array.from(
+          { length: Math.max(1, firstExercise.sets) },
+          (_, index) => firstExercise.workingSets?.[index]?.repMax ?? firstExercise.repMax ?? firstExercise.reps,
+        ),
+      );
       setRestSec(firstExercise.rest || 90);
       setTechniqueNotes(firstExercise.techniqueNotes || firstExercise.notes);
     }
@@ -733,6 +768,24 @@ export function CoachDashboardPage({
         setSetsCount(requestedItem.sets);
         setRepMin(requestedItem.repMin || requestedItem.reps);
         setRepMax(requestedItem.repMax || requestedItem.reps);
+        setSetWeights(
+          Array.from(
+            { length: Math.max(1, requestedItem.sets) },
+            (_, index) => requestedItem.workingSets?.[index]?.weight ?? requestedItem.targetWeight ?? requestedItem.weight,
+          ),
+        );
+        setSetRepMins(
+          Array.from(
+            { length: Math.max(1, requestedItem.sets) },
+            (_, index) => requestedItem.workingSets?.[index]?.reps ?? requestedItem.repMin ?? requestedItem.reps,
+          ),
+        );
+        setSetRepMaxes(
+          Array.from(
+            { length: Math.max(1, requestedItem.sets) },
+            (_, index) => requestedItem.workingSets?.[index]?.repMax ?? requestedItem.repMax ?? requestedItem.reps,
+          ),
+        );
         setTechniqueNotes(requestedItem.techniqueNotes || requestedItem.notes);
       }
     } else {
