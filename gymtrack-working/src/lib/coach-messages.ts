@@ -1,3 +1,5 @@
+import type { CoachMessage } from "./gym-types";
+
 export type CoachMessagePayload = {
   coach_id: string;
   client_id: string;
@@ -11,6 +13,32 @@ type UserResult = {
 type InsertResult = {
   error: unknown | null;
 };
+
+type MessageQueryResult = {
+  data: Array<{
+    id: string;
+    coach_id: string;
+    client_id: string;
+    message: string;
+    created_at: string;
+    is_read?: boolean | null;
+  }> | null;
+  error: unknown | null;
+};
+
+function messageError(error: unknown): Error {
+  if (error instanceof Error) return error;
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string" &&
+    error.message
+  ) {
+    return new Error(error.message);
+  }
+  return new Error("שגיאה בגישה להודעות המאמן.");
+}
 
 export async function sendCoachMessage(
   getUser: () => Promise<UserResult>,
@@ -29,16 +57,24 @@ export async function sendCoachMessage(
     message,
   });
   if (error) {
-    if (error instanceof Error) throw error;
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "message" in error &&
-      typeof error.message === "string" &&
-      error.message
-    ) {
-      throw new Error(error.message);
-    }
-    throw new Error("שגיאה בשמירת ההודעה במסד הנתונים.");
+    throw messageError(error);
   }
+}
+
+export async function loadCoachMessages(
+  fetchMessages: () => Promise<MessageQueryResult>,
+): Promise<CoachMessage[]> {
+  const { data, error } = await fetchMessages();
+  if (error) throw messageError(error);
+  return (data ?? []).map((row) => {
+    const message: CoachMessage = {
+      id: row.id,
+      coachId: row.coach_id,
+      clientId: row.client_id,
+      message: row.message,
+      createdAt: row.created_at,
+    };
+    if (row.is_read !== null && row.is_read !== undefined) message.isRead = row.is_read;
+    return message;
+  });
 }

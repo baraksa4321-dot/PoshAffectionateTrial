@@ -46,7 +46,7 @@ import { pullClientDataForCoach } from "../lib/supabase-sync";
 import { supabase } from "../lib/supabase";
 import { calculateCalorieEstimate } from "../lib/calorie-calculator";
 import { exerciseDisplayName } from "../lib/exercise-library";
-import { sendCoachMessage } from "../lib/coach-messages";
+import { loadCoachMessages, sendCoachMessage } from "../lib/coach-messages";
 import {
   getNextWorkoutReportWeekOffset,
   getWorkoutReportSessions,
@@ -58,6 +58,7 @@ import {
 import type {
   BodyMeasurement,
   BroadcastAnnouncement,
+  CoachMessage,
   Exercise,
   HistorySession,
   Meal,
@@ -940,6 +941,8 @@ export function CoachDashboardPage({
   const [coachMsgText, setCoachMsgText] = useState("");
   const [msgSentNotice, setMsgSentNotice] = useState("");
   const [msgSendError, setMsgSendError] = useState("");
+  const [sentCoachMessages, setSentCoachMessages] = useState<CoachMessage[]>([]);
+  const [sentCoachMessagesError, setSentCoachMessagesError] = useState("");
   const [broadcastText, setBroadcastText] = useState("");
   const [broadcastAudience, setBroadcastAudience] = useState<
     "assigned_clients" | "coaches" | "clients" | "everyone"
@@ -947,6 +950,48 @@ export function CoachDashboardPage({
   const [broadcastNotice, setBroadcastNotice] = useState("");
   const [broadcastError, setBroadcastError] = useState("");
   const [sentBroadcasts, setSentBroadcasts] = useState<BroadcastAnnouncement[]>([]);
+
+  const fetchSentCoachMessages = useCallback(
+    async (clientId: string): Promise<CoachMessage[]> =>
+      loadCoachMessages(async () =>
+        supabase
+          .from("coach_messages")
+          .select("id, coach_id, client_id, message, created_at, is_read")
+          .eq("coach_id", authUser?.id ?? "")
+          .eq("client_id", clientId)
+          .order("created_at", { ascending: false })
+          .limit(20),
+      ),
+    [authUser?.id],
+  );
+
+  useEffect(() => {
+    let active = true;
+    setSentCoachMessagesError("");
+    if (!authUser?.id || !isCoach || !selectedClientId) {
+      setSentCoachMessages([]);
+      return () => {
+        active = false;
+      };
+    }
+
+    void fetchSentCoachMessages(selectedClientId)
+      .then((messages) => {
+        if (active) setSentCoachMessages(messages);
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setSentCoachMessages([]);
+          setSentCoachMessagesError(
+            `טעינת היסטוריית ההודעות נכשלה: ${errorMessage(error, "שגיאה בטעינת ההודעות")}`,
+          );
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [authUser?.id, fetchSentCoachMessages, isCoach, selectedClientId]);
 
   useEffect(() => {
     if (!authUser?.id || !isCoach) {
@@ -1887,6 +1932,16 @@ export function CoachDashboardPage({
       );
       setMsgSentNotice("הודעת החיזוק נשלחה בהצלחה למתאמן!");
       setCoachMsgText("");
+      void fetchSentCoachMessages(selectedClientId)
+        .then((messages) => {
+          setSentCoachMessagesError("");
+          setSentCoachMessages(messages);
+        })
+        .catch((error: unknown) => {
+          setSentCoachMessagesError(
+            `טעינת היסטוריית ההודעות נכשלה: ${errorMessage(error, "שגיאה בטעינת ההודעות")}`,
+          );
+        });
       setTimeout(() => setMsgSentNotice(""), 3000);
     } catch (err: unknown) {
       setMsgSendError(`שליחת הודעת החיזוק נכשלה: ${errorMessage(err, "שגיאה בשליחת ההודעה")}`);
@@ -3902,6 +3957,42 @@ export function CoachDashboardPage({
                             שלח
                           </button>
                         </form>
+                        {sentCoachMessagesError && (
+                          <p
+                            role="alert"
+                            className="text-xs font-bold text-rose-700 bg-rose-50 p-2 rounded-xl border border-rose-200"
+                          >
+                            {sentCoachMessagesError}
+                          </p>
+                        )}
+                        {sentCoachMessages.length > 0 && (
+                          <div className="space-y-2 rounded-xl border border-border/60 bg-white/70 p-3">
+                            <p className="text-[11px] font-bold tracking-wide text-muted-foreground">
+                              הודעות שנשלחו לאחרונה
+                            </p>
+                            {sentCoachMessages.slice(0, 5).map((message) => (
+                              <div
+                                key={message.id}
+                                className="flex items-start justify-between gap-3 border-t border-border/50 pt-2 first:border-t-0 first:pt-0"
+                              >
+                                <p className="min-w-0 flex-1 text-xs leading-relaxed text-ink">
+                                  {message.message}
+                                </p>
+                                <time
+                                  dateTime={message.createdAt}
+                                  className="shrink-0 text-[10px] text-muted-foreground"
+                                >
+                                  {new Date(message.createdAt).toLocaleString("he-IL", {
+                                    day: "numeric",
+                                    month: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </time>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       {/* Coach-managed monthly measurements */}

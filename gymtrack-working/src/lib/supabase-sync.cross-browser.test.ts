@@ -9,7 +9,7 @@ import type {
   Program,
   Workout,
 } from "./gym-types";
-import { sendCoachMessage } from "./coach-messages";
+import { loadCoachMessages, sendCoachMessage } from "./coach-messages";
 
 type QueryResult = {
   data: unknown;
@@ -227,6 +227,33 @@ describe("cross-browser Supabase sync boundaries", () => {
         "Keep going",
       ),
     ).rejects.toThrow("network unavailable");
+  });
+
+  test("maps accepted coach messages into the selected client's sent history", async () => {
+    await expect(
+      loadCoachMessages(async () => ({
+        data: [
+          {
+            id: "message-1",
+            coach_id: "coach-a",
+            client_id: "client-b",
+            message: "Great work",
+            created_at: "2026-08-26T08:00:00.000Z",
+            is_read: false,
+          },
+        ],
+        error: null,
+      })),
+    ).resolves.toEqual([
+      {
+        id: "message-1",
+        coachId: "coach-a",
+        clientId: "client-b",
+        message: "Great work",
+        createdAt: "2026-08-26T08:00:00.000Z",
+        isRead: false,
+      },
+    ]);
   });
 
   test("clears cached messages and client links after authoritative empty responses", async () => {
