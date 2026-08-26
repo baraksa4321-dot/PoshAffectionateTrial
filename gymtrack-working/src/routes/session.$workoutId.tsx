@@ -13,7 +13,6 @@ import {
   RotateCcw,
   Search,
   Timer,
-  Video,
   X,
   Sparkles,
   Zap,
@@ -21,6 +20,7 @@ import {
   Smile,
   Meh,
   Frown,
+  ImagePlus,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
@@ -496,6 +496,18 @@ function Session() {
     }
   };
 
+  const selectPerformanceVideo = (exerciseIndex: number, file: File | undefined) => {
+    if (!file || !file.type.startsWith("video/")) return;
+    const nextUrl = URL.createObjectURL(file);
+    const previousUrl = entries[exerciseIndex]?.videoUrl;
+    if (previousUrl?.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
+    setEntries((prev) =>
+      prev.map((entry, index) =>
+        index === exerciseIndex ? { ...entry, videoUrl: nextUrl } : entry,
+      ),
+    );
+  };
+
   const totalSets = entries.reduce((a, e) => a + e.sets.filter((s) => !s.warmup).length, 0);
   const doneSets = entries.reduce(
     (a, e) => a + e.sets.filter((s) => s.done && !s.warmup).length,
@@ -897,28 +909,21 @@ function Session() {
               {/* The athlete's demonstration video is intentionally last:
                   it belongs to the completed exercise, after all sets. */}
               <div className="mt-3 rounded-2xl border border-dashed border-primary/35 bg-primary/5 p-3">
-                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-2 text-[11px] font-semibold text-primary transition-colors hover:bg-primary/10">
-                  <Video className="h-4 w-4" />
-                  <span>{entry.videoUrl ? "החלפת סרטון ביצוע" : "העלאת סרטון ביצוע מהגלריה"}</span>
-                  <input
-                    type="file"
-                    accept="video/*"
-                    capture="environment"
-                    className="sr-only"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (!file) return;
-                      const nextUrl = URL.createObjectURL(file);
-                      if (entry.videoUrl?.startsWith("blob:")) URL.revokeObjectURL(entry.videoUrl);
-                      setEntries((prev) =>
-                        prev.map((current, index) =>
-                          index === ei ? { ...current, videoUrl: nextUrl } : current,
-                        ),
-                      );
-                      event.currentTarget.value = "";
-                    }}
-                  />
-                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="col-span-2 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-center text-[11px] font-semibold text-primary transition-colors hover:bg-primary/10">
+                    <ImagePlus className="h-4 w-4" />
+                    <span>{entry.videoUrl ? "החלפה מהגלריה" : "בחירה מהגלריה"}</span>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      className="sr-only"
+                      onChange={(event) => {
+                        selectPerformanceVideo(ei, event.target.files?.[0]);
+                        event.currentTarget.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
                 {entry.videoUrl ? (
                   <video
                     className="mt-2 max-h-52 w-full rounded-xl bg-black object-contain"
