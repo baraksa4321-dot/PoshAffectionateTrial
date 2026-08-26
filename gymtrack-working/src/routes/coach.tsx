@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AppShell } from "../components/AppShell";
 import { Overlay } from "../components/ui-app/Overlay";
 import {
@@ -94,6 +95,29 @@ type ClientFeedbackRow = {
 };
 
 type ClientDetails = Awaited<ReturnType<typeof pullClientDataForCoach>>;
+
+function ExerciseBuilderPlacement({
+  exerciseId,
+  children,
+}: {
+  exerciseId: string | null;
+  children: React.ReactNode;
+}) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!exerciseId) {
+      setAnchor(null);
+      return;
+    }
+    setAnchor(document.querySelector<HTMLElement>(
+      `[data-exercise-builder-anchor="${exerciseId}"]`,
+    ));
+  }, [exerciseId]);
+
+  if (!exerciseId) return children;
+  return anchor ? createPortal(children, anchor) : null;
+}
 
 function errorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message) return error.message;
@@ -3766,6 +3790,10 @@ export function CoachDashboardPage({
                                                       </button>
                                                     </div>
                                                   </div>
+                                                  <div
+                                                    data-exercise-builder-anchor={exItem.id}
+                                                    className="contents"
+                                                  />
                                                    {false && editingItemId === exItem.id ? (
                                                      <>
                                                     <div className="mt-4 space-y-5 border-t border-border/50 pt-4">
@@ -4276,6 +4304,7 @@ export function CoachDashboardPage({
                                         )}
 
                                         {isDayActive && (
+                                          <ExerciseBuilderPlacement exerciseId={editingItemId}>
                                             <form
                                             onSubmit={handleAddExerciseToDay}
                                             className="pt-2 border-t border-border/40 space-y-2 text-xs"
@@ -4904,6 +4933,7 @@ export function CoachDashboardPage({
                                               {editingItemId ? "שמור שינויי תרגיל" : "שמור תרגיל ליום אימון"}
                                             </button>
                                           </form>
+                                          </ExerciseBuilderPlacement>
                                         )}
                                       </div>
                                     );
