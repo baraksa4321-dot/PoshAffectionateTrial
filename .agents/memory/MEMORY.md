@@ -1,6 +1,6 @@
- - [Runtime crash recovery](runtime-crash-recovery.md) — React boundaries alone do not cover browser-level chunk failures and unhandled rejections; keep a visible recovery path.
+- [Runtime crash recovery](runtime-crash-recovery.md) — React boundaries alone do not cover browser-level chunk failures and unhandled rejections; keep a visible recovery path.
 - [Animated asset disposal](animated-asset-disposal.md) — Normalize transparent GIF frames before using them; disposal-none source files can leave duplicate trails.
- - [Replit Preview routing](preview-routing.md) — browser Preview needs a registered root web artifact, not only a healthy standalone Vite workflow.
+- [Replit Preview routing](preview-routing.md) — browser Preview needs a registered root web artifact, not only a healthy standalone Vite workflow.
 - [Optional activity-log schema drift](supabase-optional-logs.md) — the connected Supabase project lacks weight and cardio log tables; these must not block authenticated role hydration.
 - [Body measurement schema compatibility](body-measurement-schema.md) — measurement writes require the extended columns in Supabase; keep code and schema aligned.
 - [Live role RPC safeguard](live-role-rpc-safeguard.md) — Owners may change another user’s role, never their own; preserve the approved live-only security guard.
@@ -17,3 +17,4 @@
 - [Targeted formatting checks](targeted-formatting-checks.md) — Compare formatting against the baseline and avoid broad rewrites when a large UI file already has style drift.
 - [Supabase MCP fallback](supabase-mcp-fallback.md) — If generated Supabase MCP callbacks are unavailable, the installed custom MCP connection may still expose the streamable `/mcp` endpoint.
 - [Live Supabase sync drift](live-supabase-sync-drift.md) — Local realtime mocks can pass while the live schema or publication is behind; verify both before declaring cross-user sync ready.
+- [Playwright WebKit runtime](playwright-webkit-nix.md) — The bundled Linux WebKit may require Debian ABI libraries unavailable in stable Nix; keep the release gate explicit rather than silently skipping it.

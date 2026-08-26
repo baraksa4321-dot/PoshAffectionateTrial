@@ -1,11 +1,16 @@
 # Authenticated iPhone Safari release smoke
 
 This is the repeatable narrow-device check for the authenticated Coach and
-active-workout surfaces. The repository does not currently include a browser
-test runner, so this remains a manual release gate until one is introduced.
+active-workout surfaces. The automated WebKit check uses a local, credential-free
+coach fixture and runs as part of `pnpm run release:check`. The manual flow below
+remains useful when investigating a failure on a real iPhone.
 
 ## Setup
 
+- Run `pnpm run release:check` for the automated WebKit/device check. It starts
+  the release preview, seeds an isolated authenticated fixture in the browser,
+  exercises the WebKit iPhone 13 profile, and never requires a real account,
+  password, or secret.
 - Use a real iPhone Safari session at 390 × 844 or the closest available
   device profile.
 - Sign in as a coach who has at least one assigned trainee.

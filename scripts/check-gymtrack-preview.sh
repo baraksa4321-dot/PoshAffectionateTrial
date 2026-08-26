@@ -25,6 +25,7 @@ preview_pid="$!"
 for _ in {1..30}; do
   if curl --fail --silent --show-error "http://127.0.0.1:${port}/" >/dev/null; then
     echo "GymTrack release preview started successfully."
+    GYMTRACK_SMOKE_PORT="$port" pnpm run test:ios
     exit 0
   fi
 

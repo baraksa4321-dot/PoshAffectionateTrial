@@ -47,3 +47,4 @@ VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhY
 
 [nix]
 channel = "stable-25_05"
+packages = ["gtk4", "glib", "pango", "harfbuzz", "gdk-pixbuf", "cairo", "vulkan-loader", "graphene", "icu", "libxml2", "sqlite", "libxslt", "lcms2", "libevent", "flite", "libwebp", "libavif", "libepoxy", "libjpeg", "libsecret", "wayland", "libmanette", "enchant", "libgbm", "libdrm", "atk", "at-spi2-atk", "libxkbcommon", "x264", "libopus", "libglvnd", "icu74", "gst_all_1.gstreamer", "gst_all_1.gst-plugins-base", "gst_all_1.gst-plugins-good", "gst_all_1.gst-plugins-bad", "gst_all_1.gst-plugins-ugly", "gst_all_1.gst-libav", "hyphen", "gcc", "libbacktrace", "libjxl", "libsoup_3", "harfbuzzFull", "libjpeg8", "libjpeg_turbo"]

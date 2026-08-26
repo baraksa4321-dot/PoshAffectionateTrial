@@ -1,0 +1,363 @@
+import { expect, test } from "@playwright/test";
+
+const COACH_ID = "ios-smoke-coach";
+const CLIENT_ID = "ios-smoke-client";
+const WORKOUT_ID = "ios-smoke-workout";
+const PROGRAM_ID = "ios-smoke-program";
+
+const exercises = Array.from({ length: 8 }, (_, index) => ({
+  id: `ios-smoke-exercise-${index + 1}`,
+  name: `תרגיל בדיקה ${index + 1}`,
+  nameHe: `תרגיל בדיקה ${index + 1}`,
+  nameEn: `Smoke Exercise ${index + 1}`,
+  muscleGroup: "כללי",
+  muscleGroups: ["כללי"],
+  equipment: "מכונה",
+  category: "מותאם אישית",
+  description: "תרגיל בדיקה",
+  instructions: "ביצוע מבוקר",
+  videoUrl: "",
+  images: [],
+  notes: "",
+}));
+
+const workoutItems = exercises.map((exercise, index) => ({
+  id: `ios-smoke-item-${index + 1}`,
+  exerciseId: exercise.id,
+  exerciseName: exercise.name,
+  sets: 3,
+  reps: 8 + (index % 4),
+  repType: "fixed",
+  weight: 20 + index,
+  rest: 60,
+  notes: index === 7 ? "הערת מאמן לתרגיל האחרון" : "",
+}));
+
+const workout = {
+  id: WORKOUT_ID,
+  name: "אימון בדיקה ארוך",
+  notes: "תוכנית ארוכה לבדיקת גלילה",
+  items: workoutItems,
+};
+
+const program = {
+  id: PROGRAM_ID,
+  name: "תוכנית בדיקה לאייפון",
+  notes: "בדיקת סביבת עבודה ארוכה",
+  dayIds: [WORKOUT_ID],
+};
+
+const clientProfile = {
+  id: CLIENT_ID,
+  email: "ios-smoke-client@example.test",
+  full_name: "מתאמנת בדיקה",
+  role: "client",
+  approval_status: "approved",
+  coach_id: COACH_ID,
+  weight_kg: 64,
+  height_cm: 166,
+  age_years: 29,
+  workouts_per_week: 4,
+  gender: "female",
+  show_calories: true,
+  today_routine_enabled: true,
+  planned_menu: [
+    {
+      id: "ios-smoke-meal",
+      name: "ארוחת בדיקה",
+      foods: [
+        {
+          id: "ios-smoke-meal-food",
+          foodId: "f-rice",
+          name: "אורז",
+          quantity: 1,
+          calories: 200,
+          protein: 4,
+          carbs: 44,
+          fat: 0,
+        },
+      ],
+    },
+  ],
+};
+
+const nutritionDay = {
+  id: "ios-smoke-nutrition-day",
+  date: "2026-08-26",
+  target_calories: 1900,
+  meals: [
+    {
+      id: "ios-smoke-meal",
+      name: "ארוחת בדיקה",
+      foods: [
+        {
+          id: "ios-smoke-meal-food",
+          foodId: "f-rice",
+          name: "אורז",
+          quantity: 1,
+          calories: 200,
+          protein: 4,
+          carbs: 44,
+          fat: 0,
+        },
+      ],
+    },
+  ],
+  planned_meals: [],
+  water_ml: 1200,
+  water_target_ml: 2500,
+};
+
+const gymData = {
+  exercises,
+  workouts: [workout],
+  programs: [program],
+  history: [],
+  foods: [],
+  nutritionDays: [],
+  nutritionTargets: {},
+  plannedMeals: clientProfile.planned_menu,
+  mealTemplate: [],
+  recipes: [],
+  recentFoods: [],
+  favoriteFoods: [],
+  bodyWeightLogs: [],
+  bodyMeasurements: [],
+  cardioLogs: [],
+  preExitChecklist: [],
+  userProfile: {
+    fullName: "מאמנת בדיקה",
+    weight: 62,
+    height: 168,
+    age: 31,
+    gender: "female",
+    role: "coach",
+    approvalStatus: "approved",
+    showCalories: true,
+    theme: "pink",
+  },
+};
+
+const coachProfile = {
+  id: COACH_ID,
+  email: "ios-smoke-coach@example.test",
+  full_name: "מאמנת בדיקה",
+  role: "coach",
+  approval_status: "approved",
+  weight_kg: 62,
+  height_cm: 168,
+  age_years: 31,
+  workouts_per_week: 4,
+  gender: "female",
+  show_calories: true,
+  today_routine_enabled: true,
+  planned_menu: [],
+};
+
+function authSession() {
+  return {
+    access_token: "ios-smoke-access-token",
+    refresh_token: "ios-smoke-refresh-token",
+    expires_in: 3600,
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    token_type: "bearer",
+    user: {
+      id: COACH_ID,
+      aud: "authenticated",
+      role: "authenticated",
+      email: coachProfile.email,
+      app_metadata: { provider: "email", providers: ["email"] },
+      user_metadata: { full_name: coachProfile.full_name, gender: "female" },
+      created_at: "2026-01-01T00:00:00.000Z",
+      confirmed_at: "2026-01-01T00:00:00.000Z",
+    },
+  };
+}
+
+function jsonResponse(body) {
+  const rowCount = Array.isArray(body) ? body.length : 1;
+  return {
+    status: 200,
+    contentType: "application/json",
+    headers: { "content-range": `0-${Math.max(0, rowCount - 1)}/*` },
+    body: JSON.stringify(body),
+  };
+}
+
+function postgrestRows(url) {
+  const path = new URL(url).pathname.replace(/^.*\/rest\/v1\//, "");
+  const query = new URL(url).searchParams;
+  if (path === "coach_clients") {
+    return [
+      {
+        id: "ios-smoke-link",
+        client_id: CLIENT_ID,
+        created_at: "2026-01-02T00:00:00.000Z",
+        profiles: {
+          email: clientProfile.email,
+          full_name: clientProfile.full_name,
+          weight_kg: clientProfile.weight_kg,
+        },
+      },
+    ];
+  }
+  if (path === "client_feedback" || path === "broadcast_announcements") return [];
+  if (path === "profiles") {
+    return [query.get("id")?.includes(CLIENT_ID) ? clientProfile : coachProfile];
+  }
+  if (path === "programs") {
+    return [{ id: PROGRAM_ID, user_id: CLIENT_ID, name: program.name, description: program.notes }];
+  }
+  if (path === "program_days") {
+    return [
+      {
+        id: WORKOUT_ID,
+        program_id: PROGRAM_ID,
+        user_id: CLIENT_ID,
+        name: workout.name,
+        items: workout.items,
+        sort_order: 0,
+      },
+    ];
+  }
+  if (path === "nutrition_days") return [nutritionDay];
+  if (
+    path === "body_measurements" ||
+    path === "workout_sessions" ||
+    path === "cardio_logs" ||
+    path === "food_favorites" ||
+    path === "custom_exercises" ||
+    path === "custom_foods" ||
+    path === "coach_recipes"
+  ) {
+    return [];
+  }
+  return [];
+}
+
+async function installFixture(page) {
+  await page.addInitScript(
+    ({ cacheKey, cacheValue, session }) => {
+      Object.defineProperty(window.navigator, "onLine", {
+        configurable: true,
+        get: () => false,
+      });
+      const originalGetItem = Storage.prototype.getItem;
+      Storage.prototype.getItem = function getItem(key) {
+        if (this === window.localStorage && key.endsWith("-auth-token")) {
+          return JSON.stringify(session);
+        }
+        return originalGetItem.call(this, key);
+      };
+      window.localStorage.setItem(cacheKey, JSON.stringify(cacheValue));
+      window.localStorage.setItem(`${cacheKey.replace("user.", "pending.")}`, "false");
+      window.sessionStorage.setItem("gymtrack.workspace", "management");
+    },
+    {
+      cacheKey: `gymtrack.v1.user.${COACH_ID}`,
+      cacheValue: gymData,
+      session: authSession(),
+    },
+  );
+
+  await page.route("**/auth/v1/user**", (route) => route.fulfill(jsonResponse(authSession().user)));
+  await page.route("**/rest/v1/**", (route) => {
+    if (route.request().method() !== "GET") return route.fulfill(jsonResponse([]));
+    return route.fulfill(jsonResponse(postgrestRows(route.request().url())));
+  });
+}
+
+function assertKeyboardVisible(locator) {
+  return expect
+    .poll(async () => {
+      return locator.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const viewport = window.visualViewport;
+        const bottom = viewport?.height ?? window.innerHeight;
+        return document.activeElement === element && rect.top >= 0 && rect.bottom <= bottom;
+      });
+    })
+    .toBe(true);
+}
+
+test("authenticated iPhone coach workspace and active workout remain usable", async ({ page }) => {
+  await installFixture(page);
+
+  await page.goto("/");
+  const coachNav = page.getByTestId("link-nav-coach");
+  await expect(coachNav).toBeVisible();
+  await coachNav.click();
+  await expect(page).toHaveURL(/\/coach\/clients/);
+  await expect(page.getByText("מתאמנת בדיקה", { exact: true })).toBeVisible();
+
+  const clientCard = page.getByText("מתאמנת בדיקה", { exact: true }).first();
+  await clientCard.click();
+  await expect(page.locator('[data-coach-workspace="true"]')).toBeVisible();
+
+  const workspace = page.locator('[data-coach-workspace="true"]');
+  await expect(workspace).toHaveCSS("overflow-y", "auto");
+  await workspace.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect
+    .poll(() => workspace.evaluate((element) => element.scrollTop > 0))
+    .toBe(true);
+  await expect
+    .poll(() =>
+      workspace.evaluate((element) => {
+        const last = element.lastElementChild;
+        return Boolean(last && last.getBoundingClientRect().bottom <= window.innerHeight);
+      }),
+    )
+    .toBe(true);
+
+  await page.getByRole("tab", { name: "תוכנית אימונים" }).click();
+  const programSearch = page.getByRole("textbox", { name: "חיפוש תוכנית אימון" });
+  await programSearch.fill("בדיקה");
+  await assertKeyboardVisible(programSearch);
+  await expect(programSearch).toHaveValue("בדיקה");
+
+  await page.getByRole("tab", { name: "תפריט תזונה" }).click();
+  await page.getByRole("button", { name: "+ מאכל" }).first().click();
+  const foodSearch = page.locator('input[type="search"][id^="menu-food-search-"]').first();
+  await foodSearch.fill("אורז");
+  await assertKeyboardVisible(foodSearch);
+  await expect(foodSearch).toHaveValue("אורז");
+
+  await page.goto(`/session/${WORKOUT_ID}`);
+  await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
+  const progress = page.locator(".workout-progress-sticky");
+  const firstExercise = page.locator("article").first();
+  const progressBottom = await progress.boundingBox();
+  const firstExerciseTop = await firstExercise.boundingBox();
+  expect(progressBottom?.y + progressBottom?.height).toBeLessThanOrEqual(firstExerciseTop?.y ?? 0);
+
+  const repsInput = page.locator('input[type="number"]').first();
+  await repsInput.fill("123");
+  await assertKeyboardVisible(repsInput);
+  await page.keyboard.press("Tab");
+  await expect(repsInput).toHaveValue("123");
+
+  const workoutNote = page.getByPlaceholder("למשל: עומס קל במרפק ימין בסט האחרון...");
+  await workoutNote.fill("הערת בדיקה 123");
+  await assertKeyboardVisible(workoutNote);
+  await expect(workoutNote).toHaveValue("הערת בדיקה 123");
+
+  await page.getByRole("button", { name: "סמן סט כבוצע" }).first().click();
+  await expect(page.getByText("4%", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "בטל סיום סט" }).first().click();
+  await expect(page.getByText("0%", { exact: true })).toBeVisible();
+  await expect(workoutNote).toHaveValue("הערת בדיקה 123");
+
+  await page.getByRole("button", { name: "פתח פרטי תרגיל בדיקה 1" }).click();
+  const detailsSheet = page.getByRole("dialog", { name: "פרטי תרגיל" });
+  await expect(detailsSheet).toBeVisible();
+  await detailsSheet.getByRole("button", { name: "סגור" }).click();
+  await expect(detailsSheet).toBeHidden();
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.style.overflow))
+    .toBe("");
+
+  await page.locator("article").last().scrollIntoViewIfNeeded();
+  await expect(page.locator("article").last()).toBeInViewport();
+});
