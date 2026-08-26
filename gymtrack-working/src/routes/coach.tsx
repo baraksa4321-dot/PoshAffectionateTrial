@@ -936,6 +936,7 @@ export function CoachDashboardPage({
   const [roleChangeUserId, setRoleChangeUserId] = useState<string | null>(null);
   const [roleChangeNotice, setRoleChangeNotice] = useState("");
   const [approvalCoachByUser, setApprovalCoachByUser] = useState<Record<string, string>>({});
+  const [approvalNameByUser, setApprovalNameByUser] = useState<Record<string, string>>({});
   const [approvalShowCaloriesByUser, setApprovalShowCaloriesByUser] = useState<
     Record<string, boolean>
   >({});
@@ -2067,7 +2068,7 @@ export function CoachDashboardPage({
       setApprovalNotice("יש לבחור מאמן לפני אישור המתאמן.");
       return;
     }
-    const fullName = profile.full_name?.trim() || "";
+    const fullName = (approvalNameByUser[profile.id] ?? profile.full_name ?? "").trim();
     if (fullName.split(/\s+/).filter(Boolean).length < 2) {
       setApprovalNotice("יש להשלים שם פרטי ושם משפחה לפני האישור.");
       return;
@@ -2085,6 +2086,11 @@ export function CoachDashboardPage({
       if (error) throw error;
       if (data !== true) throw new Error("האישור לא התקבל במסד הנתונים");
       await Promise.all([loadAllProfilesForOwner(), loadCoachClients()]);
+      setApprovalNameByUser((current) => {
+        const next = { ...current };
+        delete next[profile.id];
+        return next;
+      });
       setApprovalNotice(`ההרשמה של ${fullName} אושרה והמתאמן שויך למאמן.`);
     } catch (err: unknown) {
       setApprovalNotice(`אישור ההרשמה נכשל: ${errorMessage(err, "שגיאה באישור")}`);
@@ -3517,15 +3523,12 @@ export function CoachDashboardPage({
                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                           שם מלא
                           <input
-                            value={profile.full_name ?? ""}
+                            value={approvalNameByUser[profile.id] ?? profile.full_name ?? ""}
                             onChange={(event) =>
-                              setAllProfiles((current) =>
-                                current.map((item) =>
-                                  item.id === profile.id
-                                    ? { ...item, full_name: event.target.value }
-                                    : item,
-                                ),
-                              )
+                              setApprovalNameByUser((current) => ({
+                                ...current,
+                                [profile.id]: event.target.value,
+                              }))
                             }
                             className="h-9 rounded-lg border border-border px-2 text-xs font-semibold text-ink outline-none focus:border-primary"
                           />

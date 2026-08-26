@@ -4,6 +4,7 @@ const COACH_ID = "ios-smoke-coach";
 const CLIENT_ID = "ios-smoke-client";
 const WORKOUT_ID = "ios-smoke-workout";
 const PROGRAM_ID = "ios-smoke-program";
+const ACTIVE_SESSION_FEEDBACK_KEY = `gymtrack.active_session_feedback.${WORKOUT_ID}`;
 
 const exercises = Array.from({ length: 8 }, (_, index) => ({
   id: `ios-smoke-exercise-${index + 1}`,
@@ -378,13 +379,13 @@ test("active workout values survive leaving and reopening the session", async ({
   await page.keyboard.press("Tab");
   await expect(repsInput).toHaveValue("123");
 
-  // Completion feedback is intentionally local to the active page. It is not
-  // part of the entries draft that is restored after navigation.
+  // Completion feedback belongs to the active workout draft and should follow
+  // the workout when the coach navigates away before saving.
   await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
   const workoutNote = page.getByPlaceholder("למשל: עומס קל במרפק ימין בסט האחרון...");
   await expect(workoutNote).toBeVisible();
-  await workoutNote.fill("הערת סיום שלא נשמרת בטיוטה");
-  await expect(workoutNote).toHaveValue("הערת סיום שלא נשמרת בטיוטה");
+  await workoutNote.fill("הערת סיום בטיוטת האימון");
+  await expect(workoutNote).toHaveValue("הערת סיום בטיוטת האימון");
   await page.keyboard.press("Escape");
   await expect(workoutNote).toBeHidden();
 
@@ -393,9 +394,13 @@ test("active workout values survive leaving and reopening the session", async ({
   await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
   await expect(page.locator('input[type="number"]').first()).toHaveValue("123");
 
-  // Reopening the completion sheet documents its intended persistence
-  // boundary: the note is only saved when the workout is finished.
+  // Reopening the completion sheet restores the unfinished workout note.
   await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
   const reopenedWorkoutNote = page.getByPlaceholder("למשל: עומס קל במרפק ימין בסט האחרון...");
-  await expect(reopenedWorkoutNote).toHaveValue("");
+  await expect(reopenedWorkoutNote).toHaveValue("הערת סיום בטיוטת האימון");
+  await page.getByRole("button", { name: "אישור ושמירת אימון" }).click();
+  await expect(page).toHaveURL(/\/programs/);
+  await expect
+    .poll(() => page.evaluate((key) => localStorage.getItem(key), ACTIVE_SESSION_FEEDBACK_KEY))
+    .toBeNull();
 });

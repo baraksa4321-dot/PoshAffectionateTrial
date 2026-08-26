@@ -83,6 +83,16 @@ function supersetLabels(items: WorkoutItem[]) {
 }
 
 const ACTIVE_SESSION_KEY = (id: string) => `gymtrack.active_session.${id}`;
+const ACTIVE_SESSION_FEEDBACK_KEY = (id: string) => `gymtrack.active_session_feedback.${id}`;
+
+function loadSavedDiscomfortNotes(workoutId: string): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(ACTIVE_SESSION_FEEDBACK_KEY(workoutId)) ?? "";
+  } catch {
+    return "";
+  }
+}
 
 function isExercisePlaceholder(value: unknown): value is string {
   const normalized = typeof value === "string" ? value.trim() : "";
@@ -136,7 +146,14 @@ function Session() {
   const [difficultyRating, setDifficultyRating] = useState<"easy" | "appropriate" | "difficult">(
     "appropriate",
   );
-  const [discomfortNotes, setDiscomfortNotes] = useState("");
+  const [feedbackDraft, setFeedbackDraft] = useState(() => ({
+    workoutId,
+    discomfortNotes: loadSavedDiscomfortNotes(workoutId),
+  }));
+  const discomfortNotes =
+    feedbackDraft.workoutId === workoutId ? feedbackDraft.discomfortNotes : "";
+  const setDiscomfortNotes = (notes: string) =>
+    setFeedbackDraft({ workoutId, discomfortNotes: notes });
   const [exerciseFeedback, setExerciseFeedback] = useState<
     Record<number, { rating?: "easy" | "appropriate" | "difficult"; notes: string }>
   >({});
@@ -261,6 +278,13 @@ function Session() {
 
   const [entries, setEntries] = useState<HistoryEntry[]>(initial);
   useEffect(() => {
+    setFeedbackDraft({
+      workoutId,
+      discomfortNotes: loadSavedDiscomfortNotes(workoutId),
+    });
+  }, [workoutId]);
+
+  useEffect(() => {
     setEntries((current) =>
       current.map((entry, index) => {
         const refreshed = initial[index];
@@ -333,6 +357,20 @@ function Session() {
       /* ignore */
     }
   }, [entries, workoutId]);
+
+  useEffect(() => {
+    if (!workoutId || feedbackDraft.workoutId !== workoutId) return;
+    try {
+      const key = ACTIVE_SESSION_FEEDBACK_KEY(workoutId);
+      if (discomfortNotes) {
+        localStorage.setItem(key, discomfortNotes);
+      } else {
+        localStorage.removeItem(key);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [discomfortNotes, feedbackDraft.workoutId, workoutId]);
 
   useEffect(() => {
     if (rest <= 0 || isPaused || restPaused) return;
@@ -495,6 +533,7 @@ function Session() {
   const clearSavedSession = () => {
     try {
       localStorage.removeItem(ACTIVE_SESSION_KEY(workout.id));
+      localStorage.removeItem(ACTIVE_SESSION_FEEDBACK_KEY(workout.id));
     } catch {
       /* ignore */
     }
