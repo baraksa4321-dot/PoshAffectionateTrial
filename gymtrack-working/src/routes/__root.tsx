@@ -1102,7 +1102,33 @@ function RootContent() {
     authStatus === "authenticated" &&
     profileHydrationStatus === "ready" &&
     !userProfile?.fullName?.trim();
+  const isLoadingScreen = authStatus === "loading" || isProfileHydrating || !minimumLoadingDone;
   const routeWarmupCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (!isLoadingScreen) return;
+
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const previousBodyPosition = body.style.position;
+    const previousBodyTop = body.style.top;
+    const previousBodyWidth = body.style.width;
+
+    document.documentElement.classList.add("loading-lock");
+    body.classList.add("loading-lock");
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.width = "100%";
+
+    return () => {
+      document.documentElement.classList.remove("loading-lock");
+      body.classList.remove("loading-lock");
+      body.style.position = previousBodyPosition;
+      body.style.top = previousBodyTop;
+      body.style.width = previousBodyWidth;
+      window.scrollTo(0, scrollY);
+    };
+  }, [isLoadingScreen]);
 
   useEffect(() => {
     document.documentElement.lang = "he";
@@ -1203,7 +1229,7 @@ function RootContent() {
       <HeadContent />
       <ScrollToTop />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      {authStatus === "loading" || isProfileHydrating || !minimumLoadingDone ? (
+      {isLoadingScreen ? (
         <div
           className="loading-screen flex min-h-[100dvh] items-center justify-center bg-background px-4"
           dir="rtl"
