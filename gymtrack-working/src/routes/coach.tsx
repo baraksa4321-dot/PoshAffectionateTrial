@@ -2717,8 +2717,8 @@ export function CoachDashboardPage({
                       role="tab"
                       className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors ${
                         activeWorkspaceTab === "programs"
-                          ? "bg-sage text-ink shadow-sm"
-                          : "bg-sage-soft text-secondary-foreground hover:bg-sage/70"
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "bg-secondary text-secondary-foreground hover:bg-primary/10"
                       }`}
                     >
                       <Dumbbell className="h-3.5 w-3.5" />
@@ -2734,7 +2734,7 @@ export function CoachDashboardPage({
                       role="tab"
                       className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors ${
                         activeWorkspaceTab === "nutrition"
-                          ? "bg-accent text-accent-foreground shadow-sm"
+                            ? "bg-primary text-primary-foreground shadow-sm"
                           : "bg-secondary text-secondary-foreground hover:bg-secondary/70"
                       }`}
                     >
