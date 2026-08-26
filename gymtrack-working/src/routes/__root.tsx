@@ -32,6 +32,7 @@ import {
 import { supabase } from "../lib/supabase";
 import { genderText } from "../lib/gender-copy";
 import { LOADING_MESSAGES, loadingMessageForGender } from "../lib/loading-copy";
+import { LockKeyhole, RefreshCw } from "lucide-react";
 
 const useLoadingCycleEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
@@ -1102,6 +1103,12 @@ function RootContent() {
     authStatus === "authenticated" &&
     profileHydrationStatus === "ready" &&
     !userProfile?.fullName?.trim();
+  const accountApprovalStatus = userProfile?.approvalStatus;
+  const isAccountLocked =
+    authStatus === "authenticated" &&
+    profileHydrationStatus === "ready" &&
+    userProfile?.role === "client" &&
+    accountApprovalStatus !== "approved";
   const isLoadingScreen = authStatus === "loading" || isProfileHydrating || !minimumLoadingDone;
   const routeWarmupCleanupRef = useRef<(() => void) | null>(null);
 
@@ -1271,6 +1278,37 @@ function RootContent() {
                 className="rounded-xl border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground"
               >
                 איפוס והתחברות מחדש
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : isAccountLocked ? (
+        <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4" dir="rtl">
+          <div className="w-full max-w-md rounded-3xl border border-primary/20 bg-white px-6 py-7 text-center shadow-sm">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary/10 text-primary">
+              <LockKeyhole className="h-7 w-7" aria-hidden="true" />
+            </div>
+            <h1 className="mt-4 text-xl font-bold text-foreground">הגישה לאתר נעולה כרגע</h1>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              {accountApprovalStatus === "rejected"
+                ? "ההרשמה נדחתה על ידי הבעלים. ניתן לפנות לבעלים לקבלת פרטים נוספים."
+                : "ההרשמה ממתינה לאישור הבעלים. לאחר האישור אפשר יהיה להיכנס לכל אזורי האתר."}
+            </p>
+            <div className="mt-6 flex justify-center gap-2">
+              <button
+                type="button"
+                onClick={retryProfileHydration}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+              >
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                בדיקת סטטוס מחדש
+              </button>
+              <button
+                type="button"
+                onClick={() => void resetAuthSessionAndReload()}
+                className="rounded-xl border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground"
+              >
+                התנתקות
               </button>
             </div>
           </div>

@@ -355,6 +355,7 @@ export type UserProfile = {
   gender?: "female" | "male";
   workoutsPerWeek?: number;
   role?: UserRole;
+  approvalStatus?: "pending" | "approved" | "rejected";
   coachId?: string;
   foodPreferences?: FoodPreferences;
   todayRoutineEnabled?: boolean;

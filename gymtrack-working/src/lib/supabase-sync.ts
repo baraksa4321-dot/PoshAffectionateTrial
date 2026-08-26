@@ -578,6 +578,12 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         ? profile.gender
         : nextData.userProfile?.gender;
     const coachId = profile.coach_id || undefined;
+    const approvalStatus =
+      profile.approval_status === "pending" ||
+      profile.approval_status === "approved" ||
+      profile.approval_status === "rejected"
+        ? profile.approval_status
+        : undefined;
     nextData.userProfile = {
       ...nextData.userProfile,
       weight: profile.weight_kg ? Number(profile.weight_kg) : (nextData.userProfile?.weight ?? 0),
@@ -589,6 +595,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       ...(workoutsPerWeek === undefined ? {} : { workoutsPerWeek }),
       ...(gender === undefined ? {} : { gender }),
       ...(coachId === undefined ? {} : { coachId }),
+      ...(approvalStatus === undefined ? {} : { approvalStatus }),
     };
 
     const authTheme = authUser?.user_metadata?.["theme"];
