@@ -16,3 +16,4 @@
 - [iOS loading scroll lock](loading-scroll-lock.md) — A fixed splash layer does not stop Safari body dragging; lock html/body overflow and touch behavior during loading.
 - [Targeted formatting checks](targeted-formatting-checks.md) — Compare formatting against the baseline and avoid broad rewrites when a large UI file already has style drift.
 - [Supabase MCP fallback](supabase-mcp-fallback.md) — If generated Supabase MCP callbacks are unavailable, the installed custom MCP connection may still expose the streamable `/mcp` endpoint.
+- [Live Supabase sync drift](live-supabase-sync-drift.md) — Local realtime mocks can pass while the live schema or publication is behind; verify both before declaring cross-user sync ready.
