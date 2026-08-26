@@ -62,7 +62,8 @@ class DisposableRoleDataset {
   }
 
   private requireOwner(): void {
-    if (this.actor().role !== "owner") throw new Error("Access denied. Only the Owner may do this.");
+    if (this.actor().role !== "owner")
+      throw new Error("Access denied. Only the Owner may do this.");
   }
 
   private requireCoach(): void {
@@ -121,11 +122,7 @@ class DisposableRoleDataset {
     if (!client || client.role !== "client" || client.approvalStatus !== "approved") {
       throw new Error("The selected user is not an approved client.");
     }
-    if (
-      this.links.some(
-        (link) => link.clientId === clientId && link.coachId !== this.actorId,
-      )
-    ) {
+    if (this.links.some((link) => link.clientId === clientId && link.coachId !== this.actorId)) {
       throw new Error("The client is already assigned to another coach.");
     }
 
@@ -137,14 +134,23 @@ class DisposableRoleDataset {
   }
 
   directProfileAssignmentWrite(targetId: string, patch: Pick<Profile, "role" | "coachId">): void {
-    if (this.actor().role !== "owner" && (patch.role !== undefined || patch.coachId !== undefined)) {
+    if (
+      this.actor().role !== "owner" &&
+      (patch.role !== undefined || patch.coachId !== undefined)
+    ) {
       throw new Error("Access denied: role and coach assignment changes are owner-only.");
     }
-    Object.assign(this.profiles.get(targetId), patch);
+    const target = this.profiles.get(targetId);
+    if (!target) throw new Error("The selected user was not found.");
+    Object.assign(target, patch);
   }
 
   readClientData(clientId: string): Profile {
-    if (this.actorId !== clientId && this.actor().role !== "owner" && !this.isAssignedCoach(clientId)) {
+    if (
+      this.actorId !== clientId &&
+      this.actor().role !== "owner" &&
+      !this.isAssignedCoach(clientId)
+    ) {
       throw new Error("Access denied.");
     }
     const client = this.profiles.get(clientId);
@@ -157,7 +163,10 @@ function normalizedFunctionBody(sql: string, functionName: string): string {
   const start = sql.indexOf(`FUNCTION public.${functionName}`);
   if (start < 0) throw new Error(`Missing function ${functionName}`);
   const end = sql.indexOf("$$;", start);
-  return sql.slice(start, end < 0 ? undefined : end).replace(/\s+/g, " ").trim();
+  return sql
+    .slice(start, end < 0 ? undefined : end)
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 const migration27 = readFileSync(
@@ -182,6 +191,13 @@ const migration11 = readFileSync(
 describe("role and assignment security on a disposable dataset", () => {
   test("an assigned coach can read the client, while an unassigned coach and client cannot cross-read", () => {
     const dataset = new DisposableRoleDataset();
+    dataset.links = dataset.links.filter(
+      (link) =>
+        !(
+          (link.coachId === coachAId && link.clientId === clientBId) ||
+          (link.coachId === coachBId && link.clientId === clientAId)
+        ),
+    );
 
     expect(() => dataset.as(coachAId).readClientData(clientAId)).not.toThrow();
     expect(() => dataset.as(coachAId).readClientData(clientBId)).toThrow();
@@ -202,40 +218,46 @@ describe("role and assignment security on a disposable dataset", () => {
 
   test("both role-transition directions remove incoming and outgoing stale links", () => {
     const coachToClient = new DisposableRoleDataset();
+    coachToClient.profiles.get(coachAId)!.coachId = coachBId;
     coachToClient.profiles.set("dependent-client", profile("dependent-client", "client", coachAId));
     coachToClient.as(ownerId).changeUserRole(coachAId, "client");
 
     expect(coachToClient.profiles.get(coachAId)?.role).toBe("client");
+    expect(coachToClient.profiles.get(coachAId)?.coachId).toBeNull();
     expect(coachToClient.profiles.get("dependent-client")?.coachId).toBeNull();
-    expect(coachToClient.links.some((link) => link.coachId === coachAId || link.clientId === coachAId)).toBe(
-      false,
-    );
+    expect(
+      coachToClient.links.some((link) => link.coachId === coachAId || link.clientId === coachAId),
+    ).toBe(false);
 
     const clientToCoach = new DisposableRoleDataset();
-    clientToCoach.profiles.set("dependent-client", profile("dependent-client", "client", clientBId));
+    clientToCoach.profiles.set(
+      "dependent-client",
+      profile("dependent-client", "client", clientBId),
+    );
     clientToCoach.links.push({ coachId: clientBId, clientId: "dependent-client" });
     clientToCoach.as(ownerId).changeUserRole(clientBId, "coach");
 
     expect(clientToCoach.profiles.get(clientBId)?.role).toBe("coach");
     expect(clientToCoach.profiles.get(clientBId)?.coachId).toBeNull();
     expect(clientToCoach.profiles.get("dependent-client")?.coachId).toBeNull();
-    expect(clientToCoach.links.some((link) => link.coachId === clientBId || link.clientId === clientBId)).toBe(
-      false,
-    );
+    expect(
+      clientToCoach.links.some((link) => link.coachId === clientBId || link.clientId === clientBId),
+    ).toBe(false);
   });
 
   test("trainees and coaches cannot use owner-only RPCs or write assignment fields directly", () => {
     const dataset = new DisposableRoleDataset();
 
+    expect(() => dataset.as(ownerId).changeUserRole(ownerId, "client")).toThrow(
+      "cannot be changed",
+    );
     expect(() => dataset.as(clientAId).assignClientToCoach(clientCId, coachBId)).toThrow(
       "Only the Owner",
     );
     expect(() => dataset.as(coachAId).changeUserRole(clientBId, "client")).toThrow(
       "Only the Owner",
     );
-    expect(() => dataset.as(clientAId).linkClientToCurrentCoach(clientCId)).toThrow(
-      "Only coaches",
-    );
+    expect(() => dataset.as(clientAId).linkClientToCurrentCoach(clientCId)).toThrow("Only coaches");
     expect(() =>
       dataset.as(clientAId).directProfileAssignmentWrite(clientAId, {
         role: "coach",
@@ -257,9 +279,7 @@ describe("role and assignment security on a disposable dataset", () => {
     expect(() => dataset.as(coachAId).linkClientToCurrentCoach("pending-client")).toThrow(
       "approved client",
     );
-    expect(() => dataset.as(coachAId).linkClientToCurrentCoach(clientBId)).toThrow(
-      "another coach",
-    );
+    expect(() => dataset.as(coachAId).linkClientToCurrentCoach(clientBId)).toThrow("another coach");
 
     dataset.as(coachAId).linkClientToCurrentCoach(clientCId);
     expect(dataset.profiles.get(clientCId)?.coachId).toBe(coachAId);
@@ -287,7 +307,9 @@ describe("role and assignment SQL security contract", () => {
     expect(assignBody).toContain("IF NOT public.is_owner()");
     expect(assignBody).toContain("role IN ('coach', 'owner')");
     expect(assignBody).toContain("role = 'client' AND approval_status = 'approved'");
-    expect(assignBody).toContain("DELETE FROM public.coach_clients WHERE client_id = target_client_id");
+    expect(assignBody).toContain(
+      "DELETE FROM public.coach_clients WHERE client_id = target_client_id",
+    );
     expect(assignBody).toContain("SET coach_id = new_coach_id");
 
     expect(linkBody).toContain("IF NOT public.is_current_user_coach()");
@@ -303,7 +325,11 @@ describe("role and assignment SQL security contract", () => {
     expect(triggerBody).toContain("NEW.role IS DISTINCT FROM OLD.role");
     expect(triggerBody).toContain("NEW.coach_id IS DISTINCT FROM OLD.coach_id");
     expect(triggerBody).toContain("IF NOT public.is_owner()");
-    expect(migration11).toContain("REVOKE ALL ON FUNCTION public.change_user_role(UUID, TEXT) FROM PUBLIC");
-    expect(migration11).toContain("GRANT EXECUTE ON FUNCTION public.change_user_role(UUID, TEXT) TO authenticated");
+    expect(migration11).toContain(
+      "REVOKE ALL ON FUNCTION public.change_user_role(UUID, TEXT) FROM PUBLIC",
+    );
+    expect(migration11).toContain(
+      "GRANT EXECUTE ON FUNCTION public.change_user_role(UUID, TEXT) TO authenticated",
+    );
   });
 });
