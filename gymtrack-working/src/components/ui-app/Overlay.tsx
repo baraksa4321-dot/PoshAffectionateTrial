@@ -14,13 +14,6 @@ const openOverlayTokens: number[] = [];
 function scrollFocusedFieldWithinPanel(field: HTMLElement, panel: HTMLElement) {
   const fieldRect = field.getBoundingClientRect();
   const panelRect = panel.getBoundingClientRect();
-  const safeTop = panelRect.top + 16;
-  const safeBottom = panelRect.bottom - 20;
-  let delta = 0;
-  if (fieldRect.top < safeTop) delta = fieldRect.top - safeTop;
-  else if (fieldRect.bottom > safeBottom) delta = fieldRect.bottom - safeBottom;
-  if (!delta) return;
-
   let scrollParent: HTMLElement | null = field.parentElement;
   while (scrollParent && scrollParent !== panel) {
     const overflowY = window.getComputedStyle(scrollParent).overflowY;
@@ -28,42 +21,26 @@ function scrollFocusedFieldWithinPanel(field: HTMLElement, panel: HTMLElement) {
       /(auto|scroll)/.test(overflowY) &&
       scrollParent.scrollHeight > scrollParent.clientHeight + 1
     ) {
+      const parentRect = scrollParent.getBoundingClientRect();
+      const safeTop = Math.max(panelRect.top + 16, parentRect.top + 12);
+      const safeBottom = Math.min(panelRect.bottom - 20, parentRect.bottom - 16);
+      let delta = 0;
+      if (fieldRect.top < safeTop) delta = fieldRect.top - safeTop;
+      else if (fieldRect.bottom > safeBottom) delta = fieldRect.bottom - safeBottom;
+      if (!delta) return;
       scrollParent.scrollTop += delta;
       return;
     }
     scrollParent = scrollParent.parentElement;
   }
+
+  const safeTop = panelRect.top + 16;
+  const safeBottom = panelRect.bottom - 20;
+  let delta = 0;
+  if (fieldRect.top < safeTop) delta = fieldRect.top - safeTop;
+  else if (fieldRect.bottom > safeBottom) delta = fieldRect.bottom - safeBottom;
+  if (!delta) return;
   panel.scrollTop += delta;
-}
-
-function scrollFocusedFieldInDocument(field: HTMLElement) {
-  let scrollParent: HTMLElement | null = field.parentElement;
-  while (scrollParent) {
-    const overflowY = window.getComputedStyle(scrollParent).overflowY;
-    if (
-      /(auto|scroll)/.test(overflowY) &&
-      scrollParent.scrollHeight > scrollParent.clientHeight + 1
-    ) {
-      const fieldRect = field.getBoundingClientRect();
-      const parentRect = scrollParent.getBoundingClientRect();
-      const safeTop = Math.max(parentRect.top, 12);
-      const safeBottom = Math.min(parentRect.bottom, window.innerHeight) - 20;
-      if (fieldRect.top < safeTop) {
-        scrollParent.scrollTop += fieldRect.top - safeTop;
-      } else if (fieldRect.bottom > safeBottom) {
-        scrollParent.scrollTop += fieldRect.bottom - safeBottom;
-      }
-      return;
-    }
-    scrollParent = scrollParent.parentElement;
-  }
-
-  const fieldRect = field.getBoundingClientRect();
-  if (fieldRect.bottom > window.innerHeight - 20) {
-    window.scrollBy({ top: fieldRect.bottom - (window.innerHeight - 20), behavior: "auto" });
-  } else if (fieldRect.top < 12) {
-    window.scrollBy({ top: fieldRect.top - 12, behavior: "auto" });
-  }
 }
 
 export function Overlay({
@@ -111,8 +88,10 @@ export function Overlay({
 
       window.requestAnimationFrame(() => {
         if (document.activeElement !== activeElement) return;
-        const inlinePanel = activeElement.closest<HTMLElement>('[data-overlay-inline-panel="true"]');
-        if (inlinePanel) scrollFocusedFieldInDocument(activeElement);
+        const inlinePanel = activeElement.closest<HTMLElement>(
+          '[data-overlay-inline-panel="true"]',
+        );
+        if (inlinePanel) scrollFocusedFieldWithinPanel(activeElement, inlinePanel);
         else activeElement.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
       });
     };
@@ -197,8 +176,11 @@ export function Overlay({
     };
     const updateKeyboardOffset = () => {
       const visibleHeight = visualViewport?.height ?? window.innerHeight;
+      const viewportTop = visualViewport?.offsetTop ?? 0;
+      const rawKeyboardOffset = Math.max(0, window.innerHeight - visibleHeight - viewportTop);
+      const nextKeyboardOffset = rawKeyboardOffset > 80 ? rawKeyboardOffset : 0;
       setViewportHeight(visibleHeight);
-      setKeyboardOffset(Math.max(0, window.innerHeight - visibleHeight));
+      setKeyboardOffset(nextKeyboardOffset);
       if (visibleHeight < window.innerHeight) keepFocusedFieldVisible();
     };
     updateKeyboardOffset();
@@ -264,11 +246,7 @@ export function Overlay({
       data-overlay-root="true"
       data-overlay-variant={variant}
       data-keyboard-open={keyboardOffset > 0 ? "true" : undefined}
-      style={
-        viewportHeight !== null && !isBottom
-          ? { height: `${viewportHeight}px` }
-          : undefined
-      }
+      style={viewportHeight !== null && !isBottom ? { height: `${viewportHeight}px` } : undefined}
       className={`overlay-root fixed inset-0 z-[100] flex touch-pan-y overflow-x-hidden ${
         isFull
           ? "items-stretch justify-center"
@@ -288,9 +266,7 @@ export function Overlay({
         data-overlay-panel="true"
         style={{
           maxHeight: panelMaxHeight,
-          ...(isBottom && keyboardOffset > 0
-            ? { marginBottom: `${keyboardOffset}px` }
-            : {}),
+          ...(isBottom && keyboardOffset > 0 ? { marginBottom: `${keyboardOffset}px` } : {}),
         }}
         className={`w-full touch-pan-y ${
           isFull

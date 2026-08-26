@@ -78,7 +78,10 @@ export function Stepper({
               setEditing(false);
             }}
             onKeyDown={(event) => {
-              if (event.key === "Enter") commitDraft();
+              if (event.key === "Enter") {
+                event.preventDefault();
+                commitDraft();
+              }
             }}
             className="w-full min-w-0 bg-transparent text-center text-base font-semibold outline-none"
           />

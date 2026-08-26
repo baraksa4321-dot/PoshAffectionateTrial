@@ -167,7 +167,11 @@ export function AppShell({
     const updateKeyboardMetrics = () => {
       const visibleHeight = visualViewport?.height ?? window.innerHeight;
       const viewportTop = visualViewport?.offsetTop ?? 0;
-      const keyboardInset = Math.max(0, window.innerHeight - visibleHeight - viewportTop);
+      const rawKeyboardInset = Math.max(0, window.innerHeight - visibleHeight - viewportTop);
+      // Safari can report a shorter visual viewport while its browser chrome is
+      // visible. Only reserve space once the reduction is large enough to be a
+      // keyboard; otherwise the page gets an unnecessary bottom gap.
+      const keyboardInset = rawKeyboardInset > 80 ? rawKeyboardInset : 0;
       document.documentElement.style.setProperty("--keyboard-inset", `${keyboardInset}px`);
       document.documentElement.toggleAttribute("data-keyboard-open", keyboardInset > 80);
     };
@@ -178,7 +182,9 @@ export function AppShell({
         const field = document.activeElement;
         if (
           !(field instanceof HTMLElement) ||
-          !field.matches('input:not([type="hidden"]):not([type="file"]), textarea, select, [contenteditable="true"]') ||
+          !field.matches(
+            'input:not([type="hidden"]):not([type="file"]), textarea, select, [contenteditable="true"]',
+          ) ||
           field.closest('[data-overlay-panel="true"]')
         ) {
           return;
@@ -190,7 +196,10 @@ export function AppShell({
         const navHeight =
           shellRef.current?.querySelector<HTMLElement>(".nav-shell")?.offsetHeight ?? 0;
         const visibleTop = viewportTop + headerHeight + 12;
-        const visibleBottom = viewportTop + viewportHeight - navHeight - 16;
+        const visibleBottom =
+          viewportTop +
+          viewportHeight -
+          (document.documentElement.hasAttribute("data-keyboard-open") ? 16 : navHeight + 16);
         const rect = field.getBoundingClientRect();
         const scrollContainer = mainRef.current;
 
