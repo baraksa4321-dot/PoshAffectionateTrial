@@ -38,6 +38,137 @@ export type CoachClientData = {
   error?: string;
 };
 
+export type RealtimeCleanup = () => void;
+
+type RealtimeTableSubscription = {
+  table: string;
+  filter?: string;
+};
+
+function subscribeToRealtimeTables(
+  channelName: string,
+  subscriptions: RealtimeTableSubscription[],
+  onChange: (table?: string) => void,
+): RealtimeCleanup {
+  if (typeof supabase.channel !== "function") return () => undefined;
+
+  let channel: ReturnType<typeof supabase.channel> | null = null;
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  let reconnectAttempts = 0;
+  let stopped = false;
+
+  const scheduleReconnect = () => {
+    if (stopped || reconnectTimer || typeof supabase.channel !== "function") return;
+    const delay = Math.min(30_000, 1_000 * 2 ** reconnectAttempts);
+    reconnectAttempts += 1;
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      if (!stopped) subscribe();
+    }, delay);
+  };
+
+  const subscribe = () => {
+    if (stopped) return;
+    const nextChannel = supabase.channel(channelName);
+    const addSubscription = (table: string, filter?: string) => {
+      const notify = () => {
+        if (!stopped) onChange(table);
+      };
+      nextChannel.on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table,
+          ...(filter ? { filter } : {}),
+        },
+        notify,
+      );
+    };
+
+    subscriptions.forEach(({ table, filter }) => addSubscription(table, filter));
+
+    channel = nextChannel.subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        reconnectAttempts = 0;
+        onChange();
+        return;
+      }
+      if (status !== "CHANNEL_ERROR" && status !== "TIMED_OUT" && status !== "CLOSED") return;
+      if (channel !== nextChannel || stopped) return;
+      console.warn(
+        `[Coach client realtime ${status.toLowerCase()}]: scheduling an automatic resubscription`,
+      );
+      channel = null;
+      void supabase.removeChannel(nextChannel);
+      scheduleReconnect();
+    });
+  };
+
+  subscribe();
+  return () => {
+    stopped = true;
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    if (channel) {
+      void supabase.removeChannel(channel);
+      channel = null;
+    }
+  };
+}
+
+/**
+ * Subscribe to the rows a coach can see for one client. The callback is
+ * intentionally followed by a fresh RLS-scoped pull rather than trusting the
+ * Realtime payload, so assignment changes and audience-filtered rows stay
+ * consistent with the database.
+ */
+export function subscribeToCoachClientChanges(
+  clientId: string,
+  onChange: (table?: string) => void,
+): RealtimeCleanup {
+  return subscribeToRealtimeTables(
+    `gymtrack-coach-client-sync-${clientId}`,
+    [
+      { table: "profiles", filter: `id=eq.${clientId}` },
+      { table: "programs", filter: `user_id=eq.${clientId}` },
+      { table: "program_days", filter: `user_id=eq.${clientId}` },
+      { table: "nutrition_days", filter: `user_id=eq.${clientId}` },
+      { table: "workout_sessions", filter: `user_id=eq.${clientId}` },
+      { table: "body_weight_logs", filter: `user_id=eq.${clientId}` },
+      { table: "cardio_logs", filter: `user_id=eq.${clientId}` },
+      { table: "body_measurements", filter: `user_id=eq.${clientId}` },
+      { table: "client_habits", filter: `user_id=eq.${clientId}` },
+      { table: "client_feedback", filter: `client_id=eq.${clientId}` },
+      { table: "coach_messages", filter: `client_id=eq.${clientId}` },
+      { table: "coach_clients", filter: `client_id=eq.${clientId}` },
+    ],
+    onChange,
+  );
+}
+
+/**
+ * Keep the coach/owner management lists current when another account changes
+ * a role, assignment, or feedback entry.
+ */
+export function subscribeToCoachManagementChanges(
+  userId: string,
+  onChange: (table?: string) => void,
+): RealtimeCleanup {
+  return subscribeToRealtimeTables(
+    `gymtrack-coach-management-sync-${userId}`,
+    [
+      { table: "profiles" },
+      { table: "coach_clients" },
+      { table: "client_feedback" },
+      { table: "broadcast_announcements" },
+    ],
+    onChange,
+  );
+}
+
 function isMissingTableInSchemaCache(error: unknown, tableName: string): boolean {
   const candidate = error as { code?: unknown; message?: unknown } | null;
   const code = typeof candidate?.code === "string" ? candidate.code : "";

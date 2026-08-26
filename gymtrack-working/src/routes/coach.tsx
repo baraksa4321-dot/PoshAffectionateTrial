@@ -42,7 +42,11 @@ import {
   useAuthUser,
   useGym,
 } from "../lib/gym-store";
-import { pullClientDataForCoach } from "../lib/supabase-sync";
+import {
+  pullClientDataForCoach,
+  subscribeToCoachClientChanges,
+  subscribeToCoachManagementChanges,
+} from "../lib/supabase-sync";
 import { supabase } from "../lib/supabase";
 import {
   clientNutritionTargetUpsertPayload,
@@ -1330,6 +1334,26 @@ export function CoachDashboardPage({
   ]);
 
   useEffect(() => {
+    if (!isCoach || !authUser?.id) return;
+
+    const refreshManagementRealtime = (table?: string) => {
+      if (document.visibilityState === "hidden") return;
+      void loadCoachClients();
+      if (isOwner) void loadAllProfilesForOwner();
+      if (table === "client_feedback") void loadClientFeedback();
+    };
+
+    return subscribeToCoachManagementChanges(authUser.id, refreshManagementRealtime);
+  }, [
+    authUser?.id,
+    isCoach,
+    isOwner,
+    loadAllProfilesForOwner,
+    loadClientFeedback,
+    loadCoachClients,
+  ]);
+
+  useEffect(() => {
     if (
       isOwner ||
       isSelfSelected ||
@@ -1406,6 +1430,57 @@ export function CoachDashboardPage({
   }, [
     applyClientDetails,
     isSelfSelected,
+    selectedClientId,
+  ]);
+
+  useEffect(() => {
+    if (!isCoach || isSelfSelected || !selectedClientId) return;
+
+    let active = true;
+    let refreshTimer: number | null = null;
+    const refreshSelectedClient = (table?: string) => {
+      if (!active || document.visibilityState === "hidden" || refreshTimer !== null) return;
+      refreshTimer = window.setTimeout(() => {
+        refreshTimer = null;
+        if (!active || document.visibilityState === "hidden") return;
+
+        if (table === "coach_clients") {
+          void loadCoachClients();
+        }
+        if (table === "client_feedback") {
+          void loadClientFeedback();
+        }
+
+        void pullClientDataForCoach(selectedClientId).then((result) => {
+          if (active) applyClientDetails(result);
+        });
+        void fetchSentCoachMessages(selectedClientId)
+          .then((messages) => {
+            if (active) setSentCoachMessages(messages);
+          })
+          .catch((error: unknown) => {
+            if (active) {
+              setSentCoachMessagesError(
+                `טעינת היסטוריית ההודעות נכשלה: ${errorMessage(error, "שגיאה בטעינת ההודעות")}`,
+              );
+            }
+          });
+      }, 0);
+    };
+
+    const unsubscribe = subscribeToCoachClientChanges(selectedClientId, refreshSelectedClient);
+    return () => {
+      active = false;
+      unsubscribe();
+      if (refreshTimer !== null) window.clearTimeout(refreshTimer);
+    };
+  }, [
+    applyClientDetails,
+    fetchSentCoachMessages,
+    isCoach,
+    isSelfSelected,
+    loadClientFeedback,
+    loadCoachClients,
     selectedClientId,
   ]);
 

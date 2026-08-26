@@ -660,58 +660,127 @@ let dataRevision = 0;
 const listeners = new Set<() => void>();
 let planRealtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 let planRealtimeUserId: string | null = null;
+let realtimeReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let realtimeReconnectAttempts = 0;
+let queuedRealtimeRefreshUserId: string | null = null;
 
 function notifyListeners() {
   listeners.forEach((listener) => listener());
 }
 
-function stopPlanRealtime() {
+function stopPlanRealtime(resetReconnectBackoff = true) {
+  if (realtimeReconnectTimer) {
+    clearTimeout(realtimeReconnectTimer);
+    realtimeReconnectTimer = null;
+  }
   if (planRealtimeChannel) {
     void supabase.removeChannel(planRealtimeChannel);
     planRealtimeChannel = null;
   }
   planRealtimeUserId = null;
+  if (resetReconnectBackoff) {
+    queuedRealtimeRefreshUserId = null;
+    realtimeReconnectAttempts = 0;
+  }
 }
 
-function startPlanRealtime(userId: string) {
+function startPlanRealtime(userId: string, preserveReconnectBackoff = false) {
   if (planRealtimeUserId === userId || typeof supabase.channel !== "function") return;
 
-  stopPlanRealtime();
+  stopPlanRealtime(!preserveReconnectBackoff);
   planRealtimeUserId = userId;
-  const refreshFromRemotePlanChange = () => {
+  const refreshFromRemoteChange = () => {
     if (currentUser?.id !== userId) return;
-    // The refresh keeps the trainee's pending offline edits authoritative and
-    // only replaces the cache when the remote snapshot is safe to accept.
-    refreshCurrentUserData(true);
+    // The refresh keeps pending offline edits authoritative. If a local sync
+    // or another refresh is already running, it is drained immediately after
+    // that operation instead of being left to the 15-second fallback poll.
+    queuedRealtimeRefreshUserId = userId;
+    drainQueuedRealtimeRefresh();
   };
 
-  planRealtimeChannel = supabase
-    .channel(`gymtrack-plan-sync-${userId}`)
-    .on(
+  const channel = supabase.channel(`gymtrack-sync-${userId}`);
+  const addTableSubscription = (table: string, filter?: string) => {
+    channel.on(
       "postgres_changes",
-      { event: "*", schema: "public", table: "profiles", filter: `id=eq.${userId}` },
-      refreshFromRemotePlanChange,
-    )
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "programs", filter: `user_id=eq.${userId}` },
-      refreshFromRemotePlanChange,
-    )
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "program_days", filter: `user_id=eq.${userId}` },
-      refreshFromRemotePlanChange,
-    )
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "nutrition_days", filter: `user_id=eq.${userId}` },
-      refreshFromRemotePlanChange,
-    )
-    .subscribe((status) => {
-      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-        console.warn(`[Plan realtime ${status.toLowerCase()}]: background polling remains active`);
-      }
-    });
+      {
+        event: "*",
+        schema: "public",
+        table,
+        ...(filter ? { filter } : {}),
+      },
+      refreshFromRemoteChange,
+    );
+  };
+
+  addTableSubscription("profiles", `id=eq.${userId}`);
+  addTableSubscription("programs", `user_id=eq.${userId}`);
+  addTableSubscription("program_days", `user_id=eq.${userId}`);
+  addTableSubscription("nutrition_days", `user_id=eq.${userId}`);
+  addTableSubscription("workout_sessions", `user_id=eq.${userId}`);
+  addTableSubscription("body_weight_logs", `user_id=eq.${userId}`);
+  addTableSubscription("cardio_logs", `user_id=eq.${userId}`);
+  addTableSubscription("body_measurements", `user_id=eq.${userId}`);
+  addTableSubscription("client_habits", `user_id=eq.${userId}`);
+  addTableSubscription("coach_messages", `client_id=eq.${userId}`);
+  addTableSubscription("coach_messages", `coach_id=eq.${userId}`);
+  // Audience filtering is enforced by the table's RLS policy. Pulling the
+  // visible rows after an event avoids exposing another audience through the
+  // local store and also handles inserts/deletes without a client-side filter.
+  addTableSubscription("broadcast_announcements");
+  addTableSubscription("coach_clients", `client_id=eq.${userId}`);
+  addTableSubscription("coach_clients", `coach_id=eq.${userId}`);
+
+  planRealtimeChannel = channel.subscribe((status) => {
+    if (status === "SUBSCRIBED") {
+      realtimeReconnectAttempts = 0;
+      drainQueuedRealtimeRefresh();
+      return;
+    }
+    if (status !== "CHANNEL_ERROR" && status !== "TIMED_OUT" && status !== "CLOSED") return;
+    if (planRealtimeChannel !== channel || planRealtimeUserId !== userId) return;
+
+    console.warn(
+      `[Realtime ${status.toLowerCase()}]: scheduling an automatic resubscription`,
+    );
+    planRealtimeChannel = null;
+    planRealtimeUserId = null;
+    void supabase.removeChannel(channel);
+    scheduleRealtimeReconnect(userId);
+  });
+}
+
+function scheduleRealtimeReconnect(userId: string) {
+  if (
+    realtimeReconnectTimer ||
+    currentUser?.id !== userId ||
+    browserIsOffline() ||
+    typeof supabase.channel !== "function"
+  ) {
+    return;
+  }
+  const delay = Math.min(30_000, 1_000 * 2 ** realtimeReconnectAttempts);
+  realtimeReconnectAttempts += 1;
+  realtimeReconnectTimer = setTimeout(() => {
+    realtimeReconnectTimer = null;
+    if (currentUser?.id !== userId || browserIsOffline()) return;
+    startPlanRealtime(userId, true);
+  }, delay);
+}
+
+function drainQueuedRealtimeRefresh() {
+  const userId = queuedRealtimeRefreshUserId;
+  if (
+    !userId ||
+    currentUser?.id !== userId ||
+    browserIsOffline() ||
+    profileHydrationStatus === "loading" ||
+    syncInFlight ||
+    refreshInFlight
+  ) {
+    return;
+  }
+  queuedRealtimeRefreshUserId = null;
+  refreshCurrentUserData(true);
 }
 
 function browserIsOffline() {
@@ -883,11 +952,15 @@ function load() {
       } else {
         // An offline visit can have no local edits but still needs a
         // background refresh once the connection returns.
-        void handleUserLogin(currentUser.id, loadCachedDataForUser(currentUser.id));
+        void handleUserLogin(currentUser.id, loadCachedDataForUser(currentUser.id)).finally(
+          drainQueuedRealtimeRefresh,
+        );
       }
+      if (!planRealtimeUserId) startPlanRealtime(currentUser.id);
     });
     const refreshWhenVisible = () => {
       if (typeof document === "undefined" || document.visibilityState === "visible") {
+        if (currentUser && !planRealtimeUserId) startPlanRealtime(currentUser.id);
         refreshCurrentUserData();
       }
     };
@@ -1017,6 +1090,7 @@ export function refreshCurrentUserData(force = false) {
   lastCloudRefreshAt = now;
   const refresh = handleUserLogin(user.id, loadCachedDataForUser(user.id)).finally(() => {
     if (refreshInFlight === refresh) refreshInFlight = null;
+    drainQueuedRealtimeRefresh();
   });
   refreshInFlight = refresh;
 }
@@ -1118,6 +1192,7 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
     void queueCloudSync();
   }
   notifyListeners();
+  drainQueuedRealtimeRefresh();
 }
 
 function scheduleCloudRetry(userId: string) {
@@ -1181,10 +1256,15 @@ function queueCloudSync() {
   })().finally(() => {
     if (syncInFlight?.promise === promise) syncInFlight = null;
     notifyListeners();
-    if (!currentUser || !hasPendingCloudChanges || browserIsOffline()) return;
-    if (currentUser.id !== userId || dataRevision !== revisionAtStart) {
+    if (
+      currentUser &&
+      hasPendingCloudChanges &&
+      !browserIsOffline() &&
+      (currentUser.id !== userId || dataRevision !== revisionAtStart)
+    ) {
       void queueCloudSync();
     }
+    drainQueuedRealtimeRefresh();
   });
   syncInFlight = { userId, promise };
 }

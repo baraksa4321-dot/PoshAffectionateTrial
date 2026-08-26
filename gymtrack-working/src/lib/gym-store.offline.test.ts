@@ -23,6 +23,7 @@ const pullCalls: Array<{ userId: string; localState: Record<string, unknown> }> 
 const syncCalls: Array<{ userId: string; localData: Record<string, unknown> }> = [];
 type RealtimeHandler = { userId: string; table: string; callback: () => void };
 const realtimeHandlers: RealtimeHandler[] = [];
+const realtimeStatusCallbacks: Array<(status: string) => void> = [];
 let nextSessionUser = { id: "user-a", email: "a@example.com" };
 let pullImplementation: (
   userId: string,
@@ -80,14 +81,15 @@ mock.module("./supabase", () => ({
           const match =
             config.filter?.match(/^id=eq\.(.+)$/) ??
             config.filter?.match(/^user_id=eq\.(.+)$/);
-          if (config.table && match?.[1]) {
-            const handler = { userId: match[1], table: config.table, callback };
+          if (config.table) {
+            const handler = { userId: match?.[1] ?? "*", table: config.table, callback };
             handlers.push(handler);
             realtimeHandlers.push(handler);
           }
           return channel;
         },
         subscribe: (callback?: (status: string) => void) => {
+          if (callback) realtimeStatusCallbacks.push(callback);
           callback?.("SUBSCRIBED");
           return channel;
         },
@@ -168,7 +170,9 @@ async function eventually(predicate: () => boolean) {
 
 function emitPlanChange(userId: string, table: string) {
   for (const handler of realtimeHandlers) {
-    if (handler.userId === userId && handler.table === table) handler.callback();
+    if ((handler.userId === userId || handler.userId === "*") && handler.table === table) {
+      handler.callback();
+    }
   }
 }
 
@@ -178,6 +182,7 @@ beforeEach(() => {
   syncCalls.length = 0;
   authListeners.length = 0;
   realtimeHandlers.length = 0;
+  realtimeStatusCallbacks.length = 0;
   nextSessionUser = { id: "user-a", email: "a@example.com" };
   eventListeners.clear();
   Object.assign(navigator, { onLine: false });
@@ -366,5 +371,44 @@ describe("offline store lifecycle", () => {
     expect(traineeStore.getGymStoreSyncStatus()).toBe("syncing");
     pendingSync.resolve({ success: true });
     await eventually(() => traineeStore.getGymStoreSyncStatus() === "synced");
+  });
+
+  test("drains a queued realtime refresh after an in-flight local sync", async () => {
+    Object.assign(navigator, { onLine: true });
+    const pendingSync = deferred<{ success: true }>();
+    syncImplementation = async () => pendingSync.promise;
+    let pullCount = 0;
+    const updatedData = makeSessionData({ weight: 70, role: "client" });
+    updatedData.workouts = [{ id: "day-a", name: "Coach's latest workout", notes: "", items: [] }];
+    pullImplementation = async (_userId, localState) => {
+      pullCount += 1;
+      return { success: true, data: pullCount === 1 ? localState : updatedData };
+    };
+
+    const store = await loadStore("queued-realtime-refresh");
+    await eventually(() => pullCount === 1);
+    store.addChecklistItem("Keep this local edit");
+    await eventually(() => syncCalls.length === 1);
+
+    emitPlanChange("user-a", "program_days");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(pullCount).toBe(1);
+
+    pendingSync.resolve({ success: true });
+    await eventually(() => store.getGymStoreSnapshot().workouts[0]?.name === "Coach's latest workout");
+    expect(store.getGymStoreSnapshot().preExitChecklist[0]?.label).toBe("Keep this local edit");
+  });
+
+  test("resubscribes after a realtime channel error", async () => {
+    Object.assign(navigator, { onLine: true });
+    pullImplementation = async (_userId, localState) => ({ success: true, data: localState });
+    const store = await loadStore("realtime-reconnect");
+    await eventually(() => store.getGymStoreSyncStatus() === "synced");
+    expect(realtimeStatusCallbacks).toHaveLength(1);
+
+    realtimeStatusCallbacks[0]?.("CHANNEL_ERROR");
+    await new Promise((resolve) => setTimeout(resolve, 1_100));
+
+    expect(realtimeStatusCallbacks.length).toBeGreaterThan(1);
   });
 });
