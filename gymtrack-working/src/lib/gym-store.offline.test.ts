@@ -1,6 +1,7 @@
 // The standalone package is executed by Bun; its runtime matcher types are
 // supplied by Bun rather than the browser TypeScript environment.
 import { beforeEach, describe, expect, mock, test } from "bun:test";
+import type { GymData } from "./gym-types";
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -20,17 +21,45 @@ const authListeners: Array<
 > = [];
 const pullCalls: Array<{ userId: string; localState: Record<string, unknown> }> = [];
 const syncCalls: Array<{ userId: string; localData: Record<string, unknown> }> = [];
+type RealtimeHandler = { userId: string; table: string; callback: () => void };
+const realtimeHandlers: RealtimeHandler[] = [];
+let nextSessionUser = { id: "user-a", email: "a@example.com" };
 let pullImplementation: (
   userId: string,
   localState: Record<string, unknown>,
 ) => Promise<{ success: true; data: Record<string, unknown> }>;
 let syncImplementation: () => Promise<{ success: true } | { success: false; error: string }>;
 
+function makeSessionData(userProfile: NonNullable<GymData["userProfile"]>): GymData {
+  return {
+    exercises: [],
+    workouts: [],
+    programs: [],
+    history: [],
+    foods: [],
+    nutritionDays: [],
+    nutritionTargets: {},
+    mealTemplate: [],
+    recipes: [],
+    recentFoods: [],
+    favoriteFoods: [],
+    bodyWeightLogs: [],
+    bodyMeasurements: [],
+    habits: [],
+    coachMessages: [],
+    broadcasts: [],
+    cardioLogs: [],
+    userProfile,
+    clients: [],
+    preExitChecklist: [],
+  };
+}
+
 mock.module("./supabase", () => ({
   supabase: {
     auth: {
       getSession: async () => ({
-        data: { session: { user: { id: "user-a", email: "a@example.com" } } },
+        data: { session: { user: nextSessionUser } },
         error: null,
       }),
       onAuthStateChange: (
@@ -40,6 +69,32 @@ mock.module("./supabase", () => ({
         return { data: { subscription: { unsubscribe: () => undefined } } };
       },
     },
+    channel: (_name: string) => {
+      const handlers: RealtimeHandler[] = [];
+      const channel = {
+        on: (
+          _event: string,
+          config: { table?: string; filter?: string },
+          callback: () => void,
+        ) => {
+          const match =
+            config.filter?.match(/^id=eq\.(.+)$/) ??
+            config.filter?.match(/^user_id=eq\.(.+)$/);
+          if (config.table && match?.[1]) {
+            const handler = { userId: match[1], table: config.table, callback };
+            handlers.push(handler);
+            realtimeHandlers.push(handler);
+          }
+          return channel;
+        },
+        subscribe: (callback?: (status: string) => void) => {
+          callback?.("SUBSCRIBED");
+          return channel;
+        },
+      };
+      return channel;
+    },
+    removeChannel: () => Promise.resolve("ok"),
   },
 }));
 
@@ -111,11 +166,19 @@ async function eventually(predicate: () => boolean) {
   throw new Error("Timed out waiting for store state");
 }
 
+function emitPlanChange(userId: string, table: string) {
+  for (const handler of realtimeHandlers) {
+    if (handler.userId === userId && handler.table === table) handler.callback();
+  }
+}
+
 beforeEach(() => {
   storage.clear();
   pullCalls.length = 0;
   syncCalls.length = 0;
   authListeners.length = 0;
+  realtimeHandlers.length = 0;
+  nextSessionUser = { id: "user-a", email: "a@example.com" };
   eventListeners.clear();
   Object.assign(navigator, { onLine: false });
   pullImplementation = async (_userId, localState) => ({ success: true, data: localState });
@@ -245,5 +308,63 @@ describe("offline store lifecycle", () => {
 
     expect(storage.get("gymtrack.v1.pending.user-a")).toBe("true");
     expect(store.getGymStoreSnapshot().preExitChecklist[0]?.label).toBe("Keep pending");
+  });
+
+  test("refreshes an active trainee session after an authenticated coach changes the plan", async () => {
+    Object.assign(navigator, { onLine: true });
+    const pendingSync = deferred<{ success: true }>();
+    syncImplementation = async () => pendingSync.promise;
+    const coachData = makeSessionData({ weight: 82, role: "coach" });
+    const traineeData = makeSessionData({ weight: 70, role: "client", coachId: "coach-a" });
+    traineeData.programs = [
+      { id: "program-trainee", name: "Old plan", notes: "", dayIds: ["day-trainee"] },
+    ];
+    traineeData.workouts = [{ id: "day-trainee", name: "Old workout", notes: "", items: [] }];
+    traineeData.plannedMeals = [{ id: "meal-old", name: "Old menu", foods: [] }];
+    const remoteData = new Map<string, Record<string, unknown>>([
+      ["coach-a", coachData as unknown as Record<string, unknown>],
+      ["trainee-a", traineeData as unknown as Record<string, unknown>],
+    ]);
+    pullImplementation = async (userId, localState) => ({
+      success: true,
+      data: remoteData.get(userId) ?? localState,
+    });
+
+    nextSessionUser = { id: "coach-a", email: "coach@example.com" };
+    const coachStore = await loadStore("coach-active-session");
+    await eventually(() => coachStore.getGymStoreSnapshot().userProfile.role === "coach");
+
+    nextSessionUser = { id: "trainee-a", email: "trainee@example.com" };
+    const traineeStore = await loadStore("trainee-active-session");
+    await eventually(() => traineeStore.getGymStoreSnapshot().workouts[0]?.name === "Old workout");
+    expect(coachStore.getGymStoreSnapshot().userProfile.role).toBe("coach");
+
+    Object.assign(navigator, { onLine: false });
+    traineeStore.addMeal("2026-08-26", "Local trainee draft");
+    expect(traineeStore.getGymStoreSnapshot().nutritionDays[0]?.meals[0]?.name).toBe(
+      "Local trainee draft",
+    );
+
+    const updatedTraineeData: GymData = {
+      ...traineeData,
+      programs: [
+        { id: "program-trainee", name: "Updated plan", notes: "", dayIds: ["day-trainee"] },
+      ],
+      workouts: [{ id: "day-trainee", name: "Coach update", notes: "", items: [] }],
+      plannedMeals: [{ id: "meal-new", name: "Updated menu", foods: [] }],
+    };
+    remoteData.set("trainee-a", updatedTraineeData as unknown as Record<string, unknown>);
+    Object.assign(navigator, { onLine: true });
+    emitPlanChange("trainee-a", "program_days");
+    emitPlanChange("trainee-a", "profiles");
+
+    await eventually(() => traineeStore.getGymStoreSnapshot().workouts[0]?.name === "Coach update");
+    const refreshed = traineeStore.getGymStoreSnapshot();
+    expect(refreshed.programs[0]?.name).toBe("Updated plan");
+    expect(refreshed.plannedMeals[0]?.name).toBe("Updated menu");
+    expect(refreshed.nutritionDays[0]?.meals[0]?.name).toBe("Local trainee draft");
+    expect(traineeStore.getGymStoreSyncStatus()).toBe("syncing");
+    pendingSync.resolve({ success: true });
+    await eventually(() => traineeStore.getGymStoreSyncStatus() === "synced");
   });
 });

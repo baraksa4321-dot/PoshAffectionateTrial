@@ -634,6 +634,27 @@ function canManageAssignedPlans() {
   const role = data.userProfile?.role;
   return role === "coach" || role === "owner";
 }
+
+function mergeRemotePlanRefresh(localData: GymData, remoteData: GymData): GymData {
+  // Trainees cannot edit these collections locally, so a pending nutrition
+  // log, check-list item, or measurement must not prevent a coach's plan from
+  // appearing in the still-open session.
+  if (localData.userProfile?.role !== "client") return remoteData;
+  const { coachId: _localCoachId, approvalStatus: _localApprovalStatus, ...localProfile } =
+    localData.userProfile;
+  return {
+    ...localData,
+    programs: remoteData.programs,
+    workouts: remoteData.workouts,
+    plannedMeals: remoteData.plannedMeals ?? [],
+    nutritionTargets: remoteData.nutritionTargets,
+    userProfile: {
+      ...localProfile,
+      ...(remoteData.userProfile ?? {}),
+    },
+  };
+}
+
 let syncRetryAttempts = 0;
 let dataRevision = 0;
 const listeners = new Set<() => void>();
@@ -1080,6 +1101,9 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
       ...pulled.data,
       preExitChecklist: data.preExitChecklist ?? pulled.data.preExitChecklist ?? [],
     };
+    persistCacheOnly();
+  } else if (pendingAtPullStart) {
+    data = mergeRemotePlanRefresh(data, pulled.data);
     persistCacheOnly();
   }
   profileHydrationStatus = "ready";
