@@ -16,7 +16,13 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { saveTheme, useAuthUser, useCloudSyncStatus, useGym } from "../lib/gym-store";
+import {
+  refreshCurrentUserData,
+  saveTheme,
+  useAuthUser,
+  useCloudSyncStatus,
+  useGym,
+} from "../lib/gym-store";
 import { supabase } from "../lib/supabase";
 import { applyNightMode, applyTheme, DEFAULT_THEME, THEME_PALETTES } from "../lib/theme";
 import type { ThemePalette } from "../lib/gym-types";
@@ -118,6 +124,10 @@ export function AppShell({
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+
+  useEffect(() => {
+    refreshCurrentUserData();
+  }, [location.pathname]);
 
   useEffect(() => {
     applyNightMode(isNightMode);

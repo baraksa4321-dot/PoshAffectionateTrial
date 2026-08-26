@@ -89,10 +89,17 @@ type ExerciseBuilderReturnContext = {
   scrollY: number;
 };
 
-function moveArrayItemToFirst<T>(values: T[], index: number): T[] {
-  if (index <= 0 || index >= values.length) return [...values];
-  const selected = values[index]!;
-  return [selected, ...values.slice(0, index), ...values.slice(index + 1)];
+type WorkoutSetMode = "normal" | "warmup" | "drop" | "superset";
+
+function warmupFirstIndexes(modes: WorkoutSetMode[]) {
+  return modes
+    .map((mode, index) => ({ mode, index }))
+    .sort((a, b) => Number(b.mode === "warmup") - Number(a.mode === "warmup"))
+    .map(({ index }) => index);
+}
+
+function reorderSetValues<T>(values: T[], indexes: number[], fallback: T) {
+  return indexes.map((index) => values[index] ?? fallback);
 }
 
 type ProfileRow = {
@@ -2015,41 +2022,52 @@ export function CoachDashboardPage({
         { length: Math.max(1, setsCount) },
         (_, index) => setModes[index] ?? "normal",
       );
-      const editMode = configuredModes.find((mode) => mode !== "normal") ?? "normal";
       const hasDropSets = configuredModes.includes("drop");
       const hasSuperset = configuredModes.includes("superset");
+      const editingItem = currentDay.items.find((item) => item.id === editingItemId);
+      const existingWorkingSets =
+        editingItem?.workingSets?.filter((set) => set.setType !== "warmup") ?? [];
+      const warmupIndexes = configuredModes
+        .map((mode, index) => (mode === "warmup" ? index : -1))
+        .filter((index) => index >= 0);
+      const workingIndexes = configuredModes
+        .map((mode, index) => (mode === "warmup" ? -1 : index))
+        .filter((index) => index >= 0);
+      const workingSetPayload = workingIndexes.map((sourceIndex, index) => {
+        const mode = configuredModes[sourceIndex] ?? "normal";
+        const existing = existingWorkingSets[index];
+        return {
+          id: existing?.id || uid(),
+          setNumber: index + 1,
+          setType: mode,
+          weight: setWeights[sourceIndex] ?? targetWeight,
+          reps: setRepMins[sourceIndex] ?? repMin,
+          repMax: setRepMaxes[sourceIndex] ?? repMax,
+          rest: setRests[sourceIndex] ?? restSec,
+          ...(mode === "drop" ? { dropSet: true } : {}),
+        };
+      });
+      const warmupPayload = warmupIndexes.map((sourceIndex, index) => ({
+        id: editingItem?.warmups?.[index]?.id || uid(),
+        weight: setWeights[sourceIndex] ?? warmupWeight,
+        reps: setRepMins[sourceIndex] ?? warmupReps,
+        repsMax: setRepMaxes[sourceIndex] ?? warmupRepsMax,
+      }));
       const updatedItems = currentDay.items.map((item) =>
         item.id === editingItemId
           ? {
               ...item,
               exerciseId: selectedExId,
               ...(selectedExerciseName ? { exerciseName: selectedExerciseName } : {}),
-              sets: Math.max(1, setsCount),
+               sets: workingSetPayload.length,
               reps: Math.max(1, repMin),
               repMin: Math.max(1, repMin),
               repMax: Math.max(repMin, repMax),
               targetWeight,
               weight: targetWeight,
               notes: techNotes.trim(),
-                workingSets: configuredModes.map((mode, index) => ({
-                    id: item.workingSets?.[index]?.id || uid(),
-                    setNumber: index + 1,
-                    setType: mode,
-                    weight: setWeights[index] ?? targetWeight,
-                    reps: setRepMins[index] ?? repMin,
-                    repMax: setRepMaxes[index] ?? repMax,
-                    rest: setRests[index] ?? restSec,
-                    ...(mode === "drop" ? { dropSet: true } : {}),
-                  })),
-               warmups:
-                 editMode === "warmup"
-                   ? Array.from({ length: Math.max(1, warmupSetsCount) }, (_, index) => ({
-                       id: item.warmups?.[index]?.id || uid(),
-                       weight: warmupWeight,
-                       reps: warmupReps,
-                       repsMax: warmupRepsMax,
-                     }))
-                   : [],
+                workingSets: workingSetPayload,
+                warmups: warmupPayload,
                dropSetConfig: hasDropSets
                  ? {
                      enabled: true,
@@ -2109,6 +2127,12 @@ export function CoachDashboardPage({
     );
     const warmupModeCount = configuredModes.filter((mode) => mode === "warmup").length;
     const workingModeCount = configuredModes.length - warmupModeCount;
+    const warmupIndexes = configuredModes
+      .map((mode, index) => (mode === "warmup" ? index : -1))
+      .filter((index) => index >= 0);
+    const workingIndexes = configuredModes
+      .map((mode, index) => (mode === "warmup" ? -1 : index))
+      .filter((index) => index >= 0);
     const hasDropSets = configuredModes.includes("drop");
     const hasSupersetSets = configuredModes.includes("superset");
     if (hasSupersetSets && !supersetPartnerId) return;
@@ -2183,7 +2207,8 @@ export function CoachDashboardPage({
         : {}),
       workingSets: (() => {
         let dropOccurrence = 0;
-        return configuredModes.map((mode, sourceIndex, ) => {
+        return workingIndexes.map((sourceIndex, index) => {
+            const mode = configuredModes[sourceIndex] ?? "normal";
             let weight = setWeights[sourceIndex] ?? targetWeight;
             let reps = setRepMins[sourceIndex] ?? repMin;
             let repMaxForSet = setRepMaxes[sourceIndex] ?? repMax;
@@ -2207,7 +2232,7 @@ export function CoachDashboardPage({
             }
             return {
               id: uid(),
-              setNumber: sourceIndex + 1,
+              setNumber: index + 1,
               setType: mode,
               weight,
               reps,
@@ -2219,11 +2244,11 @@ export function CoachDashboardPage({
       })(),
       ...(warmupModeCount > 0
         ? {
-            warmups: Array.from({ length: warmupModeCount }, (_, i) => ({
+            warmups: warmupIndexes.map((sourceIndex) => ({
               id: uid(),
-              weight: warmupWeight,
-              reps: warmupReps,
-              repsMax: warmupRepsMax,
+              weight: setWeights[sourceIndex] ?? warmupWeight,
+              reps: setRepMins[sourceIndex] ?? warmupReps,
+              repsMax: setRepMaxes[sourceIndex] ?? warmupRepsMax,
             })),
           }
         : {}),
@@ -4570,62 +4595,114 @@ export function CoachDashboardPage({
                                                           setTargetWeight(
                                                             exItem.targetWeight || exItem.weight,
                                                           );
-                                                          setSetsCount(exItem.sets);
                                                           setRepMin(exItem.repMin || exItem.reps);
                                                           setRepMax(exItem.repMax || exItem.reps);
                                                           setRestSec(exItem.rest || 90);
                                                           setTechniqueNotes(exItem.techniqueNotes || exItem.notes);
-                                                           const loadedModes = exItem.workingSets?.map((set) =>
-                                                             set.setType ??
-                                                             (set.dropSet ? "drop" : exItem.supersetId ? "superset" : "normal"),
-                                                          ) ?? [];
-                                                          setSetModes(
-                                                            Array.from(
-                                                              { length: Math.max(1, exItem.sets) },
-                                                              (_, index) => loadedModes[index] ?? "normal",
-                                                            ),
+                                                          const savedWorkingSets = exItem.workingSets ?? [];
+                                                          const legacyWarmupSets = savedWorkingSets.filter(
+                                                            (set) => set.setType === "warmup",
                                                           );
-                                                           setSetWeights(
-                                                             Array.from(
-                                                               { length: Math.max(1, exItem.sets) },
-                                                               (_, index) =>
-                                                                 exItem.workingSets?.[index]?.weight ??
-                                                                 exItem.targetWeight ??
-                                                                 exItem.weight,
-                                                             ),
-                                                           );
-                                                           setSetRepMins(
-                                                             Array.from(
-                                                               { length: Math.max(1, exItem.sets) },
-                                                               (_, index) =>
-                                                                 exItem.workingSets?.[index]?.reps ??
-                                                                 exItem.repMin ??
-                                                                 exItem.reps,
-                                                             ),
-                                                           );
-                                                           setSetRepMaxes(
-                                                             Array.from(
-                                                               { length: Math.max(1, exItem.sets) },
-                                                               (_, index) =>
-                                                                 exItem.workingSets?.[index]?.repMax ??
-                                                                 exItem.repMax ??
-                                                                 exItem.reps,
-                                                             ),
-                                                           );
-                                                           setSetRests(
-                                                             Array.from(
-                                                               { length: Math.max(1, exItem.sets) },
-                                                               (_, index) =>
-                                                                 exItem.workingSets?.[index]?.rest ??
-                                                                 exItem.rest ??
-                                                                 90,
-                                                             ),
-                                                           );
-                                                           setWarmupEnabled(loadedModes.includes("warmup"));
-                                                           setWarmupSetsCount(loadedModes.filter((mode) => mode === "warmup").length || 1);
-                                                           setWarmupWeight(exItem.warmups?.[0]?.weight || 10);
-                                                           setWarmupReps(exItem.warmups?.[0]?.reps || 10);
-                                                           setWarmupRepsMax(exItem.warmups?.[0]?.repsMax || 12);
+                                                          const savedNormalSets = savedWorkingSets.filter(
+                                                            (set) => set.setType !== "warmup",
+                                                          );
+                                                          const warmupRows =
+                                                            exItem.warmups?.length
+                                                              ? exItem.warmups
+                                                              : legacyWarmupSets.map((set) => ({
+                                                                  id: set.id,
+                                                                  weight: set.weight,
+                                                                  reps: set.reps,
+                                                                  ...(set.repMax !== undefined
+                                                                    ? { repsMax: set.repMax }
+                                                                    : {}),
+                                                                }));
+                                                          const workingCount = Math.max(
+                                                            exItem.sets || 0,
+                                                            savedNormalSets.length,
+                                                          );
+                                                          const loadedModes: WorkoutSetMode[] = [
+                                                            ...warmupRows.map(() => "warmup" as const),
+                                                            ...Array.from(
+                                                              { length: workingCount },
+                                                              (_, index) => {
+                                                                const set = savedNormalSets[index];
+                                                                return (
+                                                                  set?.setType ??
+                                                                  (set?.dropSet
+                                                                    ? "drop"
+                                                                    : exItem.supersetId
+                                                                      ? "superset"
+                                                                      : "normal")
+                                                                );
+                                                              },
+                                                            ),
+                                                          ];
+                                                          setSetsCount(Math.max(1, loadedModes.length));
+                                                          setSetModes(loadedModes.length ? loadedModes : ["normal"]);
+                                                          setSetWeights(
+                                                            loadedModes.length
+                                                              ? [
+                                                                  ...warmupRows.map((row) => row.weight),
+                                                                  ...Array.from(
+                                                                    { length: workingCount },
+                                                                    (_, index) =>
+                                                                      savedNormalSets[index]?.weight ??
+                                                                      exItem.targetWeight ??
+                                                                      exItem.weight,
+                                                                  ),
+                                                                ]
+                                                              : [exItem.targetWeight ?? exItem.weight],
+                                                          );
+                                                          setSetRepMins(
+                                                            loadedModes.length
+                                                              ? [
+                                                                  ...warmupRows.map((row) => row.reps),
+                                                                  ...Array.from(
+                                                                    { length: workingCount },
+                                                                    (_, index) =>
+                                                                      savedNormalSets[index]?.reps ??
+                                                                      exItem.repMin ??
+                                                                      exItem.reps,
+                                                                  ),
+                                                                ]
+                                                              : [exItem.repMin ?? exItem.reps],
+                                                          );
+                                                          setSetRepMaxes(
+                                                            loadedModes.length
+                                                              ? [
+                                                                  ...warmupRows.map(
+                                                                    (row) => row.repsMax ?? row.reps,
+                                                                  ),
+                                                                  ...Array.from(
+                                                                    { length: workingCount },
+                                                                    (_, index) =>
+                                                                      savedNormalSets[index]?.repMax ??
+                                                                      exItem.repMax ??
+                                                                      exItem.reps,
+                                                                  ),
+                                                                ]
+                                                              : [exItem.repMax ?? exItem.reps],
+                                                          );
+                                                          setSetRests(
+                                                            loadedModes.length
+                                                              ? [
+                                                                  ...warmupRows.map(() => exItem.rest ?? 90),
+                                                                  ...Array.from(
+                                                                    { length: workingCount },
+                                                                    (_, index) =>
+                                                                      savedNormalSets[index]?.rest ??
+                                                                      exItem.rest ??
+                                                                      90,
+                                                                  ),
+                                                                ]
+                                                              : [exItem.rest ?? 90],
+                                                          );
+                                                          setWarmupEnabled(warmupRows.length > 0);
+                                                          setWarmupSetsCount(warmupRows.length || 1);
+                                                          setWarmupWeight(warmupRows[0]?.weight || 10);
+                                                          setWarmupReps(warmupRows[0]?.reps || 10);
+                                                          setWarmupRepsMax(warmupRows[0]?.repsMax || 12);
                                                           setDropSetEnabled(Boolean(exItem.dropSetConfig?.enabled));
                                                           setDropLevel1Weight(
                                                             exItem.dropSetConfig?.levels?.[0]?.weight
@@ -5302,35 +5379,20 @@ export function CoachDashboardPage({
                                                               (_, itemIndex) => current[itemIndex] ?? "normal",
                                                             );
                                                             next[index] = nextMode;
-                                                             const ordered =
-                                                               nextMode === "warmup"
-                                                                 ? moveArrayItemToFirst(next, index)
-                                                                 : next;
-                                                             if (nextMode === "warmup" && index > 0) {
-                                                               const reorderFields = <T,>(
-                                                                 values: T[],
-                                                                 fallback: T,
-                                                               ) =>
-                                                                 moveArrayItemToFirst(
-                                                                   Array.from(
-                                                                     { length: count },
-                                                                     (_, itemIndex) => values[itemIndex] ?? fallback,
-                                                                   ),
-                                                                   index,
-                                                                 );
-                                                               setSetWeights((values) =>
-                                                                 reorderFields(values, targetWeight),
-                                                               );
-                                                               setSetRepMins((values) =>
-                                                                 reorderFields(values, repMin),
-                                                               );
-                                                               setSetRepMaxes((values) =>
-                                                                 reorderFields(values, repMax),
-                                                               );
-                                                               setSetRests((values) =>
-                                                                 reorderFields(values, restSec),
-                                                               );
-                                                             }
+                                                              const order = warmupFirstIndexes(next);
+                                                              const ordered = order.map((itemIndex) => next[itemIndex]!);
+                                                              setSetWeights((values) =>
+                                                                reorderSetValues(values, order, targetWeight),
+                                                              );
+                                                              setSetRepMins((values) =>
+                                                                reorderSetValues(values, order, repMin),
+                                                              );
+                                                              setSetRepMaxes((values) =>
+                                                                reorderSetValues(values, order, repMax),
+                                                              );
+                                                              setSetRests((values) =>
+                                                                reorderSetValues(values, order, restSec),
+                                                              );
                                                              setWarmupEnabled(ordered.includes("warmup"));
                                                              setDropSetEnabled(ordered.includes("drop"));
                                                             if (nextMode === "superset" && !supersetGroup) {

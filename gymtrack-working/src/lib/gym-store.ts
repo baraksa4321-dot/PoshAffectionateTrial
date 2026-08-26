@@ -625,6 +625,8 @@ let syncStatus: SyncStatus = "idle";
 let hasPendingCloudChanges = false;
 let syncInFlight: { userId: string; promise: Promise<void> } | null = null;
 let syncRetryTimer: ReturnType<typeof setTimeout> | null = null;
+let refreshInFlight: Promise<void> | null = null;
+let lastCloudRefreshAt = 0;
 
 function canManageAssignedPlans() {
   const role = data.userProfile?.role;
@@ -805,6 +807,19 @@ function load() {
         void handleUserLogin(currentUser.id, loadCachedDataForUser(currentUser.id));
       }
     });
+    const refreshWhenVisible = () => {
+      if (typeof document === "undefined" || document.visibilityState === "visible") {
+        refreshCurrentUserData();
+      }
+    };
+    window.addEventListener("focus", refreshWhenVisible);
+    window.addEventListener("pageshow", refreshWhenVisible);
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", refreshWhenVisible);
+    }
+    if (typeof window.setInterval === "function") {
+      window.setInterval(refreshWhenVisible, 15_000);
+    }
 
     Promise.race([
       supabase.auth.getSession(),
@@ -899,6 +914,28 @@ function load() {
       }
     });
   }
+}
+
+export function refreshCurrentUserData(force = false) {
+  const user = currentUser;
+  if (
+    !user ||
+    authStatus !== "authenticated" ||
+    browserIsOffline() ||
+    profileHydrationStatus === "loading" ||
+    syncInFlight ||
+    refreshInFlight ||
+    (!force && hasPendingCloudChanges)
+  ) {
+    return;
+  }
+  const now = Date.now();
+  if (!force && now - lastCloudRefreshAt < 5_000) return;
+  lastCloudRefreshAt = now;
+  const refresh = handleUserLogin(user.id, loadCachedDataForUser(user.id)).finally(() => {
+    if (refreshInFlight === refresh) refreshInFlight = null;
+  });
+  refreshInFlight = refresh;
 }
 
 async function handleUserLogin(userId: string, cachedData = loadCachedDataForUser(userId)) {
