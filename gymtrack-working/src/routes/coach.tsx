@@ -151,17 +151,17 @@ function reportDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function getCurrentWeekDates(): string[] {
+function getWeekDates(weekOffset = 0): string[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   today.setDate(today.getDate() - today.getDay());
+  today.setDate(today.getDate() + weekOffset * 7);
   return Array.from({ length: 7 }, (_, index) => {
     const date = new Date(today);
     date.setDate(today.getDate() + index);
     return reportDateKey(date);
   });
 }
-
 function reportDateLabel(date: string, options?: Intl.DateTimeFormatOptions): string {
   return new Date(`${date}T00:00:00`).toLocaleDateString(
     "he-IL",
@@ -191,9 +191,11 @@ function WorkoutWeeklyReport({
   history: HistorySession[];
   exercises: Exercise[];
 }) {
-  const weekDates = getCurrentWeekDates();
+  const [weekOffset, setWeekOffset] = useState(0);
+  const weekDates = useMemo(() => getWeekDates(weekOffset), [weekOffset]);
   const weekStart = weekDates[0]!;
   const weekEnd = weekDates[weekDates.length - 1]!;
+  const isCurrentWeek = weekOffset === 0;
   const sessions = history
     .filter(
       (session) =>
@@ -291,9 +293,35 @@ function WorkoutWeeklyReport({
             עם ביצוע · {completedSets} סטים הושלמו
           </p>
         </div>
-        <span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-          {sessions.length} ביצועים
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+            {sessions.length} ביצועים
+          </span>
+          <div className="flex items-center gap-1 rounded-xl border border-primary/20 bg-background/80 p-0.5">
+            <button
+              type="button"
+              aria-label="שבוע קודם"
+              title="שבוע קודם"
+              onClick={() => setWeekOffset((offset) => offset - 1)}
+              className="grid h-7 w-7 place-items-center rounded-lg text-primary transition-colors hover:bg-primary/10"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <span className="min-w-20 text-center text-[10px] font-bold text-ink">
+              {isCurrentWeek ? "השבוע הנוכחי" : `לפני ${Math.abs(weekOffset)} שבועות`}
+            </span>
+            <button
+              type="button"
+              aria-label="שבוע הבא"
+              title="שבוע הבא"
+              disabled={isCurrentWeek}
+              onClick={() => setWeekOffset((offset) => Math.min(0, offset + 1))}
+              className="grid h-7 w-7 place-items-center rounded-lg text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-border/60 bg-white/55 p-2">
@@ -389,7 +417,7 @@ function WorkoutWeeklyReport({
         </div>
       ) : (
         <p className="rounded-xl bg-white/75 p-3 text-center text-[11px] text-muted-foreground">
-          עדיין לא נרשם ביצוע של האימון הזה בשבוע הנוכחי.
+          עדיין לא נרשם ביצוע של האימון הזה בשבוע הזה.
         </p>
       )}
 
