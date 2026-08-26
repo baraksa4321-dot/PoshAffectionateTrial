@@ -84,6 +84,27 @@ function supersetLabels(items: WorkoutItem[]) {
 
 const ACTIVE_SESSION_KEY = (id: string) => `gymtrack.active_session.${id}`;
 
+function isExercisePlaceholder(value: unknown): value is string {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  return !normalized || normalized === "תרגיל" || normalized === "תרגיל שהוסר";
+}
+
+function findExerciseForItem(item: WorkoutItem | undefined, exercises: Exercise[]) {
+  if (!item) return undefined;
+  const exact = exercises.find((exercise) => exercise.id === item.exerciseId);
+  if (exact) return exact;
+
+  // Older saved programs can contain the exercise slug/name instead of the
+  // catalog id. Resolve those records before rendering the generic fallback.
+  const normalizedId = item.exerciseId.trim().toLowerCase().replace(/^ex-/, "");
+  return exercises.find((exercise) => {
+    const ids = [exercise.id, exercise.name, exercise.nameEn, exercise.nameHe]
+      .filter(Boolean)
+      .map((value) => value!.trim().toLowerCase().replace(/^ex-/, ""));
+    return ids.includes(normalizedId);
+  });
+}
+
 type SmartTimerPosition = {
   exerciseIndex: number;
   setNumber: number;
@@ -133,20 +154,17 @@ function Session() {
         if (Array.isArray(parsed) && parsed.length === workout.items.length) {
             return parsed.map((entry, index) => {
               const item = workout.items[index];
-              const source = item
-                ? [...exercises, ...BODYWEIGHT_EXERCISES].find((e) => e.id === item.exerciseId)
-                : undefined;
+               const source = findExerciseForItem(item, [...exercises, ...BODYWEIGHT_EXERCISES]);
               const savedName =
                 typeof entry?.exerciseName === "string" ? entry.exerciseName.trim() : "";
               return {
                 ...entry,
                 exerciseName:
                   source?.name ||
-                  (item?.exerciseName && item.exerciseName !== "תרגיל שהוסר"
+                   (!isExercisePlaceholder(item?.exerciseName) && item?.exerciseName
                     ? item.exerciseName
                     : "") ||
-                  (savedName && savedName !== "תרגיל שהוסר" ? savedName : "") ||
-                  item?.exerciseId ||
+                   (!isExercisePlaceholder(savedName) ? savedName : "") ||
                   "תרגיל",
               };
             });
@@ -157,7 +175,7 @@ function Session() {
     }
 
     return workout.items.map((item) => {
-      const ex = [...exercises, ...BODYWEIGHT_EXERCISES].find((e) => e.id === item.exerciseId);
+      const ex = findExerciseForItem(item, [...exercises, ...BODYWEIGHT_EXERCISES]);
       const last = lastPerformance(history, item.exerciseId);
       const isRange = item.repType === "range";
 
@@ -225,7 +243,11 @@ function Session() {
       }
       return {
         exerciseId: item.exerciseId,
-        exerciseName: ex ? exerciseDisplayName(ex) : item.exerciseName || item.exerciseId || "תרגיל",
+        exerciseName: ex
+          ? exerciseDisplayName(ex)
+          : !isExercisePlaceholder(item.exerciseName)
+            ? item.exerciseName
+            : "תרגיל",
         equipment: ex?.equipment,
         notes: item.notes,
         targetSets: item.sets,
@@ -245,8 +267,7 @@ function Session() {
         if (!refreshed) return entry;
         const hasPlaceholder =
           !entry.exerciseName ||
-          entry.exerciseName === "תרגיל" ||
-          entry.exerciseName === "תרגיל שהוסר";
+          isExercisePlaceholder(entry.exerciseName);
         return hasPlaceholder ? { ...entry, exerciseName: refreshed.exerciseName } : entry;
       }),
     );
@@ -718,7 +739,9 @@ function Session() {
         {entries.map((entry, ei) => {
           const item = workout.items[ei];
           const supersetLabel = labels[ei];
-          const fullExercise = exerciseCatalog.find((e) => e.id === entry.exerciseId);
+          const fullExercise =
+            findExerciseForItem({ exerciseId: entry.exerciseId } as WorkoutItem, exerciseCatalog) ??
+            exerciseCatalog.find((e) => e.name === entry.exerciseName);
           const isSupersetFirst =
             item?.supersetOrder === 1 || Boolean(supersetLabel?.endsWith("1"));
 
