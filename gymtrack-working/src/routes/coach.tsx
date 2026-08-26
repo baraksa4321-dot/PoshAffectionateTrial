@@ -169,6 +169,12 @@ function reportDateLabel(date: string, options?: Intl.DateTimeFormatOptions): st
   );
 }
 
+function reportWeekdayLabel(date: string): string {
+  return new Date(`${date}T00:00:00`)
+    .toLocaleDateString("he-IL", { weekday: "short" })
+    .replace(".", "");
+}
+
 function workoutReportSessionMatches(session: HistorySession, workout: Workout): boolean {
   return (
     session.workoutId === workout.id ||
@@ -290,28 +296,46 @@ function WorkoutWeeklyReport({
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 lg:grid-cols-7">
-        {weekDays.map((day) => (
-          <div
-            key={day.date}
-            className={`rounded-xl border p-2 text-center ${
-              day.sessions.length > 0
-                ? "border-emerald-200 bg-emerald-50/75"
-                : "border-border/60 bg-white/70"
-            }`}
-          >
-            <p className="text-[10px] font-bold text-ink">{reportDateLabel(day.date)}</p>
-            <p
-              className={`mt-1 text-[10px] font-semibold ${
-                day.sessions.length > 0 ? "text-emerald-700" : "text-muted-foreground"
-              }`}
-            >
-              {day.sessions.length > 0
-                ? `${day.completedSets}/${day.totalSets} סטים`
-                : "לא בוצע"}
-            </p>
-          </div>
-        ))}
+      <div className="rounded-2xl border border-border/60 bg-white/55 p-2">
+        <div className="grid grid-cols-7 gap-1.5" dir="rtl">
+          {weekDays.map((day) => {
+            const isCompleted = day.sessions.length > 0;
+            return (
+              <div
+                key={day.date}
+                className={`min-w-0 rounded-xl border p-1.5 text-center ${
+                  isCompleted
+                    ? "border-emerald-200 bg-emerald-50/80"
+                    : "border-border/60 bg-white/75"
+                }`}
+              >
+                <p className="truncate text-[9px] font-bold text-muted-foreground">
+                  {reportWeekdayLabel(day.date)}
+                </p>
+                <p className="mt-0.5 text-[11px] font-extrabold text-ink">
+                  {reportDateLabel(day.date)}
+                </p>
+                <div
+                  className={`mx-auto mt-1 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-extrabold ${
+                    isCompleted
+                      ? "bg-emerald-600 text-white"
+                      : "bg-secondary text-muted-foreground"
+                  }`}
+                  aria-label={isCompleted ? "האימון בוצע" : "האימון לא בוצע"}
+                >
+                  {isCompleted ? "✓" : "—"}
+                </div>
+                <p
+                  className={`mt-1 truncate text-[8px] font-bold ${
+                    isCompleted ? "text-emerald-700" : "text-muted-foreground"
+                  }`}
+                >
+                  {isCompleted ? `${day.completedSets}/${day.totalSets}` : "לא בוצע"}
+                </p>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {sessions.length > 0 ? (
@@ -4159,7 +4183,7 @@ export function CoachDashboardPage({
                                              }
                                              aria-expanded={openWorkoutReportId === dayItem.id}
                                              aria-controls={`workout-report-${dayItem.id}`}
-                                             className={`absolute -end-2 top-4 z-[2] flex min-h-14 items-center rounded-lg border border-primary/30 px-1.5 py-2 text-[10px] font-extrabold shadow-sm transition-colors ${
+                                             className={`absolute right-0 top-4 z-[2] flex min-h-14 translate-x-1/2 items-center rounded-r-lg rounded-l-none border border-primary/30 px-1.5 py-2 text-[10px] font-extrabold shadow-sm transition-colors ${
                                                openWorkoutReportId === dayItem.id
                                                  ? "bg-primary text-primary-foreground"
                                                  : "bg-background text-primary hover:bg-primary/10"
