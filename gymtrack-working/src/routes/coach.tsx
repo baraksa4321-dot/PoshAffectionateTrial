@@ -248,9 +248,14 @@ function WorkoutWeeklyReportWeek({
         .filter((entry) => entry.exerciseId === item.exerciseId)
         .map((entry) => ({ date: reportSessionDateKey(session.date), entry })),
     );
+    const replacementEntry = findReplacementEntry(
+      item,
+      sessions.flatMap((session) => session.entries),
+    );
     return {
       item,
       entries,
+      replacementEntry,
       exercise: exercises.find((exercise) => exercise.id === item.exerciseId),
     };
   });
@@ -431,7 +436,7 @@ function WorkoutWeeklyReportWeek({
       <div className="space-y-2">
         <p className="text-[11px] font-extrabold text-ink">כל תרגילי האימון</p>
         {exerciseRows.length > 0 ? (
-          exerciseRows.map(({ item, entries, exercise }) => (
+          exerciseRows.map(({ item, entries, replacementEntry, exercise }) => (
             <div
               key={item.id}
               className={`rounded-xl border p-2.5 text-[10px] ${
@@ -453,11 +458,18 @@ function WorkoutWeeklyReportWeek({
                 </span>
               </div>
               {entries.length === 0 ? (
-                <p className="mt-1 text-muted-foreground">
-                  תוכנן: {item.sets} סטים × {item.repMin || item.reps}
-                  {item.repMax ? `–${item.repMax}` : ""} חזרות ·{" "}
-                  {item.targetWeight || item.weight} ק״ג
-                </p>
+                <>
+                  <p className="mt-1 text-muted-foreground">
+                    תוכנן: {item.sets} סטים × {item.repMin || item.reps}
+                    {item.repMax ? `–${item.repMax}` : ""} חזרות ·{" "}
+                    {item.targetWeight || item.weight} ק״ג
+                  </p>
+                  {replacementEntry ? (
+                    <p className="mt-1 font-semibold text-primary">
+                      הוחלף ב־{replacementEntry.exerciseName || "תרגיל אחר"}
+                    </p>
+                  ) : null}
+                </>
               ) : (
                 <div className="mt-1.5 space-y-1.5">
                   {entries.map(({ date, entry }, index) => (
@@ -593,15 +605,23 @@ function WorkoutDailyReport({
     () => getWorkoutReportSessions(history, workout, [reportDate]),
     [history, reportDate, workout],
   );
-  const exerciseRows = workout.items.map((item) => ({
-    item,
-    entries: sessions.flatMap((session) =>
+  const exerciseRows = workout.items.map((item) => {
+    const entries = sessions.flatMap((session) =>
       session.entries
         .filter((entry) => entry.exerciseId === item.exerciseId)
         .map((entry) => ({ entry, sessionId: session.id })),
-    ),
-    exercise: exercises.find((exercise) => exercise.id === item.exerciseId),
-  }));
+    );
+    const replacementEntry = findReplacementEntry(
+      item,
+      sessions.flatMap((session) => session.entries),
+    );
+    return {
+      item,
+      entries,
+      replacementEntry,
+      exercise: exercises.find((exercise) => exercise.id === item.exerciseId),
+    };
+  });
   const plannedExerciseIds = new Set(workout.items.map((item) => item.exerciseId));
   const additionalEntries = sessions.flatMap((session) =>
     session.entries
@@ -686,7 +706,7 @@ function WorkoutDailyReport({
 
       <div className="space-y-1.5">
         {exerciseRows.length > 0 ? (
-          exerciseRows.map(({ item, entries, exercise }) => (
+          exerciseRows.map(({ item, entries, replacementEntry, exercise }) => (
             <div
               key={item.id}
               className={`rounded-xl border px-3 py-2.5 text-[11px] ${
@@ -701,11 +721,18 @@ function WorkoutDailyReport({
                     {entries[0]?.entry.exerciseName || item.exerciseName || exercise?.name || "תרגיל"}
                   </strong>
                   {entries.length === 0 ? (
-                    <p className="mt-1 text-muted-foreground">
-                      תוכנן: {item.sets} סטים × {item.repMin || item.reps}
-                      {item.repMax ? `–${item.repMax}` : ""} חזרות ·{" "}
-                      {item.targetWeight || item.weight} ק״ג
-                    </p>
+                    <>
+                      <p className="mt-1 text-muted-foreground">
+                        תוכנן: {item.sets} סטים × {item.repMin || item.reps}
+                        {item.repMax ? `–${item.repMax}` : ""} חזרות ·{" "}
+                        {item.targetWeight || item.weight} ק״ג
+                      </p>
+                      {replacementEntry ? (
+                        <p className="mt-1 font-semibold text-primary">
+                          הוחלף ב־{replacementEntry.exerciseName || "תרגיל אחר"}
+                        </p>
+                      ) : null}
+                    </>
                   ) : (
                     entries.map(({ entry, sessionId }, entryIndex) => (
                       <div key={`${sessionId}-${entry.exerciseId}-${entryIndex}`}>
@@ -2736,12 +2763,15 @@ export function CoachDashboardPage({
   );
   const trackingPlanRows =
     selectedTrackingWorkout?.items.map((item) => {
-      const actualEntry = visibleTrackingSessions
-        .flatMap((session) => session.entries)
-        .find((entry) => entry.exerciseId === item.exerciseId);
+      const sessionEntries = visibleTrackingSessions.flatMap((session) => session.entries);
+      const actualEntry = sessionEntries.find((entry) => entry.exerciseId === item.exerciseId);
+      const replacementEntry = actualEntry
+        ? undefined
+        : findReplacementEntry(item, sessionEntries);
       return {
         item,
         actualEntry,
+        replacementEntry,
         exercise: store.exercises.find((exercise) => exercise.id === item.exerciseId),
       };
     }) ?? [];
@@ -4391,7 +4421,8 @@ export function CoachDashboardPage({
 
                             {trackingPlanRows.length > 0 ? (
                               <div className="space-y-1.5">
-                                {trackingPlanRows.map(({ item, actualEntry, exercise }) => {
+                                {trackingPlanRows.map(
+                                  ({ item, actualEntry, replacementEntry, exercise }) => {
                                   const videoUrl = actualEntry?.videoUrl || exercise?.videoUrl;
                                   return (
                                     <div
@@ -4485,12 +4516,20 @@ export function CoachDashboardPage({
                                           ) : null}
                                         </>
                                       ) : (
-                                        <p className="mt-1 text-muted-foreground">
-                                          תוכנן: {item.sets} סטים ×{" "}
-                                          {item.repMin || item.reps}
-                                          {item.repMax ? `-${item.repMax}` : ""} חזרות ·{" "}
-                                          {item.targetWeight || item.weight} ק״ג
-                                        </p>
+                                        <>
+                                          <p className="mt-1 text-muted-foreground">
+                                            תוכנן: {item.sets} סטים ×{" "}
+                                            {item.repMin || item.reps}
+                                            {item.repMax ? `-${item.repMax}` : ""} חזרות ·{" "}
+                                            {item.targetWeight || item.weight} ק״ג
+                                          </p>
+                                          {replacementEntry ? (
+                                            <p className="mt-1 font-semibold text-primary">
+                                              הוחלף ב־
+                                              {replacementEntry.exerciseName || "תרגיל אחר"}
+                                            </p>
+                                          ) : null}
+                                        </>
                                       )}
                                       {videoUrl ? (
                                         <a
@@ -4505,7 +4544,8 @@ export function CoachDashboardPage({
                                       ) : null}
                                     </div>
                                   );
-                                })}
+                                  },
+                                )}
                               </div>
                             ) : (
                               <p className="rounded-xl bg-white/80 p-3 text-center text-xs text-muted-foreground">
