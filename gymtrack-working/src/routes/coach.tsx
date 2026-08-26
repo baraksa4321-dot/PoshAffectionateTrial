@@ -2082,6 +2082,33 @@ export function CoachDashboardPage({
                 </button>
               </div>
             </form>
+            {sentBroadcasts.length > 0 ? (
+              <div className="space-y-1.5 border-t border-primary/15 pt-3">
+                <p className="text-[11px] font-bold text-muted-foreground">הודעות ששלחת</p>
+                {sentBroadcasts.map((broadcast) => (
+                  <div
+                    key={broadcast.id}
+                    className="flex items-start justify-between gap-2 rounded-xl border border-border/60 bg-background px-3 py-2"
+                  >
+                    <div className="min-w-0 text-start">
+                      <p className="text-xs font-semibold leading-relaxed text-ink">
+                        {broadcast.message}
+                      </p>
+                      <p className="mt-1 text-[10px] text-muted-foreground">
+                        {new Date(broadcast.createdAt).toLocaleDateString("he-IL")}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteBroadcast(broadcast)}
+                      className="shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold text-destructive hover:bg-destructive/10"
+                    >
+                      מחיקה לכולם
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </section>
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
