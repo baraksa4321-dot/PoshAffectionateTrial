@@ -1435,6 +1435,7 @@ export function CoachDashboardPage({
       }
       setEditingItemId(null);
       setSelectedExId("");
+      setEditingDayId(null);
       setTechniqueNotes("");
       return;
     }
@@ -1583,6 +1584,7 @@ export function CoachDashboardPage({
     if (isSelfSelected) {
       saveWorkout({ ...currentDay, items: updatedItems });
       setSelectedExId("");
+      setEditingDayId(null);
       setTechniqueNotes("");
       setSupersetGroup("");
       setSupersetPartnerId("");
@@ -1606,6 +1608,7 @@ export function CoachDashboardPage({
     }
     setSelectedExId("");
     setEditingItemId(null);
+    setEditingDayId(null);
     setTechniqueNotes("");
     setSupersetGroup("");
     setSupersetPartnerId("");
