@@ -3,6 +3,7 @@ import {
   getNextWorkoutReportWeekOffset,
   getWorkoutReportSessions,
   getWorkoutReportWeekDates,
+  reportSessionDateKey,
   type HistorySession,
   type Workout,
 } from "./gym-types";
@@ -23,6 +24,14 @@ describe("workout report week navigation", () => {
     durationSec: 0,
     entries: [],
   });
+  const expectConsecutiveDates = (dates: string[]) => {
+    expect(dates).toHaveLength(7);
+    dates.slice(1).forEach((date, index) => {
+      const previous = new Date(`${dates[index]}T00:00:00Z`);
+      const current = new Date(`${date}T00:00:00Z`);
+      expect(current.getTime() - previous.getTime()).toBe(24 * 60 * 60 * 1000);
+    });
+  };
 
   test("defaults to the current calendar week", () => {
     expect(getWorkoutReportWeekDates(undefined, referenceDate)).toEqual([
@@ -78,5 +87,69 @@ describe("workout report week navigation", () => {
   test("does not move forward beyond the current week", () => {
     expect(getNextWorkoutReportWeekOffset(0)).toBe(0);
     expect(getNextWorkoutReportWeekOffset(-1)).toBe(0);
+  });
+
+  test("keeps seven local dates consecutive across the spring DST transition", () => {
+    const weekDates = getWorkoutReportWeekDates(0, new Date(2026, 2, 8, 12));
+    const sundayLateSession = new Date(2026, 2, 8, 23, 30);
+    const saturdayLateSession = new Date(2026, 2, 14, 23, 30);
+    const nextSundaySession = new Date(2026, 2, 15, 0, 0);
+
+    expect(weekDates).toEqual([
+      "2026-03-08",
+      "2026-03-09",
+      "2026-03-10",
+      "2026-03-11",
+      "2026-03-12",
+      "2026-03-13",
+      "2026-03-14",
+    ]);
+    expectConsecutiveDates(weekDates);
+    expect(reportSessionDateKey(sundayLateSession.toISOString())).toBe("2026-03-08");
+    expect(reportSessionDateKey(saturdayLateSession.toISOString())).toBe("2026-03-14");
+    expect(reportSessionDateKey(nextSundaySession.toISOString())).toBe("2026-03-15");
+    expect(
+      getWorkoutReportSessions(
+        [
+          session("sunday-late", sundayLateSession.toISOString()),
+          session("saturday-late", saturdayLateSession.toISOString()),
+          session("next-sunday", nextSundaySession.toISOString()),
+        ],
+        workout,
+        weekDates,
+      ).map(({ id }) => id),
+    ).toEqual(["saturday-late", "sunday-late"]);
+  });
+
+  test("keeps seven local dates consecutive across the fall DST transition", () => {
+    const weekDates = getWorkoutReportWeekDates(0, new Date(2026, 10, 1, 12));
+    const sundayLateSession = new Date(2026, 10, 1, 23, 30);
+    const saturdayLateSession = new Date(2026, 10, 7, 23, 30);
+    const nextSundaySession = new Date(2026, 10, 8, 0, 0);
+
+    expect(weekDates).toEqual([
+      "2026-11-01",
+      "2026-11-02",
+      "2026-11-03",
+      "2026-11-04",
+      "2026-11-05",
+      "2026-11-06",
+      "2026-11-07",
+    ]);
+    expectConsecutiveDates(weekDates);
+    expect(reportSessionDateKey(sundayLateSession.toISOString())).toBe("2026-11-01");
+    expect(reportSessionDateKey(saturdayLateSession.toISOString())).toBe("2026-11-07");
+    expect(reportSessionDateKey(nextSundaySession.toISOString())).toBe("2026-11-08");
+    expect(
+      getWorkoutReportSessions(
+        [
+          session("sunday-late", sundayLateSession.toISOString()),
+          session("saturday-late", saturdayLateSession.toISOString()),
+          session("next-sunday", nextSundaySession.toISOString()),
+        ],
+        workout,
+        weekDates,
+      ).map(({ id }) => id),
+    ).toEqual(["saturday-late", "sunday-late"]);
   });
 });

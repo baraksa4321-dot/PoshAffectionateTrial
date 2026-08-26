@@ -394,6 +394,14 @@ export function reportDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+export function reportSessionDateKey(sessionDate: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(sessionDate)) return sessionDate;
+
+  const date = new Date(sessionDate);
+  if (Number.isNaN(date.getTime())) return sessionDate.slice(0, 10);
+  return reportDateKey(date);
+}
+
 export function getWorkoutReportWeekDates(weekOffset = 0, referenceDate = new Date()): string[] {
   const weekStart = new Date(referenceDate);
   weekStart.setHours(0, 0, 0, 0);
@@ -424,8 +432,8 @@ export function getWorkoutReportSessions(
       (session) =>
         (session.workoutId === workout.id ||
           (!session.workoutId && session.workoutName === workout.name)) &&
-        session.date.slice(0, 10) >= weekStart &&
-        session.date.slice(0, 10) <= weekEnd,
+        reportSessionDateKey(session.date) >= weekStart &&
+        reportSessionDateKey(session.date) <= weekEnd,
     )
     .sort((a, b) => b.date.localeCompare(a.date));
 }

@@ -51,6 +51,7 @@ import {
   getWorkoutReportSessions,
   getWorkoutReportWeekDates,
   reportDateKey,
+  reportSessionDateKey,
 } from "../lib/gym-types";
 import type {
   BodyMeasurement,
@@ -181,7 +182,7 @@ function WorkoutWeeklyReportWeek({
   const sessionsByDate = new Map<string, HistorySession[]>();
 
   for (const session of sessions) {
-    const date = session.date.slice(0, 10);
+    const date = reportSessionDateKey(session.date);
     const existing = sessionsByDate.get(date) ?? [];
     existing.push(session);
     sessionsByDate.set(date, existing);
@@ -213,7 +214,7 @@ function WorkoutWeeklyReportWeek({
     const entries = sessions.flatMap((session) =>
       session.entries
         .filter((entry) => entry.exerciseId === item.exerciseId)
-        .map((entry) => ({ date: session.date.slice(0, 10), entry })),
+        .map((entry) => ({ date: reportSessionDateKey(session.date), entry })),
     );
     return {
       item,
@@ -225,7 +226,7 @@ function WorkoutWeeklyReportWeek({
   const additionalEntries = sessions.flatMap((session) =>
     session.entries
       .filter((entry) => !plannedExerciseIds.has(entry.exerciseId))
-      .map((entry) => ({ date: session.date.slice(0, 10), entry })),
+      .map((entry) => ({ date: reportSessionDateKey(session.date), entry })),
   );
   const completedDays = weekDays.filter((day) => day.sessions.length > 0).length;
   const completedSets = weekDays.reduce((total, day) => total + day.completedSets, 0);
@@ -347,7 +348,7 @@ function WorkoutWeeklyReportWeek({
             <div key={session.id} className="rounded-xl border border-border/60 bg-white/80 p-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2 text-[10px]">
                 <strong className="text-ink">
-                  {reportDateLabel(session.date.slice(0, 10), {
+                  {reportDateLabel(reportSessionDateKey(session.date), {
                     weekday: "long",
                     day: "numeric",
                     month: "long",
