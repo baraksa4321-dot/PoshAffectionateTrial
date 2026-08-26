@@ -17,6 +17,7 @@ export const Route = createFileRoute("/nutrition/foods/")({
 function FoodLibrary() {
   const { foods, favoriteFoods, userProfile } = useGym();
   const gender = userProfile?.gender;
+  const showCalories = userProfile?.showCalories !== false;
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("הכל");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -150,7 +151,8 @@ function FoodLibrary() {
                       {food.name}
                     </p>
                     <p className="mt-0.5 text-[11.5px] text-muted-foreground">
-                      {food.servingSize} · {food.calories} קלוריות · חלבון {food.protein}g · פחמימות{" "}
+                      {food.servingSize}
+                      {showCalories ? ` · ${food.calories} קלוריות` : ""} · חלבון {food.protein}g · פחמימות{" "}
                       {food.carbs}g · שומן {food.fat}g · סיבים {food.fiber ?? 0}g
                     </p>
                     <p

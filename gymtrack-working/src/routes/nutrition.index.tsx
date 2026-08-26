@@ -198,6 +198,7 @@ type ScannedMeal = { mealName: string; foods: ScannedFood[] };
 function NutritionLog() {
   const gym = useGym();
   const gender = gym.userProfile?.gender;
+  const showCalories = gym.userProfile?.showCalories !== false;
   const canManageTargets =
     gym.userProfile?.role === "coach" || gym.userProfile?.role === "owner";
   const [date, setDate] = useState(todayKey());
@@ -212,6 +213,7 @@ function NutritionLog() {
   const [substituteQuery, setSubstituteQuery] = useState("");
   const [showTargets, setShowTargets] = useState(false);
   const [targetsDraft, setTargetsDraft] = useState(gym.nutritionTargets);
+  const [balanceMode, setBalanceMode] = useState<"daily" | "weekly">("daily");
 
   // New smart nutrition features state
   const [showWhatToEat, setShowWhatToEat] = useState(false);
@@ -238,6 +240,29 @@ function NutritionLog() {
   const day = nutritionDay(gym, date);
   const totals = dayTotals(day);
   const { nutritionTargets: targets } = gym;
+  const weekStart = new Date(`${todayKey()}T00:00:00`);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const weekDates = Array.from({ length: 7 }, (_, index) => shiftDate(todayKey(weekStart), index));
+  const weeklyTotals = gym.nutritionDays
+    .filter((nutritionEntry) => weekDates.includes(nutritionEntry.date))
+    .reduce(
+      (sum, nutritionEntry) => {
+        const entryTotals = dayTotals(nutritionEntry);
+        return {
+          calories: sum.calories + entryTotals.calories,
+          protein: sum.protein + entryTotals.protein,
+          carbs: sum.carbs + entryTotals.carbs,
+          fat: sum.fat + entryTotals.fat,
+          fiber: sum.fiber + entryTotals.fiber,
+        };
+      },
+      { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+    );
+  const balanceTotals = balanceMode === "daily" ? totals : weeklyTotals;
+  const balanceTarget =
+    typeof targets.calories === "number" && targets.calories > 0
+      ? targets.calories * (balanceMode === "daily" ? 1 : 7)
+      : undefined;
 
   const openMealScanner = () => {
     setShowMealScanner(true);
@@ -469,8 +494,8 @@ function NutritionLog() {
   };
 
   const calPct =
-    targets.calories && targets.calories > 0
-      ? Math.min(100, (totals.calories / targets.calories) * 100)
+    balanceTarget && balanceTarget > 0
+      ? Math.min(100, (balanceTotals.calories / balanceTarget) * 100)
       : null;
 
   return (
@@ -543,16 +568,18 @@ function NutritionLog() {
             </span>
           </span>
         </button>
-        <button
-          onClick={() => {
-            setSuggestionMealId(day.meals[0]?.id ?? "");
-            setShowWhatToEat(true);
-          }}
-          className="surface-card p-3 rounded-2xl border border-primary/20 bg-primary/5 flex items-center gap-2 text-primary font-bold text-xs cursor-pointer hover:bg-primary/10 transition-colors"
-        >
-          <Sparkles className="h-4 w-4 shrink-0" />
-          <span>מה לאכול עכשיו?</span>
-        </button>
+        {showCalories ? (
+          <button
+            onClick={() => {
+              setSuggestionMealId(day.meals[0]?.id ?? "");
+              setShowWhatToEat(true);
+            }}
+            className="surface-card p-3 rounded-2xl border border-primary/20 bg-primary/5 flex items-center gap-2 text-primary font-bold text-xs cursor-pointer hover:bg-primary/10 transition-colors"
+          >
+            <Sparkles className="h-4 w-4 shrink-0" />
+            <span>מה לאכול עכשיו?</span>
+          </button>
+        ) : null}
 
         <button
           onClick={() => setShowShoppingList(true)}
@@ -660,7 +687,9 @@ function NutritionLog() {
                   >
                     <span className="block truncate text-xs font-bold text-ink">{recipe.name}</span>
                     <span className="mt-1 block truncate text-[10px] text-muted-foreground">
-                      {recipe.category} · {recipe.nutrition.calories} קל׳
+                      {showCalories
+                        ? `${recipe.category} · ${recipe.nutrition.calories} קל׳`
+                        : recipe.category}
                     </span>
                   </button>
                 ))}
@@ -710,8 +739,8 @@ function NutritionLog() {
                       </button>
                     </div>
                     <p className="mt-1 text-[10px] text-muted-foreground">
-                      {recipe.foods.length} רכיבים · {Math.round(foodTotals(recipe.foods).calories)}{" "}
-                      קל׳
+                      {recipe.foods.length} רכיבים
+                      {showCalories ? ` · ${Math.round(foodTotals(recipe.foods).calories)} קל׳` : ""}
                     </p>
                   </div>
                 ))}
@@ -756,10 +785,12 @@ function NutritionLog() {
               </IconButton>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl bg-primary/10 p-2 text-center">
-                <span className="block text-[10px] text-muted-foreground">קלוריות</span>
-                <strong className="text-sm text-ink">{selectedRecipe.nutrition.calories}</strong>
-              </div>
+              {showCalories ? (
+                <div className="rounded-xl bg-primary/10 p-2 text-center">
+                  <span className="block text-[10px] text-muted-foreground">קלוריות</span>
+                  <strong className="text-sm text-ink">{selectedRecipe.nutrition.calories}</strong>
+                </div>
+              ) : null}
               <div className="rounded-xl bg-primary/10 p-2 text-center">
                 <span className="block text-[10px] text-muted-foreground">חלבון</span>
                 <strong className="text-sm text-ink">{selectedRecipe.nutrition.protein} ג׳</strong>
@@ -830,30 +861,59 @@ function NutritionLog() {
         </Overlay>
       ) : null}
 
-      {/* Daily total */}
+      {/* Daily/weekly balance. This is presentation-only and never changes logs. */}
       <div className="order-3 mt-4 surface-card overflow-hidden border border-border/60 bg-secondary/25 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="text-start">
-            <p className="text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-              קלוריות היום
-            </p>
-            <p className="mt-1 font-display text-[30px] font-semibold leading-none text-ink tabular-nums">
-              {Math.round(totals.calories)}
-            </p>
-            <p className="mt-1 text-[12.5px] text-muted-foreground">
-              {targets.calories ? `מתוך ${targets.calories} קלוריות` : "ללא יעד יומי"}
-            </p>
-          </div>
-          <CalRing pct={calPct ?? 0} />
-        </div>
-        {calPct != null ? (
-          <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/60">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-500"
-              style={{ width: `${calPct}%` }}
-            />
-          </div>
-        ) : null}
+        {showCalories ? (
+          <>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="text-start">
+                <p className="text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+                  מאזן {balanceMode === "daily" ? "יומי" : "שבועי"}
+                </p>
+                <p className="mt-1 font-display text-[30px] font-semibold leading-none text-ink tabular-nums">
+                  {Math.round(balanceTotals.calories)}
+                </p>
+                <p className="mt-1 text-[12.5px] text-muted-foreground">
+                  {balanceTarget
+                    ? `מתוך ${balanceTarget} קלוריות`
+                    : balanceMode === "daily"
+                      ? "ללא יעד יומי"
+                      : "ללא יעד שבועי"}
+                </p>
+              </div>
+              <CalRing pct={calPct ?? 0} />
+            </div>
+            <div className="mb-3 grid grid-cols-2 gap-1 rounded-xl bg-background/70 p-1">
+              {(["daily", "weekly"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setBalanceMode(mode)}
+                  aria-pressed={balanceMode === mode}
+                  className={`rounded-lg px-2 py-1.5 text-[11px] font-bold ${
+                    balanceMode === mode
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {mode === "daily" ? "יומי" : "שבועי"}
+                </button>
+              ))}
+            </div>
+            {calPct != null ? (
+              <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/60">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${calPct}%` }}
+                />
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <p className="mb-3 text-center text-[11px] font-semibold text-muted-foreground">
+            ערכי הקלוריות מוסתרים לפי הגדרת הפרופיל.
+          </p>
+        )}
         <div className="mt-4 grid grid-cols-4 gap-1.5">
           <MacroPill label="חלבון" value={totals.protein} target={targets.protein} unit="g" />
           <MacroPill label="פחמימה" value={totals.carbs} target={targets.carbs} unit="g" />
@@ -885,9 +945,11 @@ function NutritionLog() {
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="font-display text-[15px] font-bold text-ink">{meal.name}</h3>
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-semibold text-primary">
-                        {Math.round(plannedTotals.calories)} קלוריות
-                      </span>
+                      {showCalories ? (
+                        <span className="text-[11px] font-semibold text-primary">
+                          {Math.round(plannedTotals.calories)} קלוריות
+                        </span>
+                      ) : null}
                       <button
                         type="button"
                         disabled={day.meals.some(
@@ -918,7 +980,10 @@ function NutritionLog() {
                             {food.name}
                           </span>
                           <span className="shrink-0 text-[11px] text-muted-foreground">
-                            × {food.quantity} · {Math.round(food.calories * food.quantity)} קל׳
+                            × {food.quantity}
+                            {showCalories
+                              ? ` · ${Math.round(food.calories * food.quantity)} קל׳`
+                              : ""}
                           </span>
                         </div>
                       ))}
@@ -971,8 +1036,8 @@ function NutritionLog() {
                         onChange={(e) => renameMeal(date, meal.id, e.target.value)}
                       />
                       <p className="mt-0.5 text-[12px] text-muted-foreground tabular-nums">
-                        {Math.round(mealTotals.calories)} קלוריות · חלבון{" "}
-                        {Math.round(mealTotals.protein)}g
+                        {showCalories ? `${Math.round(mealTotals.calories)} קלוריות · ` : ""}
+                        חלבון {Math.round(mealTotals.protein)}g
                       </p>
                     </div>
                     <button
@@ -998,8 +1063,12 @@ function NutritionLog() {
                                 {food.name}
                               </p>
                               <p className="mt-0.5 text-[11.5px] text-muted-foreground">
-                                {food.servingSize} · {Math.round(food.calories * food.quantity)} קל׳
-                                · {Math.round(food.protein * food.quantity)}ח׳ ·{" "}
+                                {food.servingSize}
+                                {showCalories
+                                  ? ` · ${Math.round(food.calories * food.quantity)} קל׳`
+                                  : ""}
+                                {" · "}
+                                {Math.round(food.protein * food.quantity)}ח׳ ·{" "}
                                 {Math.round(food.carbs * food.quantity)}פ׳ ·{" "}
                                 {Math.round(food.fat * food.quantity)}ש׳ · סיבים{" "}
                                 {Math.round((food.fiber ?? 0) * food.quantity)}ג׳
@@ -1037,12 +1106,18 @@ function NutritionLog() {
                               <p className="text-[10.5px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
                                 סה״כ
                               </p>
-                              <p className="mt-0.5 font-display text-[15px] font-semibold tabular-nums text-ink">
-                                {Math.round(food.calories * food.quantity)}
-                                <span className="ms-0.5 text-[11px] font-normal text-muted-foreground">
-                                  קל
-                                </span>
-                              </p>
+                              {showCalories ? (
+                                <p className="mt-0.5 font-display text-[15px] font-semibold tabular-nums text-ink">
+                                  {Math.round(food.calories * food.quantity)}
+                                  <span className="ms-0.5 text-[11px] font-normal text-muted-foreground">
+                                    קל
+                                  </span>
+                                </p>
+                              ) : (
+                                <p className="mt-0.5 text-[12px] font-semibold text-muted-foreground">
+                                  מוסתר
+                                </p>
+                              )}
                             </div>
                           </div>
                         </article>
@@ -1297,7 +1372,9 @@ function NutritionLog() {
                             ["fat", "שומן", 0.1],
                             ["fiber", "סיבים", 0.1],
                           ] as const
-                        ).map(([key, label, step]) => (
+                        )
+                          .filter(([key]) => showCalories || key !== "calories")
+                          .map(([key, label, step]) => (
                           <label key={key} className="text-muted-foreground">
                             {label}
                             <input
@@ -1375,7 +1452,9 @@ function NutritionLog() {
               <div className="rounded-xl bg-primary/5 p-3 text-xs space-y-1">
                 <p className="font-bold text-ink">יתרה להיום לפי היעד:</p>
                 <div className="grid grid-cols-4 gap-1 text-center font-semibold pt-1">
-                  <span className="bg-white p-1 rounded-md text-ink">{remainingCal} קל'</span>
+                  {showCalories ? (
+                    <span className="bg-white p-1 rounded-md text-ink">{remainingCal} קל'</span>
+                  ) : null}
                   <span className="bg-white p-1 rounded-md text-emerald-700">
                     {remainingProt}g חלבון
                   </span>
@@ -1429,7 +1508,8 @@ function NutritionLog() {
                     <div>
                       <p className="font-bold text-ink">{food.name}</p>
                       <p className="text-[11px] text-muted-foreground">
-                        {food.servingSize} · {food.calories} קל' · {food.protein}g חלבון
+                        {food.servingSize}
+                        {showCalories ? ` · ${food.calories} קל'` : ""} · {food.protein}g חלבון
                       </p>
                     </div>
                     <span className="shrink-0 rounded-lg bg-primary/10 px-2 py-1 font-bold text-primary">
@@ -1566,7 +1646,8 @@ function NutritionLog() {
                     <div className="rounded-2xl bg-secondary p-3.5">
                       <p className="text-[15px] font-bold text-ink">{selectedFood.name}</p>
                       <p className="mt-1 text-[11.5px] text-muted-foreground">
-                        {selectedFood.servingSize} למנה · {selectedFood.calories} קל׳ · חלבון{" "}
+                        {selectedFood.servingSize} למנה
+                        {showCalories ? ` · ${selectedFood.calories} קל׳` : ""} · חלבון{" "}
                         {selectedFood.protein}ג׳ · פחמימות {selectedFood.carbs}ג׳ · שומן{" "}
                         {selectedFood.fat}ג׳ · סיבים {selectedFood.fiber ?? 0}ג׳
                       </p>
@@ -1585,7 +1666,10 @@ function NutritionLog() {
                     />
                     <div className="rounded-2xl bg-primary/10 px-3.5 py-3 text-[12px] text-ink">
                       <p>
-                        סה״כ: {Math.round(selectedFood.calories * pickerQuantity)} קל׳ · חלבון{" "}
+                        {showCalories
+                          ? `סה״כ: ${Math.round(selectedFood.calories * pickerQuantity)} קל׳ · `
+                          : "סה״כ: "}
+                        חלבון{" "}
                         {Math.round(selectedFood.protein * pickerQuantity)}ג׳ · פחמימות{" "}
                         {Math.round(selectedFood.carbs * pickerQuantity)}ג׳ · שומן{" "}
                         {Math.round(selectedFood.fat * pickerQuantity)}ג׳ · סיבים{" "}
@@ -1624,7 +1708,8 @@ function NutritionLog() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[14px] font-semibold text-ink">{food.name}</p>
                       <p className="text-[11.5px] text-muted-foreground">
-                        {food.servingSize} · {food.calories} קלוריות · חלבון {food.protein}g · סיבים{" "}
+                        {food.servingSize}
+                        {showCalories ? ` · ${food.calories} קלוריות` : ""} · חלבון {food.protein}g · סיבים{" "}
                         {food.fiber || 0}g
                       </p>
                     </div>
@@ -1661,11 +1746,17 @@ function NutritionLog() {
                   {substituteFor.food.name}
                 </h2>
                 <p className="mt-1 text-[12px] text-muted-foreground">
-                  תקציב ההחלפה:
-                  <span className="ms-1 font-bold text-ink">
-                    {Math.round(substituteFor.food.calories * (substituteFor.food.quantity || 1))}{" "}
-                    קלוריות
-                  </span>
+                  {showCalories ? (
+                    <>
+                      תקציב ההחלפה:
+                      <span className="ms-1 font-bold text-ink">
+                        {Math.round(substituteFor.food.calories * (substituteFor.food.quantity || 1))}{" "}
+                        קלוריות
+                      </span>
+                    </>
+                  ) : (
+                    "החלפה לפי מנה"
+                  )}
                 </p>
               </div>
               <IconButton aria-label="סגור" onClick={() => setSubstituteFor(null)}>
@@ -1698,9 +1789,9 @@ function NutritionLog() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[14px] font-semibold text-ink">{item.food.name}</p>
                     <p className="text-[11.5px] text-muted-foreground">
-                      {item.calculatedCalories} קל׳ · חלבון {item.calculatedProtein}ג׳ · פחמימות{" "}
-                      {item.calculatedCarbs}ג׳ · שומן {item.calculatedFat}ג׳ · סיבים{" "}
-                      {item.calculatedFiber}ג׳
+                      {showCalories ? `${item.calculatedCalories} קל׳ · ` : ""}
+                      חלבון {item.calculatedProtein}ג׳ · פחמימות {item.calculatedCarbs}ג׳ · שומן{" "}
+                      {item.calculatedFat}ג׳ · סיבים {item.calculatedFiber}ג׳
                     </p>
                   </div>
                   <span className="num-pill shrink-0 px-2.5 py-1 text-[11px] font-bold text-ink-soft">

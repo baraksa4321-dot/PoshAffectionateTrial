@@ -359,6 +359,8 @@ export type UserProfile = {
   coachId?: string;
   foodPreferences?: FoodPreferences;
   todayRoutineEnabled?: boolean;
+  /** Presentation-only calorie visibility. Nutrition values remain stored. */
+  showCalories?: boolean;
   theme?: ThemePalette;
 };
 
@@ -371,6 +373,8 @@ export type GymData = {
   foods: FoodItem[];
   nutritionDays: NutritionDay[];
   nutritionTargets: NutritionTargets;
+  /** Coach-prescribed menu shared across all calendar dates. */
+  plannedMeals?: Meal[];
   mealTemplate: string[];
   recipes?: SavedRecipe[];
   recentFoods?: string[];

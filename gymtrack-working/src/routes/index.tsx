@@ -336,6 +336,7 @@ function Dashboard() {
 
   // Nutrition Today
   const todayDateStr = todayKey();
+  const showCalories = userProfile?.showCalories !== false;
   const nutritionToday = nutritionDays.find((d) => d.date === todayDateStr);
   const totalsToday = nutritionToday
     ? dayTotals(nutritionToday)
@@ -688,15 +689,23 @@ function Dashboard() {
                 <span className="text-[10px] font-bold text-primary">תזונה יומית</span>
                 <Apple className="h-4 w-4 text-primary" />
               </div>
-              <p className="mt-2 font-display text-2xl font-extrabold leading-none text-ink">
-                {totalsToday.calories}
-                <span className="ms-1 text-[10px] font-bold text-primary/75">קק״ל</span>
-              </p>
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                {targetCals === undefined
-                  ? "יעד קלוריות עדיין לא הוגדר"
-                  : `מתוך ${targetCals} · ${Math.max(0, targetCals - totalsToday.calories)} נשארו`}
-              </p>
+              {showCalories ? (
+                <>
+                  <p className="mt-2 font-display text-2xl font-extrabold leading-none text-ink">
+                    {totalsToday.calories}
+                    <span className="ms-1 text-[10px] font-bold text-primary/75">קק״ל</span>
+                  </p>
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    {targetCals === undefined
+                      ? "יעד קלוריות עדיין לא הוגדר"
+                      : `מתוך ${targetCals} · ${Math.max(0, targetCals - totalsToday.calories)} נשארו`}
+                  </p>
+                </>
+              ) : (
+                <p className="mt-3 text-[11px] font-semibold text-muted-foreground">
+                  ערכי קלוריות מוסתרים לפי הגדרת הפרופיל
+                </p>
+              )}
               <div className="mt-auto flex items-center justify-between rounded-xl bg-background/80 px-2 py-1.5 text-[10px] font-bold text-ink">
                 <span>{Math.round(totalsToday.protein)} גרם חלבון</span>
                 <ChevronLeft className="h-3.5 w-3.5" />
@@ -809,8 +818,10 @@ function Dashboard() {
             title="אימון אירובי"
             subtitle={
               weeklyCardioMinutes
-                ? `${weeklyCardioMinutes} דקות השבוע · כ-${weeklyCardioCalories} קל׳`
-                : "תיעוד אישי עם אומדן קלוריות"
+                ? `${weeklyCardioMinutes} דקות השבוע${showCalories ? ` · כ-${weeklyCardioCalories} קל׳` : ""}`
+                : showCalories
+                  ? "תיעוד אישי עם אומדן קלוריות"
+                  : "תיעוד אישי של משך הפעילות"
             }
             action={
               <button
@@ -833,7 +844,8 @@ function Dashboard() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[13px] font-bold text-ink">{entry.type}</p>
                       <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        {entry.durationMin} דקות · כ-{entry.calories} קל׳ ·{" "}
+                        {entry.durationMin} דקות
+                        {showCalories ? ` · כ-${entry.calories} קל׳ · ` : " · "}
                         {new Date(entry.date).toLocaleDateString("he-IL")}
                       </p>
                     </div>
@@ -863,13 +875,17 @@ function Dashboard() {
             ) : (
               <div className="p-4">
                 <p className="text-[13px] font-bold text-ink">עדיין לא תיעדת אירובי</p>
-                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                  {genderText(
-                    gender,
-                    "הוסיפי הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך ואומדן קלוריות.",
-                    "הוסף הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך ואומדן קלוריות.",
-                  )}
-                </p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                    {genderText(
+                      gender,
+                      showCalories
+                        ? "הוסיפי הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך ואומדן קלוריות."
+                        : "הוסיפי הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך הפעילות.",
+                      showCalories
+                        ? "הוסף הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך ואומדן קלוריות."
+                        : "הוסף הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך הפעילות.",
+                    )}
+                  </p>
               </div>
             )}
           </div>
@@ -1107,9 +1123,11 @@ function Dashboard() {
                   <Footprints className="h-5 w-5 text-primary" />
                   {editingCardioId ? "עריכת אימון אירובי" : "הוספת אימון אירובי"}
                 </h3>
-                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                  הקלוריות הן אומדן לפי סוג הפעילות, הזמן, המהירות והשיפוע כשיש כאלה.
-                </p>
+                {showCalories ? (
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                    הקלוריות הן אומדן לפי סוג הפעילות, הזמן, המהירות והשיפוע כשיש כאלה.
+                  </p>
+                ) : null}
               </div>
               <button
                 type="button"
@@ -1194,12 +1212,14 @@ function Dashboard() {
               </div>
             </div>
 
-            <div className="rounded-2xl bg-primary/10 px-3.5 py-3 text-center">
-              <p className="text-[11px] font-semibold text-muted-foreground">שריפה משוערת</p>
-              <p className="mt-0.5 text-xl font-bold tabular-nums text-primary">
-                כ-{cardioCalories} קלוריות
-              </p>
-            </div>
+            {showCalories ? (
+              <div className="rounded-2xl bg-primary/10 px-3.5 py-3 text-center">
+                <p className="text-[11px] font-semibold text-muted-foreground">שריפה משוערת</p>
+                <p className="mt-0.5 text-xl font-bold tabular-nums text-primary">
+                  כ-{cardioCalories} קלוריות
+                </p>
+              </div>
+            ) : null}
             {cardioError ? (
               <p className="text-xs font-semibold text-rose-700">{cardioError}</p>
             ) : null}

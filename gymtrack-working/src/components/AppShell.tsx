@@ -18,6 +18,7 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   refreshCurrentUserData,
+  saveCalorieVisibility,
   saveTheme,
   useAuthUser,
   useCloudSyncStatus,
@@ -67,6 +68,7 @@ export function AppShell({
   const isOwner = role === "owner";
   const isCoach = role === "coach" || isOwner;
   const profileGender = store.userProfile?.gender;
+  const showCalories = store.userProfile?.showCalories !== false;
   const location = useLocation();
   const navigate = useNavigate();
   const isManagementRoute = isManagementPath(location.pathname);
@@ -871,6 +873,33 @@ export function AppShell({
                 if (!result.success) setThemeError(result.error ?? "שמירת הפלטה נכשלה");
               }}
             />
+            {isCoach ? (
+              <button
+                type="button"
+                onClick={() => saveCalorieVisibility(!showCalories)}
+                aria-pressed={showCalories}
+                className="mt-3 flex w-full items-center justify-between rounded-2xl border border-border bg-surface-2 px-4 py-3 text-start"
+              >
+                <span>
+                  <span className="block text-sm font-bold text-ink">הצגת ערכים קלוריים</span>
+                  <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                    הצגה במאזנים, ביומן ובספריית המאכלים
+                  </span>
+                </span>
+                <span
+                  className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                    showCalories ? "bg-primary" : "bg-border"
+                  }`}
+                  aria-hidden="true"
+                >
+                  <span
+                    className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                      showCalories ? "start-6" : "start-1"
+                    }`}
+                  />
+                </span>
+              </button>
+            ) : null}
             {themeError ? (
               <p className="mt-3 rounded-sm bg-destructive/10 px-4 py-3 text-[13px] font-semibold text-destructive border border-destructive/20">
                 {themeError}

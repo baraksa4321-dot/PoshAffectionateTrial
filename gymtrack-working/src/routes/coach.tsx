@@ -111,6 +111,7 @@ type ProfileRow = {
   created_at?: string | null;
   approval_status?: "pending" | "approved" | "rejected" | null;
   coach_id?: string | null;
+  show_calories?: boolean | null;
   age?: number | null;
   height_cm?: number | null;
   weight_kg?: number | null;
@@ -877,6 +878,9 @@ export function CoachDashboardPage({
   const [roleChangeUserId, setRoleChangeUserId] = useState<string | null>(null);
   const [roleChangeNotice, setRoleChangeNotice] = useState("");
   const [approvalCoachByUser, setApprovalCoachByUser] = useState<Record<string, string>>({});
+  const [approvalShowCaloriesByUser, setApprovalShowCaloriesByUser] = useState<
+    Record<string, boolean>
+  >({});
   const [approvalUserId, setApprovalUserId] = useState<string | null>(null);
   const [approvalNotice, setApprovalNotice] = useState("");
   const [selectedOwnerProfileId, setSelectedOwnerProfileId] = useState<string | null>(null);
@@ -1311,6 +1315,7 @@ export function CoachDashboardPage({
       programs: store.programs,
       workouts: store.workouts,
       nutritionDays: store.nutritionDays,
+      plannedMeals: store.plannedMeals ?? [],
       nutritionTargets: store.nutritionTargets,
       history: store.history,
       cardioLogs: store.cardioLogs ?? [],
@@ -1501,6 +1506,30 @@ export function CoachDashboardPage({
     setProfileNotice("נתוני הגוף נשמרו. הנתונים והחישוב זמינים רק באזור המאמן.");
   };
 
+  const saveClientCalorieVisibility = async (showCalories: boolean) => {
+    if (!selectedClientId || !clientDetails?.profile) return;
+    const previous = clientDetails.profile.showCalories !== false;
+    setClientDetails((current) =>
+      current?.profile
+        ? { ...current, profile: { ...current.profile, showCalories } }
+        : current,
+    );
+    const { error } = await supabase.rpc("set_user_calorie_visibility", {
+      target_user_id: selectedClientId,
+      show_calories_enabled: showCalories,
+    });
+    if (error) {
+      setClientDetails((current) =>
+        current?.profile
+          ? { ...current, profile: { ...current.profile, showCalories: previous } }
+          : current,
+      );
+      setProfileNotice(`שמירת תצוגת הקלוריות נכשלה: ${error.message}`);
+    } else {
+      setProfileNotice("הגדרת תצוגת הקלוריות נשמרה.");
+    }
+  };
+
   const saveClientMeasurements = async () => {
     if (!selectedClientId || !isCoach) return;
     const numeric = (value: number | undefined) =>
@@ -1562,10 +1591,9 @@ export function CoachDashboardPage({
   };
 
   useEffect(() => {
-    const day = clientDetails?.nutritionDays?.find((item) => item.date === menuDate);
     setPlannedMeals(
-      day?.plannedMeals?.length
-        ? day.plannedMeals
+      clientDetails?.plannedMeals?.length
+        ? clientDetails.plannedMeals
         : [
             { id: uid(), name: "ארוחת בוקר", foods: [] },
             { id: uid(), name: "ארוחת צהריים", foods: [] },
@@ -1576,7 +1604,7 @@ export function CoachDashboardPage({
     setMenuFoodId("");
     setMenuFoodQuery("");
     setMenuNotice("");
-  }, [clientDetails, menuDate]);
+  }, [clientDetails]);
 
   useEffect(() => {
     if (!clientDetails) return;
@@ -1741,10 +1769,11 @@ export function CoachDashboardPage({
     setApprovalUserId(profile.id);
     setApprovalNotice("");
     try {
-      const { data, error } = await supabase.rpc("approve_client_registration", {
+      const { data, error } = await supabase.rpc("approve_client_registration_with_visibility", {
         target_client_id: profile.id,
         approved_full_name: fullName,
         assigned_coach_id: assignedCoachId,
+        show_calories_enabled: approvalShowCaloriesByUser[profile.id] ?? true,
       });
       if (error) throw error;
       if (data !== true) throw new Error("האישור לא התקבל במסד הנתונים");
@@ -2541,20 +2570,14 @@ export function CoachDashboardPage({
   const savePlannedMenu = async () => {
     if (!isCoach || !selectedClientId || plannedMeals.length === 0) return;
     if (isSelfSelected) {
-      savePlannedMeals(menuDate, plannedMeals);
+      savePlannedMeals(plannedMeals);
       setMenuNotice("התפריט האישי נשמר ויופיע גם באזור התזונה שלך.");
       return;
     }
 
-    const existingDay = clientDetails?.nutritionDays?.find((item) => item.date === menuDate);
-    const { error } = await supabase.from("nutrition_days").upsert({
-      id: `${selectedClientId}_${menuDate}`,
-      user_id: selectedClientId,
-      date: menuDate,
-      meals: existingDay?.meals ?? [],
-      planned_meals: plannedMeals,
-      ...(existingDay || calTarget <= 0 ? {} : { target_calories: calTarget }),
-      updated_at: new Date().toISOString(),
+    const { error } = await supabase.rpc("save_user_planned_menu", {
+      target_user_id: selectedClientId,
+      next_planned_menu: plannedMeals,
     });
     if (error) {
       setMenuNotice(`שמירת התפריט נכשלה: ${error.message}`);
@@ -3218,6 +3241,38 @@ export function CoachDashboardPage({
                             דחייה
                           </button>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setApprovalShowCaloriesByUser((current) => ({
+                              ...current,
+                              [profile.id]: !(current[profile.id] ?? true),
+                            }))
+                          }
+                          aria-pressed={approvalShowCaloriesByUser[profile.id] ?? true}
+                          className="mt-2 flex w-full items-center justify-between rounded-lg border border-border bg-white px-2.5 py-2 text-start text-[11px] font-semibold text-ink"
+                        >
+                          <span>
+                            הצגת קלוריות למתאמן כברירת מחדל
+                            <span className="ms-1 text-muted-foreground">
+                              ({approvalShowCaloriesByUser[profile.id] ?? true ? "מוצג" : "מוסתר"})
+                            </span>
+                          </span>
+                          <span
+                            className={`relative h-5 w-9 rounded-full ${
+                              approvalShowCaloriesByUser[profile.id] ?? true
+                                ? "bg-primary"
+                                : "bg-border"
+                            }`}
+                            aria-hidden="true"
+                          >
+                            <span
+                              className={`absolute top-1 h-3 w-3 rounded-full bg-white shadow ${
+                                approvalShowCaloriesByUser[profile.id] ?? true ? "start-5" : "start-1"
+                              }`}
+                            />
+                          </span>
+                        </button>
                         <p className="mt-1 text-[10px] text-muted-foreground">
                           {profile.email || "ללא אימייל מוצג"}
                         </p>
@@ -6071,16 +6126,17 @@ export function CoachDashboardPage({
                         <h4 className="flex items-center gap-1.5 text-sm font-bold text-ink">
                           <Apple className="h-4 w-4 text-emerald-700" /> בניית תפריט למתאמן
                         </h4>
-                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                          התפריט נשמר בנפרד מהיומן בפועל ויופיע למתאמן כמתווה יומי.
-                        </p>
+                         <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                           התפריט נשמר כתבנית קבועה ונפרד מהיומן בפועל. תאריך הבדיקה מציג רק את
+                           מה שנרשם בפועל.
+                         </p>
                       </div>
                       <input
                         type="date"
                         value={menuDate}
                         onChange={(event) => setMenuDate(event.target.value)}
                         className="rounded-lg border border-emerald-200 bg-white px-2 py-1.5 text-[11px] outline-none focus:border-emerald-500"
-                        aria-label="תאריך התפריט"
+                         aria-label="תאריך להצגת רישום בפועל"
                       />
                     </div>
 
@@ -6400,6 +6456,40 @@ export function CoachDashboardPage({
                         <span>{editingNutrition ? "ביטול" : "ערוך יעדים"}</span>
                       </button>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void saveClientCalorieVisibility(
+                          !(clientDetails?.profile?.showCalories !== false),
+                        )
+                      }
+                      aria-pressed={clientDetails?.profile?.showCalories !== false}
+                      className="flex w-full items-center justify-between rounded-xl border border-primary/15 bg-white px-3 py-2.5 text-start"
+                    >
+                      <span>
+                        <span className="block text-[11px] font-bold text-ink">
+                          הצגת קלוריות למתאמן
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {clientDetails?.profile?.showCalories !== false ? "מוצג" : "מוסתר"} במסכי
+                          התזונה והמאזן
+                        </span>
+                      </span>
+                      <span
+                        className={`relative h-5 w-9 rounded-full ${
+                          clientDetails?.profile?.showCalories !== false
+                            ? "bg-primary"
+                            : "bg-border"
+                        }`}
+                        aria-hidden="true"
+                      >
+                        <span
+                          className={`absolute top-1 h-3 w-3 rounded-full bg-white shadow ${
+                            clientDetails?.profile?.showCalories !== false ? "start-5" : "start-1"
+                          }`}
+                        />
+                      </span>
+                    </button>
 
                     <button
                       type="button"

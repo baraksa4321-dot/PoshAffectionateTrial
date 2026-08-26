@@ -38,7 +38,8 @@ function FoodDetail() {
   const { foodId } = Route.useParams();
   const search = Route.useSearch();
   const navigate = useNavigate();
-  const { foods } = useGym();
+  const { foods, userProfile } = useGym();
+  const showCalories = userProfile?.showCalories !== false;
   const isNew = foodId === "new";
   const existing = foods.find((f) => f.id === foodId);
   const isLogEdit = Boolean(search.mealDate && search.mealId && search.logFoodId && !isNew);
@@ -153,12 +154,20 @@ function FoodDetail() {
           <Apple className="h-6 w-6" strokeWidth={1.8} />
         </div>
         <div className="min-w-0 flex-1 text-start">
-          <p className="text-[10.5px] font-semibold tracking-[0.16em] text-rose uppercase">
-            קלוריות למנה
-          </p>
-          <p className="mt-1 font-display text-[34px] font-semibold leading-none text-ink tabular-nums">
-            {Math.round(draft.calories)}
-          </p>
+          {showCalories ? (
+            <>
+              <p className="text-[10.5px] font-semibold tracking-[0.16em] text-rose uppercase">
+                קלוריות למנה
+              </p>
+              <p className="mt-1 font-display text-[34px] font-semibold leading-none text-ink tabular-nums">
+                {Math.round(draft.calories)}
+              </p>
+            </>
+          ) : (
+            <p className="text-[12px] font-semibold text-muted-foreground">
+              ערכי קלוריות מוסתרים לפי הגדרת הפרופיל
+            </p>
+          )}
           <p className="mt-1 text-[12.5px] text-muted-foreground">{draft.servingSize || "מנה 1"}</p>
         </div>
       </div>
@@ -205,12 +214,14 @@ function FoodDetail() {
         </div>
 
         <div className="surface-card grid grid-cols-2 gap-3 p-4">
-          <Stepper
-            label="קלוריות"
-            value={draft.calories}
-            min={0}
-            onChange={(calories) => set({ calories })}
-          />
+          {showCalories ? (
+            <Stepper
+              label="קלוריות"
+              value={draft.calories}
+              min={0}
+              onChange={(calories) => set({ calories })}
+            />
+          ) : null}
           <Stepper
             label="חלבון"
             value={draft.protein}

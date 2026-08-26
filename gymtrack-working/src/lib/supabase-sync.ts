@@ -10,6 +10,7 @@ import {
   type HistorySession,
   type NutritionTargets,
   type NutritionDay,
+  type Meal,
   type Program,
   type UserProfile,
   type UserRole,
@@ -28,6 +29,7 @@ export type CoachClientData = {
   programs: Program[];
   workouts: Workout[];
   nutritionDays: NutritionDay[];
+  plannedMeals: Meal[];
   nutritionTargets: NutritionTargets;
   history: HistorySession[];
   cardioLogs: CardioLog[];
@@ -124,6 +126,12 @@ export async function syncLocalToSupabase(
             gender: p.gender,
             today_routine_enabled: p.todayRoutineEnabled ?? true,
             updated_at: new Date().toISOString(),
+            ...(p.role === "coach" || p.role === "owner"
+              ? {
+                  show_calories: p.showCalories ?? true,
+                  planned_menu: localData.plannedMeals ?? [],
+                }
+              : {}),
           },
           { onConflict: "id" },
         ),
@@ -596,6 +604,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       weight: profile.weight_kg ? Number(profile.weight_kg) : (nextData.userProfile?.weight ?? 0),
       role: profile.role as UserRole,
       todayRoutineEnabled: profile.today_routine_enabled ?? true,
+      showCalories: profile.show_calories ?? true,
       ...(fullName === undefined ? {} : { fullName }),
       ...(height === undefined ? {} : { height }),
       ...(age === undefined ? {} : { age }),
@@ -604,6 +613,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       ...(coachId === undefined ? {} : { coachId }),
       ...(approvalStatus === undefined ? {} : { approvalStatus }),
     };
+    nextData.plannedMeals = profile.planned_menu || [];
 
     const authTheme = authUser?.user_metadata?.["theme"];
     if (
@@ -935,7 +945,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         id: row.id,
         date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
         meals: row.meals || [],
-        plannedMeals: row.planned_meals || [],
+        plannedMeals: [],
         ...(row.water_ml === null ? {} : { waterMl: Number(row.water_ml ?? 0) }),
         ...(row.water_target_ml === null
           ? {}
@@ -1063,7 +1073,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
           ? (row.date ?? row.recorded_at).slice(0, 10)
           : (row.date ?? row.recorded_at),
       meals: row.meals || [],
-      plannedMeals: row.planned_meals || [],
+      plannedMeals: [],
       ...(row.water_ml === null ? {} : { waterMl: Number(row.water_ml ?? 0) }),
       ...(row.water_target_ml === null
         ? {}
@@ -1112,6 +1122,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       programs: programsList,
       workouts: Array.from(workoutsMap.values()),
       nutritionDays: nutritionList,
+      plannedMeals: profile.planned_menu || [],
       nutritionTargets:
         latestNutritionTarget === undefined ? {} : { calories: Number(latestNutritionTarget) },
       history: historyList,
@@ -1123,6 +1134,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
             height: Number(profile.height_cm || 165),
             role: profile.role as UserRole,
             todayRoutineEnabled: profile.today_routine_enabled ?? true,
+            showCalories: profile.show_calories ?? true,
             ...(profile.email ? { email: profile.email } : {}),
             ...(profile.full_name ? { name: profile.full_name } : {}),
             ...(profile.gender === "male" || profile.gender === "female"
@@ -1139,6 +1151,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       programs: [],
       workouts: [],
       nutritionDays: [],
+      plannedMeals: [],
       nutritionTargets: {},
       history: [],
       cardioLogs: [],

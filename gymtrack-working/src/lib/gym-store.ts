@@ -3,6 +3,7 @@ import { EVERYDAY_FOOD_DATABASE } from "./israeli-food-db";
 import { assertValidFoodNutrition, assertValidMealFood } from "./nutrition-integrity";
 import { supabase } from "./supabase";
 import { pullSupabaseData, syncLocalToSupabase, type SyncStatus } from "./supabase-sync";
+import { normalizeFixedPlannedMenu } from "./nutrition-planning";
 import {
   ADDITIONAL_EXERCISES,
   renameSeedExercise,
@@ -602,6 +603,7 @@ const seed = (): GymData => {
     foods: [...EVERYDAY_FOOD_DATABASE],
     nutritionDays: [],
     nutritionTargets: {},
+    plannedMeals: [],
     mealTemplate: [],
     recipes: [],
     recentFoods: [],
@@ -761,14 +763,16 @@ function migrate(d: Partial<GymData>): GymData {
   if (!programs.length && workouts.length) {
     programs = [{ id: uid(), name: "תכנית אימונים", notes: "", dayIds: workouts.map((w) => w.id) }];
   }
+  const normalizedNutrition = normalizeFixedPlannedMenu(d.plannedMeals, d.nutritionDays ?? []);
   return {
     exercises: mergeSeedExercises(d.exercises ?? []),
     workouts,
     programs,
     history: d.history ?? [],
     foods: mergeSeedFoods(d.foods ?? []),
-    nutritionDays: d.nutritionDays ?? [],
+    nutritionDays: normalizedNutrition.nutritionDays,
     nutritionTargets: d.nutritionTargets ?? {},
+    plannedMeals: normalizedNutrition.plannedMeals,
     mealTemplate: d.mealTemplate ?? [],
     recipes: d.recipes ?? [],
     recentFoods: d.recentFoods ?? [],
@@ -777,7 +781,10 @@ function migrate(d: Partial<GymData>): GymData {
     bodyMeasurements: d.bodyMeasurements ?? [],
     cardioLogs: d.cardioLogs ?? [],
     preExitChecklist: d.preExitChecklist ?? [],
-    userProfile: d.userProfile ?? { weight: 0 },
+    userProfile: {
+      ...(d.userProfile ?? { weight: 0 }),
+      showCalories: d.userProfile?.showCalories ?? true,
+    },
   };
 }
 
@@ -1538,6 +1545,18 @@ export function saveUserProfile(profile: UserProfile) {
   set({ ...data, userProfile: profile, bodyWeightLogs: logs });
 }
 
+export function saveCalorieVisibility(showCalories: boolean) {
+  if (!canManageAssignedPlans()) return false;
+  set({
+    ...data,
+    userProfile: {
+      ...(data.userProfile ?? { weight: 0 }),
+      showCalories,
+    },
+  });
+  return true;
+}
+
 export async function saveTheme(
   theme: ThemePalette,
 ): Promise<{ success: boolean; error?: string }> {
@@ -1705,14 +1724,14 @@ export function saveNutritionTargets(targets: NutritionTargets) {
   set({ ...data, nutritionTargets: targets });
 }
 
-export function savePlannedMeals(date: string, plannedMeals: Meal[]) {
+export function savePlannedMeals(plannedMeals: Meal[]) {
   if (!canManageAssignedPlans()) return;
-  withDay(date, (day) => ({ ...day, plannedMeals }));
+  set({ ...data, plannedMeals });
 }
 
 export function logPlannedMeal(date: string, plannedMealId: string) {
   withDay(date, (day) => {
-    const plannedMeal = day.plannedMeals?.find((meal) => meal.id === plannedMealId);
+    const plannedMeal = data.plannedMeals?.find((meal) => meal.id === plannedMealId);
     if (!plannedMeal || day.meals.some((meal) => meal.sourcePlanId === plannedMealId)) return day;
     return {
       ...day,
@@ -1738,7 +1757,7 @@ export function logPlannedMeal(date: string, plannedMealId: string) {
 
 export function togglePlannedFoodEaten(date: string, plannedMealId: string, plannedFoodId: string) {
   withDay(date, (day) => {
-    const plannedMeal = day.plannedMeals?.find((meal) => meal.id === plannedMealId);
+    const plannedMeal = data.plannedMeals?.find((meal) => meal.id === plannedMealId);
     const plannedFood = plannedMeal?.foods.find((food) => food.id === plannedFoodId);
     if (!plannedFood) return day;
 
@@ -1875,10 +1894,11 @@ export function deleteRecipe(id: string) {
 /* ---------- nutrition: days & meals ---------- */
 export function nutritionDay(d: GymData, date: string): NutritionDay {
   const found = d.nutritionDays.find((x) => x.date === date);
-  if (found) return found;
+  if (found) return { ...found, plannedMeals: d.plannedMeals ?? [] };
   return {
     date,
     meals: d.mealTemplate.map((name, i) => ({ id: `tmpl-${date}-${i}`, name, foods: [] })),
+    plannedMeals: d.plannedMeals ?? [],
   };
 }
 
@@ -1888,6 +1908,7 @@ function withDay(date: string, updater: (day: NutritionDay) => NutritionDay) {
     id: `${currentUser?.id ?? "local"}_${date}`,
     date,
     meals: data.mealTemplate.map((name) => ({ id: uid(), name, foods: [] })),
+    plannedMeals: data.plannedMeals ?? [],
   };
   const next = updater(base);
   const days = existing
