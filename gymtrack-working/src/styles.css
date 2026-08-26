@@ -2093,7 +2093,7 @@ html.night-mode .auth-panel {
 .loading-wordmark {
   position: fixed;
   left: 50%;
-  bottom: max(8px, env(safe-area-inset-bottom));
+  bottom: max(0px, calc(env(safe-area-inset-bottom) - 10px));
   z-index: 2;
   display: block;
   width: min(120px, 38vw);
