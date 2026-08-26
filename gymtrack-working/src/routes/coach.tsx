@@ -201,9 +201,40 @@ export function CoachDashboardPage({
       setManagementError(result.error);
       return;
     }
+    // Older coach-built plans may contain the exercise name in the plan item
+    // but not have the matching custom_exercises row anymore. Rehydrate those
+    // catalog entries before rendering so they can be selected and edited
+    // again instead of appearing as an unnamed exercise.
+    for (const workout of result.workouts) {
+      for (const item of workout.items) {
+        const name = item.exerciseName?.trim();
+        if (
+          !name ||
+          name === "תרגיל" ||
+          name === "תרגיל שהוסר" ||
+          store.exercises.some((exercise) => exercise.id === item.exerciseId)
+        ) {
+          continue;
+        }
+        saveExercise({
+          id: item.exerciseId,
+          name,
+          nameEn: name,
+          muscleGroup: "אחר",
+          muscleGroups: ["אחר"],
+          equipment: "ללא ציוד",
+          category: "מותאם אישית",
+          description: "",
+          instructions: "",
+          videoUrl: "",
+          images: [],
+          notes: "",
+        });
+      }
+    }
     setClientDetailsError("");
     setClientDetails(result);
-  }, []);
+  }, [store.exercises]);
 
   // Coach Message sender state
   const [coachMsgText, setCoachMsgText] = useState("");
@@ -1150,8 +1181,12 @@ export function CoachDashboardPage({
 
     const currentDay = clientDetails?.workouts?.find((w) => w.id === editingDayId);
     if (!currentDay) return;
-    const selectedExerciseName =
-      store.exercises.find((exercise) => exercise.id === selectedExId)?.name?.trim() || undefined;
+    const selectedExercise = store.exercises.find((exercise) => exercise.id === selectedExId);
+    const selectedExerciseName = selectedExercise?.name?.trim() || undefined;
+    // Keep the selected exercise in the coach's catalog as part of the
+    // assignment flow too. This repairs older plans created before the
+    // builder's return-to-catalog flow was added.
+    if (selectedExercise) saveExercise(selectedExercise);
 
     if (editingItemId) {
       const configuredModes = Array.from(
