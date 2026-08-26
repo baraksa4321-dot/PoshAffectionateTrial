@@ -150,13 +150,21 @@ BEGIN
     UPDATE public.profiles
     SET coach_id = NULL, updated_at = NOW()
     WHERE coach_id = target_user_id;
-    DELETE FROM public.coach_clients WHERE coach_id = target_user_id;
+    -- Remove both directions so pre-existing stale links cannot survive the
+    -- role transition.
+    DELETE FROM public.coach_clients
+    WHERE coach_id = target_user_id
+       OR client_id = target_user_id;
   ELSE
-    -- A former client must not retain a coach assignment after becoming one.
+    -- A former client must not retain a coach assignment after becoming one,
+    -- and must not remain the stale coach for any linked clients.
     UPDATE public.profiles
     SET coach_id = NULL, updated_at = NOW()
-    WHERE id = target_user_id;
-    DELETE FROM public.coach_clients WHERE client_id = target_user_id;
+    WHERE id = target_user_id
+       OR coach_id = target_user_id;
+    DELETE FROM public.coach_clients
+    WHERE coach_id = target_user_id
+       OR client_id = target_user_id;
   END IF;
 
   UPDATE public.profiles

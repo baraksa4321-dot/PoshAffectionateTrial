@@ -15,3 +15,4 @@
 - [Coach-to-trainee synchronization](coach-trainee-sync.md) — Remote coach edits need explicit trainee rehydration, without overwriting pending offline-first local changes.
 - [iOS loading scroll lock](loading-scroll-lock.md) — A fixed splash layer does not stop Safari body dragging; lock html/body overflow and touch behavior during loading.
 - [Targeted formatting checks](targeted-formatting-checks.md) — Compare formatting against the baseline and avoid broad rewrites when a large UI file already has style drift.
+- [Supabase MCP fallback](supabase-mcp-fallback.md) — If generated Supabase MCP callbacks are unavailable, the installed custom MCP connection may still expose the streamable `/mcp` endpoint.
