@@ -1234,6 +1234,7 @@ export function CoachDashboardPage({
                     weight: setWeights[index] ?? targetWeight,
                     reps: setRepMins[index] ?? repMin,
                     repMax: setRepMaxes[index] ?? repMax,
+                    rest: setRests[index] ?? restSec,
                     ...(mode === "drop" ? { dropSet: true } : {}),
                   })),
                warmups:
@@ -1407,6 +1408,7 @@ export function CoachDashboardPage({
               weight,
               reps,
               repMax: repMaxForSet,
+              rest: setRests[sourceIndex] ?? restSec,
               ...(mode === "drop" ? { dropSet: true } : {}),
             };
           });
@@ -4467,7 +4469,149 @@ export function CoachDashboardPage({
                                                           className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink"
                                                         />
                                                       </label>
+                                                      <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground sm:col-span-3">
+                                                        זמן מנוחה (שניות)
+                                                        <input
+                                                          type="number"
+                                                          min={0}
+                                                          step={5}
+                                                          value={setRests[index] ?? restSec}
+                                                          onChange={(event) => {
+                                                            const value = Math.max(0, Number(event.target.value));
+                                                            setSetRests((current) => {
+                                                              const next = [...current];
+                                                              next[index] = value;
+                                                              return next;
+                                                            });
+                                                            if (index === 0) setRestSec(value);
+                                                          }}
+                                                          className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink"
+                                                        />
+                                                      </label>
                                                     </div>
+                                                    {mode === "superset" ? (
+                                                      <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50/70 p-2.5">
+                                                        <p className="mb-2 text-[10px] font-extrabold text-violet-900">
+                                                          תרגיל שני בסופר־סט
+                                                        </p>
+                                                        <select
+                                                          value={supersetPartnerId}
+                                                          onChange={(event) => setSupersetPartnerId(event.target.value)}
+                                                          className="mb-2 h-9 w-full rounded-lg border border-violet-200 bg-white px-2 text-xs text-ink"
+                                                        >
+                                                          <option value="">בחר תרגיל שני</option>
+                                                          {store.exercises
+                                                            .filter((exercise) => exercise.id !== selectedExId)
+                                                            .map((exercise) => (
+                                                              <option key={exercise.id} value={exercise.id}>
+                                                                {exercise.name}
+                                                              </option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="grid grid-cols-3 gap-1.5">
+                                                          <label className="grid gap-1 text-[9px] font-bold text-violet-900">
+                                                            משקל
+                                                            <input
+                                                              type="number"
+                                                              min={0}
+                                                              step={0.5}
+                                                              value={supersetPartnerWeight}
+                                                              onChange={(event) =>
+                                                                setSupersetPartnerWeight(Math.max(0, Number(event.target.value)))
+                                                              }
+                                                              className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
+                                                            />
+                                                          </label>
+                                                          <label className="grid gap-1 text-[9px] font-bold text-violet-900">
+                                                            חזרות מינ׳
+                                                            <input
+                                                              type="number"
+                                                              min={1}
+                                                              value={supersetRepsMin}
+                                                              onChange={(event) =>
+                                                                setSupersetRepsMin(Math.max(1, Number(event.target.value)))
+                                                              }
+                                                              className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
+                                                            />
+                                                          </label>
+                                                          <label className="grid gap-1 text-[9px] font-bold text-violet-900">
+                                                            חזרות מקס׳
+                                                            <input
+                                                              type="number"
+                                                              min={supersetRepsMin}
+                                                              value={supersetRepsMax}
+                                                              onChange={(event) =>
+                                                                setSupersetRepsMax(
+                                                                  Math.max(supersetRepsMin, Number(event.target.value)),
+                                                                )
+                                                              }
+                                                              className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
+                                                            />
+                                                          </label>
+                                                        </div>
+                                                      </div>
+                                                    ) : null}
+                                                    {mode === "drop" ? (
+                                                      <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-2.5">
+                                                        <p className="mb-2 text-[10px] font-extrabold text-primary">
+                                                          שלבי הורדת משקל
+                                                        </p>
+                                                        <div className="grid gap-2 sm:grid-cols-2">
+                                                          {[
+                                                            {
+                                                              label: "דרופ 1",
+                                                              weight: dropLevel1Weight,
+                                                              setWeight: setDropLevel1Weight,
+                                                              min: dropLevel1RepsMin,
+                                                              setMin: setDropLevel1RepsMin,
+                                                              max: dropLevel1RepsMax,
+                                                              setMax: setDropLevel1RepsMax,
+                                                            },
+                                                            {
+                                                              label: "דרופ 2",
+                                                              weight: dropLevel2Weight,
+                                                              setWeight: setDropLevel2Weight,
+                                                              min: dropLevel2RepsMin,
+                                                              setMin: setDropLevel2RepsMin,
+                                                              max: dropLevel2RepsMax,
+                                                              setMax: setDropLevel2RepsMax,
+                                                            },
+                                                          ].map((drop) => (
+                                                            <div key={drop.label} className="rounded-lg bg-white/80 p-2">
+                                                              <p className="mb-1 text-[9px] font-bold text-primary">{drop.label}</p>
+                                                              <div className="grid grid-cols-3 gap-1">
+                                                                <input
+                                                                  aria-label={`${drop.label} משקל`}
+                                                                  type="number"
+                                                                  min={0}
+                                                                  step={0.5}
+                                                                  value={drop.weight}
+                                                                  onChange={(event) => drop.setWeight(event.target.value)}
+                                                                  placeholder="ק״ג"
+                                                                  className="h-8 rounded-md border border-border text-center text-[11px]"
+                                                                />
+                                                                <input
+                                                                  aria-label={`${drop.label} חזרות מינימום`}
+                                                                  type="number"
+                                                                  min={1}
+                                                                  value={drop.min}
+                                                                  onChange={(event) => drop.setMin(Math.max(1, Number(event.target.value)))}
+                                                                  className="h-8 rounded-md border border-border text-center text-[11px]"
+                                                                />
+                                                                <input
+                                                                  aria-label={`${drop.label} חזרות מקסימום`}
+                                                                  type="number"
+                                                                  min={drop.min}
+                                                                  value={drop.max}
+                                                                  onChange={(event) => drop.setMax(Math.max(drop.min, Number(event.target.value)))}
+                                                                  className="h-8 rounded-md border border-border text-center text-[11px]"
+                                                                />
+                                                              </div>
+                                                            </div>
+                                                          ))}
+                                                        </div>
+                                                      </div>
+                                                    ) : null}
                                                   </div>
                                                 );
                                               })}
