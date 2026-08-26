@@ -510,7 +510,11 @@ function ProgramsPage() {
               <div>
                 <h2 className="font-display text-lg font-extrabold text-ink">מוזיקה לפי אווירה</h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  בחרי סגנון ופתחי את הפלייליסט בפלטפורמה המועדפת עלייך.
+                  {genderText(
+                    gender,
+                    "בחרי סגנון ופתחי את הפלייליסט בפלטפורמה המועדפת עלייך.",
+                    "בחר סגנון ופתח את הפלייליסט בפלטפורמה המועדפת עליך.",
+                  )}
                 </p>
               </div>
               <button

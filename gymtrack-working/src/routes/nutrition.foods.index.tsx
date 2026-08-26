@@ -66,7 +66,7 @@ function FoodLibrary() {
           <Link
             to="/nutrition/foods/$foodId"
             params={{ foodId: "new" }}
-            aria-label="הוסף מאכל"
+            aria-label={genderText(gender, "הוסיפי מאכל", "הוסף מאכל")}
             className="press grid h-11 w-11 place-items-center rounded-2xl bg-primary text-primary-foreground"
           >
             <Plus className="h-5 w-5" strokeWidth={2.4} />
@@ -169,7 +169,7 @@ function FoodLibrary() {
                 aria-label={
                   favoriteIds.has(food.id)
                     ? `הסר ${food.name} מהמועדפים`
-                    : `הוסף ${food.name} למועדפים`
+                    : genderText(gender, `הוסיפי ${food.name} למועדפים`, `הוסף ${food.name} למועדפים`)
                 }
                 className={`press grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
                   favoriteIds.has(food.id)

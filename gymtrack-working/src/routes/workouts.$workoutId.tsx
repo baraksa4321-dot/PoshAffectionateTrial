@@ -7,6 +7,7 @@ import { Stepper } from "@/components/Stepper";
 import { Overlay } from "@/components/ui-app/Overlay";
 import { deleteWorkout, emptyItem, emptyWorkout, saveWorkout, useGym } from "@/lib/gym-store";
 import type { Workout, WorkoutItem } from "@/lib/gym-types";
+import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/workouts/$workoutId")({
   head: () => ({
@@ -36,7 +37,11 @@ function Builder() {
     return (
       <AppShell title="אימון" kicker="בודקת הרשאות">
         <div className="surface-card mt-4 rounded-3xl p-6 text-center text-sm text-muted-foreground">
-          טוענת את תפקיד החשבון המאומת...
+           {genderText(
+             userProfile?.gender,
+             "טוענת את תפקיד החשבון המאומת...",
+             "טוען את תפקיד החשבון המאומת...",
+           )}
         </div>
       </AppShell>
     );

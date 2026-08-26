@@ -70,7 +70,11 @@ function ExerciseDetail() {
     return (
       <AppShell title="תרגיל" kicker="בודקת הרשאות">
         <div className="surface-card mt-4 rounded-3xl p-6 text-center text-sm text-muted-foreground">
-          טוענת את תפקיד החשבון המאומת...
+          {genderText(
+            userProfile?.gender,
+            "טוענת את תפקיד החשבון המאומת...",
+            "טוען את תפקיד החשבון המאומת...",
+          )}
         </div>
       </AppShell>
     );
@@ -463,7 +467,11 @@ function ExerciseDetail() {
               })}
             </div>
             <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-              בחרי סרטון נפרד לכל מגדר. אם אין סרטון מותאם, אפשר להשאיר את השדה ריק.
+              {genderText(
+                userProfile?.gender,
+                "בחרי סרטון נפרד לכל מגדר. אם אין סרטון מותאם, אפשר להשאיר את השדה ריק.",
+                "בחר סרטון נפרד לכל מגדר. אם אין סרטון מותאם, אפשר להשאיר את השדה ריק.",
+              )}
             </p>
             {videoUploadError ? (
               <p className="mt-2 text-[11px] font-semibold text-destructive">{videoUploadError}</p>

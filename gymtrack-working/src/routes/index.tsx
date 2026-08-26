@@ -888,7 +888,11 @@ function Dashboard() {
                   צ׳קליסט לפני יציאה מהבית
                 </h2>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  הוסיפי דברים שחשוב לזכור לפני שיוצאים לאימון.
+                  {genderText(
+                    gender,
+                    "הוסיפי דברים שחשוב לזכור לפני שיוצאים לאימון.",
+                    "הוסף דברים שחשוב לזכור לפני שיוצאים לאימון.",
+                  )}
                 </p>
               </div>
               <button
@@ -953,7 +957,11 @@ function Dashboard() {
               ))}
               {(preExitChecklist ?? []).length === 0 ? (
                 <p className="rounded-xl border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
-                  עדיין אין פריטים. הוסיפי את הדבר הראשון שחשוב לזכור.
+                  {genderText(
+                    gender,
+                    "עדיין אין פריטים. הוסיפי את הדבר הראשון שחשוב לזכור.",
+                    "עדיין אין פריטים. הוסף את הדבר הראשון שחשוב לזכור.",
+                  )}
                 </p>
               ) : null}
             </div>
