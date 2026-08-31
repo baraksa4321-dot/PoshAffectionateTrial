@@ -4557,6 +4557,70 @@ html[data-keyboard-open] .nav-shell {
   display: none;
 }
 
+.workout-surface-bookmark {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in oklch, var(--primary) 35%, var(--border));
+  background: var(--background);
+  color: var(--primary);
+  box-shadow: 0 8px 24px oklch(0.2 0.03 35 / 0.12);
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.workout-surface-bookmark:hover,
+.workout-surface-bookmark:focus-visible,
+.workout-report-bookmark-open {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.workout-surface-bookmark:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.workout-report-bookmark {
+  top: 2rem;
+  right: 0.75rem;
+  min-height: 6.5rem;
+  width: 2rem;
+  border-radius: 0.75rem;
+  transform: none;
+}
+
+.workout-report-bookmark:hover,
+.workout-report-bookmark:focus-visible {
+  transform: translateY(-1px);
+}
+
+.workout-report-bookmark span {
+  writing-mode: vertical-rl;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.workout-surface-close-bookmark {
+  top: 2rem;
+  left: 0;
+  height: 3rem;
+  width: 2.25rem;
+  border-right: 0;
+  border-radius: 0.75rem 0 0 0.75rem;
+  transform: translateX(-50%);
+}
+
+.workout-surface-close-bookmark:hover,
+.workout-surface-close-bookmark:focus-visible {
+  transform: translateX(-50%) translateY(-1px);
+}
+
 /* --- Glass panels --- */
 .glass {
   background: oklch(from var(--background) l c h / 0.9);
