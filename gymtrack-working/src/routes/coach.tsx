@@ -188,6 +188,29 @@ function ExerciseBuilderPlacement({
   return anchor ? createPortal(children, anchor) : null;
 }
 
+function WorkoutSurfacePlacement({
+  active,
+  children,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!active) {
+      setAnchor(null);
+      return;
+    }
+    setAnchor(
+      document.querySelector<HTMLElement>('[data-coach-workout-surface-slot="true"]'),
+    );
+  }, [active]);
+
+  if (!active) return children;
+  return anchor ? createPortal(children, anchor) : null;
+}
+
 type WorkoutReportDay = {
   date: string;
   sessions: HistorySession[];
@@ -1199,7 +1222,6 @@ export function CoachDashboardPage({
     context: ExerciseBuilderReturnContext;
   } | null>(null);
   const hydratedBuilderRouteKeyRef = useRef<string | null>(null);
-  const [reportBookmarkWorkoutId, setReportBookmarkWorkoutId] = useState<string | null>(null);
   const [targetWeight, setTargetWeight] = useState(20);
   const [setsCount, setSetsCount] = useState(3);
   const [setWeights, setSetWeights] = useState<number[]>([20, 20, 20]);
@@ -1236,8 +1258,7 @@ export function CoachDashboardPage({
     window.sessionStorage.removeItem("gymtrack-created-exercise-id");
   }, [store.exercises]);
   useEffect(() => {
-    if (editingDayId) setReportBookmarkWorkoutId(editingDayId);
-    else setShowExerciseForm(false);
+    if (!editingDayId) setShowExerciseForm(false);
     setOpenWorkoutReportId((current) =>
       current && editingDayId && current !== editingDayId ? null : current,
     );
@@ -3100,9 +3121,6 @@ export function CoachDashboardPage({
   const activeProgram =
     clientDetails?.programs.find((program) => program.id === editingProgramId) ??
     clientDetails?.programs.at(-1);
-  const reportBookmarkWorkout = clientWorkouts.find(
-    (workout) => workout.id === (reportBookmarkWorkoutId ?? editingDayId),
-  );
   const trackingPlanRows =
     selectedTrackingWorkout?.items
       ? workoutReviewItems(selectedTrackingWorkout).map((item) => {
@@ -4212,6 +4230,7 @@ export function CoachDashboardPage({
                   : "max-w-2xl rounded-3xl shadow-2xl"
               } ${workspacePage || openEditor ? "" : "p-4 sm:p-6"}`}
             >
+              <div data-coach-workout-surface-slot="true" className="contents" />
               <div
                 className={`flex min-w-0 items-center justify-between gap-2 overflow-x-hidden border-b border-border/60 ${
                   trackingLanding ? "px-3 pb-2" : "px-4 pb-3 sm:px-6"
@@ -5094,7 +5113,7 @@ export function CoachDashboardPage({
                         : clientsOnly
                           ? "surface-card rounded-2xl border-primary/15 bg-primary/[0.02] p-2.5"
                           : "surface-card rounded-[1.75rem] border-primary/15 bg-primary/[0.02] p-4"
-                    } ${!showProgramBuilder ? "hidden" : ""}`}
+                    } ${!showProgramBuilder || editingDayId ? "hidden" : ""}`}
                   >
                     <div
                       className={`flex items-center justify-between border-b border-border/50 ${
@@ -5267,7 +5286,6 @@ export function CoachDashboardPage({
                                            type="button"
                                            onClick={() => {
                                              setEditingDayId(dayItem.id);
-                                             setReportBookmarkWorkoutId(dayItem.id);
                                              setOpenWorkoutReportId(null);
                                              setShowExerciseForm(false);
                                              setEditingItemId(null);
@@ -5293,10 +5311,13 @@ export function CoachDashboardPage({
                                     if (!isDayActive) return null;
 
                                     return (
-                                      <div
+                                      <WorkoutSurfacePlacement
                                         key={dayItem.id}
-                                        className="relative min-h-[calc(100dvh-12rem)] w-full overflow-visible rounded-[1.75rem] border border-primary/35 bg-background p-4 shadow-sm ring-2 ring-primary/10 sm:p-6"
+                                        active={clientsOnly && workspacePage}
                                       >
+                                        <div
+                                          className="relative min-h-[calc(100dvh-12rem)] w-full overflow-visible rounded-[1.75rem] border border-primary/35 bg-background p-4 shadow-sm ring-2 ring-primary/10 sm:p-6"
+                                        >
                                         <div className="flex items-center justify-between gap-2">
                                           <div className="min-w-0 flex-1">
                                             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
@@ -5328,7 +5349,6 @@ export function CoachDashboardPage({
                                               setEditingItemId(null);
                                               setSelectedExId("");
                                               setOpenWorkoutReportId(null);
-                                              setReportBookmarkWorkoutId(null);
                                               setEditingDayId(null);
                                             }}
                                             className="shrink-0 rounded-xl border border-border/70 px-3 py-2 text-[11px] font-bold text-primary hover:bg-primary/10 cursor-pointer"
@@ -7121,7 +7141,53 @@ export function CoachDashboardPage({
                                             </form>
                                           </ExerciseBuilderPlacement>
                                         )}
-                                      </div>
+                                          <section
+                                            className="mt-6 border-t border-primary/15 pt-4"
+                                            aria-labelledby={`workout-report-heading-${dayItem.id}`}
+                                          >
+                                            <div className="flex items-center justify-between gap-3">
+                                              <div className="min-w-0">
+                                                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                                                  דוח האימון
+                                                </p>
+                                                <h3
+                                                  id={`workout-report-heading-${dayItem.id}`}
+                                                  className="mt-1 truncate font-display text-base font-extrabold text-ink"
+                                                >
+                                                  {dayItem.name}
+                                                </h3>
+                                              </div>
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  setOpenWorkoutReportId((current) =>
+                                                    current === dayItem.id ? null : dayItem.id,
+                                                  )
+                                                }
+                                                aria-expanded={openWorkoutReportId === dayItem.id}
+                                                aria-controls={`workout-report-${dayItem.id}`}
+                                                className="shrink-0 rounded-xl bg-primary px-3 py-2 text-[11px] font-extrabold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                                              >
+                                                {openWorkoutReportId === dayItem.id
+                                                  ? "סגירת הדוח"
+                                                  : "פתיחת הדוח"}
+                                              </button>
+                                            </div>
+                                            {openWorkoutReportId === dayItem.id ? (
+                                              <div
+                                                id={`workout-report-${dayItem.id}`}
+                                                className="mt-3 overflow-hidden rounded-2xl border border-primary/15 bg-primary/[0.025]"
+                                              >
+                                                <WorkoutWeeklyReportWeek
+                                                  workout={dayItem}
+                                                  history={clientDetails?.history ?? []}
+                                                  exercises={store.exercises}
+                                                />
+                                              </div>
+                                            ) : null}
+                                          </section>
+                                        </div>
+                                      </WorkoutSurfacePlacement>
                                     );
                                   })}
                                 </div>
@@ -8067,50 +8133,6 @@ export function CoachDashboardPage({
           </div>
         </Overlay>
       </div>
-      {reportBookmarkWorkout && showProgramBuilder && editingDayId === reportBookmarkWorkout.id
-        ? createPortal(
-            <aside
-              dir="rtl"
-              className={`workout-report-drawer ${
-                openWorkoutReportId === reportBookmarkWorkout.id ? "is-open" : ""
-              }`}
-              aria-label={`דוח עבור ${reportBookmarkWorkout.name}`}
-            >
-              <button
-                type="button"
-                onClick={() =>
-                  setOpenWorkoutReportId((current) =>
-                    current === reportBookmarkWorkout.id ? null : reportBookmarkWorkout.id,
-                  )
-                }
-                aria-expanded={openWorkoutReportId === reportBookmarkWorkout.id}
-                aria-controls={`workout-report-${reportBookmarkWorkout.id}`}
-                className={`workout-report-bookmark ${
-                  openWorkoutReportId === reportBookmarkWorkout.id
-                    ? "workout-report-bookmark-open"
-                    : ""
-                }`}
-                title={openWorkoutReportId === reportBookmarkWorkout.id ? "סגירת דוח" : "פתיחת דוח"}
-              >
-                <span>דוח</span>
-              </button>
-              <div
-                id={`workout-report-${reportBookmarkWorkout.id}`}
-                className="workout-report-drawer-panel"
-                aria-hidden={openWorkoutReportId !== reportBookmarkWorkout.id}
-              >
-                {openWorkoutReportId === reportBookmarkWorkout.id ? (
-                  <WorkoutWeeklyReportWeek
-                    workout={reportBookmarkWorkout}
-                    history={clientDetails?.history ?? []}
-                    exercises={store.exercises}
-                  />
-                ) : null}
-              </div>
-            </aside>,
-            document.body,
-          )
-        : null}
     </AppShell>
   );
 }

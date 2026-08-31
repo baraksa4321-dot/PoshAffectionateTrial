@@ -21,6 +21,13 @@ export default defineConfig({
         browserName: "webkit",
       },
     },
+    {
+      name: "webkit-desktop",
+      use: {
+        ...devices["Desktop Safari"],
+        browserName: "webkit",
+      },
+    },
   ],
   use: {
     baseURL: `http://127.0.0.1:${port}`,
