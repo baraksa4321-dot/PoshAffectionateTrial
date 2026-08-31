@@ -18,6 +18,7 @@ import {
   type ClientHabits,
   type SavedRecipe,
   type BroadcastAnnouncement,
+  type FoodCatalogMetadata,
 } from "./gym-types";
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "pending" | "error" | "offline";
@@ -41,7 +42,89 @@ export type RealtimeCleanup = () => void;
 export type RealtimeConnectionStatus = "connecting" | "connected" | "reconnecting" | "disconnected";
 
 function isBuiltInFoodId(id: string) {
-  return id.startsWith("f-israel-") || id.startsWith("f-usda-");
+  return (
+    id.startsWith("f-israel-") ||
+    id.startsWith("f-usda-") ||
+    id.startsWith("f-common-") ||
+    id.startsWith("f-protein-")
+  );
+}
+
+function catalogMetadataFromRow(row: Record<string, unknown>): FoodCatalogMetadata | undefined {
+  const source = row["catalog_source"];
+  const verificationStatus = row["catalog_verification_status"];
+  const productType = row["catalog_product_type"];
+  if (
+    (source !== "curated-israel" && source !== "open-food-facts") ||
+    (verificationStatus !== "curated-unverified" &&
+      verificationStatus !== "manufacturer-verified" &&
+      verificationStatus !== "external-unverified") ||
+    (productType !== "powder" &&
+      productType !== "bar" &&
+      productType !== "drink" &&
+      productType !== "pudding" &&
+      productType !== "yogurt" &&
+      productType !== "other") ||
+    row["catalog_source_product_id"] === null ||
+    row["catalog_source_product_id"] === undefined
+  ) {
+    return undefined;
+  }
+  return {
+    source,
+    sourceProductId: String(row["catalog_source_product_id"]),
+    ...(row["barcode"] ? { barcode: String(row["barcode"]) } : {}),
+    ...(row["catalog_source_url"] ? { sourceUrl: String(row["catalog_source_url"]) } : {}),
+    productType,
+    market: "IL",
+    ...(row["catalog_package_size"]
+      ? { packageSize: String(row["catalog_package_size"]) }
+      : {}),
+    ...(row["catalog_synced_at"] ? { syncedAt: String(row["catalog_synced_at"]) } : {}),
+    ...(row["catalog_source_updated_at"]
+      ? { sourceUpdatedAt: String(row["catalog_source_updated_at"]) }
+      : {}),
+    verificationStatus,
+  };
+}
+
+function foodItemFromPublicCatalogRow(row: Record<string, unknown>): FoodItem | undefined {
+  const catalog = catalogMetadataFromRow(row);
+  const id = typeof row["id"] === "string" ? row["id"] : "";
+  const name = typeof row["name"] === "string" ? row["name"] : "";
+  const servingSize = typeof row["serving_unit"] === "string" ? row["serving_unit"] : "";
+  const numericFields = ["calories", "protein", "carbs", "fat"] as const;
+  if (!id || !name.trim() || !servingSize.trim() || !catalog) return undefined;
+  if (
+    numericFields.some((field) => {
+      const value = Number(row[field]);
+      return !Number.isFinite(value) || value < 0;
+    })
+  ) {
+    return undefined;
+  }
+  const englishName = typeof row["english_name"] === "string" ? row["english_name"] : "";
+  const brand = typeof row["brand"] === "string" ? row["brand"] : "";
+  const fiber = Number(row["fiber"]);
+  const searchAliases = Array.isArray(row["search_aliases"])
+    ? row["search_aliases"].filter((term): term is string => typeof term === "string")
+    : [];
+  return {
+    id,
+    name,
+    ...(englishName ? { englishName } : {}),
+    category: typeof row["category"] === "string" ? row["category"] : "מוצרי חלבון",
+    ...(brand ? { brand } : {}),
+    servingSize,
+    calories: Number(row["calories"]),
+    protein: Number(row["protein"]),
+    carbs: Number(row["carbs"]),
+    fat: Number(row["fat"]),
+    fiber: Number.isFinite(fiber) && fiber >= 0 ? fiber : 0,
+    searchTerms: searchAliases,
+    notes: "מוצר שיובא ממקור ברקודים חיצוני; מומלץ לבדוק את תווית היצרן.",
+    catalog,
+  };
 }
 
 type RealtimeTableSubscription = {
@@ -894,6 +977,14 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .eq("user_id", userId)
       .order("date", { ascending: false });
     const customFoodsPromise = supabase.from("custom_foods").select("*").eq("user_id", userId);
+    // Public catalog rows are optional. A project that has not applied the
+    // additive catalog migration must still hydrate the account normally.
+    const publicFoodsPromise = supabase
+      .from("foods")
+      .select(
+        "id,name,english_name,category,brand,serving_unit,serving_grams,calories,protein,carbs,fat,fiber,search_aliases,barcode,catalog_source,catalog_source_product_id,catalog_source_url,catalog_product_type,catalog_package_size,catalog_synced_at,catalog_source_updated_at,catalog_verification_status",
+      )
+      .eq("catalog_source", "open-food-facts");
     const nutritionDaysPromise = supabase.from("nutrition_days").select("*").eq("user_id", userId);
     const recipesPromise = supabase
       .from("coach_recipes")
@@ -917,6 +1008,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       measurementsResult,
       habitsResult,
       customFoodsResult,
+      publicFoodsResult,
       nutritionDaysResult,
       recipesResult,
       favoritesResult,
@@ -933,6 +1025,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       measurementsPromise,
       habitsPromise,
       customFoodsPromise,
+      publicFoodsPromise,
       nutritionDaysPromise,
       recipesPromise,
       favoritesPromise,
@@ -1174,6 +1267,20 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
           fiber: Number(row.fiber || 0),
         };
         foodMap.set(row.id, foodItem);
+      }
+      nextData.foods = Array.from(foodMap.values());
+    }
+
+    // 8b. Public supermarket catalog. This is additive and optional: no
+    // catalog response can remove seed, imported, or personal food records.
+    const { data: dbPublicFoods, error: publicFoodsError } = publicFoodsResult;
+    if (publicFoodsError) {
+      console.warn(`[Optional public food catalog skipped]: ${publicFoodsError.message}`);
+    } else if (dbPublicFoods) {
+      const foodMap = new Map(nextData.foods.map((food) => [food.id, food]));
+      for (const row of dbPublicFoods) {
+        const publicFood = foodItemFromPublicCatalogRow(row as Record<string, unknown>);
+        if (publicFood) foodMap.set(publicFood.id, publicFood);
       }
       nextData.foods = Array.from(foodMap.values());
     }

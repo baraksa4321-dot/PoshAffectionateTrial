@@ -174,6 +174,55 @@ function FoodDetail() {
         <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{source.detail}</p>
       </div>
 
+      {draft.catalog ? (
+        <div className="surface-card mt-3 space-y-2 p-4 text-start">
+          <p className="text-[10.5px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+            פרטי מוצר מדף
+          </p>
+          <div className="grid grid-cols-2 gap-2 text-[12px]">
+            <p>
+              <span className="text-muted-foreground">מותג: </span>
+              <span className="font-semibold text-ink">{draft.brand || "לא צוין"}</span>
+            </p>
+            <p>
+              <span className="text-muted-foreground">סוג: </span>
+              <span className="font-semibold text-ink">
+                {{
+                  powder: "אבקה",
+                  bar: "חטיף",
+                  drink: "משקה",
+                  pudding: "מעדן",
+                  yogurt: "יוגורט",
+                  other: "אחר",
+                }[draft.catalog.productType] ?? "אחר"}
+              </span>
+            </p>
+            <p>
+              <span className="text-muted-foreground">אריזה: </span>
+              <span className="font-semibold text-ink">
+                {draft.catalog.packageSize || draft.servingSize}
+              </span>
+            </p>
+            <p>
+              <span className="text-muted-foreground">מזהה: </span>
+              <span className="font-mono text-[11px] text-ink">
+                {draft.catalog.barcode || draft.catalog.sourceProductId}
+              </span>
+            </p>
+          </div>
+          {draft.catalog.sourceUrl ? (
+            <a
+              href={draft.catalog.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex text-[11px] font-semibold text-primary underline-offset-2 hover:underline"
+            >
+              צפייה במקור הנתונים
+            </a>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="mt-4 space-y-3 text-start">
         <div className="surface-card p-4">
           <label className={labelCls}>שם המאכל</label>
@@ -182,6 +231,16 @@ function FoodDetail() {
             value={draft.name}
             onChange={(e) => set({ name: e.target.value })}
             placeholder="שם המאכל..."
+          />
+        </div>
+
+        <div className="surface-card p-4">
+          <label className={labelCls}>מותג (אופציונלי)</label>
+          <input
+            className={field}
+            value={draft.brand ?? ""}
+            onChange={(e) => set({ brand: e.target.value })}
+            placeholder="למשל: תנובה GO, דנונה PRO..."
           />
         </div>
 

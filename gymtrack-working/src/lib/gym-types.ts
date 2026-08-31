@@ -210,6 +210,7 @@ export type FoodItem = {
   approvalStatus?: "pending" | "approved" | "rejected";
   approvedBy?: string;
   approvedAt?: string;
+  catalog?: FoodCatalogMetadata;
   /** Audit trail for nutrition values; empty means the legacy value was not re-verified. */
   nutritionReview?: {
     status: "unreviewed" | "reviewed";
@@ -275,6 +276,26 @@ export type SavedRecipe = {
   id: string;
   name: string;
   foods: MealFood[];
+};
+
+export type FoodCatalogProductType = "powder" | "bar" | "drink" | "pudding" | "yogurt" | "other";
+export type FoodCatalogSource = "curated-israel" | "open-food-facts";
+export type FoodCatalogVerification =
+  | "curated-unverified"
+  | "manufacturer-verified"
+  | "external-unverified";
+
+export type FoodCatalogMetadata = {
+  barcode?: string;
+  source: FoodCatalogSource;
+  sourceProductId: string;
+  sourceUrl?: string;
+  productType: FoodCatalogProductType;
+  market: "IL";
+  packageSize?: string;
+  syncedAt?: string;
+  sourceUpdatedAt?: string;
+  verificationStatus: FoodCatalogVerification;
 };
 
 export type BodyWeightLog = {

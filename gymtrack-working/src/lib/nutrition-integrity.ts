@@ -47,6 +47,22 @@ export function nutritionSourceFor(
     };
   }
 
+  if (food.id.startsWith("f-protein-il-")) {
+    return {
+      label: "קטלוג ישראלי — נדרש אימות תווית",
+      detail: "הערך נשמר כ־seed לשימוש offline; בדקי את תווית המוצר לפני שימוש מדויק.",
+      verified: false,
+    };
+  }
+
+  if (food.id.startsWith("f-protein-")) {
+    return {
+      label: "מקור חיצוני — טרם אומת",
+      detail: "המוצר הגיע ממקור ברקודים חיצוני. יש לבדוק את תווית היצרן לפני שימוש מדויק.",
+      verified: false,
+    };
+  }
+
   return {
     label: "טרם אומת מול מקור חיצוני",
     detail: "הערך הקיים נשמר ללא שינוי עד שתושלם בדיקה מול מקור אמין.",

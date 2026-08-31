@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Apple, ArrowRight, Heart, Plus, Search } from "lucide-react";
+import { Apple, ArrowRight, Heart, Plus, Search, SlidersHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState, SectionHeader } from "@/components/ui-app/primitives";
@@ -20,6 +20,8 @@ function FoodLibrary() {
   const showCalories = userProfile?.showCalories !== false;
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("הכל");
+  const [productType, setProductType] = useState("הכל");
+  const [brand, setBrand] = useState("הכל");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const categories = useMemo(
     () =>
@@ -33,12 +35,40 @@ function FoodLibrary() {
     [foods],
   );
   const favoriteIds = useMemo(() => new Set(favoriteFoods), [favoriteFoods]);
+  const productTypes = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          foods
+            .map((food) => food.catalog?.productType)
+            .filter((type): type is NonNullable<typeof type> => Boolean(type)),
+        ),
+      ),
+    [foods],
+  );
+  const brands = useMemo(
+    () =>
+      Array.from(
+        new Set(foods.map((food) => food.brand).filter((value): value is string => Boolean(value))),
+      ).sort((a, b) => a.localeCompare(b, "he")),
+    [foods],
+  );
+  const productTypeLabels: Record<string, string> = {
+    powder: "אבקות",
+    bar: "חטיפים",
+    drink: "משקאות",
+    pudding: "מעדנים",
+    yogurt: "יוגורטים",
+    other: "אחר",
+  };
 
   const filtered = useMemo(() => {
     return searchFoods(foods, query)
       .filter(
         (f) =>
           (category === "הכל" || f.category === category) &&
+          (productType === "הכל" || f.catalog?.productType === productType) &&
+          (brand === "הכל" || f.brand === brand) &&
           (!favoritesOnly || favoriteIds.has(f.id)),
       )
       .sort((a, b) => {
@@ -46,7 +76,7 @@ function FoodLibrary() {
           Number(b.id.startsWith("f-common-")) - Number(a.id.startsWith("f-common-"));
         return commonOrder || a.name.localeCompare(b.name, "he");
       });
-  }, [category, favoriteIds, favoritesOnly, foods, query]);
+  }, [brand, category, favoriteIds, favoritesOnly, foods, productType, query]);
 
   return (
     <AppShell
@@ -124,6 +154,43 @@ function FoodLibrary() {
         ))}
       </div>
 
+      {productTypes.length > 0 || brands.length > 0 ? (
+        <details className="mt-3 rounded-2xl bg-secondary/60 p-3">
+          <summary className="flex cursor-pointer list-none items-center gap-2 text-[12px] font-semibold text-ink">
+            <SlidersHorizontal className="h-4 w-4 text-primary" />
+            סינון לפי סוג ומותג
+          </summary>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <select
+              value={productType}
+              onChange={(event) => setProductType(event.target.value)}
+              className="h-10 rounded-xl border-0 bg-background px-3 text-[12px] outline-none"
+              aria-label="סינון לפי סוג מוצר"
+            >
+              <option value="הכל">כל הסוגים</option>
+              {productTypes.map((type) => (
+                <option key={type} value={type}>
+                  {productTypeLabels[type] ?? type}
+                </option>
+              ))}
+            </select>
+            <select
+              value={brand}
+              onChange={(event) => setBrand(event.target.value)}
+              className="h-10 rounded-xl border-0 bg-background px-3 text-[12px] outline-none"
+              aria-label="סינון לפי מותג"
+            >
+              <option value="הכל">כל המותגים</option>
+              {brands.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </div>
+        </details>
+      ) : null}
+
       <SectionHeader
         className="mt-5"
         title={`${filtered.length} תוצאות`}
@@ -149,6 +216,7 @@ function FoodLibrary() {
                       {food.name}
                     </p>
                     <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+                      {food.brand ? `${food.brand} · ` : ""}
                       {food.servingSize}
                       {showCalories ? ` · ${food.calories} קלוריות` : ""} · חלבון {food.protein}g ·
                       פחמימות {food.carbs}g · שומן {food.fat}g · סיבים {food.fiber ?? 0}g
@@ -160,6 +228,11 @@ function FoodLibrary() {
                     >
                       {source.label}
                     </p>
+                    {food.catalog?.barcode ? (
+                      <p className="mt-0.5 text-[10px] text-muted-foreground">
+                        ברקוד: {food.catalog.barcode}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </Link>

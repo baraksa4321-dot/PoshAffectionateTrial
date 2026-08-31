@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { assertValidFoodNutrition, assertValidMealFood } from "./nutrition-integrity";
+import { ISRAELI_PROTEIN_PRODUCTS } from "./protein-product-catalog";
 import { supabase } from "./supabase";
 import { pullSupabaseData, syncLocalToSupabase, type SyncStatus } from "./supabase-sync";
 import { normalizeFixedPlannedMenu } from "./nutrition-planning";
@@ -594,7 +595,7 @@ const seed = (): GymData => {
     workouts: [],
     programs: [],
     history: [],
-    foods: [],
+    foods: ISRAELI_PROTEIN_PRODUCTS,
     nutritionDays: [],
     nutritionTargets: {},
     plannedMeals: [],
@@ -624,7 +625,7 @@ let syncRetryTimer: ReturnType<typeof setTimeout> | null = null;
 let refreshInFlight: Promise<void> | null = null;
 let hydrationInFlight: { userId: string; promise: Promise<void> } | null = null;
 let lastCloudRefreshAt = 0;
-let everydayFoodDatabase: FoodItem[] = [];
+let everydayFoodDatabase: FoodItem[] = ISRAELI_PROTEIN_PRODUCTS;
 let additionalExercises: Exercise[] = [];
 let seedExerciseNameMigrations: Record<string, { from: string; to: string }> = {};
 let referenceLibrariesPromise: Promise<void> | null = null;
@@ -863,7 +864,10 @@ function mergeSeedFoods(existing: FoodItem[]): FoodItem[] {
   const byId = new Map(existing.map((f) => [f.id, f]));
   const byName = new Map(existing.map((f) => [f.name.toLocaleLowerCase(), f]));
   for (const [id, food] of byId) {
-    if ((id.startsWith("f-israel-") || id.startsWith("f-usda-")) && !everydayIds.has(id)) {
+    const isLocalCatalogSeed =
+      id.startsWith("f-israel-") || id.startsWith("f-usda-") || id.startsWith("f-protein-il-");
+    const isImportedCatalogProduct = food.catalog?.source === "open-food-facts";
+    if (isLocalCatalogSeed && !everydayIds.has(id) && !isImportedCatalogProduct) {
       byId.delete(id);
       byName.delete(food.name.toLocaleLowerCase());
     }
@@ -2321,6 +2325,9 @@ export function searchFoods(foods: FoodItem[], query: string) {
     const name = normalizeSearch(food.name);
     const category = normalizeSearch(food.category ?? "");
     const english = normalizeSearch(food.englishName ?? "");
+    const brand = normalizeSearch(food.brand ?? "");
+    const barcode = normalizeSearch(food.catalog?.barcode ?? "");
+    const sourceId = normalizeSearch(food.catalog?.sourceProductId ?? "");
     const terms = (food.searchTerms ?? []).map(normalizeSearch);
 
     return tokens.every(
@@ -2328,6 +2335,9 @@ export function searchFoods(foods: FoodItem[], query: string) {
         name.includes(token) ||
         category.includes(token) ||
         english.includes(token) ||
+        brand.includes(token) ||
+        barcode.includes(token) ||
+        sourceId.includes(token) ||
         terms.some((t) => t.includes(token)),
     );
   });

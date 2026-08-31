@@ -21,3 +21,4 @@
 - [Playwright WebKit runtime](playwright-webkit-nix.md) — The bundled Linux WebKit may require Debian ABI libraries unavailable in stable Nix; keep the release gate explicit rather than silently skipping it.
 - [Supabase RLS policy additivity](supabase-rls-policy-additivity.md) — Live legacy policies can widen writes; inspect and remove old variants when tightening RLS.
 - [Loading cycle persistence](loading-cycle-persistence.md) — Persist only the per-opening index; keep in-loading animation rotation transient and guard StrictMode from double claims.
+- [PostgREST catalog upserts](postgrest-catalog-upserts.md) — `on_conflict` needs a full unique index on source and source ID; partial indexes are not inferred by the REST upsert.

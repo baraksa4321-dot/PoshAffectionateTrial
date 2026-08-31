@@ -1,5 +1,6 @@
 import type { FoodItem } from "./gym-types";
 import { COMMON_FOODS } from "./common-foods";
+import { ISRAELI_PROTEIN_PRODUCTS } from "./protein-product-catalog";
 import { USDA_FOOD_EXPANSION } from "./usda-food-expansion";
 
 /** Catalog of 488 realistic Israeli supermarket food entries. */
@@ -5931,13 +5932,22 @@ const existingEverydayNames = new Set(
 const existingEverydayAndCommonNames = new Set([
   ...existingEverydayNames,
   ...COMMON_FOODS.map((f) => f.name.trim().toLocaleLowerCase()),
+  ...ISRAELI_PROTEIN_PRODUCTS.map((f) => f.name.trim().toLocaleLowerCase()),
 ]);
 
 /** Add a short, friendly layer on top of the detailed catalog for meal building. */
 export const EVERYDAY_FOOD_DATABASE: FoodItem[] = [
   ...FILTERED_EVERYDAY_FOODS,
-  ...COMMON_FOODS.filter(
+  ...ISRAELI_PROTEIN_PRODUCTS.filter(
     (food) => !existingEverydayNames.has(food.name.trim().toLocaleLowerCase()),
+  ),
+  ...COMMON_FOODS.filter(
+    (food) =>
+      !existingEverydayNames.has(food.name.trim().toLocaleLowerCase()) &&
+      !ISRAELI_PROTEIN_PRODUCTS.some(
+        (proteinFood) =>
+          proteinFood.name.trim().toLocaleLowerCase() === food.name.trim().toLocaleLowerCase(),
+      ),
   ),
   ...USDA_FOOD_EXPANSION.filter(
     (food) => !existingEverydayAndCommonNames.has(food.name.trim().toLocaleLowerCase()),
