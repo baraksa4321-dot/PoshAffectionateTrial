@@ -38,10 +38,7 @@ export const LOADING_MESSAGES = [
   "שנייה, אנחנו נותנים לפיצה את הכבוד שמגיע לה",
 ] as const;
 
-export function loadingMessageForGender(
-  index: number,
-  gender: "female" | "male" | undefined,
-) {
+export function loadingMessageForGender(index: number, gender: "female" | "male" | undefined) {
   const message = LOADING_MESSAGES[index % LOADING_MESSAGES.length] ?? LOADING_MESSAGES[0];
   if (gender === "female") return message;
 

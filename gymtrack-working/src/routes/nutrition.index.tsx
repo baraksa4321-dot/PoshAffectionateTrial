@@ -199,8 +199,7 @@ function NutritionLog() {
   const gym = useGym();
   const gender = gym.userProfile?.gender;
   const showCalories = gym.userProfile?.showCalories !== false;
-  const canManageTargets =
-    gym.userProfile?.role === "coach" || gym.userProfile?.role === "owner";
+  const canManageTargets = gym.userProfile?.role === "coach" || gym.userProfile?.role === "owner";
   const [date, setDate] = useState(todayKey());
   const [pickerMealId, setPickerMealId] = useState<string | null>(null);
   const [pickerQuery, setPickerQuery] = useState("");
@@ -740,7 +739,9 @@ function NutritionLog() {
                     </div>
                     <p className="mt-1 text-[10px] text-muted-foreground">
                       {recipe.foods.length} רכיבים
-                      {showCalories ? ` · ${Math.round(foodTotals(recipe.foods).calories)} קל׳` : ""}
+                      {showCalories
+                        ? ` · ${Math.round(foodTotals(recipe.foods).calories)} קל׳`
+                        : ""}
                     </p>
                   </div>
                 ))}
@@ -1375,30 +1376,30 @@ function NutritionLog() {
                         )
                           .filter(([key]) => showCalories || key !== "calories")
                           .map(([key, label, step]) => (
-                          <label key={key} className="text-muted-foreground">
-                            {label}
-                            <input
-                              type="number"
-                              min={key === "quantity" ? 0.1 : 0}
-                              step={step}
-                              value={food[key]}
-                              onChange={(event) =>
-                                setScannedMeal((current) => {
-                                  if (!current) return current;
-                                  const foods = [...current.foods];
-                                  const currentFood = foods[index];
-                                  if (!currentFood) return current;
-                                  foods[index] = {
-                                    ...currentFood,
-                                    [key]: Number(event.target.value),
-                                  };
-                                  return { ...current, foods };
-                                })
-                              }
-                              className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-ink outline-none focus:border-primary"
-                            />
-                          </label>
-                        ))}
+                            <label key={key} className="text-muted-foreground">
+                              {label}
+                              <input
+                                type="number"
+                                min={key === "quantity" ? 0.1 : 0}
+                                step={step}
+                                value={food[key]}
+                                onChange={(event) =>
+                                  setScannedMeal((current) => {
+                                    if (!current) return current;
+                                    const foods = [...current.foods];
+                                    const currentFood = foods[index];
+                                    if (!currentFood) return current;
+                                    foods[index] = {
+                                      ...currentFood,
+                                      [key]: Number(event.target.value),
+                                    };
+                                    return { ...current, foods };
+                                  })
+                                }
+                                className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-ink outline-none focus:border-primary"
+                              />
+                            </label>
+                          ))}
                       </div>
                     </div>
                   ))}
@@ -1669,8 +1670,7 @@ function NutritionLog() {
                         {showCalories
                           ? `סה״כ: ${Math.round(selectedFood.calories * pickerQuantity)} קל׳ · `
                           : "סה״כ: "}
-                        חלבון{" "}
-                        {Math.round(selectedFood.protein * pickerQuantity)}ג׳ · פחמימות{" "}
+                        חלבון {Math.round(selectedFood.protein * pickerQuantity)}ג׳ · פחמימות{" "}
                         {Math.round(selectedFood.carbs * pickerQuantity)}ג׳ · שומן{" "}
                         {Math.round(selectedFood.fat * pickerQuantity)}ג׳ · סיבים{" "}
                         {Math.round((selectedFood.fiber ?? 0) * pickerQuantity)}ג׳
@@ -1709,8 +1709,8 @@ function NutritionLog() {
                       <p className="truncate text-[14px] font-semibold text-ink">{food.name}</p>
                       <p className="text-[11.5px] text-muted-foreground">
                         {food.servingSize}
-                        {showCalories ? ` · ${food.calories} קלוריות` : ""} · חלבון {food.protein}g · סיבים{" "}
-                        {food.fiber || 0}g
+                        {showCalories ? ` · ${food.calories} קלוריות` : ""} · חלבון {food.protein}g
+                        · סיבים {food.fiber || 0}g
                       </p>
                     </div>
                     <ArrowLeft className="h-4 w-4 shrink-0 text-muted-foreground/60" />
@@ -1750,7 +1750,9 @@ function NutritionLog() {
                     <>
                       תקציב ההחלפה:
                       <span className="ms-1 font-bold text-ink">
-                        {Math.round(substituteFor.food.calories * (substituteFor.food.quantity || 1))}{" "}
+                        {Math.round(
+                          substituteFor.food.calories * (substituteFor.food.quantity || 1),
+                        )}{" "}
                         קלוריות
                       </span>
                     </>

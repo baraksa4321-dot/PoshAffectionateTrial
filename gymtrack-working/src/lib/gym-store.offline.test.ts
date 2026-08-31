@@ -73,14 +73,9 @@ mock.module("./supabase", () => ({
     channel: (_name: string) => {
       const handlers: RealtimeHandler[] = [];
       const channel = {
-        on: (
-          _event: string,
-          config: { table?: string; filter?: string },
-          callback: () => void,
-        ) => {
+        on: (_event: string, config: { table?: string; filter?: string }, callback: () => void) => {
           const match =
-            config.filter?.match(/^id=eq\.(.+)$/) ??
-            config.filter?.match(/^user_id=eq\.(.+)$/);
+            config.filter?.match(/^id=eq\.(.+)$/) ?? config.filter?.match(/^user_id=eq\.(.+)$/);
           if (config.table) {
             const handler = { userId: match?.[1] ?? "*", table: config.table, callback };
             handlers.push(handler);
@@ -395,7 +390,9 @@ describe("offline store lifecycle", () => {
     expect(pullCount).toBe(1);
 
     pendingSync.resolve({ success: true });
-    await eventually(() => store.getGymStoreSnapshot().workouts[0]?.name === "Coach's latest workout");
+    await eventually(
+      () => store.getGymStoreSnapshot().workouts[0]?.name === "Coach's latest workout",
+    );
     expect(store.getGymStoreSnapshot().preExitChecklist[0]?.label).toBe("Keep this local edit");
   });
 

@@ -164,7 +164,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
-             {genderText(userProfile?.gender, "נסי שוב", "נסה שוב")}
+            {genderText(userProfile?.gender, "נסי שוב", "נסה שוב")}
           </button>
           <a
             href="/"
@@ -1066,8 +1066,9 @@ function ScrollToTop() {
 
   useEffect(() => {
     const resetScroll = () => {
-      const appScrollContainer =
-        document.querySelector<HTMLElement>('[data-app-scroll-container="true"]');
+      const appScrollContainer = document.querySelector<HTMLElement>(
+        '[data-app-scroll-container="true"]',
+      );
       appScrollContainer?.scrollTo({ top: 0, behavior: "auto" });
       window.scrollTo(0, 0);
       // Keep the document fallback for loading and non-AppShell routes.
@@ -1145,9 +1146,10 @@ function RootContent() {
     setLoadingCycle((current) => {
       try {
         const previousCycle = Number(window.localStorage.getItem(storageKey));
-        const nextCycle = Number.isInteger(previousCycle) && previousCycle >= 0
-          ? previousCycle + 1
-          : Math.floor(Math.random() * 1_000_000);
+        const nextCycle =
+          Number.isInteger(previousCycle) && previousCycle >= 0
+            ? previousCycle + 1
+            : Math.floor(Math.random() * 1_000_000);
         window.localStorage.setItem(storageKey, String(nextCycle));
         return nextCycle;
       } catch {
@@ -1209,17 +1211,14 @@ function RootContent() {
     // idle turn. This preserves the offline navigation guarantee without
     // competing with auth, hydration, or the first paint.
     const routeModules = import.meta.glob("./**/*.tsx", { eager: false });
-    const modules = Object.entries(routeModules).filter(
-      ([path]) => !path.endsWith("/__root.tsx"),
-    );
+    const modules = Object.entries(routeModules).filter(([path]) => !path.endsWith("/__root.tsx"));
     const requestIdle = (
       window as typeof window & {
         requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
       }
     ).requestIdleCallback;
-    const cancelIdle = (
-      window as typeof window & { cancelIdleCallback?: (handle: number) => void }
-    ).cancelIdleCallback;
+    const cancelIdle = (window as typeof window & { cancelIdleCallback?: (handle: number) => void })
+      .cancelIdleCallback;
     let nextModuleIndex = 0;
     let stopped = false;
     let idleHandle: number | null = null;
@@ -1233,9 +1232,11 @@ function RootContent() {
         if (stopped || !navigator.onLine) return;
         const entry = modules[nextModuleIndex++];
         if (!entry) return;
-        void entry[1]().catch(() => undefined).finally(() => {
-          if (nextModuleIndex < modules.length) scheduleNextModule();
-        });
+        void entry[1]()
+          .catch(() => undefined)
+          .finally(() => {
+            if (nextModuleIndex < modules.length) scheduleNextModule();
+          });
       };
 
       if (requestIdle) {
@@ -1302,7 +1303,7 @@ function RootContent() {
                 onClick={retryProfileHydration}
                 className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
               >
-                 {genderText(userProfile?.gender, "נסי שוב", "נסה שוב")}
+                {genderText(userProfile?.gender, "נסי שוב", "נסה שוב")}
               </button>
               <button
                 type="button"
@@ -1315,7 +1316,10 @@ function RootContent() {
           </div>
         </div>
       ) : isAccountLocked ? (
-        <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4" dir="rtl">
+        <div
+          className="flex min-h-[100dvh] items-center justify-center bg-background px-4"
+          dir="rtl"
+        >
           <div className="w-full max-w-md rounded-3xl border border-primary/20 bg-white px-6 py-7 text-center shadow-sm">
             <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary/10 text-primary">
               <LockKeyhole className="h-7 w-7" aria-hidden="true" />

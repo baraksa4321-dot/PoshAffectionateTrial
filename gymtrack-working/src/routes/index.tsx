@@ -366,9 +366,7 @@ function Dashboard() {
     const key = `myroutine-dismissed-broadcasts:${authUser.id}`;
     try {
       const stored = JSON.parse(window.localStorage.getItem(key) || "[]");
-      setDismissedMessageIds((current) =>
-        Array.from(new Set([...stored, ...current])),
-      );
+      setDismissedMessageIds((current) => Array.from(new Set([...stored, ...current])));
     } catch {
       setDismissedMessageIds([]);
     }
@@ -897,17 +895,17 @@ function Dashboard() {
             ) : (
               <div className="p-4">
                 <p className="text-[13px] font-bold text-ink">עדיין לא תיעדת אירובי</p>
-                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                    {genderText(
-                      gender,
-                      showCalories
-                        ? "הוסיפי הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך ואומדן קלוריות."
-                        : "הוסיפי הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך הפעילות.",
-                      showCalories
-                        ? "הוסף הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך ואומדן קלוריות."
-                        : "הוסף הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך הפעילות.",
-                    )}
-                  </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                  {genderText(
+                    gender,
+                    showCalories
+                      ? "הוסיפי הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך ואומדן קלוריות."
+                      : "הוסיפי הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך הפעילות.",
+                    showCalories
+                      ? "הוסף הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך ואומדן קלוריות."
+                      : "הוסף הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך הפעילות.",
+                  )}
+                </p>
               </div>
             )}
           </div>

@@ -639,8 +639,11 @@ function mergeRemotePlanRefresh(localData: GymData, remoteData: GymData): GymDat
   // log, check-list item, or measurement must not prevent a coach's plan from
   // appearing in the still-open session.
   if (localData.userProfile?.role !== "client") return remoteData;
-  const { coachId: _localCoachId, approvalStatus: _localApprovalStatus, ...localProfile } =
-    localData.userProfile;
+  const {
+    coachId: _localCoachId,
+    approvalStatus: _localApprovalStatus,
+    ...localProfile
+  } = localData.userProfile;
   return {
     ...localData,
     programs: remoteData.programs,
@@ -738,9 +741,7 @@ function startPlanRealtime(userId: string, preserveReconnectBackoff = false) {
     if (status !== "CHANNEL_ERROR" && status !== "TIMED_OUT" && status !== "CLOSED") return;
     if (planRealtimeChannel !== channel || planRealtimeUserId !== userId) return;
 
-    console.warn(
-      `[Realtime ${status.toLowerCase()}]: scheduling an automatic resubscription`,
-    );
+    console.warn(`[Realtime ${status.toLowerCase()}]: scheduling an automatic resubscription`);
     planRealtimeChannel = null;
     planRealtimeUserId = null;
     void supabase.removeChannel(channel);
@@ -1409,7 +1410,8 @@ export function useCloudSyncStatus() {
 }
 
 export function retryProfileHydration() {
-  if (currentUser?.id) void startUserHydration(currentUser.id, loadCachedDataForUser(currentUser.id));
+  if (currentUser?.id)
+    void startUserHydration(currentUser.id, loadCachedDataForUser(currentUser.id));
 }
 
 export async function completeUserProfileName(

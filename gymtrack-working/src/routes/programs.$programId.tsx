@@ -307,7 +307,9 @@ function SortableDayCard({
             {day.items.length > 0
               ? ` · ${day.items
                   .slice(0, 3)
-                  .map((item) => exercises.find((exercise) => exercise.id === item.exerciseId)?.name)
+                  .map(
+                    (item) => exercises.find((exercise) => exercise.id === item.exerciseId)?.name,
+                  )
                   .filter(Boolean)
                   .join(" · ")}`
               : ""}

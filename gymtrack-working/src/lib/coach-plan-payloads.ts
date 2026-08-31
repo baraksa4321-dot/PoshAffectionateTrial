@@ -1,10 +1,6 @@
 import type { Meal, WorkoutItem } from "./gym-types";
 
-export function clientProgramInsertPayload(
-  id: string,
-  userId: string,
-  name: string,
-) {
+export function clientProgramInsertPayload(id: string, userId: string, name: string) {
   return {
     id,
     user_id: userId,

@@ -846,8 +846,7 @@ html:not(.night-mode) .nav-shell {
   }
   100% {
     opacity: 0;
-    transform: translate3d(var(--confetti-x, 0px), 105vh, 0)
-      rotate(var(--confetti-rotate, 720deg))
+    transform: translate3d(var(--confetti-x, 0px), 105vh, 0) rotate(var(--confetti-rotate, 720deg))
       scale(var(--confetti-scale, 1));
   }
 }
@@ -1112,8 +1111,16 @@ html:not(.night-mode) .nav-shell {
 
 .auth-editorial-shell {
   background:
-    radial-gradient(circle at 16% 12%, color-mix(in srgb, var(--rose-soft) 72%, transparent), transparent 34%),
-    linear-gradient(145deg, var(--background), color-mix(in srgb, var(--surface-2) 52%, var(--background)));
+    radial-gradient(
+      circle at 16% 12%,
+      color-mix(in srgb, var(--rose-soft) 72%, transparent),
+      transparent 34%
+    ),
+    linear-gradient(
+      145deg,
+      var(--background),
+      color-mix(in srgb, var(--surface-2) 52%, var(--background))
+    );
 }
 
 .auth-editorial-shell .app-topbar {

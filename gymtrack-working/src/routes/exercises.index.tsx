@@ -44,7 +44,7 @@ function Library() {
     return (
       <AppShell title="ספריית תרגילים" kicker="בודקת הרשאות">
         <div className="surface-card mt-4 rounded-3xl p-6 text-center text-sm text-muted-foreground">
-           {genderText(gender, "טוענת את תפקיד החשבון המאומת...", "טוען את תפקיד החשבון המאומת...")}
+          {genderText(gender, "טוענת את תפקיד החשבון המאומת...", "טוען את תפקיד החשבון המאומת...")}
         </div>
       </AppShell>
     );

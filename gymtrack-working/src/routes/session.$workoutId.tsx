@@ -169,22 +169,22 @@ function Session() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length === workout.items.length) {
-            return parsed.map((entry, index) => {
-              const item = workout.items[index];
-               const source = findExerciseForItem(item, [...exercises, ...BODYWEIGHT_EXERCISES]);
-              const savedName =
-                typeof entry?.exerciseName === "string" ? entry.exerciseName.trim() : "";
-              return {
-                ...entry,
-                exerciseName:
-                  source?.name ||
-                   (!isExercisePlaceholder(item?.exerciseName) && item?.exerciseName
-                    ? item.exerciseName
-                    : "") ||
-                   (!isExercisePlaceholder(savedName) ? savedName : "") ||
-                  "תרגיל",
-              };
-            });
+          return parsed.map((entry, index) => {
+            const item = workout.items[index];
+            const source = findExerciseForItem(item, [...exercises, ...BODYWEIGHT_EXERCISES]);
+            const savedName =
+              typeof entry?.exerciseName === "string" ? entry.exerciseName.trim() : "";
+            return {
+              ...entry,
+              exerciseName:
+                source?.name ||
+                (!isExercisePlaceholder(item?.exerciseName) && item?.exerciseName
+                  ? item.exerciseName
+                  : "") ||
+                (!isExercisePlaceholder(savedName) ? savedName : "") ||
+                "תרגיל",
+            };
+          });
         }
       }
     } catch {
@@ -289,9 +289,7 @@ function Session() {
       current.map((entry, index) => {
         const refreshed = initial[index];
         if (!refreshed) return entry;
-        const hasPlaceholder =
-          !entry.exerciseName ||
-          isExercisePlaceholder(entry.exerciseName);
+        const hasPlaceholder = !entry.exerciseName || isExercisePlaceholder(entry.exerciseName);
         return hasPlaceholder ? { ...entry, exerciseName: refreshed.exerciseName } : entry;
       }),
     );
@@ -743,21 +741,23 @@ function Session() {
                 <span
                   key={index}
                   className="confetti-piece"
-                  style={{
-                    left: `${(index * 47 + (index % 7) * 3) % 101}%`,
-                    animationDelay: `${(index % 22) * 35}ms`,
-                    animationDuration: `${2200 + (index % 7) * 180}ms`,
-                    backgroundColor: [
-                      "var(--primary)",
-                      "var(--rose)",
-                      "var(--accent)",
-                      "#111111",
-                      "#f59e0b",
-                    ][index % 5],
-                    "--confetti-x": `${((index * 29) % 180) - 90}px`,
-                    "--confetti-rotate": `${540 + ((index * 61) % 900)}deg`,
-                    "--confetti-scale": `${0.8 + (index % 4) * 0.15}`,
-                  } as React.CSSProperties}
+                  style={
+                    {
+                      left: `${(index * 47 + (index % 7) * 3) % 101}%`,
+                      animationDelay: `${(index % 22) * 35}ms`,
+                      animationDuration: `${2200 + (index % 7) * 180}ms`,
+                      backgroundColor: [
+                        "var(--primary)",
+                        "var(--rose)",
+                        "var(--accent)",
+                        "#111111",
+                        "#f59e0b",
+                      ][index % 5],
+                      "--confetti-x": `${((index * 29) % 180) - 90}px`,
+                      "--confetti-rotate": `${540 + ((index * 61) % 900)}deg`,
+                      "--confetti-scale": `${0.8 + (index % 4) * 0.15}`,
+                    } as React.CSSProperties
+                  }
                 />
               ))}
             </div>,
@@ -932,7 +932,7 @@ function Session() {
                           <Stepper
                             label="משקל בפועל"
                             value={s.weight}
-                             step={0.5}
+                            step={0.5}
                             suffix="ק״ג"
                             onChange={(v) => patchSet(ei, si, { weight: v })}
                           />
@@ -1049,9 +1049,7 @@ function Session() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="font-bold text-base text-ink">
-                {exerciseDisplayName(cardExercise)}
-              </h3>
+              <h3 className="font-bold text-base text-ink">{exerciseDisplayName(cardExercise)}</h3>
               <button
                 onClick={() => setCardExercise(null)}
                 className="text-muted-foreground font-bold text-sm cursor-pointer"
@@ -1067,7 +1065,10 @@ function Session() {
                 {(cardExercise.muscleGroups ?? [])
                   .filter((group) => group !== cardExercise.muscleGroup)
                   .map((group) => (
-                    <span key={group} className="rounded-full bg-secondary px-2.5 py-1 text-muted-foreground">
+                    <span
+                      key={group}
+                      className="rounded-full bg-secondary px-2.5 py-1 text-muted-foreground"
+                    >
                       {group}
                     </span>
                   ))}
@@ -1083,13 +1084,17 @@ function Session() {
               {cardExercise.description ? (
                 <div className="rounded-xl bg-secondary/50 p-3 space-y-1">
                   <p className="font-bold text-ink">על התרגיל</p>
-                  <p className="text-muted-foreground leading-relaxed">{cardExercise.description}</p>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {cardExercise.description}
+                  </p>
                 </div>
               ) : null}
               {cardExercise.instructions ? (
                 <div className="rounded-xl bg-secondary/50 p-3 space-y-1">
                   <p className="font-bold text-ink">הוראות ביצוע</p>
-                  <p className="text-muted-foreground leading-relaxed">{cardExercise.instructions}</p>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {cardExercise.instructions}
+                  </p>
                 </div>
               ) : null}
               {cardExercise.tips ? (
@@ -1103,7 +1108,9 @@ function Session() {
                   gender === "female" ? cardExercise.videoFemaleUrl : cardExercise.videoMaleUrl,
                   cardExercise.videoUrl,
                   ...(cardExercise.videoUrls ?? []),
-                ].filter((url, index, all): url is string => Boolean(url) && all.indexOf(url) === index);
+                ].filter(
+                  (url, index, all): url is string => Boolean(url) && all.indexOf(url) === index,
+                );
                 return videos.length ? (
                   <div className="space-y-2">
                     <p className="font-bold text-ink">סרטון הדגמה</p>

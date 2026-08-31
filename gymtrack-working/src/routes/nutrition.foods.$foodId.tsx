@@ -59,10 +59,7 @@ function FoodDetail() {
 
   const replacements = useMemo(() => {
     if (!existing) return [];
-    return findFoodReplacements(foods, { ...existing, quantity: 1 }, swapQuery).slice(
-      0,
-      10,
-    );
+    return findFoodReplacements(foods, { ...existing, quantity: 1 }, swapQuery).slice(0, 10);
   }, [foods, existing, swapQuery]);
 
   if (!isNew && !existing && foodId !== "custom") {

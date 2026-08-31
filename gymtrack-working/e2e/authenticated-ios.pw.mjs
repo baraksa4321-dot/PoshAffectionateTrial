@@ -300,9 +300,7 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await workspace.evaluate((element) => {
     element.scrollTop = element.scrollHeight;
   });
-  await expect
-    .poll(() => workspace.evaluate((element) => element.scrollTop > 0))
-    .toBe(true);
+  await expect.poll(() => workspace.evaluate((element) => element.scrollTop > 0)).toBe(true);
   await expect
     .poll(() =>
       workspace.evaluate((element) => {
@@ -359,14 +357,11 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await expect(detailsSheet).toBeVisible();
   await detailsSheet.getByRole("button", { name: "סגור" }).click();
   await expect(detailsSheet).toBeHidden();
-  await expect
-    .poll(() => page.evaluate(() => document.documentElement.style.overflow))
-    .toBe("");
+  await expect.poll(() => page.evaluate(() => document.documentElement.style.overflow)).toBe("");
 
   await page.locator("article").last().scrollIntoViewIfNeeded();
   await expect(page.locator("article").last()).toBeInViewport();
 });
-
 
 test("active workout values survive leaving and reopening the session", async ({ page }) => {
   await installFixture(page);

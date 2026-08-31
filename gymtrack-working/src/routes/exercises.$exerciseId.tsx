@@ -286,10 +286,11 @@ function ExerciseDetail() {
     new Set([...EQUIPMENT, ...exercises.map((exercise) => exercise.equipment)].filter(Boolean)),
   );
   const categoryOptions = Array.from(
-    new Set([
-      ...EXERCISE_CATEGORIES,
-      ...exercises.map((exercise) => exercise.category),
-    ].filter((value): value is string => Boolean(value))),
+    new Set(
+      [...EXERCISE_CATEGORIES, ...exercises.map((exercise) => exercise.category)].filter(
+        (value): value is string => Boolean(value),
+      ),
+    ),
   );
 
   const toggleAlternative = (exerciseId: string) => {
@@ -300,10 +301,7 @@ function ExerciseDetail() {
     });
   };
 
-  const addGenderVideo = (
-    file: File | undefined,
-    field: "videoMaleUrl" | "videoFemaleUrl",
-  ) => {
+  const addGenderVideo = (file: File | undefined, field: "videoMaleUrl" | "videoFemaleUrl") => {
     if (!file || !file.type.startsWith("video/")) return;
     setVideoUploadError("");
     new Promise<string>((resolve, reject) => {
@@ -504,7 +502,10 @@ function ExerciseDetail() {
               ).map(([videoField, title]) => {
                 const source = draft[videoField];
                 return (
-                  <div key={videoField} className="rounded-2xl border border-border/60 bg-secondary/40 p-3">
+                  <div
+                    key={videoField}
+                    className="rounded-2xl border border-border/60 bg-secondary/40 p-3"
+                  >
                     <p className="mb-2 text-xs font-bold text-ink">{title}</p>
                     <input
                       type="file"
@@ -550,36 +551,39 @@ function ExerciseDetail() {
               <p className="mt-2 text-[11px] font-semibold text-destructive">{videoUploadError}</p>
             ) : null}
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {(draft.videoUrls?.length ? draft.videoUrls : draft.videoUrl ? [draft.videoUrl] : []).map(
-                (src, index) => (
-                  <div key={`${src.slice(0, 24)}-${index}`} className="relative">
-                    <video
-                      src={src}
-                      controls
-                      preload="metadata"
-                      className="h-36 w-full rounded-xl border border-border/40 bg-black object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        set({
-                          videoUrls: (draft.videoUrls?.length
-                            ? draft.videoUrls
-                            : draft.videoUrl
-                              ? [draft.videoUrl]
-                              : []
-                          ).filter((_, videoIndex) => videoIndex !== index),
-                          ...(index === 0 ? { videoUrl: "" } : {}),
-                        })
-                      }
-                      className="press absolute end-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-destructive text-destructive-foreground"
-                      aria-label={`הסר סרטון ${index + 1}`}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ),
-              )}
+              {(draft.videoUrls?.length
+                ? draft.videoUrls
+                : draft.videoUrl
+                  ? [draft.videoUrl]
+                  : []
+              ).map((src, index) => (
+                <div key={`${src.slice(0, 24)}-${index}`} className="relative">
+                  <video
+                    src={src}
+                    controls
+                    preload="metadata"
+                    className="h-36 w-full rounded-xl border border-border/40 bg-black object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      set({
+                        videoUrls: (draft.videoUrls?.length
+                          ? draft.videoUrls
+                          : draft.videoUrl
+                            ? [draft.videoUrl]
+                            : []
+                        ).filter((_, videoIndex) => videoIndex !== index),
+                        ...(index === 0 ? { videoUrl: "" } : {}),
+                      })
+                    }
+                    className="press absolute end-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-destructive text-destructive-foreground"
+                    aria-label={`הסר סרטון ${index + 1}`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -684,18 +688,20 @@ function ExerciseDetail() {
               <ArrowRight className="h-4 w-4" />
             </a>
           ) : null}
-          {ex.videoUrls?.filter((url) => url && url !== ex.videoUrl).map((url, index) => (
-            <a
-              key={`${url.slice(0, 24)}-${index}`}
-              href={url}
-              target="_blank"
-              rel="noreferrer"
-              className="press surface-card flex items-center justify-between gap-3 p-4 text-[14px] font-semibold text-primary"
-            >
-              צפי בסרטון הדגמה {index + 2}
-              <ArrowRight className="h-4 w-4" />
-            </a>
-          ))}
+          {ex.videoUrls
+            ?.filter((url) => url && url !== ex.videoUrl)
+            .map((url, index) => (
+              <a
+                key={`${url.slice(0, 24)}-${index}`}
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="press surface-card flex items-center justify-between gap-3 p-4 text-[14px] font-semibold text-primary"
+              >
+                צפי בסרטון הדגמה {index + 2}
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            ))}
 
           <div className="surface-card p-4">
             <p className={labelCls}>מאפיינים</p>

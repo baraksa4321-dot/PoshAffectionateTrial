@@ -64,9 +64,7 @@ function gramsPerBreadSlice(food: FoodItem) {
   const totalGrams = gramsFromServing(food.servingSize);
   const slices = food.servingSize.match(/(\d+(?:[.,]\d+)?)\s*(?:פרוסות?|slices?)/i)?.[1];
   const sliceCount = slices ? Number(slices.replace(",", ".")) : 1;
-  return totalGrams && Number.isFinite(sliceCount) && sliceCount > 0
-    ? totalGrams / sliceCount
-    : 30;
+  return totalGrams && Number.isFinite(sliceCount) && sliceCount > 0 ? totalGrams / sliceCount : 30;
 }
 
 function isCucumber(food: FoodItem) {
@@ -252,9 +250,7 @@ export function mealFoodFromPortion(
   };
 }
 
-export function mealFoodQuantityLabel(
-  food: Pick<MealFood, "name" | "quantity" | "servingSize">,
-) {
+export function mealFoodQuantityLabel(food: Pick<MealFood, "name" | "quantity" | "servingSize">) {
   const legacyUnit = food.servingSize.replace(/\s+למנה$/, "");
   const normalizedUnit = isBread(food)
     ? unitLabels.slice

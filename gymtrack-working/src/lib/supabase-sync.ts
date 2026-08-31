@@ -38,11 +38,7 @@ export type CoachClientData = {
 };
 
 export type RealtimeCleanup = () => void;
-export type RealtimeConnectionStatus =
-  | "connecting"
-  | "connected"
-  | "reconnecting"
-  | "disconnected";
+export type RealtimeConnectionStatus = "connecting" | "connected" | "reconnecting" | "disconnected";
 
 function isBuiltInFoodId(id: string) {
   return id.startsWith("f-israel-") || id.startsWith("f-usda-");
@@ -251,10 +247,7 @@ async function deleteRowsMissingFromLocal(
   idColumn = "id",
   ownerColumn = "user_id",
 ) {
-  const { data, error } = await supabase
-    .from(table)
-    .select(idColumn)
-    .eq(ownerColumn, userId);
+  const { data, error } = await supabase.from(table).select(idColumn).eq(ownerColumn, userId);
   if (error) throw new Error(`${label} read failed: ${error.message}`);
 
   const localIdSet = new Set(localIds);
@@ -264,11 +257,7 @@ async function deleteRowsMissingFromLocal(
   if (staleIds.length === 0) return;
 
   await requireSuccessfulWrite(
-    supabase
-      .from(table)
-      .delete()
-      .eq(ownerColumn, userId)
-      .in(idColumn, staleIds),
+    supabase.from(table).delete().eq(ownerColumn, userId).in(idColumn, staleIds),
     `${label} deletion`,
   );
 }
@@ -466,9 +455,7 @@ export async function syncLocalToSupabase(
       }));
       if (weighInPayload.length > 0) {
         await requireSuccessfulWrite(
-          supabase
-            .from("body_weight_logs")
-            .upsert(weighInPayload, { onConflict: "user_id,date" }),
+          supabase.from("body_weight_logs").upsert(weighInPayload, { onConflict: "user_id,date" }),
           "Body weight log sync",
         );
       }
@@ -476,7 +463,8 @@ export async function syncLocalToSupabase(
         .from("body_weight_logs")
         .select("date")
         .eq("user_id", userId);
-      if (weighInReadError) throw new Error(`Body weight log read failed: ${weighInReadError.message}`);
+      if (weighInReadError)
+        throw new Error(`Body weight log read failed: ${weighInReadError.message}`);
       const localWeightDates = new Set((localData.bodyWeightLogs ?? []).map((log) => log.date));
       const staleWeightDates = (remoteWeighIns ?? [])
         .map((row) => String(row.date).slice(0, 10))
@@ -656,7 +644,8 @@ export async function syncLocalToSupabase(
         .from("food_favorites")
         .select("food_id")
         .eq("user_id", userId);
-      if (favoritesReadError) throw new Error(`Favorites read failed: ${favoritesReadError.message}`);
+      if (favoritesReadError)
+        throw new Error(`Favorites read failed: ${favoritesReadError.message}`);
       const favoriteIds = new Set(localData.favoriteFoods ?? []);
       const staleFavoriteIds = (remoteFavorites ?? [])
         .map((row) => String(row.food_id))
@@ -710,8 +699,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         {
           id: userId,
           email: authUser.email,
-          full_name:
-            typeof metadata["full_name"] === "string" ? metadata["full_name"] : undefined,
+          full_name: typeof metadata["full_name"] === "string" ? metadata["full_name"] : undefined,
           gender:
             metadata["gender"] === "male" || metadata["gender"] === "female"
               ? metadata["gender"]
@@ -854,14 +842,8 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .select("*")
       .eq("user_id", userId)
       .order("date", { ascending: false });
-    const customFoodsPromise = supabase
-      .from("custom_foods")
-      .select("*")
-      .eq("user_id", userId);
-    const nutritionDaysPromise = supabase
-      .from("nutrition_days")
-      .select("*")
-      .eq("user_id", userId);
+    const customFoodsPromise = supabase.from("custom_foods").select("*").eq("user_id", userId);
+    const nutritionDaysPromise = supabase.from("nutrition_days").select("*").eq("user_id", userId);
     const recipesPromise = supabase
       .from("coach_recipes")
       .select("id, name, foods")
@@ -964,7 +946,9 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
 
     if (dbCustomExercises) {
       const customMap = new Map(
-        nextData.exercises.filter((exercise) => exercise.id.startsWith("ex-")).map((e) => [e.id, e]),
+        nextData.exercises
+          .filter((exercise) => exercise.id.startsWith("ex-"))
+          .map((e) => [e.id, e]),
       );
       for (const row of dbCustomExercises) {
         const exItem: Exercise = {
@@ -1203,9 +1187,21 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       supabase.from("profiles").select("*").eq("id", clientId).maybeSingle(),
       supabase.from("programs").select("*").eq("user_id", clientId),
       supabase.from("program_days").select("*").eq("user_id", clientId),
-      supabase.from("nutrition_days").select("*").eq("user_id", clientId).order("date", { ascending: false }),
-      supabase.from("body_measurements").select("*").eq("user_id", clientId).order("date", { ascending: false }),
-      supabase.from("workout_sessions").select("*").eq("user_id", clientId).order("date", { ascending: false }),
+      supabase
+        .from("nutrition_days")
+        .select("*")
+        .eq("user_id", clientId)
+        .order("date", { ascending: false }),
+      supabase
+        .from("body_measurements")
+        .select("*")
+        .eq("user_id", clientId)
+        .order("date", { ascending: false }),
+      supabase
+        .from("workout_sessions")
+        .select("*")
+        .eq("user_id", clientId)
+        .order("date", { ascending: false }),
       supabase.from("cardio_logs").select("*").eq("user_id", clientId),
     ]);
 

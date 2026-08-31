@@ -37,11 +37,11 @@ function Builder() {
     return (
       <AppShell title="אימון" kicker="בודקת הרשאות">
         <div className="surface-card mt-4 rounded-3xl p-6 text-center text-sm text-muted-foreground">
-           {genderText(
-             userProfile?.gender,
-             "טוענת את תפקיד החשבון המאומת...",
-             "טוען את תפקיד החשבון המאומת...",
-           )}
+          {genderText(
+            userProfile?.gender,
+            "טוענת את תפקיד החשבון המאומת...",
+            "טוען את תפקיד החשבון המאומת...",
+          )}
         </div>
       </AppShell>
     );
@@ -147,152 +147,157 @@ function Builder() {
           const previous = draft.items[index - 1];
           const startsSuperset = mode === "superset" && previous?.supersetId !== item.supersetId;
           return (
-          <div key={item.id} className="space-y-2">
-            {mode === "normal" ? (
-              <h2 className="px-1 text-xl font-extrabold text-foreground">תרגיל רגיל:</h2>
-            ) : startsSuperset ? (
-              <h2 className="px-1 text-xl font-extrabold text-foreground">סופר סט:</h2>
-            ) : mode === "drop" ? (
-              <h2 className="px-1 text-xl font-extrabold text-foreground">דרופ סט:</h2>
-            ) : null}
-          <div className={`surface-card rounded-[1.5rem] p-4 ${
-            mode === "superset"
-              ? "border-violet-200 bg-violet-50/40"
-              : mode === "drop"
-                ? "border-primary/20 bg-primary/5"
-                : ""
-          }`}>
-            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
-              <button
-                type="button"
-                aria-label="שנה סדר"
-                onClick={() => move(index, -1)}
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-secondary text-muted-foreground"
+            <div key={item.id} className="space-y-2">
+              {mode === "normal" ? (
+                <h2 className="px-1 text-xl font-extrabold text-foreground">תרגיל רגיל:</h2>
+              ) : startsSuperset ? (
+                <h2 className="px-1 text-xl font-extrabold text-foreground">סופר סט:</h2>
+              ) : mode === "drop" ? (
+                <h2 className="px-1 text-xl font-extrabold text-foreground">דרופ סט:</h2>
+              ) : null}
+              <div
+                className={`surface-card rounded-[1.5rem] p-4 ${
+                  mode === "superset"
+                    ? "border-violet-200 bg-violet-50/40"
+                    : mode === "drop"
+                      ? "border-primary/20 bg-primary/5"
+                      : ""
+                }`}
               >
-                <GripVertical className="h-4 w-4" />
-              </button>
-              <p className="truncate text-lg font-extrabold text-foreground">
-                {nameOf(item.exerciseId, item.exerciseName)}
-              </p>
-              <button
-                type="button"
-                aria-label="הסר תרגיל"
-                onClick={() =>
-                  setDraft({
-                    ...draft,
-                    items: draft.items.filter((i) => i.id !== item.id),
-                  })
-                }
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-secondary text-destructive"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+                <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+                  <button
+                    type="button"
+                    aria-label="שנה סדר"
+                    onClick={() => move(index, -1)}
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-secondary text-muted-foreground"
+                  >
+                    <GripVertical className="h-4 w-4" />
+                  </button>
+                  <p className="truncate text-lg font-extrabold text-foreground">
+                    {nameOf(item.exerciseId, item.exerciseName)}
+                  </p>
+                  <button
+                    type="button"
+                    aria-label="הסר תרגיל"
+                    onClick={() =>
+                      setDraft({
+                        ...draft,
+                        items: draft.items.filter((i) => i.id !== item.id),
+                      })
+                    }
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-secondary text-destructive"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2 border-b border-border/50 pb-3 sm:grid-cols-4">
-              <Stepper
-                label="סטים"
-                value={item.sets}
-                min={1}
-                onChange={(v) => patchItem(item.id, { sets: v })}
-              />
-              <Stepper
-                label="משקל"
-                value={item.weight}
-                step={0.1}
-                suffix="ק״ג"
-                onChange={(v) => patchItem(item.id, { weight: v })}
-              />
-              <Stepper
-                label="מנוחה"
-                value={item.rest}
-                step={0.1}
-                suffix="ש׳"
-                onChange={(v) => patchItem(item.id, { rest: v })}
-              />
-            </div>
+                <div className="mt-4 grid grid-cols-2 gap-2 border-b border-border/50 pb-3 sm:grid-cols-4">
+                  <Stepper
+                    label="סטים"
+                    value={item.sets}
+                    min={1}
+                    onChange={(v) => patchItem(item.id, { sets: v })}
+                  />
+                  <Stepper
+                    label="משקל"
+                    value={item.weight}
+                    step={0.1}
+                    suffix="ק״ג"
+                    onChange={(v) => patchItem(item.id, { weight: v })}
+                  />
+                  <Stepper
+                    label="מנוחה"
+                    value={item.rest}
+                    step={0.1}
+                    suffix="ש׳"
+                    onChange={(v) => patchItem(item.id, { rest: v })}
+                  />
+                </div>
 
-            {mode === "drop" && item.dropSetConfig?.levels?.length ? (
-              <div className="mt-3 space-y-2 rounded-2xl border border-primary/20 bg-background/70 p-3">
-                {item.dropSetConfig.levels.map((level, levelIndex) => (
-                  <div key={`${item.id}-drop-${levelIndex}`} className="grid grid-cols-3 items-center gap-2 text-center">
-                    <span className="text-xs font-bold text-primary">
-                      {levelIndex === 0 ? "לפני הדרופ" : `דרופ ${levelIndex}`}
-                    </span>
-                    <span className="text-xs font-semibold text-foreground">
-                      {level.weight} ק״ג
-                    </span>
-                    <span className="text-xs font-semibold text-foreground">
-                      {level.repsMin}-{level.repsMax} חזרות
-                    </span>
+                {mode === "drop" && item.dropSetConfig?.levels?.length ? (
+                  <div className="mt-3 space-y-2 rounded-2xl border border-primary/20 bg-background/70 p-3">
+                    {item.dropSetConfig.levels.map((level, levelIndex) => (
+                      <div
+                        key={`${item.id}-drop-${levelIndex}`}
+                        className="grid grid-cols-3 items-center gap-2 text-center"
+                      >
+                        <span className="text-xs font-bold text-primary">
+                          {levelIndex === 0 ? "לפני הדרופ" : `דרופ ${levelIndex}`}
+                        </span>
+                        <span className="text-xs font-semibold text-foreground">
+                          {level.weight} ק״ג
+                        </span>
+                        <span className="text-xs font-semibold text-foreground">
+                          {level.repsMin}-{level.repsMax} חזרות
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ) : null}
+                ) : null}
 
-            <div className="mt-3">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-                  סוג חזרות
-                </p>
-                <div className="flex rounded-2xl bg-secondary p-0.5 text-[11px] font-semibold">
-                  <button
-                    type="button"
-                    onClick={() => setRepType(item, "fixed")}
-                    className={`rounded-xl px-3 py-1.5 active:scale-95 ${
-                      item.repType !== "range"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    קבוע
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRepType(item, "range")}
-                    className={`rounded-xl px-3 py-1.5 active:scale-95 ${
-                      item.repType === "range"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    טווח
-                  </button>
+                <div className="mt-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+                      סוג חזרות
+                    </p>
+                    <div className="flex rounded-2xl bg-secondary p-0.5 text-[11px] font-semibold">
+                      <button
+                        type="button"
+                        onClick={() => setRepType(item, "fixed")}
+                        className={`rounded-xl px-3 py-1.5 active:scale-95 ${
+                          item.repType !== "range"
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        קבוע
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRepType(item, "range")}
+                        className={`rounded-xl px-3 py-1.5 active:scale-95 ${
+                          item.repType === "range"
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        טווח
+                      </button>
+                    </div>
+                  </div>
+                  {item.repType === "range" ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      <Stepper
+                        label="מינימום"
+                        value={item.repMin ?? item.reps}
+                        min={1}
+                        onChange={(v) => setRepMin(item, v)}
+                      />
+                      <Stepper
+                        label="מקסימום"
+                        value={item.repMax ?? item.reps}
+                        min={1}
+                        onChange={(v) => setRepMax(item, v)}
+                      />
+                    </div>
+                  ) : (
+                    <Stepper
+                      label="חזרות"
+                      value={item.reps}
+                      min={1}
+                      onChange={(v) => patchItem(item.id, { reps: v })}
+                    />
+                  )}
                 </div>
-              </div>
-              {item.repType === "range" ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <Stepper
-                    label="מינימום"
-                    value={item.repMin ?? item.reps}
-                    min={1}
-                    onChange={(v) => setRepMin(item, v)}
-                  />
-                  <Stepper
-                    label="מקסימום"
-                    value={item.repMax ?? item.reps}
-                    min={1}
-                    onChange={(v) => setRepMax(item, v)}
-                  />
-                </div>
-              ) : (
-                <Stepper
-                  label="חזרות"
-                  value={item.reps}
-                  min={1}
-                  onChange={(v) => patchItem(item.id, { reps: v })}
+
+                <input
+                  className={`${field} mt-3`}
+                  value={item.notes}
+                  onChange={(e) => patchItem(item.id, { notes: e.target.value })}
+                  placeholder="הערה לתרגיל זה..."
                 />
-              )}
+              </div>
             </div>
-
-            <input
-              className={`${field} mt-3`}
-              value={item.notes}
-              onChange={(e) => patchItem(item.id, { notes: e.target.value })}
-              placeholder="הערה לתרגיל זה..."
-            />
-          </div>
-          </div>
           );
         })}
       </div>

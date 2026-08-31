@@ -10,9 +10,15 @@ const gymStore = read("./gym-store.ts");
 const supabaseSync = read("./supabase-sync.ts");
 const coachRoute = read("../routes/coach.tsx");
 const ownerMigration = read("../../supabase/migrations/31_owner_auth_profile_visibility.sql");
-const insertHardening = read("../../supabase/migrations/32_registration_profile_insert_hardening.sql");
-const insertPolicyCleanup = read("../../supabase/migrations/33_cleanup_legacy_profile_insert_policy.sql");
-const ownerRpcPrivileges = read("../../supabase/migrations/34_revoke_public_owner_auth_rpc_execute.sql");
+const insertHardening = read(
+  "../../supabase/migrations/32_registration_profile_insert_hardening.sql",
+);
+const insertPolicyCleanup = read(
+  "../../supabase/migrations/33_cleanup_legacy_profile_insert_policy.sql",
+);
+const ownerRpcPrivileges = read(
+  "../../supabase/migrations/34_revoke_public_owner_auth_rpc_execute.sql",
+);
 const roleHardening = read("../../supabase/migrations/09_security_fixes.sql");
 
 describe("Supabase auth lifecycle contracts", () => {
@@ -24,7 +30,9 @@ describe("Supabase auth lifecycle contracts", () => {
     expect(appShell).toContain("auth.resend({");
     expect(appShell).toContain("resetPasswordForEmail(");
     expect(appShell).toContain("window.location.origin}/reset-password");
-    expect(appShell).not.toContain("window.location.origin}/reset-password` : undefined;\n      if (isSignUp)");
+    expect(appShell).not.toContain(
+      "window.location.origin}/reset-password` : undefined;\n      if (isSignUp)",
+    );
   });
 
   test("the pending-email path gives users a retryable verification state", () => {

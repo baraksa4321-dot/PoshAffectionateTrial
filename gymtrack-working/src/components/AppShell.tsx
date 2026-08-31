@@ -657,8 +657,7 @@ export function AppShell({
         onTouchStart={handleMainTouchStart}
         onTouchEnd={handleMainTouchEnd}
         style={{
-          paddingBottom:
-            "calc(6.5rem + env(safe-area-inset-bottom) + var(--keyboard-inset, 0px))",
+          paddingBottom: "calc(6.5rem + env(safe-area-inset-bottom) + var(--keyboard-inset, 0px))",
         }}
       >
         {user ? <span className="sr-only">{syncTitle}</span> : null}
@@ -927,11 +926,15 @@ export function AppShell({
                 }}
                 className="text-[12px] font-bold text-primary hover:underline cursor-pointer"
               >
-                 {isResettingPassword
-                   ? "חזרה להתחברות"
-                   : isSignUp
-                     ? genderText(gender, "כבר יש לך חשבון? התחברי כאן", "כבר יש לך חשבון? התחבר כאן")
-                     : genderText(gender, "אין לך חשבון? הירשמי כאן", "אין לך חשבון? הירשם כאן")}
+                {isResettingPassword
+                  ? "חזרה להתחברות"
+                  : isSignUp
+                    ? genderText(
+                        gender,
+                        "כבר יש לך חשבון? התחברי כאן",
+                        "כבר יש לך חשבון? התחבר כאן",
+                      )
+                    : genderText(gender, "אין לך חשבון? הירשמי כאן", "אין לך חשבון? הירשם כאן")}
               </button>
               {!isSignUp && !isResettingPassword ? (
                 <button

@@ -29,9 +29,7 @@ function FoodLibrary() {
             .map((food) => food.category)
             .filter((category): category is string => Boolean(category)),
         ),
-      ).sort((a, b) =>
-        a.localeCompare(b, "he"),
-      ),
+      ).sort((a, b) => a.localeCompare(b, "he")),
     [foods],
   );
   const favoriteIds = useMemo(() => new Set(favoriteFoods), [favoriteFoods]);
@@ -152,8 +150,8 @@ function FoodLibrary() {
                     </p>
                     <p className="mt-0.5 text-[11.5px] text-muted-foreground">
                       {food.servingSize}
-                      {showCalories ? ` · ${food.calories} קלוריות` : ""} · חלבון {food.protein}g · פחמימות{" "}
-                      {food.carbs}g · שומן {food.fat}g · סיבים {food.fiber ?? 0}g
+                      {showCalories ? ` · ${food.calories} קלוריות` : ""} · חלבון {food.protein}g ·
+                      פחמימות {food.carbs}g · שומן {food.fat}g · סיבים {food.fiber ?? 0}g
                     </p>
                     <p
                       className={`mt-1 text-[10px] font-semibold ${
@@ -171,7 +169,11 @@ function FoodLibrary() {
                 aria-label={
                   favoriteIds.has(food.id)
                     ? `הסר ${food.name} מהמועדפים`
-                    : genderText(gender, `הוסיפי ${food.name} למועדפים`, `הוסף ${food.name} למועדפים`)
+                    : genderText(
+                        gender,
+                        `הוסיפי ${food.name} למועדפים`,
+                        `הוסף ${food.name} למועדפים`,
+                      )
                 }
                 className={`press grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
                   favoriteIds.has(food.id)
@@ -207,7 +209,6 @@ function FoodLibrary() {
           }
         />
       ) : null}
-
     </AppShell>
   );
 }

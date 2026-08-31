@@ -1,0 +1,155 @@
+מצאתי בקוד את מנגנון מסך הטעינה, ואני רוצה שתתקן אותו לפי הדרישות הבאות.
+
+הקובץ הרלוונטי הוא:
+
+gymtrack-working/src/routes/__root.tsx
+
+והמשפטים נמצאים ב:
+
+gymtrack-working/src/lib/loading-copy.ts
+
+כרגע RootContent משתמש ב:
+
+const [loadingVariant, setLoadingVariant] = useState(0);
+const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+
+ובתוך ה-useEffect יש:
+
+setLoadingVariant(Math.floor(Math.random() * 8));
+setLoadingMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
+
+בנוסף יש שני timers נפרדים:
+
+* animation מתחלפת כל 2400ms
+* message מתחלף כל 1800ms
+
+זה לא המנגנון שאני רוצה.
+
+ההתנהגות הרצויה
+
+אני רוצה ROTATION מחזורי שנשמר בין פתיחות שונות של האתר.
+
+לדוגמה:
+
+פתיחה 1:
+Animation 1 + Message 1
+
+פתיחה 2:
+Animation 2 + Message 2
+
+פתיחה 3:
+Animation 3 + Message 3
+
+וכן הלאה.
+
+כאשר מגיעים לסוף הרשימה:
+Animation אחרון + Message אחרון
+
+ואז בפתיחה הבאה:
+Animation 1 + Message 1
+
+חשוב מאוד
+
+אל תשתמש ב-random.
+
+אני רוצה סדר מחזורי deterministic.
+
+יש כרגע 8 animation variants, ול-LOADING_MESSAGES יש מספר אחר של משפטים. אל תניח שהאורכים שווים.
+
+צור cycle index אחד משותף, לדוגמה:
+
+const cycleIndex = ...
+
+והשתמש ב:
+
+animationIndex = cycleIndex % 8
+messageIndex = cycleIndex % LOADING_MESSAGES.length
+
+שמור את ה-cycle index ב-localStorage כדי שהוא יישמר גם לאחר:
+
+* refresh
+* סגירת האתר
+* פתיחה מחדש
+* ניווט ויציאה מהאפליקציה
+
+לדוגמה אפשר להשתמש במפתח:
+
+gymtrack.loadingCycle
+
+או בשם מתאים אחר, אבל אל תתנגש במפתחות localStorage קיימים.
+
+חשוב לגבי timing
+
+אני כן רוצה לשמור על האנימציה והמשפט שמתחלפים בזמן מסך הטעינה, כפי שקיים היום, אבל הם צריכים להתחיל מהבחירה שנקבעה לפתיחה הנוכחית.
+
+כלומר אם בפתיחה הנוכחית נקבע:
+
+animationIndex = 3
+messageIndex = 3
+
+המסך מתחיל מ:
+
+Animation 3 + Message 3
+
+ולאחר מכן אפשר להמשיך את האנימציות/משפטים בזמן הטעינה לפי ההתנהגות הקיימת.
+
+אבל בפתיחה הבאה נקודת ההתחלה חייבת להיות:
+
+animationIndex = 4
+messageIndex = 4
+
+ולא random ולא 0.
+
+חשוב במיוחד
+
+אל תעדכן את ה-cycle index בכל render.
+
+ה-index צריך להתעדכן פעם אחת בלבד לכל פתיחת/טעינת אפליקציה.
+
+אל תיצור מצב שבו React StrictMode גורם לקפיצה של שתי אפשרויות.
+
+אם ה-useEffect רץ פעמיים ב-development, ודא שה-cycle מתקדם רק פעם אחת.
+
+SSR / hydration
+
+הפרויקט משתמש ב-React/TanStack Router, לכן localStorage חייב להיקרא רק בצד ה-client.
+
+אל תיגש ל-localStorage בזמן SSR/render ראשוני.
+
+בצע את הקריאה בתוך useEffect או מנגנון client-safe מתאים, בלי ליצור hydration mismatch.
+
+עוד דרישה חשובה
+
+אל תשנה:
+
+* את עיצוב מסך הטעינה
+* את האנימציות
+* את המשפטים
+* את משך מסך הטעינה
+* את המעבר מה-loading לאפליקציה
+* שום feature אחר באתר
+
+אני רוצה לתקן רק את מנגנון ה-rotation וה-persistence של בחירת האנימציה והמשפט.
+
+לפני שאתה מסיים
+
+בדוק בפועל:
+
+1. פתיחה ראשונה → בחירה ראשונה.
+2. refresh → הבחירה הבאה.
+3. refresh נוסף → הבחירה הבאה.
+4. סגירה ופתיחה מחדש → הבחירה הבאה.
+5. מעבר על כל 8 האנימציות.
+6. מעבר על כל המשפטים באמצעות modulo.
+7. אחרי הסוף → חזרה לאפשרות הראשונה.
+8. אין random.
+9. אין קפיצה כפולה בגלל React StrictMode.
+10. אין hydration mismatch.
+11. אין שינוי בהתנהגות/עיצוב של מסך הטעינה מעבר לבחירה עצמה.
+
+בסוף הצג לי:
+
+* מה היה הבאג.
+* אילו קבצים שינית.
+* את הקוד/השינוי שביצעת.
+* תוצאות הבדיקות.

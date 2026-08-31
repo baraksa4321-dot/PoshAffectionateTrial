@@ -48,13 +48,12 @@ const statusFamilyToGroup = new Map<string, StatusGroup>(
     definition.families.map((family) => [family, group as StatusGroup]),
   ),
 );
-const utilityPattern =
-  new RegExp(
-    "(?:^|[\\s\"'\\x60])(?:[a-z-]+:)*(bg|text|border|ring)-(" +
-      colorFamilies.join("|") +
-      ")-(\\d+)(?:\\/\\d+)?(?=$|[\\s\"'\\x60])",
-    "g",
-  );
+const utilityPattern = new RegExp(
+  "(?:^|[\\s\"'\\x60])(?:[a-z-]+:)*(bg|text|border|ring)-(" +
+    colorFamilies.join("|") +
+    ")-(\\d+)(?:\\/\\d+)?(?=$|[\\s\"'\\x60])",
+  "g",
+);
 
 function collectSourceFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -126,10 +125,7 @@ for (const palette of THEME_PALETTES) {
   let paletteBlock = "";
   for (const paletteStartMatch of css.matchAll(paletteStartPattern)) {
     const nextBlock = css.indexOf("\n:root", paletteStartMatch.index + paletteStartMatch[0].length);
-    const candidate = css.slice(
-      paletteStartMatch.index,
-      nextBlock === -1 ? undefined : nextBlock,
-    );
+    const candidate = css.slice(paletteStartMatch.index, nextBlock === -1 ? undefined : nextBlock);
     if (candidate.includes("--primary:")) {
       paletteBlock = candidate;
       break;

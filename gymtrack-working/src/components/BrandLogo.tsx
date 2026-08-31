@@ -13,9 +13,7 @@ export function BrandLogo({
       aria-label="MY routine — דף הבית"
       className={`inline-flex items-center gap-2 text-start transition-opacity hover:opacity-80 ${
         auth ? "justify-center" : ""
-      } ${
-        compact ? "" : "group"
-      }`}
+      } ${compact ? "" : "group"}`}
     >
       <img
         src="/myroutine-logo.png"
