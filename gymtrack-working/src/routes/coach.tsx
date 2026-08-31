@@ -1047,6 +1047,8 @@ export function CoachDashboardPage({
   const [managementError, setManagementError] = useState("");
   const [roleChangeUserId, setRoleChangeUserId] = useState<string | null>(null);
   const [roleChangeNotice, setRoleChangeNotice] = useState("");
+  const [ownerCalorieUserId, setOwnerCalorieUserId] = useState<string | null>(null);
+  const [ownerCalorieNotice, setOwnerCalorieNotice] = useState("");
   const [approvalCoachByUser, setApprovalCoachByUser] = useState<Record<string, string>>({});
   const [approvalNameByUser, setApprovalNameByUser] = useState<Record<string, string>>({});
   const [approvalShowCaloriesByUser, setApprovalShowCaloriesByUser] = useState<
@@ -1929,6 +1931,47 @@ export function CoachDashboardPage({
     } else {
       setProfileNotice("הגדרת תצוגת הקלוריות נשמרה.");
     }
+  };
+
+  const saveOwnerProfileCalorieVisibility = async (profileId: string, showCalories: boolean) => {
+    if (!isOwner) return;
+    const profile = allProfiles.find((candidate) => candidate.id === profileId);
+    if (!profile || profile.profile_exists === false) return;
+
+    const previous = profile.show_calories !== false;
+    setOwnerCalorieUserId(profileId);
+    setOwnerCalorieNotice("");
+    setAllProfiles((current) =>
+      current.map((candidate) =>
+        candidate.id === profileId ? { ...candidate, show_calories: showCalories } : candidate,
+      ),
+    );
+    setSelectedOwnerProfileDetails((current) =>
+      current?.profile
+        ? { ...current, profile: { ...current.profile, showCalories } }
+        : current,
+    );
+
+    const { error } = await supabase.rpc("set_user_calorie_visibility", {
+      target_user_id: profileId,
+      show_calories_enabled: showCalories,
+    });
+    if (error) {
+      setAllProfiles((current) =>
+        current.map((candidate) =>
+          candidate.id === profileId ? { ...candidate, show_calories: previous } : candidate,
+        ),
+      );
+      setSelectedOwnerProfileDetails((current) =>
+        current?.profile
+          ? { ...current, profile: { ...current.profile, showCalories: previous } }
+          : current,
+      );
+      setOwnerCalorieNotice(`שמירת תצוגת הקלוריות נכשלה: ${error.message}`);
+    } else {
+      setOwnerCalorieNotice("הגדרת תצוגת הקלוריות נשמרה.");
+    }
+    setOwnerCalorieUserId(null);
   };
 
   const saveClientMeasurements = async () => {
@@ -3064,6 +3107,52 @@ export function CoachDashboardPage({
     applyClientDetails(refreshed);
   };
 
+  const renderOwnerCalorieToggle = (profile: ProfileRow, compact = false) => {
+    const hasProfile = profile.profile_exists !== false;
+    const showCalories = profile.show_calories !== false;
+    const isSaving = ownerCalorieUserId === profile.id;
+    const label = hasProfile
+      ? `הצגת קלוריות עבור ${profileDisplayName(profile)}`
+      : `הצגת קלוריות אינה זמינה עבור ${profileDisplayName(profile)}`;
+
+    return (
+      <button
+        type="button"
+        disabled={!hasProfile || isSaving}
+        onClick={(event) => {
+          event.stopPropagation();
+          void saveOwnerProfileCalorieVisibility(profile.id, !showCalories);
+        }}
+        aria-label={label}
+        aria-pressed={hasProfile ? showCalories : undefined}
+        className={`flex items-center gap-1.5 rounded-xl border px-2 py-1.5 text-[10px] font-bold transition-colors ${
+          !hasProfile
+            ? "cursor-not-allowed border-border/60 bg-surface-2 text-muted-foreground"
+            : showCalories
+              ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
+              : "border-border bg-surface-2 text-muted-foreground hover:border-primary/30"
+        } ${compact ? "shrink-0" : "w-full justify-between"}`}
+      >
+        <span className={compact ? "hidden sm:inline" : ""}>קלוריות</span>
+        <span className="flex items-center gap-1">
+          <span>{!hasProfile ? "—" : showCalories ? "כן" : "לא"}</span>
+          <span
+            className={`relative h-4 w-7 rounded-full ${
+              !hasProfile ? "bg-border/70" : showCalories ? "bg-primary" : "bg-border"
+            }`}
+            aria-hidden="true"
+          >
+            <span
+              className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow ${
+                showCalories ? "start-3.5" : "start-0.5"
+              }`}
+            />
+          </span>
+        </span>
+      </button>
+    );
+  };
+
   if (role === undefined) {
     return (
       <AppShell title="דשבורד מאמן" kicker="מאמנים וצוות מקצועי">
@@ -3871,6 +3960,9 @@ export function CoachDashboardPage({
                             </strong>
                           </div>
                         </div>
+                        {selectedProfile.profile_exists !== false ? (
+                          <div className="mt-3">{renderOwnerCalorieToggle(selectedProfile)}</div>
+                        ) : null}
                         {selectedProfile.profile_exists === false ? (
                           <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
                             <p className="font-bold">חשבון Auth קיים, אך שורת הפרופיל חסרה.</p>
@@ -3957,6 +4049,11 @@ export function CoachDashboardPage({
                             עדיין לא נשמרו מדידות גוף.
                           </p>
                         ) : null}
+                        {selectedOwnerProfileId === selectedProfile.id && ownerCalorieNotice ? (
+                          <p className="mt-2 rounded-lg bg-purple-50 p-2 text-[11px] font-semibold text-purple-900">
+                            {ownerCalorieNotice}
+                          </p>
+                        ) : null}
                         {selectedProfile.profile_exists !== false &&
                         selectedProfile.role !== "owner" ? (
                           <button
@@ -3982,11 +4079,11 @@ export function CoachDashboardPage({
                   const isChanging = roleChangeUserId === p.id;
 
                   return (
-                    <div
+                      <div
                       key={p.id}
-                      className="flex items-center justify-between rounded-xl bg-white p-2.5 text-xs border border-purple-100"
+                        className="flex items-center justify-between gap-2 rounded-xl border border-purple-100 bg-white p-2.5 text-xs"
                     >
-                      <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                         <button
                           type="button"
                           onClick={() => void openOwnerProfile(p)}
@@ -4009,34 +4106,42 @@ export function CoachDashboardPage({
                         </span>
                       </div>
 
-                      <select
-                        aria-label={`שינוי תפקיד עבור ${profileDisplayName(p)}`}
-                        value={p.role || ""}
-                        disabled={
-                          isCurrentUser ||
-                          p.profile_exists === false ||
-                          !canChangeRole ||
-                          isChanging
-                        }
-                        onChange={(event) => {
-                          const nextRole = event.target.value;
-                          if (nextRole === "coach" || nextRole === "client") {
-                            void handleOwnerChangeRole(p.id, nextRole);
-                          }
-                        }}
-                        className="max-w-28 rounded-lg border border-purple-200 bg-white px-2 py-1 text-[11px] font-bold text-purple-900 outline-none focus:border-purple-500 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        <option value="" disabled>
-                          לא ידוע
-                        </option>
-                        <option value="owner">בעלים</option>
-                        <option value="coach">מאמן</option>
-                        <option value="client">מתאמן</option>
-                      </select>
+                       <div className="flex shrink-0 items-center gap-1.5">
+                         {renderOwnerCalorieToggle(p, true)}
+                         <select
+                           aria-label={`שינוי תפקיד עבור ${profileDisplayName(p)}`}
+                           value={p.role || ""}
+                           disabled={
+                             isCurrentUser ||
+                             p.profile_exists === false ||
+                             !canChangeRole ||
+                             isChanging
+                           }
+                           onChange={(event) => {
+                             const nextRole = event.target.value;
+                             if (nextRole === "coach" || nextRole === "client") {
+                               void handleOwnerChangeRole(p.id, nextRole);
+                             }
+                           }}
+                           className="max-w-28 rounded-lg border border-purple-200 bg-white px-2 py-1 text-[11px] font-bold text-purple-900 outline-none focus:border-purple-500 disabled:cursor-not-allowed disabled:opacity-60"
+                         >
+                           <option value="" disabled>
+                             לא ידוע
+                           </option>
+                           <option value="owner">בעלים</option>
+                           <option value="coach">מאמן</option>
+                           <option value="client">מתאמן</option>
+                         </select>
+                       </div>
                     </div>
                   );
                 })}
               </div>
+               {ownerCalorieNotice && !selectedOwnerProfileId ? (
+                 <p className="rounded-lg bg-purple-50 p-2 text-[11px] font-semibold text-purple-900">
+                   {ownerCalorieNotice}
+                 </p>
+               ) : null}
               {roleChangeNotice ? (
                 <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-2 text-xs font-semibold text-emerald-700">
                   {roleChangeNotice}
