@@ -7278,10 +7278,10 @@ export function CoachDashboardPage({
                                           {openWorkoutReportId === dayItem.id ? (
                                             <section
                                               id={`workout-report-${dayItem.id}`}
-                                              className="mt-6 border-t border-primary/15 pt-4"
+                                              className="workout-report-panel"
                                               aria-labelledby={`workout-report-heading-${dayItem.id}`}
                                             >
-                                              <div className="mb-3 min-w-0">
+                                              <div className="mb-3 min-w-0 pe-8">
                                                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
                                                   דוח האימון
                                                 </p>

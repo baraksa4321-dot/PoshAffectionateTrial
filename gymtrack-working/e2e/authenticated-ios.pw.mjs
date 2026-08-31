@@ -323,9 +323,15 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await expect(workoutSurface).toBeVisible();
   const openReportButton = page.getByRole("button", { name: "פתיחת דוח", exact: true });
   await expect(openReportButton).toBeVisible();
+  const closedReportBookmark = await openReportButton.boundingBox();
+  expect(closedReportBookmark).not.toBeNull();
   await openReportButton.click();
   await expect(page.getByText("דוח שבועי", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "סגירת דוח", exact: true }).click();
+  const openReportBookmark = page.getByRole("button", { name: "סגירת דוח", exact: true });
+  const openedReportBookmark = await openReportBookmark.boundingBox();
+  expect(openedReportBookmark).not.toBeNull();
+  expect(openedReportBookmark.x).toBeLessThan(closedReportBookmark.x);
+  await openReportBookmark.click();
   await expect(page.getByText("דוח שבועי", { exact: true })).toBeHidden();
   await page.getByRole("button", { name: "סגירת בניית אימון", exact: true }).click();
   await expect(dayButtons).toHaveCount(4);

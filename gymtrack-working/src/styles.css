@@ -4586,16 +4586,30 @@ html[data-keyboard-open] .nav-shell {
 }
 
 .workout-report-bookmark {
-  top: 2rem;
-  right: 0.75rem;
+  top: 5rem;
+  right: 0;
   min-height: 6.5rem;
   width: 2rem;
-  border-radius: 0.75rem;
+  border-left: 0;
+  border-radius: 0.75rem 0 0 0.75rem;
   transform: none;
 }
 
 .workout-report-bookmark:hover,
 .workout-report-bookmark:focus-visible {
+  transform: translateY(-1px);
+}
+
+.workout-report-bookmark-open {
+  right: auto;
+  left: 0;
+  border-right: 0;
+  border-left: 1px solid color-mix(in oklch, var(--primary) 35%, var(--border));
+  border-radius: 0 0.75rem 0.75rem 0;
+}
+
+.workout-report-bookmark-open:hover,
+.workout-report-bookmark-open:focus-visible {
   transform: translateY(-1px);
 }
 
@@ -4606,7 +4620,21 @@ html[data-keyboard-open] .nav-shell {
   letter-spacing: 0.04em;
 }
 
+.workout-report-panel {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow-y: auto;
+  border-radius: inherit;
+  border: 1px solid color-mix(in oklch, var(--primary) 35%, var(--border));
+  background: var(--background);
+  padding: 1rem;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 .workout-surface-close-bookmark {
+  z-index: 3;
   top: 2rem;
   left: 0;
   height: 3rem;
