@@ -1361,6 +1361,7 @@ function RootContent() {
             "התחברי כדי להמשיך לאימונים ולתזונה",
             "התחבר כדי להמשיך לאימונים ולתזונה",
           )}
+          pageClassName="auth-editorial-shell"
           authOnly
         >
           <></>

@@ -49,6 +49,7 @@ export function AppShell({
   headerAccessory,
   authOnly = false,
   compactHeader = false,
+  pageClassName = "",
   children,
 }: {
   title: string;
@@ -58,6 +59,7 @@ export function AppShell({
   headerAccessory?: ReactNode | undefined;
   authOnly?: boolean | undefined;
   compactHeader?: boolean | undefined;
+  pageClassName?: string | undefined;
   children: ReactNode;
 }) {
   const store = useGym();
@@ -490,8 +492,8 @@ export function AppShell({
       ref={shellRef}
       className={
         authOnly
-          ? "fixed inset-0 z-[100] min-h-[100dvh] w-full overflow-auto bg-background text-foreground"
-          : "flex h-[100dvh] min-h-0 w-full flex-col overflow-hidden bg-background text-foreground"
+          ? `fixed inset-0 z-[100] min-h-[100dvh] w-full overflow-auto bg-background text-foreground ${pageClassName}`
+          : `flex h-[100dvh] min-h-0 w-full flex-col overflow-hidden bg-background text-foreground ${pageClassName}`
       }
       dir="rtl"
     >
@@ -580,6 +582,7 @@ export function AppShell({
           {title || action || user ? (
             <div className="flex items-start gap-3">
               <div className="min-w-0 flex-1 text-start">
+                {kicker ? <p className="app-shell-kicker">{kicker}</p> : null}
                 {title ? (
                   <h1
                     className={`min-w-0 truncate whitespace-nowrap font-display font-extrabold leading-snug tracking-tight text-ink ${
@@ -670,7 +673,7 @@ export function AppShell({
           }}
           ariaLabel="התחברות לחשבון"
         >
-          <div className="auth-panel w-full max-w-sm space-y-6 rounded-2xl border border-border bg-surface p-6 shadow-xl">
+          <div className="auth-panel auth-editorial-panel w-full max-w-sm space-y-6 rounded-2xl border border-border bg-surface p-6 shadow-xl">
             <div className="flex justify-center">
               <BrandLogo compact auth />
             </div>

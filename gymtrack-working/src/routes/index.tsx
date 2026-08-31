@@ -411,6 +411,7 @@ function Dashboard() {
   const cardioThisWeek = (cardioLogs ?? []).filter((entry) => new Date(entry.date) >= startOfWeek);
   const weeklyCardioMinutes = cardioThisWeek.reduce((sum, entry) => sum + entry.durationMin, 0);
   const weeklyCardioCalories = cardioThisWeek.reduce((sum, entry) => sum + entry.calories, 0);
+  const greetingName = userProfile?.fullName?.trim().split(/\s+/)[0] || "";
 
   const resetCardioForm = () => {
     setEditingCardioId(null);
@@ -476,8 +477,10 @@ function Dashboard() {
 
   return (
     <AppShell
-      title={formatNumericDate(now)}
-      subtitle=""
+      title={greetingName ? `בוקר טוב, ${greetingName}.` : "היום שלי"}
+      subtitle="היום שלך לא צריך יותר מקצב אחד טוב להתחיל ממנו."
+      kicker={formatNumericDate(now)}
+      pageClassName="dashboard-editorial-shell"
       headerAccessory={
         <button
           type="button"
@@ -571,7 +574,7 @@ function Dashboard() {
                   )}
             </p>
             <div
-              className="progress-track mt-3"
+              className="consistency-linear-track progress-track mt-3"
               aria-label={
                 consistencyScore === undefined
                   ? "מדד עקביות ללא יעד"
@@ -582,9 +585,28 @@ function Dashboard() {
             </div>
           </div>
           <div className="shrink-0 text-start">
-            <p className="font-display text-3xl font-extrabold leading-none tabular-nums text-primary">
-              {consistencyScore === undefined ? "—" : `${consistencyScore}%`}
-            </p>
+            <div className="consistency-ring" aria-hidden="true">
+              <svg viewBox="0 0 44 44">
+                <circle className="consistency-ring-track" cx="22" cy="22" r="18" />
+                <circle
+                  className="consistency-ring-value"
+                  cx="22"
+                  cy="22"
+                  r="18"
+                  style={{
+                    strokeDasharray: 113.1,
+                    strokeDashoffset:
+                      consistencyScore === undefined
+                        ? 113.1
+                        : 113.1 - (113.1 * consistencyScore) / 100,
+                  }}
+                />
+              </svg>
+              <span>
+                <strong>{consistencyScore === undefined ? "—" : consistencyScore}</strong>
+                {consistencyScore === undefined ? null : <small>%</small>}
+              </span>
+            </div>
             <p className="mt-1 text-[10px] font-bold text-muted-foreground">עקביות</p>
           </div>
         </div>
