@@ -1180,8 +1180,8 @@ export function CoachDashboardPage({
   const [newProgramName, setNewProgramName] = useState("");
   const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
   const [editingDayId, setEditingDayId] = useState<string | null>(null);
+  const [workoutWorkspaceTab, setWorkoutWorkspaceTab] = useState<"build" | "report">("build");
   const [showExerciseForm, setShowExerciseForm] = useState(false);
-  const [openWorkoutReportId, setOpenWorkoutReportId] = useState<string | null>(null);
   const [focusedExerciseId, setFocusedExerciseId] = useState<string | null>(null);
   const [newDayName, setNewDayName] = useState("");
 
@@ -1199,8 +1199,6 @@ export function CoachDashboardPage({
     context: ExerciseBuilderReturnContext;
   } | null>(null);
   const hydratedBuilderRouteKeyRef = useRef<string | null>(null);
-  const [programQuery, setProgramQuery] = useState("");
-  const [reportBookmarkWorkoutId, setReportBookmarkWorkoutId] = useState<string | null>(null);
   const [targetWeight, setTargetWeight] = useState(20);
   const [setsCount, setSetsCount] = useState(3);
   const [setWeights, setSetWeights] = useState<number[]>([20, 20, 20]);
@@ -1226,6 +1224,7 @@ export function CoachDashboardPage({
     if (context?.programId) setEditingProgramId(context.programId);
     if (context?.dayId) {
       setEditingDayId(context.dayId);
+      setWorkoutWorkspaceTab("build");
       setShowExerciseForm(true);
     }
     setSelectedExId(createdExerciseId);
@@ -1237,11 +1236,7 @@ export function CoachDashboardPage({
     window.sessionStorage.removeItem("gymtrack-created-exercise-id");
   }, [store.exercises]);
   useEffect(() => {
-    if (editingDayId) setReportBookmarkWorkoutId(editingDayId);
-    else setShowExerciseForm(false);
-    setOpenWorkoutReportId((current) =>
-      current && editingDayId && current !== editingDayId ? null : current,
-    );
+    if (!editingDayId) setShowExerciseForm(false);
   }, [editingDayId]);
   const [setModes, setSetModes] = useState<Array<"normal" | "warmup" | "drop" | "superset">>([
     "normal",
@@ -3153,11 +3148,6 @@ export function CoachDashboardPage({
   const activeProgram =
     clientDetails?.programs.find((program) => program.id === editingProgramId) ??
     clientDetails?.programs.at(-1);
-  const reportBookmarkId =
-    reportBookmarkWorkoutId ?? editingDayId ?? activeProgram?.dayIds?.[0] ?? null;
-  const reportBookmarkWorkout = clientWorkouts.find(
-    (workout) => workout.id === reportBookmarkId,
-  );
   const trackingPlanRows =
     selectedTrackingWorkout?.items
       ? workoutReviewItems(selectedTrackingWorkout).map((item) => {
@@ -3298,12 +3288,6 @@ export function CoachDashboardPage({
     reader.onerror = () => setNewExerciseError("לא ניתן לקרוא את הסרטון שנבחר.");
     reader.readAsDataURL(file);
   };
-  const programQueryLower = programQuery.trim().toLocaleLowerCase();
-  const filteredPrograms = programQueryLower
-    ? (clientDetails?.programs ?? []).filter((program) =>
-        program.name.toLocaleLowerCase().includes(programQueryLower),
-      )
-    : (clientDetails?.programs ?? []);
   const ownerUserSearchLower = ownerUserSearch.trim().toLocaleLowerCase();
   const filteredOwnerProfiles = ownerUserSearchLower
     ? allProfiles.filter((profile) =>
@@ -5155,47 +5139,45 @@ export function CoachDashboardPage({
                         : "surface-card rounded-[1.75rem] border-primary/15 bg-primary/[0.02] p-4"
                     } ${!showProgramBuilder ? "hidden" : ""}`}
                   >
-                    <div className="flex items-center justify-between border-b pb-2">
-                      <h3 className="flex items-center gap-2 font-display text-lg font-extrabold text-ink">
+                    <div className="flex items-center justify-between border-b border-border/50 pb-3">
+                      <div>
+                        <h3 className="flex items-center gap-2 font-display text-lg font-extrabold text-ink">
                         <Dumbbell className="h-4 w-4 text-primary" /> תוכנית האימונים
-                      </h3>
+                        </h3>
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          בחר יום כדי לפתוח את מרחב העבודה שלו
+                        </p>
+                      </div>
                       <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary">
                         {clientDetails?.programs?.length || 0} תוכניות
                       </span>
                     </div>
 
-                    <form onSubmit={handleCreateClientProgram} className="flex gap-2">
-                      <input
-                        type="text"
-                        required
-                        value={newProgramName}
-                        onChange={(e) => setNewProgramName(e.target.value)}
-                        placeholder="שם תוכנית אימון חדשה..."
-                        className="flex-1 rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
-                      />
-                      <button
-                        type="submit"
-                        className="flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-primary/90 cursor-pointer"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        <span>צור</span>
-                      </button>
-                    </form>
-
-                    <div className="num-pill flex h-11 items-center gap-2 px-3">
-                      <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      <input
-                        type="search"
-                        value={programQuery}
-                        onChange={(event) => setProgramQuery(event.target.value)}
-                        placeholder="חיפוש תוכנית אימון..."
-                        className="w-full min-w-0 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
-                        aria-label="חיפוש תוכנית אימון"
-                      />
+                    <div className="flex items-center justify-between gap-2 rounded-2xl border border-dashed border-primary/25 bg-primary/[0.035] p-2.5">
+                      <p className="text-[11px] font-semibold text-muted-foreground">
+                        צריך תוכנית חדשה?
+                      </p>
+                      <form onSubmit={handleCreateClientProgram} className="flex gap-2">
+                        <input
+                          type="text"
+                          required
+                          value={newProgramName}
+                          onChange={(e) => setNewProgramName(e.target.value)}
+                          placeholder="שם תוכנית חדשה"
+                          className="w-36 rounded-xl border border-border bg-background px-3 py-1.5 text-xs outline-none focus:border-primary sm:w-52"
+                        />
+                        <button
+                          type="submit"
+                          className="flex shrink-0 items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-primary/90 cursor-pointer"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          <span>צור</span>
+                        </button>
+                      </form>
                     </div>
 
                     <div className="space-y-3 pt-2">
-                      {filteredPrograms.map((prog: Program) => {
+                      {(clientDetails?.programs ?? []).map((prog: Program) => {
                         const isProgActive = editingProgramId === prog.id;
                         const progDays = clientDetails?.workouts?.filter((w: Workout) =>
                           prog.dayIds?.includes(w.id),
@@ -5246,24 +5228,26 @@ export function CoachDashboardPage({
                               </button>
                             </div>
 
-                            {isProgActive && (
+                            {(isProgActive || Boolean(progDays?.length)) && (
                               <div className="space-y-3 border-t border-border/50 bg-secondary/20 p-3.5">
-                                <form onSubmit={handleAddProgramDay} className="flex gap-2">
-                                  <input
-                                    type="text"
-                                    required
-                                    value={newDayName}
-                                    onChange={(e) => setNewDayName(e.target.value)}
-                                    placeholder="שם יום אימון (למשל: A - פלג גוף עליון)..."
-                                    className="flex-1 rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
-                                  />
-                                  <button
-                                    type="submit"
-                                    className="rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 cursor-pointer"
-                                  >
-                                    + יום
-                                  </button>
-                                </form>
+                                {isProgActive ? (
+                                  <form onSubmit={handleAddProgramDay} className="flex gap-2">
+                                    <input
+                                      type="text"
+                                      required
+                                      value={newDayName}
+                                      onChange={(e) => setNewDayName(e.target.value)}
+                                      placeholder="שם יום אימון (למשל: A - פלג גוף עליון)..."
+                                      className="flex-1 rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
+                                    />
+                                    <button
+                                      type="submit"
+                                      className="rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 cursor-pointer"
+                                    >
+                                      + יום
+                                    </button>
+                                  </form>
+                                ) : null}
 
                                 <div className="space-y-2">
                                   {progDays?.map((dayItem: Workout) => {
@@ -5272,7 +5256,11 @@ export function CoachDashboardPage({
                                     return (
                                       <div
                                         key={dayItem.id}
-                                        className="relative overflow-visible rounded-2xl border border-border/60 bg-background p-3.5 shadow-sm"
+                                        className={`relative overflow-visible rounded-2xl border bg-background p-3.5 shadow-sm transition-all ${
+                                          isDayActive
+                                            ? "border-primary/45 ring-2 ring-primary/10"
+                                            : "border-border/60 hover:border-primary/30"
+                                        }`}
                                       >
                                         <div className="flex items-center justify-between gap-2">
                                           {isDayActive ? (
@@ -5302,7 +5290,7 @@ export function CoachDashboardPage({
                                               (() => {
                                                 const nextDayId = isDayActive ? null : dayItem.id;
                                                 if (nextDayId) {
-                                                  setReportBookmarkWorkoutId(nextDayId);
+                                                  setWorkoutWorkspaceTab("build");
                                                   setShowExerciseForm(true);
                                                 } else {
                                                   setShowExerciseForm(false);
@@ -5314,17 +5302,51 @@ export function CoachDashboardPage({
                                             }
                                             className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
                                           >
-                                            {isDayActive
-                                              ? "סגור"
-                                              : genderText(
-                                                  gender,
-                                                  "+ הוסיפי תרגיל",
-                                                  "+ הוסף תרגיל",
-                                                )}
+                                              {isDayActive ? "סגור" : "פתח יום"}
                                           </button>
                                         </div>
 
-                                        {dayItem.items?.length > 0 && (
+                                        {isDayActive ? (
+                                          <div className="mt-3 grid grid-cols-2 gap-1 rounded-2xl border border-border/60 bg-secondary/40 p-1">
+                                            <button
+                                              type="button"
+                                              onClick={() => setWorkoutWorkspaceTab("build")}
+                                              className={`rounded-xl px-3 py-2 text-xs font-extrabold transition-colors ${
+                                                workoutWorkspaceTab === "build"
+                                                  ? "bg-background text-primary shadow-sm"
+                                                  : "text-muted-foreground hover:text-ink"
+                                              }`}
+                                              aria-pressed={workoutWorkspaceTab === "build"}
+                                            >
+                                              בניית האימון
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setWorkoutWorkspaceTab("report");
+                                                setShowExerciseForm(false);
+                                              }}
+                                              className={`rounded-xl px-3 py-2 text-xs font-extrabold transition-colors ${
+                                                workoutWorkspaceTab === "report"
+                                                  ? "bg-background text-primary shadow-sm"
+                                                  : "text-muted-foreground hover:text-ink"
+                                              }`}
+                                              aria-pressed={workoutWorkspaceTab === "report"}
+                                            >
+                                              דוח האימון
+                                            </button>
+                                          </div>
+                                        ) : null}
+
+                                        {isDayActive && workoutWorkspaceTab === "report" ? (
+                                          <WorkoutWeeklyReportWeek
+                                            workout={dayItem}
+                                            history={clientDetails?.history ?? []}
+                                            exercises={store.exercises}
+                                          />
+                                        ) : null}
+
+                                        {isDayActive && workoutWorkspaceTab === "build" && dayItem.items?.length > 0 && (
                                           <div className="space-y-1.5 pt-1">
                                             {dayItem.items.map((exItem: WorkoutItem) => {
                                               const exMeta = store.exercises.find(
@@ -8054,50 +8076,6 @@ export function CoachDashboardPage({
           </div>
         </Overlay>
       </div>
-      {reportBookmarkWorkout && showProgramBuilder
-        ? createPortal(
-            <aside
-              dir="rtl"
-              className={`workout-report-drawer ${
-                openWorkoutReportId === reportBookmarkWorkout.id ? "is-open" : ""
-              }`}
-              aria-label={`דוח עבור ${reportBookmarkWorkout.name}`}
-            >
-              <button
-                type="button"
-                onClick={() =>
-                  setOpenWorkoutReportId((current) =>
-                    current === reportBookmarkWorkout.id ? null : reportBookmarkWorkout.id,
-                  )
-                }
-                aria-expanded={openWorkoutReportId === reportBookmarkWorkout.id}
-                aria-controls={`workout-report-${reportBookmarkWorkout.id}`}
-                className={`workout-report-bookmark ${
-                  openWorkoutReportId === reportBookmarkWorkout.id
-                    ? "workout-report-bookmark-open"
-                    : ""
-                }`}
-                title={openWorkoutReportId === reportBookmarkWorkout.id ? "סגירת דוח" : "פתיחת דוח"}
-              >
-                <span>דוח</span>
-              </button>
-              <div
-                id={`workout-report-${reportBookmarkWorkout.id}`}
-                className="workout-report-drawer-panel"
-                aria-hidden={openWorkoutReportId !== reportBookmarkWorkout.id}
-              >
-                {openWorkoutReportId === reportBookmarkWorkout.id ? (
-                  <WorkoutWeeklyReportWeek
-                    workout={reportBookmarkWorkout}
-                    history={clientDetails?.history ?? []}
-                    exercises={store.exercises}
-                  />
-                ) : null}
-              </div>
-            </aside>,
-            document.body,
-          )
-        : null}
     </AppShell>
   );
 }
