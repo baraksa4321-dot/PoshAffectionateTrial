@@ -111,11 +111,12 @@ export function assertValidMealFood(record: MealFood): void {
 
 export function foodLibraryAudit(foods: FoodItem[]) {
   const invalid = foods.filter((food) => nutritionValidationIssues(food).length > 0);
+  const verified = foods.filter((food) => food.nutritionReview?.status === "reviewed").length;
 
   return {
     total: foods.length,
-    verified: 0,
-    requiresLabelVerification: foods.length,
+    verified,
+    requiresLabelVerification: foods.length - verified,
     invalid: invalid.length,
     duplicateIds: foods.length - new Set(foods.map((food) => food.id)).size,
   };

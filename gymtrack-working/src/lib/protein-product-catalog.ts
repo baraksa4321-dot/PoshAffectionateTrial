@@ -8,6 +8,9 @@ type CuratedProduct = Omit<FoodItem, "catalog"> & {
   catalog: FoodCatalogMetadata;
 };
 
+const DANONE_PRO_STRAWBERRY_SOURCE =
+  "https://danone.strauss-group.com/products/%D7%99%D7%95%D7%92%D7%95%D7%A8%D7%98-%D7%91%D7%98%D7%A2%D7%9D-%D7%AA%D7%95%D7%AA-20-%D7%92%D7%A8%D7%9D-%D7%97%D7%9C%D7%91%D7%95%D7%9F-0-%D7%A9%D7%95%D7%9E%D7%9F-2/";
+
 const curatedProduct = (
   id: string,
   name: string,
@@ -24,32 +27,48 @@ const curatedProduct = (
   searchTerms: string[] = [],
   nutritionReview?: FoodItem["nutritionReview"],
   fiber = 0,
-): CuratedProduct => ({
-  id,
-  name,
-  englishName: `${brand} protein`,
-  category,
-  brand,
-  servingSize,
-  calories,
-  protein,
-  carbs,
-  fat,
-  fiber,
-  searchTerms: [...searchTerms, brand, "חלבון", "protein"],
-  notes:
-    "ערך seed לקטלוג מוצרי חלבון בישראל. יש לבדוק את התווית שעל האריזה לפני שימוש מדויק.",
-  catalog: {
-    source: "curated-israel",
-    sourceProductId: id,
-    sourceUrl,
-    productType,
-    market: "IL",
-    packageSize,
-    verificationStatus: "curated-unverified",
-  },
-  nutritionReview,
-});
+): CuratedProduct => {
+  const resolvedSourceUrl = id === "f-protein-il-danone-pro-strawberry"
+    ? DANONE_PRO_STRAWBERRY_SOURCE
+    : sourceUrl;
+  const resolvedNutritionReview = nutritionReview
+    ? {
+        ...nutritionReview,
+        sources: nutritionReview.sources.map((source) =>
+          source.name.startsWith("דנונה שטראוס")
+            ? { ...source, url: DANONE_PRO_STRAWBERRY_SOURCE }
+            : source,
+        ),
+      }
+    : undefined;
+
+  return {
+    id,
+    name,
+    englishName: `${brand} protein`,
+    category,
+    brand,
+    servingSize,
+    calories,
+    protein,
+    carbs,
+    fat,
+    fiber,
+    searchTerms: [...searchTerms, brand, "חלבון", "protein"],
+    notes:
+      "ערך seed לקטלוג מוצרי חלבון בישראל. יש לבדוק את התווית שעל האריזה לפני שימוש מדויק.",
+    catalog: {
+      source: "curated-israel",
+      sourceProductId: id,
+      sourceUrl: resolvedSourceUrl,
+      productType,
+      market: "IL",
+      packageSize,
+      verificationStatus: "curated-unverified",
+    },
+    ...(resolvedNutritionReview ? { nutritionReview: resolvedNutritionReview } : {}),
+  };
+};
 
 /**
  * A small, offline-safe layer for recognizable Israeli supermarket protein
