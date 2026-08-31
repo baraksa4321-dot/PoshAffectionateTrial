@@ -316,7 +316,7 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await expect(page.getByText("תוכנית האימונים", { exact: true })).toBeVisible();
   const dayButtons = page.getByRole("button", { name: /^בניית אימון אימון בדיקה/ });
   await expect(dayButtons).toHaveCount(4);
-  await dayButtons.nth(1).click();
+  await dayButtons.nth(0).click();
   await expect(page.getByRole("button", { name: "סגירת בניית אימון", exact: true })).toBeVisible();
   await expect(page.locator("#coach-programs")).toBeHidden();
   const workoutSurface = page.locator('[data-coach-workout-surface-slot="true"]');
@@ -333,6 +333,24 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   expect(openedReportBookmark.x).toBeLessThan(closedReportBookmark.x);
   await openReportBookmark.click();
   await expect(page.getByText("דוח שבועי", { exact: true })).toBeHidden();
+
+  await page.getByRole("button", { name: "עריכה", exact: true }).first().click();
+  await expect(page.getByText("עריכת תרגיל באימון", { exact: true })).toBeVisible();
+
+  const thirdSetMode = page.getByRole("combobox", { name: "סוג סט 3" });
+  await thirdSetMode.selectOption("drop");
+  const dropRestInput = page.getByRole("spinbutton", { name: "דרופ סט זמן מנוחה" });
+  await dropRestInput.fill("45");
+  await expect(dropRestInput).toHaveValue("45");
+
+  await thirdSetMode.selectOption("superset");
+  const supersetSearch = page.getByRole("searchbox", {
+    name: "חיפוש תרגיל בן־זוג לסופר סט",
+  });
+  await supersetSearch.fill("תרגיל בדיקה 2");
+  await page.getByRole("option", { name: /תרגיל בדיקה 2/ }).click();
+  await expect(page.getByText(/^נבחר: תרגיל בדיקה 2/)).toBeVisible();
+
   await page.getByRole("button", { name: "סגירת בניית אימון", exact: true }).click();
   await expect(dayButtons).toHaveCount(4);
 

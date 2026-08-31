@@ -1281,6 +1281,7 @@ export function CoachDashboardPage({
   const [techNotes, setTechniqueNotes] = useState("");
   const [supersetGroup, setSupersetGroup] = useState("");
   const [supersetPartnerId, setSupersetPartnerId] = useState("");
+  const [supersetPartnerQuery, setSupersetPartnerQuery] = useState("");
   const [supersetPartnerWeight, setSupersetPartnerWeight] = useState(20);
   const [dropSetEnabled, setDropSetEnabled] = useState(false);
   const [dropLevel1Weight, setDropLevel1Weight] = useState("");
@@ -2884,6 +2885,7 @@ export function CoachDashboardPage({
       setTechniqueNotes("");
       setSupersetGroup("");
       setSupersetPartnerId("");
+       setSupersetPartnerQuery("");
       setDropSetEnabled(false);
       setDropLevel1Weight("");
       setDropLevel2Weight("");
@@ -2911,6 +2913,7 @@ export function CoachDashboardPage({
     setTechniqueNotes("");
     setSupersetGroup("");
     setSupersetPartnerId("");
+     setSupersetPartnerQuery("");
     setDropSetEnabled(false);
     setDropLevel1Weight("");
     setDropLevel2Weight("");
@@ -3300,6 +3303,82 @@ export function CoachDashboardPage({
             exercise.muscleGroup === exerciseMuscleFilter ||
             (exercise.muscleGroups ?? []).includes(exerciseMuscleFilter),
         );
+
+  const supersetPartnerOptions = store.exercises
+    .filter((exercise) => exercise.id !== selectedExId)
+    .filter((exercise) => {
+      const query = supersetPartnerQuery.trim().toLocaleLowerCase();
+      if (!query) return false;
+      return [exercise.name, exercise.muscleGroup, exercise.equipment]
+        .filter(Boolean)
+        .some((value) => value.toLocaleLowerCase().includes(query));
+    })
+    .slice(0, 12);
+  const selectedSupersetPartner = store.exercises.find(
+    (exercise) => exercise.id === supersetPartnerId,
+  );
+
+  const renderSupersetPartnerSearch = () => (
+    <div className="min-w-0">
+      <label className="block text-right text-[9px] font-bold text-violet-900">
+        חיפוש תרגיל בן־זוג לסופר־סט
+        <div className="relative mt-1">
+          <Search
+            className="pointer-events-none absolute end-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-violet-400"
+            aria-hidden="true"
+          />
+          <input
+            type="search"
+            value={supersetPartnerQuery}
+            onChange={(event) => {
+              setSupersetPartnerQuery(event.target.value);
+              if (supersetPartnerId) setSupersetPartnerId("");
+            }}
+            placeholder="הקלד שם תרגיל..."
+            aria-label="חיפוש תרגיל בן־זוג לסופר סט"
+            className="h-9 w-full rounded-lg border border-violet-200 bg-background pe-8 ps-2 text-xs font-normal text-ink outline-none focus:border-violet-400"
+          />
+        </div>
+      </label>
+      {selectedSupersetPartner ? (
+        <p className="mt-1 rounded-lg bg-violet-100 px-2 py-1 text-right text-[10px] font-bold text-violet-900">
+          נבחר: {exerciseDisplayName(selectedSupersetPartner)}
+        </p>
+      ) : null}
+      {supersetPartnerQuery.trim() ? (
+        <div
+          role="listbox"
+          aria-label="תוצאות חיפוש לתרגיל בן־זוג"
+          className="mt-1 max-h-32 overflow-y-auto rounded-lg border border-violet-200 bg-white p-1"
+        >
+          {supersetPartnerOptions.length > 0 ? (
+            supersetPartnerOptions.map((exercise) => (
+              <button
+                key={exercise.id}
+                type="button"
+                role="option"
+                aria-selected={exercise.id === supersetPartnerId}
+                onClick={() => {
+                  setSupersetPartnerId(exercise.id);
+                  setSupersetPartnerQuery("");
+                }}
+                className="block w-full rounded-md px-2 py-1.5 text-right text-[11px] text-ink hover:bg-violet-50"
+              >
+                {exerciseDisplayName(exercise)}
+                <span className="ms-1 text-[9px] text-muted-foreground">
+                  ({exercise.muscleGroup})
+                </span>
+              </button>
+            ))
+          ) : (
+            <p className="px-2 py-2 text-right text-[10px] text-muted-foreground">
+              לא נמצאו תרגילים מתאימים.
+            </p>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
 
   const openCreateExercise = () => {
     if (!isCoach) return;
@@ -5753,6 +5832,7 @@ export function CoachDashboardPage({
                                                           setSupersetPartnerId(
                                                             exItem.supersetPartnerId || "",
                                                           );
+                                                           setSupersetPartnerQuery("");
                                                           setSupersetPartnerWeight(
                                                             exItem.supersetTargetWeight ||
                                                               exItem.targetWeight ||
@@ -6188,42 +6268,11 @@ export function CoachDashboardPage({
                                                           {setModes.find(
                                                             (mode) => mode !== "normal",
                                                           ) === "superset" ? (
-                                                            <label className="block border-b border-violet-200 pb-3 text-right text-[9px] font-bold text-violet-900">
+                                                             <div className="block border-b border-violet-200 pb-3 text-right text-[9px] font-bold text-violet-900">
                                                               <span className="mb-2 block text-xs font-extrabold">
                                                                 סופר סט
                                                               </span>
-                                                              תרגיל בן־זוג לסופר סט
-                                                              <select
-                                                                value={supersetPartnerId}
-                                                                onChange={(event) =>
-                                                                  setSupersetPartnerId(
-                                                                    event.target.value,
-                                                                  )
-                                                                }
-                                                                className="mt-1 h-9 w-full rounded-lg border border-violet-200 bg-background px-2 text-xs font-normal text-ink"
-                                                              >
-                                                                <option value="">
-                                                                  {genderText(
-                                                                    gender,
-                                                                    "בחרי תרגיל בן־זוג",
-                                                                    "בחר תרגיל בן־זוג",
-                                                                  )}
-                                                                </option>
-                                                                {store.exercises
-                                                                  .filter(
-                                                                    (exercise) =>
-                                                                      exercise.id !==
-                                                                      exItem.exerciseId,
-                                                                  )
-                                                                  .map((exercise) => (
-                                                                    <option
-                                                                      key={exercise.id}
-                                                                      value={exercise.id}
-                                                                    >
-                                                                      {exercise.name}
-                                                                    </option>
-                                                                  ))}
-                                                              </select>
+                                                               {renderSupersetPartnerSearch()}
                                                               <div className="mt-2 grid grid-cols-3 gap-1.5">
                                                                 <label className="text-center text-[9px] font-bold text-violet-900">
                                                                   משקל תרגיל 2
@@ -6284,7 +6333,7 @@ export function CoachDashboardPage({
                                                                   />
                                                                 </label>
                                                               </div>
-                                                            </label>
+                                                             </div>
                                                           ) : null}
                                                           <label className="block text-right text-[10px] font-bold text-muted-foreground">
                                                             הערה למתאמן על התרגיל
@@ -6550,6 +6599,7 @@ export function CoachDashboardPage({
                                                                </button>
                                                              ) : null}
                                                              <select
+                                                                aria-label={`סוג סט ${index + 1}`}
                                                                value={mode}
                                                                onChange={(event) => {
                                                                  const nextMode = event.target
@@ -6811,35 +6861,9 @@ export function CoachDashboardPage({
                                                                 className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
                                                               />
                                                             </div>
-                                                            <p className="mb-2 text-[10px] font-extrabold text-violet-900">
-                                                              תרגיל שני בסופר־סט
-                                                            </p>
-                                                            <select
-                                                              value={supersetPartnerId}
-                                                              onChange={(event) =>
-                                                                setSupersetPartnerId(
-                                                                  event.target.value,
-                                                                )
-                                                              }
-                                                              className="mb-2 h-9 w-full rounded-lg border border-violet-200 bg-white px-2 text-xs text-ink"
-                                                            >
-                                                              <option value="">
-                                                                בחר תרגיל שני
-                                                              </option>
-                                                              {store.exercises
-                                                                .filter(
-                                                                  (exercise) =>
-                                                                    exercise.id !== selectedExId,
-                                                                )
-                                                                .map((exercise) => (
-                                                                  <option
-                                                                    key={exercise.id}
-                                                                    value={exercise.id}
-                                                                  >
-                                                                    {exercise.name}
-                                                                  </option>
-                                                                ))}
-                                                            </select>
+                                                             <div className="mb-2">
+                                                               {renderSupersetPartnerSearch()}
+                                                             </div>
                                                             <div className="grid grid-cols-3 gap-1.5">
                                                               <label className="grid gap-1 text-[9px] font-bold text-violet-900">
                                                                 משקל
@@ -6982,6 +7006,29 @@ export function CoachDashboardPage({
                                                                 </div>
                                                               ))}
                                                             </div>
+                                                             <label className="mt-2 grid gap-1 text-[9px] font-bold text-primary">
+                                                               זמן מנוחה (שניות)
+                                                               <input
+                                                                 type="number"
+                                                                 min={0}
+                                                                 step={5}
+                                                                 value={setRests[index] ?? restSec}
+                                                                 onChange={(event) => {
+                                                                   const value = Math.max(
+                                                                     0,
+                                                                     Number(event.target.value),
+                                                                   );
+                                                                   setSetRests((current) => {
+                                                                     const next = [...current];
+                                                                     next[index] = value;
+                                                                     return next;
+                                                                   });
+                                                                   if (index === 0) setRestSec(value);
+                                                                 }}
+                                                                 className="h-8 rounded-md border border-primary/20 bg-background text-center text-[11px]"
+                                                                 aria-label={`${mode === "drop" ? "דרופ סט" : "סט"} זמן מנוחה`}
+                                                               />
+                                                             </label>
                                                           </div>
                                                         ) : null}
                                                       </div>
@@ -7164,39 +7211,9 @@ export function CoachDashboardPage({
                                                           className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
                                                         />
                                                       </label>
-                                                      <label className="col-span-2 grid min-w-0 gap-1 text-[10px] font-bold text-muted-foreground">
-                                                        תרגיל שני בסופר סט
-                                                        <select
-                                                          required
-                                                          value={supersetPartnerId}
-                                                          onChange={(event) =>
-                                                            setSupersetPartnerId(event.target.value)
-                                                          }
-                                                          className="block h-9 w-full min-w-0 max-w-full truncate rounded-lg border border-border bg-white px-2 text-xs text-ink"
-                                                        >
-                                                          <option value="">
-                                                            {genderText(
-                                                              gender,
-                                                              "בחרי תרגיל שמתבצע מיד אחרי הראשון...",
-                                                              "בחר תרגיל שמתבצע מיד אחרי הראשון...",
-                                                            )}
-                                                          </option>
-                                                          {filteredExerciseOptions
-                                                            .filter(
-                                                              (exercise) =>
-                                                                exercise.id !== selectedExId,
-                                                            )
-                                                            .map((exercise) => (
-                                                              <option
-                                                                key={exercise.id}
-                                                                value={exercise.id}
-                                                              >
-                                                                {exerciseDisplayName(exercise)} (
-                                                                {exercise.muscleGroup})
-                                                              </option>
-                                                            ))}
-                                                        </select>
-                                                      </label>
+                                                       <div className="col-span-2 min-w-0">
+                                                         {renderSupersetPartnerSearch()}
+                                                       </div>
                                                       <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                         חזרות סופר סט
                                                         <div className="grid grid-cols-2 gap-1">
