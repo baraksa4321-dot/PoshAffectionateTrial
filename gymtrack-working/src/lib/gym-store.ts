@@ -1751,18 +1751,6 @@ export function saveUserProfile(profile: UserProfile) {
   set({ ...data, userProfile: profile, bodyWeightLogs: logs });
 }
 
-export function saveCalorieVisibility(showCalories: boolean) {
-  if (!canManageAssignedPlans()) return false;
-  set({
-    ...data,
-    userProfile: {
-      ...(data.userProfile ?? { weight: 0 }),
-      showCalories,
-    },
-  });
-  return true;
-}
-
 export async function saveTheme(
   theme: ThemePalette,
 ): Promise<{ success: boolean; error?: string }> {

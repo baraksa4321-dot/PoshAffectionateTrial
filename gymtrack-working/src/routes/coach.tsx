@@ -1862,7 +1862,7 @@ export function CoachDashboardPage({
   };
 
   const saveClientCalorieVisibility = async (showCalories: boolean) => {
-    if (!selectedClientId || !clientDetails?.profile) return;
+    if (!isCoach || !selectedClientId || !clientDetails?.profile) return;
     const previous = clientDetails.profile.showCalories !== false;
     setClientDetails((current) =>
       current?.profile ? { ...current, profile: { ...current.profile, showCalories } } : current,
