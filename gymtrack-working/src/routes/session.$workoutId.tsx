@@ -210,6 +210,9 @@ function Session() {
   const [finishError, setFinishError] = useState("");
   const [videoUploadsInFlight, setVideoUploadsInFlight] = useState(0);
   const [videoUploadError, setVideoUploadError] = useState("");
+  const [videoUploadErrorExerciseIndex, setVideoUploadErrorExerciseIndex] = useState<number | null>(
+    null,
+  );
   const [difficultyRating, setDifficultyRating] = useState<
     "easy" | "appropriate" | "difficult"
   >(() => loadSavedSessionFeedback(workoutId).difficultyRating ?? "appropriate");
@@ -375,6 +378,7 @@ function Session() {
   const [startedAt] = useState(() => Date.now());
   const entriesRef = useRef(entries);
   const videoUploadTasksRef = useRef(new Set<Promise<boolean>>());
+  const videoFilesRef = useRef(new Map<number, File>());
   const restoredVideoDraftWorkoutIdRef = useRef<string | null>(null);
   useEffect(() => {
     entriesRef.current = entries;
@@ -638,13 +642,16 @@ function Session() {
     const previousUrl = entries[exerciseIndex]?.videoUrl;
     if (previousUrl?.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
     setVideoUploadError("");
+    setVideoUploadErrorExerciseIndex(null);
+    videoFilesRef.current.set(exerciseIndex, file);
     setVideoUploadsInFlight((count) => count + 1);
-    setEntries((prev) =>
-      prev.map((entry, index) =>
-        index === exerciseIndex ? { ...entry, videoUrl: nextUrl } : entry,
-      ),
+    const entriesWithLocalVideo = entriesRef.current.map((entry, index) =>
+      index === exerciseIndex ? { ...entry, videoUrl: nextUrl } : entry,
     );
+    entriesRef.current = entriesWithLocalVideo;
+    setEntries(entriesWithLocalVideo);
     void saveWorkoutVideoDraft(workout.id, exerciseIndex, file).catch((error: unknown) => {
+      setVideoUploadErrorExerciseIndex(exerciseIndex);
       setVideoUploadError(
         error instanceof Error ? error.message : "לא ניתן לשמור את הסרטון במכשיר",
       );
@@ -664,17 +671,18 @@ function Session() {
     });
     const uploadTask = Promise.race([upload, timeout])
       .then((uploadedUrl) => {
-        setEntries((prev) =>
-          prev.map((entry, index) => {
-            if (index !== exerciseIndex || entry.videoUrl !== nextUrl) return entry;
-            return { ...entry, videoUrl: uploadedUrl };
-          }),
-        );
+        const entriesWithUploadedVideo = entriesRef.current.map((entry, index) => {
+          if (index !== exerciseIndex || entry.videoUrl !== nextUrl) return entry;
+          return { ...entry, videoUrl: uploadedUrl };
+        });
+        entriesRef.current = entriesWithUploadedVideo;
+        setEntries(entriesWithUploadedVideo);
         void removeWorkoutVideoDraft(workout.id, exerciseIndex);
         URL.revokeObjectURL(nextUrl);
         return true;
       })
       .catch((error: unknown) => {
+        setVideoUploadErrorExerciseIndex(exerciseIndex);
         setVideoUploadError(error instanceof Error ? error.message : "העלאת סרטון הביצוע נכשלה");
         return false;
       })
@@ -684,6 +692,18 @@ function Session() {
       });
     videoUploadTasksRef.current.add(uploadTask);
     void uploadTask.finally(() => videoUploadTasksRef.current.delete(uploadTask));
+  };
+
+  const retryPerformanceVideo = (exerciseIndex: number) => {
+    const file = videoFilesRef.current.get(exerciseIndex);
+    if (file) {
+      selectPerformanceVideo(exerciseIndex, file);
+      return;
+    }
+    void loadWorkoutVideoDrafts(workout.id).then((drafts) => {
+      const draft = drafts.find((item) => item.exerciseIndex === exerciseIndex);
+      if (draft) selectPerformanceVideo(exerciseIndex, draft.file);
+    });
   };
 
   useEffect(() => {
@@ -1193,10 +1213,22 @@ function Session() {
                     aria-label={`סרטון ביצוע ${entry.exerciseName}`}
                   />
                 ) : null}
-                {videoUploadError ? (
-                  <p className="mt-2 text-[10px] font-semibold text-destructive">
-                    {videoUploadError}
+                {videoUploadsInFlight > 0 && entry.videoUrl?.startsWith("blob:") ? (
+                  <p className="mt-2 text-[10px] font-semibold text-primary">
+                    הסרטון נשמר במכשיר ומועלה לענן…
                   </p>
+                ) : null}
+                {videoUploadError && videoUploadErrorExerciseIndex === ei ? (
+                  <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-rose-50 px-2 py-1.5">
+                    <p className="text-[10px] font-semibold text-destructive">{videoUploadError}</p>
+                    <button
+                      type="button"
+                      onClick={() => retryPerformanceVideo(ei)}
+                      className="shrink-0 rounded-md bg-white px-2 py-1 text-[10px] font-bold text-primary"
+                    >
+                      נסי שוב
+                    </button>
+                  </div>
                 ) : null}
               </div>
 

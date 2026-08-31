@@ -486,7 +486,7 @@ export function dedupeHistorySessions(history: HistorySession[]): HistorySession
       const executionKey = JSON.stringify({
         workoutId: session.workoutId,
         workoutName: session.workoutName,
-        date: reportSessionDateKey(session.date),
+        date: session.date,
         durationSec: session.durationSec,
         entries: session.entries.map(historyEntryKey),
         notes: session.notes ?? "",

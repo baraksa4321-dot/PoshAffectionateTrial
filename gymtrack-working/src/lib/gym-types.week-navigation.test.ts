@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
+  dedupeHistorySessions,
+  dedupeWorkoutItems,
   getNextWorkoutReportWeekOffset,
   getWorkoutReportSessions,
   getWorkoutReportWeekDates,
@@ -168,5 +170,37 @@ describe("workout report week navigation", () => {
         weekDates,
       ).map(({ id }) => id),
     ).toEqual(["saturday-late", "sunday-late"]);
+  });
+
+  test("collapses exact retry duplicates but keeps distinct executions", () => {
+    const duplicate = session("retry-copy", "2026-08-26T09:00:00.000Z");
+    const sameExecutionWithNewId = session("retry-copy-2", "2026-08-26T09:00:00.000Z");
+    const distinctExecution = session("second-session", "2026-08-26T12:00:00.000Z");
+
+    expect(
+      dedupeHistorySessions([duplicate, sameExecutionWithNewId, distinctExecution]).map(
+        ({ id }) => id,
+      ),
+    ).toEqual(["second-session", "retry-copy"]);
+  });
+
+  test("keeps only one copy of an exercise in a workout plan", () => {
+    const item = (id: string, exerciseId: string): Workout["items"][number] => ({
+      id,
+      exerciseId,
+      sets: 3,
+      reps: 10,
+      weight: 20,
+      rest: 60,
+      notes: "",
+    });
+
+    expect(
+      dedupeWorkoutItems([
+        item("first", "squat"),
+        item("duplicate", "squat"),
+        item("row", "row"),
+      ]).map(({ id }) => id),
+    ).toEqual(["first", "row"]);
   });
 });

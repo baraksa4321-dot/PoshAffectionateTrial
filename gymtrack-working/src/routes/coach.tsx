@@ -241,10 +241,10 @@ function WorkoutReviewExerciseCard({
   onOpenPlan,
 }: {
   item: WorkoutItem;
-  exercise?: Exercise;
+  exercise?: Exercise | undefined;
   records: WorkoutReviewRecord[];
-  replacementEntry?: HistoryEntry;
-  onOpenPlan?: () => void;
+  replacementEntry?: HistoryEntry | undefined;
+  onOpenPlan?: (() => void) | undefined;
 }) {
   const completed = records.length > 0;
   const title = records[0]?.entry.exerciseName || item.exerciseName || exercise?.name || "תרגיל";
@@ -649,10 +649,11 @@ function WorkoutWeeklyReportWeek({
                 exerciseName: entry.exerciseName,
                 sets: entry.sets.length,
                 reps: entry.targetReps || 0,
-                repMin: entry.targetReps,
                 weight: entry.sets[0]?.weight || 0,
+                rest: 0,
                 notes: "",
                 workingSets: [],
+                ...(entry.targetReps ? { repMin: entry.targetReps } : {}),
               }}
               records={[{ date, entry }]}
             />
@@ -3132,13 +3133,21 @@ export function CoachDashboardPage({
         .map((food) => ({ date: day.date, meal: meal.name, note: food.notes!.trim() })),
     ),
   );
+  const clientWorkouts = useMemo(() => {
+    const seen = new Set<string>();
+    return (clientDetails?.workouts ?? []).filter((workout) => {
+      if (seen.has(workout.id)) return false;
+      seen.add(workout.id);
+      return true;
+    });
+  }, [clientDetails?.workouts]);
   const trackingSessions = clientDetails
     ? getWorkoutSessionsForDate(clientDetails.history, trackingDate)
     : [];
   const visibleTrackingSessions = selectedTrackingWorkoutId
     ? trackingSessions.filter((session) => session.workoutId === selectedTrackingWorkoutId)
     : [];
-  const selectedTrackingWorkout = clientDetails?.workouts.find(
+  const selectedTrackingWorkout = clientWorkouts.find(
     (workout) => workout.id === selectedTrackingWorkoutId,
   );
   const activeProgram =
@@ -3146,21 +3155,31 @@ export function CoachDashboardPage({
     clientDetails?.programs.at(-1);
   const reportBookmarkId =
     reportBookmarkWorkoutId ?? editingDayId ?? activeProgram?.dayIds?.[0] ?? null;
-  const reportBookmarkWorkout = clientDetails?.workouts.find(
+  const reportBookmarkWorkout = clientWorkouts.find(
     (workout) => workout.id === reportBookmarkId,
   );
   const trackingPlanRows =
-    selectedTrackingWorkout?.items.map((item) => {
+    selectedTrackingWorkout?.items
+      ? workoutReviewItems(selectedTrackingWorkout).map((item) => {
       const sessionEntries = visibleTrackingSessions.flatMap((session) => session.entries);
-      const actualEntry = sessionEntries.find((entry) => entry.exerciseId === item.exerciseId);
+      const actualRecords = visibleTrackingSessions.flatMap((session) =>
+        session.entries
+          .filter((entry) => entry.exerciseId === item.exerciseId)
+          .map((entry) => ({ date: session.date, sessionId: session.id, entry })),
+      );
+      const actualEntries = actualRecords.map(({ entry }) => entry);
+      const actualEntry = actualEntries[0];
       const replacementEntry = actualEntry ? undefined : findReplacementEntry(item, sessionEntries);
       return {
         item,
         actualEntry,
+        actualEntries,
+        actualRecords,
         replacementEntry,
         exercise: store.exercises.find((exercise) => exercise.id === item.exerciseId),
       };
-    }) ?? [];
+    })
+      : [];
   const trackingNutritionDay = clientDetails?.nutritionDays.find(
     (day) => day.date === trackingDate,
   );
@@ -4434,7 +4453,7 @@ export function CoachDashboardPage({
                             : "grid gap-2 sm:grid-cols-2"
                         }
                       >
-                        {clientDetails.workouts.map((workout) => (
+                        {clientWorkouts.map((workout) => (
                           <button
                             key={workout.id}
                             type="button"
@@ -4460,7 +4479,7 @@ export function CoachDashboardPage({
                           </button>
                         ))}
                       </div>
-                      {clientDetails.workouts.length === 0 ? (
+                      {clientWorkouts.length === 0 ? (
                         <p className="rounded-xl bg-white/80 p-3 text-center text-xs text-muted-foreground">
                           עדיין לא נבנו אימונים למתאמן הזה.
                         </p>
@@ -4938,130 +4957,35 @@ export function CoachDashboardPage({
                           </div>
 
                           {trackingPlanRows.length > 0 ? (
-                            <div className="space-y-1.5">
+                            <div className="space-y-2">
                               {trackingPlanRows.map(
-                                ({ item, actualEntry, replacementEntry, exercise }) => {
-                                  const videoUrl = actualEntry?.videoUrl || exercise?.videoUrl;
-                                  return (
-                                    <div
-                                      key={item.id}
-                                      role="button"
-                                      tabIndex={0}
-                                      onClick={() =>
-                                        openTrackedPlan(selectedTrackingWorkout.id, item.exerciseId)
+                                ({ item, actualRecords, replacementEntry, exercise }) => (
+                                  <div
+                                    key={item.id}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() =>
+                                      openTrackedPlan(selectedTrackingWorkout.id, item.exerciseId)
+                                    }
+                                    onKeyDown={(event) => {
+                                      if (event.key === "Enter" || event.key === " ") {
+                                        event.preventDefault();
+                                        openTrackedPlan(
+                                          selectedTrackingWorkout.id,
+                                          item.exerciseId,
+                                        );
                                       }
-                                      onKeyDown={(event) => {
-                                        if (event.key === "Enter" || event.key === " ") {
-                                          event.preventDefault();
-                                          openTrackedPlan(
-                                            selectedTrackingWorkout.id,
-                                            item.exerciseId,
-                                          );
-                                        }
-                                      }}
-                                      className={`rounded-xl border px-3 py-2.5 text-[11px] ${
-                                        actualEntry
-                                          ? "border-emerald-200 bg-emerald-50/70"
-                                          : "border-border/60 bg-white/80"
-                                      } cursor-pointer text-start transition-colors hover:border-primary/50 hover:bg-primary/5`}
-                                    >
-                                      <div className="flex items-start justify-between gap-2">
-                                        <Link
-                                          to="/coach/clients/$clientId/program"
-                                          params={{ clientId: selectedClientId ?? clientId ?? "" }}
-                                          search={{
-                                            dayId: selectedTrackingWorkout.id,
-                                            ...(clientDetails.programs.find((program) =>
-                                              program.dayIds.includes(selectedTrackingWorkout.id),
-                                            )
-                                              ? {
-                                                  programId: clientDetails.programs.find(
-                                                    (program) =>
-                                                      program.dayIds.includes(
-                                                        selectedTrackingWorkout.id,
-                                                      ),
-                                                  )!.id,
-                                                }
-                                              : {}),
-                                            exerciseId: item.exerciseId,
-                                          }}
-                                          className="text-start font-bold text-ink hover:text-primary hover:underline"
-                                          onClick={(event) => {
-                                            event.stopPropagation();
-                                          }}
-                                        >
-                                          {actualEntry?.exerciseName || exercise?.name || "תרגיל"}
-                                        </Link>
-                                        <span
-                                          className={`shrink-0 text-[10px] font-bold ${
-                                            actualEntry
-                                              ? "text-emerald-700"
-                                              : "text-muted-foreground"
-                                          }`}
-                                        >
-                                          {actualEntry ? "בוצע בפועל" : "טרם בוצע"}
-                                        </span>
-                                      </div>
-                                      {actualEntry ? (
-                                        <>
-                                          <p className="mt-1 text-muted-foreground">
-                                            {actualEntry.sets.length > 0
-                                              ? actualEntry.sets
-                                                  .map(
-                                                    (set, index) =>
-                                                      `סט ${index + 1}: ${set.weight} ק״ג × ${
-                                                        set.reps
-                                                      }${set.done ? " ✓" : " — לא בוצע"}`,
-                                                  )
-                                                  .join(" · ")
-                                              : "לא נרשמו סטים"}
-                                          </p>
-                                          {actualEntry.feedback?.notes || actualEntry.notes ? (
-                                            <p className="mt-1 text-ink">
-                                              הערה:{" "}
-                                              {actualEntry.feedback?.notes || actualEntry.notes}
-                                            </p>
-                                          ) : null}
-                                          {actualEntry.feedback?.rating ? (
-                                            <p className="mt-1 text-muted-foreground">
-                                              דירוג:{" "}
-                                              {actualEntry.feedback.rating === "easy"
-                                                ? "קל"
-                                                : actualEntry.feedback.rating === "difficult"
-                                                  ? "כבד"
-                                                  : "מתאים"}
-                                            </p>
-                                          ) : null}
-                                        </>
-                                      ) : (
-                                        <>
-                                          <p className="mt-1 text-muted-foreground">
-                                            תוכנן: {item.sets} סטים × {item.repMin || item.reps}
-                                            {item.repMax ? `-${item.repMax}` : ""} חזרות ·{" "}
-                                            {item.targetWeight || item.weight} ק״ג
-                                          </p>
-                                          {replacementEntry ? (
-                                            <p className="mt-1 font-semibold text-primary">
-                                              הוחלף ב־
-                                              {replacementEntry.exerciseName || "תרגיל אחר"}
-                                            </p>
-                                          ) : null}
-                                        </>
-                                      )}
-                                      {videoUrl ? (
-                                        <a
-                                          href={videoUrl}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          onClick={(event) => event.stopPropagation()}
-                                          className="mt-1 inline-flex items-center rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20"
-                                        >
-                                          סרטון לתרגיל
-                                        </a>
-                                      ) : null}
-                                    </div>
-                                  );
-                                },
+                                    }}
+                                    className="cursor-pointer text-start transition-colors hover:border-primary/50"
+                                  >
+                                    <WorkoutReviewExerciseCard
+                                      item={item}
+                                      exercise={exercise}
+                                      replacementEntry={replacementEntry}
+                                      records={actualRecords}
+                                    />
+                                  </div>
+                                ),
                               )}
                             </div>
                           ) : (
