@@ -41,11 +41,18 @@ const workout = {
   items: workoutItems,
 };
 
+const workouts = Array.from({ length: 4 }, (_, index) => ({
+  id: index === 0 ? WORKOUT_ID : `${WORKOUT_ID}-${index + 1}`,
+  name: index === 0 ? workout.name : `אימון בדיקה ${index + 1}`,
+  notes: index === 0 ? workout.notes : `יום בדיקה ${index + 1}`,
+  items: index === 0 ? workoutItems : [],
+}));
+
 const program = {
   id: PROGRAM_ID,
   name: "תוכנית בדיקה לאייפון",
   notes: "בדיקת סביבת עבודה ארוכה",
-  dayIds: [WORKOUT_ID],
+  dayIds: workouts.map((day) => day.id),
 };
 
 const clientProfile = {
@@ -113,7 +120,7 @@ const nutritionDay = {
 
 const gymData = {
   exercises,
-  workouts: [workout],
+  workouts,
   programs: [program],
   history: [],
   foods: [],
@@ -179,7 +186,7 @@ function authSession() {
 
 async function installFixture(page) {
   await page.addInitScript(
-    ({ cacheKey, cacheValue, session, clientProfile, coachProfile, program, workout, nutritionDay }) => {
+    ({ cacheKey, cacheValue, session, clientProfile, coachProfile, program, workouts, nutritionDay }) => {
       Object.defineProperty(window.navigator, "onLine", {
         configurable: true,
         get: () => false,
@@ -226,16 +233,14 @@ async function installFixture(page) {
           } else if (path === "programs") {
             body = [{ id: program.id, user_id: clientProfile.id, name: program.name, description: program.notes }];
           } else if (path === "program_days") {
-            body = [
-              {
-                id: workout.id,
-                program_id: program.id,
-                user_id: clientProfile.id,
-                name: workout.name,
-                items: workout.items,
-                sort_order: 0,
-              },
-            ];
+            body = workouts.map((workout, index) => ({
+              id: workout.id,
+              program_id: program.id,
+              user_id: clientProfile.id,
+              name: workout.name,
+              items: workout.items,
+              sort_order: index,
+            }));
           } else if (path === "nutrition_days") {
             body = [nutritionDay];
           }
@@ -257,7 +262,7 @@ async function installFixture(page) {
       clientProfile,
       coachProfile,
       program,
-      workout,
+      workouts,
       nutritionDay,
     },
   );
@@ -309,15 +314,18 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
 
   await page.getByRole("tab", { name: "תוכנית אימונים" }).click();
   await expect(page.getByText("תוכנית האימונים", { exact: true })).toBeVisible();
-  const openDayButton = page.getByRole("button", { name: "פתח יום" });
-  if (await openDayButton.count()) {
-    await openDayButton.first().click();
-  }
-  await expect(page.getByRole("button", { name: "בניית האימון" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "דוח האימון" })).toBeVisible();
-  await page.getByRole("button", { name: "דוח האימון" }).click();
+  const dayButtons = page.getByRole("button", { name: /^בניית אימון אימון בדיקה/ });
+  await expect(dayButtons).toHaveCount(4);
+  await dayButtons.nth(1).click();
+  await expect(page.getByRole("button", { name: "חזרה לימי האימון", exact: true })).toBeVisible();
+  const reportBookmark = page.getByRole("button", { name: "דוח", exact: true });
+  await expect(reportBookmark).toBeVisible();
+  await reportBookmark.click();
   await expect(page.getByText("דוח שבועי", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "בניית האימון" }).click();
+  await reportBookmark.click();
+  await expect(page.getByText("דוח שבועי", { exact: true })).toBeHidden();
+  await page.getByRole("button", { name: "חזרה לימי האימון", exact: true }).click();
+  await expect(dayButtons).toHaveCount(4);
 
   await page.getByRole("tab", { name: "תפריט תזונה" }).click();
   await page.getByRole("button", { name: "+ מאכל" }).first().click();
