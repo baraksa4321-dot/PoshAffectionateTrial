@@ -70,7 +70,8 @@ export function Stepper({
             onFocus={(event) => {
               setEditing(true);
               setDraftValue(displayValue);
-              window.requestAnimationFrame(() => event.currentTarget.select());
+              const input = event.currentTarget;
+              window.requestAnimationFrame(() => input.select());
             }}
             onChange={(event) => setDraftValue(event.target.value)}
             onBlur={() => {

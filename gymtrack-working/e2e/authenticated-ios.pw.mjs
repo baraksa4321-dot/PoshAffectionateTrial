@@ -71,6 +71,7 @@ const clientProfile = {
           id: "ios-smoke-meal-food",
           foodId: "f-rice",
           name: "אורז",
+          servingSize: "1 מנה",
           quantity: 1,
           calories: 200,
           protein: 4,
@@ -95,6 +96,7 @@ const nutritionDay = {
           id: "ios-smoke-meal-food",
           foodId: "f-rice",
           name: "אורז",
+          servingSize: "1 מנה",
           quantity: 1,
           calories: 200,
           protein: 4,
@@ -175,70 +177,9 @@ function authSession() {
   };
 }
 
-function jsonResponse(body) {
-  const rowCount = Array.isArray(body) ? body.length : 1;
-  return {
-    status: 200,
-    contentType: "application/json",
-    headers: { "content-range": `0-${Math.max(0, rowCount - 1)}/*` },
-    body: JSON.stringify(body),
-  };
-}
-
-function postgrestRows(url) {
-  const path = new URL(url).pathname.replace(/^.*\/rest\/v1\//, "");
-  const query = new URL(url).searchParams;
-  if (path === "coach_clients") {
-    return [
-      {
-        id: "ios-smoke-link",
-        client_id: CLIENT_ID,
-        created_at: "2026-01-02T00:00:00.000Z",
-        profiles: {
-          email: clientProfile.email,
-          full_name: clientProfile.full_name,
-          weight_kg: clientProfile.weight_kg,
-        },
-      },
-    ];
-  }
-  if (path === "client_feedback" || path === "broadcast_announcements") return [];
-  if (path === "profiles") {
-    return [query.get("id")?.includes(CLIENT_ID) ? clientProfile : coachProfile];
-  }
-  if (path === "programs") {
-    return [{ id: PROGRAM_ID, user_id: CLIENT_ID, name: program.name, description: program.notes }];
-  }
-  if (path === "program_days") {
-    return [
-      {
-        id: WORKOUT_ID,
-        program_id: PROGRAM_ID,
-        user_id: CLIENT_ID,
-        name: workout.name,
-        items: workout.items,
-        sort_order: 0,
-      },
-    ];
-  }
-  if (path === "nutrition_days") return [nutritionDay];
-  if (
-    path === "body_measurements" ||
-    path === "workout_sessions" ||
-    path === "cardio_logs" ||
-    path === "food_favorites" ||
-    path === "custom_exercises" ||
-    path === "custom_foods" ||
-    path === "coach_recipes"
-  ) {
-    return [];
-  }
-  return [];
-}
-
 async function installFixture(page) {
   await page.addInitScript(
-    ({ cacheKey, cacheValue, session }) => {
+    ({ cacheKey, cacheValue, session, clientProfile, coachProfile, program, workout, nutritionDay }) => {
       Object.defineProperty(window.navigator, "onLine", {
         configurable: true,
         get: () => false,
@@ -253,19 +194,74 @@ async function installFixture(page) {
       window.localStorage.setItem(cacheKey, JSON.stringify(cacheValue));
       window.localStorage.setItem(`${cacheKey.replace("user.", "pending.")}`, "false");
       window.sessionStorage.setItem("gymtrack.workspace", "management");
+
+      const originalFetch = window.fetch.bind(window);
+      window.fetch = async (input, init) => {
+        const url = typeof input === "string" ? input : input.url;
+        if (url.includes("/auth/v1/user")) {
+          return new Response(JSON.stringify(session.user), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        if (url.includes("/rest/v1/")) {
+          const parsed = new URL(url);
+          const path = parsed.pathname.replace(/^.*\/rest\/v1\//, "");
+          let body = [];
+          if (path === "coach_clients") {
+            body = [
+              {
+                id: "ios-smoke-link",
+                client_id: clientProfile.id,
+                created_at: "2026-01-02T00:00:00.000Z",
+                profiles: {
+                  email: clientProfile.email,
+                  full_name: clientProfile.full_name,
+                  weight_kg: clientProfile.weight_kg,
+                },
+              },
+            ];
+          } else if (path === "profiles") {
+            body = [parsed.searchParams.get("id")?.includes(clientProfile.id) ? clientProfile : coachProfile];
+          } else if (path === "programs") {
+            body = [{ id: program.id, user_id: clientProfile.id, name: program.name, description: program.notes }];
+          } else if (path === "program_days") {
+            body = [
+              {
+                id: workout.id,
+                program_id: program.id,
+                user_id: clientProfile.id,
+                name: workout.name,
+                items: workout.items,
+                sort_order: 0,
+              },
+            ];
+          } else if (path === "nutrition_days") {
+            body = [nutritionDay];
+          }
+          return new Response(JSON.stringify(body), {
+            status: 200,
+            headers: {
+              "content-range": `0-${Math.max(0, body.length - 1)}/*`,
+              "content-type": "application/json",
+            },
+          });
+        }
+        return originalFetch(input, init);
+      };
     },
     {
       cacheKey: `gymtrack.v1.user.${COACH_ID}`,
       cacheValue: gymData,
       session: authSession(),
+      clientProfile,
+      coachProfile,
+      program,
+      workout,
+      nutritionDay,
     },
   );
 
-  await page.route("**/auth/v1/user**", (route) => route.fulfill(jsonResponse(authSession().user)));
-  await page.route("**/rest/v1/**", (route) => {
-    if (route.request().method() !== "GET") return route.fulfill(jsonResponse([]));
-    return route.fulfill(jsonResponse(postgrestRows(route.request().url())));
-  });
 }
 
 function assertKeyboardVisible(locator) {
@@ -289,6 +285,7 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await expect(coachNav).toBeVisible();
   await coachNav.click();
   await expect(page).toHaveURL(/\/coach\/clients/);
+  await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("בדיקה");
   await expect(page.getByText("מתאמנת בדיקה", { exact: true })).toBeVisible();
 
   const clientCard = page.getByText("מתאמנת בדיקה", { exact: true }).first();
@@ -311,7 +308,7 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
     .toBe(true);
 
   await page.getByRole("tab", { name: "תוכנית אימונים" }).click();
-  const programSearch = page.getByRole("textbox", { name: "חיפוש תוכנית אימון" });
+  const programSearch = page.getByRole("searchbox", { name: "חיפוש תוכנית אימון" });
   await programSearch.fill("בדיקה");
   await assertKeyboardVisible(programSearch);
   await expect(programSearch).toHaveValue("בדיקה");
@@ -331,7 +328,7 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   const firstExerciseTop = await firstExercise.boundingBox();
   expect(progressBottom?.y + progressBottom?.height).toBeLessThanOrEqual(firstExerciseTop?.y ?? 0);
 
-  const repsInput = page.locator('input[type="number"]').first();
+  const repsInput = page.locator('input[inputmode="decimal"]').first();
   await repsInput.fill("123");
   await assertKeyboardVisible(repsInput);
   await page.keyboard.press("Tab");
@@ -350,12 +347,16 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await expect(page.getByText("4%", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "בטל סיום סט" }).first().click();
   await expect(page.getByText("0%", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
+  await expect(workoutNote).toBeVisible();
   await expect(workoutNote).toHaveValue("הערת בדיקה 123");
+  await page.keyboard.press("Escape");
+  await expect(workoutNote).toBeHidden();
 
   await page.getByRole("button", { name: "פתח פרטי תרגיל בדיקה 1" }).click();
   const detailsSheet = page.getByRole("dialog", { name: "פרטי תרגיל" });
   await expect(detailsSheet).toBeVisible();
-  await detailsSheet.getByRole("button", { name: "סגור" }).click();
+  await detailsSheet.getByRole("button").first().click();
   await expect(detailsSheet).toBeHidden();
   await expect.poll(() => page.evaluate(() => document.documentElement.style.overflow)).toBe("");
 
@@ -369,7 +370,7 @@ test("active workout values survive leaving and reopening the session", async ({
   await page.goto(`/session/${WORKOUT_ID}`);
   await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
 
-  const repsInput = page.locator('input[type="number"]').first();
+  const repsInput = page.locator('input[inputmode="decimal"]').first();
   await repsInput.fill("123");
   await page.keyboard.press("Tab");
   await expect(repsInput).toHaveValue("123");
@@ -388,7 +389,7 @@ test("active workout values survive leaving and reopening the session", async ({
   await page.goto(`/session/${WORKOUT_ID}`);
   await page.reload();
   await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
-  await expect(page.locator('input[type="number"]').first()).toHaveValue("123");
+  await expect(page.locator('input[inputmode="decimal"]').first()).toHaveValue("123");
 
   // Reopening the completion sheet restores the unfinished workout note.
   await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
