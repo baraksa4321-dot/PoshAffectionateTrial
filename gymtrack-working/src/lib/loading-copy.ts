@@ -38,6 +38,22 @@ export const LOADING_MESSAGES = [
   "שנייה, אנחנו נותנים לפיצה את הכבוד שמגיע לה",
 ] as const;
 
+export const LOADING_CYCLE_STORAGE_KEY = "my-routine-loading-cycle-v6";
+
+export function readLoadingCycle(value: string | null) {
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+export function loadingCycleIndexes(cycleIndex: number, animationCount: number) {
+  const safeCycleIndex = Number.isSafeInteger(cycleIndex) && cycleIndex >= 0 ? cycleIndex : 0;
+  const safeAnimationCount = Math.max(1, Math.floor(animationCount));
+  return {
+    animationIndex: safeCycleIndex % safeAnimationCount,
+    messageIndex: safeCycleIndex % LOADING_MESSAGES.length,
+  };
+}
+
 export function loadingMessageForGender(index: number, gender: "female" | "male" | undefined) {
   const message = LOADING_MESSAGES[index % LOADING_MESSAGES.length] ?? LOADING_MESSAGES[0];
   if (gender === "female") return message;

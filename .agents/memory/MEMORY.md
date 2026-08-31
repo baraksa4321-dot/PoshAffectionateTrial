@@ -20,3 +20,4 @@
 - [Live Supabase sync drift](live-supabase-sync-drift.md) — Local realtime mocks can pass while the live schema or publication is behind; verify both before declaring cross-user sync ready.
 - [Playwright WebKit runtime](playwright-webkit-nix.md) — The bundled Linux WebKit may require Debian ABI libraries unavailable in stable Nix; keep the release gate explicit rather than silently skipping it.
 - [Supabase RLS policy additivity](supabase-rls-policy-additivity.md) — Live legacy policies can widen writes; inspect and remove old variants when tightening RLS.
+- [Loading cycle persistence](loading-cycle-persistence.md) — Persist only the per-opening index; keep in-loading animation rotation transient and guard StrictMode from double claims.

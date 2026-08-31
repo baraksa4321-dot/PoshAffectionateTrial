@@ -13,6 +13,7 @@ import {
   type ReactNode,
   useEffect,
   useLayoutEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -30,7 +31,12 @@ import {
 } from "../lib/gym-store";
 import { supabase } from "../lib/supabase";
 import { genderText } from "../lib/gender-copy";
-import { LOADING_MESSAGES, loadingMessageForGender } from "../lib/loading-copy";
+import {
+  LOADING_CYCLE_STORAGE_KEY,
+  loadingCycleIndexes,
+  loadingMessageForGender,
+  readLoadingCycle,
+} from "../lib/loading-copy";
 import { LockKeyhole, RefreshCw } from "lucide-react";
 
 const useLoadingCycleEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -1089,9 +1095,15 @@ function RootContent() {
   const { userProfile } = useGym();
   // Keep the first SSR and browser render identical. The persisted cycle is
   // applied after mount so loading media cannot trigger a hydration mismatch.
-  const [loadingCycle, setLoadingCycle] = useState(0);
-  const loadingVariant = loadingCycle % SIMPLE_LOADING_ILLUSTRATIONS.length;
-  const loadingMessageIndex = (loadingCycle + 1) % LOADING_MESSAGES.length;
+  const [openingCycleIndex, setOpeningCycleIndex] = useState(0);
+  const [loadingRotationTick, setLoadingRotationTick] = useState(0);
+  const openingCycleClaimedRef = useRef(false);
+  const loadingIndexes = loadingCycleIndexes(
+    openingCycleIndex + loadingRotationTick,
+    SIMPLE_LOADING_ILLUSTRATIONS.length,
+  );
+  const loadingVariant = loadingIndexes.animationIndex;
+  const loadingMessageIndex = loadingIndexes.messageIndex;
   const [minimumLoadingDone, setMinimumLoadingDone] = useState(false);
   const profileHydrationStatus = useProfileHydrationStatus();
   const profileHydrationError = useProfileHydrationError();
@@ -1142,22 +1154,23 @@ function RootContent() {
     document.documentElement.lang = "he";
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
-    const storageKey = "my-routine-loading-cycle-v5";
-    setLoadingCycle((current) => {
+    const claimOpeningCycle = () => {
       try {
-        const previousCycle = Number(window.localStorage.getItem(storageKey));
-        const nextCycle =
-          Number.isInteger(previousCycle) && previousCycle >= 0
-            ? previousCycle + 1
-            : Math.floor(Math.random() * 1_000_000);
-        window.localStorage.setItem(storageKey, String(nextCycle));
-        return nextCycle;
+        const cycleIndex = readLoadingCycle(window.localStorage.getItem(LOADING_CYCLE_STORAGE_KEY));
+        const nextCycleIndex = cycleIndex === Number.MAX_SAFE_INTEGER ? 0 : cycleIndex + 1;
+        window.localStorage.setItem(LOADING_CYCLE_STORAGE_KEY, String(nextCycleIndex));
+        return cycleIndex;
       } catch {
-        // Private browsing can disable storage. Use a per-open seed instead
-        // of falling back to the same first illustration and message.
-        return Math.floor(Math.random() * 1_000_000) || current + 1;
+        // Private browsing can disable storage. Keep the deterministic first
+        // choice for this open rather than introducing a random fallback.
+        return 0;
       }
-    });
+    };
+
+    if (!openingCycleClaimedRef.current) {
+      openingCycleClaimedRef.current = true;
+      setOpeningCycleIndex(claimOpeningCycle());
+    }
     // Register the offline app shell in Preview as well as production. The
     // Preview URL is the address users may save on their phones, so it must
     // be able to serve the cached app when Safari is in Airplane Mode.
@@ -1171,27 +1184,12 @@ function RootContent() {
     }
     const advanceForRestoredPage = (event: PageTransitionEvent) => {
       if (!event.persisted) return;
-      setLoadingCycle((current) => {
-        const nextCycle = current + 1;
-        try {
-          window.localStorage.setItem(storageKey, String(nextCycle));
-        } catch {
-          // Keep the new cycle in memory when storage is unavailable.
-        }
-        return nextCycle;
-      });
+      setOpeningCycleIndex(claimOpeningCycle());
+      setLoadingRotationTick(0);
     };
     window.addEventListener("pageshow", advanceForRestoredPage);
     const illustrationTimer = window.setInterval(() => {
-      setLoadingCycle((current) => {
-        const nextCycle = current + 1;
-        try {
-          window.localStorage.setItem(storageKey, String(nextCycle));
-        } catch {
-          // Keep the animation rotation in memory when storage is unavailable.
-        }
-        return nextCycle;
-      });
+      setLoadingRotationTick((current) => current + 1);
     }, 1_500);
     const minimumLoadingTimer = window.setTimeout(() => {
       setMinimumLoadingDone(true);
