@@ -1,8 +1,4 @@
-import type {
-  FoodCatalogMetadata,
-  FoodItem,
-  FoodCatalogProductType,
-} from "./gym-types";
+import type { FoodCatalogMetadata, FoodItem, FoodCatalogProductType } from "./gym-types";
 
 type CuratedProduct = Omit<FoodItem, "catalog"> & {
   catalog: FoodCatalogMetadata;
@@ -10,6 +6,19 @@ type CuratedProduct = Omit<FoodItem, "catalog"> & {
 
 const DANONE_PRO_STRAWBERRY_SOURCE =
   "https://danone.strauss-group.com/products/%D7%99%D7%95%D7%92%D7%95%D7%A8%D7%98-%D7%91%D7%98%D7%A2%D7%9D-%D7%AA%D7%95%D7%AA-20-%D7%92%D7%A8%D7%9D-%D7%97%D7%9C%D7%91%D7%95%D7%9F-0-%D7%A9%D7%95%D7%9E%D7%9F-2/";
+
+const comparisonReview = (
+  name: string,
+  url: string,
+  kind: NonNullable<FoodItem["nutritionReview"]>["sources"][number]["kind"],
+  valuesPer: NonNullable<FoodItem["nutritionReview"]>["sources"][number]["valuesPer"],
+  notes: string,
+): FoodItem["nutritionReview"] => ({
+  status: "unreviewed",
+  checkedAt: "2026-08-31",
+  sources: [{ name, url, kind, match: "comparison", valuesPer }],
+  notes,
+});
 
 const curatedProduct = (
   id: string,
@@ -28,9 +37,8 @@ const curatedProduct = (
   nutritionReview?: FoodItem["nutritionReview"],
   fiber = 0,
 ): CuratedProduct => {
-  const resolvedSourceUrl = id === "f-protein-il-danone-pro-strawberry"
-    ? DANONE_PRO_STRAWBERRY_SOURCE
-    : sourceUrl;
+  const resolvedSourceUrl =
+    id === "f-protein-il-danone-pro-strawberry" ? DANONE_PRO_STRAWBERRY_SOURCE : sourceUrl;
   const resolvedNutritionReview = nutritionReview
     ? {
         ...nutritionReview,
@@ -41,9 +49,10 @@ const curatedProduct = (
         ),
       }
     : undefined;
-  const notes = resolvedNutritionReview?.status === "reviewed"
-    ? "ערכי התזונה נבדקו מול המקור המתועד; יש להעדיף את תווית האריזה אם היא שונה."
-    : "ערך seed לקטלוג מוצרי חלבון בישראל. יש לבדוק את התווית שעל האריזה לפני שימוש מדויק.";
+  const notes =
+    resolvedNutritionReview?.status === "reviewed"
+      ? "ערכי התזונה נבדקו מול המקור המתועד; יש להעדיף את תווית האריזה אם היא שונה."
+      : "ערך seed לקטלוג מוצרי חלבון בישראל. יש לבדוק את התווית שעל האריזה לפני שימוש מדויק.";
 
   return {
     id,
@@ -154,6 +163,13 @@ export const ISRAELI_PROTEIN_PRODUCTS: FoodItem[] = [
     0.3,
     "https://www.tnuva.co.il/",
     ["יופלה", "יוגורט", "סקיר"],
+    comparisonReview(
+      "תנובה — יופלה GO טבעי 20g",
+      "https://www.tnuva.co.il/products/%D7%99%D7%95%D7%A4%D7%9C%D7%94-%D7%92%D7%95-%D7%99%D7%95%D7%92%D7%95%D7%A8%D7%98-%D7%9E%D7%95%D7%A2%D7%A9%D7%A8-%D7%91%D7%97%D7%9C%D7%91%D7%95%D7%9F-%D7%98%D7%91%D7%A2%D7%99/",
+      "manufacturer",
+      "100g",
+      "המקור מזהה יופלה GO טבעי 20g בגביע 200 גרם, ולא את יופלה PRO טבעי 15g בגביע 150 גרם; הערכים נשארים לא מאומתים.",
+    ),
   ),
   curatedProduct(
     "f-protein-il-go-pudding-chocolate",
@@ -169,6 +185,13 @@ export const ISRAELI_PROTEIN_PRODUCTS: FoodItem[] = [
     2,
     "https://www.tnuva.co.il/",
     ["מעדן", "שוקולד", "תנובה"],
+    comparisonReview(
+      "תנובה — מעדן חלבון GO שוקולד 12g, 120g",
+      "https://www.tnuva.co.il/products/%D7%9E%D7%A2%D7%93%D7%9F-%D7%97%D7%9C%D7%91-%D7%92%D7%95-%D7%91%D7%98%D7%A2%D7%9D-%D7%A9%D7%95%D7%A7%D7%95%D7%9C%D7%93-12-%D7%92-%D7%97%D7%9C%D7%91%D7%95%D7%9F/",
+      "manufacturer",
+      "100g",
+      "המקור הוא מעדן GO שוקולד 12g בגביע 120 גרם, ולא המוצר שבקטלוג: 20g חלבון בגביע 200 גרם.",
+    ),
   ),
   curatedProduct(
     "f-protein-il-go-pudding-vanilla",
@@ -184,6 +207,13 @@ export const ISRAELI_PROTEIN_PRODUCTS: FoodItem[] = [
     1.8,
     "https://www.tnuva.co.il/",
     ["מעדן", "וניל", "תנובה"],
+    comparisonReview(
+      "תנובה — מעדן חלבון GO וניל 12g, 120g",
+      "https://www.tnuva.co.il/products/%D7%9E%D7%A2%D7%93%D7%9F-%D7%97%D7%9C%D7%91-%D7%92%D7%95-%D7%91%D7%98%D7%A2%D7%9D-%D7%95%D7%A0%D7%99%D7%9C-12-%D7%92%D7%A8%D7%9D-%D7%97%D7%9C%D7%91%D7%95%D7%9F/",
+      "manufacturer",
+      "100g",
+      "המקור הוא מעדן GO וניל 12g בגביע 120 גרם, ולא המוצר שבקטלוג: 20g חלבון בגביע 200 גרם.",
+    ),
   ),
   curatedProduct(
     "f-protein-il-yotvata-pro-chocolate",
@@ -199,6 +229,13 @@ export const ISRAELI_PROTEIN_PRODUCTS: FoodItem[] = [
     3,
     "https://www.yotvata.co.il/",
     ["שוקו", "משקה", "יוטבתה"],
+    comparisonReview(
+      "יטבתה — PRO שוקולד אגוזים 25g",
+      "https://noyhasade.co.il/product/%D7%9E%D7%A9%D7%A7%D7%94-%D7%A4%D7%A8%D7%95-%D7%A9%D7%95%D7%A7%D7%95%D7%9C%D7%93-%D7%90%D7%92%D7%95%D7%96%D7%99%D7%9D-%D7%9C%D7%9C%D7%90-%D7%A1%D7%95%D7%9B%D7%A8-25-%D7%92%D7%A8%D7%9D-%D7%97%D7%9C/",
+      "retailer-product-page",
+      "serving",
+      "המקור מזהה טעם שוקולד אגוזים; הרשומה מבקשת טעם שוקו, ולכן אין להעביר ממנה ערכים או לאמת את הרשומה.",
+    ),
   ),
   curatedProduct(
     "f-protein-il-tnuva-go-drink-vanilla",
@@ -214,6 +251,13 @@ export const ISRAELI_PROTEIN_PRODUCTS: FoodItem[] = [
     2,
     "https://www.tnuva.co.il/",
     ["משקה", "שייק", "וניל"],
+    comparisonReview(
+      "תנובה — משקה GO וניל 27g, 340ml",
+      "https://www.tnuva.co.il/products/%D7%9E%D7%A9%D7%A7%D7%94-%D7%97%D7%9C%D7%91%D7%95%D7%9F-go-%D7%95%D7%A0%D7%99%D7%9C-340-%D7%9E%D7%9C-27-%D7%92%D7%A8%D7%9D-%D7%97%D7%9C%D7%91%D7%95%D7%9F/",
+      "manufacturer",
+      "100ml",
+      "המקור הרשמי מציין בקבוק 340 מ״ל ו־27g חלבון, ולא את הרשומה שבקטלוג: 330 מ״ל ו־25g.",
+    ),
   ),
   curatedProduct(
     "f-protein-il-tera-pro-drink",
@@ -244,6 +288,13 @@ export const ISRAELI_PROTEIN_PRODUCTS: FoodItem[] = [
     5,
     "https://www.tnuva.co.il/",
     ["קוטג׳", "גבינה", "קוטג"],
+    comparisonReview(
+      "תנובה — קוטג׳ 12% שומן, 250g",
+      "https://www.tnuva.co.il/products/%D7%A7%D7%95%D7%98%D7%92-%D7%AA%D7%A0%D7%95%D7%91%D7%94-12/",
+      "manufacturer",
+      "100g",
+      "המקור מזהה קוטג׳ 12% שומן בגביע 250 גרם, ולא מוצר קוטג׳ PRO עם 12g חלבון; אין להחליף את ערכי ה־PRO.",
+    ),
   ),
   curatedProduct(
     "f-protein-il-allin-bar-chocolate",
@@ -291,6 +342,13 @@ export const ISRAELI_PROTEIN_PRODUCTS: FoodItem[] = [
     7,
     "https://www.maxsport.co.il/",
     ["חטיף", "מקס"],
+    comparisonReview(
+      "Protein Maxx Premium Bar 55g",
+      "https://championshop.co.il/p/protein-maxx-premium-bar/",
+      "retailer-product-page",
+      "serving",
+      "המקור מזהה Protein Maxx Premium של 55 גרם ו־17.6g חלבון, ולא את מוצר MAX הגנרי שבקטלוג; הרשומה נשארת לא מאומתת.",
+    ),
   ),
   curatedProduct(
     "f-protein-il-israelbody-whey",
@@ -306,6 +364,13 @@ export const ISRAELI_PROTEIN_PRODUCTS: FoodItem[] = [
     2,
     "https://www.israelbody.org/",
     ["אבקה", "whey", "מי גבינה"],
+    comparisonReview(
+      "FoodsDictionary — Allin Whey בטעם וניל",
+      "https://www.foodsdictionary.co.il/Products/742/WHEY%20PROTEIN%20VANILLA%20FLAVOR%20-%20%D7%97%D7%9C%D7%91%D7%95%D7%9F%20%D7%9E%D7%99%20%D7%92%D7%91%D7%99%D7%A0%D7%94%20%D7%91%D7%98%D7%A2%D7%9D%20%D7%95%D7%A0%D7%99%D7%9C",
+      "food-dictionary",
+      "100g",
+      "המקור מתייחס ל־Allin Whey וניל, לא למוצר Israel Body Whey שבקטלוג; אין להשתמש בו כתחליף או כמקור אימות.",
+    ),
   ),
   curatedProduct(
     "f-protein-il-allin-whey-vanilla",
@@ -335,7 +400,8 @@ export const ISRAELI_PROTEIN_PRODUCTS: FoodItem[] = [
           valuesPer: "serving",
         },
       ],
-      notes: "טבלת המוצר מציינת מנה של 33 גרם: 128 קלוריות, 25g חלבון, 3.1g פחמימות ו־1.5g שומן. יש להעדיף את תווית האריזה אם היא שונה.",
+      notes:
+        "טבלת המוצר מציינת מנה של 33 גרם: 128 קלוריות, 25g חלבון, 3.1g פחמימות ו־1.5g שומן. יש להעדיף את תווית האריזה אם היא שונה.",
     },
   ),
   curatedProduct(
