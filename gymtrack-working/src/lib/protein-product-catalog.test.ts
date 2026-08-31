@@ -26,10 +26,28 @@ describe("Israeli protein product catalog", () => {
   });
 
   test("labels curated seed values as requiring label verification", () => {
-    const food = ISRAELI_PROTEIN_PRODUCTS[0]!;
+    const food = ISRAELI_PROTEIN_PRODUCTS.find((item) => item.id.includes("yotvata-pro"))!;
     expect(nutritionSourceFor(food)).toMatchObject({
       verified: false,
       label: "קטלוג ישראלי — נדרש אימות תווית",
+    });
+  });
+
+  test("records manufacturer verification separately from retailer review", () => {
+    const manufacturerReviewed = ISRAELI_PROTEIN_PRODUCTS.find((item) =>
+      item.id.includes("danone-pro-strawberry"),
+    )!;
+    const retailerReviewed = ISRAELI_PROTEIN_PRODUCTS.find((item) =>
+      item.id.includes("allin-whey-vanilla"),
+    )!;
+
+    expect(nutritionSourceFor(manufacturerReviewed)).toMatchObject({
+      verified: true,
+      label: "נבדק מול מקור יצרן",
+    });
+    expect(nutritionSourceFor(retailerReviewed)).toMatchObject({
+      verified: true,
+      label: "נבדק מול דף מוצר מתועד",
     });
   });
 });

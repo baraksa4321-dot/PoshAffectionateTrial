@@ -219,11 +219,17 @@ export type FoodItem = {
     sources: Array<{
       name: string;
       url: string;
-      kind: "manufacturer" | "israeli-database" | "food-dictionary" | "usda" | "open-food-facts";
+      kind:
+        | "manufacturer"
+        | "retailer-product-page"
+        | "israeli-database"
+        | "food-dictionary"
+        | "usda"
+        | "open-food-facts";
       match: "exact-product" | "same-food" | "comparison";
       valuesPer: "100g" | "100ml" | "serving";
     }>;
-    method?: "official" | "average-matching-sources" | "existing-value";
+    method?: "official" | "retailer-product-page" | "average-matching-sources" | "existing-value";
     notes?: string;
   };
 };

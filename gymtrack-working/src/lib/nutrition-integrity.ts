@@ -28,12 +28,15 @@ export function nutritionSourceFor(
   food: Pick<FoodItem, "id" | "nutritionReview">,
 ): NutritionSource {
   if (food.nutritionReview?.status === "reviewed") {
-    const sourceNames = food.nutritionReview.sources.map((source) => source.name).join(" · ");
+    const sources = food.nutritionReview.sources;
+    const sourceNames = sources.map((source) => source.name).join(" · ");
     const confidence = food.nutritionReview.confidence
       ? `רמת ביטחון: ${food.nutritionReview.confidence === "high" ? "גבוהה" : food.nutritionReview.confidence === "medium" ? "בינונית" : "נמוכה"}.`
       : "";
     return {
-      label: "נבדק מול מקורות חיצוניים",
+      label: sources.some((source) => source.kind === "manufacturer")
+        ? "נבדק מול מקור יצרן"
+        : "נבדק מול דף מוצר מתועד",
       detail: `${sourceNames || "מקורות מתועדים"}${confidence ? ` ${confidence}` : ""}`,
       verified: true,
     };
