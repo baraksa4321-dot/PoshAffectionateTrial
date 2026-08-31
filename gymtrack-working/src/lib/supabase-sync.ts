@@ -801,23 +801,111 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       nextData.userProfile = { ...(nextData.userProfile ?? { weight: 0 }), theme: safeTheme };
     }
 
-    // 2. Independent account-level queries run together so login does not
-    // wait for each table one after another.
+    // 2–10. All post-profile pulls are independent. Starting them together
+    // removes the old login waterfall while keeping the same RLS-scoped
+    // queries and error handling.
+    const role = nextData.userProfile?.role;
+    const messagesPromise = supabase
+      .from("coach_messages")
+      .select("*")
+      .eq("client_id", userId)
+      .order("created_at", { ascending: false });
+    const broadcastsPromise = supabase
+      .from("broadcast_announcements")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(30);
+    const clientLinksPromise =
+      role === "coach" || role === "owner"
+        ? (() => {
+            let query = supabase
+              .from("coach_clients")
+              .select(
+                "id, client_id, created_at, profiles!coach_clients_client_id_fkey(email, full_name)",
+              );
+            if (role === "coach") query = query.eq("coach_id", userId);
+            return query;
+          })()
+        : Promise.resolve({ data: null, error: null });
+    const customExercisesPromise = supabase
+      .from("custom_exercises")
+      .select("*")
+      .eq("user_id", userId);
+    const programsPromise = supabase.from("programs").select("*").eq("user_id", userId);
+    const programDaysPromise = supabase.from("program_days").select("*").eq("user_id", userId);
+    const sessionsPromise = supabase
+      .from("workout_sessions")
+      .select("*")
+      .eq("user_id", userId)
+      .order("date", { ascending: false });
+    const bodyWeightPromise = supabase
+      .from("body_weight_logs")
+      .select("id, date, weight_kg")
+      .eq("user_id", userId)
+      .order("date", { ascending: false });
+    const cardioPromise = supabase.from("cardio_logs").select("*").eq("user_id", userId);
+    const measurementsPromise = supabase
+      .from("body_measurements")
+      .select("*")
+      .eq("user_id", userId)
+      .order("date", { ascending: false });
+    const habitsPromise = supabase
+      .from("client_habits")
+      .select("*")
+      .eq("user_id", userId)
+      .order("date", { ascending: false });
+    const customFoodsPromise = supabase
+      .from("custom_foods")
+      .select("*")
+      .eq("user_id", userId);
+    const nutritionDaysPromise = supabase
+      .from("nutrition_days")
+      .select("*")
+      .eq("user_id", userId);
+    const recipesPromise = supabase
+      .from("coach_recipes")
+      .select("id, name, foods")
+      .eq("coach_id", userId)
+      .order("created_at", { ascending: false });
+    const favoritesPromise = supabase
+      .from("food_favorites")
+      .select("food_id")
+      .eq("user_id", userId);
     const [
-      { data: messages, error: messagesError },
-      { data: broadcasts, error: broadcastsError },
+      messagesResult,
+      broadcastsResult,
+      clientLinksResult,
+      customExercisesResult,
+      programsResult,
+      programDaysResult,
+      sessionsResult,
+      bodyWeightResult,
+      cardioResult,
+      measurementsResult,
+      habitsResult,
+      customFoodsResult,
+      nutritionDaysResult,
+      recipesResult,
+      favoritesResult,
     ] = await Promise.all([
-      supabase
-        .from("coach_messages")
-        .select("*")
-        .eq("client_id", userId)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("broadcast_announcements")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(30),
+      messagesPromise,
+      broadcastsPromise,
+      clientLinksPromise,
+      customExercisesPromise,
+      programsPromise,
+      programDaysPromise,
+      sessionsPromise,
+      bodyWeightPromise,
+      cardioPromise,
+      measurementsPromise,
+      habitsPromise,
+      customFoodsPromise,
+      nutritionDaysPromise,
+      recipesPromise,
+      favoritesPromise,
     ]);
+    const { data: messages, error: messagesError } = messagesResult;
+    const { data: broadcasts, error: broadcastsError } = broadcastsResult;
     if (messagesError) throw new Error(`Messages pull failed: ${messagesError.message}`);
 
     if (messages) {
@@ -849,17 +937,8 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
 
     // 3. Coach sees only their links. Owner can hydrate all links under the
     // existing owner policy; neither path infers a role from identity details.
-    const role = nextData.userProfile?.role;
+    const { data: clientLinks, error: clientLinksError } = clientLinksResult;
     if (role === "coach" || role === "owner") {
-      let clientLinksQuery = supabase
-        .from("coach_clients")
-        .select(
-          "id, client_id, created_at, profiles!coach_clients_client_id_fkey(email, full_name)",
-        );
-      if (role === "coach") {
-        clientLinksQuery = clientLinksQuery.eq("coach_id", userId);
-      }
-      const { data: clientLinks, error: clientLinksError } = await clientLinksQuery;
       if (clientLinksError)
         throw new Error(`Client links pull failed: ${clientLinksError.message}`);
 
@@ -879,10 +958,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 4. Custom Exercises
-    const { data: dbCustomExercises, error: customExercisesError } = await supabase
-      .from("custom_exercises")
-      .select("*")
-      .eq("user_id", userId);
+    const { data: dbCustomExercises, error: customExercisesError } = customExercisesResult;
     if (customExercisesError)
       throw new Error(`Custom exercises pull failed: ${customExercisesError.message}`);
 
@@ -910,13 +986,8 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 5. Programs & Days
-    const [
-      { data: dbPrograms, error: programsError },
-      { data: dbProgramDays, error: programDaysError },
-    ] = await Promise.all([
-      supabase.from("programs").select("*").eq("user_id", userId),
-      supabase.from("program_days").select("*").eq("user_id", userId),
-    ]);
+    const { data: dbPrograms, error: programsError } = programsResult;
+    const { data: dbProgramDays, error: programDaysError } = programDaysResult;
     if (programsError) throw new Error(`Programs pull failed: ${programsError.message}`);
     if (programDaysError) throw new Error(`Program days pull failed: ${programDaysError.message}`);
 
@@ -953,36 +1024,12 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       nextData.workouts = Array.from(workoutsMap.values());
     }
 
-    // 6–7c. Independent logs are fetched in one batch.
-    const [
-      { data: dbSessions, error: sessionsError },
-      { data: dbBodyWeightLogs, error: bodyWeightError },
-      { data: dbCardioLogs, error: cardioError },
-      { data: dbMeasurements, error: measurementsError },
-      { data: dbHabits, error: habitsError },
-    ] = await Promise.all([
-      supabase
-        .from("workout_sessions")
-        .select("*")
-        .eq("user_id", userId)
-        .order("date", { ascending: false }),
-      supabase
-        .from("body_weight_logs")
-        .select("id, date, weight_kg")
-        .eq("user_id", userId)
-        .order("date", { ascending: false }),
-      supabase.from("cardio_logs").select("*").eq("user_id", userId),
-      supabase
-        .from("body_measurements")
-        .select("*")
-        .eq("user_id", userId)
-        .order("date", { ascending: false }),
-      supabase
-        .from("client_habits")
-        .select("*")
-        .eq("user_id", userId)
-        .order("date", { ascending: false }),
-    ]);
+    // 6–7c. Independent logs are part of the same parallel pull.
+    const { data: dbSessions, error: sessionsError } = sessionsResult;
+    const { data: dbBodyWeightLogs, error: bodyWeightError } = bodyWeightResult;
+    const { data: dbCardioLogs, error: cardioError } = cardioResult;
+    const { data: dbMeasurements, error: measurementsError } = measurementsResult;
+    const { data: dbHabits, error: habitsError } = habitsResult;
     if (sessionsError) throw new Error(`Workout history pull failed: ${sessionsError.message}`);
 
     if (dbSessions) {
@@ -1070,10 +1117,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 8. Custom Foods
-    const { data: dbCustomFoods, error: customFoodsError } = await supabase
-      .from("custom_foods")
-      .select("*")
-      .eq("user_id", userId);
+    const { data: dbCustomFoods, error: customFoodsError } = customFoodsResult;
     if (customFoodsError) throw new Error(`Custom foods pull failed: ${customFoodsError.message}`);
 
     if (dbCustomFoods) {
@@ -1100,10 +1144,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 9. Nutrition Days
-    const { data: dbNutritionDays, error: nutritionDaysError } = await supabase
-      .from("nutrition_days")
-      .select("*")
-      .eq("user_id", userId);
+    const { data: dbNutritionDays, error: nutritionDaysError } = nutritionDaysResult;
     if (nutritionDaysError) throw new Error(`Nutrition pull failed: ${nutritionDaysError.message}`);
 
     if (dbNutritionDays) {
@@ -1121,11 +1162,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 9b. Personal saved recipes use the existing role-scoped recipes table.
-    const { data: dbRecipes, error: recipesError } = await supabase
-      .from("coach_recipes")
-      .select("id, name, foods")
-      .eq("coach_id", userId)
-      .order("created_at", { ascending: false });
+    const { data: dbRecipes, error: recipesError } = recipesResult;
     if (recipesError && !isMissingTableInSchemaCache(recipesError, "coach_recipes")) {
       throw new Error(`Recipe library pull failed: ${recipesError.message}`);
     }
@@ -1138,10 +1175,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 10. Food Favorites
-    const { data: dbFavs, error: favoritesError } = await supabase
-      .from("food_favorites")
-      .select("food_id")
-      .eq("user_id", userId);
+    const { data: dbFavs, error: favoritesError } = favoritesResult;
     if (favoritesError) throw new Error(`Favorites pull failed: ${favoritesError.message}`);
 
     if (dbFavs) {

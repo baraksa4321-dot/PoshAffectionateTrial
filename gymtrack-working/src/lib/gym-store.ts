@@ -622,6 +622,7 @@ let hasPendingCloudChanges = false;
 let syncInFlight: { userId: string; promise: Promise<void> } | null = null;
 let syncRetryTimer: ReturnType<typeof setTimeout> | null = null;
 let refreshInFlight: Promise<void> | null = null;
+let hydrationInFlight: { userId: string; promise: Promise<void> } | null = null;
 let lastCloudRefreshAt = 0;
 let everydayFoodDatabase: FoodItem[] = [];
 let additionalExercises: Exercise[] = [];
@@ -980,7 +981,7 @@ function load() {
       } else {
         // An offline visit can have no local edits but still needs a
         // background refresh once the connection returns.
-        void handleUserLogin(currentUser.id, loadCachedDataForUser(currentUser.id)).finally(
+        void startUserHydration(currentUser.id, loadCachedDataForUser(currentUser.id)).finally(
           drainQueuedRealtimeRefresh,
         );
       }
@@ -1041,7 +1042,7 @@ function load() {
         if (session?.user) {
           const cachedData = resetDataForUser(session.user.id);
           startPlanRealtime(session.user.id);
-          void handleUserLogin(session.user.id, cachedData);
+          void startUserHydration(session.user.id, cachedData);
           return;
         }
         notifyListeners();
@@ -1075,7 +1076,7 @@ function load() {
         }
         const cachedData = resetDataForUser(session.user.id);
         startPlanRealtime(session.user.id);
-        void handleUserLogin(session.user.id, cachedData);
+        void startUserHydration(session.user.id, cachedData);
         return;
       } else {
         // On sign-out, reset memory state to clean seed data
@@ -1090,6 +1091,7 @@ function load() {
           clearTimeout(syncRetryTimer);
           syncRetryTimer = null;
         }
+        hydrationInFlight = null;
         data = seed();
         try {
           // Per-user caches remain available for the same account on a later
@@ -1121,11 +1123,21 @@ export function refreshCurrentUserData(force = false) {
   const now = Date.now();
   if (!force && now - lastCloudRefreshAt < 5_000) return;
   lastCloudRefreshAt = now;
-  const refresh = handleUserLogin(user.id, loadCachedDataForUser(user.id)).finally(() => {
+  const refresh = startUserHydration(user.id, loadCachedDataForUser(user.id)).finally(() => {
     if (refreshInFlight === refresh) refreshInFlight = null;
     drainQueuedRealtimeRefresh();
   });
   refreshInFlight = refresh;
+}
+
+function startUserHydration(userId: string, cachedData = loadCachedDataForUser(userId)) {
+  if (hydrationInFlight?.userId === userId) return hydrationInFlight.promise;
+
+  const promise = handleUserLogin(userId, cachedData).finally(() => {
+    if (hydrationInFlight?.promise === promise) hydrationInFlight = null;
+  });
+  hydrationInFlight = { userId, promise };
+  return promise;
 }
 
 async function handleUserLogin(userId: string, cachedData = loadCachedDataForUser(userId)) {
@@ -1397,7 +1409,7 @@ export function useCloudSyncStatus() {
 }
 
 export function retryProfileHydration() {
-  if (currentUser?.id) void handleUserLogin(currentUser.id, loadCachedDataForUser(currentUser.id));
+  if (currentUser?.id) void startUserHydration(currentUser.id, loadCachedDataForUser(currentUser.id));
 }
 
 export async function completeUserProfileName(

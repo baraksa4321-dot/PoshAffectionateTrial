@@ -13,7 +13,6 @@ import {
   type ReactNode,
   useEffect,
   useLayoutEffect,
-  useRef,
   useState,
 } from "react";
 
@@ -1112,7 +1111,6 @@ function RootContent() {
     userProfile?.role === "client" &&
     accountApprovalStatus !== "approved";
   const isLoadingScreen = authStatus === "loading" || isProfileHydrating || !minimumLoadingDone;
-  const routeWarmupCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!isLoadingScreen) return;
@@ -1169,70 +1167,6 @@ function RootContent() {
           console.warn("[App shell cache unavailable]:", error);
         });
     }
-    // Route modules are code-split by TanStack Start. Warm them in small idle
-    // batches while online so a later in-app navigation does not request an
-    // uncached chunk in Airplane Mode without creating a post-boot network
-    // burst that competes with the current screen.
-    if (navigator.onLine) {
-      const routeModules = import.meta.glob("./**/*.tsx", { eager: false });
-      const modules = Object.entries(routeModules).filter(
-        ([path]) => !path.endsWith("/__root.tsx"),
-      );
-      const requestIdle = (
-        window as typeof window & {
-          requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
-        }
-      ).requestIdleCallback;
-      const cancelIdle = (
-        window as typeof window & { cancelIdleCallback?: (handle: number) => void }
-      ).cancelIdleCallback;
-      let nextModuleIndex = 0;
-      let stopped = false;
-      let idleHandle: number | null = null;
-      let timerHandle: number | null = null;
-
-      const scheduleNextBatch = () => {
-        if (stopped || !navigator.onLine || document.visibilityState === "hidden") return;
-        const runBatch = () => {
-          idleHandle = null;
-          timerHandle = null;
-          if (stopped || !navigator.onLine) return;
-          const batch = modules.slice(nextModuleIndex, nextModuleIndex + 2);
-          nextModuleIndex += batch.length;
-          void Promise.all(batch.map(([, loadModule]) => loadModule().catch(() => undefined))).finally(
-            () => {
-              if (nextModuleIndex < modules.length) scheduleNextBatch();
-            },
-          );
-        };
-
-        if (requestIdle) {
-          idleHandle = requestIdle(runBatch, { timeout: 1_500 });
-        } else {
-          timerHandle = window.setTimeout(runBatch, 120);
-        }
-      };
-
-      const warmRouteModules = () => {
-        nextModuleIndex = 0;
-        scheduleNextBatch();
-      };
-
-      const routeWarmupTimer = window.setTimeout(warmRouteModules, 1_500);
-      window.addEventListener("online", warmRouteModules);
-      window.addEventListener("pageshow", warmRouteModules);
-      const cleanupRouteWarmup = () => {
-        stopped = true;
-        window.clearTimeout(routeWarmupTimer);
-        if (timerHandle !== null) window.clearTimeout(timerHandle);
-        if (idleHandle !== null) cancelIdle?.(idleHandle);
-        window.removeEventListener("online", warmRouteModules);
-        window.removeEventListener("pageshow", warmRouteModules);
-      };
-      // The main effect cleanup below invokes this alongside its other
-      // listeners and timers.
-      routeWarmupCleanupRef.current = cleanupRouteWarmup;
-    }
     const advanceForRestoredPage = (event: PageTransitionEvent) => {
       if (!event.persisted) return;
       setLoadingCycle((current) => {
@@ -1261,13 +1195,73 @@ function RootContent() {
       setMinimumLoadingDone(true);
     }, 350);
     return () => {
-      routeWarmupCleanupRef.current?.();
-      routeWarmupCleanupRef.current = null;
       window.clearInterval(illustrationTimer);
       window.clearTimeout(minimumLoadingTimer);
       window.removeEventListener("pageshow", advanceForRestoredPage);
     };
   }, []);
+
+  useEffect(() => {
+    if (isLoadingScreen || !navigator.onLine) return;
+
+    // Route modules are code-split by TanStack Start. Start warming them only
+    // after the first useful screen is interactive, then load one module per
+    // idle turn. This preserves the offline navigation guarantee without
+    // competing with auth, hydration, or the first paint.
+    const routeModules = import.meta.glob("./**/*.tsx", { eager: false });
+    const modules = Object.entries(routeModules).filter(
+      ([path]) => !path.endsWith("/__root.tsx"),
+    );
+    const requestIdle = (
+      window as typeof window & {
+        requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      }
+    ).requestIdleCallback;
+    const cancelIdle = (
+      window as typeof window & { cancelIdleCallback?: (handle: number) => void }
+    ).cancelIdleCallback;
+    let nextModuleIndex = 0;
+    let stopped = false;
+    let idleHandle: number | null = null;
+    let timerHandle: number | null = null;
+
+    const scheduleNextModule = () => {
+      if (stopped || !navigator.onLine || document.visibilityState === "hidden") return;
+      const runModule = () => {
+        idleHandle = null;
+        timerHandle = null;
+        if (stopped || !navigator.onLine) return;
+        const entry = modules[nextModuleIndex++];
+        if (!entry) return;
+        void entry[1]().catch(() => undefined).finally(() => {
+          if (nextModuleIndex < modules.length) scheduleNextModule();
+        });
+      };
+
+      if (requestIdle) {
+        idleHandle = requestIdle(runModule, { timeout: 5_000 });
+      } else {
+        timerHandle = window.setTimeout(runModule, 250);
+      }
+    };
+
+    const warmRouteModules = () => {
+      if (stopped || !navigator.onLine) return;
+      nextModuleIndex = 0;
+      scheduleNextModule();
+    };
+
+    const warmupTimer = window.setTimeout(warmRouteModules, 4_000);
+    window.addEventListener("online", warmRouteModules);
+    const cleanup = () => {
+      stopped = true;
+      window.clearTimeout(warmupTimer);
+      if (timerHandle !== null) window.clearTimeout(timerHandle);
+      if (idleHandle !== null) cancelIdle?.(idleHandle);
+      window.removeEventListener("online", warmRouteModules);
+    };
+    return cleanup;
+  }, [isLoadingScreen]);
 
   return (
     <QueryClientProvider client={queryClient}>
