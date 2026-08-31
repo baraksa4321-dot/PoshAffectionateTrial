@@ -21,6 +21,7 @@ import "../styles.css";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "../components/AppShell";
 import { BrandLogo } from "../components/BrandLogo";
+import { LoadingSpinner } from "../components/ui-app/LoadingSpinner";
 import {
   completeUserProfileName,
   retryProfileHydration,
@@ -1124,6 +1125,10 @@ function RootContent() {
     userProfile?.role === "client" &&
     accountApprovalStatus !== "approved";
   const isLoadingScreen = authStatus === "loading" || isProfileHydrating || !minimumLoadingDone;
+  const showExpressiveLoading =
+    authStatus === "authenticated" &&
+    profileHydrationStatus === "ready" &&
+    userProfile?.gender === "female";
 
   useEffect(() => {
     if (!isLoadingScreen) return;
@@ -1269,7 +1274,9 @@ function RootContent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       {isLoadingScreen ? (
         <div
-          className="loading-screen flex min-h-[100dvh] items-center justify-center bg-background px-4"
+          className={`loading-screen flex min-h-[100dvh] items-center justify-center bg-background px-4 ${
+            showExpressiveLoading ? "" : "loading-screen-plain"
+          }`}
           dir="rtl"
         >
           <div
@@ -1278,14 +1285,20 @@ function RootContent() {
             aria-live="polite"
             aria-label="MY routine נטען"
           >
-            <SimpleLoadingIllustration
-              key={`illustration-${loadingVariant}`}
-              variant={loadingVariant}
-            />
-            <p key={`message-${loadingMessageIndex}`} className="loading-witty-message">
-              {loadingMessageForGender(loadingMessageIndex, userProfile?.gender)}
-            </p>
-            <img className="loading-wordmark" src="/myroutine-logo.png" alt="MY routine" />
+            {showExpressiveLoading ? (
+              <>
+                <SimpleLoadingIllustration
+                  key={`illustration-${loadingVariant}`}
+                  variant={loadingVariant}
+                />
+                <p key={`message-${loadingMessageIndex}`} className="loading-witty-message">
+                  {loadingMessageForGender(loadingMessageIndex, userProfile?.gender)}
+                </p>
+                <img className="loading-wordmark" src="/myroutine-logo.png" alt="MY routine" />
+              </>
+            ) : (
+              <LoadingSpinner label="טוען" />
+            )}
           </div>
         </div>
       ) : hasProfileHydrationError ? (

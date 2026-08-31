@@ -1560,6 +1560,21 @@ html.night-mode .auth-panel {
     var(--background);
 }
 
+.loading-screen-plain::before,
+.loading-screen-plain::after {
+  display: none;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid color-mix(in srgb, var(--primary) 18%, transparent);
+  border-top-color: var(--primary);
+  border-radius: 9999px;
+  animation: loading-spinner-rotate 800ms linear infinite;
+}
+
 .loading-screen::before,
 .loading-screen::after {
   position: absolute;
@@ -1820,6 +1835,12 @@ html.night-mode .auth-panel {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes loading-spinner-rotate {
+  to {
+    transform: rotate(360deg);
   }
 }
 

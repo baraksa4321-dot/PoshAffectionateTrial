@@ -23,6 +23,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Stepper } from "@/components/Stepper";
 import { Overlay } from "@/components/ui-app/Overlay";
+import { LoadingSpinner } from "@/components/ui-app/LoadingSpinner";
 import {
   Card,
   IconButton,
@@ -236,6 +237,7 @@ function NutritionLog() {
   const [scanError, setScanError] = useState("");
   const [scannedMeal, setScannedMeal] = useState<ScannedMeal | null>(null);
   const [scanCycle, setScanCycle] = useState(0);
+  const plainScanLoading = scanState === "analyzing" && gender !== "female";
   const day = nutritionDay(gym, date);
   const totals = dayTotals(day);
   const { nutritionTargets: targets } = gym;
@@ -320,10 +322,10 @@ function NutritionLog() {
   };
 
   useEffect(() => {
-    if (scanState !== "analyzing") return;
+    if (scanState !== "analyzing" || gender !== "female") return;
     const interval = window.setInterval(() => setScanCycle((cycle) => cycle + 1), 1_500);
     return () => window.clearInterval(interval);
-  }, [scanState]);
+  }, [gender, scanState]);
 
   const confirmScannedMeal = () => {
     if (!scannedMeal) return;
@@ -1151,21 +1153,25 @@ function NutritionLog() {
           >
             <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
             <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-                  הערכה חכמה
-                </p>
-                <h2 className="mt-1 font-display text-[20px] font-semibold text-ink">
-                  {scannedMeal
-                    ? genderText(gender, "בדקי את הארוחה", "בדוק את הארוחה")
-                    : genderText(gender, "צלמי את הארוחה שלך", "צלם את הארוחה שלך")}
-                </h2>
-                <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-                  {scannedMeal
-                    ? "הערכים הם הערכה. אפשר לתקן כל שורה לפני השמירה ביומן."
-                    : "התמונה נשלחת לניתוח מאובטח ואינה נשמרת ביומן."}
-                </p>
-              </div>
+              {!plainScanLoading ? (
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
+                    הערכה חכמה
+                  </p>
+                  <h2 className="mt-1 font-display text-[20px] font-semibold text-ink">
+                    {scannedMeal
+                      ? genderText(gender, "בדקי את הארוחה", "בדוק את הארוחה")
+                      : genderText(gender, "צלמי את הארוחה שלך", "צלם את הארוחה שלך")}
+                  </h2>
+                  <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                    {scannedMeal
+                      ? "הערכים הם הערכה. אפשר לתקן כל שורה לפני השמירה ביומן."
+                      : "התמונה נשלחת לניתוח מאובטח ואינה נשמרת ביומן."}
+                  </p>
+                </div>
+              ) : (
+                <div aria-hidden="true" />
+              )}
               <IconButton aria-label="סגור" onClick={() => setShowMealScanner(false)}>
                 <X className="h-5 w-5" />
               </IconButton>
@@ -1175,29 +1181,37 @@ function NutritionLog() {
               <div className="space-y-3">
                 {scanState === "analyzing" ? (
                   <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-primary/40 bg-[#f7f2ec] px-5 py-10 text-center">
-                    <div
-                      className={`loading-micro-stage loading-simple-stage loading-simple-pose-${scanCycle % 4}`}
-                    >
-                      <video
-                        key={MEAL_SCAN_ILLUSTRATIONS[scanCycle % MEAL_SCAN_ILLUSTRATIONS.length]}
-                        aria-label="אנימציית ניתוח תמונה"
-                        className="loading-simple-image loading-simple-video"
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        preload="auto"
-                      >
-                        <source
-                          src={`/loading/meal-scan/${MEAL_SCAN_ILLUSTRATIONS[scanCycle % MEAL_SCAN_ILLUSTRATIONS.length]}.webm?v=meal-scan-${scanCycle}`}
-                          type="video/webm"
-                        />
-                      </video>
-                    </div>
-                    <span className="mt-3 text-sm font-bold text-ink">מנתחת את התמונה…</span>
-                    <span className="mt-1 text-[11px] text-muted-foreground">
-                      {loadingMessageForGender(scanCycle, gender)}
-                    </span>
+                    {gender === "female" ? (
+                      <>
+                        <div
+                          className={`loading-micro-stage loading-simple-stage loading-simple-pose-${scanCycle % 4}`}
+                        >
+                          <video
+                            key={
+                              MEAL_SCAN_ILLUSTRATIONS[scanCycle % MEAL_SCAN_ILLUSTRATIONS.length]
+                            }
+                            aria-label="אנימציית ניתוח תמונה"
+                            className="loading-simple-image loading-simple-video"
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            preload="auto"
+                          >
+                            <source
+                              src={`/loading/meal-scan/${MEAL_SCAN_ILLUSTRATIONS[scanCycle % MEAL_SCAN_ILLUSTRATIONS.length]}.webm?v=meal-scan-${scanCycle}`}
+                              type="video/webm"
+                            />
+                          </video>
+                        </div>
+                        <span className="mt-3 text-sm font-bold text-ink">מנתחת את התמונה…</span>
+                        <span className="mt-1 text-[11px] text-muted-foreground">
+                          {loadingMessageForGender(scanCycle, gender)}
+                        </span>
+                      </>
+                    ) : (
+                      <LoadingSpinner label="מנתח את התמונה" />
+                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
@@ -1241,13 +1255,15 @@ function NutritionLog() {
                     {scanError}
                   </div>
                 ) : null}
-                <p className="text-center text-[10.5px] leading-relaxed text-muted-foreground">
-                  {genderText(
-                    gender,
-                    "כדי לקבל הערכה טובה יותר, צלמי את כל הצלחת באור טוב ומזווית עליונה.",
-                    "כדי לקבל הערכה טובה יותר, צלם את כל הצלחת באור טוב ומזווית עליונה.",
-                  )}
-                </p>
+                {!plainScanLoading ? (
+                  <p className="text-center text-[10.5px] leading-relaxed text-muted-foreground">
+                    {genderText(
+                      gender,
+                      "כדי לקבל הערכה טובה יותר, צלמי את כל הצלחת באור טוב ומזווית עליונה.",
+                      "כדי לקבל הערכה טובה יותר, צלם את כל הצלחת באור טוב ומזווית עליונה.",
+                    )}
+                  </p>
+                ) : null}
               </div>
             ) : (
               <div className="space-y-3">
