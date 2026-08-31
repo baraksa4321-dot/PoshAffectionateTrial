@@ -1130,6 +1130,7 @@ export function CoachDashboardPage({
     exerciseId: string;
     context: ExerciseBuilderReturnContext;
   } | null>(null);
+  const hydratedBuilderRouteKeyRef = useRef<string | null>(null);
   const [programQuery, setProgramQuery] = useState("");
   const [reportBookmarkWorkoutId, setReportBookmarkWorkoutId] = useState<string | null>(null);
   const [targetWeight, setTargetWeight] = useState(20);
@@ -1955,6 +1956,18 @@ export function CoachDashboardPage({
 
   useEffect(() => {
     if (!clientDetails) return;
+    const builderRouteKey = [
+      selectedClientId ?? "",
+      initialProgramId ?? "",
+      initialDayId ?? "",
+      initialExerciseId ?? "",
+      initialNutritionDate ?? "",
+      initialNutritionMealId ?? "",
+      initialNutritionFoodId ?? "",
+    ].join("|");
+    if (hydratedBuilderRouteKeyRef.current === builderRouteKey) return;
+    hydratedBuilderRouteKeyRef.current = builderRouteKey;
+
     const requestedProgram = initialProgramId
       ? clientDetails.programs.find((program) => program.id === initialProgramId)
       : undefined;
@@ -2038,6 +2051,7 @@ export function CoachDashboardPage({
     initialNutritionFoodId,
     initialNutritionMealId,
     initialProgramId,
+    selectedClientId,
   ]);
 
   useEffect(() => {

@@ -1,0 +1,172 @@
+יש באג חדש במסך הטעינה אחרי התיקון האחרון.
+
+חשוב: אל תוסיף עוד מנגנון על גבי הקוד הקיים. אני רוצה שתעבור על כל מנגנון ה-loading הקיים ותאחד אותו למנגנון אחד בלבד.
+
+הבעיה הנוכחית
+
+כשאני פותחת את האתר:
+
+1. מופיעה אנימציה אחת.
+2. לאחר זמן קצר, כאשר האנימציה אמורה להתחלף, מופיעות/פועלות שתי אנימציות במקביל.
+
+בנוסף, לפעמים אני עדיין מקבלת את אותה אנימציה בפתיחות שונות.
+
+אני חושדת שיש כרגע שני מנגנונים שונים שמנהלים את ה-animation:
+
+* מנגנון rotation/persistence שהוספת לאחרונה.
+* מנגנון ה-animation rotation שהיה קיים בקוד המקורי.
+
+אני רוצה שתבדוק את הקוד ותמצא את הסיבה המדויקת, ולא פשוט תוסיף עוד תנאי.
+
+ההתנהגות שאני רוצה
+
+בכל רגע נתון חייבת להיות אנימציית loading אחת בלבד.
+
+אסור שיהיו שתי אנימציות שמוצגות בו-זמנית.
+
+לדוגמה:
+
+פתיחת האתר:
+→ Animation 1
+
+אחרי זמן ההחלפה:
+→ Animation 2
+
+אבל Animation 1 חייבת להיעלם לחלוטין לפני/בזמן המעבר ל-Animation 2.
+
+לא:
+→ Animation 1 + Animation 2 ביחד.
+
+חשוב לגבי ה-transition
+
+אם למסך הטעינה יש fade/transition, מותר שתהיה אנימציה אחת שיוצאת ואחת שנכנסת רק אם זה חלק מ-transition מכוון ומבוקר.
+
+אבל אסור שיהיו שני רכיבי animation פעילים/מוצגים במצב רגיל.
+
+אם צריך, השתמש ב-single rendered animation component שמקבל variant חדש, במקום ליצור רכיבי animation נוספים.
+
+לגבי ה-rotation בין פתיחות
+
+אני רוצה להפריד בין שני דברים:
+
+1. Opening rotation
+
+בכל פתיחה חדשה של האתר נבחרת נקודת התחלה אחרת:
+
+פתיחה 1 → Animation 1
+פתיחה 2 → Animation 2
+פתיחה 3 → Animation 3
+…
+סוף → חזרה ל-Animation 1.
+
+הבחירה הזאת צריכה להישמר ב-localStorage ולהתקדם פעם אחת בלבד בכל פתיחת אפליקציה.
+
+2. Rotation בזמן מסך הטעינה
+
+בזמן שמסך הטעינה עצמו מוצג, האנימציה יכולה להמשיך להתחלף לפי מנגנון ה-loading הקיים.
+
+אבל גם כאן:
+בכל רגע רק animation variant אחד רשאי להיות פעיל.
+
+קריטי
+
+אל תיצור שני timers שמעדכנים את אותו state.
+
+אל תיצור שני useEffects שמחליפים את animation variant.
+
+אל תיצור שני sources of truth עבור loadingVariant.
+
+אני רוצה שיהיה:
+
+ONE loading animation state
+ONE animation rotation mechanism
+ONE source of truth
+
+וה-opening cycle index צריך להיות state נפרד לחלוטין מה-animation state.
+
+לדוגמה רעיונית:
+
+openingCycleIndex
+        ↓
+קובע מאיזו אנימציה מתחילים
+loadingVariant
+        ↓
+קובע איזו אנימציה מוצגת כרגע
+
+אבל loadingVariant חייב להיות מנוהל על ידי מנגנון אחד בלבד.
+
+אני רוצה שתבדוק במיוחד
+
+חפש בקוד:
+
+* loadingVariant
+* setLoadingVariant
+* LOADING_ANIMATIONS
+* כל setInterval
+* כל setTimeout
+* כל useEffect שקשור ל-loading
+* כל render של קומפוננטת האנימציה
+* כל key של קומפוננטת האנימציה
+* ה-conditional rendering של מסך הטעינה.
+
+בדוק האם אותה אנימציה נוצרת יותר מפעם אחת ב-DOM.
+
+בדוק האם React key גורם ליצירה של component חדש לפני שהישן הוסר.
+
+בדוק האם שני timers עדיין רצים במקביל.
+
+בדוק האם ה-useEffect עושה cleanup ל-timer הקודם.
+
+בדוק גם React StrictMode כדי לוודא שאין effect כפול ב-development.
+
+תיקון
+
+אל תעשה workaround.
+
+מצא את מנגנון ה-loading המקורי והסר/אחד את המנגנון הכפול שנוצר בתיקון האחרון.
+
+בסופו של דבר אני רוצה:
+
+App opens
+↓
+determine opening cycle
+↓
+select ONE starting animation
+↓
+render ONE animation
+↓
+after rotation interval
+↓
+replace it with the next ONE
+↓
+repeat while loading screen exists
+↓
+loading finishes
+↓
+loading screen unmounts completely
+
+אל תשנה שום דבר אחר
+
+אל תשנה:
+
+* את עיצוב מסך הטעינה
+* את האנימציות עצמן
+* את המשפטים
+* את זמני הטעינה הקיימים
+* את מבנה האתר
+* שום feature אחר.
+
+תקן רק את מנגנון ה-loading כדי שלא יהיו שני animation instances ושכל פתיחה תקבל rotation נכון.
+
+לפני שאתה מסיים, בדוק בפועל:
+
+1. פתיחה ראשונה.
+2. פתיחה שנייה.
+3. refresh מספר פעמים.
+4. שהאנימציה משתנה בין פתיחות.
+5. שהאנימציה מתחלפת בזמן loading רק פעם אחת בכל interval.
+6. שאין שתי אנימציות בו-זמנית.
+7. שאין שני timers.
+8. שאין duplicate DOM nodes של האנימציה.
+9. שאין React StrictMode double-effect.
+10. שאין hydration mismatch.

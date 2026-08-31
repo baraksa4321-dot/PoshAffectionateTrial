@@ -133,6 +133,16 @@ function Session() {
     Boolean(workout?.name.endsWith("· משקל גוף")),
   );
   const regularWorkoutSnapshot = useRef(workout);
+  const bodyweightModeWorkoutIdRef = useRef<string | null>(null);
+  const hydratedEntriesWorkoutIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!workout) return;
+    regularWorkoutSnapshot.current = workout;
+    if (bodyweightModeWorkoutIdRef.current === workoutId) return;
+    bodyweightModeWorkoutIdRef.current = workoutId;
+    setIsBodyweightMode(workout.name.endsWith("· משקל גוף"));
+  }, [workout, workoutId]);
 
   useEffect(() => {
     if (!bodyweightNotice) return;
@@ -344,8 +354,10 @@ function Session() {
   );
 
   useEffect(() => {
+    if (!workout || hydratedEntriesWorkoutIdRef.current === workoutId) return;
+    hydratedEntriesWorkoutIdRef.current = workoutId;
     setEntries(initial);
-  }, [initial]);
+  }, [initial, workout, workoutId]);
 
   useEffect(() => {
     if (!workoutId || entries.length === 0) return;
