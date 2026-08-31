@@ -49,6 +49,11 @@ import {
   completedSetForReopenedWorkout,
   getCurrentWeekWorkoutSession,
 } from "@/lib/workout-session";
+import {
+  loadWorkoutVideoDrafts,
+  removeWorkoutVideoDraft,
+  saveWorkoutVideoDraft,
+} from "@/lib/workout-video-drafts";
 
 export const Route = createFileRoute("/session/$workoutId")({
   head: () => ({
