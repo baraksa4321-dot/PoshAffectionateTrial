@@ -863,7 +863,7 @@ function NutritionLog() {
       ) : null}
 
       {/* Daily/weekly balance. This is presentation-only and never changes logs. */}
-      <div className="order-3 mt-4 surface-card overflow-hidden border border-border/60 bg-secondary/25 p-4">
+      <div className="order-3 mt-4 shrink-0 surface-card overflow-hidden border border-border/60 bg-secondary/25 p-4">
         {showCalories ? (
           <>
             <div className="mb-3 flex items-center justify-between gap-3">
