@@ -438,11 +438,86 @@ export function reportSessionDateKey(sessionDate: string): string {
   return reportDateKey(date);
 }
 
+function historyEntryKey(entry: HistoryEntry) {
+  return JSON.stringify({
+    exerciseId: entry.exerciseId,
+    exerciseName: entry.exerciseName,
+    replacedExerciseId: entry.replacedExerciseId ?? "",
+    replacedExerciseName: entry.replacedExerciseName ?? "",
+    equipment: entry.equipment ?? "",
+    videoUrl: entry.videoUrl ?? "",
+    sets: entry.sets,
+    notes: entry.notes ?? "",
+    targetSets: entry.targetSets ?? null,
+    targetReps: entry.targetReps ?? null,
+    targetRepMax: entry.targetRepMax ?? null,
+    repType: entry.repType ?? null,
+    feedback: entry.feedback ?? null,
+  });
+}
+
+function dedupeHistoryEntries(entries: HistoryEntry[]) {
+  const seen = new Set<string>();
+  return entries.filter((entry) => {
+    const key = historyEntryKey(entry);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * Removes exact duplicate saves from read models without merging distinct
+ * executions on the same date. The newest copy wins when a retry reused an
+ * existing session id; content-identical sessions on the same day are also
+ * collapsed.
+ */
+export function dedupeHistorySessions(history: HistorySession[]): HistorySession[] {
+  const seenIds = new Set<string>();
+  const seenExecutions = new Set<string>();
+
+  return [...history]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .map((session) => ({
+      ...session,
+      entries: dedupeHistoryEntries(session.entries),
+    }))
+    .filter((session) => {
+      const executionKey = JSON.stringify({
+        workoutId: session.workoutId,
+        workoutName: session.workoutName,
+        date: reportSessionDateKey(session.date),
+        durationSec: session.durationSec,
+        entries: session.entries.map(historyEntryKey),
+        notes: session.notes ?? "",
+        difficultyRating: session.difficultyRating ?? "",
+        discomfortNotes: session.discomfortNotes ?? "",
+      });
+      if (seenIds.has(session.id) || seenExecutions.has(executionKey)) return false;
+      seenIds.add(session.id);
+      seenExecutions.add(executionKey);
+      return true;
+    });
+}
+
+export function dedupeWorkoutItems(items: WorkoutItem[]): WorkoutItem[] {
+  const seenIds = new Set<string>();
+  const seenExercises = new Set<string>();
+  return items.filter((item) => {
+    if (seenIds.has(item.id) || seenExercises.has(item.exerciseId)) return false;
+    seenIds.add(item.id);
+    seenExercises.add(item.exerciseId);
+    return true;
+  });
+}
+
 export function getWorkoutSessionsForDate(
   history: HistorySession[],
   reportDate: string,
 ): HistorySession[] {
-  return history.filter((session) => reportSessionDateKey(session.date) === reportDate);
+  return dedupeHistorySessions(
+    history.filter((session) => reportSessionDateKey(session.date) === reportDate),
+  );
 }
 
 export function getWorkoutReportWeekDates(weekOffset = 0, referenceDate = new Date()): string[] {
@@ -470,15 +545,15 @@ export function getWorkoutReportSessions(
   const weekStart = weekDates[0]!;
   const weekEnd = weekDates[weekDates.length - 1]!;
 
-  return history
-    .filter(
+  return dedupeHistorySessions(
+    history.filter(
       (session) =>
         (session.workoutId === workout.id ||
           (!session.workoutId && session.workoutName === workout.name)) &&
         reportSessionDateKey(session.date) >= weekStart &&
         reportSessionDateKey(session.date) <= weekEnd,
-    )
-    .sort((a, b) => b.date.localeCompare(a.date));
+    ),
+  );
 }
 
 export const MUSCLE_GROUPS = [

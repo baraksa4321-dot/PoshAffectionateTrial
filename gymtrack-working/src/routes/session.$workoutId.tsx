@@ -374,7 +374,7 @@ function Session() {
   }, [initial]);
   const [startedAt] = useState(() => Date.now());
   const entriesRef = useRef(entries);
-  const videoUploadTasksRef = useRef(new Set<Promise<void>>());
+  const videoUploadTasksRef = useRef(new Set<Promise<boolean>>());
   const restoredVideoDraftWorkoutIdRef = useRef<string | null>(null);
   useEffect(() => {
     entriesRef.current = entries;
@@ -672,9 +672,11 @@ function Session() {
         );
         void removeWorkoutVideoDraft(workout.id, exerciseIndex);
         URL.revokeObjectURL(nextUrl);
+        return true;
       })
       .catch((error: unknown) => {
         setVideoUploadError(error instanceof Error ? error.message : "העלאת סרטון הביצוע נכשלה");
+        return false;
       })
       .finally(() => {
         if (timeoutId !== undefined) window.clearTimeout(timeoutId);
@@ -724,10 +726,21 @@ function Session() {
     setFinishError("");
     const pendingVideoUploads = [...videoUploadTasksRef.current];
     if (pendingVideoUploads.length > 0) {
-      await Promise.race([
-        Promise.allSettled(pendingVideoUploads),
-        new Promise<void>((resolve) => window.setTimeout(resolve, VIDEO_UPLOAD_TIMEOUT_MS)),
+      const uploadResults = await Promise.race([
+        Promise.all(pendingVideoUploads),
+        new Promise<boolean[] | null>((resolve) =>
+          window.setTimeout(() => resolve(null), VIDEO_UPLOAD_TIMEOUT_MS),
+        ),
       ]);
+      if (uploadResults === null || uploadResults.some((uploaded) => !uploaded)) {
+        setIsFinishing(false);
+        setFinishError(
+          uploadResults === null
+            ? "הסרטון עדיין עולה. המתיני רגע ונסי לסיים שוב."
+            : "הסרטון לא נשמר בענן. נסי שוב לפני סיום האימון.",
+        );
+        return;
+      }
     }
     const currentEntries = entriesRef.current;
     const allSetsCompleted =
