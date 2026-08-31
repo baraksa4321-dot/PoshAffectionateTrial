@@ -262,6 +262,57 @@ async function deleteRowsMissingFromLocal(
   );
 }
 
+const WORKOUT_VIDEO_BUCKET = "workout-videos";
+
+function safeVideoExtension(fileName: string, contentType: string) {
+  const fromName = fileName
+    .split(".")
+    .pop()
+    ?.toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  if (fromName && fromName.length <= 8) return fromName;
+  const fromType = contentType
+    .split("/")
+    .pop()
+    ?.toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  return fromType && fromType.length <= 8 ? fromType : "mp4";
+}
+
+/**
+ * Upload a trainee performance video before it is written into a workout
+ * session. Object URLs are browser-local and cannot be played by a coach in
+ * another browser, so history entries always receive a durable shared URL.
+ */
+export async function uploadWorkoutPerformanceVideo(
+  file: File,
+  metadata: { workoutId: string; exerciseId: string },
+): Promise<string> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    throw new Error("לא ניתן להעלות סרטון בלי חשבון מחובר");
+  }
+
+  const objectId =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const extension = safeVideoExtension(file.name, file.type);
+  const path = `${user.id}/${metadata.workoutId}/${metadata.exerciseId}/${objectId}.${extension}`;
+  const { error } = await supabase.storage.from(WORKOUT_VIDEO_BUCKET).upload(path, file, {
+    contentType: file.type || "video/mp4",
+    upsert: false,
+  });
+  if (error) throw new Error(`העלאת סרטון נכשלה: ${error.message}`);
+
+  const { data } = supabase.storage.from(WORKOUT_VIDEO_BUCKET).getPublicUrl(path);
+  if (!data.publicUrl) throw new Error("העלאת הסרטון הסתיימה בלי כתובת צפייה");
+  return data.publicUrl;
+}
+
 export async function syncLocalToSupabase(
   userId: string,
   localData: GymData,
@@ -1226,7 +1277,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     }
     const { data: dbSessions, error: sessionsError } = sessionsResult;
     if (sessionsError) {
-      console.warn(`[Optional client workout history pull skipped]: ${sessionsError.message}`);
+      throw new Error(`Client workout history pull failed: ${sessionsError.message}`);
     }
     const { data: dbCardioLogs, error: cardioError } = cardioResult;
     if (cardioError) {

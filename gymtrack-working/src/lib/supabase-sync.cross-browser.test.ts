@@ -434,6 +434,68 @@ describe("cross-browser Supabase sync boundaries", () => {
       }
     }
   });
+
+  test("keeps completed workout entries and performance video URLs through coach pulls", async () => {
+    const completedSession: HistorySession = {
+      id: "session-with-video",
+      workoutId: "day-b",
+      workoutName: "Day",
+      date: "2026-08-30T08:00:00.000Z",
+      durationSec: 600,
+      entries: [
+        {
+          exerciseId: "ex-local",
+          exerciseName: "Local exercise",
+          notes: "",
+          videoUrl: "https://project.supabase.co/storage/v1/object/public/workout-videos/video.mp4",
+          sets: [{ reps: 10, weight: 20, done: true }],
+        },
+      ],
+    };
+
+    const { syncLocalToSupabase, pullClientDataForCoach } = await syncModule;
+    const syncResult = await syncLocalToSupabase(
+      "client-b",
+      { ...makeLocalData(), history: [completedSession] },
+      "client-b@example.com",
+    );
+    expect(syncResult.success).toBe(true);
+
+    const historyUpsert = callsFor("workout_sessions", "upsert").at(-1);
+    expect(historyUpsert?.payload).toEqual([
+      expect.objectContaining({
+        id: completedSession.id,
+        user_id: "client-b",
+        entries: completedSession.entries,
+      }),
+    ]);
+
+    resetResponses();
+    setResponse("profiles", { id: "client-b", role: "client", weight_kg: 70 });
+    setResponse("workout_sessions", [
+      {
+        id: completedSession.id,
+        workout_id: completedSession.workoutId,
+        workout_name: completedSession.workoutName,
+        date: completedSession.date,
+        duration_sec: completedSession.durationSec,
+        entries: completedSession.entries,
+      },
+    ]);
+
+    const coachData = await pullClientDataForCoach("client-b");
+    expect(coachData.error).toBeUndefined();
+    expect(coachData.history).toHaveLength(1);
+    expect(coachData.history[0]).toMatchObject({
+      id: completedSession.id,
+      workoutId: completedSession.workoutId,
+      workoutName: completedSession.workoutName,
+      date: completedSession.date,
+      durationSec: completedSession.durationSec,
+      entries: completedSession.entries,
+    });
+    expect(coachData.history[0]?.entries[0]?.videoUrl).toBe(completedSession.entries[0]?.videoUrl);
+  });
 });
 
 describe("role and assignment migration contract", () => {

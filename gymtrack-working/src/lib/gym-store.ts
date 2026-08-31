@@ -1315,6 +1315,39 @@ function queueCloudSync() {
   syncInFlight = { userId, promise };
 }
 
+/**
+ * Wait for the local snapshot currently being uploaded. Completion screens
+ * use this to avoid navigating away before workout_sessions has been written.
+ * Network failures remain locally durable and continue through the normal
+ * reconnect retry path, so an offline trainee can still finish the workout.
+ */
+export async function flushCloudSync(): Promise<{
+  success: boolean;
+  deferred?: boolean;
+  error?: string;
+}> {
+  const userId = currentUser?.id;
+  if (!userId) return { success: true, deferred: true };
+  if (browserIsOffline()) return { success: true, deferred: true, error: "offline" };
+
+  if (hasPendingCloudChanges && !syncInFlight) queueCloudSync();
+  const inFlight = syncInFlight;
+  if (inFlight && inFlight.userId === userId) await inFlight.promise;
+
+  if (currentUser?.id !== userId) {
+    return { success: false, error: "החשבון השתנה בזמן שמירת האימון" };
+  }
+  if (!hasPendingCloudChanges) return { success: true };
+
+  const error =
+    syncStatus === "offline"
+      ? "אין חיבור כרגע; האימון נשמר במכשיר ויסונכרן כשהחיבור יחזור"
+      : "שמירת האימון בענן עדיין ממתינה לניסיון נוסף";
+  return syncStatus === "offline" || isNetworkFailure(error)
+    ? { success: true, deferred: true, error }
+    : { success: false, error };
+}
+
 function persist() {
   if (typeof window === "undefined") return;
   try {

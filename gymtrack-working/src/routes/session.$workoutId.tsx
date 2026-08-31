@@ -35,10 +35,20 @@ import {
   SecondaryButton,
   SectionHeader,
 } from "@/components/ui-app/primitives";
-import { lastPerformance, saveSession, uid, useGym } from "@/lib/gym-store";
+import { flushCloudSync, lastPerformance, saveSession, uid, useGym } from "@/lib/gym-store";
 import { BODYWEIGHT_EXERCISES, replaceWithBodyweight } from "@/lib/bodyweight-exercises";
-import type { Exercise, HistoryEntry, LoggedSet, WorkoutItem } from "@/lib/gym-types";
+import type {
+  Exercise,
+  HistoryEntry,
+  HistorySession,
+  LoggedSet,
+  WorkoutItem,
+} from "@/lib/gym-types";
 import { genderText } from "@/lib/gender-copy";
+import {
+  completedSetForReopenedWorkout,
+  getCurrentWeekWorkoutSession,
+} from "@/lib/workout-session";
 
 export const Route = createFileRoute("/session/$workoutId")({
   head: () => ({
@@ -153,6 +163,10 @@ function Session() {
   const [isPaused, setIsPaused] = useState(false);
 
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
+  const [finishError, setFinishError] = useState("");
+  const [videoUploadsInFlight, setVideoUploadsInFlight] = useState(0);
+  const [videoUploadError, setVideoUploadError] = useState("");
   const [difficultyRating, setDifficultyRating] = useState<"easy" | "appropriate" | "difficult">(
     "appropriate",
   );
@@ -204,6 +218,10 @@ function Session() {
     return workout.items.map((item) => {
       const ex = findExerciseForItem(item, [...exercises, ...BODYWEIGHT_EXERCISES]);
       const last = lastPerformance(history, item.exerciseId);
+      const completedSession = getCurrentWeekWorkoutSession(history, workoutId);
+      const completedEntry = completedSession?.entries.find(
+        (entry) => entry.exerciseId === item.exerciseId,
+      );
       const isRange = item.repType === "range";
 
       const prescribedWeight = item.targetWeight || item.weight;
@@ -240,7 +258,7 @@ function Session() {
                   ) / 10,
                 )
               : prescribedWeight),
-          done: false,
+          done: completedSetForReopenedWorkout(completedEntry, i),
           targetReps,
           warmup: false,
           ...(targetRepMax !== undefined ? { targetRepMax } : {}),
@@ -318,6 +336,7 @@ function Session() {
   const previousRestRef = useRef(0);
   const restCompletionVibratedRef = useRef(false);
   const vibrationAudioRef = useRef<AudioContext | null>(null);
+  const finishedSessionRef = useRef<HistorySession | null>(null);
   const restDragRef = useRef<{
     pointerId: number;
     startX: number;
@@ -554,11 +573,44 @@ function Session() {
     const nextUrl = URL.createObjectURL(file);
     const previousUrl = entries[exerciseIndex]?.videoUrl;
     if (previousUrl?.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
+    setVideoUploadError("");
+    setVideoUploadsInFlight((count) => count + 1);
     setEntries((prev) =>
       prev.map((entry, index) =>
         index === exerciseIndex ? { ...entry, videoUrl: nextUrl } : entry,
       ),
     );
+    void import("@/lib/supabase-sync")
+      .then(({ uploadWorkoutPerformanceVideo }) =>
+        uploadWorkoutPerformanceVideo(file, {
+          workoutId: workout.id,
+          exerciseId: entries[exerciseIndex]?.exerciseId ?? String(exerciseIndex),
+        }),
+      )
+      .then((uploadedUrl) => {
+        setEntries((prev) =>
+          prev.map((entry, index) => {
+            if (index !== exerciseIndex || entry.videoUrl !== nextUrl) return entry;
+            return { ...entry, videoUrl: uploadedUrl };
+          }),
+        );
+        URL.revokeObjectURL(nextUrl);
+      })
+      .catch((error: unknown) => {
+        setEntries((prev) =>
+          prev.map((entry, index) =>
+            index === exerciseIndex && entry.videoUrl === nextUrl
+              ? (() => {
+                  const { videoUrl: _videoUrl, ...withoutVideo } = entry;
+                  return withoutVideo;
+                })()
+              : entry,
+          ),
+        );
+        URL.revokeObjectURL(nextUrl);
+        setVideoUploadError(error instanceof Error ? error.message : "העלאת סרטון הביצוע נכשלה");
+      })
+      .finally(() => setVideoUploadsInFlight((count) => Math.max(0, count - 1)));
   };
 
   const totalSets = entries.reduce((a, e) => a + e.sets.filter((s) => !s.warmup).length, 0);
@@ -567,41 +619,58 @@ function Session() {
     0,
   );
 
-  const handleFinishConfirm = () => {
+  const handleFinishConfirm = async () => {
+    if (isFinishing) return;
+    if (videoUploadsInFlight > 0) {
+      setFinishError("ממתינה לסיום העלאת סרטון הביצוע");
+      return;
+    }
     const allSetsCompleted =
       entries.length > 0 &&
       entries.every((entry) => {
         const workingSets = entry.sets.filter((set) => !set.warmup);
         return workingSets.length > 0 && workingSets.every((set) => set.done);
       });
-    saveSession({
-      id: uid(),
-      workoutId: workout.id,
-      workoutName: workout.name,
-      ...(currentProgram?.name ? { programName: currentProgram.name } : {}),
-      date: new Date().toISOString(),
-      durationSec: Math.round((Date.now() - startedAt) / 1000),
-      entries: entries.map((e, index) => ({
-        ...e,
-        sets: e.sets.filter((s) => s.done),
-        ...(exerciseFeedback[index]?.rating || exerciseFeedback[index]?.notes.trim()
-          ? {
-              feedback: {
-                ...(exerciseFeedback[index]?.rating
-                  ? { rating: exerciseFeedback[index].rating }
-                  : {}),
-                ...(exerciseFeedback[index]?.notes.trim()
-                  ? { notes: exerciseFeedback[index].notes.trim() }
-                  : {}),
-              },
-            }
-          : {}),
-      })),
-      difficultyRating,
-      ...(discomfortNotes.trim() ? { discomfortNotes: discomfortNotes.trim() } : {}),
-    });
+    setIsFinishing(true);
+    setFinishError("");
+    if (!finishedSessionRef.current) {
+      finishedSessionRef.current = {
+        id: uid(),
+        workoutId: workout.id,
+        workoutName: workout.name,
+        ...(currentProgram?.name ? { programName: currentProgram.name } : {}),
+        date: new Date().toISOString(),
+        durationSec: Math.round((Date.now() - startedAt) / 1000),
+        entries: entries.map((e, index) => ({
+          ...e,
+          sets: e.sets.filter((s) => s.done),
+          ...(exerciseFeedback[index]?.rating || exerciseFeedback[index]?.notes.trim()
+            ? {
+                feedback: {
+                  ...(exerciseFeedback[index]?.rating
+                    ? { rating: exerciseFeedback[index].rating }
+                    : {}),
+                  ...(exerciseFeedback[index]?.notes.trim()
+                    ? { notes: exerciseFeedback[index].notes.trim() }
+                    : {}),
+                },
+              }
+            : {}),
+        })),
+        difficultyRating,
+        ...(discomfortNotes.trim() ? { discomfortNotes: discomfortNotes.trim() } : {}),
+      };
+      saveSession(finishedSessionRef.current);
+    }
+    const syncResult = await flushCloudSync();
+    if (!syncResult.success) {
+      setIsFinishing(false);
+      setFinishError(syncResult.error ?? "שמירת האימון נכשלה. נסי שוב.");
+      return;
+    }
     clearSavedSession();
     setShowFeedbackModal(false);
+    setIsFinishing(false);
     if (allSetsCompleted) {
       setShowCompletionConfetti(true);
       window.setTimeout(() => navigate({ to: "/programs" }), 3200);
@@ -989,6 +1058,11 @@ function Session() {
                     aria-label={`סרטון ביצוע ${entry.exerciseName}`}
                   />
                 ) : null}
+                {videoUploadError ? (
+                  <p className="mt-2 text-[10px] font-semibold text-destructive">
+                    {videoUploadError}
+                  </p>
+                ) : null}
               </div>
 
               <div className="mt-3 rounded-2xl border border-border/60 bg-background p-3">
@@ -1041,7 +1115,10 @@ function Session() {
 
       <div className="mt-6">
         <PrimaryButton
-          onClick={() => setShowFeedbackModal(true)}
+          onClick={() => {
+            setFinishError("");
+            setShowFeedbackModal(true);
+          }}
           leading={<Check className="h-4 w-4" strokeWidth={2.4} />}
         >
           סיים ושמור אימון
@@ -1203,11 +1280,17 @@ function Session() {
               />
             </div>
 
+            {finishError ? (
+              <p className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800">
+                {finishError}
+              </p>
+            ) : null}
             <button
-              onClick={handleFinishConfirm}
-              className="w-full rounded-2xl bg-primary py-3 text-sm font-bold text-white shadow-md cursor-pointer hover:bg-primary/90"
+              onClick={() => void handleFinishConfirm()}
+              disabled={isFinishing || videoUploadsInFlight > 0}
+              className="w-full rounded-2xl bg-primary py-3 text-sm font-bold text-white shadow-md cursor-pointer hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              אישור ושמירת אימון
+              {isFinishing ? "שומרת את האימון..." : "אישור ושמירת אימון"}
             </button>
           </div>
         </Overlay>
