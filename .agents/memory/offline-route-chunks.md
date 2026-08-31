@@ -7,4 +7,4 @@ The offline app shell must preload code-split route modules while online. Cachin
 
 **Why:** TanStack Start emits separate JavaScript chunks for route pages, and Safari cannot recover a missing chunk while offline.
 
-**How to apply:** Keep the Service Worker caching successful module requests and run a deferred route-module warmup after the first online paint. Bump the cache version when changing the worker's offline behavior.
+**How to apply:** Keep the Service Worker caching successful module requests and run a deferred, idle-batched route-module warmup after the first online paint. Bump the cache version when changing the worker's offline behavior.

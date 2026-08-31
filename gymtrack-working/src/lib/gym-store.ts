@@ -1,14 +1,8 @@
 import { useSyncExternalStore } from "react";
-import { EVERYDAY_FOOD_DATABASE } from "./israeli-food-db";
 import { assertValidFoodNutrition, assertValidMealFood } from "./nutrition-integrity";
 import { supabase } from "./supabase";
 import { pullSupabaseData, syncLocalToSupabase, type SyncStatus } from "./supabase-sync";
 import { normalizeFixedPlannedMenu } from "./nutrition-planning";
-import {
-  ADDITIONAL_EXERCISES,
-  renameSeedExercise,
-  SEED_EXERCISE_NAME_MIGRATIONS,
-} from "./exercise-library";
 import {
   type BodyMeasurement,
   type BodyWeightLog,
@@ -594,13 +588,13 @@ const seed = (): GymData => {
   ];
 
   return {
-    exercises: [...ex.map(renameSeedExercise), ...ADDITIONAL_EXERCISES],
+    exercises: ex,
     // Exercises are a shared library. Personal workouts and programs must be
     // created by an explicit user or coach action, never by initial hydration.
     workouts: [],
     programs: [],
     history: [],
-    foods: [...EVERYDAY_FOOD_DATABASE],
+    foods: [],
     nutritionDays: [],
     nutritionTargets: {},
     plannedMeals: [],
@@ -629,6 +623,10 @@ let syncInFlight: { userId: string; promise: Promise<void> } | null = null;
 let syncRetryTimer: ReturnType<typeof setTimeout> | null = null;
 let refreshInFlight: Promise<void> | null = null;
 let lastCloudRefreshAt = 0;
+let everydayFoodDatabase: FoodItem[] = [];
+let additionalExercises: Exercise[] = [];
+let seedExerciseNameMigrations: Record<string, { from: string; to: string }> = {};
+let referenceLibrariesPromise: Promise<void> | null = null;
 
 function canManageAssignedPlans() {
   const role = data.userProfile?.role;
@@ -859,7 +857,7 @@ function resetDataForUser(userId: string) {
 
 /** Keep custom foods and saved meal snapshots, while removing retired seed items. */
 function mergeSeedFoods(existing: FoodItem[]): FoodItem[] {
-  const everydayIds = new Set(EVERYDAY_FOOD_DATABASE.map((food) => food.id));
+  const everydayIds = new Set(everydayFoodDatabase.map((food) => food.id));
   const byId = new Map(existing.map((f) => [f.id, f]));
   const byName = new Map(existing.map((f) => [f.name.toLocaleLowerCase(), f]));
   for (const [id, food] of byId) {
@@ -868,7 +866,7 @@ function mergeSeedFoods(existing: FoodItem[]): FoodItem[] {
       byName.delete(food.name.toLocaleLowerCase());
     }
   }
-  for (const seedFood of EVERYDAY_FOOD_DATABASE) {
+  for (const seedFood of everydayFoodDatabase) {
     if (byId.has(seedFood.id)) continue;
     if (byName.has(seedFood.name.toLocaleLowerCase())) continue;
     byId.set(seedFood.id, seedFood);
@@ -879,13 +877,13 @@ function mergeSeedFoods(existing: FoodItem[]): FoodItem[] {
 /** Merge the maintained exercise library without overwriting a user's edits. */
 function mergeSeedExercises(existing: Exercise[]): Exercise[] {
   const migratedExisting = existing.map((exercise) => {
-    const migration = SEED_EXERCISE_NAME_MIGRATIONS[exercise.id];
+    const migration = seedExerciseNameMigrations[exercise.id];
     return migration && exercise.name === migration.from
       ? { ...exercise, name: migration.to }
       : exercise;
   });
   const byId = new Map(migratedExisting.map((exercise) => [exercise.id, exercise]));
-  for (const seedExercise of seed().exercises) {
+  for (const seedExercise of [...seed().exercises, ...additionalExercises]) {
     const hasSameNameAndMuscle = migratedExisting.some(
       (exercise) =>
         exercise.name.toLocaleLowerCase() === seedExercise.name.toLocaleLowerCase() &&
@@ -895,6 +893,31 @@ function mergeSeedExercises(existing: Exercise[]): Exercise[] {
     byId.set(seedExercise.id, seedExercise);
   }
   return Array.from(byId.values());
+}
+
+function loadReferenceLibraries() {
+  if (referenceLibrariesPromise) return referenceLibrariesPromise;
+
+  referenceLibrariesPromise = Promise.all([
+    import("./israeli-food-db"),
+    import("./exercise-library"),
+  ]).then(([foodModule, exerciseModule]) => {
+    everydayFoodDatabase = foodModule.EVERYDAY_FOOD_DATABASE;
+    additionalExercises = exerciseModule.ADDITIONAL_EXERCISES;
+    seedExerciseNameMigrations = exerciseModule.SEED_EXERCISE_NAME_MIGRATIONS;
+
+    // These catalogs are not needed to render the shell or authenticate.
+    // Merge them after their chunks arrive while preserving custom/cached data.
+    data = {
+      ...data,
+      foods: mergeSeedFoods(data.foods ?? []),
+      exercises: mergeSeedExercises(data.exercises ?? []),
+    };
+    persistCacheOnly();
+    notifyListeners();
+  });
+
+  return referenceLibrariesPromise;
 }
 
 /** Ensure older saved data still works cleanly. */
@@ -932,6 +955,11 @@ function migrate(d: Partial<GymData>): GymData {
 function load() {
   if (hydrated || typeof window === "undefined") return;
   hydrated = true;
+  // Keep the large food and exercise catalogs out of the entry path. They are
+  // merged during the first idle turn while auth and the local snapshot start.
+  window.setTimeout(() => {
+    void loadReferenceLibraries();
+  }, 1_500);
 
   // Setup Supabase Auth state listener
   if (typeof window !== "undefined") {

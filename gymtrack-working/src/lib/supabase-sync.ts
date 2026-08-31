@@ -1,4 +1,3 @@
-import { EVERYDAY_FOOD_DATABASE } from "./israeli-food-db";
 import { supabase } from "./supabase";
 import {
   type ClientLink,
@@ -44,6 +43,10 @@ export type RealtimeConnectionStatus =
   | "connected"
   | "reconnecting"
   | "disconnected";
+
+function isBuiltInFoodId(id: string) {
+  return id.startsWith("f-israel-") || id.startsWith("f-usda-");
+}
 
 type RealtimeTableSubscription = {
   table: string;
@@ -552,8 +555,7 @@ export async function syncLocalToSupabase(
 
     // 5. Custom Foods (seed = all built-in items including USDA expansion)
     try {
-      const seedFoodIds = new Set(EVERYDAY_FOOD_DATABASE.map((f) => f.id));
-      const customFoods = localData.foods.filter((f) => !seedFoodIds.has(f.id));
+      const customFoods = localData.foods.filter((f) => !isBuiltInFoodId(f.id));
 
       if (customFoods.length > 0) {
         const customFoodPayload = customFoods.map((f) => ({
@@ -1075,9 +1077,8 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (customFoodsError) throw new Error(`Custom foods pull failed: ${customFoodsError.message}`);
 
     if (dbCustomFoods) {
-      const seedFoodIds = new Set(EVERYDAY_FOOD_DATABASE.map((food) => food.id));
       const foodMap = new Map(
-        nextData.foods.filter((food) => seedFoodIds.has(food.id)).map((f) => [f.id, f]),
+        nextData.foods.filter((food) => isBuiltInFoodId(food.id)).map((f) => [f.id, f]),
       );
       for (const row of dbCustomFoods) {
         const foodItem: FoodItem = {

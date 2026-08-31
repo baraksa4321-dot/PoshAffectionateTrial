@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  refreshCurrentUserData,
   saveCalorieVisibility,
   saveTheme,
   useAuthUser,
@@ -129,10 +128,6 @@ export function AppShell({
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
-
-  useEffect(() => {
-    refreshCurrentUserData();
-  }, [location.pathname]);
 
   useEffect(() => {
     applyNightMode(isNightMode);

@@ -1169,27 +1169,63 @@ function RootContent() {
           console.warn("[App shell cache unavailable]:", error);
         });
     }
-    // Route modules are code-split by TanStack Start. Warm them while online
-    // so a later in-app navigation does not request an uncached chunk in
-    // Airplane Mode. The imports are intentionally deferred until after the
-    // first paint and never block the current screen.
+    // Route modules are code-split by TanStack Start. Warm them in small idle
+    // batches while online so a later in-app navigation does not request an
+    // uncached chunk in Airplane Mode without creating a post-boot network
+    // burst that competes with the current screen.
     if (navigator.onLine) {
       const routeModules = import.meta.glob("./**/*.tsx", { eager: false });
-      const warmRouteModules = () =>
-        Promise.all(
-          Object.entries(routeModules)
-            .filter(([path]) => !path.endsWith("/__root.tsx"))
-            .map(([, loadModule]) => loadModule().catch(() => undefined)),
-        );
-      const routeWarmupTimer = window.setTimeout(() => {
-        void warmRouteModules();
-      }, 1_000);
+      const modules = Object.entries(routeModules).filter(
+        ([path]) => !path.endsWith("/__root.tsx"),
+      );
+      const requestIdle = (
+        window as typeof window & {
+          requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+        }
+      ).requestIdleCallback;
+      const cancelIdle = (
+        window as typeof window & { cancelIdleCallback?: (handle: number) => void }
+      ).cancelIdleCallback;
+      let nextModuleIndex = 0;
+      let stopped = false;
+      let idleHandle: number | null = null;
+      let timerHandle: number | null = null;
+
+      const scheduleNextBatch = () => {
+        if (stopped || !navigator.onLine || document.visibilityState === "hidden") return;
+        const runBatch = () => {
+          idleHandle = null;
+          timerHandle = null;
+          if (stopped || !navigator.onLine) return;
+          const batch = modules.slice(nextModuleIndex, nextModuleIndex + 2);
+          nextModuleIndex += batch.length;
+          void Promise.all(batch.map(([, loadModule]) => loadModule().catch(() => undefined))).finally(
+            () => {
+              if (nextModuleIndex < modules.length) scheduleNextBatch();
+            },
+          );
+        };
+
+        if (requestIdle) {
+          idleHandle = requestIdle(runBatch, { timeout: 1_500 });
+        } else {
+          timerHandle = window.setTimeout(runBatch, 120);
+        }
+      };
+
+      const warmRouteModules = () => {
+        nextModuleIndex = 0;
+        scheduleNextBatch();
+      };
+
+      const routeWarmupTimer = window.setTimeout(warmRouteModules, 1_500);
       window.addEventListener("online", warmRouteModules);
       window.addEventListener("pageshow", warmRouteModules);
-      // Keep the listeners lightweight and avoid retaining the warmup
-      // callback after the root component is replaced.
       const cleanupRouteWarmup = () => {
+        stopped = true;
         window.clearTimeout(routeWarmupTimer);
+        if (timerHandle !== null) window.clearTimeout(timerHandle);
+        if (idleHandle !== null) cancelIdle?.(idleHandle);
         window.removeEventListener("online", warmRouteModules);
         window.removeEventListener("pageshow", warmRouteModules);
       };
