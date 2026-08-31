@@ -385,11 +385,25 @@ test("active workout values survive leaving and reopening the session", async ({
   await page.keyboard.press("Escape");
   await expect(workoutNote).toBeHidden();
 
+  const firstExercise = page.locator("article").first();
+  await firstExercise.getByRole("button", { name: "קל", exact: true }).click();
+  const exerciseNote = firstExercise.getByPlaceholder("כאב, אי־נוחות או הערה למאמנת...");
+  await exerciseNote.fill("הערת תרגיל בטיוטה");
+  await expect(exerciseNote).toHaveValue("הערת תרגיל בטיוטה");
+
   await page.goto("/programs");
   await page.goto(`/session/${WORKOUT_ID}`);
   await page.reload();
   await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
   await expect(page.locator('input[inputmode="decimal"]').first()).toHaveValue("123");
+
+  const reopenedFirstExercise = page.locator("article").first();
+  await expect(
+    reopenedFirstExercise.getByRole("button", { name: "קל", exact: true }),
+  ).toHaveClass(/border-primary/);
+  await expect(
+    reopenedFirstExercise.getByPlaceholder("כאב, אי־נוחות או הערה למאמנת..."),
+  ).toHaveValue("הערת תרגיל בטיוטה");
 
   // Reopening the completion sheet restores the unfinished workout note.
   await page.getByRole("button", { name: "סיים ושמור אימון" }).click();

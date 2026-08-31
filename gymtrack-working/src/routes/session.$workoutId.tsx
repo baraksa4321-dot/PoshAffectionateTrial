@@ -101,12 +101,49 @@ const ACTIVE_SESSION_KEY = (id: string) => `gymtrack.active_session.${id}`;
 const ACTIVE_SESSION_FEEDBACK_KEY = (id: string) => `gymtrack.active_session_feedback.${id}`;
 const VIDEO_UPLOAD_TIMEOUT_MS = 15_000;
 
-function loadSavedDiscomfortNotes(workoutId: string): string {
-  if (typeof window === "undefined") return "";
+type ExerciseFeedbackDraft = {
+  rating?: "easy" | "appropriate" | "difficult";
+  notes: string;
+};
+
+type SavedSessionFeedback = {
+  difficultyRating?: "easy" | "appropriate" | "difficult";
+  discomfortNotes: string;
+  exerciseFeedback: Record<number, ExerciseFeedbackDraft>;
+};
+
+function loadSavedSessionFeedback(workoutId: string): SavedSessionFeedback {
+  const empty: SavedSessionFeedback = {
+    discomfortNotes: "",
+    exerciseFeedback: {},
+  };
+  if (typeof window === "undefined") return empty;
   try {
-    return window.localStorage.getItem(ACTIVE_SESSION_FEEDBACK_KEY(workoutId)) ?? "";
+    const raw = window.localStorage.getItem(ACTIVE_SESSION_FEEDBACK_KEY(workoutId));
+    if (!raw) return empty;
+    try {
+      const parsed = JSON.parse(raw) as Partial<SavedSessionFeedback>;
+      if (!parsed || typeof parsed !== "object") return empty;
+      const difficultyRating =
+        parsed.difficultyRating === "easy" ||
+        parsed.difficultyRating === "appropriate" ||
+        parsed.difficultyRating === "difficult"
+          ? parsed.difficultyRating
+          : undefined;
+      return {
+        ...(difficultyRating ? { difficultyRating } : {}),
+        discomfortNotes: typeof parsed.discomfortNotes === "string" ? parsed.discomfortNotes : "",
+        exerciseFeedback:
+          parsed.exerciseFeedback && typeof parsed.exerciseFeedback === "object"
+            ? parsed.exerciseFeedback
+            : {},
+      };
+    } catch {
+      // Support feedback saved by the previous version as plain text.
+      return { ...empty, discomfortNotes: raw };
+    }
   } catch {
-    return "";
+    return empty;
   }
 }
 
@@ -173,20 +210,23 @@ function Session() {
   const [finishError, setFinishError] = useState("");
   const [videoUploadsInFlight, setVideoUploadsInFlight] = useState(0);
   const [videoUploadError, setVideoUploadError] = useState("");
-  const [difficultyRating, setDifficultyRating] = useState<"easy" | "appropriate" | "difficult">(
-    "appropriate",
-  );
-  const [feedbackDraft, setFeedbackDraft] = useState(() => ({
-    workoutId,
-    discomfortNotes: loadSavedDiscomfortNotes(workoutId),
-  }));
+  const [difficultyRating, setDifficultyRating] = useState<
+    "easy" | "appropriate" | "difficult"
+  >(() => loadSavedSessionFeedback(workoutId).difficultyRating ?? "appropriate");
+  const [feedbackDraft, setFeedbackDraft] = useState(() => {
+    const saved = loadSavedSessionFeedback(workoutId);
+    return {
+      workoutId,
+      discomfortNotes: saved.discomfortNotes,
+    };
+  });
   const discomfortNotes =
     feedbackDraft.workoutId === workoutId ? feedbackDraft.discomfortNotes : "";
   const setDiscomfortNotes = (notes: string) =>
     setFeedbackDraft({ workoutId, discomfortNotes: notes });
-  const [exerciseFeedback, setExerciseFeedback] = useState<
-    Record<number, { rating?: "easy" | "appropriate" | "difficult"; notes: string }>
-  >({});
+  const [exerciseFeedback, setExerciseFeedback] = useState<Record<number, ExerciseFeedbackDraft>>(
+    () => loadSavedSessionFeedback(workoutId).exerciseFeedback,
+  );
 
   const [replacingIndex, setReplacingIndex] = useState<number | null>(null);
   const [replaceSearch, setReplaceSearch] = useState("");
@@ -313,10 +353,13 @@ function Session() {
 
   const [entries, setEntries] = useState<HistoryEntry[]>(initial);
   useEffect(() => {
+    const saved = loadSavedSessionFeedback(workoutId);
     setFeedbackDraft({
       workoutId,
-      discomfortNotes: loadSavedDiscomfortNotes(workoutId),
+      discomfortNotes: saved.discomfortNotes,
     });
+    setDifficultyRating(saved.difficultyRating ?? "appropriate");
+    setExerciseFeedback(saved.exerciseFeedback);
   }, [workoutId]);
 
   useEffect(() => {
@@ -403,16 +446,24 @@ function Session() {
   useEffect(() => {
     if (!workoutId || feedbackDraft.workoutId !== workoutId) return;
     try {
-      const key = ACTIVE_SESSION_FEEDBACK_KEY(workoutId);
-      if (discomfortNotes) {
-        localStorage.setItem(key, discomfortNotes);
-      } else {
-        localStorage.removeItem(key);
-      }
+      localStorage.setItem(
+        ACTIVE_SESSION_FEEDBACK_KEY(workoutId),
+        JSON.stringify({
+          difficultyRating,
+          discomfortNotes,
+          exerciseFeedback,
+        }),
+      );
     } catch {
       /* ignore */
     }
-  }, [discomfortNotes, feedbackDraft.workoutId, workoutId]);
+  }, [
+    difficultyRating,
+    discomfortNotes,
+    exerciseFeedback,
+    feedbackDraft.workoutId,
+    workoutId,
+  ]);
 
   useEffect(() => {
     if (rest <= 0 || isPaused || restPaused) return;
@@ -685,39 +736,49 @@ function Session() {
         const workingSets = entry.sets.filter((set) => !set.warmup);
         return workingSets.length > 0 && workingSets.every((set) => set.done);
       });
-    if (!finishedSessionRef.current) {
-      finishedSessionRef.current = {
+    const existingSession = finishedSessionRef.current;
+    let sessionWithoutDiscomfort: Omit<HistorySession, "discomfortNotes">;
+    if (existingSession) {
+      const { discomfortNotes: _previousDiscomfortNotes, ...existingWithoutDiscomfort } =
+        existingSession;
+      sessionWithoutDiscomfort = existingWithoutDiscomfort;
+    } else {
+      sessionWithoutDiscomfort = {
         id: uid(),
         workoutId: workout.id,
         workoutName: workout.name,
         ...(currentProgram?.name ? { programName: currentProgram.name } : {}),
         date: new Date().toISOString(),
         durationSec: Math.round((Date.now() - startedAt) / 1000),
-        entries: currentEntries.map((e, index) => {
-          const { videoUrl, ...entryWithoutVideo } = e;
-          return {
-            ...entryWithoutVideo,
-            ...(videoUrl && !videoUrl.startsWith("blob:") ? { videoUrl } : {}),
-            sets: e.sets.filter((s) => s.done),
-            ...(exerciseFeedback[index]?.rating || exerciseFeedback[index]?.notes.trim()
-              ? {
-                  feedback: {
-                    ...(exerciseFeedback[index]?.rating
-                      ? { rating: exerciseFeedback[index].rating }
-                      : {}),
-                    ...(exerciseFeedback[index]?.notes.trim()
-                      ? { notes: exerciseFeedback[index].notes.trim() }
-                      : {}),
-                  },
-                }
-              : {}),
-          };
-        }),
-        difficultyRating,
-        ...(discomfortNotes.trim() ? { discomfortNotes: discomfortNotes.trim() } : {}),
+        entries: [],
       };
-      saveSession(finishedSessionRef.current);
     }
+    finishedSessionRef.current = {
+      ...sessionWithoutDiscomfort,
+      entries: currentEntries.map((e, index) => {
+        const { videoUrl, ...entryWithoutVideo } = e;
+        return {
+          ...entryWithoutVideo,
+          ...(videoUrl && !videoUrl.startsWith("blob:") ? { videoUrl } : {}),
+          sets: e.sets.filter((s) => s.done),
+          ...(exerciseFeedback[index]?.rating || exerciseFeedback[index]?.notes.trim()
+            ? {
+                feedback: {
+                  ...(exerciseFeedback[index]?.rating
+                    ? { rating: exerciseFeedback[index].rating }
+                    : {}),
+                  ...(exerciseFeedback[index]?.notes.trim()
+                    ? { notes: exerciseFeedback[index].notes.trim() }
+                    : {}),
+                },
+              }
+            : {}),
+        };
+      }),
+      difficultyRating,
+      ...(discomfortNotes.trim() ? { discomfortNotes: discomfortNotes.trim() } : {}),
+    };
+    saveSession(finishedSessionRef.current);
     const syncResult = await flushCloudSync();
     if (!syncResult.success) {
       setIsFinishing(false);

@@ -1744,7 +1744,10 @@ export function programDays(d: GymData, programId: string): Workout[] {
 
 /* ---------- history ---------- */
 export function saveSession(session: HistorySession) {
-  set({ ...data, history: [session, ...data.history] });
+  set({
+    ...data,
+    history: [session, ...data.history.filter((existing) => existing.id !== session.id)],
+  });
 }
 
 export function deleteSession(id: string) {
