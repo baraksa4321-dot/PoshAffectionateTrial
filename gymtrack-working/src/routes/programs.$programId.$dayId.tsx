@@ -591,14 +591,19 @@ function SortableItem({
   const name = exercise?.name ?? item.exerciseName ?? "תרגיל שהוסר";
   const isRange = item.repType === "range";
   const warmups = item.warmups ?? [];
-  const workingSets =
-    item.workingSets ??
-    Array.from({ length: item.sets }, (_, index) => ({
+  const fallbackWorkingSets: WorkingSet[] = Array.from(
+    { length: item.sets },
+    (_, index): WorkingSet => ({
       id: `${item.id}-set-${index}`,
       setNumber: index + 1,
       weight: item.weight,
       reps: item.reps,
-    }));
+      repMax: item.repMax ?? item.reps,
+      rest: item.rest,
+      notes: "",
+    }),
+  );
+  const workingSets: WorkingSet[] = item.workingSets ?? fallbackWorkingSets;
 
   const setRepType = (type: "fixed" | "range") => {
     if (type === "range") {
@@ -619,6 +624,28 @@ function SortableItem({
     onPatch(item.id, {
       warmups: warmups.map((w) => (w.id === wid ? { ...w, ...patch } : w)),
     });
+
+  const copySetFromPrevious = (index: number) => {
+    if (index === 0) return;
+    const previous = workingSets[index - 1];
+    if (!previous) return;
+    onPatch(item.id, {
+      workingSets: workingSets.map((current, currentIndex) =>
+        currentIndex === index
+          ? {
+              ...current,
+              weight: previous.weight,
+              reps: previous.reps,
+              notes: previous.notes ?? "",
+              ...(previous.repMax !== undefined ? { repMax: previous.repMax } : {}),
+              ...(previous.rest !== undefined ? { rest: previous.rest } : {}),
+              ...(previous.setType ? { setType: previous.setType } : {}),
+              ...(previous.dropSet !== undefined ? { dropSet: previous.dropSet } : {}),
+            }
+          : current,
+      ),
+    });
+  };
 
   return (
     <article
@@ -769,7 +796,7 @@ function SortableItem({
         <div className="space-y-2.5">
           {workingSets.slice(0, item.sets).map((set, index) => (
             <div key={set.id} className="rounded-2xl bg-white/70 px-3 py-2.5">
-              <div className="grid grid-cols-[1.5rem_1fr_1fr] items-end gap-2">
+              <div className="grid grid-cols-[1.5rem_1fr] items-end gap-2">
                 <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-[11px] font-bold text-primary">
                   {index + 1}
                 </span>
@@ -786,19 +813,62 @@ function SortableItem({
                     })
                   }
                 />
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-2">
                 <Stepper
-                  label="חזרות"
+                  label="חזרות מינ׳"
                   value={set.reps}
                   min={0}
                   onChange={(reps) =>
                     onPatch(item.id, {
                       workingSets: workingSets.map((current, i) =>
-                        i === index ? { ...current, reps } : current,
+                        i === index
+                          ? {
+                              ...current,
+                              reps,
+                              repMax: Math.max(reps, current.repMax ?? reps),
+                            }
+                          : current,
+                      ),
+                    })
+                  }
+                />
+                <Stepper
+                  label="חזרות מקס׳"
+                  value={set.repMax ?? set.reps}
+                  min={set.reps}
+                  onChange={(repMax) =>
+                    onPatch(item.id, {
+                      workingSets: workingSets.map((current, i) =>
+                        i === index
+                          ? { ...current, repMax: Math.max(current.reps, repMax) }
+                          : current,
                       ),
                     })
                   }
                 />
               </div>
+              <input
+                className={`${fieldBase} mt-2 text-[13px]`}
+                value={set.notes ?? ""}
+                onChange={(event) =>
+                  onPatch(item.id, {
+                    workingSets: workingSets.map((current, i) =>
+                      i === index ? { ...current, notes: event.target.value } : current,
+                    ),
+                  })
+                }
+                placeholder="הערה לסט, למשל: עד כשל"
+              />
+              {index > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => copySetFromPrevious(index)}
+                  className="press mt-2 w-full rounded-xl bg-secondary py-2 text-[11.5px] font-semibold text-muted-foreground hover:text-primary"
+                >
+                  העתק מהסט הקודם
+                </button>
+              ) : null}
               <label className="mt-1.5 flex cursor-pointer items-center gap-2 px-1 text-[11.5px] font-medium text-muted-foreground">
                 <input
                   type="checkbox"

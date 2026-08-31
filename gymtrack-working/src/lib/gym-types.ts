@@ -89,6 +89,7 @@ export type WorkingSet = {
   reps: number;
   repMax?: number;
   rest?: number;
+  notes?: string;
   dropSet?: boolean;
 };
 
@@ -150,6 +151,7 @@ export type LoggedSet = {
   reps: number;
   weight: number;
   done: boolean;
+  notes?: string;
   targetReps?: number;
   targetRepMax?: number;
   warmup?: boolean;

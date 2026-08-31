@@ -34,6 +34,16 @@ describe("coach plan payload boundaries", () => {
         weight: 20,
         rest: 90,
         notes: "",
+        workingSets: [
+          {
+            id: "set-1",
+            setNumber: 1,
+            weight: 20,
+            reps: 8,
+            repMax: 10,
+            notes: "עד כשל",
+          },
+        ],
       },
     ];
     expect(clientProgramDayItemsUpdatePayload(items)).toMatchObject({ items });

@@ -1139,6 +1139,7 @@ export function CoachDashboardPage({
   const [setRepMins, setSetRepMins] = useState<number[]>([8, 8, 8]);
   const [setRepMaxes, setSetRepMaxes] = useState<number[]>([10, 10, 10]);
   const [setRests, setSetRests] = useState<number[]>([90, 90, 90]);
+  const [setNotes, setSetNotes] = useState<string[]>(["", "", ""]);
   useEffect(() => {
     const createdExerciseId = window.sessionStorage.getItem("gymtrack-created-exercise-id");
     if (!createdExerciseId) return;
@@ -1222,6 +1223,9 @@ export function CoachDashboardPage({
     );
     setSetRests((current) =>
       Array.from({ length: nextCount }, (_, index) => current[index] ?? restSec),
+    );
+    setSetNotes((current) =>
+      Array.from({ length: nextCount }, (_, index) => current[index] ?? ""),
     );
   };
   const [supersetRepsMin, setSupersetRepsMin] = useState(10);
@@ -1760,6 +1764,12 @@ export function CoachDashboardPage({
           (_, index) => firstExercise.workingSets?.[index]?.rest ?? firstExercise.rest ?? 90,
         ),
       );
+      setSetNotes(
+        Array.from(
+          { length: Math.max(1, firstExercise.sets) },
+          (_, index) => firstExercise.workingSets?.[index]?.notes ?? "",
+        ),
+      );
       setRestSec(firstExercise.rest || 90);
       setTechniqueNotes(firstExercise.techniqueNotes || firstExercise.notes);
     }
@@ -2023,6 +2033,12 @@ export function CoachDashboardPage({
           Array.from(
             { length: Math.max(1, requestedItem.sets) },
             (_, index) => requestedItem.workingSets?.[index]?.rest ?? requestedItem.rest ?? 90,
+          ),
+        );
+        setSetNotes(
+          Array.from(
+            { length: Math.max(1, requestedItem.sets) },
+            (_, index) => requestedItem.workingSets?.[index]?.notes ?? "",
           ),
         );
         setTechniqueNotes(requestedItem.techniqueNotes || requestedItem.notes);
@@ -2550,6 +2566,9 @@ export function CoachDashboardPage({
           reps: setRepMins[sourceIndex] ?? repMin,
           repMax: setRepMaxes[sourceIndex] ?? repMax,
           rest: setRests[sourceIndex] ?? restSec,
+           ...(setNotes[sourceIndex]?.trim()
+             ? { notes: setNotes[sourceIndex].trim() }
+             : {}),
           ...(mode === "drop" ? { dropSet: true } : {}),
         };
       });
@@ -2744,6 +2763,9 @@ export function CoachDashboardPage({
             reps,
             repMax: repMaxForSet,
             rest: setRests[sourceIndex] ?? restSec,
+             ...(setNotes[sourceIndex]?.trim()
+               ? { notes: setNotes[sourceIndex].trim() }
+               : {}),
             ...(mode === "drop" ? { dropSet: true } : {}),
           };
         });
@@ -2787,6 +2809,7 @@ export function CoachDashboardPage({
       setDropLevel1Weight("");
       setDropLevel2Weight("");
       setSetModes(["normal", "normal", "normal"]);
+       setSetNotes(["", "", ""]);
       setApprovedAltIds([]);
       setBodyweightAlternativeId("");
       return;
@@ -2813,6 +2836,7 @@ export function CoachDashboardPage({
     setDropLevel1Weight("");
     setDropLevel2Weight("");
     setSetModes(["normal", "normal", "normal"]);
+    setSetNotes(["", "", ""]);
     setApprovedAltIds([]);
     setBodyweightAlternativeId("");
     pullClientDataForCoach(selectedClientId).then(applyClientDetails);
@@ -5534,6 +5558,18 @@ export function CoachDashboardPage({
                                                                 ]
                                                               : [exItem.rest ?? 90],
                                                           );
+                                                           setSetNotes(
+                                                             loadedModes.length
+                                                               ? [
+                                                                   ...warmupRows.map(() => ""),
+                                                                   ...Array.from(
+                                                                     { length: workingCount },
+                                                                     (_, index) =>
+                                                                       savedNormalSets[index]?.notes ?? "",
+                                                                   ),
+                                                                 ]
+                                                               : [""],
+                                                           );
                                                           setWarmupEnabled(warmupRows.length > 0);
                                                           setWarmupSetsCount(
                                                             warmupRows.length || 1,
@@ -6345,87 +6381,132 @@ export function CoachDashboardPage({
                                                           <span className="rounded-full bg-foreground/10 px-2.5 py-1 text-[11px] font-extrabold text-ink">
                                                             סט {index + 1}
                                                           </span>
-                                                          <select
-                                                            value={mode}
-                                                            onChange={(event) => {
-                                                              const nextMode = event.target
-                                                                .value as
-                                                                | "normal"
-                                                                | "warmup"
-                                                                | "drop"
-                                                                | "superset";
-                                                              setSetModes((current) => {
-                                                                const count = Math.max(
-                                                                  1,
-                                                                  setsCount,
-                                                                );
-                                                                const next = Array.from(
-                                                                  { length: count },
-                                                                  (_, itemIndex) =>
-                                                                    current[itemIndex] ?? "normal",
-                                                                );
-                                                                next[index] = nextMode;
-                                                                const order =
-                                                                  warmupFirstIndexes(next);
-                                                                const ordered = order.map(
-                                                                  (itemIndex) => next[itemIndex]!,
-                                                                );
-                                                                setSetWeights((values) =>
-                                                                  reorderSetValues(
-                                                                    values,
-                                                                    order,
-                                                                    targetWeight,
-                                                                  ),
-                                                                );
-                                                                setSetRepMins((values) =>
-                                                                  reorderSetValues(
-                                                                    values,
-                                                                    order,
-                                                                    repMin,
-                                                                  ),
-                                                                );
-                                                                setSetRepMaxes((values) =>
-                                                                  reorderSetValues(
-                                                                    values,
-                                                                    order,
-                                                                    repMax,
-                                                                  ),
-                                                                );
-                                                                setSetRests((values) =>
-                                                                  reorderSetValues(
-                                                                    values,
-                                                                    order,
-                                                                    restSec,
-                                                                  ),
-                                                                );
-                                                                setWarmupEnabled(
-                                                                  ordered.includes("warmup"),
-                                                                );
-                                                                setDropSetEnabled(
-                                                                  ordered.includes("drop"),
-                                                                );
-                                                                if (
-                                                                  nextMode === "superset" &&
-                                                                  !supersetGroup
-                                                                ) {
-                                                                  setSupersetGroup("A");
-                                                                }
-                                                                return ordered;
-                                                              });
-                                                            }}
-                                                            className="h-9 min-w-36 rounded-xl border border-border bg-white px-2 text-[11px] font-bold text-ink"
-                                                          >
-                                                            <option value="normal">סט רגיל</option>
-                                                            <option value="warmup">סט חימום</option>
-                                                            <option value="drop">דרופ סט</option>
-                                                            <option value="superset">
-                                                              סופר־סט
-                                                            </option>
-                                                          </select>
+                                                           <div className="flex items-center gap-2">
+                                                             {index > 0 ? (
+                                                               <button
+                                                                 type="button"
+                                                                 onClick={() => {
+                                                                   setSetWeights((values) => {
+                                                                     const next = [...values];
+                                                                     next[index] =
+                                                                       values[index - 1] ?? targetWeight;
+                                                                     return next;
+                                                                   });
+                                                                   setSetRepMins((values) => {
+                                                                     const next = [...values];
+                                                                     next[index] = values[index - 1] ?? repMin;
+                                                                     return next;
+                                                                   });
+                                                                   setSetRepMaxes((values) => {
+                                                                     const next = [...values];
+                                                                     next[index] = values[index - 1] ?? repMax;
+                                                                     return next;
+                                                                   });
+                                                                   setSetRests((values) => {
+                                                                     const next = [...values];
+                                                                     next[index] = values[index - 1] ?? restSec;
+                                                                     return next;
+                                                                   });
+                                                                   setSetNotes((values) => {
+                                                                     const next = [...values];
+                                                                     next[index] = values[index - 1] ?? "";
+                                                                     return next;
+                                                                   });
+                                                                 }}
+                                                                 className="rounded-lg bg-secondary px-2 py-1.5 text-[10px] font-bold text-muted-foreground hover:text-primary"
+                                                               >
+                                                                 העתק מהקודם
+                                                               </button>
+                                                             ) : null}
+                                                             <select
+                                                               value={mode}
+                                                               onChange={(event) => {
+                                                                 const nextMode = event.target
+                                                                   .value as
+                                                                   | "normal"
+                                                                   | "warmup"
+                                                                   | "drop"
+                                                                   | "superset";
+                                                                 setSetModes((current) => {
+                                                                   const count = Math.max(
+                                                                     1,
+                                                                     setsCount,
+                                                                   );
+                                                                   const next = Array.from(
+                                                                     { length: count },
+                                                                     (_, itemIndex) =>
+                                                                       current[itemIndex] ?? "normal",
+                                                                   );
+                                                                   next[index] = nextMode;
+                                                                   const order =
+                                                                     warmupFirstIndexes(next);
+                                                                   const ordered = order.map(
+                                                                     (itemIndex) => next[itemIndex]!,
+                                                                   );
+                                                                   setSetWeights((values) =>
+                                                                     reorderSetValues(
+                                                                       values,
+                                                                       order,
+                                                                       targetWeight,
+                                                                     ),
+                                                                   );
+                                                                   setSetRepMins((values) =>
+                                                                     reorderSetValues(
+                                                                       values,
+                                                                       order,
+                                                                       repMin,
+                                                                     ),
+                                                                   );
+                                                                   setSetRepMaxes((values) =>
+                                                                     reorderSetValues(
+                                                                       values,
+                                                                       order,
+                                                                       repMax,
+                                                                     ),
+                                                                   );
+                                                                   setSetRests((values) =>
+                                                                     reorderSetValues(
+                                                                       values,
+                                                                       order,
+                                                                       restSec,
+                                                                     ),
+                                                                   );
+                                                                   setSetNotes((values) =>
+                                                                     reorderSetValues(
+                                                                       values,
+                                                                       order,
+                                                                       "",
+                                                                     ),
+                                                                   );
+                                                                   setWarmupEnabled(
+                                                                     ordered.includes("warmup"),
+                                                                   );
+                                                                   setDropSetEnabled(
+                                                                     ordered.includes("drop"),
+                                                                   );
+                                                                   if (
+                                                                     nextMode === "superset" &&
+                                                                     !supersetGroup
+                                                                   ) {
+                                                                     setSupersetGroup("A");
+                                                                   }
+                                                                   return ordered;
+                                                                 });
+                                                               }}
+                                                               className="h-9 min-w-36 rounded-xl border border-border bg-white px-2 text-[11px] font-bold text-ink"
+                                                             >
+                                                               <option value="normal">סט רגיל</option>
+                                                               <option value="warmup">סט חימום</option>
+                                                               <option value="drop">דרופ סט</option>
+                                                               <option value="superset">
+                                                                 סופר־סט
+                                                               </option>
+                                                             </select>
+                                                           </div>
                                                         </div>
                                                         {mode === "normal" || mode === "warmup" ? (
-                                                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                                                            <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                           <div className="grid grid-cols-2 gap-2">
+                                                             <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                               משקל (ק״ג)
                                                               <input
                                                                 type="number"
@@ -6469,7 +6550,7 @@ export function CoachDashboardPage({
                                                                 className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink"
                                                               />
                                                             </label>
-                                                            <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground sm:col-span-1">
+                                                             <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                               חזרות מקס׳
                                                               <input
                                                                 type="number"
@@ -6490,7 +6571,23 @@ export function CoachDashboardPage({
                                                                 className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink"
                                                               />
                                                             </label>
-                                                            <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground sm:col-span-3">
+                                                             <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                               הערה לסט
+                                                               <textarea
+                                                                 rows={1}
+                                                                 value={setNotes[index] ?? ""}
+                                                                 onChange={(event) => {
+                                                                   setSetNotes((current) => {
+                                                                     const next = [...current];
+                                                                     next[index] = event.target.value;
+                                                                     return next;
+                                                                   });
+                                                                 }}
+                                                                 placeholder="למשל: עד כשל"
+                                                                 className="min-h-10 rounded-xl border border-border bg-background px-2 py-2 text-right text-sm font-normal text-ink"
+                                                               />
+                                                             </label>
+                                                             <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                               זמן מנוחה (שניות)
                                                               <input
                                                                 type="number"

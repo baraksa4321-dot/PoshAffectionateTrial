@@ -262,6 +262,7 @@ function Session() {
           targetReps,
           warmup: false,
           ...(targetRepMax !== undefined ? { targetRepMax } : {}),
+          ...(configuredSet?.notes ? { notes: configuredSet.notes } : {}),
           ...(isDropSet ? { dropSet: true } : {}),
         };
       });
@@ -1009,6 +1010,11 @@ function Session() {
                             <Check className="h-5 w-5" strokeWidth={2.6} />
                           </button>
                         </div>
+                        {s.notes ? (
+                          <p className="mt-2 rounded-xl bg-primary/5 px-2.5 py-2 text-right text-[11.5px] font-medium text-primary">
+                            {s.notes}
+                          </p>
+                        ) : null}
                         <div className="mt-2 grid grid-cols-2 gap-2">
                           <Stepper
                             label="משקל בפועל"
