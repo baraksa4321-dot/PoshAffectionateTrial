@@ -55,6 +55,7 @@ import {
 } from "@/lib/gym-store";
 import type { FoodItem, MealFood } from "@/lib/gym-types";
 import { nutritionSourceFor } from "@/lib/nutrition-integrity";
+import { buildShoppingList, type ShoppingListPeriod } from "@/lib/nutrition-planning";
 import { RECIPE_LIBRARY, type RecipeDefinition } from "@/lib/recipe-library";
 import { genderText } from "@/lib/gender-copy";
 import { loadingMessageForGender } from "@/lib/loading-copy";
@@ -132,6 +133,16 @@ function quantityLabelForServing(servingSize: string): string {
   if (/(כף|כפות)/.test(serving)) return "כפות";
   if (/(כוס|כוסות)/.test(serving)) return "כוסות";
   return "כמות";
+}
+
+const SHOPPING_PERIOD_OPTIONS: Array<{ value: ShoppingListPeriod; label: string }> = [
+  { value: "daily", label: "יומי" },
+  { value: "weekly", label: "שבועי" },
+  { value: "monthly", label: "חודשי" },
+];
+
+function formatShoppingQuantity(value: number) {
+  return new Intl.NumberFormat("he-IL", { maximumFractionDigits: 2 }).format(value);
 }
 
 async function prepareMealImage(file: File): Promise<string> {
@@ -219,6 +230,7 @@ function NutritionLog() {
   const [showWhatToEat, setShowWhatToEat] = useState(false);
   const [showShoppingList, setShowShoppingList] = useState(false);
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+  const [shoppingPeriod, setShoppingPeriod] = useState<ShoppingListPeriod>("daily");
   const [suggestionMealId, setSuggestionMealId] = useState<string>("");
   const [showRecipes, setShowRecipes] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<RecipeDefinition | null>(null);
@@ -417,21 +429,10 @@ function NutritionLog() {
   }, [gym.foods, remainingCal, remainingProt]);
 
   // Generate Automatic Shopping List from planned foods
-  const shoppingListItems = useMemo(() => {
-    const map = new Map<string, { name: string; category: string; count: number }>();
-    day.meals.forEach((m) => {
-      m.foods.forEach((f) => {
-        const key = f.name;
-        const existing = map.get(key);
-        if (existing) {
-          existing.count += f.quantity;
-        } else {
-          map.set(key, { name: f.name, category: "מוצרי תזונה", count: f.quantity });
-        }
-      });
-    });
-    return Array.from(map.values());
-  }, [day.meals]);
+  const shoppingListItems = useMemo(
+    () => buildShoppingList(gym.plannedMeals, shoppingPeriod),
+    [gym.plannedMeals, shoppingPeriod],
+  );
 
   const filteredFoods = useMemo(() => {
     return [...searchFoods(gym.foods, pickerQuery)].sort((a, b) => {
@@ -1556,7 +1557,7 @@ function NutritionLog() {
           >
             <div className="flex items-center justify-between border-b pb-2">
               <h3 className="font-bold text-base text-ink flex items-center gap-2">
-                <ShoppingBag className="h-5 w-5 text-emerald-600" /> רשימת קניות אוטומטית
+                <ShoppingBag className="h-5 w-5 text-emerald-600" /> רשימת קניות מהתפריט
               </h3>
               <button
                 onClick={() => setShowShoppingList(false)}
@@ -1566,20 +1567,46 @@ function NutritionLog() {
               </button>
             </div>
 
+            <div
+              className="grid grid-cols-3 gap-1 rounded-2xl bg-secondary/70 p-1"
+              role="tablist"
+              aria-label="טווח רשימת הקניות"
+            >
+              {SHOPPING_PERIOD_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={shoppingPeriod === option.value}
+                  onClick={() => setShoppingPeriod(option.value)}
+                  className={`rounded-xl px-2 py-2 text-[11px] font-bold transition-colors ${
+                    shoppingPeriod === option.value
+                      ? "bg-ink text-white shadow-sm"
+                      : "text-muted-foreground hover:bg-white/70"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] leading-relaxed text-muted-foreground">
+              הכמויות מחושבות לפי התפריט שלך ומומרות לאריזות נפוצות בסופר.
+            </p>
+
             {shoppingListItems.length === 0 ? (
               <p className="text-xs text-muted-foreground py-4 text-center">
-                הרשימה ריקה. תכנני ארוחות ביומן ליצירת רשימה אוטומטית.
+                עדיין אין תפריט מתוכנן. בקשי מהמאמן לבנות עבורך תפריט כדי ליצור רשימת קניות.
               </p>
             ) : (
               <div className="space-y-2">
                 {shoppingListItems.map((item) => {
-                  const isChecked = checkedItems[item.name] || false;
+                  const isChecked = checkedItems[item.key] || false;
 
                   return (
                     <div
-                      key={item.name}
+                      key={item.key}
                       onClick={() =>
-                        setCheckedItems((prev) => ({ ...prev, [item.name]: !isChecked }))
+                        setCheckedItems((prev) => ({ ...prev, [item.key]: !isChecked }))
                       }
                       className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between text-xs ${
                         isChecked
@@ -1587,8 +1614,21 @@ function NutritionLog() {
                           : "bg-secondary/50 font-bold"
                       }`}
                     >
-                      <span>
-                        {item.name} ({item.count} יחידות/מנות)
+                      <span className="min-w-0">
+                        <span className="block truncate">{item.name}</span>
+                        <span className="mt-1 block text-[10px] font-medium text-muted-foreground">
+                          נדרש: {formatShoppingQuantity(item.requiredQuantity)} {item.requiredUnit}
+                        </span>
+                        {item.purchaseQuantity !== item.requiredQuantity ||
+                        item.purchaseUnit !== item.requiredUnit ? (
+                          <span className="mt-0.5 block text-[10px] font-bold text-emerald-700">
+                            לקנייה: {formatShoppingQuantity(item.purchaseQuantity)}{" "}
+                            {item.purchaseUnit}
+                            {item.purchaseContentsQuantity !== undefined
+                              ? ` (${item.purchasePackageBreakdown ?? formatShoppingQuantity(item.purchaseContentsQuantity)} ${item.purchaseContentsUnit})`
+                              : ""}
+                          </span>
+                        ) : null}
                       </span>
                       {isChecked ? (
                         <CheckSquare className="h-4 w-4 text-emerald-600 shrink-0" />
