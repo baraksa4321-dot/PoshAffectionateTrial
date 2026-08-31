@@ -712,33 +712,33 @@ body.loading-lock {
  */
 :root.night-mode,
 :root.night-mode[data-theme] {
-  --background: #303034;
-  --foreground: #f4f1f2;
-  --surface: #242427;
-  --surface-2: #2e2e32;
-  --cream: #303034;
-  --card: #242427;
-  --card-foreground: #f4f1f2;
-  --popover: #242427;
-  --popover-foreground: #f4f1f2;
-  --ink: #f4f1f2;
-  --ink-soft: #d0cdd0;
-  --muted: #2b2b2f;
-  --muted-foreground: #c0bcc1;
-  --secondary: #303034;
-  --secondary-foreground: #f4f1f2;
-  --accent-foreground: #f4f1f2;
-  --border: #48484d;
-  --input: #48484d;
+  --background: #3a3a3f;
+  --foreground: #ecebed;
+  --surface: #444449;
+  --surface-2: #4d4d53;
+  --cream: #3a3a3f;
+  --card: #444449;
+  --card-foreground: #ecebed;
+  --popover: #444449;
+  --popover-foreground: #ecebed;
+  --ink: #ecebed;
+  --ink-soft: #d1ced2;
+  --muted: #404045;
+  --muted-foreground: #c2bec4;
+  --secondary: #3e3e43;
+  --secondary-foreground: #ecebed;
+  --accent-foreground: #ecebed;
+  --border: #5b5b63;
+  --input: #5b5b63;
   --ring: var(--primary);
 }
 
 html.night-mode,
 html.night-mode body,
 html.night-mode #root {
-  background-color: #303034 !important;
+  background-color: #3a3a3f !important;
   background-image: none !important;
-  color: #f4f1f2;
+  color: #ecebed;
 }
 
 html.night-mode .bg-white,
@@ -770,7 +770,7 @@ html.night-mode .bg-background {
 }
 
 html.night-mode .app-topbar {
-  box-shadow: 0 10px 26px rgb(0 0 0 / 0.34) !important;
+  box-shadow: 0 10px 26px rgb(0 0 0 / 0.22) !important;
 }
 
 html.night-mode .text-black,
@@ -781,9 +781,9 @@ html.night-mode .text-gray-900 {
 /* Keep the app chrome as one continuous night-mode surface on mobile. */
 html.night-mode .app-topbar,
 html.night-mode .nav-shell {
-  background: #303034 !important;
-  background-color: #303034 !important;
-  border-color: #35353a !important;
+  background: #3a3a3f !important;
+  background-color: #3a3a3f !important;
+  border-color: #444449 !important;
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;

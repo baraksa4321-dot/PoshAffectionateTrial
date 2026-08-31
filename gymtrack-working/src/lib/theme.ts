@@ -110,5 +110,5 @@ export function applyNightMode(enabled: boolean) {
   document.documentElement.classList.toggle("night-mode", enabled);
   document.documentElement.style.colorScheme = enabled ? "dark" : "light";
   const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  themeColor?.setAttribute("content", enabled ? "#232326" : "#f8f7f3");
+  themeColor?.setAttribute("content", enabled ? "#3a3a3f" : "#f8f7f3");
 }

@@ -146,9 +146,9 @@ const requiredCssContracts = [
   ":root[data-theme] {",
   ":root:not(.night-mode)",
   ":root.night-mode[data-theme]",
-  "--background: #303034",
-  "--ink: #f4f1f2",
-  "--border: #48484d",
+  "--background: #3a3a3f",
+  "--ink: #ecebed",
+  "--border: #5b5b63",
   "--ring: var(--primary)",
 ];
 for (const contract of requiredCssContracts) {
