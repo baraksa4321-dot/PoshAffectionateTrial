@@ -1019,6 +1019,10 @@ function load() {
     ])
       .then(({ data: { session }, error }) => {
         if (error) {
+          // A timeout/error must not leave INITIAL_SESSION ignored forever.
+          // Supabase can still deliver the real session through the auth
+          // listener after a slow getSession request finishes.
+          authResolved = true;
           currentUser = null;
           authStatus = "unauthenticated";
           profileHydrationStatus = "error";
@@ -1043,6 +1047,7 @@ function load() {
         notifyListeners();
       })
       .catch(() => {
+        authResolved = true;
         currentUser = null;
         authStatus = "unauthenticated";
         profileHydrationStatus = "error";

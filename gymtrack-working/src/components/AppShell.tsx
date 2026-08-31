@@ -351,8 +351,7 @@ export function AppShell({
     const normalizedEmail = email.trim().toLowerCase();
 
     try {
-      const redirectTo =
-        typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
+      const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
       if (isSignUp) {
         const normalizedFullName = fullName.trim().replace(/\s+/g, " ");
         if (normalizedFullName.split(" ").filter(Boolean).length < 2) {

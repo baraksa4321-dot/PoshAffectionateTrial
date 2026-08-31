@@ -139,6 +139,18 @@ type ProfileRow = {
   weight_kg?: number | null;
   workouts_per_week?: number | null;
   gender?: string | null;
+  profile_exists?: boolean;
+  email_confirmed_at?: string | null;
+  last_sign_in_at?: string | null;
+};
+
+type OwnerAuthUserRow = {
+  id: string;
+  email?: string | null;
+  email_confirmed_at?: string | null;
+  last_sign_in_at?: string | null;
+  created_at?: string | null;
+  profile_exists?: boolean;
 };
 
 type ClientFeedbackRow = {
@@ -1348,14 +1360,42 @@ export function CoachDashboardPage({
   const loadAllProfilesForOwner = useCallback(async (): Promise<boolean> => {
     if (!isOwner) return false;
     setManagementError("");
-    const { data, error } = await supabase.from("profiles").select("*");
-    if (error) {
-      setManagementError(`טעינת משתמשי המערכת נכשלה: ${error.message}`);
+    const [{ data: profileData, error: profileError }, { data: authData, error: authError }] =
+      await Promise.all([
+        supabase.from("profiles").select("*"),
+        supabase.rpc("list_owner_auth_users"),
+      ]);
+    if (profileError) {
+      setManagementError(`טעינת משתמשי המערכת נכשלה: ${profileError.message}`);
       return false;
     }
-    if (data) {
-      setAllProfiles(data as unknown as ProfileRow[]);
+    const profileRows = (profileData ?? []).map((profile) => ({
+      ...(profile as unknown as ProfileRow),
+      profile_exists: true,
+    }));
+    if (authError) {
+      setAllProfiles(profileRows);
+      setManagementError(
+        `הפרופילים נטענו, אך לא ניתן לבדוק חשבונות Auth ללא פרופיל: ${authError.message}`,
+      );
+      return true;
     }
+    const knownProfileIds = new Set(profileRows.map((profile) => profile.id));
+    const missingProfileRows = ((authData ?? []) as unknown as OwnerAuthUserRow[])
+      .filter((authUser) => authUser.profile_exists === false && !knownProfileIds.has(authUser.id))
+      .map(
+        (authUser): ProfileRow => ({
+          id: authUser.id,
+          email: authUser.email ?? null,
+          profile_exists: false,
+          email_confirmed_at: authUser.email_confirmed_at ?? null,
+          last_sign_in_at: authUser.last_sign_in_at ?? null,
+          created_at: authUser.created_at ?? null,
+          role: null,
+          approval_status: null,
+        }),
+      );
+    setAllProfiles([...profileRows, ...missingProfileRows]);
     return true;
   }, [isOwner]);
 
@@ -2128,6 +2168,27 @@ export function CoachDashboardPage({
     if (profile.role === "client") {
       const details = await pullClientDataForCoach(profile.id);
       if (!details.error) setSelectedOwnerProfileDetails(details);
+    }
+  };
+
+  const handleRepairMissingProfile = async (profile: ProfileRow) => {
+    if (profile.profile_exists !== false) return;
+    setOwnerUserActionId(profile.id);
+    setManagementError("");
+    try {
+      const { data, error } = await supabase.rpc("repair_missing_client_profile", {
+        target_user_id: profile.id,
+      });
+      if (error) throw error;
+      if (data !== true) throw new Error("יצירת הפרופיל לא התקבלה במסד הנתונים");
+      await Promise.all([loadAllProfilesForOwner(), loadCoachClients()]);
+      setRoleChangeNotice(
+        `נוצר פרופיל client עבור ${profileDisplayName(profile)} והוא ממתין לאישור בעלים.`,
+      );
+    } catch (err: unknown) {
+      setManagementError(`תיקון הפרופיל נכשל: ${errorMessage(err, "שגיאה ביצירת הפרופיל")}`);
+    } finally {
+      setOwnerUserActionId(null);
     }
   };
 
@@ -3671,21 +3732,25 @@ export function CoachDashboardPage({
                         <div className="rounded-xl bg-purple-50 p-2">
                           <span className="block text-muted-foreground">תפקיד</span>
                           <strong className="text-purple-950">
-                            {selectedProfile.role === "owner"
-                              ? "בעלים"
-                              : selectedProfile.role === "coach"
-                                ? "מאמן"
-                                : "מתאמן"}
+                            {selectedProfile.profile_exists === false
+                              ? "Auth ללא פרופיל"
+                              : selectedProfile.role === "owner"
+                                ? "בעלים"
+                                : selectedProfile.role === "coach"
+                                  ? "מאמן"
+                                  : "מתאמן"}
                           </strong>
                         </div>
                         <div className="rounded-xl bg-purple-50 p-2">
                           <span className="block text-muted-foreground">סטטוס</span>
                           <strong className="text-purple-950">
-                            {selectedProfile.approval_status === "pending"
-                              ? "ממתין לאישור"
-                              : selectedProfile.approval_status === "rejected"
-                                ? "נדחה"
-                                : "מאושר"}
+                            {selectedProfile.profile_exists === false
+                              ? "נדרש תיקון פרופיל"
+                              : selectedProfile.approval_status === "pending"
+                                ? "ממתין לאישור"
+                                : selectedProfile.approval_status === "rejected"
+                                  ? "נדחה"
+                                  : "מאושר"}
                           </strong>
                         </div>
                         <div className="rounded-xl bg-surface-2 p-2">
@@ -3705,6 +3770,29 @@ export function CoachDashboardPage({
                           </strong>
                         </div>
                       </div>
+                      {selectedProfile.profile_exists === false ? (
+                        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
+                          <p className="font-bold">חשבון Auth קיים, אך שורת הפרופיל חסרה.</p>
+                          <p className="mt-1 leading-relaxed">
+                            אימייל:{" "}
+                            {selectedProfile.email_confirmed_at ? "מאומת" : "טרם אומת"} · כניסה
+                            אחרונה:{" "}
+                            {selectedProfile.last_sign_in_at
+                              ? new Date(selectedProfile.last_sign_in_at).toLocaleString("he-IL")
+                              : "אין"}
+                          </p>
+                          <button
+                            type="button"
+                            disabled={ownerUserActionId === selectedProfile.id}
+                            onClick={() => void handleRepairMissingProfile(selectedProfile)}
+                            className="mt-2 rounded-xl bg-amber-700 px-3 py-2 text-[11px] font-bold text-white disabled:opacity-50"
+                          >
+                            {ownerUserActionId === selectedProfile.id
+                              ? "יוצר פרופיל..."
+                              : "יצירת פרופיל client ממתין לאישור"}
+                          </button>
+                        </div>
+                      ) : null}
                       {assignedCoach ? (
                         <p className="mt-2 text-[11px] text-muted-foreground">
                           מאמן משויך: <strong>{profileDisplayName(assignedCoach)}</strong>
@@ -3769,7 +3857,7 @@ export function CoachDashboardPage({
                           עדיין לא נשמרו מדידות גוף.
                         </p>
                       ) : null}
-                      {selectedProfile.role !== "owner" ? (
+                      {selectedProfile.profile_exists !== false && selectedProfile.role !== "owner" ? (
                         <button
                           type="button"
                           disabled={ownerUserActionId === selectedProfile.id}
@@ -3805,7 +3893,9 @@ export function CoachDashboardPage({
                         </button>
                         <span className="text-muted-foreground mr-1">
                           (
-                          {p.role === "owner"
+                          {p.profile_exists === false
+                            ? "Auth ללא פרופיל"
+                            : p.role === "owner"
                             ? "בעלים"
                             : p.role === "coach"
                               ? "מאמן"
@@ -3819,7 +3909,12 @@ export function CoachDashboardPage({
                       <select
                         aria-label={`שינוי תפקיד עבור ${profileDisplayName(p)}`}
                         value={p.role || ""}
-                        disabled={isCurrentUser || !canChangeRole || isChanging}
+                        disabled={
+                          isCurrentUser ||
+                          p.profile_exists === false ||
+                          !canChangeRole ||
+                          isChanging
+                        }
                         onChange={(event) => {
                           const nextRole = event.target.value;
                           if (nextRole === "coach" || nextRole === "client") {
