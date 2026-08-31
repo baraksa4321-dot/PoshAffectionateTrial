@@ -33,6 +33,45 @@ describe("Israeli protein product catalog", () => {
     });
   });
 
+  test("keeps products without an exact source unverified", () => {
+    const reviewedIds = new Set([
+      "f-protein-il-tnuva-go-yogurt-natural",
+      "f-protein-il-danone-pro-strawberry",
+      "f-protein-il-allin-bar-chocolate",
+      "f-protein-il-allin-whey-vanilla",
+    ]);
+    const unverified = ISRAELI_PROTEIN_PRODUCTS.filter((food) => !reviewedIds.has(food.id));
+
+    expect(unverified).toHaveLength(10);
+    for (const food of unverified) {
+      expect(food.nutritionReview).toBeUndefined();
+      expect(nutritionSourceFor(food).verified).toBe(false);
+    }
+  });
+
+  test("does not trust a reviewed record whose source is only a comparison", () => {
+    const comparisonOnly = {
+      id: "f-protein-il-comparison-only",
+      nutritionReview: {
+        status: "reviewed" as const,
+        sources: [
+          {
+            name: "מוצר דומה",
+            url: "https://example.com/product",
+            kind: "retailer-product-page" as const,
+            match: "comparison" as const,
+            valuesPer: "serving" as const,
+          },
+        ],
+      },
+    };
+
+    expect(nutritionSourceFor(comparisonOnly)).toMatchObject({
+      verified: false,
+      label: "קטלוג ישראלי — נדרש אימות תווית",
+    });
+  });
+
   test("records manufacturer verification separately from retailer review", () => {
     const yoplait = ISRAELI_PROTEIN_PRODUCTS.find((item) =>
       item.id.includes("tnuva-go-yogurt-natural"),

@@ -41,6 +41,9 @@ const curatedProduct = (
         ),
       }
     : undefined;
+  const notes = resolvedNutritionReview?.status === "reviewed"
+    ? "ערכי התזונה נבדקו מול המקור המתועד; יש להעדיף את תווית האריזה אם היא שונה."
+    : "ערך seed לקטלוג מוצרי חלבון בישראל. יש לבדוק את התווית שעל האריזה לפני שימוש מדויק.";
 
   return {
     id,
@@ -55,8 +58,7 @@ const curatedProduct = (
     fat,
     fiber,
     searchTerms: [...searchTerms, brand, "חלבון", "protein"],
-    notes:
-      "ערך seed לקטלוג מוצרי חלבון בישראל. יש לבדוק את התווית שעל האריזה לפני שימוש מדויק.",
+    notes,
     catalog: {
       source: "curated-israel",
       sourceProductId: id,

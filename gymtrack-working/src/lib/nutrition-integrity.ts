@@ -16,6 +16,15 @@ export type NutritionValidationIssue = {
   message: string;
 };
 
+function hasExactProductReview(food: Pick<FoodItem, "nutritionReview">): boolean {
+  return (
+    food.nutritionReview?.status === "reviewed" &&
+    food.nutritionReview.sources.some(
+      (source) => source.match === "exact-product" && source.url.trim().length > 0,
+    )
+  );
+}
+
 const REQUIRED_MACROS = [
   ["calories", "קלוריות"],
   ["protein", "חלבון"],
@@ -27,11 +36,12 @@ const REQUIRED_MACROS = [
 export function nutritionSourceFor(
   food: Pick<FoodItem, "id" | "nutritionReview">,
 ): NutritionSource {
-  if (food.nutritionReview?.status === "reviewed") {
-    const sources = food.nutritionReview.sources;
+  const review = food.nutritionReview;
+  if (hasExactProductReview(food) && review) {
+    const sources = review.sources;
     const sourceNames = sources.map((source) => source.name).join(" · ");
-    const confidence = food.nutritionReview.confidence
-      ? `רמת ביטחון: ${food.nutritionReview.confidence === "high" ? "גבוהה" : food.nutritionReview.confidence === "medium" ? "בינונית" : "נמוכה"}.`
+    const confidence = review.confidence
+      ? `רמת ביטחון: ${review.confidence === "high" ? "גבוהה" : review.confidence === "medium" ? "בינונית" : "נמוכה"}.`
       : "";
     return {
       label: sources.some((source) => source.kind === "manufacturer")
@@ -111,7 +121,7 @@ export function assertValidMealFood(record: MealFood): void {
 
 export function foodLibraryAudit(foods: FoodItem[]) {
   const invalid = foods.filter((food) => nutritionValidationIssues(food).length > 0);
-  const verified = foods.filter((food) => food.nutritionReview?.status === "reviewed").length;
+  const verified = foods.filter((food) => hasExactProductReview(food)).length;
 
   return {
     total: foods.length,
