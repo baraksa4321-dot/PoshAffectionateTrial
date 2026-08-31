@@ -296,6 +296,16 @@ function isMissingTableInSchemaCache(error: unknown, tableName: string): boolean
   );
 }
 
+function isMissingColumnInSchemaCache(error: unknown, tableName: string): boolean {
+  const candidate = error as { message?: unknown } | null;
+  const message = error instanceof Error ? error.message : String(candidate?.message ?? error);
+  return (
+    message.includes(tableName) &&
+    (/column .* does not exist/i.test(message) ||
+      /could not find .* column .* schema cache/i.test(message))
+  );
+}
+
 function cardioCloudId(localId: string): string {
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(localId)) {
     return localId;
@@ -614,7 +624,10 @@ export async function syncLocalToSupabase(
         );
       }
     } catch (error: unknown) {
-      if (isMissingTableInSchemaCache(error, "body_weight_logs")) {
+      if (
+        isMissingTableInSchemaCache(error, "body_weight_logs") ||
+        isMissingColumnInSchemaCache(error, "body_weight_logs")
+      ) {
         console.warn("[Optional body weight sync skipped]: public.body_weight_logs is unavailable");
       } else {
         throw error;
