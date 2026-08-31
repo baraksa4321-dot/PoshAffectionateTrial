@@ -7,7 +7,7 @@
 # Test info
 
 - Name: authenticated-ios.pw.mjs >> authenticated iPhone coach workspace and active workout remain usable
-- Location: gymtrack-working/e2e/authenticated-ios.pw.mjs:284:1
+- Location: gymtrack-working/e2e/authenticated-ios.pw.mjs:280:1
 
 # Error details
 

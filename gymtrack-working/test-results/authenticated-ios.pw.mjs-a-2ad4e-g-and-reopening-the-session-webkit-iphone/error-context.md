@@ -7,7 +7,7 @@
 # Test info
 
 - Name: authenticated-ios.pw.mjs >> active workout values survive leaving and reopening the session
-- Location: gymtrack-working/e2e/authenticated-ios.pw.mjs:371:1
+- Location: gymtrack-working/e2e/authenticated-ios.pw.mjs:367:1
 
 # Error details
 
