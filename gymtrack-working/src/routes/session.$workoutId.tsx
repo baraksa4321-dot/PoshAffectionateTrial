@@ -330,6 +330,12 @@ function Session() {
     );
   }, [initial]);
   const [startedAt] = useState(() => Date.now());
+  const entriesRef = useRef(entries);
+  const videoUploadTasksRef = useRef(new Set<Promise<void>>());
+  const restoredVideoDraftWorkoutIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    entriesRef.current = entries;
+  }, [entries]);
   const [rest, setRest] = useState(0);
   const [restFinished, setRestFinished] = useState(false);
   const [smartTimerPosition, setSmartTimerPosition] = useState<SmartTimerPosition | null>(null);
@@ -587,6 +593,11 @@ function Session() {
         index === exerciseIndex ? { ...entry, videoUrl: nextUrl } : entry,
       ),
     );
+    void saveWorkoutVideoDraft(workout.id, exerciseIndex, file).catch((error: unknown) => {
+      setVideoUploadError(
+        error instanceof Error ? error.message : "לא ניתן לשמור את הסרטון במכשיר",
+      );
+    });
     let timeoutId: number | undefined;
     const upload = import("@/lib/supabase-sync").then(({ uploadWorkoutPerformanceVideo }) =>
       uploadWorkoutPerformanceVideo(file, {
@@ -600,7 +611,7 @@ function Session() {
         VIDEO_UPLOAD_TIMEOUT_MS,
       );
     });
-    void Promise.race([upload, timeout])
+    const uploadTask = Promise.race([upload, timeout])
       .then((uploadedUrl) => {
         setEntries((prev) =>
           prev.map((entry, index) => {
@@ -608,27 +619,47 @@ function Session() {
             return { ...entry, videoUrl: uploadedUrl };
           }),
         );
+        void removeWorkoutVideoDraft(workout.id, exerciseIndex);
         URL.revokeObjectURL(nextUrl);
       })
       .catch((error: unknown) => {
-        setEntries((prev) =>
-          prev.map((entry, index) =>
-            index === exerciseIndex && entry.videoUrl === nextUrl
-              ? (() => {
-                  const { videoUrl: _videoUrl, ...withoutVideo } = entry;
-                  return withoutVideo;
-                })()
-              : entry,
-          ),
-        );
-        URL.revokeObjectURL(nextUrl);
         setVideoUploadError(error instanceof Error ? error.message : "העלאת סרטון הביצוע נכשלה");
       })
       .finally(() => {
         if (timeoutId !== undefined) window.clearTimeout(timeoutId);
         setVideoUploadsInFlight((count) => Math.max(0, count - 1));
       });
+    videoUploadTasksRef.current.add(uploadTask);
+    void uploadTask.finally(() => videoUploadTasksRef.current.delete(uploadTask));
   };
+
+  useEffect(() => {
+    if (!workout || restoredVideoDraftWorkoutIdRef.current === workoutId) return;
+    restoredVideoDraftWorkoutIdRef.current = workoutId;
+    let cancelled = false;
+    void loadWorkoutVideoDrafts(workoutId)
+      .then((drafts) => {
+        if (cancelled) return;
+        drafts.forEach(({ exerciseIndex, file }) => {
+          const existingUrl = entriesRef.current[exerciseIndex]?.videoUrl;
+          if (existingUrl && !existingUrl.startsWith("blob:")) {
+            void removeWorkoutVideoDraft(workoutId, exerciseIndex);
+            return;
+          }
+          selectPerformanceVideo(exerciseIndex, file);
+        });
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setVideoUploadError(
+            error instanceof Error ? error.message : "לא ניתן לשחזר את סרטון האימון",
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [workout, workoutId]);
 
   const totalSets = entries.reduce((a, e) => a + e.sets.filter((s) => !s.warmup).length, 0);
   const doneSets = entries.reduce(
@@ -638,18 +669,22 @@ function Session() {
 
   const handleFinishConfirm = async () => {
     if (isFinishing) return;
-    if (videoUploadsInFlight > 0) {
-      setFinishError("ממתינה לסיום העלאת סרטון הביצוע");
-      return;
+    setIsFinishing(true);
+    setFinishError("");
+    const pendingVideoUploads = [...videoUploadTasksRef.current];
+    if (pendingVideoUploads.length > 0) {
+      await Promise.race([
+        Promise.allSettled(pendingVideoUploads),
+        new Promise<void>((resolve) => window.setTimeout(resolve, VIDEO_UPLOAD_TIMEOUT_MS)),
+      ]);
     }
+    const currentEntries = entriesRef.current;
     const allSetsCompleted =
-      entries.length > 0 &&
-      entries.every((entry) => {
+      currentEntries.length > 0 &&
+      currentEntries.every((entry) => {
         const workingSets = entry.sets.filter((set) => !set.warmup);
         return workingSets.length > 0 && workingSets.every((set) => set.done);
       });
-    setIsFinishing(true);
-    setFinishError("");
     if (!finishedSessionRef.current) {
       finishedSessionRef.current = {
         id: uid(),
@@ -658,22 +693,26 @@ function Session() {
         ...(currentProgram?.name ? { programName: currentProgram.name } : {}),
         date: new Date().toISOString(),
         durationSec: Math.round((Date.now() - startedAt) / 1000),
-        entries: entries.map((e, index) => ({
-          ...e,
-          sets: e.sets.filter((s) => s.done),
-          ...(exerciseFeedback[index]?.rating || exerciseFeedback[index]?.notes.trim()
-            ? {
-                feedback: {
-                  ...(exerciseFeedback[index]?.rating
-                    ? { rating: exerciseFeedback[index].rating }
-                    : {}),
-                  ...(exerciseFeedback[index]?.notes.trim()
-                    ? { notes: exerciseFeedback[index].notes.trim() }
-                    : {}),
-                },
-              }
-            : {}),
-        })),
+        entries: currentEntries.map((e, index) => {
+          const { videoUrl, ...entryWithoutVideo } = e;
+          return {
+            ...entryWithoutVideo,
+            ...(videoUrl && !videoUrl.startsWith("blob:") ? { videoUrl } : {}),
+            sets: e.sets.filter((s) => s.done),
+            ...(exerciseFeedback[index]?.rating || exerciseFeedback[index]?.notes.trim()
+              ? {
+                  feedback: {
+                    ...(exerciseFeedback[index]?.rating
+                      ? { rating: exerciseFeedback[index].rating }
+                      : {}),
+                    ...(exerciseFeedback[index]?.notes.trim()
+                      ? { notes: exerciseFeedback[index].notes.trim() }
+                      : {}),
+                  },
+                }
+              : {}),
+          };
+        }),
         difficultyRating,
         ...(discomfortNotes.trim() ? { discomfortNotes: discomfortNotes.trim() } : {}),
       };
@@ -1276,6 +1315,7 @@ function Session() {
                 ).map(({ id, label, icon: Icon, color }) => (
                   <button
                     key={id}
+                    type="button"
                     onClick={() => setDifficultyRating(id)}
                     className={`p-2.5 rounded-2xl border text-center font-bold text-xs flex flex-col items-center gap-1 cursor-pointer transition-all ${
                       difficultyRating === id
@@ -1308,8 +1348,9 @@ function Session() {
               </p>
             ) : null}
             <button
+              type="button"
               onClick={() => void handleFinishConfirm()}
-              disabled={isFinishing || videoUploadsInFlight > 0}
+              disabled={isFinishing}
               className="w-full rounded-2xl bg-primary py-3 text-sm font-bold text-white shadow-md cursor-pointer hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isFinishing ? "שומרת את האימון..." : "אישור ושמירת אימון"}
