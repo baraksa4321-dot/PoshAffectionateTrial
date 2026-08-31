@@ -34,6 +34,7 @@ const USER_PENDING_PREFIX = "gymtrack.v1.pending.";
 // to be reported as permission failures before the request could finish.
 const AUTH_TIMEOUT_MS = 15_000;
 const INITIAL_DATA_TIMEOUT_MS = 30_000;
+const SYNC_FLUSH_TIMEOUT_MS = 12_000;
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -1336,7 +1337,23 @@ export async function flushCloudSync(): Promise<{
 
   if (hasPendingCloudChanges && !syncInFlight) queueCloudSync();
   const inFlight = syncInFlight;
-  if (inFlight && inFlight.userId === userId) await inFlight.promise;
+  if (inFlight && inFlight.userId === userId) {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<"timeout">((resolve) => {
+      timeoutId = setTimeout(() => resolve("timeout"), SYNC_FLUSH_TIMEOUT_MS);
+    });
+    const result = await Promise.race([inFlight.promise.then(() => "settled" as const), timeout]);
+    if (timeoutId) clearTimeout(timeoutId);
+    if (result === "timeout") {
+      // The local session is already durable. Do not leave the completion
+      // modal disabled forever when Supabase is slow or unreachable.
+      return {
+        success: true,
+        deferred: true,
+        error: "השמירה בענן מתעכבת; האימון נשמר במכשיר ויסונכרן בהמשך",
+      };
+    }
+  }
 
   if (currentUser?.id !== userId) {
     return { success: false, error: "החשבון השתנה בזמן שמירת האימון" };

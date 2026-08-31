@@ -94,6 +94,7 @@ function supersetLabels(items: WorkoutItem[]) {
 
 const ACTIVE_SESSION_KEY = (id: string) => `gymtrack.active_session.${id}`;
 const ACTIVE_SESSION_FEEDBACK_KEY = (id: string) => `gymtrack.active_session_feedback.${id}`;
+const VIDEO_UPLOAD_TIMEOUT_MS = 15_000;
 
 function loadSavedDiscomfortNotes(workoutId: string): string {
   if (typeof window === "undefined") return "";
@@ -581,13 +582,20 @@ function Session() {
         index === exerciseIndex ? { ...entry, videoUrl: nextUrl } : entry,
       ),
     );
-    void import("@/lib/supabase-sync")
-      .then(({ uploadWorkoutPerformanceVideo }) =>
-        uploadWorkoutPerformanceVideo(file, {
-          workoutId: workout.id,
-          exerciseId: entries[exerciseIndex]?.exerciseId ?? String(exerciseIndex),
-        }),
-      )
+    let timeoutId: number | undefined;
+    const upload = import("@/lib/supabase-sync").then(({ uploadWorkoutPerformanceVideo }) =>
+      uploadWorkoutPerformanceVideo(file, {
+        workoutId: workout.id,
+        exerciseId: entries[exerciseIndex]?.exerciseId ?? String(exerciseIndex),
+      }),
+    );
+    const timeout = new Promise<never>((_, reject) => {
+      timeoutId = window.setTimeout(
+        () => reject(new Error("העלאת הסרטון נמשכת זמן רב מדי; אפשר להמשיך בלי הסרטון")),
+        VIDEO_UPLOAD_TIMEOUT_MS,
+      );
+    });
+    void Promise.race([upload, timeout])
       .then((uploadedUrl) => {
         setEntries((prev) =>
           prev.map((entry, index) => {
@@ -611,7 +619,10 @@ function Session() {
         URL.revokeObjectURL(nextUrl);
         setVideoUploadError(error instanceof Error ? error.message : "העלאת סרטון הביצוע נכשלה");
       })
-      .finally(() => setVideoUploadsInFlight((count) => Math.max(0, count - 1)));
+      .finally(() => {
+        if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+        setVideoUploadsInFlight((count) => Math.max(0, count - 1));
+      });
   };
 
   const totalSets = entries.reduce((a, e) => a + e.sets.filter((s) => !s.warmup).length, 0);
