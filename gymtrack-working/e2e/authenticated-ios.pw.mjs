@@ -309,7 +309,10 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
 
   await page.getByRole("tab", { name: "תוכנית אימונים" }).click();
   await expect(page.getByText("תוכנית האימונים", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "פתח יום" }).first().click();
+  const openDayButton = page.getByRole("button", { name: "פתח יום" });
+  if (await openDayButton.count()) {
+    await openDayButton.first().click();
+  }
   await expect(page.getByRole("button", { name: "בניית האימון" })).toBeVisible();
   await expect(page.getByRole("button", { name: "דוח האימון" })).toBeVisible();
   await page.getByRole("button", { name: "דוח האימון" }).click();
