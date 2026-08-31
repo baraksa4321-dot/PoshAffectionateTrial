@@ -66,7 +66,8 @@ export function AppShell({
   const location = useLocation();
   const navigate = useNavigate();
   const isManagementRoute = isManagementPath(location.pathname);
-  const showHomeOnlyHeaderControls = location.pathname === "/";
+  const showHomeOnlyHeaderControls =
+    location.pathname === "/" || location.pathname === "/coach";
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const topbarRef = useRef<HTMLElement>(null);
