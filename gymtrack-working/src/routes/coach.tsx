@@ -5088,28 +5088,54 @@ export function CoachDashboardPage({
                   {/* Client Programs & Full Exercise Prescription Builder */}
                   <div
                     id="coach-programs"
-                    className={`scroll-mt-24 space-y-4 ${
+                    className={`scroll-mt-24 ${clientsOnly ? "space-y-2" : "space-y-4"} ${
                       workspacePage
                         ? "bg-background"
-                        : "surface-card rounded-[1.75rem] border-primary/15 bg-primary/[0.02] p-4"
+                        : clientsOnly
+                          ? "surface-card rounded-2xl border-primary/15 bg-primary/[0.02] p-2.5"
+                          : "surface-card rounded-[1.75rem] border-primary/15 bg-primary/[0.02] p-4"
                     } ${!showProgramBuilder ? "hidden" : ""}`}
                   >
-                    <div className="flex items-center justify-between border-b border-border/50 pb-3">
+                    <div
+                      className={`flex items-center justify-between border-b border-border/50 ${
+                        clientsOnly ? "pb-1.5" : "pb-3"
+                      }`}
+                    >
                       <div>
-                        <h3 className="flex items-center gap-2 font-display text-lg font-extrabold text-ink">
-                        <Dumbbell className="h-4 w-4 text-primary" /> תוכנית האימונים
+                        <h3
+                          className={`flex items-center gap-2 font-display font-extrabold text-ink ${
+                            clientsOnly ? "text-sm" : "text-lg"
+                          }`}
+                        >
+                          <Dumbbell className="h-4 w-4 text-primary" /> תוכנית האימונים
                         </h3>
-                        <p className="mt-1 text-[11px] text-muted-foreground">
+                        <p
+                          className={`text-muted-foreground ${
+                            clientsOnly ? "mt-0.5 text-[10px]" : "mt-1 text-[11px]"
+                          }`}
+                        >
                           בחר יום כדי לפתוח את מרחב העבודה שלו
                         </p>
                       </div>
-                      <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary">
+                      <span
+                        className={`rounded-full bg-primary/10 font-bold text-primary ${
+                          clientsOnly ? "px-2 py-0.5 text-[9px]" : "px-2.5 py-1 text-[10px]"
+                        }`}
+                      >
                         {clientDetails?.programs?.length || 0} תוכניות
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 rounded-2xl border border-dashed border-primary/25 bg-primary/[0.035] p-2.5">
-                      <p className="text-[11px] font-semibold text-muted-foreground">
+                    <div
+                      className={`flex items-center justify-between gap-2 border border-dashed border-primary/25 bg-primary/[0.035] ${
+                        clientsOnly ? "rounded-xl p-1.5" : "rounded-2xl p-2.5"
+                      }`}
+                    >
+                      <p
+                        className={`font-semibold text-muted-foreground ${
+                          clientsOnly ? "text-[10px]" : "text-[11px]"
+                        }`}
+                      >
                         צריך תוכנית חדשה?
                       </p>
                       <form onSubmit={handleCreateClientProgram} className="flex gap-2">
@@ -5119,19 +5145,25 @@ export function CoachDashboardPage({
                           value={newProgramName}
                           onChange={(e) => setNewProgramName(e.target.value)}
                           placeholder="שם תוכנית חדשה"
-                          className="w-36 rounded-xl border border-border bg-background px-3 py-1.5 text-xs outline-none focus:border-primary sm:w-52"
+                          className={`rounded-xl border border-border bg-background outline-none focus:border-primary ${
+                            clientsOnly
+                              ? "w-28 px-2 py-1 text-[11px]"
+                              : "w-36 px-3 py-1.5 text-xs sm:w-52"
+                          }`}
                         />
                         <button
                           type="submit"
-                          className="flex shrink-0 items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-primary/90 cursor-pointer"
+                          className={`flex shrink-0 items-center gap-1 rounded-xl bg-primary font-bold text-white shadow-xs hover:bg-primary/90 cursor-pointer ${
+                            clientsOnly ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-xs"
+                          }`}
                         >
-                          <Plus className="h-3.5 w-3.5" />
+                          <Plus className={clientsOnly ? "h-3 w-3" : "h-3.5 w-3.5"} />
                           <span>צור</span>
                         </button>
                       </form>
                     </div>
 
-                    <div className="space-y-3 pt-2">
+                    <div className={clientsOnly ? "space-y-1 pt-0.5" : "space-y-3 pt-2"}>
                       {(clientDetails?.programs ?? []).map((prog: Program) => {
                         const isProgActive = editingProgramId === prog.id;
                         const progDays = clientDetails?.workouts?.filter((w: Workout) =>
@@ -5147,7 +5179,11 @@ export function CoachDashboardPage({
                                 : "border-border/60 hover:border-primary/30"
                             }`}
                           >
-                            <div className="flex items-center justify-between gap-3 p-3.5">
+                            <div
+                              className={`flex items-center justify-between gap-3 ${
+                                clientsOnly ? "p-2" : "p-3.5"
+                              }`}
+                            >
                               <div className="min-w-0 text-start">
                                 {isProgActive ? (
                                   <input
@@ -5159,14 +5195,24 @@ export function CoachDashboardPage({
                                     onKeyDown={(event) => {
                                       if (event.key === "Enter") event.currentTarget.blur();
                                     }}
-                                    className="w-full rounded-xl border border-primary/30 bg-background px-3 py-1.5 font-display text-[15px] font-semibold text-ink outline-none focus:border-primary"
+                                    className={`w-full rounded-xl border border-primary/30 bg-background font-display font-semibold text-ink outline-none focus:border-primary ${
+                                      clientsOnly ? "px-2 py-1 text-[13px]" : "px-3 py-1.5 text-[15px]"
+                                    }`}
                                   />
                                 ) : (
-                                  <span className="block truncate font-display text-[15px] font-semibold text-ink">
+                                   <span
+                                     className={`block truncate font-display font-semibold text-ink ${
+                                       clientsOnly ? "text-[13px]" : "text-[15px]"
+                                     }`}
+                                   >
                                     {prog.name}
                                   </span>
                                 )}
-                                <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                                 <span
+                                   className={`mt-0.5 block text-muted-foreground ${
+                                     clientsOnly ? "text-[10px]" : "text-[11px]"
+                                   }`}
+                                 >
                                   {progDays?.length || 0} ימי אימון ·{" "}
                                   {progDays?.reduce((total, day) => total + day.items.length, 0) ||
                                     0}{" "}
@@ -5176,7 +5222,9 @@ export function CoachDashboardPage({
                               <button
                                 type="button"
                                 onClick={() => setEditingProgramId(isProgActive ? null : prog.id)}
-                                className="shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-[11px] font-bold text-primary hover:bg-primary/20"
+                                 className={`shrink-0 rounded-full bg-primary/10 font-bold text-primary hover:bg-primary/20 ${
+                                   clientsOnly ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-[11px]"
+                                 }`}
                               >
                                 <Edit2 className="h-3 w-3" />
                                 <span>{isProgActive ? "סגירה" : "עריכה"}</span>
@@ -5184,7 +5232,11 @@ export function CoachDashboardPage({
                             </div>
 
                             {(isProgActive || Boolean(progDays?.length)) && (
-                              <div className="space-y-3 border-t border-border/50 bg-secondary/20 p-3.5">
+                               <div
+                                 className={`border-t border-border/50 bg-secondary/20 ${
+                                   clientsOnly ? "space-y-1.5 p-2" : "space-y-3 p-3.5"
+                                 }`}
+                               >
                                 {isProgActive && !editingDayId ? (
                                   <form onSubmit={handleAddProgramDay} className="flex gap-2">
                                     <input

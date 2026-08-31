@@ -66,6 +66,7 @@ export function AppShell({
   const location = useLocation();
   const navigate = useNavigate();
   const isManagementRoute = isManagementPath(location.pathname);
+  const showHomeOnlyHeaderControls = location.pathname === "/";
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const topbarRef = useRef<HTMLElement>(null);
@@ -521,7 +522,7 @@ export function AppShell({
               )}
             </button>
           </div>
-          {headerAccessory || isCoach ? (
+          {headerAccessory || (isCoach && showHomeOnlyHeaderControls) ? (
             <div
               className={`flex items-center justify-between gap-2 border-b border-border/50 ${
                 compactHeader ? "mb-1 pb-0.5" : "mb-2 pb-1"
@@ -532,7 +533,7 @@ export function AppShell({
               ) : (
                 <span />
               )}
-              {isCoach ? (
+              {isCoach && showHomeOnlyHeaderControls ? (
                 <div
                   className="flex items-center gap-2 rounded-full border border-border bg-surface-2 p-0.5"
                   role="group"
@@ -572,7 +573,7 @@ export function AppShell({
               ) : null}
             </div>
           ) : null}
-          {title || action || user ? (
+          {title || action || (user && showHomeOnlyHeaderControls) || !user ? (
             <div className="flex items-start gap-3">
               <div className="min-w-0 flex-1 text-start">
                 {kicker ? <p className="app-shell-kicker">{kicker}</p> : null}
@@ -589,7 +590,7 @@ export function AppShell({
                 ) : null}
               </div>
               <div className="flex shrink-0 items-center gap-2 pt-0.5">
-                {user ? (
+                {user && showHomeOnlyHeaderControls ? (
                   <div className="flex items-center gap-2 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-[12px] font-bold text-ink shadow-sm">
                     <SyncIcon
                       className={`h-3.5 w-3.5 ${syncIconClass} ${
@@ -625,7 +626,7 @@ export function AppShell({
                       <LogOut className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                ) : (
+                ) : !user ? (
                   <button
                     onClick={() => setShowAuthModal(true)}
                     className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[12px] font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
@@ -633,7 +634,7 @@ export function AppShell({
                     <LogIn className="h-3.5 w-3.5" />
                     <span>התחברות</span>
                   </button>
-                )}
+                ) : null}
                 {action}
               </div>
             </div>
