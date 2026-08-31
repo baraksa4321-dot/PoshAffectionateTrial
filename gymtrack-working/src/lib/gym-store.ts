@@ -1946,12 +1946,27 @@ export function calculateCardioCalories(
 }
 
 /* ---------- nutrition: food library ---------- */
+function isSeedFoodId(id: string) {
+  return (
+    id.startsWith("f-israel-") ||
+    id.startsWith("f-usda-") ||
+    id.startsWith("f-common-") ||
+    id.startsWith("f-protein-")
+  );
+}
+
 export function saveFood(food: FoodItem) {
   assertValidFoodNutrition(food);
-  const exists = data.foods.some((f) => f.id === food.id);
+  const savedFood =
+    currentUser?.id && isSeedFoodId(food.id) && !food.ownerId
+      ? { ...food, ownerId: currentUser.id }
+      : food;
+  const exists = data.foods.some((f) => f.id === savedFood.id);
   set({
     ...data,
-    foods: exists ? data.foods.map((f) => (f.id === food.id ? food : f)) : [...data.foods, food],
+    foods: exists
+      ? data.foods.map((f) => (f.id === savedFood.id ? savedFood : f))
+      : [...data.foods, savedFood],
   });
 }
 

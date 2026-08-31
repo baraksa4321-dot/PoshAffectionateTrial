@@ -41,12 +41,13 @@ export type CoachClientData = {
 export type RealtimeCleanup = () => void;
 export type RealtimeConnectionStatus = "connecting" | "connected" | "reconnecting" | "disconnected";
 
-function isBuiltInFoodId(id: string) {
+function isBuiltInFood(food: FoodItem) {
   return (
-    id.startsWith("f-israel-") ||
-    id.startsWith("f-usda-") ||
-    id.startsWith("f-common-") ||
-    id.startsWith("f-protein-")
+    !food.ownerId &&
+    (food.id.startsWith("f-israel-") ||
+      food.id.startsWith("f-usda-") ||
+      food.id.startsWith("f-common-") ||
+      food.id.startsWith("f-protein-"))
   );
 }
 
@@ -690,7 +691,7 @@ export async function syncLocalToSupabase(
 
     // 5. Custom Foods (seed = all built-in items including USDA expansion)
     try {
-      const customFoods = localData.foods.filter((f) => !isBuiltInFoodId(f.id));
+      const customFoods = localData.foods.filter((food) => !isBuiltInFood(food));
 
       if (customFoods.length > 0) {
         const customFoodPayload = customFoods.map((f) => ({
@@ -721,7 +722,11 @@ export async function syncLocalToSupabase(
         "Custom foods",
       );
     } catch (error) {
-      console.warn("[Optional custom foods sync skipped]:", error);
+      if (isMissingTableInSchemaCache(error, "custom_foods")) {
+        console.warn("[Optional custom foods sync skipped]:", error);
+      } else {
+        throw error;
+      }
     }
 
     // 6. Nutrition Days
@@ -1263,11 +1268,12 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
 
     if (dbCustomFoods) {
       const foodMap = new Map(
-        nextData.foods.filter((food) => isBuiltInFoodId(food.id)).map((f) => [f.id, f]),
+        nextData.foods.filter((food) => isBuiltInFood(food)).map((f) => [f.id, f]),
       );
       for (const row of dbCustomFoods) {
         const foodItem: FoodItem = {
           id: row.id,
+          ownerId: row.user_id || undefined,
           name: row.name,
           englishName: row.english_name || undefined,
           category: row.category,

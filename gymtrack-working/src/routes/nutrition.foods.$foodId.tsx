@@ -45,6 +45,8 @@ function FoodDetail() {
   const isLogEdit = Boolean(search.mealDate && search.mealId && search.logFoodId && !isNew);
 
   const [draft, setDraft] = useState<FoodItem>(existing ?? emptyFood());
+  const [draftFoodId, setDraftFoodId] = useState(foodId);
+  const [draftIsDirty, setDraftIsDirty] = useState(false);
   const [swapQuery, setSwapQuery] = useState("");
   const [showSwaps, setShowSwaps] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -53,9 +55,16 @@ function FoodDetail() {
   // router.subscribe('onResolved')); no per-page effect needed.
 
   useEffect(() => {
-    if (existing) setDraft(existing);
-    else if (isNew) setDraft(emptyFood());
-  }, [existing, isNew]);
+    if (draftFoodId !== foodId) {
+      setDraftFoodId(foodId);
+      setDraft(existing ?? emptyFood());
+      setDraftIsDirty(false);
+      return;
+    }
+    // A realtime pull may replace `existing` while this form is open. Never
+    // overwrite fields the user has already started editing.
+    if (!draftIsDirty && existing) setDraft(existing);
+  }, [draftFoodId, draftIsDirty, existing, foodId]);
 
   const replacements = useMemo(() => {
     if (!existing) return [];
@@ -91,7 +100,10 @@ function FoodDetail() {
     );
   }
 
-  const set = (patch: Partial<FoodItem>) => setDraft({ ...draft, ...patch });
+  const set = (patch: Partial<FoodItem>) => {
+    setDraftIsDirty(true);
+    setDraft((current) => ({ ...current, ...patch }));
+  };
 
   const onSave = () => {
     if (!draft.name.trim()) return;
