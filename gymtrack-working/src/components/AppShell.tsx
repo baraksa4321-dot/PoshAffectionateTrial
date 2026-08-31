@@ -1092,7 +1092,10 @@ function ThemeChooser({
               aria-hidden="true"
             >
               <span className="h-2.5" style={{ backgroundColor: palette.previewAccent }} />
-              <span className="mx-1.5 mt-1.5 h-1.5 rounded-full bg-[#111111]" />
+              <span
+                className="mx-1.5 mt-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: palette.swatch }}
+              />
               <span
                 className="mx-1.5 mt-1 h-2.5 rounded-sm"
                 style={{ backgroundColor: palette.swatch, opacity: 0.65 }}
@@ -1101,7 +1104,7 @@ function ThemeChooser({
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[13px] font-bold text-ink">{palette.label}</span>
               <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
-                רקע בהיר · טקסט שחור
+                רקע בהיר · גוון מותאם
               </span>
             </span>
           </button>

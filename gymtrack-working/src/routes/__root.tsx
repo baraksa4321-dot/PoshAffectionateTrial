@@ -1278,8 +1278,11 @@ function RootContent() {
             aria-live="polite"
             aria-label="MY routine נטען"
           >
-            <SimpleLoadingIllustration key={loadingVariant} variant={loadingVariant} />
-            <p key={loadingMessageIndex} className="loading-witty-message">
+            <SimpleLoadingIllustration
+              key={`illustration-${loadingVariant}`}
+              variant={loadingVariant}
+            />
+            <p key={`message-${loadingMessageIndex}`} className="loading-witty-message">
               {loadingMessageForGender(loadingMessageIndex, userProfile?.gender)}
             </p>
             <img className="loading-wordmark" src="/myroutine-logo.png" alt="MY routine" />

@@ -1077,18 +1077,23 @@ html:not(.night-mode) .nav-shell {
 .dashboard-editorial-shell .home-feature-item > .ink-card {
   min-height: 11.5rem;
   border-radius: 0.9rem;
-  background: var(--ink);
-  color: #fff;
+  background: linear-gradient(
+    135deg,
+    var(--gradient-start) 0%,
+    var(--gradient-mid) 52%,
+    var(--gradient-end) 100%
+  );
+  color: var(--primary-foreground);
   box-shadow: 0 12px 24px rgb(var(--shadow-color) / 12%);
 }
 
 .dashboard-editorial-shell .home-feature-item > .ink-card h2,
 .dashboard-editorial-shell .home-feature-item > .ink-card p {
-  color: #fff;
+  color: var(--primary-foreground);
 }
 
 .dashboard-editorial-shell .home-feature-item > .ink-card p {
-  color: rgb(255 255 255 / 72%);
+  color: color-mix(in srgb, var(--primary-foreground) 72%, transparent);
 }
 
 .dashboard-editorial-shell .home-calorie-card {
@@ -4715,7 +4720,6 @@ textarea {
 :root,
 :root[data-theme] {
   --foreground: #111111;
-  --ink: #111111;
   --ink-soft: #111111;
   --muted-foreground: #111111;
   --secondary-foreground: #111111;
