@@ -41,6 +41,7 @@ type ProfileDraft = {
   height: string;
   age: string;
   gender: "female" | "male";
+  coachId: string;
 };
 
 function profileDraftFrom(profile?: UserProfile): ProfileDraft {
@@ -50,6 +51,7 @@ function profileDraftFrom(profile?: UserProfile): ProfileDraft {
     height: profile?.height && profile.height > 0 ? String(profile.height) : "",
     age: profile?.age && profile.age > 0 ? String(profile.age) : "",
     gender: profile?.gender ?? "female",
+    coachId: profile?.coachId ?? "",
   };
 }
 
@@ -359,6 +361,10 @@ export function AppShell({
   );
   const [profileError, setProfileError] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
+  const [coachOptions, setCoachOptions] = useState<
+    Array<{ id: string; full_name: string | null; role: "coach" | "owner" }>
+  >([]);
+  const [coachOptionsLoading, setCoachOptionsLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -371,6 +377,41 @@ export function AppShell({
   useEffect(() => {
     if (profileGender) setGender(profileGender);
   }, [profileGender]);
+
+  useEffect(() => {
+    if (!showProfileModal || !isOwner) {
+      setCoachOptions([]);
+      return;
+    }
+
+    let active = true;
+    setCoachOptionsLoading(true);
+    void supabase
+      .from("profiles")
+      .select("id, full_name, role")
+      .in("role", ["coach", "owner"])
+      .order("full_name", { ascending: true })
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) {
+          setProfileError(`טעינת רשימת המאמנים נכשלה: ${error.message}`);
+          setCoachOptions([]);
+        } else {
+          setCoachOptions(
+            (data ?? []).filter(
+              (profile): profile is { id: string; full_name: string | null; role: "coach" | "owner" } =>
+                typeof profile.id === "string" &&
+                (profile.role === "coach" || profile.role === "owner"),
+            ),
+          );
+        }
+        setCoachOptionsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isOwner, showProfileModal]);
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -568,11 +609,13 @@ export function AppShell({
         fullName: normalizedName,
         weight: weight ?? currentProfile.weight ?? 0,
         gender: profileDraft.gender,
+        ...(profileDraft.coachId ? { coachId: profileDraft.coachId } : {}),
       };
       if (height === undefined) delete nextProfile.height;
       else nextProfile.height = height;
       if (age === undefined) delete nextProfile.age;
       else nextProfile.age = age;
+      if (!profileDraft.coachId) delete nextProfile.coachId;
       saveUserProfile(nextProfile);
       setShowProfileModal(false);
     } catch (error) {
@@ -890,6 +933,37 @@ export function AppShell({
                   </select>
                 </label>
               </div>
+
+              {isOwner ? (
+                <label className="block text-xs font-bold text-muted-foreground">
+                  מאמן לפרופיל
+                  <select
+                    value={profileDraft.coachId}
+                    disabled={coachOptionsLoading}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        coachId: event.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-2xl border border-border bg-background px-3.5 py-3 text-sm font-bold text-ink outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary disabled:cursor-wait disabled:opacity-60"
+                  >
+                    <option value="">
+                      {coachOptionsLoading ? "טוענת מאמנים..." : "ללא מאמן משויך"}
+                    </option>
+                    {coachOptions.map((coach) => (
+                      <option key={coach.id} value={coach.id}>
+                        {coach.id === user?.id
+                          ? "אני (בעלים)"
+                          : coach.full_name?.trim() || (coach.role === "owner" ? "בעלים" : "מאמן")}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="mt-1 block text-[10px] font-medium text-muted-foreground">
+                    הבחירה אינה משנה את תפקיד החשבון.
+                  </span>
+                </label>
+              ) : null}
             </div>
 
             <button

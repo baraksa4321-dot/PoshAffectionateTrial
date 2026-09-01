@@ -1800,7 +1800,7 @@ export function CoachDashboardPage({
     // The management workspace is only for assigned trainees. Do not allow a
     // manually entered self-id (or stale return link) to reopen self-building
     // inside the trainee editor.
-    if (authUser?.id === clientId) {
+    if (authUser?.id === clientId && !isOwner) {
       setSelectedClientId(null);
       setShowClientWorkspace(false);
       setClientDetails(null);
@@ -1822,7 +1822,7 @@ export function CoachDashboardPage({
     setSelectedTrackingWorkoutId(null);
     setTrackingDate(todayKey());
     trackingClientInitializedRef.current = null;
-  }, [authUser?.id, trackingLanding, workspacePage, clientId, workspaceMode, navigate]);
+  }, [authUser?.id, isOwner, trackingLanding, workspacePage, clientId, workspaceMode, navigate]);
 
   useEffect(() => {
     if (!selectedClientId) {
@@ -1843,7 +1843,21 @@ export function CoachDashboardPage({
     setClientRefreshInFlight(!isSelfSelected);
     setClientDataStale(false);
     if (isSelfSelected) {
+      const selfProfile = store.userProfile ?? { weight: 0, role: "owner" as const };
+      setClientDetails({
+        exercises: store.exercises,
+        programs: store.programs,
+        workouts: store.workouts,
+        nutritionDays: store.nutritionDays,
+        plannedMeals: store.plannedMeals ?? [],
+        nutritionTargets: store.nutritionTargets,
+        history: store.history,
+        cardioLogs: store.cardioLogs ?? [],
+        bodyMeasurements: store.bodyMeasurements ?? [],
+        profile: selfProfile,
+      });
       setClientRefreshInFlight(false);
+      setLoadingDetails(false);
       return;
     }
 
@@ -1868,7 +1882,7 @@ export function CoachDashboardPage({
     return () => {
       active = false;
     };
-  }, [applyClientDetails, isSelfSelected, selectedClientId]);
+  }, [applyClientDetails, isSelfSelected, selectedClientId, store]);
 
   useEffect(() => {
     if (!isCoach || isSelfSelected || !selectedClientId) return;
@@ -2528,13 +2542,35 @@ export function CoachDashboardPage({
 
   const handleOwnerAssignClient = async (profile: ProfileRow) => {
     const newCoachId = assignmentCoachByUser[profile.id] || "";
-    if (profile.role !== "client" || profile.approval_status !== "approved" || !newCoachId) {
+    const isCurrentOwnerProfile = profile.id === authUser?.id && profile.role === "owner";
+    if (
+      !isCurrentOwnerProfile &&
+      (profile.role !== "client" || profile.approval_status !== "approved" || !newCoachId)
+    ) {
       setManagementError("יש לבחור מאמן למתאמן מאושר לפני השמירה.");
       return;
     }
     setAssignmentUserId(profile.id);
     setManagementError("");
     try {
+      if (isCurrentOwnerProfile) {
+        const { error } = await supabase
+          .from("profiles")
+          .update({
+            coach_id: newCoachId || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", profile.id);
+        if (error) throw error;
+        setAllProfiles((current) =>
+          current.map((candidate) =>
+            candidate.id === profile.id ? { ...candidate, coach_id: newCoachId || null } : candidate,
+          ),
+        );
+        setRoleChangeNotice("בחירת המאמן לפרופיל הבעלים נשמרה בהצלחה.");
+        return;
+      }
+
       const { data, error } = await supabase.rpc("assign_client_to_coach", {
         target_client_id: profile.id,
         new_coach_id: newCoachId,
@@ -3459,14 +3495,30 @@ export function CoachDashboardPage({
   if (!isCoach) return <Navigate to="/" replace />;
 
   const selfDisplayName = store.userProfile?.fullName?.trim() || "אני";
-  const filteredClients = clients.filter((c) => {
+  const selfClientRow: CoachClientRow | null =
+    isOwner && authUser
+      ? {
+          id: `self-${authUser.id}`,
+          client_id: authUser.id,
+          created_at: "",
+          profiles: {
+            email: authUser.email ?? null,
+            full_name: selfDisplayName,
+            weight_kg: store.userProfile?.weight ?? null,
+          },
+        }
+      : null;
+  const selectableClients = selfClientRow ? [selfClientRow, ...clients] : clients;
+  const filteredClients = selectableClients.filter((c) => {
     const emailStr = (c.profiles?.email || "").toLowerCase();
     const nameStr = profileDisplayName(c.profiles).toLowerCase();
     const q = clientSearch.toLowerCase();
-    return Boolean(q) && (emailStr.includes(q) || nameStr.includes(q));
+    return !q
+      ? c.client_id === authUser?.id
+      : emailStr.includes(q) || nameStr.includes(q);
   });
   const clientSearchQuery = clientSearch.trim().toLocaleLowerCase();
-  const selectedClientInfo = clients.find((c) => c.client_id === selectedClientId);
+  const selectedClientInfo = selectableClients.find((c) => c.client_id === selectedClientId);
   const latestProgram = clientDetails?.programs?.[clientDetails.programs.length - 1];
   const latestNutritionDay = [...(clientDetails?.nutritionDays ?? [])].sort((a, b) =>
     b.date.localeCompare(a.date),
@@ -4363,8 +4415,9 @@ export function CoachDashboardPage({
                             מאמן משויך: <strong>{profileDisplayName(assignedCoach)}</strong>
                           </p>
                         ) : null}
-                        {selectedProfile.role === "client" &&
-                        selectedProfile.approval_status === "approved" ? (
+                         {((selectedProfile.role === "client" &&
+                           selectedProfile.approval_status === "approved") ||
+                           (selectedProfile.id === authUser?.id && selectedProfile.role === "owner")) ? (
                           <div className="mt-3 flex gap-2">
                             <select
                               value={
@@ -4402,7 +4455,11 @@ export function CoachDashboardPage({
                               onClick={() => void handleOwnerAssignClient(selectedProfile)}
                               className="shrink-0 rounded-xl bg-purple-700 px-3 py-2 text-[11px] font-bold text-white disabled:opacity-50"
                             >
-                              {assignmentUserId === selectedProfile.id ? "שומר..." : "שמירת שיוך"}
+                              {assignmentUserId === selectedProfile.id
+                                ? "שומר..."
+                                : selectedProfile.role === "owner"
+                                  ? "שמירת מאמן"
+                                  : "שמירת שיוך"}
                             </button>
                           </div>
                         ) : null}
@@ -4590,11 +4647,12 @@ export function CoachDashboardPage({
                     )}
                   </button>
                 </div>
-              ) : clientSearchQuery ? (
+              ) : filteredClients.length > 0 ? (
                 <div className="grid grid-cols-1 gap-2.5">
                   {filteredClients.map((c) => {
                     const isSelected = c.client_id === selectedClientId;
                     const nameStr = profileDisplayName(c.profiles);
+                    const isSelf = c.client_id === authUser?.id;
 
                     return (
                       <div
@@ -4620,16 +4678,22 @@ export function CoachDashboardPage({
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Link
-                            to="/coach/tracking/$clientId"
-                            params={{ clientId: c.client_id }}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                            }}
-                            className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-primary/20"
-                          >
-                            פתח דוח
-                          </Link>
+                          {isSelf ? (
+                            <span className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary">
+                              התוכנית שלי
+                            </span>
+                          ) : (
+                            <Link
+                              to="/coach/tracking/$clientId"
+                              params={{ clientId: c.client_id }}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                              }}
+                              className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-primary/20"
+                            >
+                              פתח דוח
+                            </Link>
+                          )}
                           <ChevronLeft
                             className={`h-5 w-5 text-muted-foreground transition-transform ${
                               isSelected ? "-rotate-90 text-primary" : ""

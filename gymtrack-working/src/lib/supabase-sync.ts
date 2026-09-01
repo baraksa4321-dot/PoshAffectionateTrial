@@ -425,6 +425,7 @@ export async function syncLocalToSupabase(
             age_years: p.age,
             workouts_per_week: p.workoutsPerWeek,
             gender: p.gender,
+            coach_id: p.coachId ?? null,
             today_routine_enabled: p.todayRoutineEnabled ?? true,
             updated_at: new Date().toISOString(),
             ...(p.role === "coach" || p.role === "owner"
