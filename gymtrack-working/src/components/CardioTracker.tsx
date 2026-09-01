@@ -1,6 +1,7 @@
 import { Footprints, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { Overlay } from "@/components/ui-app/Overlay";
+import { FreeTextInput } from "@/components/FreeTextInput";
 import {
   calculateCardioCalories,
   deleteCardioLog,
@@ -260,8 +261,7 @@ export function CardioTracker() {
               </label>
               <label className="grid gap-1.5 font-bold text-muted-foreground">
                 משך בדקות
-                <input
-                  type="number"
+                <FreeTextInput
                   min="1"
                   value={cardioDuration}
                   onChange={(event) => setCardioDuration(event.target.value)}
@@ -272,8 +272,7 @@ export function CardioTracker() {
                 {cardioFields.speed ? (
                   <label className="grid gap-1.5 font-bold text-muted-foreground">
                     מהירות קמ״ש
-                    <input
-                      type="number"
+                    <FreeTextInput
                       min="0"
                       step={0.1}
                       value={cardioSpeed}
@@ -285,8 +284,7 @@ export function CardioTracker() {
                 {cardioFields.incline ? (
                   <label className="grid gap-1.5 font-bold text-muted-foreground">
                     שיפוע %
-                    <input
-                      type="number"
+                    <FreeTextInput
                       min="0"
                       step={0.1}
                       value={cardioIncline}
@@ -298,8 +296,7 @@ export function CardioTracker() {
                 {cardioFields.distance ? (
                   <label className="grid gap-1.5 font-bold text-muted-foreground">
                     מרחק ק״מ
-                    <input
-                      type="number"
+                    <FreeTextInput
                       min="0"
                       step={0.1}
                       value={cardioDistance}

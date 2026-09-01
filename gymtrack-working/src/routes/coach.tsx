@@ -30,6 +30,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AppShell } from "../components/AppShell";
+import { FreeTextInput } from "../components/FreeTextInput";
 import { Overlay } from "../components/ui-app/Overlay";
 import {
   emptyExercise,
@@ -5370,8 +5371,7 @@ export function CoachDashboardPage({
                                       className="grid gap-1 text-[11px] font-bold text-muted-foreground"
                                     >
                                       {label}
-                                      <input
-                                        type="number"
+                                      <FreeTextInput
                                         min="0"
                                         step={0.1}
                                         value={measurementDraft[field] ?? ""}
@@ -6514,8 +6514,7 @@ export function CoachDashboardPage({
                                                           <div className="grid grid-cols-3 gap-2 border-b border-border/50 pb-4">
                                                             <label className="text-center text-[9px] font-bold text-muted-foreground">
                                                               משקל יעד
-                                                              <input
-                                                                type="number"
+                                                              <FreeTextInput
                                                                 defaultValue={
                                                                   exItem.targetWeight ||
                                                                   exItem.weight
@@ -6542,8 +6541,7 @@ export function CoachDashboardPage({
                                                             </label>
                                                             <label className="text-center text-[9px] font-bold text-muted-foreground">
                                                               חזרות
-                                                              <input
-                                                                type="number"
+                                                              <FreeTextInput
                                                                 defaultValue={
                                                                   exItem.repMin || exItem.reps
                                                                 }
@@ -6570,8 +6568,7 @@ export function CoachDashboardPage({
                                                                 }}
                                                                 className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
                                                               />
-                                                              <input
-                                                                type="number"
+                                                              <FreeTextInput
                                                                 defaultValue={
                                                                   exItem.repMax ||
                                                                   exItem.repMin ||
@@ -6598,8 +6595,7 @@ export function CoachDashboardPage({
                                                             </label>
                                                             <label className="text-center text-[9px] font-bold text-muted-foreground">
                                                               מנוחה (שניות)
-                                                              <input
-                                                                type="number"
+                                                              <FreeTextInput
                                                                 defaultValue={exItem.rest || 90}
                                                                 min={0}
                                                                 step={5}
@@ -6646,8 +6642,7 @@ export function CoachDashboardPage({
                                                             <div className="flex items-end justify-between gap-3 border-b border-border/50 pb-3">
                                                               <label className="text-center text-[9px] font-bold text-muted-foreground">
                                                                 סטים
-                                                                <input
-                                                                  type="number"
+                                                                <FreeTextInput
                                                                   min={1}
                                                                   value={setsCount}
                                                                   onChange={(event) =>
@@ -6721,8 +6716,7 @@ export function CoachDashboardPage({
                                                             <div className="grid grid-cols-4 gap-1.5 border-b border-amber-200 pb-3">
                                                               <label className="text-center text-[9px] font-bold text-amber-900">
                                                                 סטי חימום
-                                                                <input
-                                                                  type="number"
+                                                                <FreeTextInput
                                                                   min={1}
                                                                   value={warmupSetsCount}
                                                                   onChange={(event) =>
@@ -6738,8 +6732,7 @@ export function CoachDashboardPage({
                                                               </label>
                                                               <label className="text-center text-[9px] font-bold text-amber-900">
                                                                 משקל חימום
-                                                                <input
-                                                                  type="number"
+                                                                <FreeTextInput
                                                                   step={0.5}
                                                                   min={0}
                                                                   value={warmupWeight}
@@ -6753,8 +6746,7 @@ export function CoachDashboardPage({
                                                               </label>
                                                               <label className="text-center text-[9px] font-bold text-amber-900">
                                                                 חזרות מינ׳
-                                                                <input
-                                                                  type="number"
+                                                                <FreeTextInput
                                                                   min={1}
                                                                   value={warmupReps}
                                                                   onChange={(event) =>
@@ -6767,8 +6759,7 @@ export function CoachDashboardPage({
                                                               </label>
                                                               <label className="text-center text-[9px] font-bold text-amber-900">
                                                                 חזרות מקס׳
-                                                                <input
-                                                                  type="number"
+                                                                <FreeTextInput
                                                                   min={warmupReps}
                                                                   value={warmupRepsMax}
                                                                   onChange={(event) =>
@@ -6793,8 +6784,7 @@ export function CoachDashboardPage({
                                                                 <div className="grid grid-cols-2 gap-1.5">
                                                                   <label className="text-center text-[9px] font-bold text-primary">
                                                                     משקל דרופ 1
-                                                                    <input
-                                                                      type="number"
+                                                                    <FreeTextInput
                                                                       step={0.5}
                                                                       min={0}
                                                                       value={dropLevel1Weight}
@@ -6808,8 +6798,7 @@ export function CoachDashboardPage({
                                                                   </label>
                                                                   <label className="text-center text-[9px] font-bold text-primary">
                                                                     חזרות דרופ 1 מינ׳
-                                                                    <input
-                                                                      type="number"
+                                                                    <FreeTextInput
                                                                       min={1}
                                                                       value={dropLevel1RepsMin}
                                                                       onChange={(event) =>
@@ -6827,8 +6816,7 @@ export function CoachDashboardPage({
                                                                   </label>
                                                                   <label className="text-center text-[9px] font-bold text-primary">
                                                                     חזרות דרופ 1 מקס׳
-                                                                    <input
-                                                                      type="number"
+                                                                    <FreeTextInput
                                                                       min={dropLevel1RepsMin}
                                                                       value={dropLevel1RepsMax}
                                                                       onChange={(event) =>
@@ -6846,8 +6834,7 @@ export function CoachDashboardPage({
                                                                   </label>
                                                                   <label className="text-center text-[9px] font-bold text-primary">
                                                                     משקל דרופ 2
-                                                                    <input
-                                                                      type="number"
+                                                                    <FreeTextInput
                                                                       step={0.5}
                                                                       min={0}
                                                                       value={dropLevel2Weight}
@@ -6861,8 +6848,7 @@ export function CoachDashboardPage({
                                                                   </label>
                                                                   <label className="text-center text-[9px] font-bold text-primary">
                                                                     חזרות דרופ 2 מינ׳
-                                                                    <input
-                                                                      type="number"
+                                                                    <FreeTextInput
                                                                       min={1}
                                                                       value={dropLevel2RepsMin}
                                                                       onChange={(event) =>
@@ -6880,8 +6866,7 @@ export function CoachDashboardPage({
                                                                   </label>
                                                                   <label className="text-center text-[9px] font-bold text-primary">
                                                                     חזרות דרופ 2 מקס׳
-                                                                    <input
-                                                                      type="number"
+                                                                    <FreeTextInput
                                                                       min={dropLevel2RepsMin}
                                                                       value={dropLevel2RepsMax}
                                                                       onChange={(event) =>
@@ -6911,8 +6896,7 @@ export function CoachDashboardPage({
                                                                 <div className="mt-2 grid grid-cols-3 gap-1.5">
                                                                   <label className="text-center text-[9px] font-bold text-violet-900">
                                                                     משקל תרגיל 2
-                                                                    <input
-                                                                      type="number"
+                                                                    <FreeTextInput
                                                                       min={0}
                                                                       step={0.5}
                                                                       value={supersetPartnerWeight}
@@ -6931,8 +6915,7 @@ export function CoachDashboardPage({
                                                                   </label>
                                                                   <label className="text-center text-[9px] font-bold text-violet-900">
                                                                     חזרות מינ׳
-                                                                    <input
-                                                                      type="number"
+                                                                    <FreeTextInput
                                                                       min={1}
                                                                       value={supersetRepsMin}
                                                                       onChange={(event) =>
@@ -6950,8 +6933,7 @@ export function CoachDashboardPage({
                                                                   </label>
                                                                   <label className="text-center text-[9px] font-bold text-violet-900">
                                                                     חזרות מקס׳
-                                                                    <input
-                                                                      type="number"
+                                                                    <FreeTextInput
                                                                       min={supersetRepsMin}
                                                                       value={supersetRepsMax}
                                                                       onChange={(event) =>
@@ -7192,8 +7174,7 @@ export function CoachDashboardPage({
                                                   </p>
                                                   <label className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
                                                     מספר סטים
-                                                    <input
-                                                      type="number"
+                                                                    <FreeTextInput
                                                       min={1}
                                                       max={20}
                                                       value={setsCount}
@@ -7373,8 +7354,7 @@ export function CoachDashboardPage({
                                                             <div className="grid grid-cols-2 gap-2">
                                                               <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                                 משקל (ק״ג)
-                                                                <input
-                                                                  type="number"
+                                                                <FreeTextInput
                                                                   min={0}
                                                                   step={0.5}
                                                                   value={weight}
@@ -7396,8 +7376,7 @@ export function CoachDashboardPage({
                                                               </label>
                                                               <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                                 חזרות מינ׳
-                                                                <input
-                                                                  type="number"
+                                                                <FreeTextInput
                                                                   min={1}
                                                                   value={minReps}
                                                                   onChange={(event) => {
@@ -7418,8 +7397,7 @@ export function CoachDashboardPage({
                                                               </label>
                                                               <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                                 חזרות מקס׳
-                                                                <input
-                                                                  type="number"
+                                                                <FreeTextInput
                                                                   min={minReps}
                                                                   value={maxReps}
                                                                   onChange={(event) => {
@@ -7457,8 +7435,7 @@ export function CoachDashboardPage({
                                                               </label>
                                                               <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                                 זמן מנוחה (שניות)
-                                                                <input
-                                                                  type="number"
+                                                                 <FreeTextInput
                                                                   min={0}
                                                                   step={5}
                                                                   value={setRests[index] ?? restSec}
@@ -7489,9 +7466,8 @@ export function CoachDashboardPage({
                                                                 )?.name || "תרגיל ראשון"}
                                                               </p>
                                                               <div className="mb-3 grid grid-cols-3 gap-1.5">
-                                                                <input
-                                                                  aria-label="תרגיל ראשון משקל"
-                                                                  type="number"
+                                                                 <FreeTextInput
+                                                                   aria-label="תרגיל ראשון משקל"
                                                                   min={0}
                                                                   step={0.5}
                                                                   value={weight}
@@ -7509,9 +7485,8 @@ export function CoachDashboardPage({
                                                                   placeholder="משקל"
                                                                   className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
                                                                 />
-                                                                <input
-                                                                  aria-label="תרגיל ראשון חזרות מינימום"
-                                                                  type="number"
+                                                                 <FreeTextInput
+                                                                   aria-label="תרגיל ראשון חזרות מינימום"
                                                                   min={1}
                                                                   value={minReps}
                                                                   onChange={(event) => {
@@ -7528,9 +7503,8 @@ export function CoachDashboardPage({
                                                                   placeholder="חזרות מינ׳"
                                                                   className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
                                                                 />
-                                                                <input
-                                                                  aria-label="תרגיל ראשון חזרות מקסימום"
-                                                                  type="number"
+                                                                 <FreeTextInput
+                                                                   aria-label="תרגיל ראשון חזרות מקסימום"
                                                                   min={minReps}
                                                                   value={maxReps}
                                                                   onChange={(event) => {
@@ -7554,8 +7528,7 @@ export function CoachDashboardPage({
                                                               <div className="grid grid-cols-3 gap-1.5">
                                                                 <label className="grid gap-1 text-[9px] font-bold text-violet-900">
                                                                   משקל
-                                                                  <input
-                                                                    type="number"
+                                                                  <FreeTextInput
                                                                     min={0}
                                                                     step={0.5}
                                                                     value={supersetPartnerWeight}
@@ -7574,8 +7547,7 @@ export function CoachDashboardPage({
                                                                 </label>
                                                                 <label className="grid gap-1 text-[9px] font-bold text-violet-900">
                                                                   חזרות מינ׳
-                                                                  <input
-                                                                    type="number"
+                                                                  <FreeTextInput
                                                                     min={1}
                                                                     value={supersetRepsMin}
                                                                     onChange={(event) =>
@@ -7593,8 +7565,7 @@ export function CoachDashboardPage({
                                                                 </label>
                                                                 <label className="grid gap-1 text-[9px] font-bold text-violet-900">
                                                                   חזרות מקס׳
-                                                                  <input
-                                                                    type="number"
+                                                                  <FreeTextInput
                                                                     min={supersetRepsMin}
                                                                     value={supersetRepsMax}
                                                                     onChange={(event) =>
@@ -7647,9 +7618,8 @@ export function CoachDashboardPage({
                                                                       {drop.label}
                                                                     </p>
                                                                     <div className="grid grid-cols-3 gap-1">
-                                                                      <input
-                                                                        aria-label={`${drop.label} משקל`}
-                                                                        type="number"
+                                                                       <FreeTextInput
+                                                                         aria-label={`${drop.label} משקל`}
                                                                         min={0}
                                                                         step={0.5}
                                                                         value={drop.weight}
@@ -7661,9 +7631,8 @@ export function CoachDashboardPage({
                                                                         placeholder="ק״ג"
                                                                         className="h-8 rounded-md border border-border text-center text-[11px]"
                                                                       />
-                                                                      <input
-                                                                        aria-label={`${drop.label} חזרות מינימום`}
-                                                                        type="number"
+                                                                       <FreeTextInput
+                                                                         aria-label={`${drop.label} חזרות מינימום`}
                                                                         min={1}
                                                                         value={drop.min}
                                                                         onChange={(event) =>
@@ -7678,9 +7647,8 @@ export function CoachDashboardPage({
                                                                         }
                                                                         className="h-8 rounded-md border border-border text-center text-[11px]"
                                                                       />
-                                                                      <input
-                                                                        aria-label={`${drop.label} חזרות מקסימום`}
-                                                                        type="number"
+                                                                       <FreeTextInput
+                                                                         aria-label={`${drop.label} חזרות מקסימום`}
                                                                         min={drop.min}
                                                                         value={drop.max}
                                                                         onChange={(event) =>
@@ -7701,8 +7669,7 @@ export function CoachDashboardPage({
                                                               </div>
                                                               <label className="mt-2 grid gap-1 text-[9px] font-bold text-primary">
                                                                 זמן מנוחה (שניות)
-                                                                <input
-                                                                  type="number"
+                                                                  <FreeTextInput
                                                                   min={0}
                                                                   step={5}
                                                                   value={setRests[index] ?? restSec}
@@ -7753,8 +7720,7 @@ export function CoachDashboardPage({
                                                       <>
                                                         <label className="grid min-w-0 gap-1 text-[10px] font-bold text-muted-foreground">
                                                           משקל חימום (ק״ג)
-                                                          <input
-                                                            type="number"
+                                                                  <FreeTextInput
                                                             min="0"
                                                             step={0.5}
                                                             value={warmupWeight}
@@ -7771,8 +7737,7 @@ export function CoachDashboardPage({
                                                         </label>
                                                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                           מספר סטי חימום
-                                                          <input
-                                                            type="number"
+                                                                  <FreeTextInput
                                                             min="1"
                                                             max="5"
                                                             value={warmupSetsCount}
@@ -7789,8 +7754,7 @@ export function CoachDashboardPage({
                                                         </label>
                                                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                           חזרות חימום מינ'
-                                                          <input
-                                                            type="number"
+                                                                      <FreeTextInput
                                                             min="1"
                                                             value={warmupReps}
                                                             onChange={(event) =>
@@ -7806,8 +7770,7 @@ export function CoachDashboardPage({
                                                         </label>
                                                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                           חזרות חימום מקס'
-                                                          <input
-                                                            type="number"
+                                                                      <FreeTextInput
                                                             min={warmupReps}
                                                             value={warmupRepsMax}
                                                             onChange={(event) =>
@@ -7827,8 +7790,7 @@ export function CoachDashboardPage({
                                                       <>
                                                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                           משקל לפני הדרופ (ק״ג)
-                                                          <input
-                                                            type="number"
+                                                                      <FreeTextInput
                                                             min="0.1"
                                                             step={0.5}
                                                             inputMode="decimal"
@@ -7845,8 +7807,7 @@ export function CoachDashboardPage({
                                                         </label>
                                                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                           משקל אחרי הדרופ (ק״ג)
-                                                          <input
-                                                            type="number"
+                                                                <FreeTextInput
                                                             min="0.1"
                                                             step={0.5}
                                                             inputMode="decimal"
@@ -7864,8 +7825,7 @@ export function CoachDashboardPage({
                                                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                           חזרות דרופ סט
                                                           <div className="grid grid-cols-2 gap-1">
-                                                            <input
-                                                              type="number"
+                                                          <FreeTextInput
                                                               min="1"
                                                               value={dropRepsMin}
                                                               onChange={(event) =>
@@ -7879,8 +7839,7 @@ export function CoachDashboardPage({
                                                               className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
                                                               aria-label="חזרות דרופ סט מינימום"
                                                             />
-                                                            <input
-                                                              type="number"
+                                                          <FreeTextInput
                                                               min={dropRepsMin}
                                                               value={dropRepsMax}
                                                               onChange={(event) =>
@@ -7917,8 +7876,7 @@ export function CoachDashboardPage({
                                                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                           חזרות סופר סט
                                                           <div className="grid grid-cols-2 gap-1">
-                                                            <input
-                                                              type="number"
+                                                          <FreeTextInput
                                                               min="1"
                                                               value={supersetRepsMin}
                                                               onChange={(event) =>
@@ -7932,8 +7890,7 @@ export function CoachDashboardPage({
                                                               className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
                                                               aria-label="חזרות סופר סט מינימום"
                                                             />
-                                                            <input
-                                                              type="number"
+                                                          <FreeTextInput
                                                               min={supersetRepsMin}
                                                               value={supersetRepsMax}
                                                               onChange={(event) =>
@@ -8301,8 +8258,7 @@ export function CoachDashboardPage({
                                   </label>
                                   <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                     כמות
-                                    <input
-                                      type="number"
+                                                          <FreeTextInput
                                       min="0.1"
                                       step={0.1}
                                       value={menuFoodQuantity}
@@ -8461,8 +8417,7 @@ export function CoachDashboardPage({
                           </label>
                           <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                             גיל
-                            <input
-                              type="number"
+                                                          <FreeTextInput
                               min="1"
                               max="120"
                               value={profileAge}
@@ -8473,8 +8428,7 @@ export function CoachDashboardPage({
                           </label>
                           <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                             גובה (ס״מ)
-                            <input
-                              type="number"
+                                                            <FreeTextInput
                               min="1"
                               max="300"
                               value={profileHeight}
@@ -8485,8 +8439,7 @@ export function CoachDashboardPage({
                           </label>
                           <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                             משקל (ק״ג)
-                            <input
-                              type="number"
+                                                            <FreeTextInput
                               min="0.1"
                               max="500"
                               step={0.1}
@@ -8498,8 +8451,7 @@ export function CoachDashboardPage({
                           </label>
                           <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                             אימונים בשבוע
-                            <input
-                              type="number"
+                                                          <FreeTextInput
                               min="0"
                               max="14"
                               value={profileWorkouts}
@@ -8560,8 +8512,7 @@ export function CoachDashboardPage({
                             <label className="block text-[10px] font-bold text-muted-foreground mb-1">
                               קלוריות (kcal)
                             </label>
-                            <input
-                              type="number"
+                                                            <FreeTextInput
                               value={calTarget || ""}
                               onChange={(e) => setCalTarget(Number(e.target.value))}
                               className="w-full rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
@@ -8571,8 +8522,7 @@ export function CoachDashboardPage({
                             <label className="block text-[10px] font-bold text-muted-foreground mb-1">
                               חלבון (g)
                             </label>
-                            <input
-                              type="number"
+                                                            <FreeTextInput
                               value={protTarget || ""}
                               onChange={(e) => setProtTarget(Number(e.target.value))}
                               className="w-full rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { FreeTextInput } from "@/components/FreeTextInput";
 import { Stepper } from "@/components/Stepper";
 import { Overlay } from "@/components/ui-app/Overlay";
 import { LoadingSpinner } from "@/components/ui-app/LoadingSpinner";
@@ -1369,8 +1370,7 @@ function NutritionLog() {
                       {food.eggCount !== undefined ? (
                         <label className="mt-2 block text-[11px] text-muted-foreground">
                           ביצים
-                          <input
-                            type="number"
+                          <FreeTextInput
                             min={1}
                             step={1}
                             value={food.eggCount}
@@ -1424,8 +1424,7 @@ function NutritionLog() {
                           .map(([key, label, step]) => (
                             <label key={key} className="text-muted-foreground">
                               {label}
-                              <input
-                                type="number"
+                              <FreeTextInput
                                 min={key === "quantity" ? 0.1 : 0}
                                 step={step}
                                 value={food[key]}

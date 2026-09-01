@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import { AppShell } from "@/components/AppShell";
+import { FreeTextInput } from "@/components/FreeTextInput";
 import { Overlay } from "@/components/ui-app/Overlay";
 import {
   Card,
@@ -922,8 +923,7 @@ function Dashboard() {
 
             <div className="space-y-2 text-xs">
               <label className="block font-bold text-muted-foreground">משקל נוכחי (ק"ג)</label>
-              <input
-                type="number"
+              <FreeTextInput
                 step={0.1}
                 value={weeklyWeightInput}
                 onChange={(e) => setWeeklyWeightInput(e.target.value)}

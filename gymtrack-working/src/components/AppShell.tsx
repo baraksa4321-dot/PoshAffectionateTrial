@@ -29,6 +29,7 @@ import { applyNightMode, applyTheme, DEFAULT_THEME, THEME_PALETTES } from "../li
 import type { ThemePalette, UserProfile } from "../lib/gym-types";
 import { Overlay } from "./ui-app/Overlay";
 import { BrandLogo } from "./BrandLogo";
+import { FreeTextInput } from "./FreeTextInput";
 import { genderText } from "../lib/gender-copy";
 import { LOADING_GENDER_STORAGE_KEY } from "../lib/loading-copy";
 
@@ -874,8 +875,7 @@ export function AppShell({
               <div className="grid grid-cols-2 gap-3">
                 <label className="block text-xs font-bold text-muted-foreground">
                   משקל (ק״ג)
-                  <input
-                    type="number"
+                  <FreeTextInput
                     inputMode="decimal"
                     min="0"
                     step="0.1"
@@ -891,8 +891,7 @@ export function AppShell({
                 </label>
                 <label className="block text-xs font-bold text-muted-foreground">
                   גובה (ס״מ)
-                  <input
-                    type="number"
+                  <FreeTextInput
                     inputMode="numeric"
                     min="0"
                     step="1"
@@ -908,8 +907,7 @@ export function AppShell({
                 </label>
                 <label className="block text-xs font-bold text-muted-foreground">
                   גיל
-                  <input
-                    type="number"
+                  <FreeTextInput
                     inputMode="numeric"
                     min="0"
                     step="1"
