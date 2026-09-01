@@ -1365,7 +1365,6 @@ export function CoachDashboardPage({
   const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
   const [editingDayId, setEditingDayId] = useState<string | null>(null);
   const [showExerciseForm, setShowExerciseForm] = useState(false);
-  const [openWorkoutReportId, setOpenWorkoutReportId] = useState<string | null>(null);
   const [focusedExerciseId, setFocusedExerciseId] = useState<string | null>(null);
   const [newDayName, setNewDayName] = useState("");
 
@@ -1420,9 +1419,6 @@ export function CoachDashboardPage({
   }, [store.exercises]);
   useEffect(() => {
     if (!editingDayId) setShowExerciseForm(false);
-    setOpenWorkoutReportId((current) =>
-      current && editingDayId && current !== editingDayId ? null : current,
-    );
   }, [editingDayId]);
   const [setModes, setSetModes] = useState<Array<"normal" | "warmup" | "drop" | "superset">>([
     "normal",
@@ -1930,24 +1926,9 @@ export function CoachDashboardPage({
     selectedClientId,
   ]);
 
-  const refreshSelectedClientForReport = useCallback(() => {
-    if (!selectedClientId || isSelfSelected) return;
-
-    setClientDetailsError("");
-    setClientRefreshInFlight(true);
-    void pullClientDataForCoach(selectedClientId)
-      .then(applySelectedClientRefreshResult)
-      .catch((error: unknown) => {
-        setClientRefreshInFlight(false);
-        setClientDataStale(true);
-        setClientDetailsError(errorMessage(error, "רענון נתוני המתאמן נכשל"));
-      });
-  }, [applySelectedClientRefreshResult, isSelfSelected, selectedClientId]);
-
   useEffect(() => {
     if (!isSelfSelected || !selectedClientId) return;
     setClientDetails({
-      exercises: store.exercises,
       programs: store.programs,
       workouts: store.workouts,
       nutritionDays: store.nutritionDays,
@@ -1962,7 +1943,6 @@ export function CoachDashboardPage({
   }, [
     isSelfSelected,
     selectedClientId,
-    store.exercises,
     store.cardioLogs,
     store.history,
     store.nutritionDays,
@@ -2009,7 +1989,6 @@ export function CoachDashboardPage({
     setShowExerciseForm(false);
     setEditingItemId(null);
     setSelectedExId("");
-    setOpenWorkoutReportId(null);
   }, [clientDetails, editingProgramId, workspaceMode, workspacePage]);
 
   useEffect(() => {
@@ -2755,7 +2734,6 @@ export function CoachDashboardPage({
       deleteProgram(program.id);
       setEditingProgramId((current) => (current === program.id ? null : current));
       setEditingDayId(null);
-      setOpenWorkoutReportId(null);
       return;
     }
 
@@ -2783,7 +2761,6 @@ export function CoachDashboardPage({
 
     setEditingProgramId((current) => (current === program.id ? null : current));
     setEditingDayId(null);
-    setOpenWorkoutReportId(null);
     const refreshedDetails = await pullClientDataForCoach(selectedClientId);
     applyClientDetails(refreshedDetails);
   };
@@ -4652,7 +4629,7 @@ export function CoachDashboardPage({
           >
             <div
               data-coach-workspace="true"
-              className={`w-full ${trackingLanding ? "space-y-2.5" : "space-y-4"} bg-background ${
+              className={`w-full ${trackingLanding ? "space-y-1" : "space-y-4"} bg-background ${
                 workspacePage || openEditor
                   ? "min-w-0 max-w-full overflow-x-hidden pb-10"
                   : "max-w-2xl rounded-3xl shadow-2xl"
@@ -4815,46 +4792,29 @@ export function CoachDashboardPage({
                     </button>
                   </nav>
                   {trackingLanding && activeWorkspaceTab === "programs" ? (
-                    <section
-                      className={`rounded-2xl border border-primary/20 bg-primary/5 ${
-                        trackingLanding ? "p-2" : "p-3"
-                      }`}
-                    >
-                      <div className={trackingLanding ? "mb-1" : "mb-2"}>
+                    <section className="rounded-2xl border border-primary/20 bg-primary/5 p-1.5">
+                      <div className="mb-0.5">
                         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
                           בחירת אימון
                         </p>
-                        <p className="mt-1 text-xs font-semibold text-ink">
-                          {genderText(
-                            gender,
-                            "בחרי אימון כדי לראות את הדוח המלא שלו",
-                            "בחר אימון כדי לראות את הדוח המלא שלו",
-                          )}
-                        </p>
                       </div>
-                      <div
-                        className={
-                          trackingLanding
-                            ? "grid gap-1 sm:grid-cols-2"
-                            : "grid gap-2 sm:grid-cols-2"
-                        }
-                      >
+                      <div className="grid grid-cols-2 gap-1">
                         {clientWorkouts.map((workout) => (
                           <button
                             key={workout.id}
                             type="button"
                             onClick={() => setSelectedTrackingWorkoutId(workout.id)}
                             className={`rounded-xl border text-start font-bold transition-colors ${
-                              trackingLanding ? "px-2 py-1.5 text-[11px]" : "px-3 py-2.5 text-xs"
+                              "px-2 py-1 text-[10px]"
                             } ${
                               selectedTrackingWorkoutId === workout.id
                                 ? "border-primary bg-primary text-primary-foreground"
                                 : "border-primary/20 bg-white text-ink hover:border-primary/50"
                             }`}
                           >
-                            <span className="block">{workout.name}</span>
+                            <span className="block truncate">{workout.name}</span>
                             <span
-                              className={`mt-0.5 block text-[10px] ${
+                              className={`mt-0.5 block text-[9px] ${
                                 selectedTrackingWorkoutId === workout.id
                                   ? "text-primary-foreground/80"
                                   : "text-muted-foreground"
@@ -5737,7 +5697,6 @@ export function CoachDashboardPage({
                                           type="button"
                                           onClick={() => {
                                             setEditingDayId(dayItem.id);
-                                            setOpenWorkoutReportId(null);
                                             setShowExerciseForm(false);
                                             setEditingItemId(null);
                                             setSelectedExId("");
@@ -5797,7 +5756,6 @@ export function CoachDashboardPage({
                                                 setShowExerciseForm(false);
                                                 setEditingItemId(null);
                                                 setSelectedExId("");
-                                                setOpenWorkoutReportId(null);
                                                 setEditingDayId(null);
                                               }}
                                               aria-label="סגירת בניית אימון"
@@ -7579,67 +7537,6 @@ export function CoachDashboardPage({
                                               </form>
                                             </ExerciseBuilderPlacement>
                                           )}
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const shouldOpen = openWorkoutReportId !== dayItem.id;
-                                              setOpenWorkoutReportId((current) =>
-                                                current === dayItem.id ? null : dayItem.id,
-                                              );
-                                              if (shouldOpen) refreshSelectedClientForReport();
-                                            }}
-                                            aria-label={
-                                              openWorkoutReportId === dayItem.id
-                                                ? "סגירת דוח"
-                                                : "פתיחת דוח"
-                                            }
-                                            aria-expanded={openWorkoutReportId === dayItem.id}
-                                            aria-controls={`workout-report-${dayItem.id}`}
-                                            title={
-                                              openWorkoutReportId === dayItem.id
-                                                ? "סגירת דוח"
-                                                : "פתיחת דוח"
-                                            }
-                                            className={`workout-surface-bookmark workout-report-bookmark ${
-                                              openWorkoutReportId === dayItem.id
-                                                ? "workout-report-bookmark-open"
-                                                : ""
-                                            }`}
-                                          >
-                                            <span>דוח</span>
-                                          </button>
-                                          {openWorkoutReportId === dayItem.id ? (
-                                            <section
-                                              id={`workout-report-${dayItem.id}`}
-                                              className="workout-report-panel"
-                                              aria-labelledby={`workout-report-heading-${dayItem.id}`}
-                                            >
-                                              <div className="mb-3 min-w-0 pe-8">
-                                                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
-                                                  דוח האימון
-                                                </p>
-                                                <h3
-                                                  id={`workout-report-heading-${dayItem.id}`}
-                                                  className="mt-1 truncate font-display text-base font-extrabold text-ink"
-                                                >
-                                                  {dayItem.name}
-                                                </h3>
-                                              </div>
-                                              <div className="overflow-hidden rounded-2xl border border-primary/15 bg-primary/[0.025]">
-                                                <WorkoutDailyReport
-                                                  workout={dayItem}
-                                                  history={clientDetails?.history ?? []}
-                                                  exercises={Array.from(
-                                                    new Map(
-                                                      [...store.exercises, ...(clientDetails?.exercises ?? [])].map(
-                                                        (exercise) => [exercise.id, exercise],
-                                                      ),
-                                                    ).values(),
-                                                  )}
-                                                />
-                                              </div>
-                                            </section>
-                                          ) : null}
                                         </div>
                                       </WorkoutSurfacePlacement>
                                     );
