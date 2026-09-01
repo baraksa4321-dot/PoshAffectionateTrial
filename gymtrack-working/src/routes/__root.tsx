@@ -42,6 +42,39 @@ import { LockKeyhole, RefreshCw } from "lucide-react";
 
 const useLoadingCycleEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 const LOADING_RECOVERY_TIMEOUT_MS = 45_000;
+const BOOT_WATCHDOG_SCRIPT = `
+(() => {
+  const recoveryKey = "__myroutine_boot_recovery_v1";
+  window.setTimeout(async () => {
+    if (window.__MY_ROUTINE_BOOTED__) return;
+    const fallback = document.querySelector("[data-app-boot-fallback]");
+    let shouldRetry = false;
+    try {
+      shouldRetry = window.sessionStorage.getItem(recoveryKey) !== "1";
+      if (shouldRetry) window.sessionStorage.setItem(recoveryKey, "1");
+    } catch {
+      shouldRetry = false;
+    }
+    if (shouldRetry) {
+      try {
+        if ("serviceWorker" in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map((registration) => registration.unregister()));
+        }
+        if ("caches" in window) {
+          const cacheKeys = await caches.keys();
+          await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+        }
+      } catch {
+        // The second boot attempt is still useful when storage APIs are blocked.
+      }
+      window.location.reload();
+      return;
+    }
+    if (fallback instanceof HTMLElement) fallback.hidden = false;
+  }, 12_000);
+})();
+`;
 
 async function resetAuthSessionAndReload() {
   try {
@@ -1138,6 +1171,7 @@ function RootContent() {
     // Keep SSR and the first browser render identical. The gender-specific
     // loading surface starts after hydration, avoiding a spinner flash for
     // women whose cached profile is already available in the browser.
+    (window as Window & { __MY_ROUTINE_BOOTED__?: boolean }).__MY_ROUTINE_BOOTED__ = true;
     setLoadingPresentationReady(true);
   }, []);
 
@@ -1296,6 +1330,31 @@ function RootContent() {
       <HeadContent />
       <ScrollToTop />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+      <div
+        data-app-boot-fallback
+        hidden
+        className="fixed inset-0 z-[100] flex min-h-[100dvh] items-center justify-center bg-background px-4"
+        dir="rtl"
+      >
+        <div className="w-full max-w-md rounded-3xl border border-primary/20 bg-white px-6 py-7 text-center shadow-sm">
+          <img
+            src="/myroutine-logo.png"
+            alt="MY routine"
+            className="mx-auto h-auto w-32 object-contain"
+          />
+          <h1 className="mt-5 text-lg font-bold text-foreground">האתר לא נטען</h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            נסי לטעון מחדש כדי לנקות את גרסת האתר השמורה במכשיר.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-5 inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+          >
+            טעינה מחדש
+          </button>
+        </div>
+      </div>
       {loadingRecoveryTimedOut ? (
         <div
           className="flex min-h-[100dvh] items-center justify-center bg-background px-4"
@@ -1436,6 +1495,7 @@ function RootContent() {
       ) : (
         <Outlet />
       )}
+      <script dangerouslySetInnerHTML={{ __html: BOOT_WATCHDOG_SCRIPT }} />
       <Scripts />
     </QueryClientProvider>
   );
