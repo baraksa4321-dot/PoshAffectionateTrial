@@ -56,6 +56,7 @@ import {
 } from "@/lib/gym-store";
 import { BODYWEIGHT_EXERCISES } from "@/lib/bodyweight-exercises";
 import {
+  canonicalizeExerciseRecords,
   exerciseDisplayName,
   exerciseEquipmentOptions,
   exerciseGripOptions,
@@ -137,7 +138,8 @@ function DayBuilder() {
   const navigate = useNavigate();
   const { programs, workouts, exercises, userProfile } = useGym();
   const gender = userProfile?.gender;
-  const exerciseCatalog = uniqueCanonicalExercises([...exercises, ...BODYWEIGHT_EXERCISES]);
+  const exerciseCatalog = canonicalizeExerciseRecords([...exercises, ...BODYWEIGHT_EXERCISES]);
+  const pickerExerciseCatalog = uniqueCanonicalExercises(exerciseCatalog);
   const canManageProgram = userProfile?.role === "coach" || userProfile?.role === "owner";
   const program = programs.find((item) => item.id === programId);
   const existing = workouts.find((workout) => workout.id === dayId);
@@ -238,7 +240,7 @@ function DayBuilder() {
     navigate({ to: "/programs/$programId", params: { programId: program.id } });
   };
 
-  const pickerExercises = exerciseCatalog.filter(
+  const pickerExercises = pickerExerciseCatalog.filter(
     (exercise) =>
       (pickerGroup === "הכל" || exercise.muscleGroup === pickerGroup) &&
       (pickerEquipment === "הכל" || exerciseEquipmentOptions(exercise).includes(pickerEquipment)) &&
@@ -601,7 +603,7 @@ function SortableItem({
     id: item.id,
   });
   const [advanced, setAdvanced] = useState(false);
-  const name = exercise?.name ?? item.exerciseName ?? "תרגיל שהוסר";
+  const name = exercise ? exerciseDisplayName(exercise) : item.exerciseName ?? "תרגיל שהוסר";
   const availableEquipment = exercise ? exerciseEquipmentOptions(exercise) : [];
   const selectedEquipment = item.equipment || availableEquipment[0] || exercise?.equipment || "";
   const availableCableGrips = exercise ? exerciseGripOptions(exercise) : [];

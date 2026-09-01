@@ -145,6 +145,17 @@ function stripHebrewEquipmentFromName(value: string): string {
     .trim();
 }
 
+function mergeStringLists(...lists: Array<string[] | undefined>): string[] {
+  return Array.from(
+    new Set(lists.flatMap((list) => list ?? []).map((value) => value.trim()).filter(Boolean)),
+  );
+}
+
+function mergeText(first: string, second: string): string {
+  const values = [first.trim(), second.trim()].filter(Boolean);
+  return Array.from(new Set(values)).join("\n");
+}
+
 export function exerciseFamilyKey(exercise: Pick<Exercise, "name" | "nameEn">): string {
   const source = exercise.nameEn?.trim() || exercise.name.trim();
   const stripped = stripEquipmentFromName(source).toLocaleLowerCase("en");
@@ -195,20 +206,45 @@ export function uniqueCanonicalExercises(exercises: Exercise[]): Exercise[] {
       });
       continue;
     }
+    const mergedCableGripOptions =
+      existing.cableGripOptions?.length || exercise.cableGripOptions?.length
+        ? exerciseGripOptions({
+            cableGripOptions: [
+              ...(existing.cableGripOptions ?? []),
+              ...(exercise.cableGripOptions ?? []),
+            ],
+          })
+        : undefined;
     byFamily.set(key, {
       ...existing,
+      muscleGroups: mergeStringLists(
+        existing.muscleGroups ?? [existing.muscleGroup],
+        exercise.muscleGroups ?? [exercise.muscleGroup],
+      ),
+      secondaryMuscles: mergeStringLists(existing.secondaryMuscles, exercise.secondaryMuscles),
+      approvedSubstitutes: mergeStringLists(
+        existing.approvedSubstitutes,
+        exercise.approvedSubstitutes,
+      ),
       equipmentOptions: Array.from(
         new Set([...exerciseEquipmentOptions(existing), ...exerciseEquipmentOptions(exercise)]),
       ),
-      cableGripOptions:
-        existing.cableGripOptions?.length || exercise.cableGripOptions?.length
-          ? exerciseGripOptions({
-              cableGripOptions: [
-                ...(existing.cableGripOptions ?? []),
-                ...(exercise.cableGripOptions ?? []),
-              ],
-            })
-          : undefined,
+      videoUrls: mergeStringLists(existing.videoUrls, exercise.videoUrls),
+      images: mergeStringLists(existing.images, exercise.images),
+      description: mergeText(existing.description, exercise.description),
+      instructions: mergeText(existing.instructions ?? "", exercise.instructions ?? ""),
+      notes: mergeText(existing.notes, exercise.notes),
+      tips: mergeText(existing.tips ?? "", exercise.tips ?? ""),
+      ...(existing.videoUrl || exercise.videoUrl
+        ? { videoUrl: existing.videoUrl || exercise.videoUrl }
+        : {}),
+      ...(existing.videoMaleUrl || exercise.videoMaleUrl
+        ? { videoMaleUrl: existing.videoMaleUrl || exercise.videoMaleUrl }
+        : {}),
+      ...(existing.videoFemaleUrl || exercise.videoFemaleUrl
+        ? { videoFemaleUrl: existing.videoFemaleUrl || exercise.videoFemaleUrl }
+        : {}),
+      ...(mergedCableGripOptions ? { cableGripOptions: mergedCableGripOptions } : {}),
     });
   }
   return Array.from(byFamily.values());

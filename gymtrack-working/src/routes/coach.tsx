@@ -92,7 +92,7 @@ import type {
   Workout,
   WorkoutItem,
 } from "../lib/gym-types";
-import { CABLE_GRIPS, EQUIPMENT } from "../lib/gym-types";
+import { EQUIPMENT } from "../lib/gym-types";
 import { genderText } from "../lib/gender-copy";
 import {
   defaultFoodQuantity,
@@ -3722,7 +3722,7 @@ export function CoachDashboardPage({
         .some((value) => value!.toLocaleLowerCase().includes(query));
     })
     .slice(0, 12);
-  const selectedSupersetPartner = store.exercises.find(
+  const selectedSupersetPartner = canonicalExerciseOptions.find(
     (exercise) => exercise.id === supersetPartnerId,
   );
   const selectedBuilderExercise = canonicalExerciseOptions.find(
@@ -6970,10 +6970,15 @@ export function CoachDashboardPage({
                                                           : "text-muted-foreground"
                                                       }
                                                     >
-                                                      {selectedExId
-                                                        ? store.exercises.find(
-                                                            (e) => e.id === selectedExId,
-                                                          )?.name || "תרגיל נבחר"
+                                                 {selectedExId
+                                                         ? (() => {
+                                                             const exercise = canonicalExerciseOptions.find(
+                                                               (e) => e.id === selectedExId,
+                                                             );
+                                                             return exercise
+                                                               ? exerciseDisplayName(exercise)
+                                                               : "תרגיל נבחר";
+                                                           })()
                                                         : "חיפוש ובחירת תרגיל..."}
                                                     </span>
                                                     <Search className="h-4 w-4 text-muted-foreground" />
