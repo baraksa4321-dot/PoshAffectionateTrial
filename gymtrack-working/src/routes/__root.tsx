@@ -41,6 +41,7 @@ import {
 import { LockKeyhole, RefreshCw } from "lucide-react";
 
 const useLoadingCycleEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+const LOADING_RECOVERY_TIMEOUT_MS = 45_000;
 
 async function resetAuthSessionAndReload() {
   try {
@@ -1100,6 +1101,7 @@ function RootContent() {
   const [loadingRotationTick, setLoadingRotationTick] = useState(0);
   const openingCycleClaimedRef = useRef(false);
   const [loadingPresentationReady, setLoadingPresentationReady] = useState(false);
+  const [loadingRecoveryTimedOut, setLoadingRecoveryTimedOut] = useState(false);
   const loadingIndexes = loadingCycleIndexes(
     openingCycleIndex + loadingRotationTick,
     SIMPLE_LOADING_ILLUSTRATIONS.length,
@@ -1138,6 +1140,19 @@ function RootContent() {
     // women whose cached profile is already available in the browser.
     setLoadingPresentationReady(true);
   }, []);
+
+  useEffect(() => {
+    if (!isLoadingScreen) {
+      setLoadingRecoveryTimedOut(false);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(
+      () => setLoadingRecoveryTimedOut(true),
+      LOADING_RECOVERY_TIMEOUT_MS,
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, [isLoadingScreen]);
 
   useEffect(() => {
     if (!isLoadingScreen) return;
@@ -1190,7 +1205,7 @@ function RootContent() {
     // be able to serve the cached app when Safari is in Airplane Mode.
     if ("serviceWorker" in navigator) {
       void navigator.serviceWorker
-        .register("/sw.js?v=8", { updateViaCache: "none" })
+        .register("/sw.js?v=9", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch((error) => {
           console.warn("[App shell cache unavailable]:", error);
@@ -1281,7 +1296,36 @@ function RootContent() {
       <HeadContent />
       <ScrollToTop />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      {isLoadingScreen ? (
+      {loadingRecoveryTimedOut ? (
+        <div
+          className="flex min-h-[100dvh] items-center justify-center bg-background px-4"
+          dir="rtl"
+        >
+          <div className="w-full max-w-md rounded-3xl border border-primary/20 bg-white px-6 py-7 text-center shadow-sm">
+            <img
+              src="/myroutine-logo.png"
+              alt="MY routine"
+              className="mx-auto h-auto w-32 object-contain"
+            />
+            <h1 className="mt-5 text-lg font-bold text-foreground">הטעינה מתעכבת</h1>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              {genderText(
+                userProfile?.gender,
+                "לא הצלחנו להשלים את החיבור בזמן. בדקי את החיבור ונסי שוב.",
+                "לא הצלחנו להשלים את החיבור בזמן. בדוק את החיבור ונסה שוב.",
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              {genderText(userProfile?.gender, "טעינה מחדש", "טען מחדש")}
+            </button>
+          </div>
+        </div>
+      ) : isLoadingScreen ? (
         <div
           className={`loading-screen flex min-h-[100dvh] items-center justify-center bg-background px-4 ${
             showExpressiveLoading ? "" : "loading-screen-plain"
@@ -1307,7 +1351,9 @@ function RootContent() {
               </>
             ) : showPlainLoading ? (
               <LoadingSpinner label="טוען" />
-            ) : null}
+            ) : (
+              <img className="loading-initial-wordmark" src="/myroutine-logo.png" alt="MY routine" />
+            )}
           </div>
         </div>
       ) : hasProfileHydrationError ? (

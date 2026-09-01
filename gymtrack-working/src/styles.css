@@ -2406,6 +2406,15 @@ html.night-mode .auth-panel {
   transform: translateX(-50%);
 }
 
+.loading-initial-wordmark {
+  display: block;
+  width: min(130px, 40vw);
+  height: auto;
+  margin: 0 auto;
+  opacity: 0.82;
+  object-fit: contain;
+}
+
 .loading-micro-stage {
   position: relative;
   display: grid;
