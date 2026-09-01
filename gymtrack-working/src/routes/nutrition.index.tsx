@@ -58,7 +58,12 @@ import { nutritionSourceFor } from "@/lib/nutrition-integrity";
 import { buildShoppingList, type ShoppingListPeriod } from "@/lib/nutrition-planning";
 import { RECIPE_LIBRARY, type RecipeDefinition } from "@/lib/recipe-library";
 import { genderText } from "@/lib/gender-copy";
-import { loadingMessageForGender } from "@/lib/loading-copy";
+import {
+  LOADING_GENDER_STORAGE_KEY,
+  loadingMessageForGender,
+  readLoadingGender,
+  type LoadingGender,
+} from "@/lib/loading-copy";
 
 export const Route = createFileRoute("/nutrition/")({
   head: () => ({
@@ -210,6 +215,7 @@ type ScannedMeal = { mealName: string; foods: ScannedFood[] };
 function NutritionLog() {
   const gym = useGym();
   const gender = gym.userProfile?.gender;
+  const [loadingGender, setLoadingGender] = useState<LoadingGender | undefined>(gender);
   const showCalories = gym.userProfile?.showCalories !== false;
   const canManageTargets = gym.userProfile?.role === "coach" || gym.userProfile?.role === "owner";
   const [date, setDate] = useState(todayKey());
@@ -249,7 +255,8 @@ function NutritionLog() {
   const [scanError, setScanError] = useState("");
   const [scannedMeal, setScannedMeal] = useState<ScannedMeal | null>(null);
   const [scanCycle, setScanCycle] = useState(0);
-  const plainScanLoading = scanState === "analyzing" && gender !== "female";
+  const activeLoadingGender = loadingGender ?? gender;
+  const plainScanLoading = scanState === "analyzing" && activeLoadingGender !== "female";
   const day = nutritionDay(gym, date);
   const totals = dayTotals(day);
   const { nutritionTargets: targets } = gym;
@@ -334,10 +341,22 @@ function NutritionLog() {
   };
 
   useEffect(() => {
-    if (scanState !== "analyzing" || gender !== "female") return;
+    if (gender) {
+      setLoadingGender(gender);
+      return;
+    }
+    try {
+      setLoadingGender(readLoadingGender(window.localStorage.getItem(LOADING_GENDER_STORAGE_KEY)));
+    } catch {
+      setLoadingGender(undefined);
+    }
+  }, [gender]);
+
+  useEffect(() => {
+    if (scanState !== "analyzing" || activeLoadingGender !== "female") return;
     const interval = window.setInterval(() => setScanCycle((cycle) => cycle + 1), 1_500);
     return () => window.clearInterval(interval);
-  }, [gender, scanState]);
+  }, [activeLoadingGender, scanState]);
 
   const confirmScannedMeal = () => {
     if (!scannedMeal) return;
@@ -1182,7 +1201,7 @@ function NutritionLog() {
               <div className="space-y-3">
                 {scanState === "analyzing" ? (
                   <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-primary/40 bg-[#f7f2ec] px-5 py-10 text-center">
-                    {gender === "female" ? (
+                    {activeLoadingGender === "female" ? (
                       <>
                         <div
                           className={`loading-micro-stage loading-simple-stage loading-simple-pose-${scanCycle % 4}`}

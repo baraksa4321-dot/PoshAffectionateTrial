@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
-import { LOADING_MESSAGES, loadingCycleIndexes, readLoadingCycle } from "./loading-copy";
+import {
+  LOADING_MESSAGES,
+  loadingCycleIndexes,
+  readLoadingCycle,
+  readLoadingGender,
+} from "./loading-copy";
 
 describe("loading cycle", () => {
   test("starts at zero and rejects invalid persisted values", () => {
@@ -32,5 +37,13 @@ describe("loading cycle", () => {
       animationIndex: 0,
       messageIndex: 0,
     });
+  });
+
+  test("accepts only supported persisted loading genders", () => {
+    expect(readLoadingGender("female")).toBe("female");
+    expect(readLoadingGender("male")).toBe("male");
+    expect(readLoadingGender(null)).toBeUndefined();
+    expect(readLoadingGender("")).toBeUndefined();
+    expect(readLoadingGender("unknown")).toBeUndefined();
   });
 });

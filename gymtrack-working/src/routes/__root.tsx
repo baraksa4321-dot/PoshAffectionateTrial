@@ -34,9 +34,12 @@ import { supabase } from "../lib/supabase";
 import { genderText } from "../lib/gender-copy";
 import {
   LOADING_CYCLE_STORAGE_KEY,
+  LOADING_GENDER_STORAGE_KEY,
   loadingCycleIndexes,
   loadingMessageForGender,
+  readLoadingGender,
   readLoadingCycle,
+  type LoadingGender,
 } from "../lib/loading-copy";
 import { LockKeyhole, RefreshCw } from "lucide-react";
 
@@ -56,6 +59,7 @@ async function resetAuthSessionAndReload() {
     );
     authKeys.forEach((key) => window.localStorage.removeItem(key));
     window.localStorage.removeItem("supabase.auth.token");
+    window.localStorage.removeItem(LOADING_GENDER_STORAGE_KEY);
   } catch {
     // Storage may be unavailable in private browsing; reload still lets the
     // auth client retry with an empty in-memory session.
@@ -1100,6 +1104,7 @@ function RootContent() {
   // applied after mount so loading media cannot trigger a hydration mismatch.
   const [openingCycleIndex, setOpeningCycleIndex] = useState(0);
   const [loadingRotationTick, setLoadingRotationTick] = useState(0);
+  const [loadingGender, setLoadingGender] = useState<LoadingGender | undefined>(undefined);
   const openingCycleClaimedRef = useRef(false);
   const [loadingPresentationReady, setLoadingPresentationReady] = useState(false);
   const [loadingRecoveryTimedOut, setLoadingRecoveryTimedOut] = useState(false);
@@ -1129,19 +1134,71 @@ function RootContent() {
     userProfile?.role === "client" &&
     accountApprovalStatus !== "approved";
   const isLoadingScreen = authStatus === "loading" || isProfileHydrating || !minimumLoadingDone;
-  const showExpressiveLoading =
-    loadingPresentationReady &&
-    authStatus === "authenticated" &&
-    userProfile?.gender === "female";
-  const showPlainLoading = loadingPresentationReady && !showExpressiveLoading;
+  const activeLoadingGender =
+    authStatus === "unauthenticated" ? undefined : (userProfile?.gender ?? loadingGender);
+  const showExpressiveLoading = loadingPresentationReady && activeLoadingGender === "female";
+  const showPlainLoading = loadingPresentationReady && activeLoadingGender === "male";
 
-  useEffect(() => {
+  useLoadingCycleEffect(() => {
     // Keep SSR and the first browser render identical. The gender-specific
     // loading surface starts after hydration, avoiding a spinner flash for
     // women whose cached profile is already available in the browser.
+    try {
+      setLoadingGender(readLoadingGender(window.localStorage.getItem(LOADING_GENDER_STORAGE_KEY)));
+    } catch {
+      setLoadingGender(undefined);
+    }
     (window as Window & { __MY_ROUTINE_BOOTED__?: boolean }).__MY_ROUTINE_BOOTED__ = true;
     setLoadingPresentationReady(true);
   }, []);
+
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      const metadataGender = session?.user.user_metadata?.["gender"];
+      const nextGender = readLoadingGender(
+        typeof metadataGender === "string" ? metadataGender : null,
+      );
+      if (nextGender) {
+        setLoadingGender(nextGender);
+        try {
+          window.localStorage.setItem(LOADING_GENDER_STORAGE_KEY, nextGender);
+        } catch {
+          // The current in-memory session still controls this opening.
+        }
+        return;
+      }
+      if (!session?.user) {
+        setLoadingGender(undefined);
+        try {
+          window.localStorage.removeItem(LOADING_GENDER_STORAGE_KEY);
+        } catch {
+          // Private browsing can disable storage; auth state still resets.
+        }
+      }
+    });
+
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (authStatus === "unauthenticated") {
+      setLoadingGender(undefined);
+      try {
+        window.localStorage.removeItem(LOADING_GENDER_STORAGE_KEY);
+      } catch {
+        // Private browsing can disable storage; the in-memory state is enough.
+      }
+      return;
+    }
+    if (authStatus !== "authenticated" || !userProfile?.gender) return;
+
+    setLoadingGender(userProfile.gender);
+    try {
+      window.localStorage.setItem(LOADING_GENDER_STORAGE_KEY, userProfile.gender);
+    } catch {
+      // The current in-memory account state still controls this opening.
+    }
+  }, [authStatus, userProfile?.gender]);
 
   useEffect(() => {
     if (!isLoadingScreen) {
@@ -1391,7 +1448,7 @@ function RootContent() {
                   variant={loadingVariant}
                 />
                 <p key={`message-${loadingMessageIndex}`} className="loading-witty-message">
-                  {loadingMessageForGender(loadingMessageIndex, userProfile?.gender)}
+                  {loadingMessageForGender(loadingMessageIndex, activeLoadingGender)}
                 </p>
                 <img className="loading-wordmark" src="/myroutine-logo.png" alt="MY routine" />
               </>

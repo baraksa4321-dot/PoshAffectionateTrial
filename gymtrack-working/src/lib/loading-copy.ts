@@ -39,6 +39,13 @@ export const LOADING_MESSAGES = [
 ] as const;
 
 export const LOADING_CYCLE_STORAGE_KEY = "my-routine-loading-cycle-v6";
+export const LOADING_GENDER_STORAGE_KEY = "my-routine-loading-gender-v1";
+
+export type LoadingGender = "female" | "male";
+
+export function readLoadingGender(value: string | null): LoadingGender | undefined {
+  return value === "female" || value === "male" ? value : undefined;
+}
 
 export function readLoadingCycle(value: string | null) {
   const parsed = Number(value);

@@ -23,6 +23,7 @@ import type { ThemePalette } from "../lib/gym-types";
 import { Overlay } from "./ui-app/Overlay";
 import { BrandLogo } from "./BrandLogo";
 import { genderText } from "../lib/gender-copy";
+import { LOADING_GENDER_STORAGE_KEY } from "../lib/loading-copy";
 
 const WORKSPACE_KEY = "gymtrack.workspace";
 const FULL_NAME_REQUIRED_ERROR = "יש להזין שם פרטי ושם משפחה כדי ליצור חשבון.";
@@ -479,6 +480,11 @@ export function AppShell({
   };
 
   const handleSignOut = async () => {
+    try {
+      window.localStorage.removeItem(LOADING_GENDER_STORAGE_KEY);
+    } catch {
+      // The auth event still clears the in-memory loading mode.
+    }
     await supabase.auth.signOut();
   };
 
