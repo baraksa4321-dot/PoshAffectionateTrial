@@ -16,10 +16,17 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { saveTheme, useAuthUser, useCloudSyncStatus, useGym } from "../lib/gym-store";
+import {
+  completeUserProfileName,
+  saveTheme,
+  saveUserProfile,
+  useAuthUser,
+  useCloudSyncStatus,
+  useGym,
+} from "../lib/gym-store";
 import { supabase } from "../lib/supabase";
 import { applyNightMode, applyTheme, DEFAULT_THEME, THEME_PALETTES } from "../lib/theme";
-import type { ThemePalette } from "../lib/gym-types";
+import type { ThemePalette, UserProfile } from "../lib/gym-types";
 import { Overlay } from "./ui-app/Overlay";
 import { BrandLogo } from "./BrandLogo";
 import { genderText } from "../lib/gender-copy";
@@ -27,6 +34,24 @@ import { LOADING_GENDER_STORAGE_KEY } from "../lib/loading-copy";
 
 const WORKSPACE_KEY = "gymtrack.workspace";
 const FULL_NAME_REQUIRED_ERROR = "יש להזין שם פרטי ושם משפחה כדי ליצור חשבון.";
+
+type ProfileDraft = {
+  fullName: string;
+  weight: string;
+  height: string;
+  age: string;
+  gender: "female" | "male";
+};
+
+function profileDraftFrom(profile?: UserProfile): ProfileDraft {
+  return {
+    fullName: profile?.fullName ?? "",
+    weight: profile?.weight && profile.weight > 0 ? String(profile.weight) : "",
+    height: profile?.height && profile.height > 0 ? String(profile.height) : "",
+    age: profile?.age && profile.age > 0 ? String(profile.age) : "",
+    gender: profile?.gender ?? "female",
+  };
+}
 
 function isManagementPath(pathname: string) {
   return /(^|\/)(coach|exercises)(\/|$)/.test(pathname);
@@ -328,6 +353,12 @@ export function AppShell({
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [gender, setGender] = useState<"female" | "male">("female");
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() =>
+    profileDraftFrom(store.userProfile),
+  );
+  const [profileError, setProfileError] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -488,6 +519,69 @@ export function AppShell({
     await supabase.auth.signOut();
   };
 
+  const openProfileModal = () => {
+    setProfileDraft(profileDraftFrom(store.userProfile));
+    setProfileError("");
+    setShowProfileModal(true);
+  };
+
+  const handleProfileSave = async () => {
+    const normalizedName = profileDraft.fullName.trim().replace(/\s+/g, " ");
+    const parsePositiveNumber = (value: string, label: string) => {
+      if (!value.trim()) return undefined;
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        throw new Error(`יש להזין ${label} תקין.`);
+      }
+      return parsed;
+    };
+
+    if (normalizedName.split(" ").filter(Boolean).length < 2) {
+      setProfileError("יש להזין שם פרטי ושם משפחה.");
+      return;
+    }
+
+    let weight: number | undefined;
+    let height: number | undefined;
+    let age: number | undefined;
+    try {
+      weight = parsePositiveNumber(profileDraft.weight, "משקל");
+      height = parsePositiveNumber(profileDraft.height, "גובה");
+      age = parsePositiveNumber(profileDraft.age, "גיל");
+    } catch (error) {
+      setProfileError(errorMessage(error, "יש לבדוק את פרטי הפרופיל."));
+      return;
+    }
+
+    setProfileSaving(true);
+    setProfileError("");
+    try {
+      const nameResult = await completeUserProfileName(normalizedName);
+      if (!nameResult.success) {
+        setProfileError(nameResult.error);
+        return;
+      }
+
+      const currentProfile = store.userProfile ?? { weight: 0 };
+      const nextProfile: UserProfile = {
+        ...currentProfile,
+        fullName: normalizedName,
+        weight: weight ?? currentProfile.weight ?? 0,
+        gender: profileDraft.gender,
+      };
+      if (height === undefined) delete nextProfile.height;
+      else nextProfile.height = height;
+      if (age === undefined) delete nextProfile.age;
+      else nextProfile.age = age;
+      saveUserProfile(nextProfile);
+      setShowProfileModal(false);
+    } catch (error) {
+      setProfileError(errorMessage(error, "שמירת הפרופיל נכשלה."));
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
   return (
     <div
       ref={shellRef}
@@ -605,7 +699,12 @@ export function AppShell({
                       }`}
                       aria-hidden="true"
                     />
-                    <span className="flex max-w-[150px] min-w-0 flex-col truncate text-start leading-tight">
+                    <button
+                      type="button"
+                      onClick={openProfileModal}
+                      aria-label="פתיחת הפרופיל האישי"
+                      className="flex max-w-[150px] min-w-0 cursor-pointer flex-col truncate text-start leading-tight transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
                       <span className="truncate">
                         {store.userProfile?.fullName || "החשבון שלי"}
                       </span>
@@ -614,7 +713,7 @@ export function AppShell({
                           {user.email}
                         </span>
                       ) : null}
-                    </span>
+                    </button>
                     <div className="h-3 w-px bg-border/80 mx-1" />
                     <button
                       type="button"
@@ -664,6 +763,146 @@ export function AppShell({
         {user ? <span className="sr-only">{syncTitle}</span> : null}
         {!authOnly ? children : null}
       </main>
+
+      {showProfileModal ? (
+        <Overlay
+          open={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          ariaLabel="הפרופיל האישי"
+        >
+          <div
+            className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-border/70 pb-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                  הפרופיל שלי
+                </p>
+                <h2 className="mt-1 truncate font-display text-lg font-extrabold text-ink">
+                  פרטים אישיים
+                </h2>
+                {user?.email ? (
+                  <p className="mt-1 truncate text-xs text-muted-foreground" dir="ltr">
+                    {user.email}
+                  </p>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowProfileModal(false)}
+                aria-label="סגירת הפרופיל"
+                className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-ink"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {profileError ? (
+              <p className="rounded-2xl border border-destructive/20 bg-destructive/10 px-3 py-2.5 text-xs font-semibold text-destructive">
+                {profileError}
+              </p>
+            ) : null}
+
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-muted-foreground">
+                שם מלא
+                <input
+                  type="text"
+                  autoComplete="name"
+                  value={profileDraft.fullName}
+                  onChange={(event) =>
+                    setProfileDraft((current) => ({
+                      ...current,
+                      fullName: event.target.value,
+                    }))
+                  }
+                  className="mt-1 w-full rounded-2xl border border-border bg-background px-3.5 py-3 text-sm font-bold text-ink outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block text-xs font-bold text-muted-foreground">
+                  משקל (ק״ג)
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.1"
+                    value={profileDraft.weight}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        weight: event.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-2xl border border-border bg-background px-3.5 py-3 text-sm font-bold text-ink outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                  />
+                </label>
+                <label className="block text-xs font-bold text-muted-foreground">
+                  גובה (ס״מ)
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    step="1"
+                    value={profileDraft.height}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        height: event.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-2xl border border-border bg-background px-3.5 py-3 text-sm font-bold text-ink outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                  />
+                </label>
+                <label className="block text-xs font-bold text-muted-foreground">
+                  גיל
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    step="1"
+                    value={profileDraft.age}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        age: event.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-2xl border border-border bg-background px-3.5 py-3 text-sm font-bold text-ink outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                  />
+                </label>
+                <label className="block text-xs font-bold text-muted-foreground">
+                  מין
+                  <select
+                    value={profileDraft.gender}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        gender: event.target.value as "female" | "male",
+                      }))
+                    }
+                    className="mt-1 w-full rounded-2xl border border-border bg-background px-3.5 py-3 text-sm font-bold text-ink outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="female">נקבה</option>
+                    <option value="male">זכר</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void handleProfileSave()}
+              disabled={profileSaving}
+              className="w-full cursor-pointer rounded-2xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60"
+            >
+              {profileSaving ? "שומרת..." : "שמירת הפרופיל"}
+            </button>
+          </div>
+        </Overlay>
+      ) : null}
 
       {showAuthModal && (
         <Overlay
