@@ -1425,11 +1425,44 @@ html.night-mode .auth-panel {
 
 .coach-workout-surface {
   isolation: isolate;
-  padding-right: 3rem;
+  padding-right: 2rem;
 }
 
 .coach-workout-header input {
+  display: block;
   min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.coach-workout-surface form {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  text-align: right;
+}
+
+.coach-workout-surface form > div,
+.coach-workout-surface form > label,
+.coach-workout-surface form label,
+.coach-workout-surface form input,
+.coach-workout-surface form select,
+.coach-workout-surface form textarea {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 639px) {
+  .coach-workout-surface {
+    padding-right: 2rem;
+  }
+
+  .coach-workout-header > div:first-child {
+    width: 100%;
+    max-width: 100%;
+  }
 }
 
 /* iOS can blur the whole app behind an open keyboard. Keep the page legible
