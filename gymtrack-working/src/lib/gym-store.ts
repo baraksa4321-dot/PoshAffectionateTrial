@@ -571,7 +571,16 @@ function mergeRemotePlanRefresh(localData: GymData, remoteData: GymData): GymDat
   // Trainees cannot edit these collections locally, so a pending nutrition
   // log, check-list item, or measurement must not prevent a coach's plan from
   // appearing in the still-open session.
-  if (localData.userProfile?.role !== "client") return remoteData;
+  if (localData.userProfile?.role !== "client") {
+    const localProfile = localData.userProfile ?? { weight: 0 };
+    return {
+      ...localData,
+      userProfile: {
+        ...localProfile,
+        ...(remoteData.userProfile ?? {}),
+      },
+    };
+  }
   const {
     coachId: _localCoachId,
     approvalStatus: _localApprovalStatus,
@@ -791,10 +800,13 @@ function resetDataForUser(userId: string) {
 }
 
 /** Keep custom foods and saved meal snapshots, while removing retired seed items. */
-function mergeSeedFoods(existing: FoodItem[]): FoodItem[] {
+function mergeSeedFoods(existing: FoodItem[], deletedFoodIds: string[] = []): FoodItem[] {
+  const deletedIds = new Set(deletedFoodIds);
   const everydayIds = new Set(everydayFoodDatabase.map((food) => food.id));
-  const byId = new Map(existing.map((f) => [f.id, f]));
-  const byName = new Map(existing.map((f) => [f.name.toLocaleLowerCase(), f]));
+  const byId = new Map(existing.filter((food) => !deletedIds.has(food.id)).map((f) => [f.id, f]));
+  const byName = new Map(
+    existing.filter((food) => !deletedIds.has(food.id)).map((f) => [f.name.toLocaleLowerCase(), f]),
+  );
   for (const [id, food] of byId) {
     const isLocalCatalogSeed =
       id.startsWith("f-israel-") || id.startsWith("f-usda-") || id.startsWith("f-protein-il-");
@@ -805,6 +817,7 @@ function mergeSeedFoods(existing: FoodItem[]): FoodItem[] {
     }
   }
   for (const seedFood of everydayFoodDatabase) {
+    if (deletedIds.has(seedFood.id)) continue;
     if (byId.has(seedFood.id)) continue;
     if (byName.has(seedFood.name.toLocaleLowerCase())) continue;
     byId.set(seedFood.id, seedFood);
@@ -852,7 +865,7 @@ function loadReferenceLibraries() {
     // Merge them after their chunks arrive while preserving custom/cached data.
     data = {
       ...data,
-      foods: mergeSeedFoods(data.foods ?? []),
+      foods: mergeSeedFoods(data.foods ?? [], data.deletedFoodIds ?? []),
       exercises: mergeSeedExercises(data.exercises ?? [], data.deletedExerciseIds ?? []),
     };
     persistCacheOnly();
@@ -875,10 +888,18 @@ function migrate(d: Partial<GymData>): GymData {
     deletedExerciseIds: d.deletedExerciseIds ?? [],
     deletedEquipmentOptions: d.deletedEquipmentOptions ?? [],
     deletedCableGripOptions: d.deletedCableGripOptions ?? [],
+    deletedWorkoutIds: d.deletedWorkoutIds ?? [],
+    deletedProgramIds: d.deletedProgramIds ?? [],
+    deletedSessionIds: d.deletedSessionIds ?? [],
+    deletedBodyWeightLogDates: d.deletedBodyWeightLogDates ?? [],
+    deletedNutritionDayIds: d.deletedNutritionDayIds ?? [],
+    deletedRecipeIds: d.deletedRecipeIds ?? [],
+    deletedCardioLogIds: d.deletedCardioLogIds ?? [],
+    deletedFavoriteFoodIds: d.deletedFavoriteFoodIds ?? [],
     workouts,
     programs,
     history: d.history ?? [],
-    foods: mergeSeedFoods(d.foods ?? []),
+    foods: mergeSeedFoods(d.foods ?? [], d.deletedFoodIds ?? []),
     nutritionDays: normalizedNutrition.nutritionDays,
     nutritionTargets: d.nutritionTargets ?? {},
     plannedMeals: normalizedNutrition.plannedMeals,
@@ -1535,6 +1556,7 @@ export function saveWorkout(w: Workout) {
   const exists = data.workouts.some((x) => x.id === w.id);
   set({
     ...data,
+    deletedWorkoutIds: (data.deletedWorkoutIds ?? []).filter((id) => id !== w.id),
     workouts: exists ? data.workouts.map((x) => (x.id === w.id ? w : x)) : [...data.workouts, w],
   });
 }
@@ -1548,13 +1570,19 @@ export function saveWorkoutInProgram(programId: string, w: Workout) {
   const programs = data.programs.map((p) =>
     p.id === programId && !p.dayIds.includes(w.id) ? { ...p, dayIds: [...p.dayIds, w.id] } : p,
   );
-  set({ ...data, workouts, programs });
+  set({
+    ...data,
+    deletedWorkoutIds: (data.deletedWorkoutIds ?? []).filter((id) => id !== w.id),
+    workouts,
+    programs,
+  });
 }
 
 export function deleteWorkout(id: string) {
   if (!canManageAssignedPlans()) return;
   set({
     ...data,
+    deletedWorkoutIds: Array.from(new Set([...(data.deletedWorkoutIds ?? []), id])),
     workouts: data.workouts.filter((w) => w.id !== id),
     programs: data.programs.map((p) => ({
       ...p,
@@ -1628,6 +1656,7 @@ export function saveProgram(p: Program) {
   const exists = data.programs.some((x) => x.id === p.id);
   set({
     ...data,
+    deletedProgramIds: (data.deletedProgramIds ?? []).filter((id) => id !== p.id),
     programs: exists ? data.programs.map((x) => (x.id === p.id ? p : x)) : [...data.programs, p],
   });
 }
@@ -1680,6 +1709,8 @@ export function deleteProgram(id: string) {
   const orphan = new Set(program?.dayIds ?? []);
   set({
     ...data,
+    deletedProgramIds: Array.from(new Set([...(data.deletedProgramIds ?? []), id])),
+    deletedWorkoutIds: Array.from(new Set([...(data.deletedWorkoutIds ?? []), ...orphan])),
     programs: data.programs.filter((p) => p.id !== id),
     workouts: data.workouts.filter((w) => !orphan.has(w.id)),
   });
@@ -1723,12 +1754,17 @@ export function programDays(d: GymData, programId: string): Workout[] {
 export function saveSession(session: HistorySession) {
   set({
     ...data,
+    deletedSessionIds: (data.deletedSessionIds ?? []).filter((id) => id !== session.id),
     history: [session, ...data.history.filter((existing) => existing.id !== session.id)],
   });
 }
 
 export function deleteSession(id: string) {
-  set({ ...data, history: data.history.filter((s) => s.id !== id) });
+  set({
+    ...data,
+    deletedSessionIds: Array.from(new Set([...(data.deletedSessionIds ?? []), id])),
+    history: data.history.filter((s) => s.id !== id),
+  });
 }
 
 export function lastPerformance(history: HistorySession[], exerciseId: string) {
@@ -1813,7 +1849,24 @@ export function saveBodyWeight(weight: number, dateStr = todayKey()) {
     logs.unshift({ id: uid(), date: dateStr, weight });
   }
   const profile = { ...(data.userProfile ?? { weight: 0 }), weight };
-  set({ ...data, bodyWeightLogs: logs, userProfile: profile });
+  set({
+    ...data,
+    deletedBodyWeightLogDates: (data.deletedBodyWeightLogDates ?? []).filter(
+      (date) => date !== dateStr,
+    ),
+    bodyWeightLogs: logs,
+    userProfile: profile,
+  });
+}
+
+export function deleteBodyWeight(dateStr: string) {
+  set({
+    ...data,
+    deletedBodyWeightLogDates: Array.from(
+      new Set([...(data.deletedBodyWeightLogDates ?? []), dateStr]),
+    ),
+    bodyWeightLogs: (data.bodyWeightLogs ?? []).filter((log) => log.date !== dateStr),
+  });
 }
 
 export function saveBodyMeasurement(measurement: Omit<BodyMeasurement, "id">) {
@@ -1863,7 +1916,11 @@ export function calculateRmr(profile?: UserProfile) {
 
 export function saveCardioLog(log: Omit<CardioLog, "id">) {
   const entry: CardioLog = { id: uid(), ...log };
-  set({ ...data, cardioLogs: [entry, ...(data.cardioLogs ?? [])] });
+  set({
+    ...data,
+    deletedCardioLogIds: (data.deletedCardioLogIds ?? []).filter((id) => id !== entry.id),
+    cardioLogs: [entry, ...(data.cardioLogs ?? [])],
+  });
   return entry;
 }
 
@@ -1876,7 +1933,11 @@ export function updateCardioLog(log: CardioLog) {
 }
 
 export function deleteCardioLog(id: string) {
-  set({ ...data, cardioLogs: (data.cardioLogs ?? []).filter((entry) => entry.id !== id) });
+  set({
+    ...data,
+    deletedCardioLogIds: Array.from(new Set([...(data.deletedCardioLogIds ?? []), id])),
+    cardioLogs: (data.cardioLogs ?? []).filter((entry) => entry.id !== id),
+  });
 }
 
 export function calculateCardioCalories(
@@ -1941,6 +2002,7 @@ export function saveFood(food: FoodItem) {
   const exists = data.foods.some((f) => f.id === savedFood.id);
   set({
     ...data,
+    deletedFoodIds: (data.deletedFoodIds ?? []).filter((id) => id !== savedFood.id),
     foods: exists
       ? data.foods.map((f) => (f.id === savedFood.id ? savedFood : f))
       : [...data.foods, savedFood],
@@ -1949,13 +2011,29 @@ export function saveFood(food: FoodItem) {
 
 export function toggleFavoriteFood(foodId: string) {
   const favorites = new Set(data.favoriteFoods ?? []);
-  if (favorites.has(foodId)) favorites.delete(foodId);
-  else favorites.add(foodId);
-  set({ ...data, favoriteFoods: Array.from(favorites) });
+  const deletedFavoriteFoodIds = new Set(data.deletedFavoriteFoodIds ?? []);
+  if (favorites.has(foodId)) {
+    favorites.delete(foodId);
+    deletedFavoriteFoodIds.add(foodId);
+  } else {
+    favorites.add(foodId);
+    deletedFavoriteFoodIds.delete(foodId);
+  }
+  set({
+    ...data,
+    favoriteFoods: Array.from(favorites),
+    deletedFavoriteFoodIds: Array.from(deletedFavoriteFoodIds),
+  });
 }
 
 export function deleteFood(id: string) {
-  set({ ...data, foods: data.foods.filter((f) => f.id !== id) });
+  set({
+    ...data,
+    deletedFoodIds: Array.from(new Set([...(data.deletedFoodIds ?? []), id])),
+    foods: data.foods.filter((f) => f.id !== id),
+    favoriteFoods: (data.favoriteFoods ?? []).filter((foodId) => foodId !== id),
+    recentFoods: (data.recentFoods ?? []).filter((foodId) => foodId !== id),
+  });
 }
 
 export function emptyFood(): FoodItem {
@@ -2107,7 +2185,11 @@ export function saveRecipe(name: string, foods: MealFood[]) {
     return false;
   }
   const recipe: SavedRecipe = { id: uid(), name: name.trim() || "מתכון שמור", foods };
-  set({ ...data, recipes: [recipe, ...recipes] });
+  set({
+    ...data,
+    deletedRecipeIds: (data.deletedRecipeIds ?? []).filter((id) => id !== recipe.id),
+    recipes: [recipe, ...recipes],
+  });
   return true;
 }
 
@@ -2131,7 +2213,11 @@ export function renameRecipe(id: string, name: string) {
 }
 
 export function deleteRecipe(id: string) {
-  set({ ...data, recipes: (data.recipes ?? []).filter((recipe) => recipe.id !== id) });
+  set({
+    ...data,
+    deletedRecipeIds: Array.from(new Set([...(data.deletedRecipeIds ?? []), id])),
+    recipes: (data.recipes ?? []).filter((recipe) => recipe.id !== id),
+  });
 }
 
 /* ---------- nutrition: days & meals ---------- */
@@ -2157,7 +2243,25 @@ function withDay(date: string, updater: (day: NutritionDay) => NutritionDay) {
   const days = existing
     ? data.nutritionDays.map((x) => (x.date === date ? next : x))
     : [next, ...data.nutritionDays];
-  set({ ...data, nutritionDays: days });
+  const dayId = next.id ?? `${currentUser?.id ?? "local"}_${date}`;
+  set({
+    ...data,
+    deletedNutritionDayIds: (data.deletedNutritionDayIds ?? []).filter(
+      (id) => id !== dayId && id !== date,
+    ),
+    nutritionDays: days,
+  });
+}
+
+export function deleteNutritionDay(dateOrId: string) {
+  const day = data.nutritionDays.find((item) => item.id === dateOrId || item.date === dateOrId);
+  const date = day?.date ?? dateOrId;
+  const id = day?.id ?? `${currentUser?.id ?? "local"}_${date}`;
+  set({
+    ...data,
+    deletedNutritionDayIds: Array.from(new Set([...(data.deletedNutritionDayIds ?? []), id, date])),
+    nutritionDays: data.nutritionDays.filter((item) => item.id !== dateOrId && item.date !== date),
+  });
 }
 
 export function autoMealIndexForTime(timeStr?: string): number {

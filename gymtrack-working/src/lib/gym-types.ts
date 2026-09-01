@@ -216,6 +216,8 @@ export type FoodItem = {
   category?: string;
   brand?: string;
   servingSize: string;
+  /** Weight represented by the reference serving, when known reliably. */
+  servingGrams?: number;
   calories: number;
   protein: number;
   carbs: number;
@@ -306,9 +308,7 @@ export type SavedRecipe = {
 export type FoodCatalogProductType = "powder" | "bar" | "drink" | "pudding" | "yogurt" | "other";
 export type FoodCatalogSource = "curated-israel" | "open-food-facts";
 export type FoodCatalogVerification =
-  | "curated-unverified"
-  | "manufacturer-verified"
-  | "external-unverified";
+  "curated-unverified" | "manufacturer-verified" | "external-unverified";
 
 export type FoodCatalogMetadata = {
   barcode?: string;
@@ -417,8 +417,19 @@ export type GymData = {
   exercises: Exercise[];
   /** Library items hidden by this user; kept local so built-in catalog edits persist. */
   deletedExerciseIds?: string[];
+  /** Built-in and personal foods explicitly hidden by this user. */
+  deletedFoodIds?: string[];
   deletedEquipmentOptions?: string[];
   deletedCableGripOptions?: string[];
+  /** Explicit local deletions; sync must never infer deletion from an incomplete snapshot. */
+  deletedWorkoutIds?: string[];
+  deletedProgramIds?: string[];
+  deletedSessionIds?: string[];
+  deletedBodyWeightLogDates?: string[];
+  deletedNutritionDayIds?: string[];
+  deletedRecipeIds?: string[];
+  deletedCardioLogIds?: string[];
+  deletedFavoriteFoodIds?: string[];
   workouts: Workout[];
   programs: Program[];
   history: HistorySession[];
@@ -453,8 +464,7 @@ export function reportDateKey(date: Date): string {
 
 export function visibleProgramNote(notes?: string | null): string {
   const value = notes?.trim() ?? "";
-  return value === "תוכנית נבנתה על ידי המאמן" ||
-    value === "תוכנית אישית שנבנתה במרחב הניהול"
+  return value === "תוכנית נבנתה על ידי המאמן" || value === "תוכנית אישית שנבנתה במרחב הניהול"
     ? ""
     : value;
 }

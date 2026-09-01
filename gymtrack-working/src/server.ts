@@ -1,5 +1,6 @@
 import "./lib/error-capture";
 
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 
@@ -8,9 +9,13 @@ type ServerEntry = {
 };
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
-const MAX_MEAL_IMAGE_BYTES = 20 * 1024 * 1024;
+let scanAuthClient: SupabaseClient | undefined;
+const MAX_MEAL_IMAGE_BYTES = 8 * 1024 * 1024;
+const MAX_SCAN_REQUEST_BYTES = 12 * 1024 * 1024;
 const GEMINI_TIMEOUT_MS = 60_000;
-const scanTimestamps: number[] = [];
+const SCAN_RATE_LIMIT = 10;
+const SCAN_RATE_WINDOW_MS = 60_000;
+const scanRateLimitHits = new Map<string, number[]>();
 
 type ScanFood = {
   name: string;
@@ -36,6 +41,90 @@ function scanResponse(body: unknown, status: number, scanId: string, startedAt: 
   response.headers.set("x-meal-scan-id", scanId);
   response.headers.set("x-meal-scan-ms", String(Date.now() - startedAt));
   return response;
+}
+
+function requestIp(request: Request) {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip")?.trim() ||
+    "unknown"
+  );
+}
+
+function scanRateLimited(keys: string[], now = Date.now()) {
+  const cutoff = now - SCAN_RATE_WINDOW_MS;
+  let limited = false;
+  for (const key of keys) {
+    const recent = (scanRateLimitHits.get(key) ?? []).filter((timestamp) => timestamp > cutoff);
+    if (recent.length >= SCAN_RATE_LIMIT) {
+      limited = true;
+    } else {
+      recent.push(now);
+    }
+    scanRateLimitHits.set(key, recent);
+  }
+  if (scanRateLimitHits.size > 5000) {
+    for (const [key, timestamps] of scanRateLimitHits) {
+      if (timestamps.every((timestamp) => timestamp <= cutoff)) scanRateLimitHits.delete(key);
+    }
+  }
+  return limited;
+}
+
+async function authenticatedScanUser(request: Request) {
+  const authorization = request.headers.get("authorization") ?? "";
+  const tokenMatch = authorization.match(/^Bearer\s+(.+)$/i);
+  if (!tokenMatch?.[1]) return { error: "unauthorized" as const };
+
+  const supabaseUrl = process.env["VITE_SUPABASE_URL"];
+  const supabaseAnonKey = process.env["VITE_SUPABASE_ANON_KEY"];
+  if (!supabaseUrl || !supabaseAnonKey) return { error: "server-config" as const };
+
+  scanAuthClient ??= createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data, error } = await scanAuthClient.auth.getUser(tokenMatch[1]);
+  if (error || !data.user) return { error: "unauthorized" as const };
+
+  return { userId: data.user.id, ip: requestIp(request) };
+}
+
+async function readBodyWithLimit(request: Request, maxBytes: number) {
+  const declaredLength = Number(request.headers.get("content-length") ?? "");
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes)
+    throw new Error("payload-too-large");
+
+  if (!request.body) {
+    const body = await request.text();
+    if (new TextEncoder().encode(body).byteLength > maxBytes) throw new Error("payload-too-large");
+    return body;
+  }
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        await reader.cancel();
+        throw new Error("payload-too-large");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const body = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(body);
 }
 
 function normalizeServingSize(name: string, servingSize: string): string {
@@ -158,27 +247,41 @@ async function analyzeMealImage(request: Request): Promise<Response> {
   const startedAt = Date.now();
   console.info("Meal scan started", scanId);
   if (request.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
-  const now = Date.now();
-  while (scanTimestamps[0] && scanTimestamps[0] < now - 60_000) scanTimestamps.shift();
-  if (scanTimestamps.length >= 10) {
+  const auth = await authenticatedScanUser(request);
+  if (auth.error === "unauthorized") {
+    return scanResponse({ error: "יש להתחבר כדי להשתמש בסריקת ארוחה." }, 401, scanId, startedAt);
+  }
+  if (auth.error === "server-config") {
+    return scanResponse({ error: "חיבור ניתוח התמונות עדיין לא הוגדר." }, 503, scanId, startedAt);
+  }
+  if (scanRateLimited([`user:${auth.userId}`, `ip:${auth.ip}`])) {
     return scanResponse({ error: "יותר מדי ניסיונות. נסי שוב בעוד דקה." }, 429, scanId, startedAt);
   }
-  scanTimestamps.push(now);
 
   let payload: { image?: unknown };
   try {
-    payload = (await request.json()) as { image?: unknown };
+    payload = JSON.parse(await readBodyWithLimit(request, MAX_SCAN_REQUEST_BYTES)) as {
+      image?: unknown;
+    };
     console.info(
       "Meal scan payload read",
       scanId,
       typeof payload.image === "string" ? payload.image.length : 0,
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "payload-too-large") {
+      return scanResponse(
+        { error: "הבקשה גדולה מדי. הגודל המרבי הוא 8MB." },
+        413,
+        scanId,
+        startedAt,
+      );
+    }
     return scanResponse({ error: "לא ניתן לקרוא את התמונה." }, 400, scanId, startedAt);
   }
   if (!isImageDataUrl(payload.image)) {
     return scanResponse(
-      { error: "יש להעלות תמונת PNG או JPG תקינה, עד 20MB." },
+      { error: "יש להעלות תמונת PNG או JPG תקינה, עד 8MB." },
       400,
       scanId,
       startedAt,
@@ -198,6 +301,20 @@ async function analyzeMealImage(request: Request): Promise<Response> {
       return scanResponse({ error: "חיבור ניתוח התמונות עדיין לא הוגדר." }, 503, scanId, startedAt);
     }
     if (!imageData) return scanResponse({ error: "התמונה אינה תקינה." }, 400, scanId, startedAt);
+    const padding = imageData.endsWith("==") ? 2 : imageData.endsWith("=") ? 1 : 0;
+    const decodedBytes = Math.floor((imageData.length * 3) / 4) - padding;
+    if (
+      !Number.isFinite(decodedBytes) ||
+      decodedBytes <= 0 ||
+      decodedBytes > MAX_MEAL_IMAGE_BYTES
+    ) {
+      return scanResponse(
+        { error: "התמונה גדולה מדי. הגודל המרבי הוא 8MB." },
+        413,
+        scanId,
+        startedAt,
+      );
+    }
     console.info("Meal scan sending to Gemini", scanId, imageData.length);
     const geminiRequest = fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${encodeURIComponent(apiKey)}`,

@@ -58,6 +58,7 @@ import { nutritionSourceFor } from "@/lib/nutrition-integrity";
 import { buildShoppingList, type ShoppingListPeriod } from "@/lib/nutrition-planning";
 import { RECIPE_LIBRARY, type RecipeDefinition } from "@/lib/recipe-library";
 import { genderText } from "@/lib/gender-copy";
+import { supabase } from "@/lib/supabase";
 import {
   LOADING_GENDER_STORAGE_KEY,
   loadingMessageForGender,
@@ -298,8 +299,8 @@ function NutritionLog() {
       setScanState("error");
       return;
     }
-    if (file.size > 20 * 1024 * 1024) {
-      setScanError("התמונה גדולה מדי. הגודל המרבי הוא 20MB.");
+    if (file.size > 8 * 1024 * 1024) {
+      setScanError("התמונה גדולה מדי. הגודל המרבי הוא 8MB.");
       setScanState("error");
       return;
     }
@@ -308,10 +309,19 @@ function NutritionLog() {
     setScanCycle(0);
     try {
       const image = await prepareMealImage(file);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("יש להתחבר כדי להשתמש בסריקת ארוחה.");
+      }
       const controller = new AbortController();
       const request = fetch("/nutrition-scan-meal", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ image }),
         signal: controller.signal,
       });

@@ -596,3 +596,35 @@ describe("role and assignment migration contract", () => {
     expect(migration28).toContain("SET role = new_role");
   });
 });
+
+describe("explicit deletion and optional sync contracts", () => {
+  const syncSource = readFileSync(
+    fileURLToPath(new URL("./supabase-sync.ts", import.meta.url)),
+    "utf8",
+  );
+
+  test("never infers cloud deletion from a missing local snapshot row", () => {
+    expect(syncSource).not.toContain("deleteRowsMissingFromLocal");
+    expect(syncSource).toContain("deleteRowsExplicitlyDeleted");
+    expect(syncSource).toContain("deletedFoodIds");
+    expect(syncSource).toContain("deletedBodyWeightLogDates");
+    expect(syncSource).toContain("deletedSessionIds");
+    expect(syncSource).toContain("deletedNutritionDayIds");
+  });
+
+  test("optional sync blocks only skip confirmed missing tables", () => {
+    const customExercisesBlock = syncSource.slice(
+      syncSource.indexOf("// 2. Custom Exercises"),
+      syncSource.indexOf("// 3. Programs & Program Days"),
+    );
+    const recipesBlock = syncSource.slice(
+      syncSource.indexOf("// 6b. Personal recipe library"),
+      syncSource.indexOf("// 7. Food Favorites"),
+    );
+
+    expect(customExercisesBlock).toContain("isMissingTableInSchemaCache");
+    expect(customExercisesBlock).toContain("throw error");
+    expect(recipesBlock).toContain("isMissingTableInSchemaCache");
+    expect(recipesBlock).toContain("throw error");
+  });
+});
