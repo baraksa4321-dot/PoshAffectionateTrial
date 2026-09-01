@@ -3603,34 +3603,34 @@ export function CoachDashboardPage({
             )}
           </section>
 
-          <div className="grid grid-cols-2 gap-0.5 sm:grid-cols-4">
-            <div className="surface-card flex items-center justify-between gap-1 border-primary/25 bg-primary/5 px-2 py-1.5 text-start">
-              <p className="truncate text-[10px] font-bold text-muted-foreground">מתאמנים</p>
-              <p className="font-display text-base font-extrabold leading-none text-ink">
-                {clients.length}
-              </p>
-            </div>
-            <div className="surface-card flex items-center justify-between gap-1 border-accent/60 bg-accent/20 px-2 py-1.5 text-start">
-              <p className="truncate text-[10px] font-bold text-muted-foreground">דורשים תכנית</p>
-              <p className="font-display text-base font-extrabold leading-none text-ink">
-                {needsPlan.length}
-              </p>
-            </div>
-            <div className="surface-card flex items-center justify-between gap-1 border-border bg-surface-2 px-2 py-1.5 text-start">
-              <p className="truncate text-[10px] font-bold text-muted-foreground">שקטים 14 יום</p>
-              <p className="font-display text-base font-extrabold leading-none text-ink">
-                {quietClients.length}
-              </p>
-            </div>
-            {isOwner ? (
+          {isOwner ? (
+            <div className="grid grid-cols-2 gap-0.5 sm:grid-cols-4">
+              <div className="surface-card flex items-center justify-between gap-1 border-primary/25 bg-primary/5 px-2 py-1.5 text-start">
+                <p className="truncate text-[10px] font-bold text-muted-foreground">מתאמנים</p>
+                <p className="font-display text-base font-extrabold leading-none text-ink">
+                  {clients.length}
+                </p>
+              </div>
+              <div className="surface-card flex items-center justify-between gap-1 border-accent/60 bg-accent/20 px-2 py-1.5 text-start">
+                <p className="truncate text-[10px] font-bold text-muted-foreground">דורשים תכנית</p>
+                <p className="font-display text-base font-extrabold leading-none text-ink">
+                  {needsPlan.length}
+                </p>
+              </div>
+              <div className="surface-card flex items-center justify-between gap-1 border-border bg-surface-2 px-2 py-1.5 text-start">
+                <p className="truncate text-[10px] font-bold text-muted-foreground">שקטים 14 יום</p>
+                <p className="font-display text-base font-extrabold leading-none text-ink">
+                  {quietClients.length}
+                </p>
+              </div>
               <div className="surface-card flex items-center justify-between gap-1 border-purple-200 bg-purple-50/70 px-2 py-1.5 text-start">
                 <p className="truncate text-[10px] font-bold text-purple-700">משתמשים</p>
                 <p className="font-display text-base font-extrabold leading-none text-purple-950">
                   {allProfiles.length}
                 </p>
               </div>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
 
           <section className="surface-card space-y-2.5 border-primary/20 bg-primary/5 p-4 text-start">
             <div className="flex items-center gap-1.5">
@@ -3713,57 +3713,57 @@ export function CoachDashboardPage({
             ) : null}
           </section>
 
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <div className="surface-card border-primary/20 bg-primary/5 px-2.5 py-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-primary">
-                    פעילות חדשה
-                  </p>
-                  <h3 className="text-xs font-bold text-ink">נרשמו היום</h3>
+          {isOwner ? (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="surface-card border-primary/20 bg-primary/5 px-2.5 py-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-primary">
+                      פעילות חדשה
+                    </p>
+                    <h3 className="text-xs font-bold text-ink">נרשמו היום</h3>
+                  </div>
+                  <span className="font-display text-lg font-extrabold leading-none text-primary">
+                    {newTodayProfiles.length}
+                  </span>
                 </div>
-                <span className="font-display text-lg font-extrabold leading-none text-primary">
-                  {newTodayProfiles.length}
-                </span>
+                {newTodayProfiles.length > 0 ? (
+                  <div className="mt-2 space-y-1">
+                    {newTodayProfiles.slice(0, 3).map((profile) => (
+                      <div key={profile.id} className="flex items-center justify-between text-[11px]">
+                        <span className="truncate font-semibold text-ink">
+                          {profileDisplayName(profile)}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {profile.role === "coach" ? "מאמן" : "מתאמן"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-[10px] text-muted-foreground">אין הרשמות חדשות היום.</p>
+                )}
               </div>
-              {newTodayProfiles.length > 0 ? (
-                <div className="mt-2 space-y-1">
-                  {newTodayProfiles.slice(0, 3).map((profile) => (
-                    <div key={profile.id} className="flex items-center justify-between text-[11px]">
-                      <span className="truncate font-semibold text-ink">
-                        {profileDisplayName(profile)}
-                      </span>
-                      <span className="text-muted-foreground">
-                        {profile.role === "coach" ? "מאמן" : "מתאמן"}
-                      </span>
-                    </div>
-                  ))}
+              <div className="surface-card border-amber-200 bg-amber-50/70 px-2.5 py-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-amber-700">
+                      דורש טיפול
+                    </p>
+                    <h3 className="text-xs font-bold text-ink">אישורי הרשמה</h3>
+                  </div>
+                  <span className="font-display text-lg font-extrabold leading-none text-amber-800">
+                    {pendingApprovals.length}
+                  </span>
                 </div>
-              ) : (
-                <p className="mt-1 text-[10px] text-muted-foreground">אין הרשמות חדשות היום.</p>
-              )}
-            </div>
-            <div className="surface-card border-amber-200 bg-amber-50/70 px-2.5 py-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-amber-700">
-                    דורש טיפול
-                  </p>
-                  <h3 className="text-xs font-bold text-ink">אישורי הרשמה</h3>
-                </div>
-                <span className="font-display text-lg font-extrabold leading-none text-amber-800">
-                  {isOwner ? pendingApprovals.length : 0}
-                </span>
-              </div>
-              <p className="mt-1 text-[10px] leading-snug text-amber-900/75">
-                {isOwner
-                  ? pendingApprovals.length > 0
+                <p className="mt-1 text-[10px] leading-snug text-amber-900/75">
+                  {pendingApprovals.length > 0
                     ? "יש מתאמנים שממתינים לאישור שם ושיוך למאמן."
-                    : "אין כרגע הרשמות שממתינות לאישור."
-                  : "בעיות, חוסרים ומתאמנים שדורשים תשומת לב מופיעים כאן."}
-              </p>
+                    : "אין כרגע הרשמות שממתינות לאישור."}
+                </p>
+              </div>
             </div>
-          </div>
+          ) : null}
 
           {overviewRows.length === 0 ? (
             <div className="surface-card p-4 text-sm text-muted-foreground">
