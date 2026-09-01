@@ -333,16 +333,22 @@ export function AppShell({
     const deltaY = end.clientY - start.y;
     if (Math.abs(deltaX) < 55 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.2) return;
 
-    const currentIndex = NAV.findIndex((item) =>
-      item.to === "/"
-        ? location.pathname === "/"
-        : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
+    const currentIndex = NAV.reduce(
+      (matchedIndex, item, index) =>
+        item.to === "/"
+          ? location.pathname === "/"
+            ? index
+            : matchedIndex
+          : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
+            ? index
+            : matchedIndex,
+      -1,
     );
     if (currentIndex < 0) return;
 
-    // Follow the visual direction of the swipe: right-to-left moves to the
-    // page on the left, and left-to-right moves to the page on the right.
-    const nextIndex = deltaX < 0 ? currentIndex - 1 : currentIndex + 1;
+    // Follow the visual direction of the swipe in the RTL navigation: a
+    // right-to-left swipe moves to the item rendered on the left.
+    const nextIndex = deltaX < 0 ? currentIndex + 1 : currentIndex - 1;
     const nextItem = NAV[nextIndex];
     if (!nextItem) return;
     nextItem.onClick?.();
