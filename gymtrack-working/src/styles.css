@@ -1181,35 +1181,29 @@ html:not(.night-mode) .nav-shell {
     ),
     var(--surface);
   border: 1px solid color-mix(in srgb, var(--border) 82%, white);
-  border-radius: 1.25rem;
+  border-radius: 1.1rem;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 86%),
-    var(--elevation-1),
-    0 18px 36px rgb(var(--shadow-color) / 14%),
-    0 4px 10px rgb(var(--shadow-color) / 10%);
+    inset 0 1px 0 rgb(255 255 255 / 72%),
+    0 3px 10px rgb(var(--shadow-color) / 7%);
   transition:
     border-color 160ms ease,
     box-shadow 160ms ease,
     transform 160ms ease;
-  will-change: transform;
 }
 
 .surface-card:hover {
   border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 88%),
-    0 8px 16px rgb(var(--shadow-color) / 12%),
-    0 22px 42px rgb(var(--shadow-color) / 18%);
+    inset 0 1px 0 rgb(255 255 255 / 76%),
+    0 5px 14px rgb(var(--shadow-color) / 10%);
 }
 
 @media (hover: none) {
   .surface-card:hover {
     border-color: color-mix(in srgb, var(--border) 82%, white);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 86%),
-      var(--elevation-1),
-      0 18px 36px rgb(var(--shadow-color) / 14%),
-      0 4px 10px rgb(var(--shadow-color) / 10%);
+      inset 0 1px 0 rgb(255 255 255 / 72%),
+      0 3px 10px rgb(var(--shadow-color) / 7%);
   }
 }
 
@@ -1226,8 +1220,8 @@ html:not(.night-mode) .nav-shell {
 .app-topbar,
 .nav-shell {
   box-shadow:
-    0 2px 8px rgb(var(--shadow-color) / 8%),
-    0 10px 24px rgb(var(--shadow-color) / 8%);
+    0 2px 8px rgb(var(--shadow-color) / 6%),
+    0 8px 18px rgb(var(--shadow-color) / 5%);
 }
 
 html.night-mode .auth-panel {
@@ -1391,8 +1385,26 @@ html.night-mode .auth-panel {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow:
-    0 8px 26px rgb(var(--shadow-color) / 5%),
+    0 6px 18px rgb(var(--shadow-color) / 4%),
     inset 0 1px 0 rgb(255 255 255 / 54%);
+}
+
+.app-main {
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+}
+
+.coach-workout-surface-slot {
+  display: block;
+  width: 100%;
+}
+
+.coach-workout-surface {
+  isolation: isolate;
+}
+
+.coach-workout-header input {
+  min-width: 0;
 }
 
 /* iOS can blur the whole app behind an open keyboard. Keep the page legible
@@ -1453,6 +1465,25 @@ html.night-mode .auth-panel {
   transform-origin: center bottom;
 }
 
+.overlay-panel {
+  border: 1px solid color-mix(in srgb, var(--border) 86%, white);
+  box-shadow:
+    0 12px 28px rgb(var(--shadow-color) / 12%),
+    0 28px 60px rgb(var(--shadow-color) / 10%);
+}
+
+.overlay-panel > .shadow-2xl:not(.auth-panel) {
+  box-shadow: none;
+}
+
+.overlay-panel > .rounded-3xl:not(.auth-panel) {
+  border-radius: var(--radius-xl);
+}
+
+.overlay-inline-panel {
+  min-width: 0;
+}
+
 .overlay-root[data-overlay-variant="bottom"] > [data-overlay-panel] {
   animation-name: overlay-bottom-in;
 }
@@ -1485,6 +1516,32 @@ html.night-mode .auth-panel {
 .app-nav-link[data-status="active"]::after {
   opacity: 1;
   transform: scaleX(1);
+}
+
+/* Keep controls from changing shape between routes that still use local
+   utility classes. The shared shell provides the only visual context. */
+.app-main input:not([type="hidden"]):not([type="file"]),
+.app-main textarea,
+.app-main select,
+.overlay-panel input:not([type="hidden"]):not([type="file"]),
+.overlay-panel textarea,
+.overlay-panel select {
+  border-radius: var(--radius-md);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.app-main input:not([type="hidden"]):not([type="file"]):focus,
+.app-main textarea:focus,
+.app-main select:focus,
+.overlay-panel input:not([type="hidden"]):not([type="file"]):focus,
+.overlay-panel textarea:focus,
+.overlay-panel select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
 }
 
 @media (hover: hover) {
@@ -4640,22 +4697,6 @@ html[data-keyboard-open] .nav-shell {
   padding: 1rem;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-}
-
-.workout-surface-close-bookmark {
-  z-index: 3;
-  top: 2rem;
-  left: 0;
-  height: 3rem;
-  width: 2.25rem;
-  border-right: 0;
-  border-radius: 0.75rem 0 0 0.75rem;
-  transform: translateX(-50%);
-}
-
-.workout-surface-close-bookmark:hover,
-.workout-surface-close-bookmark:focus-visible {
-  transform: translateX(-50%) translateY(-1px);
 }
 
 /* --- Glass panels --- */

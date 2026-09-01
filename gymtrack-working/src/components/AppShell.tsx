@@ -493,8 +493,8 @@ export function AppShell({
       ref={shellRef}
       className={
         authOnly
-          ? `fixed inset-0 z-[100] min-h-[100dvh] w-full overflow-auto bg-background text-foreground ${pageClassName}`
-          : `flex h-[100dvh] min-h-0 w-full flex-col overflow-hidden bg-background text-foreground ${pageClassName}`
+          ? `app-shell fixed inset-0 z-[100] min-h-[100dvh] w-full overflow-auto bg-background text-foreground ${pageClassName}`
+          : `app-shell flex h-[100dvh] min-h-0 w-full flex-col overflow-hidden bg-background text-foreground ${pageClassName}`
       }
       dir="rtl"
     >
@@ -652,7 +652,7 @@ export function AppShell({
       <main
         ref={mainRef}
         data-app-scroll-container="true"
-        className={`page-enter page-scroll-container mx-auto w-full max-w-3xl px-4 pb-8 sm:px-6 ${
+        className={`app-main page-enter page-scroll-container mx-auto w-full max-w-3xl px-4 pb-8 sm:px-6 ${
           compactHeader ? "flex flex-col pt-1.5" : "pt-5 sm:pt-7"
         }`}
         onTouchStart={handleMainTouchStart}

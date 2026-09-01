@@ -4487,7 +4487,7 @@ export function CoachDashboardPage({
                   : "max-w-2xl rounded-3xl shadow-2xl"
               } ${workspacePage || openEditor ? "" : "p-4 sm:p-6"}`}
             >
-              <div data-coach-workout-surface-slot="true" className="contents" />
+              <div data-coach-workout-surface-slot="true" className="coach-workout-surface-slot" />
               <div
                 className={`flex min-w-0 items-center justify-between gap-2 overflow-x-hidden border-b border-border/60 ${
                   trackingLanding ? "px-3 pb-2" : "px-4 pb-3 sm:px-6"
@@ -5573,9 +5573,9 @@ export function CoachDashboardPage({
                                         active={clientsOnly && workspacePage}
                                       >
                                         <div
-                                          className="relative min-h-[calc(100dvh-12rem)] w-full overflow-visible rounded-[1.75rem] border border-primary/35 bg-background p-4 shadow-sm ring-2 ring-primary/10 sm:p-6"
+                                          className="coach-workout-surface relative min-h-[calc(100dvh-12rem)] w-full overflow-hidden rounded-[1.5rem] border border-primary/25 bg-background p-4 shadow-sm ring-1 ring-primary/10 sm:p-6"
                                         >
-                                        <div className="flex items-center justify-between gap-2">
+                                          <div className="coach-workout-header flex items-start justify-between gap-3 border-b border-border/60 pb-3">
                                           <div className="min-w-0 flex-1">
                                             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
                                               בניית אימון
@@ -5610,13 +5610,14 @@ export function CoachDashboardPage({
                                             }}
                                             aria-label="סגירת בניית אימון"
                                             title="סגירת בניית אימון"
-                                            className="workout-surface-bookmark workout-surface-close-bookmark"
+                                            data-testid="button-close-coach-workout"
+                                            className="ui-icon-button grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border bg-surface text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                           >
                                             <X className="h-4 w-4" aria-hidden="true" />
                                           </button>
-                                        </div>
+                                          </div>
 
-                                         {dayItem.items?.length > 0 && (
+                                          {dayItem.items?.length > 0 && (
                                           <div className="space-y-1.5 pt-1">
                                             {dayItem.items.map((exItem: WorkoutItem) => {
                                               const exMeta = store.exercises.find(

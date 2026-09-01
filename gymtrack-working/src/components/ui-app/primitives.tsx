@@ -142,7 +142,7 @@ export function IconButton({
     <button
       type="button"
       className={cn(
-        "grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-all active:scale-95 cursor-pointer",
+        "ui-icon-button grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         styles[variant],
         className,
       )}

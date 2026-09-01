@@ -230,7 +230,7 @@ export function Overlay({
       <div className={`w-full ${className}`}>
         <div
           data-overlay-inline-panel="true"
-          className={`w-full overflow-x-hidden ${panelClassName}`}
+          className={`overlay-inline-panel w-full overflow-x-hidden ${panelClassName}`}
         >
           {children}
         </div>
@@ -268,7 +268,7 @@ export function Overlay({
           maxHeight: panelMaxHeight,
           ...(isBottom && keyboardOffset > 0 ? { marginBottom: `${keyboardOffset}px` } : {}),
         }}
-        className={`w-full touch-pan-y ${
+        className={`overlay-panel w-full touch-pan-y ${
           isFull
             ? "h-full max-h-full max-w-none rounded-none"
             : isBottom
