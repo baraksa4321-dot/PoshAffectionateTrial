@@ -304,6 +304,7 @@ function ExerciseDetail() {
   );
   const [alternativeQuery, setAlternativeQuery] = useState("");
   const [videoUploadError, setVideoUploadError] = useState("");
+  const [saveError, setSaveError] = useState("");
 
   // Scroll reset on navigation is handled centrally in __root.tsx (ScrollToTop
   // subscribes to router.subscribe('onResolved')); no per-page effect needed.
@@ -409,11 +410,19 @@ function ExerciseDetail() {
 
   const onSave = () => {
     if (!canManageLibrary) return;
+    setSaveError("");
     const isOther = draft.muscleGroup === "אחר" || (draft.muscleGroups ?? []).includes("אחר");
     const customValue = isOther ? customMuscle.trim() : undefined;
     const finalMuscleGroup = isOther && customValue ? customValue : draft.muscleGroup;
 
-    if (!draft.name.trim() || !finalMuscleGroup) return;
+    if (!draft.name.trim()) {
+      setSaveError("יש להזין שם תרגיל לפני השמירה.");
+      return;
+    }
+    if (!finalMuscleGroup) {
+      setSaveError("יש לבחור קבוצת שרירים לפני השמירה.");
+      return;
+    }
     saveExercise({
       ...draft,
       muscleGroup: finalMuscleGroup,
@@ -787,6 +796,12 @@ function ExerciseDetail() {
               placeholder="הערות אישיות לגבי התרגיל..."
             />
           </div>
+
+          {saveError ? (
+            <p className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs font-semibold text-destructive">
+              {saveError}
+            </p>
+          ) : null}
 
           <div className="space-y-3 pt-2">
             <PrimaryButton onClick={onSave} leading={<Save className="h-4 w-4" />}>

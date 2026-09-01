@@ -1,4 +1,4 @@
-import { CABLE_GRIPS, type Exercise } from "./gym-types";
+import { CABLE_GRIPS, EQUIPMENT, type Exercise } from "./gym-types";
 
 type SeedNameMigration = { from: string; to: string };
 
@@ -177,7 +177,11 @@ export function exerciseFamilyKey(exercise: Pick<Exercise, "name" | "nameEn">): 
 export function exerciseEquipmentOptions(exercise: Pick<Exercise, "equipment" | "equipmentOptions">) {
   return Array.from(
     new Set(
-      (exercise.equipmentOptions?.length ? exercise.equipmentOptions : [exercise.equipment])
+      [
+        ...(exercise.equipmentOptions?.length ? exercise.equipmentOptions : []),
+        exercise.equipment,
+        ...EQUIPMENT,
+      ]
         .map((option) => option.trim())
         .filter(Boolean),
     ),

@@ -1507,10 +1507,11 @@ export function CoachDashboardPage({
     exerciseId: string,
     equipmentOverride?: string,
     cableGripOverride?: string,
+    exerciseOverride?: Exercise,
   ) => {
-    const exercise = uniqueCanonicalExercises(store.exercises).find(
-      (candidate) => candidate.id === exerciseId,
-    );
+    const exercise =
+      exerciseOverride ??
+      uniqueCanonicalExercises(store.exercises).find((candidate) => candidate.id === exerciseId);
     const options = exercise ? exerciseEquipmentOptions(exercise) : [];
     const nextEquipment =
       equipmentOverride && options.includes(equipmentOverride)
@@ -3920,7 +3921,7 @@ export function CoachDashboardPage({
       notes: newExerciseDraft.notes.trim(),
     };
     saveExercise(exercise);
-    selectExerciseForBuilder(exercise.id);
+    selectExerciseForBuilder(exercise.id, undefined, undefined, exercise);
     setExerciseQuery("");
     setShowCreateExercise(false);
     setExerciseBuilderNotice(`התרגיל "${exercise.name}" נוסף למאגר ונבחר לאימון.`);
