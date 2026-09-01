@@ -346,9 +346,9 @@ export function AppShell({
     );
     if (currentIndex < 0) return;
 
-    // Follow the visual direction of the swipe in the RTL navigation: a
-    // right-to-left swipe moves to the item rendered on the left.
-    const nextIndex = deltaX < 0 ? currentIndex + 1 : currentIndex - 1;
+    // Keep the requested navigation direction: a left-to-right swipe moves
+    // forward through the navigation items, including nested coach routes.
+    const nextIndex = deltaX > 0 ? currentIndex + 1 : currentIndex - 1;
     const nextItem = NAV[nextIndex];
     if (!nextItem) return;
     nextItem.onClick?.();

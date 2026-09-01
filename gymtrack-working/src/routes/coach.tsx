@@ -1542,7 +1542,7 @@ export function CoachDashboardPage({
     } catch {
       context = null;
     }
-    if (context?.clientId && context.clientId !== authUser?.id) {
+    if (context?.clientId) {
       setSelectedClientId(context.clientId);
       setShowClientWorkspace(true);
     }
@@ -2544,6 +2544,16 @@ export function CoachDashboardPage({
     setShowExerciseForm(true);
     setEditingItemId(null);
     selectExerciseForBuilder(pending.exerciseId);
+    // The new exercise is now selected for set/reps configuration. Do not
+    // submit it here: the user still needs to choose the workout settings.
+    setPendingCreatedExercise(null);
+    if (Number.isFinite(pending.context.scrollY)) {
+      window.requestAnimationFrame(() => {
+        const appScrollContainer = getAppScrollContainer();
+        if (appScrollContainer) appScrollContainer.scrollTop = pending.context.scrollY;
+        else window.scrollTo(0, pending.context.scrollY);
+      });
+    }
   }, [clientDetails, pendingCreatedExercise, selectedClientId]);
 
   useEffect(() => {
@@ -3381,28 +3391,6 @@ export function CoachDashboardPage({
     setBodyweightAlternativeId("");
     pullClientDataForCoach(selectedClientId).then(applyClientDetails);
   };
-
-  const handleAddExerciseToDayRef = useRef<typeof handleAddExerciseToDay>(handleAddExerciseToDay);
-  handleAddExerciseToDayRef.current = handleAddExerciseToDay;
-
-  useEffect(() => {
-    const pending = pendingCreatedExercise;
-    if (!pending || !clientDetails || !selectedClientId || !editingDayId) return;
-    if (pending.context.clientId && selectedClientId !== pending.context.clientId) return;
-    if (editingDayId !== pending.context.dayId || selectedExId !== pending.exerciseId) return;
-
-    setPendingCreatedExercise(null);
-    void handleAddExerciseToDayRef.current({
-      preventDefault: () => undefined,
-    } as React.FormEvent);
-    if (Number.isFinite(pending.context.scrollY)) {
-      window.requestAnimationFrame(() => {
-        const appScrollContainer = getAppScrollContainer();
-        if (appScrollContainer) appScrollContainer.scrollTop = pending.context.scrollY;
-        else window.scrollTo(0, pending.context.scrollY);
-      });
-    }
-  }, [clientDetails, editingDayId, pendingCreatedExercise, selectedClientId, selectedExId]);
 
   // Delete exercise from day
   const handleRemoveExerciseFromDay = async (dayId: string, itemId: string) => {
