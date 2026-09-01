@@ -181,6 +181,12 @@ const migration38 = readFileSync(
   ),
   "utf8",
 );
+const migration40 = readFileSync(
+  fileURLToPath(
+    new URL("../../supabase/migrations/40_owner_role_and_coach_assignments.sql", import.meta.url),
+  ),
+  "utf8",
+);
 const migration11 = readFileSync(
   fileURLToPath(
     new URL("../../supabase/migrations/11_role_and_rpc_hardening.sql", import.meta.url),
@@ -305,6 +311,25 @@ describe("role and assignment SQL security contract", () => {
     expect(body).toContain("SET role = new_role");
     expect(body).toContain("SECURITY DEFINER");
     expect(body).toContain("SET search_path = public, pg_temp");
+  });
+
+  test("latest role RPC keeps self-protection while allowing another Owner to change", () => {
+    const body = normalizedFunctionBody(migration40, "change_user_role");
+
+    expect(body).toContain("IF NOT public.is_owner()");
+    expect(body).toContain("target_user_id = auth.uid()");
+    expect(body).toContain("new_role NOT IN ('owner', 'coach', 'client')");
+    expect(body).toContain("SET role = new_role");
+    expect(body).not.toContain("role = 'owner' THEN");
+  });
+
+  test("latest assignment RPC supports approved clients and coaches", () => {
+    const body = normalizedFunctionBody(migration40, "assign_client_to_coach");
+
+    expect(body).toContain("target_role NOT IN ('client', 'coach')");
+    expect(body).toContain("target_role = 'client' AND NOT EXISTS");
+    expect(body).toContain("A user cannot be assigned to themselves as a coach.");
+    expect(body).toContain("SET coach_id = new_coach_id");
   });
 
   test("assignment and coach-link RPCs validate roles, approval, and ownership", () => {

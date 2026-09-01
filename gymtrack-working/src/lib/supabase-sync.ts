@@ -1411,8 +1411,8 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
 
     const { data: profile, error: profileError } = profileResult;
     if (profileError) throw new Error(`Client profile pull failed: ${profileError.message}`);
-    if (!profile || profile.role !== "client") {
-      throw new Error("Client data pull failed: the client is no longer available to this coach");
+    if (!profile || !["client", "coach", "owner"].includes(profile.role)) {
+      throw new Error("User data pull failed: the selected user is no longer available");
     }
     const { data: dbCustomExercises, error: customExercisesError } = customExercisesResult;
     if (customExercisesError) {

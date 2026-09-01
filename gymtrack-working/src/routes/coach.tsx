@@ -2640,7 +2640,7 @@ export function CoachDashboardPage({
       ...current,
       [profile.id]: profile.coach_id ?? "",
     }));
-    if (profile.role === "client") {
+    if (profile.role === "client" || profile.role === "coach" || profile.role === "owner") {
       const details = await pullClientDataForCoach(profile.id);
       if (!details.error) setSelectedOwnerProfileDetails(details);
     }
@@ -2670,11 +2670,14 @@ export function CoachDashboardPage({
   const handleOwnerAssignClient = async (profile: ProfileRow) => {
     const newCoachId = assignmentCoachByUser[profile.id] || "";
     const isCurrentOwnerProfile = profile.id === authUser?.id && profile.role === "owner";
+    const canAssignCoach =
+      profile.role === "coach" ||
+      (profile.role === "client" && profile.approval_status === "approved");
     if (
       !isCurrentOwnerProfile &&
-      (profile.role !== "client" || profile.approval_status !== "approved" || !newCoachId)
+      (!canAssignCoach || !newCoachId)
     ) {
-      setManagementError("יש לבחור מאמן למתאמן מאושר לפני השמירה.");
+      setManagementError("יש לבחור מאמן למתאמן או למאמן לפני השמירה.");
       return;
     }
     setAssignmentUserId(profile.id);
@@ -2704,7 +2707,11 @@ export function CoachDashboardPage({
       await Promise.all([loadAllProfilesForOwner(), loadCoachClients()]);
       const refreshedDetails = await pullClientDataForCoach(profile.id);
       if (!refreshedDetails.error) setSelectedOwnerProfileDetails(refreshedDetails);
-      setRoleChangeNotice("שיוך המתאמן למאמן עודכן בהצלחה.");
+      setRoleChangeNotice(
+        profile.role === "coach"
+          ? "שיוך המאמן למאמן מלווה עודכן בהצלחה."
+          : "שיוך המתאמן למאמן עודכן בהצלחה.",
+      );
     } catch (err: unknown) {
       setManagementError(`עדכון שיוך המתאמן נכשל: ${errorMessage(err, "שגיאה בעדכון השיוך")}`);
     } finally {
@@ -3645,14 +3652,33 @@ export function CoachDashboardPage({
           },
         }
       : null;
-  const selectableClients = selfClientRow ? [selfClientRow, ...clients] : clients;
+  const ownerWorkspaceRows: CoachClientRow[] = isOwner
+    ? allProfiles
+        .filter(
+          (profile) =>
+            profile.id !== authUser?.id && profile.profile_exists !== false && Boolean(profile.role),
+        )
+        .map((profile) => ({
+          id: `owner-user-${profile.id}`,
+          client_id: profile.id,
+          created_at: profile.created_at ?? "",
+          profiles: {
+            email: profile.email ?? null,
+            full_name: profile.full_name ?? null,
+            weight_kg: profile.weight_kg ?? null,
+          },
+        }))
+    : [];
+  const selectableClients = isOwner
+    ? [...(selfClientRow ? [selfClientRow] : []), ...ownerWorkspaceRows]
+    : selfClientRow
+      ? [selfClientRow, ...clients]
+      : clients;
   const filteredClients = selectableClients.filter((c) => {
     const emailStr = (c.profiles?.email || "").toLowerCase();
     const nameStr = profileDisplayName(c.profiles).toLowerCase();
     const q = clientSearch.toLowerCase();
-    return !q
-      ? c.client_id === authUser?.id
-      : emailStr.includes(q) || nameStr.includes(q);
+    return !q ? isOwner || c.client_id === authUser?.id : emailStr.includes(q) || nameStr.includes(q);
   });
   const clientSearchQuery = clientSearch.trim().toLocaleLowerCase();
   const selectedClientInfo = selectableClients.find((c) => c.client_id === selectedClientId);
@@ -4622,6 +4648,7 @@ export function CoachDashboardPage({
                         ) : null}
                          {((selectedProfile.role === "client" &&
                            selectedProfile.approval_status === "approved") ||
+                           selectedProfile.role === "coach" ||
                            (selectedProfile.id === authUser?.id && selectedProfile.role === "owner")) ? (
                           <div className="mt-3 flex gap-2">
                             <select
@@ -4643,8 +4670,10 @@ export function CoachDashboardPage({
                               {allProfiles
                                 .filter(
                                   (candidate) =>
-                                    candidate.role === "coach" ||
-                                    (candidate.id === authUser?.id && candidate.role === "owner"),
+                                    candidate.id !== selectedProfile.id &&
+                                    (candidate.role === "coach" ||
+                                      (candidate.id === authUser?.id &&
+                                        candidate.role === "owner")),
                                 )
                                 .map((coach) => (
                                   <option key={coach.id} value={coach.id}>
@@ -4820,7 +4849,8 @@ export function CoachDashboardPage({
                     שלב 1
                   </p>
                   <h3 className="mt-1 flex items-center gap-1.5 font-bold text-sm text-ink">
-                    <Users className="h-4 w-4 text-primary" /> בחירת מתאמן
+                    <Users className="h-4 w-4 text-primary" />{" "}
+                    {isOwner ? "בחירת משתמש" : "בחירת מתאמן"}
                   </h3>
                 </div>
                 <span className="text-[11px] text-muted-foreground">תוכניות ותפריטים בלבד</span>
