@@ -232,6 +232,7 @@ type ProfileRow = {
   created_at?: string | null;
   approval_status?: "pending" | "approved" | "rejected" | null;
   coach_id?: string | null;
+  coach_ids?: string[];
   show_calories?: boolean | null;
   age?: number | null;
   height_cm?: number | null;
@@ -1787,19 +1788,40 @@ export function CoachDashboardPage({
   const loadAllProfilesForOwner = useCallback(async (): Promise<boolean> => {
     if (!isOwner) return false;
     setManagementError("");
-    const [{ data: profileData, error: profileError }, { data: authData, error: authError }] =
-      await Promise.all([
-        supabase.from("profiles").select("*"),
-        supabase.rpc("list_owner_auth_users"),
-      ]);
+    const [
+      { data: profileData, error: profileError },
+      { data: authData, error: authError },
+      { data: coachLinkData, error: coachLinkError },
+    ] = await Promise.all([
+      supabase.from("profiles").select("*"),
+      supabase.rpc("list_owner_auth_users"),
+      supabase.from("coach_clients").select("coach_id, client_id"),
+    ]);
     if (profileError) {
       setManagementError(`טעינת משתמשי המערכת נכשלה: ${profileError.message}`);
       return false;
     }
+    const coachIdsByClient = new Map<string, string[]>();
+    if (!coachLinkError) {
+      for (const row of (coachLinkData ?? []) as Array<{
+        coach_id: string;
+        client_id: string;
+      }>) {
+        const coachIds = coachIdsByClient.get(row.client_id) ?? [];
+        coachIds.push(row.coach_id);
+        coachIdsByClient.set(row.client_id, coachIds);
+      }
+    }
     const profileRows = (profileData ?? []).map((profile) => ({
       ...(profile as unknown as ProfileRow),
       profile_exists: true,
+      coach_ids: coachIdsByClient.get(profile.id) ?? [],
     }));
+    if (coachLinkError) {
+      setManagementError(
+        `הפרופילים נטענו, אך לא ניתן לטעון את שיוכי המאמנים: ${coachLinkError.message}`,
+      );
+    }
     if (authError) {
       setAllProfiles(profileRows);
       setManagementError(
@@ -2636,9 +2658,14 @@ export function CoachDashboardPage({
   const openOwnerProfile = async (profile: ProfileRow) => {
     setSelectedOwnerProfileId(profile.id);
     setSelectedOwnerProfileDetails(null);
+    const additionalCoachId =
+      profile.coach_ids?.find((coachId) => {
+        if (coachId === profile.id) return false;
+        return allProfiles.find((candidate) => candidate.id === coachId)?.role !== "owner";
+      }) ?? (profile.coach_id !== profile.id ? profile.coach_id : "");
     setAssignmentCoachByUser((current) => ({
       ...current,
-      [profile.id]: profile.coach_id ?? "",
+      [profile.id]: additionalCoachId ?? "",
     }));
     if (profile.role === "client" || profile.role === "coach" || profile.role === "owner") {
       const details = await pullClientDataForCoach(profile.id);
@@ -4496,9 +4523,15 @@ export function CoachDashboardPage({
                     if (!selectedProfile) return null;
                     const measurements = selectedOwnerProfileDetails?.bodyMeasurements ?? [];
                     const latestMeasurement = measurements[0];
-                    const assignedCoach = allProfiles.find(
-                      (profile) => profile.id === selectedProfile.coach_id,
+                    const assignedCoachIds = Array.from(
+                      new Set([
+                        ...(selectedProfile.coach_ids ?? []),
+                        ...(selectedProfile.coach_id ? [selectedProfile.coach_id] : []),
+                      ]),
                     );
+                    const assignedCoaches = assignedCoachIds
+                      .map((coachId) => allProfiles.find((profile) => profile.id === coachId))
+                      .filter((profile): profile is ProfileRow => Boolean(profile));
                     return (
                       <div className="rounded-2xl border border-purple-200 bg-white p-3 shadow-sm">
                         <div className="flex items-start justify-between gap-3">
@@ -4641,9 +4674,20 @@ export function CoachDashboardPage({
                             </button>
                           </div>
                         ) : null}
-                        {assignedCoach ? (
+                        {assignedCoaches.length > 0 ? (
                           <p className="mt-2 text-[11px] text-muted-foreground">
-                            מאמן משויך: <strong>{profileDisplayName(assignedCoach)}</strong>
+                            מאמנים משויכים:{" "}
+                            <strong>
+                              {assignedCoaches
+                                .map((coach) =>
+                                  coach.id === selectedProfile.id &&
+                                  (selectedProfile.role === "coach" ||
+                                    selectedProfile.role === "owner")
+                                    ? `${profileDisplayName(coach)} (עצמי)`
+                                    : profileDisplayName(coach),
+                                )
+                                .join(" · ")}
+                            </strong>
                           </p>
                         ) : null}
                          {((selectedProfile.role === "client" &&
@@ -4652,11 +4696,7 @@ export function CoachDashboardPage({
                            (selectedProfile.id === authUser?.id && selectedProfile.role === "owner")) ? (
                           <div className="mt-3 flex gap-2">
                             <select
-                              value={
-                                assignmentCoachByUser[selectedProfile.id] ??
-                                selectedProfile.coach_id ??
-                                ""
-                              }
+                                value={assignmentCoachByUser[selectedProfile.id] ?? ""}
                               onChange={(event) =>
                                 setAssignmentCoachByUser((current) => ({
                                   ...current,
@@ -4671,9 +4711,7 @@ export function CoachDashboardPage({
                                 .filter(
                                   (candidate) =>
                                     candidate.id !== selectedProfile.id &&
-                                    (candidate.role === "coach" ||
-                                      (candidate.id === authUser?.id &&
-                                        candidate.role === "owner")),
+                                    candidate.role === "coach" || candidate.role === "owner",
                                 )
                                 .map((coach) => (
                                   <option key={coach.id} value={coach.id}>

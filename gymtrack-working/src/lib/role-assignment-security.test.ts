@@ -187,6 +187,12 @@ const migration40 = readFileSync(
   ),
   "utf8",
 );
+const migration41 = readFileSync(
+  fileURLToPath(
+    new URL("../../supabase/migrations/41_owner_is_coach_of_everyone.sql", import.meta.url),
+  ),
+  "utf8",
+);
 const migration11 = readFileSync(
   fileURLToPath(
     new URL("../../supabase/migrations/11_role_and_rpc_hardening.sql", import.meta.url),
@@ -330,6 +336,19 @@ describe("role and assignment SQL security contract", () => {
     expect(body).toContain("target_role = 'client' AND NOT EXISTS");
     expect(body).toContain("A user cannot be assigned to themselves as a coach.");
     expect(body).toContain("SET coach_id = new_coach_id");
+  });
+
+  test("staff self-coaching and Owner-wide coaching remain enforced", () => {
+    expect(migration41).toContain("CREATE TRIGGER tr_enforce_staff_self_coach");
+    expect(migration41).toContain("CREATE TRIGGER tr_ensure_owner_coach_links");
+    expect(migration41).toContain("CROSS JOIN public.profiles profile");
+    expect(migration41).toContain(
+      "The Owner's automatic link is additional and must survive reassignment.",
+    );
+    expect(migration41).toContain(
+      "WHEN target_role = 'coach' THEN target_client_id",
+    );
+    expect(migration41).toContain("SET coach_id = auth.uid()");
   });
 
   test("assignment and coach-link RPCs validate roles, approval, and ownership", () => {
