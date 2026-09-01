@@ -1070,12 +1070,22 @@ html:not(.night-mode) .nav-shell {
 }
 
 .dashboard-editorial-shell .home-feature-grid {
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55rem;
 }
 
+.dashboard-editorial-shell .home-feature-item {
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+}
+
+.dashboard-editorial-shell .home-feature-item > .ink-card,
+.dashboard-editorial-shell .home-calorie-card {
+  height: 100%;
+  min-height: 0;
+}
+
 .dashboard-editorial-shell .home-feature-item > .ink-card {
-  min-height: 11.5rem;
   border-radius: 0.9rem;
   background: linear-gradient(
     135deg,
@@ -1097,9 +1107,9 @@ html:not(.night-mode) .nav-shell {
 }
 
 .dashboard-editorial-shell .home-calorie-card {
-  min-height: 5.8rem;
   border-radius: 0.9rem;
-  background: color-mix(in srgb, var(--sage-soft) 74%, var(--surface));
+  background: color-mix(in srgb, var(--surface-2) 72%, var(--surface));
+  border-color: color-mix(in srgb, var(--primary) 18%, var(--border));
 }
 
 .dashboard-editorial-shell .home-feature-section + .surface-card {
