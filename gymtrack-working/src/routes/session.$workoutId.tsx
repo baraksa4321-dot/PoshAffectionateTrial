@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { exerciseDisplayName } from "@/lib/exercise-library";
+import { canonicalizeExerciseRecords, exerciseDisplayName } from "@/lib/exercise-library";
 import { Stepper } from "@/components/Stepper";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
 import { Overlay } from "@/components/ui-app/Overlay";
@@ -282,18 +282,27 @@ function Session() {
         if (Array.isArray(parsed) && parsed.length === workout.items.length) {
           return parsed.map((entry, index) => {
             const item = workout.items[index];
-            const source = findExerciseForItem(item, [...exercises, ...BODYWEIGHT_EXERCISES]);
+            const source = findExerciseForItem(
+              item,
+              canonicalizeExerciseRecords([...exercises, ...BODYWEIGHT_EXERCISES]),
+            );
             const savedName =
               typeof entry?.exerciseName === "string" ? entry.exerciseName.trim() : "";
             return {
               ...entry,
               exerciseName:
-                source?.name ||
+                (source ? exerciseDisplayName(source) : "") ||
                 (!isExercisePlaceholder(item?.exerciseName) && item?.exerciseName
                   ? item.exerciseName
                   : "") ||
                 (!isExercisePlaceholder(savedName) ? savedName : "") ||
                 "תרגיל",
+              ...(entry?.equipment || item?.equipment || source?.equipment
+                ? { equipment: entry?.equipment || item?.equipment || source?.equipment }
+                : {}),
+              ...(entry?.cableGrip || item?.cableGrip
+                ? { cableGrip: entry?.cableGrip || item?.cableGrip }
+                : {}),
             };
           });
         }
@@ -303,7 +312,10 @@ function Session() {
     }
 
     return workout.items.map((item) => {
-      const ex = findExerciseForItem(item, [...exercises, ...BODYWEIGHT_EXERCISES]);
+      const ex = findExerciseForItem(
+        item,
+        canonicalizeExerciseRecords([...exercises, ...BODYWEIGHT_EXERCISES]),
+      );
       const last = lastPerformance(history, item.exerciseId);
       const completedSession = getCurrentWeekWorkoutSession(history, workoutId);
       const completedEntry = completedSession?.entries.find(
@@ -381,7 +393,8 @@ function Session() {
           : !isExercisePlaceholder(item.exerciseName)
             ? item.exerciseName
             : "תרגיל",
-        equipment: ex?.equipment,
+        equipment: item.equipment || ex?.equipment,
+        ...(item.cableGrip ? { cableGrip: item.cableGrip } : {}),
         notes: item.notes,
         targetSets: item.sets,
         targetReps,
@@ -576,7 +589,10 @@ function Session() {
   }, [entries, nextSmartTimerPosition, rest]);
 
   const labels = useMemo(() => supersetLabels(workout?.items ?? []), [workout?.items]);
-  const exerciseCatalog = useMemo(() => [...exercises, ...BODYWEIGHT_EXERCISES], [exercises]);
+  const exerciseCatalog = useMemo(
+    () => canonicalizeExerciseRecords([...exercises, ...BODYWEIGHT_EXERCISES]),
+    [exercises],
+  );
 
   const currentItem = replacingIndex !== null ? workout?.items[replacingIndex] : null;
   const approvedIds = currentItem?.approvedAlternatives;
@@ -702,8 +718,9 @@ function Session() {
           ? {
               ...e,
               exerciseId: newEx.id,
-              exerciseName: newEx.name,
+              exerciseName: exerciseDisplayName(newEx),
               equipment: newEx.equipment,
+              cableGrip: undefined,
               replacedExerciseId: e.replacedExerciseId ?? e.exerciseId,
               replacedExerciseName: e.replacedExerciseName ?? e.exerciseName,
             }
@@ -900,8 +917,9 @@ function Session() {
         return {
           index,
           exerciseId: item.exerciseId,
-          exerciseName: source?.name ?? item.exerciseName ?? "תרגיל",
-          equipment: source?.equipment,
+          exerciseName: source ? exerciseDisplayName(source) : item.exerciseName ?? "תרגיל",
+          equipment: item.equipment || source?.equipment,
+          ...(item.cableGrip ? { cableGrip: item.cableGrip } : {}),
         };
       });
       setEntries((current) =>
@@ -913,6 +931,7 @@ function Session() {
             exerciseId: regular.exerciseId,
             exerciseName: regular.exerciseName,
             ...(regular.equipment ? { equipment: regular.equipment } : {}),
+            ...(regular.cableGrip ? { cableGrip: regular.cableGrip } : {}),
             sets: entry.sets.map((set, setIndex) => ({
               ...set,
               weight: regularWorkout.items[index]?.workingSets?.[setIndex]?.weight ?? set.weight,
@@ -938,6 +957,7 @@ function Session() {
           exerciseId: bodyExercise.id,
           exerciseName: bodyExercise.name,
           ...(bodyExercise.equipment ? { equipment: bodyExercise.equipment } : {}),
+          cableGrip: undefined,
           sets: entry.sets.map((set) => ({ ...set, weight: 0 })),
         };
       }),
@@ -1132,6 +1152,12 @@ function Session() {
                     </button>
                   </div>
                 </div>
+                {entry.equipment ? (
+                  <p className="mt-1 text-[11px] font-medium text-muted-foreground">
+                    {entry.equipment}
+                    {entry.cableGrip ? ` · מאחז: ${entry.cableGrip}` : ""}
+                  </p>
+                ) : null}
 
                 <div className="flex items-center gap-1.5">
                   <button

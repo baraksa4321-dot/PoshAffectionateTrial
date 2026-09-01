@@ -55,7 +55,12 @@ import {
   useGym,
 } from "@/lib/gym-store";
 import { BODYWEIGHT_EXERCISES } from "@/lib/bodyweight-exercises";
-import { exerciseDisplayName } from "@/lib/exercise-library";
+import {
+  exerciseDisplayName,
+  exerciseEquipmentOptions,
+  exerciseGripOptions,
+  uniqueCanonicalExercises,
+} from "@/lib/exercise-library";
 import { genderText } from "@/lib/gender-copy";
 import {
   EQUIPMENT,
@@ -132,7 +137,7 @@ function DayBuilder() {
   const navigate = useNavigate();
   const { programs, workouts, exercises, userProfile } = useGym();
   const gender = userProfile?.gender;
-  const exerciseCatalog = [...exercises, ...BODYWEIGHT_EXERCISES];
+  const exerciseCatalog = uniqueCanonicalExercises([...exercises, ...BODYWEIGHT_EXERCISES]);
   const canManageProgram = userProfile?.role === "coach" || userProfile?.role === "owner";
   const program = programs.find((item) => item.id === programId);
   const existing = workouts.find((workout) => workout.id === dayId);
@@ -233,18 +238,25 @@ function DayBuilder() {
     navigate({ to: "/programs/$programId", params: { programId: program.id } });
   };
 
-  const pickerExercises = exercises.filter(
+  const pickerExercises = exerciseCatalog.filter(
     (exercise) =>
       (pickerGroup === "הכל" || exercise.muscleGroup === pickerGroup) &&
-      (pickerEquipment === "הכל" || exercise.equipment === pickerEquipment) &&
-      (exercise.name.toLowerCase().includes(pickerQuery.toLowerCase()) ||
-        exercise.equipment.toLowerCase().includes(pickerQuery.toLowerCase()) ||
+      (pickerEquipment === "הכל" || exerciseEquipmentOptions(exercise).includes(pickerEquipment)) &&
+      (exerciseDisplayName(exercise).toLowerCase().includes(pickerQuery.toLowerCase()) ||
+        exerciseEquipmentOptions(exercise).some((equipment) =>
+          equipment.toLowerCase().includes(pickerQuery.toLowerCase()),
+        ) ||
         exercise.muscleGroup.toLowerCase().includes(pickerQuery.toLowerCase())),
   );
 
   const addExercise = (exerciseId: string) => {
     if (!canManageProgram) return;
-    setDraft((current) => ({ ...current, items: [...current.items, emptyItem(exerciseId)] }));
+    const exercise = exerciseCatalog.find((candidate) => candidate.id === exerciseId);
+    const equipment = exercise ? exerciseEquipmentOptions(exercise)[0] : undefined;
+    setDraft((current) => ({
+      ...current,
+      items: [...current.items, emptyItem(exerciseId, equipment)],
+    }));
     setPicker(false);
     setPickerQuery("");
   };
@@ -254,6 +266,7 @@ function DayBuilder() {
     if (!name) return;
     const exercise = emptyExercise();
     exercise.name = name;
+    exercise.equipmentOptions = [exercise.equipment];
     saveExercise(exercise);
     addExercise(exercise.id);
     setNewExerciseName("");
@@ -589,6 +602,9 @@ function SortableItem({
   });
   const [advanced, setAdvanced] = useState(false);
   const name = exercise?.name ?? item.exerciseName ?? "תרגיל שהוסר";
+  const availableEquipment = exercise ? exerciseEquipmentOptions(exercise) : [];
+  const selectedEquipment = item.equipment || availableEquipment[0] || exercise?.equipment || "";
+  const availableCableGrips = exercise ? exerciseGripOptions(exercise) : [];
   const isRange = item.repType === "range";
   const warmups = item.warmups ?? [];
   const fallbackWorkingSets: WorkingSet[] = Array.from(
@@ -676,7 +692,8 @@ function SortableItem({
           </div>
           {exercise ? (
             <p className="mt-0.5 text-[12px] text-muted-foreground">
-              {exercise.equipment}
+              {selectedEquipment}
+              {item.cableGrip ? ` · ${item.cableGrip}` : ""}
               {exercise.muscleGroup ? ` · ${exercise.muscleGroup}` : ""}
             </p>
           ) : null}
@@ -708,6 +725,47 @@ function SortableItem({
           )}
           {supersetActive ? "בטל סופר-סט עם הקודם" : "חבר בסופר-סט לקודם"}
         </button>
+      ) : null}
+
+      {exercise ? (
+        <div className="mt-4 rounded-2xl border border-primary/15 bg-primary/5 p-3">
+          <label className="block text-[10px] font-bold text-primary">
+            מכשיר / ציוד
+            <select
+              value={selectedEquipment}
+              onChange={(event) =>
+                onPatch(item.id, {
+                  equipment: event.target.value,
+                  cableGrip: undefined,
+                })
+              }
+              className="mt-1.5 h-10 w-full rounded-xl border border-primary/20 bg-background px-3 text-xs font-bold text-ink outline-none focus:border-primary"
+            >
+              {availableEquipment.map((equipment) => (
+                <option key={equipment} value={equipment}>
+                  {equipment}
+                </option>
+              ))}
+            </select>
+          </label>
+          {selectedEquipment === "פולי / כבלים" ? (
+            <label className="mt-2 block text-[10px] font-bold text-primary">
+              מאחז
+              <select
+                value={item.cableGrip || ""}
+                onChange={(event) => onPatch(item.id, { cableGrip: event.target.value || undefined })}
+                className="mt-1.5 h-10 w-full rounded-xl border border-primary/20 bg-background px-3 text-xs font-bold text-ink outline-none focus:border-primary"
+              >
+                <option value="">בחירת מאחז...</option>
+                {availableCableGrips.map((grip) => (
+                  <option key={grip} value={grip}>
+                    {grip}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="mt-4 grid grid-cols-2 gap-3">

@@ -21,7 +21,14 @@ import {
   saveExercise,
   useGym,
 } from "@/lib/gym-store";
-import { EQUIPMENT, EXERCISE_CATEGORIES, MUSCLE_GROUPS, type Exercise } from "@/lib/gym-types";
+import {
+  CABLE_GRIPS,
+  EQUIPMENT,
+  EXERCISE_CATEGORIES,
+  MUSCLE_GROUPS,
+  type Exercise,
+} from "@/lib/gym-types";
+import { exerciseDisplayName, exerciseEquipmentOptions } from "@/lib/exercise-library";
 import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/exercises/$exerciseId")({
@@ -285,6 +292,7 @@ function ExerciseDetail() {
   const equipmentOptions = Array.from(
     new Set([...EQUIPMENT, ...exercises.map((exercise) => exercise.equipment)].filter(Boolean)),
   );
+  const selectedEquipmentOptions = exerciseEquipmentOptions(draft);
   const categoryOptions = Array.from(
     new Set(
       [...EXERCISE_CATEGORIES, ...exercises.map((exercise) => exercise.category)].filter(
@@ -355,10 +363,10 @@ function ExerciseDetail() {
   return (
     <AppShell
       kicker={isNew ? "תרגיל חדש" : editing ? "עריכה" : "ספריית תרגילים"}
-      title={isNew ? "תרגיל חדש" : editing ? ex.name || "עריכת תרגיל" : ex.name}
+      title={isNew ? "תרגיל חדש" : exerciseDisplayName(ex)}
       subtitle={
         !editing && !isNew
-          ? `${ex.customMuscleGroup || ex.muscleGroup} · ${ex.equipment}`
+          ? `${ex.customMuscleGroup || ex.muscleGroup} · ${exerciseEquipmentOptions(ex).join(" · ")}`
           : undefined
       }
       action={
@@ -420,12 +428,48 @@ function ExerciseDetail() {
               }
             />
             <SearchOptionField
-              label="ציוד"
+              label="ציוד ברירת מחדל"
               value={draft.equipment}
               options={equipmentOptions}
               placeholder="חיפוש או כתיבת ציוד חדש..."
-              onChange={(value) => set({ equipment: value })}
+              onChange={(value) =>
+                set({
+                  equipment: value,
+                  equipmentOptions: Array.from(
+                    new Set([...(draft.equipmentOptions ?? []), value].filter(Boolean)),
+                  ),
+                })
+              }
             />
+            <SearchMultiOptionField
+              label="ציוד אפשרי בעת בניית אימון"
+              selected={selectedEquipmentOptions}
+              options={equipmentOptions}
+              placeholder="חיפוש ציוד אפשרי..."
+              onToggle={(value) => {
+                const next = selectedEquipmentOptions.includes(value)
+                  ? selectedEquipmentOptions.filter((option) => option !== value)
+                  : [...selectedEquipmentOptions, value];
+                if (next.length === 0) return;
+                set({ equipment: next[0] ?? draft.equipment, equipmentOptions: next });
+              }}
+            />
+            {selectedEquipmentOptions.includes("פולי / כבלים") ? (
+              <SearchMultiOptionField
+                label="מאחזים אפשריים בכבלים"
+                selected={draft.cableGripOptions ?? []}
+                options={CABLE_GRIPS}
+                placeholder="חיפוש מאחז..."
+                onToggle={(value) => {
+                  const current = draft.cableGripOptions ?? [];
+                  set({
+                    cableGripOptions: current.includes(value)
+                      ? current.filter((option) => option !== value)
+                      : [...current, value],
+                  });
+                }}
+              />
+            ) : null}
           </div>
 
           <div className="surface-card p-4">

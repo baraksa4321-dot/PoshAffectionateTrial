@@ -61,7 +61,12 @@ import {
   clientProgramInsertPayload,
 } from "../lib/coach-plan-payloads";
 import { calculateCalorieEstimate } from "../lib/calorie-calculator";
-import { exerciseDisplayName } from "../lib/exercise-library";
+import {
+  exerciseDisplayName,
+  exerciseEquipmentOptions,
+  exerciseGripOptions,
+  uniqueCanonicalExercises,
+} from "../lib/exercise-library";
 import { loadCoachMessages, sendCoachMessage } from "../lib/coach-messages";
 import {
   getNextWorkoutReportWeekOffset,
@@ -87,6 +92,7 @@ import type {
   Workout,
   WorkoutItem,
 } from "../lib/gym-types";
+import { CABLE_GRIPS, EQUIPMENT } from "../lib/gym-types";
 import { genderText } from "../lib/gender-copy";
 import {
   defaultFoodQuantity,
@@ -1392,6 +1398,8 @@ export function CoachDashboardPage({
 
   // Exercise Assignment Editor state
   const [selectedExId, setSelectedExId] = useState("");
+  const [selectedEquipment, setSelectedEquipment] = useState("");
+  const [selectedCableGrip, setSelectedCableGrip] = useState("");
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [exerciseQuery, setExerciseQuery] = useState("");
@@ -1404,6 +1412,26 @@ export function CoachDashboardPage({
     context: ExerciseBuilderReturnContext;
   } | null>(null);
   const hydratedBuilderRouteKeyRef = useRef<string | null>(null);
+
+  const selectExerciseForBuilder = (
+    exerciseId: string,
+    equipmentOverride?: string,
+    cableGripOverride?: string,
+  ) => {
+    const exercise = uniqueCanonicalExercises(store.exercises).find(
+      (candidate) => candidate.id === exerciseId,
+    );
+    const options = exercise ? exerciseEquipmentOptions(exercise) : [];
+    const nextEquipment =
+      equipmentOverride && options.includes(equipmentOverride)
+        ? equipmentOverride
+        : options[0] || exercise?.equipment || "";
+    setSelectedExId(exerciseId);
+    setSelectedEquipment(nextEquipment);
+    setSelectedCableGrip(
+      nextEquipment === "פולי / כבלים" ? cableGripOverride || "" : "",
+    );
+  };
   const [targetWeight, setTargetWeight] = useState(20);
   const [setsCount, setSetsCount] = useState(3);
   const [setWeights, setSetWeights] = useState<number[]>([20, 20, 20]);
@@ -1431,7 +1459,7 @@ export function CoachDashboardPage({
       setEditingDayId(context.dayId);
       setShowExerciseForm(true);
     }
-    setSelectedExId(createdExerciseId);
+    selectExerciseForBuilder(createdExerciseId);
     setExerciseBuilderNotice("התרגיל החדש נבחר להוספה לאימון.");
     if (context) {
       setPendingCreatedExercise({ exerciseId: createdExerciseId, context });
@@ -2309,7 +2337,11 @@ export function CoachDashboardPage({
       setEditingItemId(requestedItem?.id ?? null);
       setShowExerciseForm(Boolean(requestedItem));
       if (requestedItem) {
-        setSelectedExId(requestedItem.exerciseId);
+        selectExerciseForBuilder(
+          requestedItem.exerciseId,
+          requestedItem.equipment,
+          requestedItem.cableGrip,
+        );
         setTargetWeight(requestedItem.targetWeight || requestedItem.weight);
         setSetsCount(requestedItem.sets);
         setRepMin(requestedItem.repMin || requestedItem.reps);
@@ -2398,7 +2430,7 @@ export function CoachDashboardPage({
     setEditingDayId(day.id);
     setShowExerciseForm(true);
     setEditingItemId(null);
-    setSelectedExId(pending.exerciseId);
+    selectExerciseForBuilder(pending.exerciseId);
   }, [clientDetails, pendingCreatedExercise, selectedClientId]);
 
   useEffect(() => {
@@ -2909,8 +2941,12 @@ export function CoachDashboardPage({
 
     const currentDay = clientDetails?.workouts?.find((w) => w.id === editingDayId);
     if (!currentDay) return;
-    const selectedExercise = store.exercises.find((exercise) => exercise.id === selectedExId);
-    const selectedExerciseName = selectedExercise?.name?.trim() || undefined;
+    const selectedExercise = uniqueCanonicalExercises(store.exercises).find(
+      (exercise) => exercise.id === selectedExId,
+    );
+    const selectedExerciseName = selectedExercise
+      ? exerciseDisplayName(selectedExercise)
+      : undefined;
     // Keep the selected exercise in the coach's catalog as part of the
     // assignment flow too. This repairs older plans created before the
     // builder's return-to-catalog flow was added.
@@ -2959,6 +2995,11 @@ export function CoachDashboardPage({
               ...item,
               exerciseId: selectedExId,
               ...(selectedExerciseName ? { exerciseName: selectedExerciseName } : {}),
+              ...(selectedEquipment ? { equipment: selectedEquipment } : {}),
+              cableGrip:
+                selectedEquipment === "פולי / כבלים" && selectedCableGrip
+                  ? selectedCableGrip
+                  : undefined,
               sets: workingSetPayload.length,
               reps: Math.max(1, repMin),
               repMin: Math.max(1, repMin),
@@ -3063,6 +3104,10 @@ export function CoachDashboardPage({
       id: uid(),
       exerciseId: selectedExId,
       ...(selectedExerciseName ? { exerciseName: selectedExerciseName } : {}),
+      ...(selectedEquipment ? { equipment: selectedEquipment } : {}),
+      ...(selectedEquipment === "פולי / כבלים" && selectedCableGrip
+        ? { cableGrip: selectedCableGrip }
+        : {}),
       sets: workingModeCount,
       reps: repMin,
       repType: "range",
@@ -3635,13 +3680,23 @@ export function CoachDashboardPage({
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b, "he")),
   ];
+  const canonicalExerciseOptions = useMemo(
+    () => uniqueCanonicalExercises(store.exercises),
+    [store.exercises],
+  );
   const filteredExerciseOptions = exerciseQueryLower
-    ? store.exercises.filter((exercise) =>
-        [exercise.name, exercise.muscleGroup, exercise.equipment]
+    ? canonicalExerciseOptions.filter((exercise) =>
+        [
+          exercise.name,
+          exercise.nameHe,
+          exercise.muscleGroup,
+          exercise.equipment,
+          ...exerciseEquipmentOptions(exercise),
+        ]
           .filter(Boolean)
-          .some((value) => value.toLocaleLowerCase().includes(exerciseQueryLower)),
+          .some((value) => value!.toLocaleLowerCase().includes(exerciseQueryLower)),
       )
-    : store.exercises;
+    : canonicalExerciseOptions;
   const visibleExerciseOptions =
     exerciseMuscleFilter === "הכל"
       ? filteredExerciseOptions
@@ -3651,19 +3706,34 @@ export function CoachDashboardPage({
             (exercise.muscleGroups ?? []).includes(exerciseMuscleFilter),
         );
 
-  const supersetPartnerOptions = store.exercises
+  const supersetPartnerOptions = canonicalExerciseOptions
     .filter((exercise) => exercise.id !== selectedExId)
     .filter((exercise) => {
       const query = supersetPartnerQuery.trim().toLocaleLowerCase();
       if (!query) return false;
-      return [exercise.name, exercise.muscleGroup, exercise.equipment]
+      return [
+        exercise.name,
+        exercise.nameHe,
+        exercise.muscleGroup,
+        exercise.equipment,
+        ...exerciseEquipmentOptions(exercise),
+      ]
         .filter(Boolean)
-        .some((value) => value.toLocaleLowerCase().includes(query));
+        .some((value) => value!.toLocaleLowerCase().includes(query));
     })
     .slice(0, 12);
   const selectedSupersetPartner = store.exercises.find(
     (exercise) => exercise.id === supersetPartnerId,
   );
+  const selectedBuilderExercise = canonicalExerciseOptions.find(
+    (exercise) => exercise.id === selectedExId,
+  );
+  const selectedBuilderEquipmentOptions = selectedBuilderExercise
+    ? exerciseEquipmentOptions(selectedBuilderExercise)
+    : [];
+  const selectedBuilderGripOptions = selectedBuilderExercise
+    ? exerciseGripOptions(selectedBuilderExercise)
+    : [];
 
   const renderSupersetPartnerSearch = () => (
     <div className="min-w-0">
@@ -3752,15 +3822,18 @@ export function CoachDashboardPage({
       setNewExerciseError("יש להזין שם תרגיל.");
       return;
     }
+    const equipmentChoices = exerciseEquipmentOptions(newExerciseDraft);
     const exercise = {
       ...newExerciseDraft,
       name,
+      equipment: equipmentChoices[0] || newExerciseDraft.equipment,
+      equipmentOptions: equipmentChoices,
       description: newExerciseDraft.description.trim(),
       instructions: newExerciseDraft.instructions?.trim() ?? "",
       notes: newExerciseDraft.notes.trim(),
     };
     saveExercise(exercise);
-    setSelectedExId(exercise.id);
+    selectExerciseForBuilder(exercise.id);
     setExerciseQuery("");
     setShowCreateExercise(false);
     setExerciseBuilderNotice(`התרגיל "${exercise.name}" נוסף למאגר ונבחר לאימון.`);
@@ -5922,7 +5995,7 @@ export function CoachDashboardPage({
                                                     <div className="flex items-start justify-between gap-2">
                                                       <div>
                                                         <span className="block font-display text-[15px] font-extrabold text-ink">
-                                                          {exMeta?.name || "תרגיל"}
+                                                          {exMeta ? exerciseDisplayName(exMeta) : "תרגיל"}
                                                         </span>
                                                         {exItem.supersetPartnerId ? (
                                                           <span className="mt-0.5 block text-[11px] font-bold text-violet-800">
@@ -5931,11 +6004,26 @@ export function CoachDashboardPage({
                                                               (exercise) =>
                                                                 exercise.id ===
                                                                 exItem.supersetPartnerId,
-                                                            )?.name || "תרגיל בן־זוג"}{" "}
+                                                             )
+                                                               ? exerciseDisplayName(
+                                                                   store.exercises.find(
+                                                                     (exercise) =>
+                                                                       exercise.id ===
+                                                                       exItem.supersetPartnerId,
+                                                                   )!,
+                                                                 )
+                                                               : "תרגיל בן־זוג"}{" "}
                                                             · ללא מנוחה
                                                           </span>
                                                         ) : null}
                                                         <span className="mt-1 inline-flex rounded-full bg-background/80 px-2.5 py-1 text-[11px] font-bold text-ink">
+                                                          {exItem.equipment || exMeta?.equipment
+                                                            ? `${exItem.equipment || exMeta?.equipment}${
+                                                                exItem.cableGrip
+                                                                  ? ` · ${exItem.cableGrip}`
+                                                                  : ""
+                                                              } · `
+                                                            : ""}
                                                           {exItem.targetWeight || exItem.weight} ק״ג
                                                           · {exItem.sets} סטים ×{" "}
                                                           {exItem.repMin || exItem.reps}
@@ -5995,7 +6083,11 @@ export function CoachDashboardPage({
                                                                 : exItem.id,
                                                             );
                                                             if (editingItemId === exItem.id) return;
-                                                            setSelectedExId(exItem.exerciseId);
+                                                            selectExerciseForBuilder(
+                                                              exItem.exerciseId,
+                                                              exItem.equipment,
+                                                              exItem.cableGrip,
+                                                            );
                                                             setTargetWeight(
                                                               exItem.targetWeight || exItem.weight,
                                                             );
@@ -6887,6 +6979,46 @@ export function CoachDashboardPage({
                                                     <Search className="h-4 w-4 text-muted-foreground" />
                                                   </button>
                                                 </div>
+                                                 {selectedBuilderExercise ? (
+                                                   <div className="rounded-xl border border-primary/15 bg-primary/5 p-3">
+                                                     <label className="block text-[10px] font-bold text-primary">
+                                                       בחירת מכשיר לתרגיל
+                                                       <select
+                                                         value={selectedEquipment}
+                                                         onChange={(event) => {
+                                                           setSelectedEquipment(event.target.value);
+                                                           setSelectedCableGrip("");
+                                                         }}
+                                                         className="mt-1.5 h-10 w-full rounded-xl border border-primary/20 bg-background px-3 text-xs font-bold text-ink outline-none focus:border-primary"
+                                                       >
+                                                         {selectedBuilderEquipmentOptions.map((equipment) => (
+                                                           <option key={equipment} value={equipment}>
+                                                             {equipment}
+                                                           </option>
+                                                         ))}
+                                                       </select>
+                                                     </label>
+                                                     {selectedEquipment === "פולי / כבלים" ? (
+                                                       <label className="mt-2 block text-[10px] font-bold text-primary">
+                                                         בחירת מאחז
+                                                         <select
+                                                           value={selectedCableGrip}
+                                                           onChange={(event) =>
+                                                             setSelectedCableGrip(event.target.value)
+                                                           }
+                                                           className="mt-1.5 h-10 w-full rounded-xl border border-primary/20 bg-background px-3 text-xs font-bold text-ink outline-none focus:border-primary"
+                                                         >
+                                                           <option value="">בחירת מאחז...</option>
+                                                           {selectedBuilderGripOptions.map((grip) => (
+                                                             <option key={grip} value={grip}>
+                                                               {grip}
+                                                             </option>
+                                                           ))}
+                                                         </select>
+                                                       </label>
+                                                     ) : null}
+                                                   </div>
+                                                 ) : null}
                                                 {exerciseBuilderNotice ? (
                                                   <p className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-[10px] font-semibold text-ink">
                                                     {exerciseBuilderNotice}
@@ -8519,7 +8651,7 @@ export function CoachDashboardPage({
                     type="button"
                     key={exercise.id}
                     onClick={() => {
-                      setSelectedExId(exercise.id);
+                      selectExerciseForBuilder(exercise.id);
                       setExerciseQuery("");
                       setShowExercisePicker(false);
                     }}
@@ -8607,21 +8739,46 @@ export function CoachDashboardPage({
                     className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary"
                   />
                 </label>
-                <label className="block text-xs font-bold text-muted-foreground">
-                  ציוד
-                  <input
-                    required
-                    value={newExerciseDraft.equipment}
-                    onChange={(event) =>
-                      setNewExerciseDraft((current) => ({
-                        ...current,
-                        equipment: event.target.value,
-                      }))
-                    }
-                    placeholder="מכונה / משקוליות"
-                    className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary"
-                  />
-                </label>
+                <div className="block text-xs font-bold text-muted-foreground">
+                  ציוד אפשרי
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {EQUIPMENT.map((equipment) => {
+                      const selected = exerciseEquipmentOptions(newExerciseDraft).includes(equipment);
+                      return (
+                        <button
+                          key={equipment}
+                          type="button"
+                          onClick={() =>
+                            setNewExerciseDraft((current) => {
+                              const options = exerciseEquipmentOptions(current);
+                              const next = selected
+                                ? options.filter((option) => option !== equipment)
+                                : [...options, equipment];
+                              if (next.length === 0) return current;
+                              return {
+                                ...current,
+                                equipment: next[0] ?? current.equipment,
+                                equipmentOptions: next,
+                              };
+                            })
+                          }
+                          className={`rounded-full px-2.5 py-1.5 text-[11px] font-bold ${
+                            selected
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-secondary text-muted-foreground"
+                          }`}
+                        >
+                          {equipment}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {exerciseEquipmentOptions(newExerciseDraft).includes("פולי / כבלים") ? (
+                    <p className="mt-2 text-[10px] font-medium text-muted-foreground">
+                      באימון עצמו תופיע גם בחירת מאחז לכבלים.
+                    </p>
+                  ) : null}
+                </div>
               </div>
               <label className="block text-xs font-bold text-muted-foreground">
                 הוראות ביצוע (אופציונלי)

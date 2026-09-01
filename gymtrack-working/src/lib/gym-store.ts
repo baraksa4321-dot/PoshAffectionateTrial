@@ -1563,10 +1563,12 @@ export function emptyWorkout(): Workout {
   return { id: uid(), name: "", notes: "", items: [] };
 }
 
-export function emptyItem(exerciseId: string): WorkoutItem {
+export function emptyItem(exerciseId: string, equipment?: string, cableGrip?: string): WorkoutItem {
   return {
     id: uid(),
     exerciseId,
+    ...(equipment ? { equipment } : {}),
+    ...(cableGrip ? { cableGrip } : {}),
     sets: 3,
     reps: 10,
     repType: "fixed",

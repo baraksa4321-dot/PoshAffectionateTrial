@@ -1,4 +1,4 @@
-import type { Exercise } from "./gym-types";
+import { CABLE_GRIPS, type Exercise } from "./gym-types";
 
 type SeedNameMigration = { from: string; to: string };
 
@@ -92,12 +92,148 @@ export function renameSeedExercise(exercise: Exercise): Exercise {
 }
 
 export function exerciseDisplayName(
-  exercise: Pick<Exercise, "name" | "nameHe" | "nameEn">,
+  exercise: Pick<
+    Exercise,
+    "name" | "nameHe" | "nameEn" | "canonicalName" | "canonicalNameHe"
+  >,
 ): string {
-  const hebrew = exercise.nameHe?.trim();
-  const english = exercise.nameEn?.trim() || exercise.name?.trim();
+  const hebrew = exercise.canonicalNameHe?.trim() || exercise.nameHe?.trim();
+  const english = exercise.canonicalName?.trim() || exercise.nameEn?.trim() || exercise.name?.trim();
   if (hebrew && english && hebrew !== english) return `${hebrew} (${english})`;
   return hebrew || english || "תרגיל";
+}
+
+const EQUIPMENT_NAME_WORDS = [
+  "barbell",
+  "dumbbell",
+  "dumbbells",
+  "cable",
+  "machine",
+  "bodyweight",
+  "kettlebell",
+  "ez bar",
+  "ez-bar",
+  "parallel bar",
+];
+
+const CANONICAL_FAMILY_ALIASES: Record<string, string> = {
+  "back squat": "squat",
+  "barbell back squat": "squat",
+  "barbell hip thrust": "hip thrust",
+  "front plank": "plank",
+  "seated leg curl": "leg curl",
+  "standing calf raise": "calf raise",
+  "cable chest fly": "chest fly",
+};
+
+function stripEquipmentFromName(value: string): string {
+  let result = value.trim();
+  for (const word of EQUIPMENT_NAME_WORDS) {
+    result = result.replace(new RegExp(`\\b${word}\\b`, "gi"), " ");
+  }
+  return result.replace(/\s+/g, " ").replace(/^[\s-]+|[\s-]+$/g, "").trim();
+}
+
+function stripHebrewEquipmentFromName(value: string): string {
+  return value
+    .trim()
+    .replace(
+      /(?:\s+(?:כנגד|עם|ב|ב)?\s*(?:מוט(?:\s+W)?|משקוליות(?:\s+יד)?|משקולות|כבלים?|פולי|מכונה|קטלבל|משקל גוף))+$/u,
+      "",
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function exerciseFamilyKey(exercise: Pick<Exercise, "name" | "nameEn">): string {
+  const source = exercise.nameEn?.trim() || exercise.name.trim();
+  const stripped = stripEquipmentFromName(source).toLocaleLowerCase("en");
+  return (CANONICAL_FAMILY_ALIASES[stripped] ?? stripped).replace(/[^a-z0-9]+/g, "");
+}
+
+export function exerciseEquipmentOptions(exercise: Pick<Exercise, "equipment" | "equipmentOptions">) {
+  return Array.from(
+    new Set(
+      (exercise.equipmentOptions?.length ? exercise.equipmentOptions : [exercise.equipment])
+        .map((option) => option.trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
+export function exerciseGripOptions(
+  exercise: Pick<Exercise, "cableGripOptions">,
+): string[] {
+  return Array.from(new Set([...(exercise.cableGripOptions ?? []), ...CABLE_GRIPS]));
+}
+
+/**
+ * Keep legacy IDs stable while presenting equipment variants as one movement
+ * in pickers and the catalog. The first record remains the navigation target;
+ * its metadata is enriched with the available equipment choices.
+ */
+export function uniqueCanonicalExercises(exercises: Exercise[]): Exercise[] {
+  const byFamily = new Map<string, Exercise>();
+  for (const exercise of exercises) {
+    const key = exerciseFamilyKey(exercise);
+    const existing = byFamily.get(key);
+    const canonicalName =
+      existing?.canonicalName ||
+      stripEquipmentFromName(exercise.nameEn?.trim() || exercise.name.trim());
+    const canonicalNameHe =
+      existing?.canonicalNameHe ||
+      (exercise.nameHe ? stripHebrewEquipmentFromName(exercise.nameHe) : undefined);
+    if (!existing) {
+      byFamily.set(key, {
+        ...exercise,
+        canonicalName,
+        ...(canonicalNameHe ? { canonicalNameHe } : {}),
+        equipmentOptions: exerciseEquipmentOptions(exercise),
+        cableGripOptions: exercise.cableGripOptions?.length
+          ? exerciseGripOptions(exercise)
+          : undefined,
+      });
+      continue;
+    }
+    byFamily.set(key, {
+      ...existing,
+      equipmentOptions: Array.from(
+        new Set([...exerciseEquipmentOptions(existing), ...exerciseEquipmentOptions(exercise)]),
+      ),
+      cableGripOptions:
+        existing.cableGripOptions?.length || exercise.cableGripOptions?.length
+          ? exerciseGripOptions({
+              cableGripOptions: [
+                ...(existing.cableGripOptions ?? []),
+                ...(exercise.cableGripOptions ?? []),
+              ],
+            })
+          : undefined,
+    });
+  }
+  return Array.from(byFamily.values());
+}
+
+/** Add canonical labels and merged equipment choices without removing legacy IDs. */
+export function canonicalizeExerciseRecords(exercises: Exercise[]): Exercise[] {
+  const representatives = uniqueCanonicalExercises(exercises);
+  const byFamily = new Map(representatives.map((exercise) => [exerciseFamilyKey(exercise), exercise]));
+  return exercises.map((exercise) => {
+    const representative = byFamily.get(exerciseFamilyKey(exercise));
+    return representative?.canonicalName
+      ? {
+          ...exercise,
+          canonicalName: representative.canonicalName,
+          ...(representative.canonicalNameHe
+            ? { canonicalNameHe: representative.canonicalNameHe }
+            : {}),
+          equipmentOptions: representative.equipmentOptions,
+          ...(representative.cableGripOptions
+            ? { cableGripOptions: representative.cableGripOptions }
+            : {}),
+        }
+      : exercise;
+  });
 }
 
 const makeExercise = (

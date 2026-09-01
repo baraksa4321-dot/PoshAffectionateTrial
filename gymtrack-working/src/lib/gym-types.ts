@@ -45,6 +45,9 @@ export type Exercise = {
   /** Optional bilingual labels. `name` remains the legacy display value for saved records. */
   nameHe?: string;
   nameEn?: string;
+  /** Canonical movement labels used when equipment variants share one exercise. */
+  canonicalName?: string;
+  canonicalNameHe?: string;
   muscleGroup: string;
   /** Primary and secondary muscle groups worked (multi-select). */
   muscleGroups?: string[];
@@ -57,6 +60,10 @@ export type Exercise = {
   /** Optional free-form category (e.g. מורכב, בידוד, עזר). */
   category?: string;
   equipment: string;
+  /** Equipment choices available when prescribing this movement. */
+  equipmentOptions?: string[] | undefined;
+  /** Optional grips shown when the selected equipment is cable / pulley. */
+  cableGripOptions?: string[] | undefined;
   description: string;
   /** Optional step-by-step execution instructions. */
   instructions?: string;
@@ -98,6 +105,10 @@ export type WorkoutItem = {
   exerciseId: string;
   /** Snapshot used when a custom exercise is not present in the viewer's catalog yet. */
   exerciseName?: string;
+  /** Equipment selected for this prescription, separate from the catalog default. */
+  equipment?: string;
+  /** Cable grip selected for this prescription, when equipment is cable / pulley. */
+  cableGrip?: string | undefined;
   sets: number;
   reps: number;
   repType?: RepType;
@@ -166,6 +177,8 @@ export type HistoryEntry = {
   replacedExerciseId?: string;
   replacedExerciseName?: string;
   equipment?: string;
+  /** Cable grip used for this completed exercise, when recorded. */
+  cableGrip?: string | undefined;
   videoUrl?: string;
   sets: LoggedSet[];
   notes: string;
@@ -453,6 +466,7 @@ function historyEntryKey(entry: HistoryEntry) {
     replacedExerciseId: entry.replacedExerciseId ?? "",
     replacedExerciseName: entry.replacedExerciseName ?? "",
     equipment: entry.equipment ?? "",
+    cableGrip: entry.cableGrip ?? "",
     videoUrl: entry.videoUrl ?? "",
     sets: entry.sets,
     notes: entry.notes ?? "",
@@ -626,6 +640,17 @@ export const EQUIPMENT = [
   "משקל גוף",
   "גומיית התנגדות",
   "משקל גוף בתוספת משקל",
+  "אחר",
+];
+
+export const CABLE_GRIPS = [
+  "חבל",
+  "מוט ישר",
+  "מוט W / EZ",
+  "מאחז יחיד",
+  "מוט קצר",
+  "מאחז רחב",
+  "מאחז צר",
   "אחר",
 ];
 

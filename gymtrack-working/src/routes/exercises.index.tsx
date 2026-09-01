@@ -2,7 +2,11 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Dumbbell, Plus, Search, Shield, SlidersHorizontal } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { exerciseDisplayName } from "@/lib/exercise-library";
+import {
+  exerciseDisplayName,
+  exerciseEquipmentOptions,
+  uniqueCanonicalExercises,
+} from "@/lib/exercise-library";
 import { EmptyState, Pill, SectionHeader } from "@/components/ui-app/primitives";
 import { useGym } from "@/lib/gym-store";
 import { EQUIPMENT, MUSCLE_GROUPS } from "@/lib/gym-types";
@@ -28,6 +32,7 @@ function Library() {
   const role = userProfile?.role;
   const gender = userProfile?.gender;
   const isCoach = role === "coach" || role === "owner";
+  const catalogExercises = uniqueCanonicalExercises(exercises);
 
   useEffect(() => {
     if (role && !isCoach) {
@@ -68,12 +73,12 @@ function Library() {
   }
 
   const query = q.toLowerCase();
-  const list = exercises.filter(
+  const list = catalogExercises.filter(
     (e) =>
       (group === "הכל" || e.muscleGroup === group || (e.muscleGroups ?? []).includes(group)) &&
-      (equipment === "הכל" || e.equipment === equipment) &&
-      (e.name.toLowerCase().includes(query) ||
-        e.equipment.toLowerCase().includes(query) ||
+      (equipment === "הכל" || exerciseEquipmentOptions(e).includes(equipment)) &&
+      (exerciseDisplayName(e).toLowerCase().includes(query) ||
+        exerciseEquipmentOptions(e).some((option) => option.toLowerCase().includes(query)) ||
         e.muscleGroup.toLowerCase().includes(query) ||
         (e.customMuscleGroup ?? "").toLowerCase().includes(query) ||
         (e.category ?? "").toLowerCase().includes(query)),
@@ -85,7 +90,7 @@ function Library() {
     <AppShell
       kicker="ספרייה"
       title="תרגילים"
-      subtitle={`${exercises.length} תרגילים בספרייה`}
+      subtitle={`${catalogExercises.length} תנועות בספרייה`}
       action={
         <Link
           to="/exercises/$exerciseId"
@@ -208,6 +213,9 @@ function Library() {
                 </p>
                 <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
                   {primary}
+                  {e.equipmentOptions && e.equipmentOptions.length > 1 ? (
+                    <span className="ms-1">· {e.equipmentOptions.join(" · ")}</span>
+                  ) : null}
                   {secondaryCount > 0 ? ` (+${secondaryCount})` : ""}
                   {e.category ? ` · ${e.category}` : ""}
                 </p>
