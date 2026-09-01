@@ -5,11 +5,12 @@ import { AppShell } from "@/components/AppShell";
 import {
   exerciseDisplayName,
   exerciseEquipmentOptions,
+  exerciseGripOptions,
   uniqueCanonicalExercises,
 } from "@/lib/exercise-library";
 import { EmptyState, Pill, SectionHeader } from "@/components/ui-app/primitives";
 import { useGym } from "@/lib/gym-store";
-import { EQUIPMENT, MUSCLE_GROUPS } from "@/lib/gym-types";
+import { CABLE_GRIPS, EQUIPMENT, MUSCLE_GROUPS } from "@/lib/gym-types";
 import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/exercises/")({
@@ -44,6 +45,7 @@ function Library() {
   const [group, setGroup] = useState("הכל");
   const [equipment, setEquipment] = useState("הכל");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"exercises" | "equipment" | "grips">("exercises");
 
   if (role === undefined) {
     return (
@@ -85,6 +87,48 @@ function Library() {
   );
 
   const activeFilters = (group !== "הכל" ? 1 : 0) + (equipment !== "הכל" ? 1 : 0);
+  const equipmentNames = Array.from(
+    new Set([
+      ...EQUIPMENT,
+      ...catalogExercises.flatMap((exercise) => exerciseEquipmentOptions(exercise)),
+    ]),
+  );
+  const equipmentRows = equipmentNames
+    .map((name) => {
+      const linkedExercises = catalogExercises.filter((exercise) =>
+        exerciseEquipmentOptions(exercise).includes(name),
+      );
+      return {
+        name,
+        count: linkedExercises.length,
+        image: linkedExercises
+          .map((exercise) => exercise.equipmentImages?.[name]?.trim())
+          .find(Boolean),
+      };
+    })
+    .filter((row) => row.name.toLocaleLowerCase().includes(query));
+  const gripNames = Array.from(
+    new Set([
+      ...CABLE_GRIPS,
+      ...catalogExercises.flatMap((exercise) => exerciseGripOptions(exercise)),
+    ]),
+  );
+  const gripRows = gripNames
+    .map((name) => {
+      const linkedExercises = catalogExercises.filter(
+        (exercise) =>
+          exerciseEquipmentOptions(exercise).includes("פולי / כבלים") &&
+          exerciseGripOptions(exercise).includes(name),
+      );
+      return {
+        name,
+        count: linkedExercises.length,
+        image: linkedExercises
+          .map((exercise) => exercise.cableGripImages?.[name]?.trim())
+          .find(Boolean),
+      };
+    })
+    .filter((row) => row.name.toLocaleLowerCase().includes(query));
 
   return (
     <AppShell
@@ -130,8 +174,34 @@ function Library() {
         </button>
       </div>
 
-      {/* Active filter chips */}
-      {(group !== "הכל" || equipment !== "הכל") && (
+      <div className="mt-4 grid grid-cols-3 rounded-2xl bg-secondary p-1 text-[12px] font-bold">
+        {(
+          [
+            ["exercises", "מאגר תרגילים"],
+            ["equipment", "מאגר מכשירים"],
+            ["grips", "מאגר מאחזים"],
+          ] as const
+        ).map(([tab, label]) => (
+          <button
+            key={tab}
+            type="button"
+            aria-pressed={activeTab === tab}
+            onClick={() => setActiveTab(tab)}
+            className={`rounded-xl px-2 py-2.5 transition-colors ${
+              activeTab === tab
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "exercises" ? (
+        <>
+          {/* Active filter chips */}
+          {(group !== "הכל" || equipment !== "הכל") && (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {group !== "הכל" ? (
             <Pill active onClick={() => setGroup("הכל")} variant="sage">
@@ -148,8 +218,8 @@ function Library() {
         </div>
       )}
 
-      {/* Filter rail */}
-      {filtersOpen ? (
+          {/* Filter rail */}
+          {filtersOpen ? (
         <div className="surface-card mt-3 p-4 text-start">
           <SectionHeader title="סינון לפי שריר" className="mb-2" />
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2 no-scrollbar">
@@ -186,13 +256,13 @@ function Library() {
         </div>
       ) : null}
 
-      <SectionHeader
+          <SectionHeader
         className="mt-5 text-start"
         title={`${list.length} תרגילים בספרייה`}
         subtitle={genderText(gender, "לחצי על תרגיל לעריכה ופרטים", "לחץ על תרגיל לעריכה ופרטים")}
       />
 
-      <div className="space-y-2.5">
+          <div className="space-y-2.5">
         {list.map((e) => {
           const showCustom = e.muscleGroup === "אחר" && e.customMuscleGroup;
           const primary = showCustom ? e.customMuscleGroup! : e.muscleGroup;
@@ -229,7 +299,7 @@ function Library() {
         })}
       </div>
 
-      {list.length === 0 ? (
+          {list.length === 0 ? (
         <EmptyState
           icon={Dumbbell}
           title="לא נמצאו תרגילים"
@@ -249,7 +319,53 @@ function Library() {
             </Link>
           }
         />
-      ) : null}
+          ) : null}
+        </>
+      ) : (
+        <>
+          <SectionHeader
+            className="mt-5 text-start"
+            title={activeTab === "equipment" ? "מאגר מכשירים וציוד" : "מאגר מאחזים לכבלים"}
+            subtitle={
+              activeTab === "equipment"
+                ? `${equipmentRows.length} סוגי ציוד זמינים לבחירה`
+                : `${gripRows.length} סוגי מאחזים זמינים לבחירה`
+            }
+          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            {(activeTab === "equipment" ? equipmentRows : gripRows).map((row) => (
+              <div
+                key={row.name}
+                className="surface-card flex items-center gap-3 p-3.5 text-start"
+              >
+                {row.image ? (
+                  <img
+                    src={row.image}
+                    alt=""
+                    loading="lazy"
+                    className="h-16 w-16 shrink-0 rounded-2xl border border-border/40 object-cover"
+                  />
+                ) : (
+                  <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-sage-soft text-primary">
+                    <Dumbbell className="h-6 w-6" strokeWidth={1.7} />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="font-display text-[15px] font-semibold text-ink">{row.name}</p>
+                  <p className="mt-1 text-[11.5px] text-muted-foreground">
+                    מופיע ב־{row.count} {row.count === 1 ? "תרגיל" : "תרגילים"}
+                  </p>
+                  {!row.image ? (
+                    <p className="mt-1 text-[10.5px] text-muted-foreground">
+                      הוסיפי תמונה מתוך עריכת תרגיל שמשתמש באפשרות הזו.
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </AppShell>
   );
 }

@@ -28,7 +28,11 @@ import {
   MUSCLE_GROUPS,
   type Exercise,
 } from "@/lib/gym-types";
-import { exerciseDisplayName, exerciseEquipmentOptions } from "@/lib/exercise-library";
+import {
+  exerciseDisplayName,
+  exerciseEquipmentOptions,
+  exerciseGripOptions,
+} from "@/lib/exercise-library";
 import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/exercises/$exerciseId")({
@@ -196,6 +200,87 @@ function SearchMultiOptionField({
           + הוסיפי ״{customValue}״ למאגר
         </button>
       ) : null}
+    </div>
+  );
+}
+
+function OptionImagesEditor({
+  label,
+  options,
+  images,
+  onChange,
+}: {
+  label: string;
+  options: string[];
+    images: Record<string, string> | undefined;
+  onChange: (images: Record<string, string>) => void;
+}) {
+  const [draftUrls, setDraftUrls] = useState<Record<string, string>>({});
+
+  return (
+    <div className="surface-card p-4">
+      <label className={labelCls}>{label}</label>
+      <p className="text-[11.5px] text-muted-foreground">
+        הוסיפי קישור לתמונה לכל אפשרות. התמונה תופיע גם במאגר המתאים.
+      </p>
+      <div className="mt-3 space-y-2">
+        {options.map((option) => {
+          const image = images?.[option]?.trim() || "";
+          const inputValue = draftUrls[option] ?? image;
+          return (
+            <div key={option} className="rounded-2xl border border-border/60 bg-secondary/40 p-3">
+              <p className="mb-2 text-xs font-bold text-ink">{option}</p>
+              <div className="flex gap-2">
+                <input
+                  className={`${field} min-w-0 flex-1`}
+                  value={inputValue}
+                  onChange={(event) =>
+                    setDraftUrls((current) => ({ ...current, [option]: event.target.value }))
+                  }
+                  placeholder="קישור לתמונה (URL)"
+                  aria-label={`תמונה עבור ${option}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = { ...(images ?? {}) };
+                    const nextValue = inputValue.trim();
+                    if (nextValue) next[option] = nextValue;
+                    else delete next[option];
+                    onChange(next);
+                    setDraftUrls((current) => ({ ...current, [option]: nextValue }));
+                  }}
+                  className="press shrink-0 rounded-2xl bg-primary px-3 text-xs font-bold text-primary-foreground"
+                >
+                  שמור
+                </button>
+              </div>
+              {image ? (
+                <div className="relative mt-2">
+                  <img
+                    src={image}
+                    alt={`תמונה עבור ${option}`}
+                    className="h-28 w-full rounded-xl border border-border/40 object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = { ...(images ?? {}) };
+                      delete next[option];
+                      onChange(next);
+                      setDraftUrls((current) => ({ ...current, [option]: "" }));
+                    }}
+                    className="press absolute end-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-destructive text-destructive-foreground"
+                    aria-label={`הסר תמונה עבור ${option}`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -471,6 +556,22 @@ function ExerciseDetail() {
               />
             ) : null}
           </div>
+
+          <OptionImagesEditor
+            label="מאגר תמונות למכשירים ולציוד"
+            options={selectedEquipmentOptions}
+            images={draft.equipmentImages}
+            onChange={(equipmentImages) => set({ equipmentImages })}
+          />
+
+          {selectedEquipmentOptions.includes("פולי / כבלים") ? (
+            <OptionImagesEditor
+              label="מאגר תמונות למאחזים"
+              options={exerciseGripOptions(draft)}
+              images={draft.cableGripImages}
+              onChange={(cableGripImages) => set({ cableGripImages })}
+            />
+          ) : null}
 
           <div className="surface-card p-4">
             <SearchOptionField

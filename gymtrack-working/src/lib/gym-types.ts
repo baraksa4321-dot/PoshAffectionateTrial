@@ -62,8 +62,12 @@ export type Exercise = {
   equipment: string;
   /** Equipment choices available when prescribing this movement. */
   equipmentOptions?: string[] | undefined;
+  /** Optional image URL per equipment choice in the exercise/equipment library. */
+  equipmentImages?: Record<string, string> | undefined;
   /** Optional grips shown when the selected equipment is cable / pulley. */
   cableGripOptions?: string[] | undefined;
+  /** Optional image URL per cable grip choice in the exercise/grip library. */
+  cableGripImages?: Record<string, string> | undefined;
   description: string;
   /** Optional step-by-step execution instructions. */
   instructions?: string;

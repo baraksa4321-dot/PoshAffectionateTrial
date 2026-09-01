@@ -156,6 +156,18 @@ function mergeText(first: string, second: string): string {
   return Array.from(new Set(values)).join("\n");
 }
 
+function mergeImageMaps(
+  ...maps: Array<Record<string, string> | undefined>
+): Record<string, string> | undefined {
+  const merged: Record<string, string> = {};
+  for (const map of maps) {
+    for (const [key, value] of Object.entries(map ?? {})) {
+      if (value.trim() && !merged[key]) merged[key] = value.trim();
+    }
+  }
+  return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
 export function exerciseFamilyKey(exercise: Pick<Exercise, "name" | "nameEn">): string {
   const source = exercise.nameEn?.trim() || exercise.name.trim();
   const stripped = stripEquipmentFromName(source).toLocaleLowerCase("en");
@@ -200,9 +212,11 @@ export function uniqueCanonicalExercises(exercises: Exercise[]): Exercise[] {
         canonicalName,
         ...(canonicalNameHe ? { canonicalNameHe } : {}),
         equipmentOptions: exerciseEquipmentOptions(exercise),
+        ...(exercise.equipmentImages ? { equipmentImages: exercise.equipmentImages } : {}),
         cableGripOptions: exercise.cableGripOptions?.length
           ? exerciseGripOptions(exercise)
           : undefined,
+        ...(exercise.cableGripImages ? { cableGripImages: exercise.cableGripImages } : {}),
       });
       continue;
     }
@@ -229,6 +243,11 @@ export function uniqueCanonicalExercises(exercises: Exercise[]): Exercise[] {
       equipmentOptions: Array.from(
         new Set([...exerciseEquipmentOptions(existing), ...exerciseEquipmentOptions(exercise)]),
       ),
+      ...(mergeImageMaps(existing.equipmentImages, exercise.equipmentImages)
+        ? {
+            equipmentImages: mergeImageMaps(existing.equipmentImages, exercise.equipmentImages),
+          }
+        : {}),
       videoUrls: mergeStringLists(existing.videoUrls, exercise.videoUrls),
       images: mergeStringLists(existing.images, exercise.images),
       description: mergeText(existing.description, exercise.description),
@@ -245,6 +264,14 @@ export function uniqueCanonicalExercises(exercises: Exercise[]): Exercise[] {
         ? { videoFemaleUrl: existing.videoFemaleUrl || exercise.videoFemaleUrl }
         : {}),
       ...(mergedCableGripOptions ? { cableGripOptions: mergedCableGripOptions } : {}),
+      ...(mergeImageMaps(existing.cableGripImages, exercise.cableGripImages)
+        ? {
+            cableGripImages: mergeImageMaps(
+              existing.cableGripImages,
+              exercise.cableGripImages,
+            ),
+          }
+        : {}),
     });
   }
   return Array.from(byFamily.values());
@@ -264,8 +291,14 @@ export function canonicalizeExerciseRecords(exercises: Exercise[]): Exercise[] {
             ? { canonicalNameHe: representative.canonicalNameHe }
             : {}),
           equipmentOptions: representative.equipmentOptions,
+          ...(representative.equipmentImages
+            ? { equipmentImages: representative.equipmentImages }
+            : {}),
           ...(representative.cableGripOptions
             ? { cableGripOptions: representative.cableGripOptions }
+            : {}),
+          ...(representative.cableGripImages
+            ? { cableGripImages: representative.cableGripImages }
             : {}),
         }
       : exercise;

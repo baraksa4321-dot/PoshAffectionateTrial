@@ -1111,12 +1111,18 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       throw new Error(`Custom exercises pull failed: ${customExercisesError.message}`);
 
     if (dbCustomExercises) {
+      const cachedCustomExercises = new Map(
+        nextData.exercises
+          .filter((exercise) => !exercise.id.startsWith("ex-"))
+          .map((exercise) => [exercise.id, exercise]),
+      );
       const customMap = new Map(
         nextData.exercises
           .filter((exercise) => exercise.id.startsWith("ex-"))
           .map((e) => [e.id, e]),
       );
       for (const row of dbCustomExercises) {
+        const cachedExercise = cachedCustomExercises.get(row.id);
         const exItem: Exercise = {
           id: row.id,
           name: row.name,
@@ -1130,8 +1136,20 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
           videoUrls: Array.isArray(row.video_urls) ? row.video_urls : undefined,
           videoMaleUrl: row.video_male_url || undefined,
           videoFemaleUrl: row.video_female_url || undefined,
-          images: [],
-          notes: "",
+          images: cachedExercise?.images ?? [],
+          notes: cachedExercise?.notes ?? "",
+          ...(cachedExercise?.equipmentOptions
+            ? { equipmentOptions: cachedExercise.equipmentOptions }
+            : {}),
+          ...(cachedExercise?.equipmentImages
+            ? { equipmentImages: cachedExercise.equipmentImages }
+            : {}),
+          ...(cachedExercise?.cableGripOptions
+            ? { cableGripOptions: cachedExercise.cableGripOptions }
+            : {}),
+          ...(cachedExercise?.cableGripImages
+            ? { cableGripImages: cachedExercise.cableGripImages }
+            : {}),
         };
         customMap.set(row.id, exItem);
       }

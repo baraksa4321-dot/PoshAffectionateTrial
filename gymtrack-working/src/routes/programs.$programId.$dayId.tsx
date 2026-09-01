@@ -31,7 +31,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Stepper } from "@/components/Stepper";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
@@ -102,6 +102,90 @@ function ChipButton({
     >
       {children}
     </button>
+  );
+}
+
+function SearchSelectField({
+  label,
+  value,
+  options,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  placeholder: string;
+  onChange: (value: string) => void;
+}) {
+  const [query, setQuery] = useState(value);
+  const [open, setOpen] = useState(false);
+  const filteredOptions = options
+    .filter((option) => option.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
+    .slice(0, 12);
+
+  useEffect(() => {
+    setQuery(value);
+  }, [value]);
+
+  return (
+    <div className="relative">
+      <label className="block text-[10px] font-bold text-primary">{label}</label>
+      <div className="relative mt-1.5">
+        <Search className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary/60" />
+        <input
+          value={query}
+          onFocus={() => setOpen(true)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setOpen(true);
+          }}
+          placeholder={placeholder}
+          aria-label={label}
+          autoComplete="off"
+          className="h-10 w-full rounded-xl border border-primary/20 bg-background pe-9 ps-3 text-xs font-bold text-ink outline-none focus:border-primary"
+        />
+      </div>
+      {open ? (
+        <>
+          <button
+            type="button"
+            aria-label={`סגירת ${label}`}
+            className="fixed inset-0 z-10 cursor-default"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            role="listbox"
+            aria-label={`אפשרויות ${label}`}
+            className="absolute inset-x-0 top-full z-20 mt-1 max-h-44 overflow-y-auto rounded-xl border border-primary/20 bg-white p-1 shadow-lg"
+          >
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  role="option"
+                  aria-selected={option === value}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    setQuery(option);
+                    setOpen(false);
+                    onChange(option);
+                  }}
+                  className={`block w-full rounded-lg px-3 py-2 text-right text-xs font-semibold ${
+                    option === value ? "bg-primary/10 text-primary" : "text-ink hover:bg-secondary"
+                  }`}
+                >
+                  {option}
+                </button>
+              ))
+            ) : (
+              <p className="px-3 py-2 text-[11px] text-muted-foreground">לא נמצאה אפשרות.</p>
+            )}
+          </div>
+        </>
+      ) : null}
+    </div>
   );
 }
 
@@ -731,41 +815,28 @@ function SortableItem({
 
       {exercise ? (
         <div className="mt-4 rounded-2xl border border-primary/15 bg-primary/5 p-3">
-          <label className="block text-[10px] font-bold text-primary">
-            מכשיר / ציוד
-            <select
-              value={selectedEquipment}
-              onChange={(event) =>
-                onPatch(item.id, {
-                  equipment: event.target.value,
-                  cableGrip: undefined,
-                })
-              }
-              className="mt-1.5 h-10 w-full rounded-xl border border-primary/20 bg-background px-3 text-xs font-bold text-ink outline-none focus:border-primary"
-            >
-              {availableEquipment.map((equipment) => (
-                <option key={equipment} value={equipment}>
-                  {equipment}
-                </option>
-              ))}
-            </select>
-          </label>
+          <SearchSelectField
+            label="חיפוש מכשיר / ציוד"
+            value={selectedEquipment}
+            options={availableEquipment}
+            placeholder="חיפוש מכשיר..."
+            onChange={(equipment) =>
+              onPatch(item.id, {
+                equipment,
+                cableGrip: undefined,
+              })
+            }
+          />
           {selectedEquipment === "פולי / כבלים" ? (
-            <label className="mt-2 block text-[10px] font-bold text-primary">
-              מאחז
-              <select
+            <div className="mt-2">
+              <SearchSelectField
+                label="חיפוש מאחז לכבלים"
                 value={item.cableGrip || ""}
-                onChange={(event) => onPatch(item.id, { cableGrip: event.target.value || undefined })}
-                className="mt-1.5 h-10 w-full rounded-xl border border-primary/20 bg-background px-3 text-xs font-bold text-ink outline-none focus:border-primary"
-              >
-                <option value="">בחירת מאחז...</option>
-                {availableCableGrips.map((grip) => (
-                  <option key={grip} value={grip}>
-                    {grip}
-                  </option>
-                ))}
-              </select>
-            </label>
+                options={availableCableGrips}
+                placeholder="חיפוש מאחז..."
+                onChange={(cableGrip) => onPatch(item.id, { cableGrip: cableGrip || undefined })}
+              />
+            </div>
           ) : null}
         </div>
       ) : null}
