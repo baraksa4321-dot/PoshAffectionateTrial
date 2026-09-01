@@ -42,39 +42,6 @@ import { LockKeyhole, RefreshCw } from "lucide-react";
 
 const useLoadingCycleEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 const LOADING_RECOVERY_TIMEOUT_MS = 45_000;
-const BOOT_WATCHDOG_SCRIPT = `
-(() => {
-  const recoveryKey = "__myroutine_boot_recovery_v1";
-  window.setTimeout(async () => {
-    if (window.__MY_ROUTINE_BOOTED__) return;
-    const fallback = document.querySelector("[data-app-boot-fallback]");
-    let shouldRetry = false;
-    try {
-      shouldRetry = window.sessionStorage.getItem(recoveryKey) !== "1";
-      if (shouldRetry) window.sessionStorage.setItem(recoveryKey, "1");
-    } catch {
-      shouldRetry = false;
-    }
-    if (shouldRetry) {
-      try {
-        if ("serviceWorker" in navigator) {
-          const registrations = await navigator.serviceWorker.getRegistrations();
-          await Promise.all(registrations.map((registration) => registration.unregister()));
-        }
-        if ("caches" in window) {
-          const cacheKeys = await caches.keys();
-          await Promise.all(cacheKeys.map((key) => caches.delete(key)));
-        }
-      } catch {
-        // The second boot attempt is still useful when storage APIs are blocked.
-      }
-      window.location.reload();
-      return;
-    }
-    if (fallback instanceof HTMLElement) fallback.hidden = false;
-  }, 12_000);
-})();
-`;
 
 async function resetAuthSessionAndReload() {
   try {
@@ -1050,6 +1017,7 @@ function LegacyLoadingIllustration({ variant }: { variant: number }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
+    scripts: [{ async: true, src: "/boot-watchdog.js" }],
     meta: [
       { charSet: "utf-8" },
       {
@@ -1234,16 +1202,35 @@ function RootContent() {
       openingCycleClaimedRef.current = true;
       setOpeningCycleIndex(claimOpeningCycle());
     }
-    // Register the offline app shell in Preview as well as production. The
-    // Preview URL is the address users may save on their phones, so it must
-    // be able to serve the cached app when Safari is in Airplane Mode.
     if ("serviceWorker" in navigator) {
-      void navigator.serviceWorker
-        .register("/sw.js?v=9", { updateViaCache: "none" })
-        .then((registration) => registration.update())
-        .catch((error) => {
-          console.warn("[App shell cache unavailable]:", error);
-        });
+      if (import.meta.env.DEV) {
+        // A Service Worker is unsafe in Vite development: it can serve stale
+        // source modules while HMR serves newer SSR output, which leaves
+        // Safari on the server-rendered loading shell.
+        void navigator.serviceWorker
+          .getRegistrations()
+          .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+          .then(() => caches.keys())
+          .then((cacheKeys) =>
+            Promise.all(
+              cacheKeys
+                .filter((key) => key.startsWith("myroutine-app-shell-"))
+                .map((key) => caches.delete(key)),
+            ),
+          )
+          .catch((error) => {
+            console.warn("[Preview app shell cleanup unavailable]:", error);
+          });
+      } else {
+        // Keep the offline app shell in production, where compiled asset URLs
+        // remain stable for the lifetime of a deployed build.
+        void navigator.serviceWorker
+          .register("/sw.js?v=9", { updateViaCache: "none" })
+          .then((registration) => registration.update())
+          .catch((error) => {
+            console.warn("[App shell cache unavailable]:", error);
+          });
+      }
     }
     const advanceForRestoredPage = (event: PageTransitionEvent) => {
       if (!event.persisted) return;
@@ -1495,7 +1482,6 @@ function RootContent() {
       ) : (
         <Outlet />
       )}
-      <script dangerouslySetInnerHTML={{ __html: BOOT_WATCHDOG_SCRIPT }} />
       <Scripts />
     </QueryClientProvider>
   );
