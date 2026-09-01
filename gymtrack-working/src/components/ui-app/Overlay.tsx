@@ -246,7 +246,10 @@ export function Overlay({
       data-overlay-root="true"
       data-overlay-variant={variant}
       data-keyboard-open={keyboardOffset > 0 ? "true" : undefined}
-      style={viewportHeight !== null && !isBottom ? { height: `${viewportHeight}px` } : undefined}
+      // Keep centered dialogs anchored to the layout viewport when the
+      // keyboard opens. Re-centering against the shorter visual viewport
+      // makes profile/edit cards jump upward as soon as an input is focused.
+      style={viewportHeight !== null && isFull ? { height: `${viewportHeight}px` } : undefined}
       className={`overlay-root fixed inset-0 z-[100] flex touch-pan-y overflow-x-hidden ${
         isFull
           ? "items-stretch justify-center"
