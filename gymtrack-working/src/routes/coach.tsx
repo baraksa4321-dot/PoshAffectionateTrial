@@ -234,10 +234,85 @@ function reportDateLabel(date: string, options?: Intl.DateTimeFormatOptions): st
   );
 }
 
-function reportWeekdayLabel(date: string): string {
-  return new Date(`${date}T00:00:00`)
-    .toLocaleDateString("he-IL", { weekday: "short" })
-    .replace(".", "");
+function reportWeekRangeLabel(start: string, end: string): string {
+  return `${reportDateLabel(start)}–${reportDateLabel(end)}`;
+}
+
+function youtubeEmbedUrl(source: string): string | null {
+  try {
+    const url = new URL(source);
+    const hostname = url.hostname.replace(/^www\./, "").toLowerCase();
+    let videoId = "";
+
+    if (hostname === "youtu.be") {
+      videoId = url.pathname.slice(1);
+    } else if (hostname === "youtube.com" || hostname === "m.youtube.com") {
+      if (url.pathname === "/watch") {
+        videoId = url.searchParams.get("v") ?? "";
+      } else if (url.pathname.startsWith("/shorts/") || url.pathname.startsWith("/embed/")) {
+        videoId = url.pathname.split("/")[2] ?? "";
+      }
+    }
+
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+  } catch {
+    return null;
+  }
+}
+
+function WorkoutExerciseDemoVideos({ exercise }: { exercise: Exercise | undefined }) {
+  if (!exercise) return null;
+
+  const sources = Array.from(
+    new Set(
+      [
+        ...(exercise.videoUrls ?? []),
+        exercise.videoUrl,
+        exercise.videoMaleUrl,
+        exercise.videoFemaleUrl,
+      ]
+        .map((source) => source?.trim())
+        .filter((source): source is string => Boolean(source)),
+    ),
+  );
+
+  if (sources.length === 0) return null;
+
+  return (
+    <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-2.5">
+      <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-primary">
+        <Video className="h-3.5 w-3.5" /> סרטון הדגמה לתרגיל
+      </p>
+      <div className={sources.length > 1 ? "grid gap-2 sm:grid-cols-2" : "space-y-2"}>
+        {sources.map((source, index) => {
+          const embedUrl = youtubeEmbedUrl(source);
+          return (
+            <div key={`${source}-${index}`} className="overflow-hidden rounded-lg bg-black">
+              {embedUrl ? (
+                <iframe
+                  src={embedUrl}
+                  title={`סרטון הדגמה ${index + 1} עבור ${exercise.name}`}
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="aspect-video w-full"
+                />
+              ) : (
+                <video
+                  src={source}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="max-h-64 w-full object-contain"
+                  aria-label={`סרטון הדגמה ${index + 1} עבור ${exercise.name}`}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function workoutReviewItems(workout: Workout) {
@@ -315,6 +390,8 @@ function WorkoutReviewExerciseCard({
           הוחלף בפועל ב־{replacementEntry.exerciseName || "תרגיל אחר"}
         </p>
       ) : null}
+
+      <WorkoutExerciseDemoVideos exercise={exercise} />
 
       {records.length > 0 ? (
         <div className="mt-3 space-y-3">
@@ -510,75 +587,37 @@ function WorkoutWeeklyReportWeek({
             ביצוע · {completedSets} סטים הושלמו
           </p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-            {sessions.length} ביצועים
-          </span>
-          <div className="flex items-center gap-1 rounded-xl border border-primary/20 bg-background/80 p-0.5">
-            <button
-              type="button"
-              aria-label="שבוע קודם"
-              title="שבוע קודם"
-              onClick={() => setWeekOffset((offset) => offset - 1)}
-              className="grid h-7 w-7 place-items-center rounded-lg text-primary transition-colors hover:bg-primary/10"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-            <span className="min-w-20 text-center text-[10px] font-bold text-ink">
-              {isCurrentWeek ? "השבוע הנוכחי" : `לפני ${Math.abs(weekOffset)} שבועות`}
-            </span>
-            <button
-              type="button"
-              aria-label="שבוע הבא"
-              title="שבוע הבא"
-              disabled={isCurrentWeek}
-              onClick={() => setWeekOffset(getNextWorkoutReportWeekOffset)}
-              className="grid h-7 w-7 place-items-center rounded-lg text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-30"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+        <span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+          {sessions.length} ביצועים
+        </span>
       </div>
 
-      <div className="rounded-2xl border border-border/60 bg-white/55 p-2">
-        <div className="grid grid-cols-7 gap-1.5" dir="rtl">
-          {weekDays.map((day) => {
-            const isCompleted = day.sessions.length > 0;
-            return (
-              <div
-                key={day.date}
-                className={`min-w-0 rounded-xl border p-1.5 text-center ${
-                  isCompleted
-                    ? "border-emerald-200 bg-emerald-50/80"
-                    : "border-border/60 bg-white/75"
-                }`}
-              >
-                <p className="truncate text-[9px] font-bold text-muted-foreground">
-                  {reportWeekdayLabel(day.date)}
-                </p>
-                <p className="mt-0.5 text-[11px] font-extrabold text-ink">
-                  {reportDateLabel(day.date)}
-                </p>
-                <div
-                  className={`mx-auto mt-1 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-extrabold ${
-                    isCompleted ? "bg-emerald-600 text-white" : "bg-secondary text-muted-foreground"
-                  }`}
-                  aria-label={isCompleted ? "האימון בוצע" : "האימון לא בוצע"}
-                >
-                  {isCompleted ? "✓" : "—"}
-                </div>
-                <p
-                  className={`mt-1 truncate text-[8px] font-bold ${
-                    isCompleted ? "text-emerald-700" : "text-muted-foreground"
-                  }`}
-                >
-                  {isCompleted ? `${day.completedSets}/${day.totalSets}` : "לא בוצע"}
-                </p>
-              </div>
-            );
-          })}
-        </div>
+      <div
+        className="flex items-center justify-between gap-2 rounded-xl border border-primary/20 bg-white/80 p-1.5"
+        dir="rtl"
+      >
+        <button
+          type="button"
+          aria-label="שבוע קודם"
+          title="שבוע קודם"
+          onClick={() => setWeekOffset((offset) => offset - 1)}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-primary transition-colors hover:bg-primary/10"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+        <span className="min-w-0 flex-1 text-center text-xs font-extrabold text-ink">
+          {reportWeekRangeLabel(weekStart, weekEnd)}
+        </span>
+        <button
+          type="button"
+          aria-label="שבוע הבא"
+          title="שבוע הבא"
+          disabled={isCurrentWeek}
+          onClick={() => setWeekOffset(getNextWorkoutReportWeekOffset)}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-30"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
       </div>
 
       {sessions.length > 0 ? (
