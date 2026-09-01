@@ -6,6 +6,7 @@ import {
   Copy,
   Dumbbell,
   Music2,
+  Plus,
   Search,
   Sparkles,
   Trash2,
@@ -17,9 +18,12 @@ import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
 import { Overlay } from "@/components/ui-app/Overlay";
 import {
   EmptyState,
+  IconButton,
+  PrimaryButton,
   SectionHeader,
+  SecondaryButton,
 } from "@/components/ui-app/primitives";
-import { deleteProgram, duplicateProgram, useGym } from "@/lib/gym-store";
+import { createProgram, deleteProgram, duplicateProgram, useGym } from "@/lib/gym-store";
 import { genderText } from "@/lib/gender-copy";
 import { BUILT_IN_MUSIC_GENRES, type BuiltInMusicGenre } from "@/lib/music-library";
 import { visibleProgramNote } from "@/lib/gym-types";
@@ -34,7 +38,10 @@ function ProgramsPage() {
   const navigate = useNavigate();
   const role = userProfile?.role;
   const gender = userProfile?.gender;
+  const isOwner = role === "owner";
   const isCoach = role === "coach" || role === "owner";
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
   const [showPlaylistMenu, setShowPlaylistMenu] = useState(false);
   const [selectedMusicGenre, setSelectedMusicGenre] = useState<BuiltInMusicGenre | null>(null);
@@ -51,13 +58,74 @@ function ProgramsPage() {
     );
   });
 
+  const submit = () => {
+    const value = name.trim();
+    if (!value || !isOwner) return;
+    const program = createProgram(value);
+    setName("");
+    setAdding(false);
+    void navigate({ to: "/programs/$programId", params: { programId: program.id } });
+  };
+
   return (
     <AppShell
       kicker="תוכניות"
       title=""
       subtitle=""
-      action={undefined}
+      action={
+        isOwner ? (
+          <IconButton
+            variant="primary"
+            aria-label="תכנית חדשה"
+            onClick={() => setAdding((value) => !value)}
+          >
+            <Plus className="h-5 w-5" strokeWidth={2.4} />
+          </IconButton>
+        ) : undefined
+      }
     >
+      {adding && isOwner ? (
+        <div className="surface-card mt-4 p-4 text-start">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
+              תכנית חדשה
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setAdding(false);
+                setName("");
+              }}
+              aria-label="סגור"
+              className="press grid h-8 w-8 place-items-center rounded-xl text-muted-foreground hover:bg-secondary"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <input
+            autoFocus
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            onKeyDown={(event) => event.key === "Enter" && submit()}
+            placeholder="למשל: תכנית חיטוב 4 ימים"
+            className="mt-2 w-full rounded-2xl border border-border/60 bg-secondary px-4 py-3.5 text-base outline-none placeholder:text-muted-foreground/80 focus:border-primary"
+          />
+          <div className="mt-3 flex gap-2">
+            <PrimaryButton onClick={submit} disabled={!name.trim()}>
+              {genderText(gender, "צרי תכנית", "צור תכנית")}
+            </PrimaryButton>
+            <SecondaryButton
+              onClick={() => {
+                setAdding(false);
+                setName("");
+              }}
+            >
+              ביטול
+            </SecondaryButton>
+          </div>
+        </div>
+      ) : null}
+
       {/* Programs list */}
       <section className="mt-6">
         <SectionHeader
@@ -181,9 +249,25 @@ function ProgramsPage() {
             title={genderText(gender, "צרי קצב אימונים קבוע", "צור קצב אימונים קבוע")}
             description={genderText(
               gender,
-              "התוכניות והאימונים שלך יופיעו כאן לאחר שהמאמן יוסיף אותם.",
-              "התוכניות והאימונים שלך יופיעו כאן לאחר שהמאמן יוסיף אותם.",
+              isOwner
+                ? "הוסיפי תכנית ראשונה ובני ימי אימון שמתאימים לשגרה שלך."
+                : "התוכניות והאימונים שלך יופיעו כאן לאחר שהמאמן יוסיף אותם.",
+              isOwner
+                ? "הוסף תכנית ראשונה ובנה ימי אימון שמתאימים לשגרה שלך."
+                : "התוכניות והאימונים שלך יופיעו כאן לאחר שהמאמן יוסיף אותם.",
             )}
+            action={
+              isOwner ? (
+                <button
+                  type="button"
+                  onClick={() => setAdding(true)}
+                  className="press inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-[13.5px] font-bold text-primary-foreground shadow-sm"
+                >
+                  <Plus className="h-4 w-4" strokeWidth={2.4} />
+                  יצירת תכנית אימונים
+                </button>
+              ) : undefined
+            }
           />
         )}
       </section>
