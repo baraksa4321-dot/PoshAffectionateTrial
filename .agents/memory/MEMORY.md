@@ -29,3 +29,4 @@
 - [Workout history deduplication](history-dedupe.md) — Merge retries only with an exact timestamp or repeated ID; same-day workouts may be legitimate separate executions.
 - [Coach workspace fixtures](coach-workspace-fixtures.md) — The authenticated coach fixture can hydrate with the first workout day already open; tests should accept that valid initial state.
 - [Focused workspace portals](focused-workspace-portals.md) — Portal targets for focused coach editors belong inside the owning workspace, not the global app main.
+- [Completed session draft guard](session-feedback-persistence.md) — After a successful save, stop hydration effects from recreating cleared feedback drafts.
