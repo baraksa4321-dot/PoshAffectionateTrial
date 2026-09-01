@@ -266,7 +266,6 @@ async function installFixture(page) {
       nutritionDay,
     },
   );
-
 }
 
 function assertKeyboardVisible(locator) {
@@ -360,6 +359,17 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await foodSearch.fill("אורז");
   await assertKeyboardVisible(foodSearch);
   await expect(foodSearch).toHaveValue("אורז");
+  const menuDraft = page.getByRole("textbox", { name: "שם הארוחה" }).first();
+  await menuDraft.fill("טיוטת תפריט לפני פתיחת הדוח");
+  await expect(menuDraft).toHaveValue("טיוטת תפריט לפני פתיחת הדוח");
+
+  await page.getByRole("tab", { name: "תוכנית אימונים" }).click();
+  await dayButtons.nth(0).click();
+  await openReportButton.click();
+  await expect(page.getByTestId("coach-workout-daily-report")).toBeVisible();
+  await page.getByRole("button", { name: "סגירת דוח", exact: true }).click();
+  await page.getByRole("tab", { name: "תפריט תזונה" }).click();
+  await expect(menuDraft).toHaveValue("טיוטת תפריט לפני פתיחת הדוח");
 
   await page.goto(`/session/${WORKOUT_ID}`);
   await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();

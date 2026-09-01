@@ -186,18 +186,62 @@ async function readTraineePage(
   };
 }
 
+async function readCoachReport(
+  coachClient: SmokeClient,
+  traineeId: string,
+  workoutId: string,
+  reportDate: string,
+): Promise<Array<Record<string, unknown>>> {
+  const start = `${reportDate}T00:00:00.000Z`;
+  const end = `${reportDate}T23:59:59.999Z`;
+  const { data, error } = await coachClient
+    .from("workout_sessions")
+    .select(
+      "id, workout_id, date, duration_sec, entries, notes, difficulty_rating, discomfort_notes",
+    )
+    .eq("user_id", traineeId)
+    .eq("workout_id", workoutId)
+    .gte("date", start)
+    .lte("date", end)
+    .order("date", { ascending: false });
+  if (error) {
+    throw new Error(
+      `The coach report could not refresh${errorCode(error) ? ` (${errorCode(error)})` : ""}.`,
+    );
+  }
+  return (data ?? []) as Array<Record<string, unknown>>;
+}
+
 async function cleanup(
   coachClient: SmokeClient,
   traineeClient: SmokeClient,
   traineeId: string,
   programId: string,
+  sessionId: string | null,
   originalPlannedMenu: unknown,
-  channel: RealtimeChannel | null,
+  traineeChannel: RealtimeChannel | null,
+  coachChannel: RealtimeChannel | null,
 ): Promise<void> {
   const cleanupErrors: string[] = [];
-  if (channel) {
-    const channelResult = await traineeClient.removeChannel(channel);
+  if (traineeChannel) {
+    const channelResult = await traineeClient.removeChannel(traineeChannel);
     if (channelResult !== "ok") cleanupErrors.push(`realtime channel removal (${channelResult})`);
+  }
+  if (coachChannel) {
+    const channelResult = await coachClient.removeChannel(coachChannel);
+    if (channelResult !== "ok")
+      cleanupErrors.push(`coach realtime channel removal (${channelResult})`);
+  }
+
+  if (sessionId) {
+    const { error: sessionError } = await traineeClient
+      .from("workout_sessions")
+      .delete()
+      .eq("id", sessionId)
+      .eq("user_id", traineeId);
+    if (sessionError) {
+      cleanupErrors.push(`workout session deletion (${errorCode(sessionError) ?? "delete"})`);
+    }
   }
 
   const { error: menuError } = await coachClient.rpc("save_user_planned_menu", {
@@ -243,6 +287,8 @@ async function run(): Promise<void> {
   const coachClient = makeClient();
   const traineeClient = makeClient();
   let traineeChannel: RealtimeChannel | null = null;
+  let coachChannel: RealtimeChannel | null = null;
+  let completedSessionId: string | null = null;
   let originalPlannedMenu: unknown = [];
   let cleanupNeeded = false;
 
@@ -293,7 +339,19 @@ async function run(): Promise<void> {
       program_id: programId,
       user_id: trainee.id,
       name: initialWorkoutName,
-      items: [],
+      items: [
+        {
+          id: `${runId}-item`,
+          exerciseId: `${runId}-exercise`,
+          exerciseName: `${runId} test exercise`,
+          sets: 2,
+          reps: 8,
+          repType: "fixed",
+          weight: 20,
+          rest: 60,
+          notes: "",
+        },
+      ],
       sort_order: 0,
     });
     if (dayError)
@@ -379,6 +437,123 @@ async function run(): Promise<void> {
     );
     if (subscriptionFailure) throw subscriptionFailure;
 
+    let coachReportSessions: Array<Record<string, unknown>> = [];
+    let coachReportRefreshChain = Promise.resolve();
+    const enqueueCoachReportRefresh = () => {
+      coachReportRefreshChain = coachReportRefreshChain.then(async () => {
+        coachReportSessions = await readCoachReport(
+          coachClient,
+          trainee.id,
+          dayId,
+          new Date().toISOString().slice(0, 10),
+        );
+      });
+    };
+
+    let coachSubscribed = false;
+    let coachSubscriptionFailure: Error | null = null;
+    coachChannel = coachClient
+      .channel(`gymtrack-live-report-smoke-${runId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "workout_sessions",
+          filter: `user_id=eq.${trainee.id}`,
+        },
+        enqueueCoachReportRefresh,
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") coachSubscribed = true;
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          coachSubscriptionFailure = new Error(
+            `Coach report real-time subscription failed (${status}).`,
+          );
+        }
+      });
+    await waitFor(
+      () => coachSubscribed || coachSubscriptionFailure !== null,
+      "the coach report real-time subscription",
+      config.timeoutMs,
+    );
+    if (coachSubscriptionFailure) throw coachSubscriptionFailure;
+
+    const reportDate = new Date().toISOString().slice(0, 10);
+    const reportSessionId = `${runId}-session`;
+    const completedEntries = [
+      {
+        exerciseId: `${runId}-exercise`,
+        exerciseName: `${runId} test exercise`,
+        sets: [
+          {
+            id: `${runId}-set-1`,
+            setNumber: 1,
+            weight: 20,
+            reps: 8,
+            done: true,
+          },
+        ],
+        feedback: {
+          rating: "appropriate",
+          notes: `${runId} exercise feedback`,
+        },
+      },
+    ];
+    const { error: sessionError } = await traineeClient.from("workout_sessions").insert({
+      id: reportSessionId,
+      user_id: trainee.id,
+      workout_id: dayId,
+      workout_name: updatedWorkoutName,
+      program_name: updatedProgramName,
+      date: new Date().toISOString(),
+      duration_sec: 420,
+      entries: completedEntries,
+      notes: `${runId} trainee workout feedback`,
+      difficulty_rating: "appropriate",
+      discomfort_notes: `${runId} no discomfort`,
+    });
+    if (sessionError) {
+      throw new Error(
+        `Trainee could not save the completed workout (${errorCode(sessionError) ?? "insert"}).`,
+      );
+    }
+    completedSessionId = reportSessionId;
+
+    await waitFor(
+      () => coachReportSessions.some((session) => session.id === reportSessionId),
+      "the coach report to receive the completed trainee workout over real-time",
+      config.timeoutMs,
+    );
+    await coachReportRefreshChain;
+    const refreshedCoachReport = await readCoachReport(coachClient, trainee.id, dayId, reportDate);
+    const reportSession = refreshedCoachReport.find((session) => session.id === reportSessionId);
+    assertCondition(
+      Boolean(reportSession),
+      "The coach report did not include the trainee's completed workout for today.",
+    );
+    const reportEntries = (reportSession?.entries ?? []) as Array<Record<string, unknown>>;
+    const reportEntry = reportEntries[0];
+    const reportSets = (reportEntry?.sets ?? []) as Array<Record<string, unknown>>;
+    assertCondition(
+      reportSets.some((set) => set.done === true && set.reps === 8),
+      "The coach report did not include the completed set.",
+    );
+    assertCondition(
+      reportEntry?.feedback &&
+        (reportEntry.feedback as Record<string, unknown>).notes === `${runId} exercise feedback`,
+      "The coach report did not include the exercise feedback.",
+    );
+    assertCondition(
+      reportSession?.notes === `${runId} trainee workout feedback` &&
+        reportSession?.difficulty_rating === "appropriate" &&
+        reportSession?.discomfort_notes === `${runId} no discomfort`,
+      "The coach report did not include the trainee's session feedback.",
+    );
+    console.log(
+      "PASS: the coach report refreshed through Realtime and shows today's set and trainee feedback.",
+    );
+
     console.log("Applying coach workout and menu changes while the trainee session stays open...");
     const { error: workoutUpdateError } = await coachClient
       .from("program_days")
@@ -437,15 +612,18 @@ async function run(): Promise<void> {
           traineeClient,
           (await traineeClient.auth.getUser()).data.user?.id ?? "",
           programId,
+          completedSessionId,
           originalPlannedMenu,
           traineeChannel,
+          coachChannel,
         );
         console.log("Cleaned up isolated smoke records.");
       } catch (cleanupError) {
         console.error(`WARNING: smoke cleanup failed: ${errorMessage(cleanupError, config)}`);
       }
-    } else if (traineeChannel) {
-      await traineeClient.removeChannel(traineeChannel);
+    } else {
+      if (traineeChannel) await traineeClient.removeChannel(traineeChannel);
+      if (coachChannel) await coachClient.removeChannel(coachChannel);
     }
     await Promise.all([coachClient.auth.signOut(), traineeClient.auth.signOut()]);
   }

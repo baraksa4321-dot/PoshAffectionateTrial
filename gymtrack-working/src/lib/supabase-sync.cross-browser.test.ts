@@ -480,6 +480,9 @@ describe("cross-browser Supabase sync boundaries", () => {
         date: completedSession.date,
         duration_sec: completedSession.durationSec,
         entries: completedSession.entries,
+        notes: "Workout notes",
+        difficulty_rating: "appropriate",
+        discomfort_notes: "No discomfort",
       },
     ]);
 
@@ -493,6 +496,9 @@ describe("cross-browser Supabase sync boundaries", () => {
       date: completedSession.date,
       durationSec: completedSession.durationSec,
       entries: completedSession.entries,
+      notes: "Workout notes",
+      difficultyRating: "appropriate",
+      discomfortNotes: "No discomfort",
     });
     expect(coachData.history[0]?.entries[0]?.videoUrl).toBe(completedSession.entries[0]?.videoUrl);
   });

@@ -203,9 +203,7 @@ function WorkoutSurfacePlacement({
       setAnchor(null);
       return;
     }
-    setAnchor(
-      document.querySelector<HTMLElement>('[data-coach-workout-surface-slot="true"]'),
-    );
+    setAnchor(document.querySelector<HTMLElement>('[data-coach-workout-surface-slot="true"]'));
   }, [active]);
 
   if (!active) return children;
@@ -817,6 +815,7 @@ function WorkoutDailyReport({
     <section
       className="mt-3 space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.035] p-3"
       aria-label={`היסטוריית אימונים והערות עבור ${workout.name}`}
+      data-testid="coach-workout-daily-report"
     >
       <div className="flex items-start gap-3 border-b border-primary/15 pb-3">
         <span className="illustrated-mark inline-grid h-11 w-11 shrink-0 place-items-center text-primary">
@@ -881,9 +880,18 @@ function WorkoutDailyReport({
           </span>
         </div>
         {sessions.length > 0 ? (
-          <p className="mt-1 text-muted-foreground">
-            {completedSets} מתוך {totalSets} סטים בוצעו בפועל
-          </p>
+          <div className="mt-1 space-y-1 text-muted-foreground">
+            <p>
+              {completedSets} מתוך {totalSets} סטים בוצעו בפועל
+            </p>
+            {sessions.map((session) =>
+              session.difficultyRating ? (
+                <p key={`${session.id}-difficulty`}>
+                  משוב על קושי: {ratingLabel(session.difficultyRating)}
+                </p>
+              ) : null,
+            )}
+          </div>
         ) : null}
       </div>
 
@@ -1397,9 +1405,7 @@ export function CoachDashboardPage({
     setSetRests((current) =>
       Array.from({ length: nextCount }, (_, index) => current[index] ?? restSec),
     );
-    setSetNotes((current) =>
-      Array.from({ length: nextCount }, (_, index) => current[index] ?? ""),
-    );
+    setSetNotes((current) => Array.from({ length: nextCount }, (_, index) => current[index] ?? ""));
   };
   const [supersetRepsMin, setSupersetRepsMin] = useState(10);
   const [supersetRepsMax, setSupersetRepsMax] = useState(12);
@@ -1438,6 +1444,10 @@ export function CoachDashboardPage({
   const [lastClientRefreshAt, setLastClientRefreshAt] = useState<number | null>(null);
   const [clientRefreshInFlight, setClientRefreshInFlight] = useState(false);
   const [clientDataStale, setClientDataStale] = useState(false);
+  const draftOwnerRef = useRef<string | null>(null);
+  const measurementDraftDirtyRef = useRef(false);
+  const profileDraftDirtyRef = useRef(false);
+  const plannedMealsDraftDirtyRef = useRef(false);
   const [editingMeasurements, setEditingMeasurements] = useState(false);
   const [measurementDraft, setMeasurementDraft] = useState<BodyMeasurement>({
     id: "",
@@ -1516,6 +1526,24 @@ export function CoachDashboardPage({
     },
     [applyClientDetails],
   );
+
+  const markMeasurementDraftDirty = () => {
+    measurementDraftDirtyRef.current = true;
+  };
+  const markProfileDraftDirty = () => {
+    profileDraftDirtyRef.current = true;
+  };
+  const markPlannedMealsDraftDirty = () => {
+    plannedMealsDraftDirtyRef.current = true;
+  };
+
+  useEffect(() => {
+    if (draftOwnerRef.current === selectedClientId) return;
+    draftOwnerRef.current = selectedClientId;
+    measurementDraftDirtyRef.current = false;
+    profileDraftDirtyRef.current = false;
+    plannedMealsDraftDirtyRef.current = false;
+  }, [selectedClientId]);
 
   const loadCoachClients = useCallback(async () => {
     setManagementError("");
@@ -1877,6 +1905,7 @@ export function CoachDashboardPage({
 
   useEffect(() => {
     const latest = clientDetails?.bodyMeasurements?.[0];
+    if (measurementDraftDirtyRef.current) return;
     setMeasurementDraft(
       latest
         ? { ...latest }
@@ -1913,6 +1942,7 @@ export function CoachDashboardPage({
   }, [clientDetails, editingProgramId, workspaceMode, workspacePage]);
 
   useEffect(() => {
+    if (profileDraftDirtyRef.current) return;
     setCalTarget(clientDetails?.nutritionTargets?.calories ?? 0);
     const profile = clientDetails?.profile;
     setProfileAge(profile?.age === undefined ? "" : String(profile.age));
@@ -1988,6 +2018,7 @@ export function CoachDashboardPage({
       setProfileNotice(`שמירת נתוני הגוף נכשלה: ${error.message}`);
       return;
     }
+    profileDraftDirtyRef.current = false;
     setClientDetails((current) =>
       current
         ? {
@@ -2044,9 +2075,7 @@ export function CoachDashboardPage({
       ),
     );
     setSelectedOwnerProfileDetails((current) =>
-      current?.profile
-        ? { ...current, profile: { ...current.profile, showCalories } }
-        : current,
+      current?.profile ? { ...current, profile: { ...current.profile, showCalories } } : current,
     );
 
     const { error } = await supabase.rpc("set_user_calorie_visibility", {
@@ -2101,6 +2130,7 @@ export function CoachDashboardPage({
       setMeasurementNotice(`שמירת המדידות נכשלה: ${error.message}`);
       return;
     }
+    measurementDraftDirtyRef.current = false;
     const saved: BodyMeasurement = {
       id: data.id,
       date: data.date,
@@ -2135,6 +2165,7 @@ export function CoachDashboardPage({
     // An empty cloud menu is authoritative. Do not recreate defaults after a
     // coach intentionally removes every meal, otherwise the empty save can
     // never reach the trainee.
+    if (plannedMealsDraftDirtyRef.current) return;
     setPlannedMeals(clientDetails?.plannedMeals ?? []);
     setMenuFoodMealId(null);
     setMenuFoodId("");
@@ -2783,9 +2814,7 @@ export function CoachDashboardPage({
           reps: setRepMins[sourceIndex] ?? repMin,
           repMax: setRepMaxes[sourceIndex] ?? repMax,
           rest: setRests[sourceIndex] ?? restSec,
-           ...(setNotes[sourceIndex]?.trim()
-             ? { notes: setNotes[sourceIndex].trim() }
-             : {}),
+          ...(setNotes[sourceIndex]?.trim() ? { notes: setNotes[sourceIndex].trim() } : {}),
           ...(mode === "drop" ? { dropSet: true } : {}),
         };
       });
@@ -2980,9 +3009,7 @@ export function CoachDashboardPage({
             reps,
             repMax: repMaxForSet,
             rest: setRests[sourceIndex] ?? restSec,
-             ...(setNotes[sourceIndex]?.trim()
-               ? { notes: setNotes[sourceIndex].trim() }
-               : {}),
+            ...(setNotes[sourceIndex]?.trim() ? { notes: setNotes[sourceIndex].trim() } : {}),
             ...(mode === "drop" ? { dropSet: true } : {}),
           };
         });
@@ -3022,12 +3049,12 @@ export function CoachDashboardPage({
       setTechniqueNotes("");
       setSupersetGroup("");
       setSupersetPartnerId("");
-       setSupersetPartnerQuery("");
+      setSupersetPartnerQuery("");
       setDropSetEnabled(false);
       setDropLevel1Weight("");
       setDropLevel2Weight("");
       setSetModes(["normal", "normal", "normal"]);
-       setSetNotes(["", "", ""]);
+      setSetNotes(["", "", ""]);
       setApprovedAltIds([]);
       setBodyweightAlternativeId("");
       return;
@@ -3050,7 +3077,7 @@ export function CoachDashboardPage({
     setTechniqueNotes("");
     setSupersetGroup("");
     setSupersetPartnerId("");
-     setSupersetPartnerQuery("");
+    setSupersetPartnerQuery("");
     setDropSetEnabled(false);
     setDropLevel1Weight("");
     setDropLevel2Weight("");
@@ -3167,6 +3194,7 @@ export function CoachDashboardPage({
 
   const addPlannedMeal = () => {
     if (!isCoach) return;
+    markPlannedMealsDraftDirty();
     setPlannedMeals((current) => [
       ...current,
       { id: uid(), name: `ארוחה ${current.length + 1}`, foods: [] },
@@ -3188,6 +3216,7 @@ export function CoachDashboardPage({
     // back into view.
     activeElement?.blur();
     const plannedFood: MealFood = mealFoodFromPortion(food, menuFoodQuantity, menuFoodUnit);
+    markPlannedMealsDraftDirty();
     setPlannedMeals((current) =>
       current.map((meal) =>
         meal.id === mealId ? { ...meal, foods: [...meal.foods, plannedFood] } : meal,
@@ -3217,6 +3246,7 @@ export function CoachDashboardPage({
 
   const removePlannedFood = (mealId: string, foodId: string) => {
     if (!isCoach) return;
+    markPlannedMealsDraftDirty();
     setPlannedMeals((current) =>
       current.map((meal) =>
         meal.id === mealId
@@ -3230,6 +3260,7 @@ export function CoachDashboardPage({
     if (!isCoach || !selectedClientId) return;
     if (isSelfSelected) {
       savePlannedMeals(plannedMeals);
+      plannedMealsDraftDirtyRef.current = false;
       setMenuNotice("התפריט האישי נשמר ויופיע גם באזור התזונה שלך.");
       return;
     }
@@ -3242,6 +3273,7 @@ export function CoachDashboardPage({
       setMenuNotice(`שמירת התפריט נכשלה: ${error.message}`);
       return;
     }
+    plannedMealsDraftDirtyRef.current = false;
     setMenuNotice("התפריט נשמר ויופיע למתאמן במסך התזונה האישי.");
     const refreshed = await pullClientDataForCoach(selectedClientId);
     applyClientDetails(refreshed);
@@ -3350,28 +3382,29 @@ export function CoachDashboardPage({
   const activeProgram =
     clientDetails?.programs.find((program) => program.id === editingProgramId) ??
     clientDetails?.programs.at(-1);
-  const trackingPlanRows =
-    selectedTrackingWorkout?.items
-      ? workoutReviewItems(selectedTrackingWorkout).map((item) => {
-      const sessionEntries = visibleTrackingSessions.flatMap((session) => session.entries);
-      const actualRecords = visibleTrackingSessions.flatMap((session) =>
-        session.entries
-          .filter((entry) => entry.exerciseId === item.exerciseId)
-          .map((entry) => ({ date: session.date, sessionId: session.id, entry })),
-      );
-      const actualEntries = actualRecords.map(({ entry }) => entry);
-      const actualEntry = actualEntries[0];
-      const replacementEntry = actualEntry ? undefined : findReplacementEntry(item, sessionEntries);
-      return {
-        item,
-        actualEntry,
-        actualEntries,
-        actualRecords,
-        replacementEntry,
-        exercise: store.exercises.find((exercise) => exercise.id === item.exerciseId),
-      };
-    })
-      : [];
+  const trackingPlanRows = selectedTrackingWorkout?.items
+    ? workoutReviewItems(selectedTrackingWorkout).map((item) => {
+        const sessionEntries = visibleTrackingSessions.flatMap((session) => session.entries);
+        const actualRecords = visibleTrackingSessions.flatMap((session) =>
+          session.entries
+            .filter((entry) => entry.exerciseId === item.exerciseId)
+            .map((entry) => ({ date: session.date, sessionId: session.id, entry })),
+        );
+        const actualEntries = actualRecords.map(({ entry }) => entry);
+        const actualEntry = actualEntries[0];
+        const replacementEntry = actualEntry
+          ? undefined
+          : findReplacementEntry(item, sessionEntries);
+        return {
+          item,
+          actualEntry,
+          actualEntries,
+          actualRecords,
+          replacementEntry,
+          exercise: store.exercises.find((exercise) => exercise.id === item.exerciseId),
+        };
+      })
+    : [];
   const trackingNutritionDay = clientDetails?.nutritionDays.find(
     (day) => day.date === trackingDate,
   );
@@ -3794,7 +3827,10 @@ export function CoachDashboardPage({
                 {newTodayProfiles.length > 0 ? (
                   <div className="mt-2 space-y-1">
                     {newTodayProfiles.slice(0, 3).map((profile) => (
-                      <div key={profile.id} className="flex items-center justify-between text-[11px]">
+                      <div
+                        key={profile.id}
+                        className="flex items-center justify-between text-[11px]"
+                      >
                         <span className="truncate font-semibold text-ink">
                           {profileDisplayName(profile)}
                         </span>
@@ -4295,11 +4331,11 @@ export function CoachDashboardPage({
                   const isChanging = roleChangeUserId === p.id;
 
                   return (
-                      <div
+                    <div
                       key={p.id}
-                        className="flex items-center justify-between gap-2 rounded-xl border border-purple-100 bg-white p-2.5 text-xs"
+                      className="flex items-center justify-between gap-2 rounded-xl border border-purple-100 bg-white p-2.5 text-xs"
                     >
-                        <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1">
                         <button
                           type="button"
                           onClick={() => void openOwnerProfile(p)}
@@ -4322,42 +4358,42 @@ export function CoachDashboardPage({
                         </span>
                       </div>
 
-                       <div className="flex shrink-0 items-center gap-1.5">
-                         {renderOwnerCalorieToggle(p, true)}
-                         <select
-                           aria-label={`שינוי תפקיד עבור ${profileDisplayName(p)}`}
-                           value={p.role || ""}
-                           disabled={
-                             isCurrentUser ||
-                             p.profile_exists === false ||
-                             !canChangeRole ||
-                             isChanging
-                           }
-                           onChange={(event) => {
-                             const nextRole = event.target.value;
-                             if (nextRole === "coach" || nextRole === "client") {
-                               void handleOwnerChangeRole(p.id, nextRole);
-                             }
-                           }}
-                           className="max-w-28 rounded-lg border border-purple-200 bg-white px-2 py-1 text-[11px] font-bold text-purple-900 outline-none focus:border-purple-500 disabled:cursor-not-allowed disabled:opacity-60"
-                         >
-                           <option value="" disabled>
-                             לא ידוע
-                           </option>
-                           <option value="owner">בעלים</option>
-                           <option value="coach">מאמן</option>
-                           <option value="client">מתאמן</option>
-                         </select>
-                       </div>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {renderOwnerCalorieToggle(p, true)}
+                        <select
+                          aria-label={`שינוי תפקיד עבור ${profileDisplayName(p)}`}
+                          value={p.role || ""}
+                          disabled={
+                            isCurrentUser ||
+                            p.profile_exists === false ||
+                            !canChangeRole ||
+                            isChanging
+                          }
+                          onChange={(event) => {
+                            const nextRole = event.target.value;
+                            if (nextRole === "coach" || nextRole === "client") {
+                              void handleOwnerChangeRole(p.id, nextRole);
+                            }
+                          }}
+                          className="max-w-28 rounded-lg border border-purple-200 bg-white px-2 py-1 text-[11px] font-bold text-purple-900 outline-none focus:border-purple-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <option value="" disabled>
+                            לא ידוע
+                          </option>
+                          <option value="owner">בעלים</option>
+                          <option value="coach">מאמן</option>
+                          <option value="client">מתאמן</option>
+                        </select>
+                      </div>
                     </div>
                   );
                 })}
               </div>
-               {ownerCalorieNotice && !selectedOwnerProfileId ? (
-                 <p className="rounded-lg bg-purple-50 p-2 text-[11px] font-semibold text-purple-900">
-                   {ownerCalorieNotice}
-                 </p>
-               ) : null}
+              {ownerCalorieNotice && !selectedOwnerProfileId ? (
+                <p className="rounded-lg bg-purple-50 p-2 text-[11px] font-semibold text-purple-900">
+                  {ownerCalorieNotice}
+                </p>
+              ) : null}
               {roleChangeNotice ? (
                 <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-2 text-xs font-semibold text-emerald-700">
                   {roleChangeNotice}
@@ -4894,7 +4930,10 @@ export function CoachDashboardPage({
                           </div>
 
                           {/* Coach-managed monthly measurements */}
-                          <div className="surface-card rounded-2xl p-4 space-y-3">
+                          <div
+                            className="surface-card rounded-2xl p-4 space-y-3"
+                            onChange={markMeasurementDraftDirty}
+                          >
                             <div className="flex items-center justify-between border-b pb-2">
                               <div>
                                 <h4 className="font-bold text-sm text-ink">
@@ -5536,23 +5575,25 @@ export function CoachDashboardPage({
                                       if (event.key === "Enter") event.currentTarget.blur();
                                     }}
                                     className={`w-full rounded-xl border border-primary/30 bg-background font-display font-semibold text-ink outline-none focus:border-primary ${
-                                      clientsOnly ? "px-2 py-1 text-[13px]" : "px-3 py-1.5 text-[15px]"
+                                      clientsOnly
+                                        ? "px-2 py-1 text-[13px]"
+                                        : "px-3 py-1.5 text-[15px]"
                                     }`}
                                   />
                                 ) : (
-                                   <span
-                                     className={`block truncate font-display font-semibold text-ink ${
-                                       clientsOnly ? "text-[13px]" : "text-[15px]"
-                                     }`}
-                                   >
+                                  <span
+                                    className={`block truncate font-display font-semibold text-ink ${
+                                      clientsOnly ? "text-[13px]" : "text-[15px]"
+                                    }`}
+                                  >
                                     {prog.name}
                                   </span>
                                 )}
-                                 <span
-                                   className={`mt-0.5 block text-muted-foreground ${
-                                     clientsOnly ? "text-[10px]" : "text-[11px]"
-                                   }`}
-                                 >
+                                <span
+                                  className={`mt-0.5 block text-muted-foreground ${
+                                    clientsOnly ? "text-[10px]" : "text-[11px]"
+                                  }`}
+                                >
                                   {progDays?.length || 0} ימי אימון ·{" "}
                                   {progDays?.reduce((total, day) => total + day.items.length, 0) ||
                                     0}{" "}
@@ -5562,9 +5603,7 @@ export function CoachDashboardPage({
                               <div className="flex shrink-0 items-center gap-1">
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    setEditingProgramId(isProgActive ? null : prog.id)
-                                  }
+                                  onClick={() => setEditingProgramId(isProgActive ? null : prog.id)}
                                   className={`rounded-full bg-primary/10 font-bold text-primary hover:bg-primary/20 ${
                                     clientsOnly
                                       ? "px-2 py-1 text-[10px]"
@@ -5592,11 +5631,11 @@ export function CoachDashboardPage({
                             </div>
 
                             {(isProgActive || Boolean(progDays?.length)) && (
-                               <div
-                                 className={`border-t border-border/50 bg-secondary/20 ${
-                                   clientsOnly ? "space-y-1.5 p-2" : "space-y-3 p-3.5"
-                                 }`}
-                               >
+                              <div
+                                className={`border-t border-border/50 bg-secondary/20 ${
+                                  clientsOnly ? "space-y-1.5 p-2" : "space-y-3 p-3.5"
+                                }`}
+                              >
                                 {isProgActive && !editingDayId ? (
                                   <form onSubmit={handleAddProgramDay} className="flex gap-2">
                                     <input
@@ -5623,17 +5662,17 @@ export function CoachDashboardPage({
                                     if (!editingDayId) {
                                       return (
                                         <button
-                                           key={dayItem.id}
-                                           type="button"
-                                           onClick={() => {
-                                             setEditingDayId(dayItem.id);
-                                             setOpenWorkoutReportId(null);
-                                             setShowExerciseForm(false);
-                                             setEditingItemId(null);
-                                             setSelectedExId("");
-                                           }}
-                                           aria-label={`בניית אימון ${dayItem.name}`}
-                                           className="flex w-full items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background p-3.5 text-start shadow-sm transition-all hover:border-primary/45 hover:bg-primary/[0.03]"
+                                          key={dayItem.id}
+                                          type="button"
+                                          onClick={() => {
+                                            setEditingDayId(dayItem.id);
+                                            setOpenWorkoutReportId(null);
+                                            setShowExerciseForm(false);
+                                            setEditingItemId(null);
+                                            setSelectedExId("");
+                                          }}
+                                          aria-label={`בניית אימון ${dayItem.name}`}
+                                          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background p-3.5 text-start shadow-sm transition-all hover:border-primary/45 hover:bg-primary/[0.03]"
                                         >
                                           <span className="min-w-0">
                                             <span className="block truncate font-bold text-[13px] text-ink">
@@ -5656,575 +5695,1206 @@ export function CoachDashboardPage({
                                         key={dayItem.id}
                                         active={clientsOnly && workspacePage}
                                       >
-                                        <div
-                                          className="coach-workout-surface relative min-h-[calc(100dvh-12rem)] w-full overflow-hidden rounded-[1.5rem] border border-primary/25 bg-background p-4 shadow-sm ring-1 ring-primary/10 sm:p-6"
-                                        >
+                                        <div className="coach-workout-surface relative min-h-[calc(100dvh-12rem)] w-full overflow-hidden rounded-[1.5rem] border border-primary/25 bg-background p-4 shadow-sm ring-1 ring-primary/10 sm:p-6">
                                           <div className="coach-workout-header flex items-start justify-between gap-3 border-b border-border/60 pb-3">
-                                          <div className="min-w-0 flex-1">
-                                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
-                                              בניית אימון
-                                            </p>
-                                            <input
-                                              defaultValue={dayItem.name}
-                                              aria-label="שם יום האימון"
-                                              onBlur={(event) =>
-                                                void handleRenameWorkoutDay(
-                                                  dayItem,
-                                                  event.target.value,
-                                                )
-                                              }
-                                              onKeyDown={(event) => {
-                                                if (event.key === "Enter")
-                                                  event.currentTarget.blur();
+                                            <div className="min-w-0 flex-1">
+                                              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                                                בניית אימון
+                                              </p>
+                                              <input
+                                                defaultValue={dayItem.name}
+                                                aria-label="שם יום האימון"
+                                                onBlur={(event) =>
+                                                  void handleRenameWorkoutDay(
+                                                    dayItem,
+                                                    event.target.value,
+                                                  )
+                                                }
+                                                onKeyDown={(event) => {
+                                                  if (event.key === "Enter")
+                                                    event.currentTarget.blur();
+                                                }}
+                                                className="mt-1 w-full max-w-xl rounded-xl border border-primary/30 bg-background px-3 py-2 text-base font-extrabold text-ink outline-none focus:border-primary"
+                                              />
+                                              <p className="mt-1 text-[11px] text-muted-foreground">
+                                                {dayItem.items?.length || 0} תרגילים בתוכנית
+                                              </p>
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setShowExerciseForm(false);
+                                                setEditingItemId(null);
+                                                setSelectedExId("");
+                                                setOpenWorkoutReportId(null);
+                                                setEditingDayId(null);
                                               }}
-                                              className="mt-1 w-full max-w-xl rounded-xl border border-primary/30 bg-background px-3 py-2 text-base font-extrabold text-ink outline-none focus:border-primary"
-                                            />
-                                            <p className="mt-1 text-[11px] text-muted-foreground">
-                                              {dayItem.items?.length || 0} תרגילים בתוכנית
-                                            </p>
-                                          </div>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setShowExerciseForm(false);
-                                              setEditingItemId(null);
-                                              setSelectedExId("");
-                                              setOpenWorkoutReportId(null);
-                                              setEditingDayId(null);
-                                            }}
-                                            aria-label="סגירת בניית אימון"
-                                            title="סגירת בניית אימון"
-                                            data-testid="button-close-coach-workout"
-                                            className="ui-icon-button grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border bg-surface text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                          >
-                                            <X className="h-4 w-4" aria-hidden="true" />
-                                          </button>
+                                              aria-label="סגירת בניית אימון"
+                                              title="סגירת בניית אימון"
+                                              data-testid="button-close-coach-workout"
+                                              className="ui-icon-button grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border bg-surface text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            >
+                                              <X className="h-4 w-4" aria-hidden="true" />
+                                            </button>
                                           </div>
 
                                           {dayItem.items?.length > 0 && (
-                                          <div className="space-y-1.5 pt-1">
-                                            {dayItem.items.map((exItem: WorkoutItem) => {
-                                              const exMeta = store.exercises.find(
-                                                (e) => e.id === exItem.exerciseId,
-                                              );
+                                            <div className="space-y-1.5 pt-1">
+                                              {dayItem.items.map((exItem: WorkoutItem) => {
+                                                const exMeta = store.exercises.find(
+                                                  (e) => e.id === exItem.exerciseId,
+                                                );
 
-                                              return (
-                                                <div
-                                                  key={exItem.id}
-                                                  id={`coach-exercise-${exItem.exerciseId}`}
-                                                  className={`px-1 py-3 text-xs transition-colors ${
-                                                    focusedExerciseId === exItem.exerciseId
-                                                      ? "border-s-2 border-primary ps-3"
-                                                      : ""
-                                                  }`}
-                                                >
-                                                  <div className="flex items-start justify-between gap-2">
-                                                    <div>
-                                                      <span className="block font-display text-[15px] font-extrabold text-ink">
-                                                        {exMeta?.name || "תרגיל"}
-                                                      </span>
-                                                      {exItem.supersetPartnerId ? (
-                                                        <span className="mt-0.5 block text-[11px] font-bold text-violet-800">
-                                                          +{" "}
-                                                          {store.exercises.find(
-                                                            (exercise) =>
-                                                              exercise.id ===
-                                                              exItem.supersetPartnerId,
-                                                          )?.name || "תרגיל בן־זוג"}{" "}
-                                                          · ללא מנוחה
+                                                return (
+                                                  <div
+                                                    key={exItem.id}
+                                                    id={`coach-exercise-${exItem.exerciseId}`}
+                                                    className={`px-1 py-3 text-xs transition-colors ${
+                                                      focusedExerciseId === exItem.exerciseId
+                                                        ? "border-s-2 border-primary ps-3"
+                                                        : ""
+                                                    }`}
+                                                  >
+                                                    <div className="flex items-start justify-between gap-2">
+                                                      <div>
+                                                        <span className="block font-display text-[15px] font-extrabold text-ink">
+                                                          {exMeta?.name || "תרגיל"}
                                                         </span>
-                                                      ) : null}
-                                                      <span className="mt-1 inline-flex rounded-full bg-background/80 px-2.5 py-1 text-[11px] font-bold text-ink">
-                                                        {exItem.targetWeight || exItem.weight} ק״ג ·{" "}
-                                                        {exItem.sets} סטים ×{" "}
-                                                        {exItem.repMin || exItem.reps}
-                                                        {exItem.repMax
-                                                          ? `-${exItem.repMax}`
-                                                          : ""}{" "}
-                                                        חזרות
-                                                      </span>
-                                                      <div className="mt-1 flex flex-wrap gap-1">
-                                                        {exItem.warmups?.length ? (
-                                                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-                                                            חימום ×{exItem.warmups.length}
+                                                        {exItem.supersetPartnerId ? (
+                                                          <span className="mt-0.5 block text-[11px] font-bold text-violet-800">
+                                                            +{" "}
+                                                            {store.exercises.find(
+                                                              (exercise) =>
+                                                                exercise.id ===
+                                                                exItem.supersetPartnerId,
+                                                            )?.name || "תרגיל בן־זוג"}{" "}
+                                                            · ללא מנוחה
                                                           </span>
                                                         ) : null}
-                                                        {exItem.dropSetConfig?.enabled ? (
-                                                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                                                            {exItem.dropSetConfig.reductionValue &&
-                                                            exItem.dropSetConfig.reductionMode
-                                                              ? `דרופ סט · −${exItem.dropSetConfig.reductionValue}${
-                                                                  exItem.dropSetConfig
-                                                                    .reductionMode === "percent"
-                                                                    ? "%"
-                                                                    : " ק״ג"
-                                                                }`
-                                                              : "דרופ סט"}
-                                                          </span>
-                                                        ) : null}
-                                                        {exItem.supersetId ? (
-                                                          <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-800">
-                                                            סופר סט {exItem.supersetId} ·{" "}
-                                                            {exItem.supersetRepsMin ||
-                                                              exItem.repMin ||
-                                                              exItem.reps}
-                                                            -
-                                                            {exItem.supersetRepsMax ||
-                                                              exItem.repMax ||
-                                                              exItem.reps}
-                                                          </span>
-                                                        ) : null}
-                                                        {exItem.techniqueNotes ? (
-                                                          <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800">
-                                                            יש הערה למתאמן
-                                                          </span>
-                                                        ) : null}
+                                                        <span className="mt-1 inline-flex rounded-full bg-background/80 px-2.5 py-1 text-[11px] font-bold text-ink">
+                                                          {exItem.targetWeight || exItem.weight} ק״ג
+                                                          · {exItem.sets} סטים ×{" "}
+                                                          {exItem.repMin || exItem.reps}
+                                                          {exItem.repMax
+                                                            ? `-${exItem.repMax}`
+                                                            : ""}{" "}
+                                                          חזרות
+                                                        </span>
+                                                        <div className="mt-1 flex flex-wrap gap-1">
+                                                          {exItem.warmups?.length ? (
+                                                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                                                              חימום ×{exItem.warmups.length}
+                                                            </span>
+                                                          ) : null}
+                                                          {exItem.dropSetConfig?.enabled ? (
+                                                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                                                              {exItem.dropSetConfig
+                                                                .reductionValue &&
+                                                              exItem.dropSetConfig.reductionMode
+                                                                ? `דרופ סט · −${exItem.dropSetConfig.reductionValue}${
+                                                                    exItem.dropSetConfig
+                                                                      .reductionMode === "percent"
+                                                                      ? "%"
+                                                                      : " ק״ג"
+                                                                  }`
+                                                                : "דרופ סט"}
+                                                            </span>
+                                                          ) : null}
+                                                          {exItem.supersetId ? (
+                                                            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-800">
+                                                              סופר סט {exItem.supersetId} ·{" "}
+                                                              {exItem.supersetRepsMin ||
+                                                                exItem.repMin ||
+                                                                exItem.reps}
+                                                              -
+                                                              {exItem.supersetRepsMax ||
+                                                                exItem.repMax ||
+                                                                exItem.reps}
+                                                            </span>
+                                                          ) : null}
+                                                          {exItem.techniqueNotes ? (
+                                                            <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800">
+                                                              יש הערה למתאמן
+                                                            </span>
+                                                          ) : null}
+                                                        </div>
+                                                      </div>
+                                                      <div className="flex shrink-0 items-center gap-1">
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => {
+                                                            setEditingDayId(dayItem.id);
+                                                            setShowExerciseForm(true);
+                                                            setEditingItemId((current) =>
+                                                              current === exItem.id
+                                                                ? null
+                                                                : exItem.id,
+                                                            );
+                                                            if (editingItemId === exItem.id) return;
+                                                            setSelectedExId(exItem.exerciseId);
+                                                            setTargetWeight(
+                                                              exItem.targetWeight || exItem.weight,
+                                                            );
+                                                            setRepMin(exItem.repMin || exItem.reps);
+                                                            setRepMax(exItem.repMax || exItem.reps);
+                                                            setRestSec(exItem.rest || 90);
+                                                            setTechniqueNotes(
+                                                              exItem.techniqueNotes || exItem.notes,
+                                                            );
+                                                            const savedWorkingSets =
+                                                              exItem.workingSets ?? [];
+                                                            const legacyWarmupSets =
+                                                              savedWorkingSets.filter(
+                                                                (set) => set.setType === "warmup",
+                                                              );
+                                                            const savedNormalSets =
+                                                              savedWorkingSets.filter(
+                                                                (set) => set.setType !== "warmup",
+                                                              );
+                                                            const warmupRows = exItem.warmups
+                                                              ?.length
+                                                              ? exItem.warmups
+                                                              : legacyWarmupSets.map((set) => ({
+                                                                  id: set.id,
+                                                                  weight: set.weight,
+                                                                  reps: set.reps,
+                                                                  ...(set.repMax !== undefined
+                                                                    ? { repsMax: set.repMax }
+                                                                    : {}),
+                                                                }));
+                                                            const workingCount = Math.max(
+                                                              exItem.sets || 0,
+                                                              savedNormalSets.length,
+                                                            );
+                                                            const loadedModes: WorkoutSetMode[] = [
+                                                              ...warmupRows.map(
+                                                                () => "warmup" as const,
+                                                              ),
+                                                              ...Array.from(
+                                                                { length: workingCount },
+                                                                (_, index) => {
+                                                                  const set =
+                                                                    savedNormalSets[index];
+                                                                  return (
+                                                                    set?.setType ??
+                                                                    (set?.dropSet
+                                                                      ? "drop"
+                                                                      : exItem.supersetId
+                                                                        ? "superset"
+                                                                        : "normal")
+                                                                  );
+                                                                },
+                                                              ),
+                                                            ];
+                                                            setSetsCount(
+                                                              Math.max(1, loadedModes.length),
+                                                            );
+                                                            setSetModes(
+                                                              loadedModes.length
+                                                                ? loadedModes
+                                                                : ["normal"],
+                                                            );
+                                                            setSetWeights(
+                                                              loadedModes.length
+                                                                ? [
+                                                                    ...warmupRows.map(
+                                                                      (row) => row.weight,
+                                                                    ),
+                                                                    ...Array.from(
+                                                                      { length: workingCount },
+                                                                      (_, index) =>
+                                                                        savedNormalSets[index]
+                                                                          ?.weight ??
+                                                                        exItem.targetWeight ??
+                                                                        exItem.weight,
+                                                                    ),
+                                                                  ]
+                                                                : [
+                                                                    exItem.targetWeight ??
+                                                                      exItem.weight,
+                                                                  ],
+                                                            );
+                                                            setSetRepMins(
+                                                              loadedModes.length
+                                                                ? [
+                                                                    ...warmupRows.map(
+                                                                      (row) => row.reps,
+                                                                    ),
+                                                                    ...Array.from(
+                                                                      { length: workingCount },
+                                                                      (_, index) =>
+                                                                        savedNormalSets[index]
+                                                                          ?.reps ??
+                                                                        exItem.repMin ??
+                                                                        exItem.reps,
+                                                                    ),
+                                                                  ]
+                                                                : [exItem.repMin ?? exItem.reps],
+                                                            );
+                                                            setSetRepMaxes(
+                                                              loadedModes.length
+                                                                ? [
+                                                                    ...warmupRows.map(
+                                                                      (row) =>
+                                                                        row.repsMax ?? row.reps,
+                                                                    ),
+                                                                    ...Array.from(
+                                                                      { length: workingCount },
+                                                                      (_, index) =>
+                                                                        savedNormalSets[index]
+                                                                          ?.repMax ??
+                                                                        exItem.repMax ??
+                                                                        exItem.reps,
+                                                                    ),
+                                                                  ]
+                                                                : [exItem.repMax ?? exItem.reps],
+                                                            );
+                                                            setSetRests(
+                                                              loadedModes.length
+                                                                ? [
+                                                                    ...warmupRows.map(
+                                                                      () => exItem.rest ?? 90,
+                                                                    ),
+                                                                    ...Array.from(
+                                                                      { length: workingCount },
+                                                                      (_, index) =>
+                                                                        savedNormalSets[index]
+                                                                          ?.rest ??
+                                                                        exItem.rest ??
+                                                                        90,
+                                                                    ),
+                                                                  ]
+                                                                : [exItem.rest ?? 90],
+                                                            );
+                                                            setSetNotes(
+                                                              loadedModes.length
+                                                                ? [
+                                                                    ...warmupRows.map(() => ""),
+                                                                    ...Array.from(
+                                                                      { length: workingCount },
+                                                                      (_, index) =>
+                                                                        savedNormalSets[index]
+                                                                          ?.notes ?? "",
+                                                                    ),
+                                                                  ]
+                                                                : [""],
+                                                            );
+                                                            setWarmupEnabled(warmupRows.length > 0);
+                                                            setWarmupSetsCount(
+                                                              warmupRows.length || 1,
+                                                            );
+                                                            setWarmupWeight(
+                                                              warmupRows[0]?.weight || 10,
+                                                            );
+                                                            setWarmupReps(
+                                                              warmupRows[0]?.reps || 10,
+                                                            );
+                                                            setWarmupRepsMax(
+                                                              warmupRows[0]?.repsMax || 12,
+                                                            );
+                                                            setDropSetEnabled(
+                                                              Boolean(
+                                                                exItem.dropSetConfig?.enabled,
+                                                              ),
+                                                            );
+                                                            setDropLevel1Weight(
+                                                              exItem.dropSetConfig?.levels?.[0]
+                                                                ?.weight
+                                                                ? String(
+                                                                    exItem.dropSetConfig.levels[0]
+                                                                      .weight,
+                                                                  )
+                                                                : "",
+                                                            );
+                                                            setDropLevel2Weight(
+                                                              exItem.dropSetConfig?.levels?.[1]
+                                                                ?.weight
+                                                                ? String(
+                                                                    exItem.dropSetConfig.levels[1]
+                                                                      .weight,
+                                                                  )
+                                                                : "",
+                                                            );
+                                                            setDropLevel1RepsMin(
+                                                              exItem.dropSetConfig?.levels?.[0]
+                                                                ?.repsMin || 8,
+                                                            );
+                                                            setDropLevel1RepsMax(
+                                                              exItem.dropSetConfig?.levels?.[0]
+                                                                ?.repsMax || 10,
+                                                            );
+                                                            setDropLevel2RepsMin(
+                                                              exItem.dropSetConfig?.levels?.[1]
+                                                                ?.repsMin || 6,
+                                                            );
+                                                            setDropLevel2RepsMax(
+                                                              exItem.dropSetConfig?.levels?.[1]
+                                                                ?.repsMax || 8,
+                                                            );
+                                                            setSupersetGroup(
+                                                              exItem.supersetId || "",
+                                                            );
+                                                            setSupersetPartnerId(
+                                                              exItem.supersetPartnerId || "",
+                                                            );
+                                                            setSupersetPartnerQuery("");
+                                                            setSupersetPartnerWeight(
+                                                              exItem.supersetTargetWeight ||
+                                                                exItem.targetWeight ||
+                                                                exItem.weight ||
+                                                                20,
+                                                            );
+                                                            setSupersetRepsMin(
+                                                              exItem.supersetRepsMin ||
+                                                                exItem.repMin ||
+                                                                8,
+                                                            );
+                                                            setSupersetRepsMax(
+                                                              exItem.supersetRepsMax ||
+                                                                exItem.repMax ||
+                                                                10,
+                                                            );
+                                                          }}
+                                                          className="rounded-lg bg-background px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/10"
+                                                        >
+                                                          {editingItemId === exItem.id
+                                                            ? "סגירה"
+                                                            : "עריכה"}
+                                                        </button>
+                                                        <button
+                                                          type="button"
+                                                          onClick={() =>
+                                                            handleRemoveExerciseFromDay(
+                                                              dayItem.id,
+                                                              exItem.id,
+                                                            )
+                                                          }
+                                                          className="rounded-lg p-1 text-muted-foreground hover:text-red-600 cursor-pointer"
+                                                          aria-label={`הסר את ${exMeta?.name || "התרגיל"}`}
+                                                        >
+                                                          <Trash2 className="h-3.5 w-3.5" />
+                                                        </button>
                                                       </div>
                                                     </div>
-                                                    <div className="flex shrink-0 items-center gap-1">
-                                                      <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                          setEditingDayId(dayItem.id);
-                                                          setShowExerciseForm(true);
-                                                          setEditingItemId((current) =>
-                                                            current === exItem.id
-                                                              ? null
-                                                              : exItem.id,
-                                                          );
-                                                          if (editingItemId === exItem.id) return;
-                                                          setSelectedExId(exItem.exerciseId);
-                                                          setTargetWeight(
-                                                            exItem.targetWeight || exItem.weight,
-                                                          );
-                                                          setRepMin(exItem.repMin || exItem.reps);
-                                                          setRepMax(exItem.repMax || exItem.reps);
-                                                          setRestSec(exItem.rest || 90);
-                                                          setTechniqueNotes(
-                                                            exItem.techniqueNotes || exItem.notes,
-                                                          );
-                                                          const savedWorkingSets =
-                                                            exItem.workingSets ?? [];
-                                                          const legacyWarmupSets =
-                                                            savedWorkingSets.filter(
-                                                              (set) => set.setType === "warmup",
-                                                            );
-                                                          const savedNormalSets =
-                                                            savedWorkingSets.filter(
-                                                              (set) => set.setType !== "warmup",
-                                                            );
-                                                          const warmupRows = exItem.warmups?.length
-                                                            ? exItem.warmups
-                                                            : legacyWarmupSets.map((set) => ({
-                                                                id: set.id,
-                                                                weight: set.weight,
-                                                                reps: set.reps,
-                                                                ...(set.repMax !== undefined
-                                                                  ? { repsMax: set.repMax }
-                                                                  : {}),
-                                                              }));
-                                                          const workingCount = Math.max(
-                                                            exItem.sets || 0,
-                                                            savedNormalSets.length,
-                                                          );
-                                                          const loadedModes: WorkoutSetMode[] = [
-                                                            ...warmupRows.map(
-                                                              () => "warmup" as const,
-                                                            ),
-                                                            ...Array.from(
-                                                              { length: workingCount },
-                                                              (_, index) => {
-                                                                const set = savedNormalSets[index];
-                                                                return (
-                                                                  set?.setType ??
-                                                                  (set?.dropSet
-                                                                    ? "drop"
-                                                                    : exItem.supersetId
-                                                                      ? "superset"
-                                                                      : "normal")
-                                                                );
-                                                              },
-                                                            ),
-                                                          ];
-                                                          setSetsCount(
-                                                            Math.max(1, loadedModes.length),
-                                                          );
-                                                          setSetModes(
-                                                            loadedModes.length
-                                                              ? loadedModes
-                                                              : ["normal"],
-                                                          );
-                                                          setSetWeights(
-                                                            loadedModes.length
-                                                              ? [
-                                                                  ...warmupRows.map(
-                                                                    (row) => row.weight,
-                                                                  ),
-                                                                  ...Array.from(
-                                                                    { length: workingCount },
-                                                                    (_, index) =>
-                                                                      savedNormalSets[index]
-                                                                        ?.weight ??
-                                                                      exItem.targetWeight ??
-                                                                      exItem.weight,
-                                                                  ),
-                                                                ]
-                                                              : [
-                                                                  exItem.targetWeight ??
-                                                                    exItem.weight,
-                                                                ],
-                                                          );
-                                                          setSetRepMins(
-                                                            loadedModes.length
-                                                              ? [
-                                                                  ...warmupRows.map(
-                                                                    (row) => row.reps,
-                                                                  ),
-                                                                  ...Array.from(
-                                                                    { length: workingCount },
-                                                                    (_, index) =>
-                                                                      savedNormalSets[index]
-                                                                        ?.reps ??
-                                                                      exItem.repMin ??
-                                                                      exItem.reps,
-                                                                  ),
-                                                                ]
-                                                              : [exItem.repMin ?? exItem.reps],
-                                                          );
-                                                          setSetRepMaxes(
-                                                            loadedModes.length
-                                                              ? [
-                                                                  ...warmupRows.map(
-                                                                    (row) =>
-                                                                      row.repsMax ?? row.reps,
-                                                                  ),
-                                                                  ...Array.from(
-                                                                    { length: workingCount },
-                                                                    (_, index) =>
-                                                                      savedNormalSets[index]
-                                                                        ?.repMax ??
-                                                                      exItem.repMax ??
-                                                                      exItem.reps,
-                                                                  ),
-                                                                ]
-                                                              : [exItem.repMax ?? exItem.reps],
-                                                          );
-                                                          setSetRests(
-                                                            loadedModes.length
-                                                              ? [
-                                                                  ...warmupRows.map(
-                                                                    () => exItem.rest ?? 90,
-                                                                  ),
-                                                                  ...Array.from(
-                                                                    { length: workingCount },
-                                                                    (_, index) =>
-                                                                      savedNormalSets[index]
-                                                                        ?.rest ??
-                                                                      exItem.rest ??
-                                                                      90,
-                                                                  ),
-                                                                ]
-                                                              : [exItem.rest ?? 90],
-                                                          );
-                                                           setSetNotes(
-                                                             loadedModes.length
-                                                               ? [
-                                                                   ...warmupRows.map(() => ""),
-                                                                   ...Array.from(
-                                                                     { length: workingCount },
-                                                                     (_, index) =>
-                                                                       savedNormalSets[index]?.notes ?? "",
-                                                                   ),
-                                                                 ]
-                                                               : [""],
-                                                           );
-                                                          setWarmupEnabled(warmupRows.length > 0);
-                                                          setWarmupSetsCount(
-                                                            warmupRows.length || 1,
-                                                          );
-                                                          setWarmupWeight(
-                                                            warmupRows[0]?.weight || 10,
-                                                          );
-                                                          setWarmupReps(warmupRows[0]?.reps || 10);
-                                                          setWarmupRepsMax(
-                                                            warmupRows[0]?.repsMax || 12,
-                                                          );
-                                                          setDropSetEnabled(
-                                                            Boolean(exItem.dropSetConfig?.enabled),
-                                                          );
-                                                          setDropLevel1Weight(
-                                                            exItem.dropSetConfig?.levels?.[0]
-                                                              ?.weight
-                                                              ? String(
-                                                                  exItem.dropSetConfig.levels[0]
-                                                                    .weight,
-                                                                )
-                                                              : "",
-                                                          );
-                                                          setDropLevel2Weight(
-                                                            exItem.dropSetConfig?.levels?.[1]
-                                                              ?.weight
-                                                              ? String(
-                                                                  exItem.dropSetConfig.levels[1]
-                                                                    .weight,
-                                                                )
-                                                              : "",
-                                                          );
-                                                          setDropLevel1RepsMin(
-                                                            exItem.dropSetConfig?.levels?.[0]
-                                                              ?.repsMin || 8,
-                                                          );
-                                                          setDropLevel1RepsMax(
-                                                            exItem.dropSetConfig?.levels?.[0]
-                                                              ?.repsMax || 10,
-                                                          );
-                                                          setDropLevel2RepsMin(
-                                                            exItem.dropSetConfig?.levels?.[1]
-                                                              ?.repsMin || 6,
-                                                          );
-                                                          setDropLevel2RepsMax(
-                                                            exItem.dropSetConfig?.levels?.[1]
-                                                              ?.repsMax || 8,
-                                                          );
-                                                          setSupersetGroup(exItem.supersetId || "");
-                                                          setSupersetPartnerId(
-                                                            exItem.supersetPartnerId || "",
-                                                          );
-                                                           setSupersetPartnerQuery("");
-                                                          setSupersetPartnerWeight(
-                                                            exItem.supersetTargetWeight ||
-                                                              exItem.targetWeight ||
-                                                              exItem.weight ||
-                                                              20,
-                                                          );
-                                                          setSupersetRepsMin(
-                                                            exItem.supersetRepsMin ||
-                                                              exItem.repMin ||
-                                                              8,
-                                                          );
-                                                          setSupersetRepsMax(
-                                                            exItem.supersetRepsMax ||
-                                                              exItem.repMax ||
-                                                              10,
-                                                          );
-                                                        }}
-                                                        className="rounded-lg bg-background px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/10"
-                                                      >
-                                                        {editingItemId === exItem.id
-                                                          ? "סגירה"
-                                                          : "עריכה"}
-                                                      </button>
-                                                      <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                          handleRemoveExerciseFromDay(
-                                                            dayItem.id,
-                                                            exItem.id,
-                                                          )
-                                                        }
-                                                        className="rounded-lg p-1 text-muted-foreground hover:text-red-600 cursor-pointer"
-                                                        aria-label={`הסר את ${exMeta?.name || "התרגיל"}`}
-                                                      >
-                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                      </button>
-                                                    </div>
-                                                  </div>
-                                                  <div
-                                                    data-exercise-builder-anchor={exItem.id}
-                                                    className="contents"
-                                                  />
-                                                  {advancedExerciseControlsEnabled &&
-                                                  editingItemId === exItem.id ? (
-                                                    <>
-                                                      <div className="mt-4 space-y-5 border-t border-border/50 pt-4">
-                                                        <div className="grid grid-cols-3 gap-2 border-b border-border/50 pb-4">
-                                                          <label className="text-center text-[9px] font-bold text-muted-foreground">
-                                                            משקל יעד
-                                                            <input
-                                                              type="number"
-                                                              defaultValue={
-                                                                exItem.targetWeight || exItem.weight
-                                                              }
-                                                              min={0}
-                                                              step={0.5}
-                                                              onBlur={(event) => {
-                                                                const value = Number(
-                                                                  event.target.value,
-                                                                );
-                                                                if (Number.isFinite(value)) {
-                                                                  void handleUpdateExerciseItem(
-                                                                    dayItem.id,
-                                                                    exItem.id,
-                                                                    {
-                                                                      targetWeight: value,
-                                                                      weight: value,
-                                                                    },
-                                                                  );
-                                                                }
-                                                              }}
-                                                              className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
-                                                            />
-                                                          </label>
-                                                          <label className="text-center text-[9px] font-bold text-muted-foreground">
-                                                            חזרות
-                                                            <input
-                                                              type="number"
-                                                              defaultValue={
-                                                                exItem.repMin || exItem.reps
-                                                              }
-                                                              min={1}
-                                                              onBlur={(event) => {
-                                                                const value = Math.max(
-                                                                  1,
-                                                                  Number(event.target.value),
-                                                                );
-                                                                if (Number.isFinite(value)) {
-                                                                  void handleUpdateExerciseItem(
-                                                                    dayItem.id,
-                                                                    exItem.id,
-                                                                    {
-                                                                      reps: value,
-                                                                      repMin: value,
-                                                                      repMax: Math.max(
-                                                                        value,
-                                                                        exItem.repMax || value,
-                                                                      ),
-                                                                    },
-                                                                  );
-                                                                }
-                                                              }}
-                                                              className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
-                                                            />
-                                                            <input
-                                                              type="number"
-                                                              defaultValue={
-                                                                exItem.repMax ||
-                                                                exItem.repMin ||
-                                                                exItem.reps
-                                                              }
-                                                              min={exItem.repMin || exItem.reps}
-                                                              onBlur={(event) => {
-                                                                const value = Math.max(
-                                                                  exItem.repMin || exItem.reps,
-                                                                  Number(event.target.value),
-                                                                );
-                                                                if (Number.isFinite(value)) {
-                                                                  void handleUpdateExerciseItem(
-                                                                    dayItem.id,
-                                                                    exItem.id,
-                                                                    {
-                                                                      repMax: value,
-                                                                    },
-                                                                  );
-                                                                }
-                                                              }}
-                                                              className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
-                                                            />
-                                                          </label>
-                                                          <label className="text-center text-[9px] font-bold text-muted-foreground">
-                                                            מנוחה (שניות)
-                                                            <input
-                                                              type="number"
-                                                              defaultValue={exItem.rest || 90}
-                                                              min={0}
-                                                              step={5}
-                                                              onBlur={(event) => {
-                                                                const value = Math.max(
-                                                                  0,
-                                                                  Number(event.target.value),
-                                                                );
-                                                                if (Number.isFinite(value)) {
-                                                                  void handleUpdateExerciseItem(
-                                                                    dayItem.id,
-                                                                    exItem.id,
-                                                                    {
-                                                                      rest: value,
-                                                                    },
-                                                                  );
-                                                                }
-                                                              }}
-                                                              className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
-                                                            />
-                                                          </label>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                          <p className="text-right text-xs font-extrabold text-ink">
-                                                            תרגיל וסוג סט
-                                                          </p>
-                                                          <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                              setShowExercisePicker(true)
-                                                            }
-                                                            className="flex h-10 w-full items-center justify-between rounded-xl border border-border/60 bg-background px-3 text-right text-xs font-semibold text-ink"
-                                                          >
-                                                            <span>
-                                                              {store.exercises.find(
-                                                                (exercise) =>
-                                                                  exercise.id === selectedExId,
-                                                              )?.name ||
-                                                                exMeta?.name ||
-                                                                "חיפוש ובחירת תרגיל"}
-                                                            </span>
-                                                            <Search className="h-4 w-4 text-muted-foreground" />
-                                                          </button>
-                                                          <div className="flex items-end justify-between gap-3 border-b border-border/50 pb-3">
+                                                    <div
+                                                      data-exercise-builder-anchor={exItem.id}
+                                                      className="contents"
+                                                    />
+                                                    {advancedExerciseControlsEnabled &&
+                                                    editingItemId === exItem.id ? (
+                                                      <>
+                                                        <div className="mt-4 space-y-5 border-t border-border/50 pt-4">
+                                                          <div className="grid grid-cols-3 gap-2 border-b border-border/50 pb-4">
                                                             <label className="text-center text-[9px] font-bold text-muted-foreground">
-                                                              סטים
+                                                              משקל יעד
                                                               <input
                                                                 type="number"
-                                                                min={1}
-                                                                value={setsCount}
-                                                                onChange={(event) =>
-                                                                  resizeSetFields(
-                                                                    Math.max(
-                                                                      1,
-                                                                      Number(event.target.value),
-                                                                    ),
-                                                                  )
+                                                                defaultValue={
+                                                                  exItem.targetWeight ||
+                                                                  exItem.weight
                                                                 }
-                                                                className="mt-1 h-9 w-16 rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
+                                                                min={0}
+                                                                step={0.5}
+                                                                onBlur={(event) => {
+                                                                  const value = Number(
+                                                                    event.target.value,
+                                                                  );
+                                                                  if (Number.isFinite(value)) {
+                                                                    void handleUpdateExerciseItem(
+                                                                      dayItem.id,
+                                                                      exItem.id,
+                                                                      {
+                                                                        targetWeight: value,
+                                                                        weight: value,
+                                                                      },
+                                                                    );
+                                                                  }
+                                                                }}
+                                                                className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
                                                               />
                                                             </label>
-                                                            <div className="flex items-center justify-between gap-3">
-                                                              <p className="text-right text-[10px] font-bold text-muted-foreground">
-                                                                סוג הסט
-                                                              </p>
-                                                              <select
-                                                                value={
-                                                                  setModes.find(
-                                                                    (mode) => mode !== "normal",
-                                                                  ) ?? "normal"
+                                                            <label className="text-center text-[9px] font-bold text-muted-foreground">
+                                                              חזרות
+                                                              <input
+                                                                type="number"
+                                                                defaultValue={
+                                                                  exItem.repMin || exItem.reps
                                                                 }
+                                                                min={1}
+                                                                onBlur={(event) => {
+                                                                  const value = Math.max(
+                                                                    1,
+                                                                    Number(event.target.value),
+                                                                  );
+                                                                  if (Number.isFinite(value)) {
+                                                                    void handleUpdateExerciseItem(
+                                                                      dayItem.id,
+                                                                      exItem.id,
+                                                                      {
+                                                                        reps: value,
+                                                                        repMin: value,
+                                                                        repMax: Math.max(
+                                                                          value,
+                                                                          exItem.repMax || value,
+                                                                        ),
+                                                                      },
+                                                                    );
+                                                                  }
+                                                                }}
+                                                                className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
+                                                              />
+                                                              <input
+                                                                type="number"
+                                                                defaultValue={
+                                                                  exItem.repMax ||
+                                                                  exItem.repMin ||
+                                                                  exItem.reps
+                                                                }
+                                                                min={exItem.repMin || exItem.reps}
+                                                                onBlur={(event) => {
+                                                                  const value = Math.max(
+                                                                    exItem.repMin || exItem.reps,
+                                                                    Number(event.target.value),
+                                                                  );
+                                                                  if (Number.isFinite(value)) {
+                                                                    void handleUpdateExerciseItem(
+                                                                      dayItem.id,
+                                                                      exItem.id,
+                                                                      {
+                                                                        repMax: value,
+                                                                      },
+                                                                    );
+                                                                  }
+                                                                }}
+                                                                className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
+                                                              />
+                                                            </label>
+                                                            <label className="text-center text-[9px] font-bold text-muted-foreground">
+                                                              מנוחה (שניות)
+                                                              <input
+                                                                type="number"
+                                                                defaultValue={exItem.rest || 90}
+                                                                min={0}
+                                                                step={5}
+                                                                onBlur={(event) => {
+                                                                  const value = Math.max(
+                                                                    0,
+                                                                    Number(event.target.value),
+                                                                  );
+                                                                  if (Number.isFinite(value)) {
+                                                                    void handleUpdateExerciseItem(
+                                                                      dayItem.id,
+                                                                      exItem.id,
+                                                                      {
+                                                                        rest: value,
+                                                                      },
+                                                                    );
+                                                                  }
+                                                                }}
+                                                                className="mt-1 h-9 w-full rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
+                                                              />
+                                                            </label>
+                                                          </div>
+                                                          <div className="space-y-2">
+                                                            <p className="text-right text-xs font-extrabold text-ink">
+                                                              תרגיל וסוג סט
+                                                            </p>
+                                                            <button
+                                                              type="button"
+                                                              onClick={() =>
+                                                                setShowExercisePicker(true)
+                                                              }
+                                                              className="flex h-10 w-full items-center justify-between rounded-xl border border-border/60 bg-background px-3 text-right text-xs font-semibold text-ink"
+                                                            >
+                                                              <span>
+                                                                {store.exercises.find(
+                                                                  (exercise) =>
+                                                                    exercise.id === selectedExId,
+                                                                )?.name ||
+                                                                  exMeta?.name ||
+                                                                  "חיפוש ובחירת תרגיל"}
+                                                              </span>
+                                                              <Search className="h-4 w-4 text-muted-foreground" />
+                                                            </button>
+                                                            <div className="flex items-end justify-between gap-3 border-b border-border/50 pb-3">
+                                                              <label className="text-center text-[9px] font-bold text-muted-foreground">
+                                                                סטים
+                                                                <input
+                                                                  type="number"
+                                                                  min={1}
+                                                                  value={setsCount}
+                                                                  onChange={(event) =>
+                                                                    resizeSetFields(
+                                                                      Math.max(
+                                                                        1,
+                                                                        Number(event.target.value),
+                                                                      ),
+                                                                    )
+                                                                  }
+                                                                  className="mt-1 h-9 w-16 rounded-xl border border-border/60 bg-background px-1 text-center text-xs font-bold text-ink outline-none focus:border-primary"
+                                                                />
+                                                              </label>
+                                                              <div className="flex items-center justify-between gap-3">
+                                                                <p className="text-right text-[10px] font-bold text-muted-foreground">
+                                                                  סוג הסט
+                                                                </p>
+                                                                <select
+                                                                  value={
+                                                                    setModes.find(
+                                                                      (mode) => mode !== "normal",
+                                                                    ) ?? "normal"
+                                                                  }
+                                                                  onChange={(event) => {
+                                                                    const mode = event.target
+                                                                      .value as
+                                                                      | "normal"
+                                                                      | "warmup"
+                                                                      | "drop"
+                                                                      | "superset";
+                                                                    setSetModes(
+                                                                      Array.from(
+                                                                        {
+                                                                          length: Math.max(
+                                                                            1,
+                                                                            setsCount,
+                                                                          ),
+                                                                        },
+                                                                        () => mode,
+                                                                      ),
+                                                                    );
+                                                                    setWarmupEnabled(
+                                                                      mode === "warmup",
+                                                                    );
+                                                                    setDropSetEnabled(
+                                                                      mode === "drop",
+                                                                    );
+                                                                    setSupersetGroup(
+                                                                      mode === "superset"
+                                                                        ? "A"
+                                                                        : "",
+                                                                    );
+                                                                  }}
+                                                                  className="h-9 min-w-36 rounded-xl border border-border/60 bg-background px-2 text-[11px] font-bold text-ink"
+                                                                >
+                                                                  <option value="normal">
+                                                                    סט רגיל
+                                                                  </option>
+                                                                  <option value="warmup">
+                                                                    סט חימום
+                                                                  </option>
+                                                                  <option value="drop">
+                                                                    דרופ סט
+                                                                  </option>
+                                                                  <option value="superset">
+                                                                    סופר סט
+                                                                  </option>
+                                                                </select>
+                                                              </div>
+                                                            </div>
+                                                            <div className="grid grid-cols-4 gap-1.5 border-b border-amber-200 pb-3">
+                                                              <label className="text-center text-[9px] font-bold text-amber-900">
+                                                                סטי חימום
+                                                                <input
+                                                                  type="number"
+                                                                  min={1}
+                                                                  value={warmupSetsCount}
+                                                                  onChange={(event) =>
+                                                                    setWarmupSetsCount(
+                                                                      Math.max(
+                                                                        1,
+                                                                        Number(event.target.value),
+                                                                      ),
+                                                                    )
+                                                                  }
+                                                                  className="mt-1 h-8 w-full rounded-lg border border-amber-200 bg-background text-center text-xs"
+                                                                />
+                                                              </label>
+                                                              <label className="text-center text-[9px] font-bold text-amber-900">
+                                                                משקל חימום
+                                                                <input
+                                                                  type="number"
+                                                                  step={0.5}
+                                                                  min={0}
+                                                                  value={warmupWeight}
+                                                                  onChange={(event) =>
+                                                                    setWarmupWeight(
+                                                                      Number(event.target.value),
+                                                                    )
+                                                                  }
+                                                                  className="mt-1 h-8 w-full rounded-lg border border-amber-200 bg-background text-center text-xs"
+                                                                />
+                                                              </label>
+                                                              <label className="text-center text-[9px] font-bold text-amber-900">
+                                                                חזרות מינ׳
+                                                                <input
+                                                                  type="number"
+                                                                  min={1}
+                                                                  value={warmupReps}
+                                                                  onChange={(event) =>
+                                                                    setWarmupReps(
+                                                                      Number(event.target.value),
+                                                                    )
+                                                                  }
+                                                                  className="mt-1 h-8 w-full rounded-lg border border-amber-200 bg-background text-center text-xs"
+                                                                />
+                                                              </label>
+                                                              <label className="text-center text-[9px] font-bold text-amber-900">
+                                                                חזרות מקס׳
+                                                                <input
+                                                                  type="number"
+                                                                  min={warmupReps}
+                                                                  value={warmupRepsMax}
+                                                                  onChange={(event) =>
+                                                                    setWarmupRepsMax(
+                                                                      Math.max(
+                                                                        warmupReps,
+                                                                        Number(event.target.value),
+                                                                      ),
+                                                                    )
+                                                                  }
+                                                                  className="mt-1 h-8 w-full rounded-lg border border-amber-200 bg-background text-center text-xs"
+                                                                />
+                                                              </label>
+                                                            </div>
+                                                            {setModes.find(
+                                                              (mode) => mode !== "normal",
+                                                            ) === "drop" ? (
+                                                              <div className="space-y-2 border-b border-primary/20 pb-3">
+                                                                <p className="text-right text-xs font-extrabold text-primary">
+                                                                  דרופ סט
+                                                                </p>
+                                                                <div className="grid grid-cols-2 gap-1.5">
+                                                                  <label className="text-center text-[9px] font-bold text-primary">
+                                                                    משקל דרופ 1
+                                                                    <input
+                                                                      type="number"
+                                                                      step={0.5}
+                                                                      min={0}
+                                                                      value={dropLevel1Weight}
+                                                                      onChange={(event) =>
+                                                                        setDropLevel1Weight(
+                                                                          event.target.value,
+                                                                        )
+                                                                      }
+                                                                      className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
+                                                                    />
+                                                                  </label>
+                                                                  <label className="text-center text-[9px] font-bold text-primary">
+                                                                    חזרות דרופ 1 מינ׳
+                                                                    <input
+                                                                      type="number"
+                                                                      min={1}
+                                                                      value={dropLevel1RepsMin}
+                                                                      onChange={(event) =>
+                                                                        setDropLevel1RepsMin(
+                                                                          Math.max(
+                                                                            1,
+                                                                            Number(
+                                                                              event.target.value,
+                                                                            ),
+                                                                          ),
+                                                                        )
+                                                                      }
+                                                                      className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
+                                                                    />
+                                                                  </label>
+                                                                  <label className="text-center text-[9px] font-bold text-primary">
+                                                                    חזרות דרופ 1 מקס׳
+                                                                    <input
+                                                                      type="number"
+                                                                      min={dropLevel1RepsMin}
+                                                                      value={dropLevel1RepsMax}
+                                                                      onChange={(event) =>
+                                                                        setDropLevel1RepsMax(
+                                                                          Math.max(
+                                                                            dropLevel1RepsMin,
+                                                                            Number(
+                                                                              event.target.value,
+                                                                            ),
+                                                                          ),
+                                                                        )
+                                                                      }
+                                                                      className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
+                                                                    />
+                                                                  </label>
+                                                                  <label className="text-center text-[9px] font-bold text-primary">
+                                                                    משקל דרופ 2
+                                                                    <input
+                                                                      type="number"
+                                                                      step={0.5}
+                                                                      min={0}
+                                                                      value={dropLevel2Weight}
+                                                                      onChange={(event) =>
+                                                                        setDropLevel2Weight(
+                                                                          event.target.value,
+                                                                        )
+                                                                      }
+                                                                      className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
+                                                                    />
+                                                                  </label>
+                                                                  <label className="text-center text-[9px] font-bold text-primary">
+                                                                    חזרות דרופ 2 מינ׳
+                                                                    <input
+                                                                      type="number"
+                                                                      min={1}
+                                                                      value={dropLevel2RepsMin}
+                                                                      onChange={(event) =>
+                                                                        setDropLevel2RepsMin(
+                                                                          Math.max(
+                                                                            1,
+                                                                            Number(
+                                                                              event.target.value,
+                                                                            ),
+                                                                          ),
+                                                                        )
+                                                                      }
+                                                                      className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
+                                                                    />
+                                                                  </label>
+                                                                  <label className="text-center text-[9px] font-bold text-primary">
+                                                                    חזרות דרופ 2 מקס׳
+                                                                    <input
+                                                                      type="number"
+                                                                      min={dropLevel2RepsMin}
+                                                                      value={dropLevel2RepsMax}
+                                                                      onChange={(event) =>
+                                                                        setDropLevel2RepsMax(
+                                                                          Math.max(
+                                                                            dropLevel2RepsMin,
+                                                                            Number(
+                                                                              event.target.value,
+                                                                            ),
+                                                                          ),
+                                                                        )
+                                                                      }
+                                                                      className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
+                                                                    />
+                                                                  </label>
+                                                                </div>
+                                                              </div>
+                                                            ) : null}
+                                                            {setModes.find(
+                                                              (mode) => mode !== "normal",
+                                                            ) === "superset" ? (
+                                                              <div className="block border-b border-violet-200 pb-3 text-right text-[9px] font-bold text-violet-900">
+                                                                <span className="mb-2 block text-xs font-extrabold">
+                                                                  סופר סט
+                                                                </span>
+                                                                {renderSupersetPartnerSearch()}
+                                                                <div className="mt-2 grid grid-cols-3 gap-1.5">
+                                                                  <label className="text-center text-[9px] font-bold text-violet-900">
+                                                                    משקל תרגיל 2
+                                                                    <input
+                                                                      type="number"
+                                                                      min={0}
+                                                                      step={0.5}
+                                                                      value={supersetPartnerWeight}
+                                                                      onChange={(event) =>
+                                                                        setSupersetPartnerWeight(
+                                                                          Math.max(
+                                                                            0,
+                                                                            Number(
+                                                                              event.target.value,
+                                                                            ),
+                                                                          ),
+                                                                        )
+                                                                      }
+                                                                      className="mt-1 h-8 w-full rounded-lg border border-violet-200 bg-background text-center text-xs"
+                                                                    />
+                                                                  </label>
+                                                                  <label className="text-center text-[9px] font-bold text-violet-900">
+                                                                    חזרות מינ׳
+                                                                    <input
+                                                                      type="number"
+                                                                      min={1}
+                                                                      value={supersetRepsMin}
+                                                                      onChange={(event) =>
+                                                                        setSupersetRepsMin(
+                                                                          Math.max(
+                                                                            1,
+                                                                            Number(
+                                                                              event.target.value,
+                                                                            ),
+                                                                          ),
+                                                                        )
+                                                                      }
+                                                                      className="mt-1 h-8 w-full rounded-lg border border-violet-200 bg-background text-center text-xs"
+                                                                    />
+                                                                  </label>
+                                                                  <label className="text-center text-[9px] font-bold text-violet-900">
+                                                                    חזרות מקס׳
+                                                                    <input
+                                                                      type="number"
+                                                                      min={supersetRepsMin}
+                                                                      value={supersetRepsMax}
+                                                                      onChange={(event) =>
+                                                                        setSupersetRepsMax(
+                                                                          Math.max(
+                                                                            supersetRepsMin,
+                                                                            Number(
+                                                                              event.target.value,
+                                                                            ),
+                                                                          ),
+                                                                        )
+                                                                      }
+                                                                      className="mt-1 h-8 w-full rounded-lg border border-violet-200 bg-background text-center text-xs"
+                                                                    />
+                                                                  </label>
+                                                                </div>
+                                                              </div>
+                                                            ) : null}
+                                                            <label className="block text-right text-[10px] font-bold text-muted-foreground">
+                                                              הערה למתאמן על התרגיל
+                                                              <textarea
+                                                                rows={2}
+                                                                value={techNotes}
+                                                                onChange={(event) =>
+                                                                  setTechniqueNotes(
+                                                                    event.target.value,
+                                                                  )
+                                                                }
+                                                                placeholder="למשל: לשמור על גב ישר ולבצע לאט..."
+                                                                className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-right text-xs font-normal text-ink outline-none focus:border-primary"
+                                                              />
+                                                            </label>
+                                                            <button
+                                                              type="button"
+                                                              onClick={() => {
+                                                                void handleUpdateExerciseItem(
+                                                                  dayItem.id,
+                                                                  exItem.id,
+                                                                  {
+                                                                    targetWeight,
+                                                                    weight: targetWeight,
+                                                                    sets: Math.max(1, setsCount),
+                                                                    reps: Math.max(1, repMin),
+                                                                    repMin: Math.max(1, repMin),
+                                                                    repMax: Math.max(
+                                                                      repMin,
+                                                                      repMax,
+                                                                    ),
+                                                                    rest: Math.max(0, restSec),
+                                                                    notes: techNotes.trim(),
+                                                                    warmups: warmupEnabled
+                                                                      ? Array.from(
+                                                                          {
+                                                                            length: Math.max(
+                                                                              1,
+                                                                              warmupSetsCount,
+                                                                            ),
+                                                                          },
+                                                                          (_, index) => ({
+                                                                            id:
+                                                                              exItem.warmups?.[
+                                                                                index
+                                                                              ]?.id || uid(),
+                                                                            weight: warmupWeight,
+                                                                            reps: warmupReps,
+                                                                            repsMax: warmupRepsMax,
+                                                                          }),
+                                                                        )
+                                                                      : [],
+                                                                    dropSetConfig: dropSetEnabled
+                                                                      ? {
+                                                                          enabled: true,
+                                                                          drops: 2,
+                                                                          levels: [
+                                                                            {
+                                                                              weight:
+                                                                                Number(
+                                                                                  dropLevel1Weight,
+                                                                                ) || targetWeight,
+                                                                              repsMin:
+                                                                                dropLevel1RepsMin,
+                                                                              repsMax:
+                                                                                dropLevel1RepsMax,
+                                                                            },
+                                                                            {
+                                                                              weight:
+                                                                                Number(
+                                                                                  dropLevel2Weight,
+                                                                                ) || targetWeight,
+                                                                              repsMin:
+                                                                                dropLevel2RepsMin,
+                                                                              repsMax:
+                                                                                dropLevel2RepsMax,
+                                                                            },
+                                                                          ],
+                                                                        }
+                                                                      : {
+                                                                          enabled: false,
+                                                                          drops: 0,
+                                                                          levels: [],
+                                                                        },
+                                                                    supersetId: supersetGroup || "",
+                                                                    supersetPartnerId: supersetGroup
+                                                                      ? supersetPartnerId
+                                                                      : "",
+                                                                    supersetRepsMin: supersetGroup
+                                                                      ? Math.max(1, supersetRepsMin)
+                                                                      : 0,
+                                                                    supersetRepsMax: supersetGroup
+                                                                      ? Math.max(
+                                                                          supersetRepsMin,
+                                                                          supersetRepsMax,
+                                                                        )
+                                                                      : 0,
+                                                                  },
+                                                                );
+                                                                setEditingItemId(null);
+                                                              }}
+                                                              className="h-11 w-full rounded-full bg-primary text-sm font-bold text-primary-foreground shadow-sm"
+                                                            >
+                                                              שמור תרגיל ליום אימון
+                                                            </button>
+                                                          </div>
+                                                        </div>
+                                                      </>
+                                                    ) : null}
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          )}
+
+                                          {isDayActive && showExerciseForm && (
+                                            <ExerciseBuilderPlacement exerciseId={editingItemId}>
+                                              <form
+                                                onSubmit={handleAddExerciseToDay}
+                                                onKeyDown={(event) => {
+                                                  // Number inputs submit a form when the mobile
+                                                  // keyboard's action key is pressed. Saving here
+                                                  // unmounts the builder and makes it look as if
+                                                  // the tab closed while entering a set.
+                                                  if (
+                                                    event.key === "Enter" &&
+                                                    !(event.target instanceof HTMLTextAreaElement)
+                                                  ) {
+                                                    event.preventDefault();
+                                                  }
+                                                }}
+                                                className="pt-2 border-t border-border/40 space-y-2 text-xs"
+                                              >
+                                                <div className="flex items-center justify-between">
+                                                  <p className="text-[11px] font-bold text-primary">
+                                                    {editingItemId
+                                                      ? "עריכת תרגיל באימון"
+                                                      : "הוספת תרגיל לאימון"}
+                                                  </p>
+                                                  {editingItemId ? (
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        setEditingItemId(null);
+                                                        setSelectedExId("");
+                                                      }}
+                                                      className="text-[10px] font-bold text-muted-foreground hover:text-ink"
+                                                    >
+                                                      ביטול עריכה
+                                                    </button>
+                                                  ) : null}
+                                                </div>
+                                                <div>
+                                                  <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                                                    {genderText(
+                                                      gender,
+                                                      "בחרי תרגיל מספרייה",
+                                                      "בחר תרגיל מספרייה",
+                                                    )}
+                                                  </label>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setShowExercisePicker(true)}
+                                                    className="w-full flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 text-start"
+                                                  >
+                                                    <span
+                                                      className={
+                                                        selectedExId
+                                                          ? "text-ink"
+                                                          : "text-muted-foreground"
+                                                      }
+                                                    >
+                                                      {selectedExId
+                                                        ? store.exercises.find(
+                                                            (e) => e.id === selectedExId,
+                                                          )?.name || "תרגיל נבחר"
+                                                        : "חיפוש ובחירת תרגיל..."}
+                                                    </span>
+                                                    <Search className="h-4 w-4 text-muted-foreground" />
+                                                  </button>
+                                                </div>
+                                                {exerciseBuilderNotice ? (
+                                                  <p className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-[10px] font-semibold text-ink">
+                                                    {exerciseBuilderNotice}
+                                                  </p>
+                                                ) : null}
+
+                                                <div className="flex items-center justify-between gap-2">
+                                                  <p className="text-[10px] font-bold text-muted-foreground">
+                                                    הגדרת סטים
+                                                  </p>
+                                                  <label className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
+                                                    מספר סטים
+                                                    <input
+                                                      type="number"
+                                                      min={1}
+                                                      max={20}
+                                                      value={setsCount}
+                                                      onChange={(event) =>
+                                                        resizeSetFields(Number(event.target.value))
+                                                      }
+                                                      className="h-8 w-16 rounded-lg border border-border bg-white text-center text-xs text-ink"
+                                                    />
+                                                  </label>
+                                                </div>
+                                                <div className="space-y-2">
+                                                  {Array.from(
+                                                    { length: Math.max(1, setsCount) },
+                                                    (_, index) => {
+                                                      const mode = setModes[index] ?? "normal";
+                                                      const weight =
+                                                        setWeights[index] ?? targetWeight;
+                                                      const minReps = setRepMins[index] ?? repMin;
+                                                      const maxReps = setRepMaxes[index] ?? repMax;
+                                                      return (
+                                                        <div
+                                                          key={index}
+                                                          className={`rounded-2xl border p-3 shadow-sm ${
+                                                            mode === "warmup"
+                                                              ? "border-amber-200 bg-amber-50/70"
+                                                              : mode === "drop"
+                                                                ? "border-primary/30 bg-primary/5"
+                                                                : mode === "superset"
+                                                                  ? "border-violet-200 bg-violet-50/60"
+                                                                  : "border-border/70 bg-white"
+                                                          }`}
+                                                        >
+                                                          <div className="mb-2 flex items-center justify-between gap-2">
+                                                            <span className="rounded-full bg-foreground/10 px-2.5 py-1 text-[11px] font-extrabold text-ink">
+                                                              סט {index + 1}
+                                                            </span>
+                                                            <div className="flex items-center gap-2">
+                                                              {index > 0 ? (
+                                                                <button
+                                                                  type="button"
+                                                                  onClick={() => {
+                                                                    setSetWeights((values) => {
+                                                                      const next = [...values];
+                                                                      next[index] =
+                                                                        values[index - 1] ??
+                                                                        targetWeight;
+                                                                      return next;
+                                                                    });
+                                                                    setSetRepMins((values) => {
+                                                                      const next = [...values];
+                                                                      next[index] =
+                                                                        values[index - 1] ?? repMin;
+                                                                      return next;
+                                                                    });
+                                                                    setSetRepMaxes((values) => {
+                                                                      const next = [...values];
+                                                                      next[index] =
+                                                                        values[index - 1] ?? repMax;
+                                                                      return next;
+                                                                    });
+                                                                    setSetRests((values) => {
+                                                                      const next = [...values];
+                                                                      next[index] =
+                                                                        values[index - 1] ??
+                                                                        restSec;
+                                                                      return next;
+                                                                    });
+                                                                    setSetNotes((values) => {
+                                                                      const next = [...values];
+                                                                      next[index] =
+                                                                        values[index - 1] ?? "";
+                                                                      return next;
+                                                                    });
+                                                                  }}
+                                                                  className="rounded-lg bg-secondary px-2 py-1.5 text-[10px] font-bold text-muted-foreground hover:text-primary"
+                                                                >
+                                                                  העתק מהקודם
+                                                                </button>
+                                                              ) : null}
+                                                              <select
+                                                                aria-label={`סוג סט ${index + 1}`}
+                                                                value={mode}
                                                                 onChange={(event) => {
-                                                                  const mode = event.target
+                                                                  const nextMode = event.target
                                                                     .value as
                                                                     | "normal"
                                                                     | "warmup"
                                                                     | "drop"
                                                                     | "superset";
-                                                                  setSetModes(
-                                                                    Array.from(
-                                                                      {
-                                                                        length: Math.max(
-                                                                          1,
-                                                                          setsCount,
-                                                                        ),
-                                                                      },
-                                                                      () => mode,
-                                                                    ),
-                                                                  );
-                                                                  setWarmupEnabled(
-                                                                    mode === "warmup",
-                                                                  );
-                                                                  setDropSetEnabled(
-                                                                    mode === "drop",
-                                                                  );
-                                                                  setSupersetGroup(
-                                                                    mode === "superset" ? "A" : "",
-                                                                  );
+                                                                  setSetModes((current) => {
+                                                                    const count = Math.max(
+                                                                      1,
+                                                                      setsCount,
+                                                                    );
+                                                                    const next = Array.from(
+                                                                      { length: count },
+                                                                      (_, itemIndex) =>
+                                                                        current[itemIndex] ??
+                                                                        "normal",
+                                                                    );
+                                                                    next[index] = nextMode;
+                                                                    const order =
+                                                                      warmupFirstIndexes(next);
+                                                                    const ordered = order.map(
+                                                                      (itemIndex) =>
+                                                                        next[itemIndex]!,
+                                                                    );
+                                                                    setSetWeights((values) =>
+                                                                      reorderSetValues(
+                                                                        values,
+                                                                        order,
+                                                                        targetWeight,
+                                                                      ),
+                                                                    );
+                                                                    setSetRepMins((values) =>
+                                                                      reorderSetValues(
+                                                                        values,
+                                                                        order,
+                                                                        repMin,
+                                                                      ),
+                                                                    );
+                                                                    setSetRepMaxes((values) =>
+                                                                      reorderSetValues(
+                                                                        values,
+                                                                        order,
+                                                                        repMax,
+                                                                      ),
+                                                                    );
+                                                                    setSetRests((values) =>
+                                                                      reorderSetValues(
+                                                                        values,
+                                                                        order,
+                                                                        restSec,
+                                                                      ),
+                                                                    );
+                                                                    setSetNotes((values) =>
+                                                                      reorderSetValues(
+                                                                        values,
+                                                                        order,
+                                                                        "",
+                                                                      ),
+                                                                    );
+                                                                    setWarmupEnabled(
+                                                                      ordered.includes("warmup"),
+                                                                    );
+                                                                    setDropSetEnabled(
+                                                                      ordered.includes("drop"),
+                                                                    );
+                                                                    if (
+                                                                      nextMode === "superset" &&
+                                                                      !supersetGroup
+                                                                    ) {
+                                                                      setSupersetGroup("A");
+                                                                    }
+                                                                    return ordered;
+                                                                  });
                                                                 }}
-                                                                className="h-9 min-w-36 rounded-xl border border-border/60 bg-background px-2 text-[11px] font-bold text-ink"
+                                                                className="h-9 min-w-36 rounded-xl border border-border bg-white px-2 text-[11px] font-bold text-ink"
                                                               >
                                                                 <option value="normal">
                                                                   סט רגיל
@@ -6236,204 +6906,197 @@ export function CoachDashboardPage({
                                                                   דרופ סט
                                                                 </option>
                                                                 <option value="superset">
-                                                                  סופר סט
+                                                                  סופר־סט
                                                                 </option>
                                                               </select>
                                                             </div>
                                                           </div>
-                                                          <div className="grid grid-cols-4 gap-1.5 border-b border-amber-200 pb-3">
-                                                            <label className="text-center text-[9px] font-bold text-amber-900">
-                                                              סטי חימום
-                                                              <input
-                                                                type="number"
-                                                                min={1}
-                                                                value={warmupSetsCount}
-                                                                onChange={(event) =>
-                                                                  setWarmupSetsCount(
-                                                                    Math.max(
+                                                          {mode === "normal" ||
+                                                          mode === "warmup" ? (
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                              <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                                משקל (ק״ג)
+                                                                <input
+                                                                  type="number"
+                                                                  min={0}
+                                                                  step={0.5}
+                                                                  value={weight}
+                                                                  onChange={(event) => {
+                                                                    const value = Math.max(
+                                                                      0,
+                                                                      Number(event.target.value),
+                                                                    );
+                                                                    setSetWeights((current) => {
+                                                                      const next = [...current];
+                                                                      next[index] = value;
+                                                                      return next;
+                                                                    });
+                                                                    if (index === 0)
+                                                                      setTargetWeight(value);
+                                                                  }}
+                                                                  className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink"
+                                                                />
+                                                              </label>
+                                                              <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                                חזרות מינ׳
+                                                                <input
+                                                                  type="number"
+                                                                  min={1}
+                                                                  value={minReps}
+                                                                  onChange={(event) => {
+                                                                    const value = Math.max(
                                                                       1,
                                                                       Number(event.target.value),
-                                                                    ),
-                                                                  )
-                                                                }
-                                                                className="mt-1 h-8 w-full rounded-lg border border-amber-200 bg-background text-center text-xs"
-                                                              />
-                                                            </label>
-                                                            <label className="text-center text-[9px] font-bold text-amber-900">
-                                                              משקל חימום
-                                                              <input
-                                                                type="number"
-                                                                step={0.5}
-                                                                min={0}
-                                                                value={warmupWeight}
-                                                                onChange={(event) =>
-                                                                  setWarmupWeight(
-                                                                    Number(event.target.value),
-                                                                  )
-                                                                }
-                                                                className="mt-1 h-8 w-full rounded-lg border border-amber-200 bg-background text-center text-xs"
-                                                              />
-                                                            </label>
-                                                            <label className="text-center text-[9px] font-bold text-amber-900">
-                                                              חזרות מינ׳
-                                                              <input
-                                                                type="number"
-                                                                min={1}
-                                                                value={warmupReps}
-                                                                onChange={(event) =>
-                                                                  setWarmupReps(
-                                                                    Number(event.target.value),
-                                                                  )
-                                                                }
-                                                                className="mt-1 h-8 w-full rounded-lg border border-amber-200 bg-background text-center text-xs"
-                                                              />
-                                                            </label>
-                                                            <label className="text-center text-[9px] font-bold text-amber-900">
-                                                              חזרות מקס׳
-                                                              <input
-                                                                type="number"
-                                                                min={warmupReps}
-                                                                value={warmupRepsMax}
-                                                                onChange={(event) =>
-                                                                  setWarmupRepsMax(
-                                                                    Math.max(
-                                                                      warmupReps,
+                                                                    );
+                                                                    setSetRepMins((current) => {
+                                                                      const next = [...current];
+                                                                      next[index] = value;
+                                                                      return next;
+                                                                    });
+                                                                    if (index === 0)
+                                                                      setRepMin(value);
+                                                                  }}
+                                                                  className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink"
+                                                                />
+                                                              </label>
+                                                              <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                                חזרות מקס׳
+                                                                <input
+                                                                  type="number"
+                                                                  min={minReps}
+                                                                  value={maxReps}
+                                                                  onChange={(event) => {
+                                                                    const value = Math.max(
+                                                                      minReps,
                                                                       Number(event.target.value),
-                                                                    ),
-                                                                  )
-                                                                }
-                                                                className="mt-1 h-8 w-full rounded-lg border border-amber-200 bg-background text-center text-xs"
-                                                              />
-                                                            </label>
-                                                          </div>
-                                                          {setModes.find(
-                                                            (mode) => mode !== "normal",
-                                                          ) === "drop" ? (
-                                                            <div className="space-y-2 border-b border-primary/20 pb-3">
-                                                              <p className="text-right text-xs font-extrabold text-primary">
-                                                                דרופ סט
-                                                              </p>
-                                                              <div className="grid grid-cols-2 gap-1.5">
-                                                                <label className="text-center text-[9px] font-bold text-primary">
-                                                                  משקל דרופ 1
-                                                                  <input
-                                                                    type="number"
-                                                                    step={0.5}
-                                                                    min={0}
-                                                                    value={dropLevel1Weight}
-                                                                    onChange={(event) =>
-                                                                      setDropLevel1Weight(
-                                                                        event.target.value,
-                                                                      )
-                                                                    }
-                                                                    className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
-                                                                  />
-                                                                </label>
-                                                                <label className="text-center text-[9px] font-bold text-primary">
-                                                                  חזרות דרופ 1 מינ׳
-                                                                  <input
-                                                                    type="number"
-                                                                    min={1}
-                                                                    value={dropLevel1RepsMin}
-                                                                    onChange={(event) =>
-                                                                      setDropLevel1RepsMin(
-                                                                        Math.max(
-                                                                          1,
-                                                                          Number(
-                                                                            event.target.value,
-                                                                          ),
-                                                                        ),
-                                                                      )
-                                                                    }
-                                                                    className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
-                                                                  />
-                                                                </label>
-                                                                <label className="text-center text-[9px] font-bold text-primary">
-                                                                  חזרות דרופ 1 מקס׳
-                                                                  <input
-                                                                    type="number"
-                                                                    min={dropLevel1RepsMin}
-                                                                    value={dropLevel1RepsMax}
-                                                                    onChange={(event) =>
-                                                                      setDropLevel1RepsMax(
-                                                                        Math.max(
-                                                                          dropLevel1RepsMin,
-                                                                          Number(
-                                                                            event.target.value,
-                                                                          ),
-                                                                        ),
-                                                                      )
-                                                                    }
-                                                                    className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
-                                                                  />
-                                                                </label>
-                                                                <label className="text-center text-[9px] font-bold text-primary">
-                                                                  משקל דרופ 2
-                                                                  <input
-                                                                    type="number"
-                                                                    step={0.5}
-                                                                    min={0}
-                                                                    value={dropLevel2Weight}
-                                                                    onChange={(event) =>
-                                                                      setDropLevel2Weight(
-                                                                        event.target.value,
-                                                                      )
-                                                                    }
-                                                                    className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
-                                                                  />
-                                                                </label>
-                                                                <label className="text-center text-[9px] font-bold text-primary">
-                                                                  חזרות דרופ 2 מינ׳
-                                                                  <input
-                                                                    type="number"
-                                                                    min={1}
-                                                                    value={dropLevel2RepsMin}
-                                                                    onChange={(event) =>
-                                                                      setDropLevel2RepsMin(
-                                                                        Math.max(
-                                                                          1,
-                                                                          Number(
-                                                                            event.target.value,
-                                                                          ),
-                                                                        ),
-                                                                      )
-                                                                    }
-                                                                    className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
-                                                                  />
-                                                                </label>
-                                                                <label className="text-center text-[9px] font-bold text-primary">
-                                                                  חזרות דרופ 2 מקס׳
-                                                                  <input
-                                                                    type="number"
-                                                                    min={dropLevel2RepsMin}
-                                                                    value={dropLevel2RepsMax}
-                                                                    onChange={(event) =>
-                                                                      setDropLevel2RepsMax(
-                                                                        Math.max(
-                                                                          dropLevel2RepsMin,
-                                                                          Number(
-                                                                            event.target.value,
-                                                                          ),
-                                                                        ),
-                                                                      )
-                                                                    }
-                                                                    className="mt-1 h-8 w-full rounded-lg border border-primary/20 bg-background text-center text-xs"
-                                                                  />
-                                                                </label>
-                                                              </div>
+                                                                    );
+                                                                    setSetRepMaxes((current) => {
+                                                                      const next = [...current];
+                                                                      next[index] = value;
+                                                                      return next;
+                                                                    });
+                                                                    if (index === 0)
+                                                                      setRepMax(value);
+                                                                  }}
+                                                                  className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink"
+                                                                />
+                                                              </label>
+                                                              <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                                הערה לסט
+                                                                <textarea
+                                                                  rows={1}
+                                                                  value={setNotes[index] ?? ""}
+                                                                  onChange={(event) => {
+                                                                    setSetNotes((current) => {
+                                                                      const next = [...current];
+                                                                      next[index] =
+                                                                        event.target.value;
+                                                                      return next;
+                                                                    });
+                                                                  }}
+                                                                  placeholder="למשל: עד כשל"
+                                                                  className="min-h-10 rounded-xl border border-border bg-background px-2 py-2 text-right text-sm font-normal text-ink"
+                                                                />
+                                                              </label>
+                                                              <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                                זמן מנוחה (שניות)
+                                                                <input
+                                                                  type="number"
+                                                                  min={0}
+                                                                  step={5}
+                                                                  value={setRests[index] ?? restSec}
+                                                                  onChange={(event) => {
+                                                                    const value = Math.max(
+                                                                      0,
+                                                                      Number(event.target.value),
+                                                                    );
+                                                                    setSetRests((current) => {
+                                                                      const next = [...current];
+                                                                      next[index] = value;
+                                                                      return next;
+                                                                    });
+                                                                    if (index === 0)
+                                                                      setRestSec(value);
+                                                                  }}
+                                                                  className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink"
+                                                                />
+                                                              </label>
                                                             </div>
                                                           ) : null}
-                                                          {setModes.find(
-                                                            (mode) => mode !== "normal",
-                                                          ) === "superset" ? (
-                                                             <div className="block border-b border-violet-200 pb-3 text-right text-[9px] font-bold text-violet-900">
-                                                              <span className="mb-2 block text-xs font-extrabold">
-                                                                סופר סט
-                                                              </span>
-                                                               {renderSupersetPartnerSearch()}
-                                                              <div className="mt-2 grid grid-cols-3 gap-1.5">
-                                                                <label className="text-center text-[9px] font-bold text-violet-900">
-                                                                  משקל תרגיל 2
+                                                          {mode === "superset" ? (
+                                                            <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50/70 p-2.5">
+                                                              <p className="mb-2 text-[10px] font-extrabold text-violet-900">
+                                                                {store.exercises.find(
+                                                                  (exercise) =>
+                                                                    exercise.id === selectedExId,
+                                                                )?.name || "תרגיל ראשון"}
+                                                              </p>
+                                                              <div className="mb-3 grid grid-cols-3 gap-1.5">
+                                                                <input
+                                                                  aria-label="תרגיל ראשון משקל"
+                                                                  type="number"
+                                                                  min={0}
+                                                                  step={0.5}
+                                                                  value={weight}
+                                                                  onChange={(event) => {
+                                                                    const value = Math.max(
+                                                                      0,
+                                                                      Number(event.target.value),
+                                                                    );
+                                                                    setSetWeights((current) => {
+                                                                      const next = [...current];
+                                                                      next[index] = value;
+                                                                      return next;
+                                                                    });
+                                                                  }}
+                                                                  placeholder="משקל"
+                                                                  className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
+                                                                />
+                                                                <input
+                                                                  aria-label="תרגיל ראשון חזרות מינימום"
+                                                                  type="number"
+                                                                  min={1}
+                                                                  value={minReps}
+                                                                  onChange={(event) => {
+                                                                    const value = Math.max(
+                                                                      1,
+                                                                      Number(event.target.value),
+                                                                    );
+                                                                    setSetRepMins((current) => {
+                                                                      const next = [...current];
+                                                                      next[index] = value;
+                                                                      return next;
+                                                                    });
+                                                                  }}
+                                                                  placeholder="חזרות מינ׳"
+                                                                  className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
+                                                                />
+                                                                <input
+                                                                  aria-label="תרגיל ראשון חזרות מקסימום"
+                                                                  type="number"
+                                                                  min={minReps}
+                                                                  value={maxReps}
+                                                                  onChange={(event) => {
+                                                                    const value = Math.max(
+                                                                      minReps,
+                                                                      Number(event.target.value),
+                                                                    );
+                                                                    setSetRepMaxes((current) => {
+                                                                      const next = [...current];
+                                                                      next[index] = value;
+                                                                      return next;
+                                                                    });
+                                                                  }}
+                                                                  placeholder="חזרות מקס׳"
+                                                                  className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
+                                                                />
+                                                              </div>
+                                                              <div className="mb-2">
+                                                                {renderSupersetPartnerSearch()}
+                                                              </div>
+                                                              <div className="grid grid-cols-3 gap-1.5">
+                                                                <label className="grid gap-1 text-[9px] font-bold text-violet-900">
+                                                                  משקל
                                                                   <input
                                                                     type="number"
                                                                     min={0}
@@ -6449,10 +7112,10 @@ export function CoachDashboardPage({
                                                                         ),
                                                                       )
                                                                     }
-                                                                    className="mt-1 h-8 w-full rounded-lg border border-violet-200 bg-background text-center text-xs"
+                                                                    className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
                                                                   />
                                                                 </label>
-                                                                <label className="text-center text-[9px] font-bold text-violet-900">
+                                                                <label className="grid gap-1 text-[9px] font-bold text-violet-900">
                                                                   חזרות מינ׳
                                                                   <input
                                                                     type="number"
@@ -6468,10 +7131,10 @@ export function CoachDashboardPage({
                                                                         ),
                                                                       )
                                                                     }
-                                                                    className="mt-1 h-8 w-full rounded-lg border border-violet-200 bg-background text-center text-xs"
+                                                                    className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
                                                                   />
                                                                 </label>
-                                                                <label className="text-center text-[9px] font-bold text-violet-900">
+                                                                <label className="grid gap-1 text-[9px] font-bold text-violet-900">
                                                                   חזרות מקס׳
                                                                   <input
                                                                     type="number"
@@ -6487,942 +7150,364 @@ export function CoachDashboardPage({
                                                                         ),
                                                                       )
                                                                     }
-                                                                    className="mt-1 h-8 w-full rounded-lg border border-violet-200 bg-background text-center text-xs"
+                                                                    className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
                                                                   />
                                                                 </label>
                                                               </div>
-                                                             </div>
-                                                          ) : null}
-                                                          <label className="block text-right text-[10px] font-bold text-muted-foreground">
-                                                            הערה למתאמן על התרגיל
-                                                            <textarea
-                                                              rows={2}
-                                                              value={techNotes}
-                                                              onChange={(event) =>
-                                                                setTechniqueNotes(
-                                                                  event.target.value,
-                                                                )
-                                                              }
-                                                              placeholder="למשל: לשמור על גב ישר ולבצע לאט..."
-                                                              className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-right text-xs font-normal text-ink outline-none focus:border-primary"
-                                                            />
-                                                          </label>
-                                                          <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                              void handleUpdateExerciseItem(
-                                                                dayItem.id,
-                                                                exItem.id,
-                                                                {
-                                                                  targetWeight,
-                                                                  weight: targetWeight,
-                                                                  sets: Math.max(1, setsCount),
-                                                                  reps: Math.max(1, repMin),
-                                                                  repMin: Math.max(1, repMin),
-                                                                  repMax: Math.max(repMin, repMax),
-                                                                  rest: Math.max(0, restSec),
-                                                                  notes: techNotes.trim(),
-                                                                  warmups: warmupEnabled
-                                                                    ? Array.from(
-                                                                        {
-                                                                          length: Math.max(
-                                                                            1,
-                                                                            warmupSetsCount,
-                                                                          ),
-                                                                        },
-                                                                        (_, index) => ({
-                                                                          id:
-                                                                            exItem.warmups?.[index]
-                                                                              ?.id || uid(),
-                                                                          weight: warmupWeight,
-                                                                          reps: warmupReps,
-                                                                          repsMax: warmupRepsMax,
-                                                                        }),
-                                                                      )
-                                                                    : [],
-                                                                  dropSetConfig: dropSetEnabled
-                                                                    ? {
-                                                                        enabled: true,
-                                                                        drops: 2,
-                                                                        levels: [
-                                                                          {
-                                                                            weight:
-                                                                              Number(
-                                                                                dropLevel1Weight,
-                                                                              ) || targetWeight,
-                                                                            repsMin:
-                                                                              dropLevel1RepsMin,
-                                                                            repsMax:
-                                                                              dropLevel1RepsMax,
-                                                                          },
-                                                                          {
-                                                                            weight:
-                                                                              Number(
-                                                                                dropLevel2Weight,
-                                                                              ) || targetWeight,
-                                                                            repsMin:
-                                                                              dropLevel2RepsMin,
-                                                                            repsMax:
-                                                                              dropLevel2RepsMax,
-                                                                          },
-                                                                        ],
-                                                                      }
-                                                                    : {
-                                                                        enabled: false,
-                                                                        drops: 0,
-                                                                        levels: [],
-                                                                      },
-                                                                  supersetId: supersetGroup || "",
-                                                                  supersetPartnerId: supersetGroup
-                                                                    ? supersetPartnerId
-                                                                    : "",
-                                                                  supersetRepsMin: supersetGroup
-                                                                    ? Math.max(1, supersetRepsMin)
-                                                                    : 0,
-                                                                  supersetRepsMax: supersetGroup
-                                                                    ? Math.max(
-                                                                        supersetRepsMin,
-                                                                        supersetRepsMax,
-                                                                      )
-                                                                    : 0,
-                                                                },
-                                                              );
-                                                              setEditingItemId(null);
-                                                            }}
-                                                            className="h-11 w-full rounded-full bg-primary text-sm font-bold text-primary-foreground shadow-sm"
-                                                          >
-                                                            שמור תרגיל ליום אימון
-                                                          </button>
-                                                        </div>
-                                                      </div>
-                                                    </>
-                                                  ) : null}
-                                                </div>
-                                              );
-                                            })}
-                                          </div>
-                                        )}
-
-                                        {isDayActive && showExerciseForm && (
-                                          <ExerciseBuilderPlacement exerciseId={editingItemId}>
-                                            <form
-                                              onSubmit={handleAddExerciseToDay}
-                                              onKeyDown={(event) => {
-                                                // Number inputs submit a form when the mobile
-                                                // keyboard's action key is pressed. Saving here
-                                                // unmounts the builder and makes it look as if
-                                                // the tab closed while entering a set.
-                                                if (
-                                                  event.key === "Enter" &&
-                                                  !(event.target instanceof HTMLTextAreaElement)
-                                                ) {
-                                                  event.preventDefault();
-                                                }
-                                              }}
-                                              className="pt-2 border-t border-border/40 space-y-2 text-xs"
-                                            >
-                                              <div className="flex items-center justify-between">
-                                                <p className="text-[11px] font-bold text-primary">
-                                                  {editingItemId
-                                                    ? "עריכת תרגיל באימון"
-                                                    : "הוספת תרגיל לאימון"}
-                                                </p>
-                                                {editingItemId ? (
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                      setEditingItemId(null);
-                                                      setSelectedExId("");
-                                                    }}
-                                                    className="text-[10px] font-bold text-muted-foreground hover:text-ink"
-                                                  >
-                                                    ביטול עריכה
-                                                  </button>
-                                                ) : null}
-                                              </div>
-                                              <div>
-                                                <label className="block text-[10px] font-bold text-muted-foreground mb-1">
-                                                  {genderText(
-                                                    gender,
-                                                    "בחרי תרגיל מספרייה",
-                                                    "בחר תרגיל מספרייה",
-                                                  )}
-                                                </label>
-                                                <button
-                                                  type="button"
-                                                  onClick={() => setShowExercisePicker(true)}
-                                                  className="w-full flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 text-start"
-                                                >
-                                                  <span
-                                                    className={
-                                                      selectedExId
-                                                        ? "text-ink"
-                                                        : "text-muted-foreground"
-                                                    }
-                                                  >
-                                                    {selectedExId
-                                                      ? store.exercises.find(
-                                                          (e) => e.id === selectedExId,
-                                                        )?.name || "תרגיל נבחר"
-                                                      : "חיפוש ובחירת תרגיל..."}
-                                                  </span>
-                                                  <Search className="h-4 w-4 text-muted-foreground" />
-                                                </button>
-                                              </div>
-                                              {exerciseBuilderNotice ? (
-                                                <p className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-[10px] font-semibold text-ink">
-                                                  {exerciseBuilderNotice}
-                                                </p>
-                                              ) : null}
-
-                                              <div className="flex items-center justify-between gap-2">
-                                                <p className="text-[10px] font-bold text-muted-foreground">
-                                                  הגדרת סטים
-                                                </p>
-                                                <label className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
-                                                  מספר סטים
-                                                  <input
-                                                    type="number"
-                                                    min={1}
-                                                    max={20}
-                                                    value={setsCount}
-                                                    onChange={(event) =>
-                                                      resizeSetFields(Number(event.target.value))
-                                                    }
-                                                    className="h-8 w-16 rounded-lg border border-border bg-white text-center text-xs text-ink"
-                                                  />
-                                                </label>
-                                              </div>
-                                              <div className="space-y-2">
-                                                {Array.from(
-                                                  { length: Math.max(1, setsCount) },
-                                                  (_, index) => {
-                                                    const mode = setModes[index] ?? "normal";
-                                                    const weight =
-                                                      setWeights[index] ?? targetWeight;
-                                                    const minReps = setRepMins[index] ?? repMin;
-                                                    const maxReps = setRepMaxes[index] ?? repMax;
-                                                    return (
-                                                      <div
-                                                        key={index}
-                                                        className={`rounded-2xl border p-3 shadow-sm ${
-                                                          mode === "warmup"
-                                                            ? "border-amber-200 bg-amber-50/70"
-                                                            : mode === "drop"
-                                                              ? "border-primary/30 bg-primary/5"
-                                                              : mode === "superset"
-                                                                ? "border-violet-200 bg-violet-50/60"
-                                                                : "border-border/70 bg-white"
-                                                        }`}
-                                                      >
-                                                        <div className="mb-2 flex items-center justify-between gap-2">
-                                                          <span className="rounded-full bg-foreground/10 px-2.5 py-1 text-[11px] font-extrabold text-ink">
-                                                            סט {index + 1}
-                                                          </span>
-                                                           <div className="flex items-center gap-2">
-                                                             {index > 0 ? (
-                                                               <button
-                                                                 type="button"
-                                                                 onClick={() => {
-                                                                   setSetWeights((values) => {
-                                                                     const next = [...values];
-                                                                     next[index] =
-                                                                       values[index - 1] ?? targetWeight;
-                                                                     return next;
-                                                                   });
-                                                                   setSetRepMins((values) => {
-                                                                     const next = [...values];
-                                                                     next[index] = values[index - 1] ?? repMin;
-                                                                     return next;
-                                                                   });
-                                                                   setSetRepMaxes((values) => {
-                                                                     const next = [...values];
-                                                                     next[index] = values[index - 1] ?? repMax;
-                                                                     return next;
-                                                                   });
-                                                                   setSetRests((values) => {
-                                                                     const next = [...values];
-                                                                     next[index] = values[index - 1] ?? restSec;
-                                                                     return next;
-                                                                   });
-                                                                   setSetNotes((values) => {
-                                                                     const next = [...values];
-                                                                     next[index] = values[index - 1] ?? "";
-                                                                     return next;
-                                                                   });
-                                                                 }}
-                                                                 className="rounded-lg bg-secondary px-2 py-1.5 text-[10px] font-bold text-muted-foreground hover:text-primary"
-                                                               >
-                                                                 העתק מהקודם
-                                                               </button>
-                                                             ) : null}
-                                                             <select
-                                                                aria-label={`סוג סט ${index + 1}`}
-                                                               value={mode}
-                                                               onChange={(event) => {
-                                                                 const nextMode = event.target
-                                                                   .value as
-                                                                   | "normal"
-                                                                   | "warmup"
-                                                                   | "drop"
-                                                                   | "superset";
-                                                                 setSetModes((current) => {
-                                                                   const count = Math.max(
-                                                                     1,
-                                                                     setsCount,
-                                                                   );
-                                                                   const next = Array.from(
-                                                                     { length: count },
-                                                                     (_, itemIndex) =>
-                                                                       current[itemIndex] ?? "normal",
-                                                                   );
-                                                                   next[index] = nextMode;
-                                                                   const order =
-                                                                     warmupFirstIndexes(next);
-                                                                   const ordered = order.map(
-                                                                     (itemIndex) => next[itemIndex]!,
-                                                                   );
-                                                                   setSetWeights((values) =>
-                                                                     reorderSetValues(
-                                                                       values,
-                                                                       order,
-                                                                       targetWeight,
-                                                                     ),
-                                                                   );
-                                                                   setSetRepMins((values) =>
-                                                                     reorderSetValues(
-                                                                       values,
-                                                                       order,
-                                                                       repMin,
-                                                                     ),
-                                                                   );
-                                                                   setSetRepMaxes((values) =>
-                                                                     reorderSetValues(
-                                                                       values,
-                                                                       order,
-                                                                       repMax,
-                                                                     ),
-                                                                   );
-                                                                   setSetRests((values) =>
-                                                                     reorderSetValues(
-                                                                       values,
-                                                                       order,
-                                                                       restSec,
-                                                                     ),
-                                                                   );
-                                                                   setSetNotes((values) =>
-                                                                     reorderSetValues(
-                                                                       values,
-                                                                       order,
-                                                                       "",
-                                                                     ),
-                                                                   );
-                                                                   setWarmupEnabled(
-                                                                     ordered.includes("warmup"),
-                                                                   );
-                                                                   setDropSetEnabled(
-                                                                     ordered.includes("drop"),
-                                                                   );
-                                                                   if (
-                                                                     nextMode === "superset" &&
-                                                                     !supersetGroup
-                                                                   ) {
-                                                                     setSupersetGroup("A");
-                                                                   }
-                                                                   return ordered;
-                                                                 });
-                                                               }}
-                                                               className="h-9 min-w-36 rounded-xl border border-border bg-white px-2 text-[11px] font-bold text-ink"
-                                                             >
-                                                               <option value="normal">סט רגיל</option>
-                                                               <option value="warmup">סט חימום</option>
-                                                               <option value="drop">דרופ סט</option>
-                                                               <option value="superset">
-                                                                 סופר־סט
-                                                               </option>
-                                                             </select>
-                                                           </div>
-                                                        </div>
-                                                        {mode === "normal" || mode === "warmup" ? (
-                                                           <div className="grid grid-cols-2 gap-2">
-                                                             <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                              משקל (ק״ג)
-                                                              <input
-                                                                type="number"
-                                                                min={0}
-                                                                step={0.5}
-                                                                value={weight}
-                                                                onChange={(event) => {
-                                                                  const value = Math.max(
-                                                                    0,
-                                                                    Number(event.target.value),
-                                                                  );
-                                                                  setSetWeights((current) => {
-                                                                    const next = [...current];
-                                                                    next[index] = value;
-                                                                    return next;
-                                                                  });
-                                                                  if (index === 0)
-                                                                    setTargetWeight(value);
-                                                                }}
-                                                                className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink"
-                                                              />
-                                                            </label>
-                                                            <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                              חזרות מינ׳
-                                                              <input
-                                                                type="number"
-                                                                min={1}
-                                                                value={minReps}
-                                                                onChange={(event) => {
-                                                                  const value = Math.max(
-                                                                    1,
-                                                                    Number(event.target.value),
-                                                                  );
-                                                                  setSetRepMins((current) => {
-                                                                    const next = [...current];
-                                                                    next[index] = value;
-                                                                    return next;
-                                                                  });
-                                                                  if (index === 0) setRepMin(value);
-                                                                }}
-                                                                className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink"
-                                                              />
-                                                            </label>
-                                                             <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                              חזרות מקס׳
-                                                              <input
-                                                                type="number"
-                                                                min={minReps}
-                                                                value={maxReps}
-                                                                onChange={(event) => {
-                                                                  const value = Math.max(
-                                                                    minReps,
-                                                                    Number(event.target.value),
-                                                                  );
-                                                                  setSetRepMaxes((current) => {
-                                                                    const next = [...current];
-                                                                    next[index] = value;
-                                                                    return next;
-                                                                  });
-                                                                  if (index === 0) setRepMax(value);
-                                                                }}
-                                                                className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink"
-                                                              />
-                                                            </label>
-                                                             <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                               הערה לסט
-                                                               <textarea
-                                                                 rows={1}
-                                                                 value={setNotes[index] ?? ""}
-                                                                 onChange={(event) => {
-                                                                   setSetNotes((current) => {
-                                                                     const next = [...current];
-                                                                     next[index] = event.target.value;
-                                                                     return next;
-                                                                   });
-                                                                 }}
-                                                                 placeholder="למשל: עד כשל"
-                                                                 className="min-h-10 rounded-xl border border-border bg-background px-2 py-2 text-right text-sm font-normal text-ink"
-                                                               />
-                                                             </label>
-                                                             <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                              זמן מנוחה (שניות)
-                                                              <input
-                                                                type="number"
-                                                                min={0}
-                                                                step={5}
-                                                                value={setRests[index] ?? restSec}
-                                                                onChange={(event) => {
-                                                                  const value = Math.max(
-                                                                    0,
-                                                                    Number(event.target.value),
-                                                                  );
-                                                                  setSetRests((current) => {
-                                                                    const next = [...current];
-                                                                    next[index] = value;
-                                                                    return next;
-                                                                  });
-                                                                  if (index === 0)
-                                                                    setRestSec(value);
-                                                                }}
-                                                                className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink"
-                                                              />
-                                                            </label>
-                                                          </div>
-                                                        ) : null}
-                                                        {mode === "superset" ? (
-                                                          <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50/70 p-2.5">
-                                                            <p className="mb-2 text-[10px] font-extrabold text-violet-900">
-                                                              {store.exercises.find(
-                                                                (exercise) =>
-                                                                  exercise.id === selectedExId,
-                                                              )?.name || "תרגיל ראשון"}
-                                                            </p>
-                                                            <div className="mb-3 grid grid-cols-3 gap-1.5">
-                                                              <input
-                                                                aria-label="תרגיל ראשון משקל"
-                                                                type="number"
-                                                                min={0}
-                                                                step={0.5}
-                                                                value={weight}
-                                                                onChange={(event) => {
-                                                                  const value = Math.max(
-                                                                    0,
-                                                                    Number(event.target.value),
-                                                                  );
-                                                                  setSetWeights((current) => {
-                                                                    const next = [...current];
-                                                                    next[index] = value;
-                                                                    return next;
-                                                                  });
-                                                                }}
-                                                                placeholder="משקל"
-                                                                className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
-                                                              />
-                                                              <input
-                                                                aria-label="תרגיל ראשון חזרות מינימום"
-                                                                type="number"
-                                                                min={1}
-                                                                value={minReps}
-                                                                onChange={(event) => {
-                                                                  const value = Math.max(
-                                                                    1,
-                                                                    Number(event.target.value),
-                                                                  );
-                                                                  setSetRepMins((current) => {
-                                                                    const next = [...current];
-                                                                    next[index] = value;
-                                                                    return next;
-                                                                  });
-                                                                }}
-                                                                placeholder="חזרות מינ׳"
-                                                                className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
-                                                              />
-                                                              <input
-                                                                aria-label="תרגיל ראשון חזרות מקסימום"
-                                                                type="number"
-                                                                min={minReps}
-                                                                value={maxReps}
-                                                                onChange={(event) => {
-                                                                  const value = Math.max(
-                                                                    minReps,
-                                                                    Number(event.target.value),
-                                                                  );
-                                                                  setSetRepMaxes((current) => {
-                                                                    const next = [...current];
-                                                                    next[index] = value;
-                                                                    return next;
-                                                                  });
-                                                                }}
-                                                                placeholder="חזרות מקס׳"
-                                                                className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
-                                                              />
                                                             </div>
-                                                             <div className="mb-2">
-                                                               {renderSupersetPartnerSearch()}
-                                                             </div>
-                                                            <div className="grid grid-cols-3 gap-1.5">
-                                                              <label className="grid gap-1 text-[9px] font-bold text-violet-900">
-                                                                משקל
+                                                          ) : null}
+                                                          {mode === "drop" ? (
+                                                            <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-2.5">
+                                                              <p className="mb-2 text-[10px] font-extrabold text-primary">
+                                                                שלבי הורדת משקל
+                                                              </p>
+                                                              <div className="grid gap-2 sm:grid-cols-2">
+                                                                {[
+                                                                  {
+                                                                    label: "דרופ 1",
+                                                                    weight: dropLevel1Weight,
+                                                                    setWeight: setDropLevel1Weight,
+                                                                    min: dropLevel1RepsMin,
+                                                                    setMin: setDropLevel1RepsMin,
+                                                                    max: dropLevel1RepsMax,
+                                                                    setMax: setDropLevel1RepsMax,
+                                                                  },
+                                                                  {
+                                                                    label: "דרופ 2",
+                                                                    weight: dropLevel2Weight,
+                                                                    setWeight: setDropLevel2Weight,
+                                                                    min: dropLevel2RepsMin,
+                                                                    setMin: setDropLevel2RepsMin,
+                                                                    max: dropLevel2RepsMax,
+                                                                    setMax: setDropLevel2RepsMax,
+                                                                  },
+                                                                ].map((drop) => (
+                                                                  <div
+                                                                    key={drop.label}
+                                                                    className="rounded-lg bg-white/80 p-2"
+                                                                  >
+                                                                    <p className="mb-1 text-[9px] font-bold text-primary">
+                                                                      {drop.label}
+                                                                    </p>
+                                                                    <div className="grid grid-cols-3 gap-1">
+                                                                      <input
+                                                                        aria-label={`${drop.label} משקל`}
+                                                                        type="number"
+                                                                        min={0}
+                                                                        step={0.5}
+                                                                        value={drop.weight}
+                                                                        onChange={(event) =>
+                                                                          drop.setWeight(
+                                                                            event.target.value,
+                                                                          )
+                                                                        }
+                                                                        placeholder="ק״ג"
+                                                                        className="h-8 rounded-md border border-border text-center text-[11px]"
+                                                                      />
+                                                                      <input
+                                                                        aria-label={`${drop.label} חזרות מינימום`}
+                                                                        type="number"
+                                                                        min={1}
+                                                                        value={drop.min}
+                                                                        onChange={(event) =>
+                                                                          drop.setMin(
+                                                                            Math.max(
+                                                                              1,
+                                                                              Number(
+                                                                                event.target.value,
+                                                                              ),
+                                                                            ),
+                                                                          )
+                                                                        }
+                                                                        className="h-8 rounded-md border border-border text-center text-[11px]"
+                                                                      />
+                                                                      <input
+                                                                        aria-label={`${drop.label} חזרות מקסימום`}
+                                                                        type="number"
+                                                                        min={drop.min}
+                                                                        value={drop.max}
+                                                                        onChange={(event) =>
+                                                                          drop.setMax(
+                                                                            Math.max(
+                                                                              drop.min,
+                                                                              Number(
+                                                                                event.target.value,
+                                                                              ),
+                                                                            ),
+                                                                          )
+                                                                        }
+                                                                        className="h-8 rounded-md border border-border text-center text-[11px]"
+                                                                      />
+                                                                    </div>
+                                                                  </div>
+                                                                ))}
+                                                              </div>
+                                                              <label className="mt-2 grid gap-1 text-[9px] font-bold text-primary">
+                                                                זמן מנוחה (שניות)
                                                                 <input
                                                                   type="number"
                                                                   min={0}
-                                                                  step={0.5}
-                                                                  value={supersetPartnerWeight}
-                                                                  onChange={(event) =>
-                                                                    setSupersetPartnerWeight(
-                                                                      Math.max(
-                                                                        0,
-                                                                        Number(event.target.value),
-                                                                      ),
-                                                                    )
-                                                                  }
-                                                                  className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
-                                                                />
-                                                              </label>
-                                                              <label className="grid gap-1 text-[9px] font-bold text-violet-900">
-                                                                חזרות מינ׳
-                                                                <input
-                                                                  type="number"
-                                                                  min={1}
-                                                                  value={supersetRepsMin}
-                                                                  onChange={(event) =>
-                                                                    setSupersetRepsMin(
-                                                                      Math.max(
-                                                                        1,
-                                                                        Number(event.target.value),
-                                                                      ),
-                                                                    )
-                                                                  }
-                                                                  className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
-                                                                />
-                                                              </label>
-                                                              <label className="grid gap-1 text-[9px] font-bold text-violet-900">
-                                                                חזרות מקס׳
-                                                                <input
-                                                                  type="number"
-                                                                  min={supersetRepsMin}
-                                                                  value={supersetRepsMax}
-                                                                  onChange={(event) =>
-                                                                    setSupersetRepsMax(
-                                                                      Math.max(
-                                                                        supersetRepsMin,
-                                                                        Number(event.target.value),
-                                                                      ),
-                                                                    )
-                                                                  }
-                                                                  className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
+                                                                  step={5}
+                                                                  value={setRests[index] ?? restSec}
+                                                                  onChange={(event) => {
+                                                                    const value = Math.max(
+                                                                      0,
+                                                                      Number(event.target.value),
+                                                                    );
+                                                                    setSetRests((current) => {
+                                                                      const next = [...current];
+                                                                      next[index] = value;
+                                                                      return next;
+                                                                    });
+                                                                    if (index === 0)
+                                                                      setRestSec(value);
+                                                                  }}
+                                                                  className="h-8 rounded-md border border-primary/20 bg-background text-center text-[11px]"
+                                                                  aria-label={`${mode === "drop" ? "דרופ סט" : "סט"} זמן מנוחה`}
                                                                 />
                                                               </label>
                                                             </div>
-                                                          </div>
-                                                        ) : null}
-                                                        {mode === "drop" ? (
-                                                          <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-2.5">
-                                                            <p className="mb-2 text-[10px] font-extrabold text-primary">
-                                                              שלבי הורדת משקל
-                                                            </p>
-                                                            <div className="grid gap-2 sm:grid-cols-2">
-                                                              {[
-                                                                {
-                                                                  label: "דרופ 1",
-                                                                  weight: dropLevel1Weight,
-                                                                  setWeight: setDropLevel1Weight,
-                                                                  min: dropLevel1RepsMin,
-                                                                  setMin: setDropLevel1RepsMin,
-                                                                  max: dropLevel1RepsMax,
-                                                                  setMax: setDropLevel1RepsMax,
-                                                                },
-                                                                {
-                                                                  label: "דרופ 2",
-                                                                  weight: dropLevel2Weight,
-                                                                  setWeight: setDropLevel2Weight,
-                                                                  min: dropLevel2RepsMin,
-                                                                  setMin: setDropLevel2RepsMin,
-                                                                  max: dropLevel2RepsMax,
-                                                                  setMax: setDropLevel2RepsMax,
-                                                                },
-                                                              ].map((drop) => (
-                                                                <div
-                                                                  key={drop.label}
-                                                                  className="rounded-lg bg-white/80 p-2"
-                                                                >
-                                                                  <p className="mb-1 text-[9px] font-bold text-primary">
-                                                                    {drop.label}
-                                                                  </p>
-                                                                  <div className="grid grid-cols-3 gap-1">
-                                                                    <input
-                                                                      aria-label={`${drop.label} משקל`}
-                                                                      type="number"
-                                                                      min={0}
-                                                                      step={0.5}
-                                                                      value={drop.weight}
-                                                                      onChange={(event) =>
-                                                                        drop.setWeight(
-                                                                          event.target.value,
-                                                                        )
-                                                                      }
-                                                                      placeholder="ק״ג"
-                                                                      className="h-8 rounded-md border border-border text-center text-[11px]"
-                                                                    />
-                                                                    <input
-                                                                      aria-label={`${drop.label} חזרות מינימום`}
-                                                                      type="number"
-                                                                      min={1}
-                                                                      value={drop.min}
-                                                                      onChange={(event) =>
-                                                                        drop.setMin(
-                                                                          Math.max(
-                                                                            1,
-                                                                            Number(
-                                                                              event.target.value,
-                                                                            ),
-                                                                          ),
-                                                                        )
-                                                                      }
-                                                                      className="h-8 rounded-md border border-border text-center text-[11px]"
-                                                                    />
-                                                                    <input
-                                                                      aria-label={`${drop.label} חזרות מקסימום`}
-                                                                      type="number"
-                                                                      min={drop.min}
-                                                                      value={drop.max}
-                                                                      onChange={(event) =>
-                                                                        drop.setMax(
-                                                                          Math.max(
-                                                                            drop.min,
-                                                                            Number(
-                                                                              event.target.value,
-                                                                            ),
-                                                                          ),
-                                                                        )
-                                                                      }
-                                                                      className="h-8 rounded-md border border-border text-center text-[11px]"
-                                                                    />
-                                                                  </div>
-                                                                </div>
-                                                              ))}
-                                                            </div>
-                                                             <label className="mt-2 grid gap-1 text-[9px] font-bold text-primary">
-                                                               זמן מנוחה (שניות)
-                                                               <input
-                                                                 type="number"
-                                                                 min={0}
-                                                                 step={5}
-                                                                 value={setRests[index] ?? restSec}
-                                                                 onChange={(event) => {
-                                                                   const value = Math.max(
-                                                                     0,
-                                                                     Number(event.target.value),
-                                                                   );
-                                                                   setSetRests((current) => {
-                                                                     const next = [...current];
-                                                                     next[index] = value;
-                                                                     return next;
-                                                                   });
-                                                                   if (index === 0) setRestSec(value);
-                                                                 }}
-                                                                 className="h-8 rounded-md border border-primary/20 bg-background text-center text-[11px]"
-                                                                 aria-label={`${mode === "drop" ? "דרופ סט" : "סט"} זמן מנוחה`}
-                                                               />
-                                                             </label>
-                                                          </div>
-                                                        ) : null}
-                                                      </div>
-                                                    );
-                                                  },
-                                                )}
-                                              </div>
-
-                                              <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                הערה למתאמן על התרגיל
-                                                <textarea
-                                                  value={techNotes}
-                                                  onChange={(event) =>
-                                                    setTechniqueNotes(event.target.value)
-                                                  }
-                                                  placeholder="למשל: לשמור על גב ישר ולבצע לאט..."
-                                                  rows={2}
-                                                  className="w-full resize-none rounded-lg border border-border bg-white px-2 py-1.5 text-xs font-normal text-ink outline-none focus:border-primary"
-                                                />
-                                              </label>
-
-                                              {advancedExerciseControlsEnabled &&
-                                              (warmupEnabled || dropSetEnabled || supersetGroup) ? (
-                                                <div className="grid min-w-0 grid-cols-2 gap-2 rounded-2xl border border-border/60 bg-background p-3">
-                                                  {warmupEnabled ? (
-                                                    <>
-                                                      <label className="grid min-w-0 gap-1 text-[10px] font-bold text-muted-foreground">
-                                                        משקל חימום (ק״ג)
-                                                        <input
-                                                          type="number"
-                                                          min="0"
-                                                          step={0.5}
-                                                          value={warmupWeight}
-                                                          onChange={(event) =>
-                                                            setWarmupWeight(
-                                                              Math.max(
-                                                                0,
-                                                                Number(event.target.value),
-                                                              ),
-                                                            )
-                                                          }
-                                                          className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
-                                                        />
-                                                      </label>
-                                                      <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                        מספר סטי חימום
-                                                        <input
-                                                          type="number"
-                                                          min="1"
-                                                          max="5"
-                                                          value={warmupSetsCount}
-                                                          onChange={(event) =>
-                                                            setWarmupSetsCount(
-                                                              Math.max(
-                                                                1,
-                                                                Number(event.target.value),
-                                                              ),
-                                                            )
-                                                          }
-                                                          className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
-                                                        />
-                                                      </label>
-                                                      <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                        חזרות חימום מינ'
-                                                        <input
-                                                          type="number"
-                                                          min="1"
-                                                          value={warmupReps}
-                                                          onChange={(event) =>
-                                                            setWarmupReps(
-                                                              Math.max(
-                                                                1,
-                                                                Number(event.target.value),
-                                                              ),
-                                                            )
-                                                          }
-                                                          className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
-                                                        />
-                                                      </label>
-                                                      <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                        חזרות חימום מקס'
-                                                        <input
-                                                          type="number"
-                                                          min={warmupReps}
-                                                          value={warmupRepsMax}
-                                                          onChange={(event) =>
-                                                            setWarmupRepsMax(
-                                                              Math.max(
-                                                                warmupReps,
-                                                                Number(event.target.value),
-                                                              ),
-                                                            )
-                                                          }
-                                                          className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
-                                                        />
-                                                      </label>
-                                                    </>
-                                                  ) : null}
-                                                  {dropSetEnabled ? (
-                                                    <>
-                                                      <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                        משקל לפני הדרופ (ק״ג)
-                                                        <input
-                                                          type="number"
-                                                          min="0.1"
-                                                          step={0.5}
-                                                          inputMode="decimal"
-                                                          value={dropLevel1Weight}
-                                                          onChange={(event) =>
-                                                            setDropLevel1Weight(event.target.value)
-                                                          }
-                                                          placeholder="למשל 20"
-                                                          className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
-                                                          aria-label="משקל לפני הדרופ בקילוגרמים"
-                                                        />
-                                                      </label>
-                                                      <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                        משקל אחרי הדרופ (ק״ג)
-                                                        <input
-                                                          type="number"
-                                                          min="0.1"
-                                                          step={0.5}
-                                                          inputMode="decimal"
-                                                          value={dropLevel2Weight}
-                                                          onChange={(event) =>
-                                                            setDropLevel2Weight(event.target.value)
-                                                          }
-                                                          placeholder="למשל 15"
-                                                          className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
-                                                          aria-label="משקל אחרי הדרופ בקילוגרמים"
-                                                        />
-                                                      </label>
-                                                      <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                        חזרות דרופ סט
-                                                        <div className="grid grid-cols-2 gap-1">
-                                                          <input
-                                                            type="number"
-                                                            min="1"
-                                                            value={dropRepsMin}
-                                                            onChange={(event) =>
-                                                              setDropRepsMin(
-                                                                Math.max(
-                                                                  1,
-                                                                  Number(event.target.value),
-                                                                ),
-                                                              )
-                                                            }
-                                                            className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
-                                                            aria-label="חזרות דרופ סט מינימום"
-                                                          />
-                                                          <input
-                                                            type="number"
-                                                            min={dropRepsMin}
-                                                            value={dropRepsMax}
-                                                            onChange={(event) =>
-                                                              setDropRepsMax(
-                                                                Math.max(
-                                                                  dropRepsMin,
-                                                                  Number(event.target.value),
-                                                                ),
-                                                              )
-                                                            }
-                                                            className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
-                                                            aria-label="חזרות דרופ סט מקסימום"
-                                                          />
+                                                          ) : null}
                                                         </div>
-                                                      </label>
-                                                    </>
-                                                  ) : null}
-                                                  {supersetGroup ? (
-                                                    <>
-                                                      <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                        קבוצה
-                                                        <input
-                                                          value={supersetGroup}
-                                                          onChange={(event) =>
-                                                            setSupersetGroup(event.target.value)
-                                                          }
-                                                          placeholder="A"
-                                                          className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
-                                                        />
-                                                      </label>
-                                                       <div className="col-span-2 min-w-0">
-                                                         {renderSupersetPartnerSearch()}
-                                                       </div>
-                                                      <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                        חזרות סופר סט
-                                                        <div className="grid grid-cols-2 gap-1">
-                                                          <input
-                                                            type="number"
-                                                            min="1"
-                                                            value={supersetRepsMin}
-                                                            onChange={(event) =>
-                                                              setSupersetRepsMin(
-                                                                Math.max(
-                                                                  1,
-                                                                  Number(event.target.value),
-                                                                ),
-                                                              )
-                                                            }
-                                                            className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
-                                                            aria-label="חזרות סופר סט מינימום"
-                                                          />
-                                                          <input
-                                                            type="number"
-                                                            min={supersetRepsMin}
-                                                            value={supersetRepsMax}
-                                                            onChange={(event) =>
-                                                              setSupersetRepsMax(
-                                                                Math.max(
-                                                                  supersetRepsMin,
-                                                                  Number(event.target.value),
-                                                                ),
-                                                              )
-                                                            }
-                                                            className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
-                                                            aria-label="חזרות סופר סט מקסימום"
-                                                          />
-                                                        </div>
-                                                      </label>
-                                                    </>
-                                                  ) : null}
+                                                      );
+                                                    },
+                                                  )}
                                                 </div>
-                                              ) : null}
 
-                                              <button
-                                                type="submit"
-                                                className="w-full rounded-lg bg-primary py-1.5 font-bold text-white shadow-xs cursor-pointer"
-                                              >
-                                                {editingItemId
-                                                  ? "שמור שינויי תרגיל"
-                                                  : "שמור תרגיל ליום אימון"}
-                                              </button>
-                                            </form>
-                                          </ExerciseBuilderPlacement>
-                                        )}
+                                                <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                  הערה למתאמן על התרגיל
+                                                  <textarea
+                                                    value={techNotes}
+                                                    onChange={(event) =>
+                                                      setTechniqueNotes(event.target.value)
+                                                    }
+                                                    placeholder="למשל: לשמור על גב ישר ולבצע לאט..."
+                                                    rows={2}
+                                                    className="w-full resize-none rounded-lg border border-border bg-white px-2 py-1.5 text-xs font-normal text-ink outline-none focus:border-primary"
+                                                  />
+                                                </label>
+
+                                                {advancedExerciseControlsEnabled &&
+                                                (warmupEnabled ||
+                                                  dropSetEnabled ||
+                                                  supersetGroup) ? (
+                                                  <div className="grid min-w-0 grid-cols-2 gap-2 rounded-2xl border border-border/60 bg-background p-3">
+                                                    {warmupEnabled ? (
+                                                      <>
+                                                        <label className="grid min-w-0 gap-1 text-[10px] font-bold text-muted-foreground">
+                                                          משקל חימום (ק״ג)
+                                                          <input
+                                                            type="number"
+                                                            min="0"
+                                                            step={0.5}
+                                                            value={warmupWeight}
+                                                            onChange={(event) =>
+                                                              setWarmupWeight(
+                                                                Math.max(
+                                                                  0,
+                                                                  Number(event.target.value),
+                                                                ),
+                                                              )
+                                                            }
+                                                            className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
+                                                          />
+                                                        </label>
+                                                        <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                          מספר סטי חימום
+                                                          <input
+                                                            type="number"
+                                                            min="1"
+                                                            max="5"
+                                                            value={warmupSetsCount}
+                                                            onChange={(event) =>
+                                                              setWarmupSetsCount(
+                                                                Math.max(
+                                                                  1,
+                                                                  Number(event.target.value),
+                                                                ),
+                                                              )
+                                                            }
+                                                            className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
+                                                          />
+                                                        </label>
+                                                        <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                          חזרות חימום מינ'
+                                                          <input
+                                                            type="number"
+                                                            min="1"
+                                                            value={warmupReps}
+                                                            onChange={(event) =>
+                                                              setWarmupReps(
+                                                                Math.max(
+                                                                  1,
+                                                                  Number(event.target.value),
+                                                                ),
+                                                              )
+                                                            }
+                                                            className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
+                                                          />
+                                                        </label>
+                                                        <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                          חזרות חימום מקס'
+                                                          <input
+                                                            type="number"
+                                                            min={warmupReps}
+                                                            value={warmupRepsMax}
+                                                            onChange={(event) =>
+                                                              setWarmupRepsMax(
+                                                                Math.max(
+                                                                  warmupReps,
+                                                                  Number(event.target.value),
+                                                                ),
+                                                              )
+                                                            }
+                                                            className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
+                                                          />
+                                                        </label>
+                                                      </>
+                                                    ) : null}
+                                                    {dropSetEnabled ? (
+                                                      <>
+                                                        <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                          משקל לפני הדרופ (ק״ג)
+                                                          <input
+                                                            type="number"
+                                                            min="0.1"
+                                                            step={0.5}
+                                                            inputMode="decimal"
+                                                            value={dropLevel1Weight}
+                                                            onChange={(event) =>
+                                                              setDropLevel1Weight(
+                                                                event.target.value,
+                                                              )
+                                                            }
+                                                            placeholder="למשל 20"
+                                                            className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
+                                                            aria-label="משקל לפני הדרופ בקילוגרמים"
+                                                          />
+                                                        </label>
+                                                        <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                          משקל אחרי הדרופ (ק״ג)
+                                                          <input
+                                                            type="number"
+                                                            min="0.1"
+                                                            step={0.5}
+                                                            inputMode="decimal"
+                                                            value={dropLevel2Weight}
+                                                            onChange={(event) =>
+                                                              setDropLevel2Weight(
+                                                                event.target.value,
+                                                              )
+                                                            }
+                                                            placeholder="למשל 15"
+                                                            className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
+                                                            aria-label="משקל אחרי הדרופ בקילוגרמים"
+                                                          />
+                                                        </label>
+                                                        <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                          חזרות דרופ סט
+                                                          <div className="grid grid-cols-2 gap-1">
+                                                            <input
+                                                              type="number"
+                                                              min="1"
+                                                              value={dropRepsMin}
+                                                              onChange={(event) =>
+                                                                setDropRepsMin(
+                                                                  Math.max(
+                                                                    1,
+                                                                    Number(event.target.value),
+                                                                  ),
+                                                                )
+                                                              }
+                                                              className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
+                                                              aria-label="חזרות דרופ סט מינימום"
+                                                            />
+                                                            <input
+                                                              type="number"
+                                                              min={dropRepsMin}
+                                                              value={dropRepsMax}
+                                                              onChange={(event) =>
+                                                                setDropRepsMax(
+                                                                  Math.max(
+                                                                    dropRepsMin,
+                                                                    Number(event.target.value),
+                                                                  ),
+                                                                )
+                                                              }
+                                                              className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
+                                                              aria-label="חזרות דרופ סט מקסימום"
+                                                            />
+                                                          </div>
+                                                        </label>
+                                                      </>
+                                                    ) : null}
+                                                    {supersetGroup ? (
+                                                      <>
+                                                        <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                          קבוצה
+                                                          <input
+                                                            value={supersetGroup}
+                                                            onChange={(event) =>
+                                                              setSupersetGroup(event.target.value)
+                                                            }
+                                                            placeholder="A"
+                                                            className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs"
+                                                          />
+                                                        </label>
+                                                        <div className="col-span-2 min-w-0">
+                                                          {renderSupersetPartnerSearch()}
+                                                        </div>
+                                                        <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                          חזרות סופר סט
+                                                          <div className="grid grid-cols-2 gap-1">
+                                                            <input
+                                                              type="number"
+                                                              min="1"
+                                                              value={supersetRepsMin}
+                                                              onChange={(event) =>
+                                                                setSupersetRepsMin(
+                                                                  Math.max(
+                                                                    1,
+                                                                    Number(event.target.value),
+                                                                  ),
+                                                                )
+                                                              }
+                                                              className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
+                                                              aria-label="חזרות סופר סט מינימום"
+                                                            />
+                                                            <input
+                                                              type="number"
+                                                              min={supersetRepsMin}
+                                                              value={supersetRepsMax}
+                                                              onChange={(event) =>
+                                                                setSupersetRepsMax(
+                                                                  Math.max(
+                                                                    supersetRepsMin,
+                                                                    Number(event.target.value),
+                                                                  ),
+                                                                )
+                                                              }
+                                                              className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
+                                                              aria-label="חזרות סופר סט מקסימום"
+                                                            />
+                                                          </div>
+                                                        </label>
+                                                      </>
+                                                    ) : null}
+                                                  </div>
+                                                ) : null}
+
+                                                <button
+                                                  type="submit"
+                                                  className="w-full rounded-lg bg-primary py-1.5 font-bold text-white shadow-xs cursor-pointer"
+                                                >
+                                                  {editingItemId
+                                                    ? "שמור שינויי תרגיל"
+                                                    : "שמור תרגיל ליום אימון"}
+                                                </button>
+                                              </form>
+                                            </ExerciseBuilderPlacement>
+                                          )}
                                           <button
                                             type="button"
                                             onClick={() => {
@@ -7494,6 +7579,7 @@ export function CoachDashboardPage({
                   {/* Coach-prescribed menu builder */}
                   <div
                     id="coach-menu"
+                    onChange={markPlannedMealsDraftDirty}
                     className={`space-y-3 ${
                       workspacePage
                         ? "bg-background"
@@ -7875,7 +7961,10 @@ export function CoachDashboardPage({
                       מחשבון BMR
                     </button>
                     {showBmrCalculator ? (
-                      <div className="rounded-2xl border border-primary/15 bg-card/80 p-3">
+                      <div
+                        className="rounded-2xl border border-primary/15 bg-card/80 p-3"
+                        onChange={markProfileDraftDirty}
+                      >
                         <div className="mb-3">
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-[11px] font-bold text-ink">מחשבון BMR למאמן בלבד</p>
