@@ -27,6 +27,7 @@
 - [Catalog source URL normalization](catalog-source-normalization.md) — Canonicalize mixed Hebrew and percent-encoded product URLs before exposing them to catalog consumers.
 - [Exact product label verification](exact-product-label-verification.md) — A real source is insufficient when the flavor, serving, or package does not match exactly.
 - [Workout history deduplication](history-dedupe.md) — Merge retries only with an exact timestamp or repeated ID; same-day workouts may be legitimate separate executions.
+- [Workout exercise identity drift](workout-exercise-identity-drift.md) — Completed sessions can retain older exercise IDs; coach reports must also match the normalized exercise name.
 - [Coach workspace fixtures](coach-workspace-fixtures.md) — The authenticated coach fixture can hydrate with the first workout day already open; tests should accept that valid initial state.
 - [Focused workspace portals](focused-workspace-portals.md) — Portal targets for focused coach editors belong inside the owning workspace, not the global app main.
 - [Completed session draft guard](session-feedback-persistence.md) — After a successful save, stop hydration effects from recreating cleared feedback drafts.

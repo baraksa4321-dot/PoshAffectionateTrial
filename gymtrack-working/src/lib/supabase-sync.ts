@@ -26,6 +26,7 @@ export type PullResult =
   { success: true; data: GymData } | { success: false; data: GymData; error: string };
 
 export type CoachClientData = {
+  exercises: Exercise[];
   programs: Program[];
   workouts: Workout[];
   nutritionDays: NutritionDay[];
@@ -1361,6 +1362,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
   try {
     const [
       profileResult,
+      customExercisesResult,
       programsResult,
       programDaysResult,
       nutritionResult,
@@ -1369,6 +1371,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       cardioResult,
     ] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", clientId).maybeSingle(),
+      supabase.from("custom_exercises").select("*").eq("user_id", clientId),
       supabase.from("programs").select("*").eq("user_id", clientId),
       supabase.from("program_days").select("*").eq("user_id", clientId),
       supabase
@@ -1393,6 +1396,10 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     if (profileError) throw new Error(`Client profile pull failed: ${profileError.message}`);
     if (!profile || profile.role !== "client") {
       throw new Error("Client data pull failed: the client is no longer available to this coach");
+    }
+    const { data: dbCustomExercises, error: customExercisesError } = customExercisesResult;
+    if (customExercisesError) {
+      console.warn(`[Optional client custom exercises pull skipped]: ${customExercisesError.message}`);
     }
     const { data: dbPrograms, error: programsError } = programsResult;
     if (programsError) throw new Error(`Client programs pull failed: ${programsError.message}`);
@@ -1476,6 +1483,22 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       ...(row.muscle_mass_kg === null ? {} : { muscleMassKg: Number(row.muscle_mass_kg) }),
       ...(row.notes ? { notes: row.notes } : {}),
     }));
+    const exerciseList: Exercise[] = (dbCustomExercises || []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      muscleGroup: row.muscle_group || "אחר",
+      muscleGroups: row.muscle_group ? [row.muscle_group] : ["אחר"],
+      category: row.category || "מותאם אישית",
+      equipment: row.equipment || "ללא ציוד",
+      description: row.description || "",
+      instructions: row.instructions || "",
+      videoUrl: row.video_url || "",
+      videoUrls: Array.isArray(row.video_urls) ? row.video_urls : undefined,
+      videoMaleUrl: row.video_male_url || undefined,
+      videoFemaleUrl: row.video_female_url || undefined,
+      images: [],
+      notes: "",
+    }));
 
     const historyList: HistorySession[] = (dbSessions || []).map((row) => ({
       id: row.id,
@@ -1498,6 +1521,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       calories: Number(row.calories ?? 0),
     }));
     return {
+      exercises: exerciseList,
       programs: programsList,
       workouts: Array.from(workoutsMap.values()),
       nutritionDays: nutritionList,
@@ -1527,6 +1551,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     const error = err instanceof Error && err.message ? err.message : "Client data pull failed";
     console.error("[Pull Client Data Error]:", error);
     return {
+      exercises: [],
       programs: [],
       workouts: [],
       nutritionDays: [],

@@ -320,18 +320,7 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await expect(page.locator("#coach-programs")).toBeHidden();
   const workoutSurface = page.locator('[data-coach-workout-surface-slot="true"]');
   await expect(workoutSurface).toBeVisible();
-  const openReportButton = page.getByRole("button", { name: "פתיחת דוח", exact: true });
-  await expect(openReportButton).toBeVisible();
-  const closedReportBookmark = await openReportButton.boundingBox();
-  expect(closedReportBookmark).not.toBeNull();
-  await openReportButton.click();
-  await expect(page.getByText("היסטוריית אימונים והערות", { exact: true })).toBeVisible();
-  const openReportBookmark = page.getByRole("button", { name: "סגירת דוח", exact: true });
-  const openedReportBookmark = await openReportBookmark.boundingBox();
-  expect(openedReportBookmark).not.toBeNull();
-  expect(openedReportBookmark.x).toBeLessThan(closedReportBookmark.x);
-  await openReportBookmark.click();
-  await expect(page.getByText("היסטוריית אימונים והערות", { exact: true })).toBeHidden();
+  await expect(page.getByRole("button", { name: "פתיחת דוח", exact: true })).toHaveCount(0);
 
   await page.getByRole("button", { name: "עריכה", exact: true }).first().click();
   await expect(page.getByText("עריכת תרגיל באימון", { exact: true })).toBeVisible();
@@ -365,9 +354,6 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
 
   await page.getByRole("tab", { name: "תוכנית אימונים" }).click();
   await dayButtons.nth(0).click();
-  await openReportButton.click();
-  await expect(page.getByTestId("coach-workout-daily-report")).toBeVisible();
-  await page.getByRole("button", { name: "סגירת דוח", exact: true }).click();
   await page.getByRole("tab", { name: "תפריט תזונה" }).click();
   await expect(menuDraft).toHaveValue("טיוטת תפריט לפני פתיחת הדוח");
 

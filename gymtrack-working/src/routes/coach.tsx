@@ -227,6 +227,26 @@ function findReplacementEntry(item: WorkoutItem, entries: HistoryEntry[]) {
   );
 }
 
+function normalizedReportLabel(value?: string | null) {
+  return value?.trim().toLocaleLowerCase("he") ?? "";
+}
+
+function historySessionMatchesWorkout(session: HistorySession, workout: Workout) {
+  return (
+    session.workoutId === workout.id ||
+    (normalizedReportLabel(session.workoutName) !== "" &&
+      normalizedReportLabel(session.workoutName) === normalizedReportLabel(workout.name))
+  );
+}
+
+function historyEntryMatchesWorkoutItem(entry: HistoryEntry, item: WorkoutItem) {
+  return (
+    entry.exerciseId === item.exerciseId ||
+    (normalizedReportLabel(entry.exerciseName) !== "" &&
+      normalizedReportLabel(entry.exerciseName) === normalizedReportLabel(item.exerciseName))
+  );
+}
+
 function findReportExercise(
   item: Pick<WorkoutItem, "exerciseId" | "exerciseName">,
   exercises: Exercise[],
@@ -1244,7 +1264,8 @@ export function CoachDashboardPage({
             !name ||
             name === "תרגיל" ||
             name === "תרגיל שהוסר" ||
-            store.exercises.some((exercise) => exercise.id === item.exerciseId)
+            store.exercises.some((exercise) => exercise.id === item.exerciseId) ||
+            result.exercises.some((exercise) => exercise.id === item.exerciseId)
           ) {
             continue;
           }
@@ -1500,6 +1521,7 @@ export function CoachDashboardPage({
   const [menuNotice, setMenuNotice] = useState("");
   const [focusedNutritionFoodId, setFocusedNutritionFoodId] = useState<string | null>(null);
   const [focusedNutritionMealId, setFocusedNutritionMealId] = useState<string | null>(null);
+  const trackingClientInitializedRef = useRef<string | null>(null);
   const isSelfSelected = Boolean(authUser?.id && selectedClientId === authUser.id);
   const [overviewRows, setOverviewRows] = useState<
     Array<{ client: CoachClientRow; details: ClientDetails }>
@@ -1784,6 +1806,8 @@ export function CoachDashboardPage({
             : null,
     );
     setSelectedTrackingWorkoutId(null);
+    setTrackingDate(todayKey());
+    trackingClientInitializedRef.current = null;
   }, [trackingLanding, workspacePage, clientId, workspaceMode]);
 
   useEffect(() => {
@@ -1929,6 +1953,7 @@ export function CoachDashboardPage({
   useEffect(() => {
     if (!isSelfSelected || !selectedClientId) return;
     setClientDetails({
+      exercises: store.exercises,
       programs: store.programs,
       workouts: store.workouts,
       nutritionDays: store.nutritionDays,
@@ -1944,6 +1969,7 @@ export function CoachDashboardPage({
     isSelfSelected,
     selectedClientId,
     store.cardioLogs,
+    store.exercises,
     store.history,
     store.nutritionDays,
     store.nutritionTargets,
@@ -3421,12 +3447,33 @@ export function CoachDashboardPage({
   const trackingSessions = clientDetails
     ? getWorkoutSessionsForDate(clientDetails.history, trackingDate)
     : [];
-  const visibleTrackingSessions = selectedTrackingWorkoutId
-    ? trackingSessions.filter((session) => session.workoutId === selectedTrackingWorkoutId)
-    : [];
   const selectedTrackingWorkout = clientWorkouts.find(
     (workout) => workout.id === selectedTrackingWorkoutId,
   );
+  const visibleTrackingSessions = selectedTrackingWorkout
+    ? trackingSessions.filter((session) =>
+        historySessionMatchesWorkout(session, selectedTrackingWorkout),
+      )
+    : [];
+  useEffect(() => {
+    if (!selectedClientId) {
+      trackingClientInitializedRef.current = null;
+      return;
+    }
+    if (!clientDetails || trackingClientInitializedRef.current === selectedClientId) return;
+
+    trackingClientInitializedRef.current = selectedClientId;
+    const latestSession = [...clientDetails.history].sort((a, b) =>
+      b.date.localeCompare(a.date),
+    )[0];
+    const latestWorkout = latestSession
+      ? clientWorkouts.find((workout) => historySessionMatchesWorkout(latestSession, workout))
+      : undefined;
+    if (latestSession) {
+      setTrackingDate(reportSessionDateKey(latestSession.date));
+    }
+    setSelectedTrackingWorkoutId(latestWorkout?.id ?? clientWorkouts[0]?.id ?? null);
+  }, [clientDetails, clientWorkouts, selectedClientId]);
   const activeProgram =
     clientDetails?.programs.find((program) => program.id === editingProgramId) ??
     clientDetails?.programs.at(-1);
@@ -3435,7 +3482,7 @@ export function CoachDashboardPage({
         const sessionEntries = visibleTrackingSessions.flatMap((session) => session.entries);
         const actualRecords = visibleTrackingSessions.flatMap((session) =>
           session.entries
-            .filter((entry) => entry.exerciseId === item.exerciseId)
+            .filter((entry) => historyEntryMatchesWorkoutItem(entry, item))
             .map((entry) => ({ date: session.date, sessionId: session.id, entry })),
         );
         const actualEntries = actualRecords.map(({ entry }) => entry);
@@ -3449,7 +3496,18 @@ export function CoachDashboardPage({
           actualEntries,
           actualRecords,
           replacementEntry,
-          exercise: store.exercises.find((exercise) => exercise.id === item.exerciseId),
+          exercise: Array.from(
+            new Map(
+              [...store.exercises, ...(clientDetails?.exercises ?? [])].map((exercise) => [
+                exercise.id,
+                exercise,
+              ]),
+            ).values(),
+          ).find(
+            (exercise) =>
+              exercise.id === item.exerciseId ||
+              normalizedReportLabel(exercise.name) === normalizedReportLabel(item.exerciseName),
+          ),
         };
       })
     : [];
@@ -5342,16 +5400,25 @@ export function CoachDashboardPage({
                               באימון הזה עדיין לא הוגדרו תרגילים.
                             </p>
                           )}
-                          {visibleTrackingSessions.map((session) =>
-                            session.discomfortNotes ? (
-                              <p
-                                key={`${session.id}-discomfort`}
-                                className="rounded-lg bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-800"
-                              >
-                                כאב / אי־נוחות: {session.discomfortNotes}
-                              </p>
-                            ) : null,
-                          )}
+                          {visibleTrackingSessions.map((session) => (
+                            <div key={`${session.id}-feedback`} className="space-y-1">
+                              {session.difficultyRating ? (
+                                <p className="rounded-lg bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
+                                  דירוג האימון: {ratingLabel(session.difficultyRating)}
+                                </p>
+                              ) : null}
+                              {session.notes?.trim() ? (
+                                <p className="rounded-lg bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-900">
+                                  הערת אימון: {session.notes.trim()}
+                                </p>
+                              ) : null}
+                              {session.discomfortNotes?.trim() ? (
+                                <p className="rounded-lg bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-800">
+                                  כאב / אי־נוחות: {session.discomfortNotes.trim()}
+                                </p>
+                              ) : null}
+                            </div>
+                          ))}
                         </div>
                       ) : (
                         <p className="text-center text-xs text-muted-foreground">
