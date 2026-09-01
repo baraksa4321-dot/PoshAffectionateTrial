@@ -2469,26 +2469,26 @@ html.night-mode .auth-panel {
   text-align: center;
 }
 
-.loading-wordmark {
+.loading-wordmark,
+.loading-initial-wordmark {
   position: fixed;
   left: 50%;
-  bottom: max(0px, calc(env(safe-area-inset-bottom) - 10px));
+  bottom: max(24px, calc(env(safe-area-inset-bottom) + 24px));
   z-index: 2;
   display: block;
-  width: min(120px, 38vw);
   height: auto;
   margin: 0;
   object-fit: contain;
   transform: translateX(-50%);
 }
 
+.loading-wordmark {
+  width: min(120px, 38vw);
+}
+
 .loading-initial-wordmark {
-  display: block;
   width: min(130px, 40vw);
-  height: auto;
-  margin: 0 auto;
   opacity: 0.82;
-  object-fit: contain;
 }
 
 .loading-initial-state {
