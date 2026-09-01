@@ -1425,6 +1425,7 @@ html.night-mode .auth-panel {
 
 .coach-workout-surface {
   isolation: isolate;
+  padding-right: 3rem;
 }
 
 .coach-workout-header input {
@@ -4725,7 +4726,8 @@ html[data-keyboard-open] .nav-shell {
 .workout-report-panel {
   position: absolute;
   z-index: 1;
-  inset: 0;
+  inset-block: 0;
+  inset-inline: 0 2.75rem;
   overflow-y: auto;
   border-radius: inherit;
   border: 1px solid color-mix(in oklch, var(--primary) 35%, var(--border));

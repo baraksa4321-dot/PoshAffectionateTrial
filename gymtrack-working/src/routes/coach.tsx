@@ -5860,22 +5860,38 @@ export function CoachDashboardPage({
                                                 {dayItem.items?.length || 0} תרגילים בתוכנית
                                               </p>
                                             </div>
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                setShowExerciseForm(false);
-                                                setEditingItemId(null);
-                                                setSelectedExId("");
-                                                setOpenWorkoutReportId(null);
-                                                setEditingDayId(null);
-                                              }}
-                                              aria-label="סגירת בניית אימון"
-                                              title="סגירת בניית אימון"
-                                              data-testid="button-close-coach-workout"
-                                              className="ui-icon-button grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border bg-surface text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                            >
-                                              <X className="h-4 w-4" aria-hidden="true" />
-                                            </button>
+                                            <div className="flex shrink-0 items-center gap-2">
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setShowExerciseForm((current) => !current);
+                                                  setEditingItemId(null);
+                                                  setSelectedExId("");
+                                                  setOpenWorkoutReportId(null);
+                                                }}
+                                                aria-expanded={showExerciseForm}
+                                                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3 text-[11px] font-extrabold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                              >
+                                                <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                                                {showExerciseForm ? "סגירת הוספה" : "הוספת תרגיל"}
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setShowExerciseForm(false);
+                                                  setEditingItemId(null);
+                                                  setSelectedExId("");
+                                                  setOpenWorkoutReportId(null);
+                                                  setEditingDayId(null);
+                                                }}
+                                                aria-label="סגירת בניית אימון"
+                                                title="סגירת בניית אימון"
+                                                data-testid="button-close-coach-workout"
+                                                className="ui-icon-button grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border bg-surface text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                              >
+                                                <X className="h-4 w-4" aria-hidden="true" />
+                                              </button>
+                                            </div>
                                           </div>
 
                                           {dayItem.items?.length > 0 && (
