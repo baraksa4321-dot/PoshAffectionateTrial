@@ -332,6 +332,21 @@ describe("cross-browser Supabase sync boundaries", () => {
 
   test("keeps coach and client data queries scoped to the requested client", async () => {
     setResponse("profiles", { id: "client-b", role: "client", weight_kg: 70 });
+    setResponse("custom_exercises", [
+      {
+        id: "ex-custom",
+        name: "Custom exercise",
+        muscle_group: "Chest",
+        equipment: "Machine",
+        category: "מותאם אישית",
+        description: "Coach instructions",
+        instructions: "Use controlled reps",
+        video_url: "https://cdn.example.com/custom.mp4",
+        video_urls: ["https://cdn.example.com/custom.mp4"],
+        video_male_url: null,
+        video_female_url: null,
+      },
+    ]);
     setResponse("programs", []);
     setResponse("program_days", []);
     setResponse("nutrition_days", []);
@@ -344,7 +359,17 @@ describe("cross-browser Supabase sync boundaries", () => {
     expect(coachResult.error).toBeUndefined();
 
     expect(hasFilter("profiles", "id", "client-b")).toBe(true);
+    expect(hasFilter("custom_exercises", "user_id", "client-b")).toBe(true);
+    expect(coachResult.exercises).toEqual([
+      expect.objectContaining({
+        id: "ex-custom",
+        name: "Custom exercise",
+        videoUrl: "https://cdn.example.com/custom.mp4",
+        videoUrls: ["https://cdn.example.com/custom.mp4"],
+      }),
+    ]);
     for (const table of [
+      "custom_exercises",
       "programs",
       "program_days",
       "nutrition_days",

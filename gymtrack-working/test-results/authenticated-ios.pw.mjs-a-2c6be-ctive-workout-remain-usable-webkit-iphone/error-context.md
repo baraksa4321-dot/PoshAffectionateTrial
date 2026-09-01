@@ -14,76 +14,61 @@
 ```
 Error: expect(locator).toBeVisible() failed
 
-Locator: getByRole('button', { name: 'פתיחת דוח', exact: true })
+Locator: getByTestId('link-nav-coach')
 Expected: visible
 Timeout: 8000ms
 Error: element(s) not found
 
 Call log:
   - Expect "toBeVisible" with timeout 8000ms
-  - waiting for getByRole('button', { name: 'פתיחת דוח', exact: true })
+  - waiting for getByTestId('link-nav-coach')
 
 ```
 
 ```yaml
-- banner:
-  - link "MY routine — דף הבית":
-    - /url: /
-    - img "MY routine"
-  - button "מעבר לתצוגת לילה"
-  - paragraph: בניית תוכניות ותפריטים
-  - heading "עריכה" [level=1]
-- main:
-  - text: אין חיבור לאינטרנט — השינויים נשמרים במכשיר
-  - paragraph: בניית אימון
-  - textbox "שם יום האימון": אימון בדיקה ארוך
-  - paragraph: 8 תרגילים בתוכנית
-  - button "סגירת בניית אימון"
-  - text: תרגיל בדיקה 1 20 ק״ג · 3 סטים × 8 חזרות
-  - button "עריכה"
-  - button "הסר את תרגיל בדיקה 1"
-  - text: תרגיל בדיקה 2 21 ק״ג · 3 סטים × 9 חזרות
-  - button "עריכה"
-  - button "הסר את תרגיל בדיקה 2"
-  - text: תרגיל בדיקה 3 22 ק״ג · 3 סטים × 10 חזרות
-  - button "עריכה"
-  - button "הסר את תרגיל בדיקה 3"
-  - text: תרגיל בדיקה 4 23 ק״ג · 3 סטים × 11 חזרות
-  - button "עריכה"
-  - button "הסר את תרגיל בדיקה 4"
-  - text: תרגיל בדיקה 5 24 ק״ג · 3 סטים × 8 חזרות
-  - button "עריכה"
-  - button "הסר את תרגיל בדיקה 5"
-  - text: תרגיל בדיקה 6 25 ק״ג · 3 סטים × 9 חזרות
-  - button "עריכה"
-  - button "הסר את תרגיל בדיקה 6"
-  - text: תרגיל בדיקה 7 26 ק״ג · 3 סטים × 10 חזרות
-  - button "עריכה"
-  - button "הסר את תרגיל בדיקה 7"
-  - text: תרגיל בדיקה 8 27 ק״ג · 3 סטים × 11 חזרות
-  - button "עריכה"
-  - button "הסר את תרגיל בדיקה 8"
-  - 'heading "תכנית המתאמן: מתאמנת בדיקה" [level=3]'
-  - button "סגירת תכנית המתאמן"
-  - status: החיבור לא זמין · מוצג עותק מ־08:51
-  - button "נסה שוב לרענן את נתוני המתאמן": נסה שוב
-  - navigation "ניווט בסביבת העריכה":
-    - tab "תוכנית אימונים" [selected]
-    - tab "תפריט תזונה"
-- navigation "ניווט ראשי":
-  - link:
-    - /url: /coach
-  - link "מתאמנים":
-    - /url: /coach/clients
-  - link "מעקב":
-    - /url: /coach/tracking
-  - link "תרגילים":
-    - /url: /exercises
+- status "MY routine נטען":
+  - status "טוען"
+  - img "MY routine"
 ```
 
 # Test source
 
 ```ts
+  189 |     ({ cacheKey, cacheValue, session, clientProfile, coachProfile, program, workouts, nutritionDay }) => {
+  190 |       Object.defineProperty(window.navigator, "onLine", {
+  191 |         configurable: true,
+  192 |         get: () => false,
+  193 |       });
+  194 |       const originalGetItem = Storage.prototype.getItem;
+  195 |       Storage.prototype.getItem = function getItem(key) {
+  196 |         if (this === window.localStorage && key.endsWith("-auth-token")) {
+  197 |           return JSON.stringify(session);
+  198 |         }
+  199 |         return originalGetItem.call(this, key);
+  200 |       };
+  201 |       window.localStorage.setItem(cacheKey, JSON.stringify(cacheValue));
+  202 |       window.localStorage.setItem(`${cacheKey.replace("user.", "pending.")}`, "false");
+  203 |       window.sessionStorage.setItem("gymtrack.workspace", "management");
+  204 | 
+  205 |       const originalFetch = window.fetch.bind(window);
+  206 |       window.fetch = async (input, init) => {
+  207 |         const url = typeof input === "string" ? input : input.url;
+  208 |         if (url.includes("/auth/v1/user")) {
+  209 |           return new Response(JSON.stringify(session.user), {
+  210 |             status: 200,
+  211 |             headers: { "content-type": "application/json" },
+  212 |           });
+  213 |         }
+  214 |         if (url.includes("/rest/v1/")) {
+  215 |           const parsed = new URL(url);
+  216 |           const path = parsed.pathname.replace(/^.*\/rest\/v1\//, "");
+  217 |           let body = [];
+  218 |           if (path === "coach_clients") {
+  219 |             body = [
+  220 |               {
+  221 |                 id: "ios-smoke-link",
+  222 |                 client_id: clientProfile.id,
+  223 |                 created_at: "2026-01-02T00:00:00.000Z",
   224 |                 profiles: {
   225 |                   email: clientProfile.email,
   226 |                   full_name: clientProfile.full_name,
@@ -149,7 +134,8 @@ Call log:
   286 | 
   287 |   await page.goto("/");
   288 |   const coachNav = page.getByTestId("link-nav-coach");
-  289 |   await expect(coachNav).toBeVisible();
+> 289 |   await expect(coachNav).toBeVisible();
+      |                          ^ Error: expect(locator).toBeVisible() failed
   290 |   await coachNav.click();
   291 |   await expect(page).toHaveURL(/\/coach\/clients/);
   292 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("בדיקה");
@@ -183,107 +169,71 @@ Call log:
   320 |   await expect(page.locator("#coach-programs")).toBeHidden();
   321 |   const workoutSurface = page.locator('[data-coach-workout-surface-slot="true"]');
   322 |   await expect(workoutSurface).toBeVisible();
-  323 |   const openReportButton = page.getByRole("button", { name: "פתיחת דוח", exact: true });
-> 324 |   await expect(openReportButton).toBeVisible();
-      |                                  ^ Error: expect(locator).toBeVisible() failed
-  325 |   const closedReportBookmark = await openReportButton.boundingBox();
-  326 |   expect(closedReportBookmark).not.toBeNull();
-  327 |   await openReportButton.click();
-  328 |   await expect(page.getByText("היסטוריית אימונים והערות", { exact: true })).toBeVisible();
-  329 |   const openReportBookmark = page.getByRole("button", { name: "סגירת דוח", exact: true });
-  330 |   const openedReportBookmark = await openReportBookmark.boundingBox();
-  331 |   expect(openedReportBookmark).not.toBeNull();
-  332 |   expect(openedReportBookmark.x).toBeLessThan(closedReportBookmark.x);
-  333 |   await openReportBookmark.click();
-  334 |   await expect(page.getByText("היסטוריית אימונים והערות", { exact: true })).toBeHidden();
-  335 | 
-  336 |   await page.getByRole("button", { name: "עריכה", exact: true }).first().click();
-  337 |   await expect(page.getByText("עריכת תרגיל באימון", { exact: true })).toBeVisible();
-  338 | 
-  339 |   const thirdSetMode = page.getByRole("combobox", { name: "סוג סט 3" });
-  340 |   await thirdSetMode.selectOption("drop");
-  341 |   const dropRestInput = page.getByRole("spinbutton", { name: "דרופ סט זמן מנוחה" });
-  342 |   await dropRestInput.fill("45");
-  343 |   await expect(dropRestInput).toHaveValue("45");
+  323 |   await expect(page.getByRole("button", { name: "פתיחת דוח", exact: true })).toHaveCount(0);
+  324 | 
+  325 |   await page.getByRole("button", { name: "עריכה", exact: true }).first().click();
+  326 |   await expect(page.getByText("עריכת תרגיל באימון", { exact: true })).toBeVisible();
+  327 | 
+  328 |   const thirdSetMode = page.getByRole("combobox", { name: "סוג סט 3" });
+  329 |   await thirdSetMode.selectOption("drop");
+  330 |   const dropRestInput = page.getByRole("spinbutton", { name: "דרופ סט זמן מנוחה" });
+  331 |   await dropRestInput.fill("45");
+  332 |   await expect(dropRestInput).toHaveValue("45");
+  333 | 
+  334 |   await thirdSetMode.selectOption("superset");
+  335 |   const supersetSearch = page.getByRole("searchbox", {
+  336 |     name: "חיפוש תרגיל בן־זוג לסופר סט",
+  337 |   });
+  338 |   await supersetSearch.fill("תרגיל בדיקה 2");
+  339 |   await page.getByRole("option", { name: /תרגיל בדיקה 2/ }).click();
+  340 |   await expect(page.getByText(/^נבחר: תרגיל בדיקה 2/)).toBeVisible();
+  341 | 
+  342 |   await page.getByRole("button", { name: "סגירת בניית אימון", exact: true }).click();
+  343 |   await expect(dayButtons).toHaveCount(4);
   344 | 
-  345 |   await thirdSetMode.selectOption("superset");
-  346 |   const supersetSearch = page.getByRole("searchbox", {
-  347 |     name: "חיפוש תרגיל בן־זוג לסופר סט",
-  348 |   });
-  349 |   await supersetSearch.fill("תרגיל בדיקה 2");
-  350 |   await page.getByRole("option", { name: /תרגיל בדיקה 2/ }).click();
-  351 |   await expect(page.getByText(/^נבחר: תרגיל בדיקה 2/)).toBeVisible();
-  352 | 
-  353 |   await page.getByRole("button", { name: "סגירת בניית אימון", exact: true }).click();
-  354 |   await expect(dayButtons).toHaveCount(4);
-  355 | 
-  356 |   await page.getByRole("tab", { name: "תפריט תזונה" }).click();
-  357 |   await page.getByRole("button", { name: "+ מאכל" }).first().click();
-  358 |   const foodSearch = page.locator('input[type="search"][id^="menu-food-search-"]').first();
-  359 |   await foodSearch.fill("אורז");
-  360 |   await assertKeyboardVisible(foodSearch);
-  361 |   await expect(foodSearch).toHaveValue("אורז");
-  362 |   const menuDraft = page.getByRole("textbox", { name: "שם הארוחה" }).first();
-  363 |   await menuDraft.fill("טיוטת תפריט לפני פתיחת הדוח");
-  364 |   await expect(menuDraft).toHaveValue("טיוטת תפריט לפני פתיחת הדוח");
-  365 | 
-  366 |   await page.getByRole("tab", { name: "תוכנית אימונים" }).click();
-  367 |   await dayButtons.nth(0).click();
-  368 |   await openReportButton.click();
-  369 |   await expect(page.getByTestId("coach-workout-daily-report")).toBeVisible();
-  370 |   await page.getByRole("button", { name: "סגירת דוח", exact: true }).click();
-  371 |   await page.getByRole("tab", { name: "תפריט תזונה" }).click();
-  372 |   await expect(menuDraft).toHaveValue("טיוטת תפריט לפני פתיחת הדוח");
+  345 |   await page.getByRole("tab", { name: "תפריט תזונה" }).click();
+  346 |   await page.getByRole("button", { name: "+ מאכל" }).first().click();
+  347 |   const foodSearch = page.locator('input[type="search"][id^="menu-food-search-"]').first();
+  348 |   await foodSearch.fill("אורז");
+  349 |   await assertKeyboardVisible(foodSearch);
+  350 |   await expect(foodSearch).toHaveValue("אורז");
+  351 |   const menuDraft = page.getByRole("textbox", { name: "שם הארוחה" }).first();
+  352 |   await menuDraft.fill("טיוטת תפריט לפני פתיחת הדוח");
+  353 |   await expect(menuDraft).toHaveValue("טיוטת תפריט לפני פתיחת הדוח");
+  354 | 
+  355 |   await page.getByRole("tab", { name: "תוכנית אימונים" }).click();
+  356 |   await dayButtons.nth(0).click();
+  357 |   await page.getByRole("tab", { name: "תפריט תזונה" }).click();
+  358 |   await expect(menuDraft).toHaveValue("טיוטת תפריט לפני פתיחת הדוח");
+  359 | 
+  360 |   await page.goto(`/session/${WORKOUT_ID}`);
+  361 |   await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
+  362 |   const progress = page.locator(".workout-progress-sticky");
+  363 |   const firstExercise = page.locator("article").first();
+  364 |   const progressBottom = await progress.boundingBox();
+  365 |   const firstExerciseTop = await firstExercise.boundingBox();
+  366 |   expect(progressBottom?.y + progressBottom?.height).toBeLessThanOrEqual(firstExerciseTop?.y ?? 0);
+  367 | 
+  368 |   const repsInput = page.locator('input[inputmode="decimal"]').first();
+  369 |   await repsInput.fill("123");
+  370 |   await assertKeyboardVisible(repsInput);
+  371 |   await page.keyboard.press("Tab");
+  372 |   await expect(repsInput).toHaveValue("123");
   373 | 
-  374 |   await page.goto(`/session/${WORKOUT_ID}`);
-  375 |   await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
-  376 |   const progress = page.locator(".workout-progress-sticky");
-  377 |   const firstExercise = page.locator("article").first();
-  378 |   const progressBottom = await progress.boundingBox();
-  379 |   const firstExerciseTop = await firstExercise.boundingBox();
-  380 |   expect(progressBottom?.y + progressBottom?.height).toBeLessThanOrEqual(firstExerciseTop?.y ?? 0);
-  381 | 
-  382 |   const repsInput = page.locator('input[inputmode="decimal"]').first();
-  383 |   await repsInput.fill("123");
-  384 |   await assertKeyboardVisible(repsInput);
-  385 |   await page.keyboard.press("Tab");
-  386 |   await expect(repsInput).toHaveValue("123");
-  387 | 
-  388 |   await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
-  389 |   const workoutNote = page.getByPlaceholder("למשל: עומס קל במרפק ימין בסט האחרון...");
-  390 |   await expect(workoutNote).toBeVisible();
-  391 |   await workoutNote.fill("הערת בדיקה 123");
-  392 |   await assertKeyboardVisible(workoutNote);
-  393 |   await expect(workoutNote).toHaveValue("הערת בדיקה 123");
-  394 |   await page.keyboard.press("Escape");
-  395 |   await expect(workoutNote).toBeHidden();
-  396 | 
-  397 |   await page.getByRole("button", { name: "סמן סט כבוצע" }).first().click();
-  398 |   await expect(page.getByText("4%", { exact: true })).toBeVisible();
-  399 |   await page.getByRole("button", { name: "בטל סיום סט" }).first().click();
-  400 |   await expect(page.getByText("0%", { exact: true })).toBeVisible();
-  401 |   await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
-  402 |   await expect(workoutNote).toBeVisible();
-  403 |   await expect(workoutNote).toHaveValue("הערת בדיקה 123");
-  404 |   await page.keyboard.press("Escape");
-  405 |   await expect(workoutNote).toBeHidden();
-  406 | 
-  407 |   await page.getByRole("button", { name: "פתח פרטי תרגיל בדיקה 1" }).click();
-  408 |   const detailsSheet = page.getByRole("dialog", { name: "פרטי תרגיל" });
-  409 |   await expect(detailsSheet).toBeVisible();
-  410 |   await detailsSheet.getByRole("button").first().click();
-  411 |   await expect(detailsSheet).toBeHidden();
-  412 |   await expect.poll(() => page.evaluate(() => document.documentElement.style.overflow)).toBe("");
-  413 | 
-  414 |   await page.locator("article").last().scrollIntoViewIfNeeded();
-  415 |   await expect(page.locator("article").last()).toBeInViewport();
-  416 | });
-  417 | 
-  418 | test("active workout values survive leaving and reopening the session", async ({ page }) => {
-  419 |   await installFixture(page);
-  420 | 
-  421 |   await page.goto(`/session/${WORKOUT_ID}`);
-  422 |   await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
-  423 | 
-  424 |   const repsInput = page.locator('input[inputmode="decimal"]').first();
+  374 |   await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
+  375 |   const workoutNote = page.getByPlaceholder("למשל: עומס קל במרפק ימין בסט האחרון...");
+  376 |   await expect(workoutNote).toBeVisible();
+  377 |   await workoutNote.fill("הערת בדיקה 123");
+  378 |   await assertKeyboardVisible(workoutNote);
+  379 |   await expect(workoutNote).toHaveValue("הערת בדיקה 123");
+  380 |   await page.keyboard.press("Escape");
+  381 |   await expect(workoutNote).toBeHidden();
+  382 | 
+  383 |   await page.getByRole("button", { name: "סמן סט כבוצע" }).first().click();
+  384 |   await expect(page.getByText("4%", { exact: true })).toBeVisible();
+  385 |   await page.getByRole("button", { name: "בטל סיום סט" }).first().click();
+  386 |   await expect(page.getByText("0%", { exact: true })).toBeVisible();
+  387 |   await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
+  388 |   await expect(workoutNote).toBeVisible();
+  389 |   await expect(workoutNote).toHaveValue("הערת בדיקה 123");
 ```

@@ -3399,6 +3399,35 @@ export function CoachDashboardPage({
     );
   };
 
+  const clientWorkouts = useMemo(() => {
+    const seen = new Set<string>();
+    return (clientDetails?.workouts ?? []).filter((workout) => {
+      if (seen.has(workout.id)) return false;
+      seen.add(workout.id);
+      return true;
+    });
+  }, [clientDetails?.workouts]);
+
+  useEffect(() => {
+    if (!selectedClientId) {
+      trackingClientInitializedRef.current = null;
+      return;
+    }
+    if (!clientDetails || trackingClientInitializedRef.current === selectedClientId) return;
+
+    trackingClientInitializedRef.current = selectedClientId;
+    const latestSession = [...clientDetails.history].sort((a, b) =>
+      b.date.localeCompare(a.date),
+    )[0];
+    const latestWorkout = latestSession
+      ? clientWorkouts.find((workout) => historySessionMatchesWorkout(latestSession, workout))
+      : undefined;
+    if (latestSession) {
+      setTrackingDate(reportSessionDateKey(latestSession.date));
+    }
+    setSelectedTrackingWorkoutId(latestWorkout?.id ?? clientWorkouts[0]?.id ?? null);
+  }, [clientDetails, clientWorkouts, selectedClientId]);
+
   if (role === undefined) {
     return (
       <AppShell title="דשבורד מאמן" kicker="מאמנים וצוות מקצועי">
@@ -3436,14 +3465,6 @@ export function CoachDashboardPage({
         .map((food) => ({ date: day.date, meal: meal.name, note: food.notes!.trim() })),
     ),
   );
-  const clientWorkouts = useMemo(() => {
-    const seen = new Set<string>();
-    return (clientDetails?.workouts ?? []).filter((workout) => {
-      if (seen.has(workout.id)) return false;
-      seen.add(workout.id);
-      return true;
-    });
-  }, [clientDetails?.workouts]);
   const trackingSessions = clientDetails
     ? getWorkoutSessionsForDate(clientDetails.history, trackingDate)
     : [];
@@ -3455,25 +3476,6 @@ export function CoachDashboardPage({
         historySessionMatchesWorkout(session, selectedTrackingWorkout),
       )
     : [];
-  useEffect(() => {
-    if (!selectedClientId) {
-      trackingClientInitializedRef.current = null;
-      return;
-    }
-    if (!clientDetails || trackingClientInitializedRef.current === selectedClientId) return;
-
-    trackingClientInitializedRef.current = selectedClientId;
-    const latestSession = [...clientDetails.history].sort((a, b) =>
-      b.date.localeCompare(a.date),
-    )[0];
-    const latestWorkout = latestSession
-      ? clientWorkouts.find((workout) => historySessionMatchesWorkout(latestSession, workout))
-      : undefined;
-    if (latestSession) {
-      setTrackingDate(reportSessionDateKey(latestSession.date));
-    }
-    setSelectedTrackingWorkoutId(latestWorkout?.id ?? clientWorkouts[0]?.id ?? null);
-  }, [clientDetails, clientWorkouts, selectedClientId]);
   const activeProgram =
     clientDetails?.programs.find((program) => program.id === editingProgramId) ??
     clientDetails?.programs.at(-1);
@@ -4862,9 +4864,7 @@ export function CoachDashboardPage({
                             key={workout.id}
                             type="button"
                             onClick={() => setSelectedTrackingWorkoutId(workout.id)}
-                            className={`rounded-xl border text-start font-bold transition-colors ${
-                              "px-2 py-1 text-[10px]"
-                            } ${
+                            className={`rounded-xl border px-2 py-1 text-[10px] text-start font-bold transition-colors ${
                               selectedTrackingWorkoutId === workout.id
                                 ? "border-primary bg-primary text-primary-foreground"
                                 : "border-primary/20 bg-white text-ink hover:border-primary/50"

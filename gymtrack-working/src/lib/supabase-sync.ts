@@ -79,9 +79,7 @@ function catalogMetadataFromRow(row: Record<string, unknown>): FoodCatalogMetada
     ...(row["catalog_source_url"] ? { sourceUrl: String(row["catalog_source_url"]) } : {}),
     productType,
     market: "IL",
-    ...(row["catalog_package_size"]
-      ? { packageSize: String(row["catalog_package_size"]) }
-      : {}),
+    ...(row["catalog_package_size"] ? { packageSize: String(row["catalog_package_size"]) } : {}),
     ...(row["catalog_synced_at"] ? { syncedAt: String(row["catalog_synced_at"]) } : {}),
     ...(row["catalog_source_updated_at"]
       ? { sourceUpdatedAt: String(row["catalog_source_updated_at"]) }
@@ -1399,7 +1397,9 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     }
     const { data: dbCustomExercises, error: customExercisesError } = customExercisesResult;
     if (customExercisesError) {
-      console.warn(`[Optional client custom exercises pull skipped]: ${customExercisesError.message}`);
+      console.warn(
+        `[Optional client custom exercises pull skipped]: ${customExercisesError.message}`,
+      );
     }
     const { data: dbPrograms, error: programsError } = programsResult;
     if (programsError) throw new Error(`Client programs pull failed: ${programsError.message}`);
