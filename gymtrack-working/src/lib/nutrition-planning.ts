@@ -49,6 +49,7 @@ export type ShoppingListItem = {
   purchaseContentsQuantity?: number;
   purchaseContentsUnit?: string;
   purchasePackageBreakdown?: string;
+  purchasePackageDescription?: string;
 };
 
 type ShoppingAmount = {
@@ -244,6 +245,12 @@ function packageRuleFor(
   if (/גבינה צהובה|yellow cheese/i.test(name) && amount.unitKey === "g") {
     return { packageSizes: [200, 400], packageUnit: "חבילות" };
   }
+  if (
+    amount.unitKey === "g" &&
+    /גמבה|פלפל אדום|פלפל צהוב|פלפל ירוק|bell pepper/i.test(name)
+  ) {
+    return { packageSizes: [150], packageUnit: "פלפלים" };
+  }
   if (amount.unitKey === "pita") return { packageSizes: [5, 10], packageUnit: "חבילות" };
   if (amount.unitKey === "bread-slice") return { packageSizes: [16, 20], packageUnit: "שקיות" };
   if (amount.unitKey === "tortilla") return { packageSizes: [8, 10], packageUnit: "חבילות" };
@@ -354,7 +361,45 @@ function packagePlanFor(requiredQuantity: number, packageSizes: number[]) {
       .map((size, index) => (best!.counts[index] ? `${best!.counts[index]}×${size}` : ""))
       .filter(Boolean)
       .join(" + "),
+    packages: sizes
+      .map((size, index) => ({ size, count: best!.counts[index] ?? 0 }))
+      .filter(({ count }) => count > 0),
   };
+}
+
+function singularPackageUnit(unit: string) {
+  const singular: Record<string, string> = {
+    אריזות: "אריזה",
+    בקבוקים: "בקבוק",
+    גביעים: "גביע",
+    חבילות: "חבילה",
+    טורים: "טור",
+    מארזים: "מארז",
+    מגשים: "מגש",
+    קופסאות: "קופסה",
+    קרטונים: "קרטון",
+    שקיות: "שקית",
+    צנצנות: "צנצנת",
+    פלפלים: "פלפל",
+  };
+  return singular[unit] ?? unit;
+}
+
+function packageDescription(
+  plan: {
+    packageCount: number;
+    total: number;
+    breakdown: string;
+    packages: Array<{ size: number; count: number }>;
+  },
+  requiredUnit: string,
+  packageUnit: string,
+) {
+  return plan.packages
+    .map(({ size, count }) =>
+      `${count} ${count === 1 ? singularPackageUnit(packageUnit) : packageUnit} של ${size} ${requiredUnit}`,
+    )
+    .join(" + ") || `${plan.packageCount} ${packageUnit}`;
 }
 
 export function buildShoppingList(
@@ -417,6 +462,11 @@ export function buildShoppingList(
               purchaseContentsQuantity: packagePlan.total,
               purchaseContentsUnit: item.requiredUnit,
               purchasePackageBreakdown: packagePlan.breakdown,
+              purchasePackageDescription: packageDescription(
+                packagePlan,
+                item.requiredUnit,
+                item.packageUnit!,
+              ),
             }),
       };
     })

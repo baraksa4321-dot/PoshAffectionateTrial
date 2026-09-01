@@ -1635,19 +1635,11 @@ function NutritionLog() {
                     >
                       <span className="min-w-0">
                         <span className="block truncate">{item.name}</span>
-                        <span className="mt-1 block text-[10px] font-medium text-muted-foreground">
-                          נדרש: {formatShoppingQuantity(item.requiredQuantity)} {item.requiredUnit}
+                        <span className="mt-1 block text-[10.5px] font-bold text-emerald-700">
+                          לקנייה:{" "}
+                          {item.purchasePackageDescription ??
+                            `${formatShoppingQuantity(item.purchaseQuantity)} ${item.purchaseUnit}`}
                         </span>
-                        {item.purchaseQuantity !== item.requiredQuantity ||
-                        item.purchaseUnit !== item.requiredUnit ? (
-                          <span className="mt-0.5 block text-[10px] font-bold text-emerald-700">
-                            לקנייה: {formatShoppingQuantity(item.purchaseQuantity)}{" "}
-                            {item.purchaseUnit}
-                            {item.purchaseContentsQuantity !== undefined
-                              ? ` (${item.purchasePackageBreakdown ?? formatShoppingQuantity(item.purchaseContentsQuantity)} ${item.purchaseContentsUnit})`
-                              : ""}
-                          </span>
-                        ) : null}
                       </span>
                       {isChecked ? (
                         <CheckSquare className="h-4 w-4 text-emerald-600 shrink-0" />

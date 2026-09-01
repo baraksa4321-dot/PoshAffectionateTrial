@@ -75,6 +75,7 @@ describe("fixed nutrition menu and calorie visibility", () => {
         purchaseQuantity: 1,
         purchaseUnit: "קרטונים",
         purchaseContentsQuantity: 12,
+      purchasePackageDescription: "1 קרטון של 12 ביצים",
       },
     ]);
     expect(buildShoppingList(meals, "weekly")).toMatchObject([
@@ -82,6 +83,7 @@ describe("fixed nutrition menu and calorie visibility", () => {
         requiredQuantity: 21,
         purchaseQuantity: 2,
         purchaseContentsQuantity: 24,
+      purchasePackageDescription: "2 קרטונים של 12 ביצים",
       },
     ]);
     expect(buildShoppingList(meals, "monthly")).toMatchObject([
@@ -102,6 +104,7 @@ describe("fixed nutrition menu and calorie visibility", () => {
       purchaseUnit: "חבילות",
       purchaseContentsQuantity: 600,
       purchasePackageBreakdown: "1×400 + 1×200",
+      purchasePackageDescription: "1 חבילה של 400 גרם + 1 חבילה של 200 גרם",
     });
   });
 
@@ -120,6 +123,7 @@ describe("fixed nutrition menu and calorie visibility", () => {
       purchaseUnit: "חבילות",
       purchaseContentsQuantity: 25,
       purchasePackageBreakdown: "2×10 + 1×5",
+      purchasePackageDescription: "2 חבילות של 10 פיתות + 1 חבילה של 5 פיתות",
     });
   });
 
@@ -144,5 +148,16 @@ describe("fixed nutrition menu and calorie visibility", () => {
     expect(purchaseUnits.get("לחם")).toBe("שקיות");
     expect(purchaseUnits.get("טונה")).toBe("קופסאות");
     expect(purchaseUnits.get("ירקות קפואים")).toBe("שקיות");
+  });
+
+  test("turns fresh bell pepper weight into countable supermarket units", () => {
+    const [item] = buildShoppingList([planned(food("פלפל אדום (גמבה)", "גרם למנה", 300))]);
+    expect(item).toMatchObject({
+      requiredQuantity: 300,
+      purchaseQuantity: 2,
+      purchaseUnit: "פלפלים",
+      purchaseContentsQuantity: 300,
+      purchasePackageDescription: "2 פלפלים של 150 גרם",
+    });
   });
 });
