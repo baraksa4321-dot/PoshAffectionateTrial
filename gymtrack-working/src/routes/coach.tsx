@@ -227,6 +227,22 @@ function findReplacementEntry(item: WorkoutItem, entries: HistoryEntry[]) {
   );
 }
 
+function findReportExercise(
+  item: Pick<WorkoutItem, "exerciseId" | "exerciseName">,
+  exercises: Exercise[],
+) {
+  return (
+    exercises.find((exercise) => exercise.id === item.exerciseId) ??
+    (item.exerciseName
+      ? exercises.find(
+          (exercise) =>
+            exercise.name.trim().toLocaleLowerCase() ===
+            item.exerciseName?.trim().toLocaleLowerCase(),
+        )
+      : undefined)
+  );
+}
+
 function reportDateLabel(date: string, options?: Intl.DateTimeFormatOptions): string {
   return new Date(`${date}T00:00:00`).toLocaleDateString(
     "he-IL",
@@ -260,10 +276,9 @@ function youtubeEmbedUrl(source: string): string | null {
   }
 }
 
-function WorkoutExerciseDemoVideos({ exercise }: { exercise: Exercise | undefined }) {
-  if (!exercise) return null;
-
-  const sources = Array.from(
+function exerciseDemoVideoSources(exercise: Exercise | undefined): string[] {
+  if (!exercise) return [];
+  return Array.from(
     new Set(
       [
         ...(exercise.videoUrls ?? []),
@@ -275,6 +290,11 @@ function WorkoutExerciseDemoVideos({ exercise }: { exercise: Exercise | undefine
         .filter((source): source is string => Boolean(source)),
     ),
   );
+}
+
+function WorkoutExerciseDemoVideos({ exercise }: { exercise: Exercise | undefined }) {
+  const sources = exerciseDemoVideoSources(exercise);
+  const exerciseName = exercise?.name || "תרגיל";
 
   if (sources.length === 0) return null;
 
@@ -291,8 +311,7 @@ function WorkoutExerciseDemoVideos({ exercise }: { exercise: Exercise | undefine
               {embedUrl ? (
                 <iframe
                   src={embedUrl}
-                  title={`סרטון הדגמה ${index + 1} עבור ${exercise.name}`}
-                  loading="lazy"
+                  title={`סרטון הדגמה ${index + 1} עבור ${exerciseName}`}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                   className="aspect-video w-full"
@@ -304,7 +323,7 @@ function WorkoutExerciseDemoVideos({ exercise }: { exercise: Exercise | undefine
                   playsInline
                   preload="metadata"
                   className="max-h-64 w-full object-contain"
-                  aria-label={`סרטון הדגמה ${index + 1} עבור ${exercise.name}`}
+                  aria-label={`סרטון הדגמה ${index + 1} עבור ${exerciseName}`}
                 />
               )}
             </div>
@@ -538,7 +557,7 @@ function WorkoutWeeklyReportWeek({
       item,
       entries,
       replacementEntry,
-      exercise: exercises.find((exercise) => exercise.id === item.exerciseId),
+      exercise: findReportExercise(item, exercises),
     };
   });
   const plannedExerciseIds = new Set(reviewItems.map((item) => item.exerciseId));
@@ -566,8 +585,10 @@ function WorkoutWeeklyReportWeek({
   const hasEntryNotes = exerciseRows.some(({ entries }) =>
     entries.some(({ entry }) => entry.notes?.trim() || entry.feedback?.notes?.trim()),
   );
-  const hasVideos = exerciseRows.some(({ entries }) =>
-    entries.some(({ entry }) => Boolean(entry.videoUrl)),
+  const hasVideos = exerciseRows.some(
+    ({ exercise, entries }) =>
+      exerciseDemoVideoSources(exercise).length > 0 ||
+      entries.some(({ entry }) => Boolean(entry.videoUrl)),
   );
 
   return (
@@ -772,7 +793,7 @@ function WorkoutDailyReport({
       item,
       entries,
       replacementEntry,
-      exercise: exercises.find((exercise) => exercise.id === item.exerciseId),
+      exercise: findReportExercise(item, exercises),
     };
   });
   const plannedExerciseIds = new Set(workout.items.map((item) => item.exerciseId));
@@ -929,6 +950,7 @@ function WorkoutDailyReport({
                   {entries.length > 0 ? "בוצע בפועל" : "טרם בוצע"}
                 </span>
               </div>
+              <WorkoutExerciseDemoVideos exercise={exercise} />
             </div>
           ))
         ) : (
@@ -941,29 +963,41 @@ function WorkoutDailyReport({
       {additionalEntries.length > 0 ? (
         <div className="space-y-1.5">
           <p className="text-[11px] font-extrabold text-ink">תרגילים שבוצעו ואינם בתוכנית</p>
-          {additionalEntries.map(({ entry, sessionId, index }) => (
-            <div
-              key={`additional-${sessionId}-${entry.exerciseId}-${index}`}
-              className="rounded-xl border border-sky-200 bg-sky-50/65 p-2.5 text-[10px]"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <strong className="text-start text-ink">{entry.exerciseName || "תרגיל"}</strong>
-                <span className="shrink-0 font-bold text-sky-800">בוצע בפועל</span>
+          {additionalEntries.map(({ entry, sessionId, index }) => {
+            const exercise =
+              exercises.find((candidate) => candidate.id === entry.exerciseId) ??
+              (entry.exerciseName
+                ? exercises.find(
+                    (candidate) =>
+                      candidate.name.trim().toLocaleLowerCase() ===
+                      entry.exerciseName.trim().toLocaleLowerCase(),
+                  )
+                : undefined);
+            return (
+              <div
+                key={`additional-${sessionId}-${entry.exerciseId}-${index}`}
+                className="rounded-xl border border-sky-200 bg-sky-50/65 p-2.5 text-[10px]"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <strong className="text-start text-ink">{entry.exerciseName || "תרגיל"}</strong>
+                  <span className="shrink-0 font-bold text-sky-800">בוצע בפועל</span>
+                </div>
+                <WorkoutExerciseDemoVideos exercise={exercise} />
+                <p className="mt-1 text-muted-foreground">
+                  {entry.sets.length > 0
+                    ? entry.sets
+                        .map(
+                          (set, setIndex) =>
+                            `סט ${setIndex + 1}: ${set.weight} ק״ג × ${set.reps}${
+                              set.done ? " ✓" : " — לא בוצע"
+                            }`,
+                        )
+                        .join(" · ")
+                    : "לא נרשמו סטים"}
+                </p>
               </div>
-              <p className="mt-1 text-muted-foreground">
-                {entry.sets.length > 0
-                  ? entry.sets
-                      .map(
-                        (set, setIndex) =>
-                          `סט ${setIndex + 1}: ${set.weight} ק״ג × ${set.reps}${
-                            set.done ? " ✓" : " — לא בוצע"
-                          }`,
-                      )
-                      .join(" · ")
-                  : "לא נרשמו סטים"}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : null}
 

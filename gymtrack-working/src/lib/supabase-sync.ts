@@ -459,6 +459,10 @@ export async function syncLocalToSupabase(
           category: e.category,
           description: e.description,
           instructions: e.instructions,
+          video_url: e.videoUrl || null,
+          video_urls: e.videoUrls ?? null,
+          video_male_url: e.videoMaleUrl || null,
+          video_female_url: e.videoFemaleUrl || null,
           updated_at: new Date().toISOString(),
         }));
         await requireSuccessfulWrite(
@@ -1122,7 +1126,10 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
           equipment: row.equipment || "מוט",
           description: row.description || "",
           instructions: row.instructions || "",
-          videoUrl: "",
+          videoUrl: row.video_url || "",
+          videoUrls: Array.isArray(row.video_urls) ? row.video_urls : undefined,
+          videoMaleUrl: row.video_male_url || undefined,
+          videoFemaleUrl: row.video_female_url || undefined,
           images: [],
           notes: "",
         };
