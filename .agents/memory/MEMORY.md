@@ -32,3 +32,4 @@
 - [Focused workspace portals](focused-workspace-portals.md) — Portal targets for focused coach editors belong inside the owning workspace, not the global app main.
 - [Completed session draft guard](session-feedback-persistence.md) — After a successful save, stop hydration effects from recreating cleared feedback drafts.
 - [Supabase MCP destructive output](supabase-mcp-destructive-output.md) — A blocked destructive response can mean the transaction already committed; verify read-only before retrying.
+- [Stale browser rehydration](stale-browser-rehydration.md) — Stop or clear authenticated preview state before final DB counts; old local state can repopulate rows after cleanup.
