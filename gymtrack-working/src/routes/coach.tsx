@@ -3979,17 +3979,6 @@ export function CoachDashboardPage({
     setShowCreateExercise(false);
     setExerciseBuilderNotice(`התרגיל "${exercise.name}" נוסף למאגר ונבחר לאימון.`);
   };
-  const addNewExerciseVideo = (
-    file: File | undefined,
-    field: "videoMaleUrl" | "videoFemaleUrl",
-  ) => {
-    if (!file || !file.type.startsWith("video/")) return;
-    const reader = new FileReader();
-    reader.onload = () =>
-      setNewExerciseDraft((current) => ({ ...current, [field]: String(reader.result) }));
-    reader.onerror = () => setNewExerciseError("לא ניתן לקרוא את הסרטון שנבחר.");
-    reader.readAsDataURL(file);
-  };
   const ownerUserSearchLower = ownerUserSearch.trim().toLocaleLowerCase();
   const filteredOwnerProfiles = ownerUserSearchLower
     ? allProfiles.filter((profile) =>
@@ -8928,7 +8917,9 @@ export function CoachDashboardPage({
                 <div className="block text-xs font-bold text-muted-foreground">
                   ציוד אפשרי
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {EQUIPMENT.map((equipment) => {
+                    {EQUIPMENT.filter(
+                      (equipment) => !store.deletedEquipmentOptions?.includes(equipment),
+                    ).map((equipment) => {
                       const selected = exerciseEquipmentOptions(newExerciseDraft).includes(equipment);
                       return (
                         <button
@@ -8966,51 +8957,10 @@ export function CoachDashboardPage({
                   ) : null}
                 </div>
               </div>
-              <label className="block text-xs font-bold text-muted-foreground">
-                הוראות ביצוע (אופציונלי)
-                <textarea
-                  value={newExerciseDraft.instructions ?? ""}
-                  onChange={(event) =>
-                    setNewExerciseDraft((current) => ({
-                      ...current,
-                      instructions: event.target.value,
-                    }))
-                  }
-                  rows={3}
-                  placeholder="הנחיות קצרות למתאמן"
-                  className="mt-1.5 w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary"
-                />
-              </label>
-              <div className="rounded-2xl border border-border/60 bg-secondary/40 p-3">
-                <p className="mb-2 text-xs font-bold text-ink">סרטוני הדגמה לפי מגדר</p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {(
-                    [
-                      ["videoMaleUrl", "סרטון הדגמה לגבר"],
-                      ["videoFemaleUrl", "סרטון הדגמה לאישה"],
-                    ] as const
-                  ).map(([videoField, title]) => (
-                    <label
-                      key={videoField}
-                      className="grid gap-1 text-[11px] font-bold text-muted-foreground"
-                    >
-                      {title}
-                      <input
-                        type="file"
-                        accept="video/*"
-                        onChange={(event) => {
-                          addNewExerciseVideo(event.target.files?.[0], videoField);
-                          event.currentTarget.value = "";
-                        }}
-                        className="w-full text-[10px] file:me-2 file:rounded-lg file:border-0 file:bg-primary file:px-2 file:py-1.5 file:text-[10px] file:font-bold file:text-primary-foreground"
-                      />
-                      {newExerciseDraft[videoField] ? (
-                        <span className="text-[10px] text-emerald-700">סרטון נבחר</span>
-                      ) : null}
-                    </label>
-                  ))}
-                </div>
-              </div>
+              <p className="rounded-2xl bg-secondary/60 p-3 text-[11px] leading-relaxed text-muted-foreground">
+                זהו טופס מהיר: שם, קבוצת שרירים וציוד מספיקים כדי להתחיל. אפשר להוסיף הוראות,
+                תמונות וסרטונים בעריכת התרגיל לאחר השמירה.
+              </p>
               {newExerciseError ? (
                 <p className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs font-semibold text-destructive">
                   {newExerciseError}

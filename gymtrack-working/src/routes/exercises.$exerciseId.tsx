@@ -288,7 +288,13 @@ function OptionImagesEditor({
 function ExerciseDetail() {
   const { exerciseId } = Route.useParams();
   const navigate = useNavigate();
-  const { exercises, history, userProfile } = useGym();
+  const {
+    exercises,
+    history,
+    userProfile,
+    deletedEquipmentOptions = [],
+    deletedCableGripOptions = [],
+  } = useGym();
   const isNew = exerciseId === "new";
   const existing = exercises.find((e) => e.id === exerciseId);
   const canManageLibrary = userProfile?.role === "coach" || userProfile?.role === "owner";
@@ -377,7 +383,7 @@ function ExerciseDetail() {
   );
   const equipmentOptions = Array.from(
     new Set([...EQUIPMENT, ...exercises.map((exercise) => exercise.equipment)].filter(Boolean)),
-  );
+  ).filter((option) => !deletedEquipmentOptions.includes(option));
   const selectedEquipmentOptions = exerciseEquipmentOptions(draft);
   const categoryOptions = Array.from(
     new Set(
@@ -535,37 +541,45 @@ function ExerciseDetail() {
                 })
               }
             />
-            <SearchMultiOptionField
-              label="ציוד אפשרי בעת בניית אימון"
-              selected={selectedEquipmentOptions}
-              options={equipmentOptions}
-              placeholder="חיפוש ציוד אפשרי..."
-              onToggle={(value) => {
-                const next = selectedEquipmentOptions.includes(value)
-                  ? selectedEquipmentOptions.filter((option) => option !== value)
-                  : [...selectedEquipmentOptions, value];
-                if (next.length === 0) return;
-                set({ equipment: next[0] ?? draft.equipment, equipmentOptions: next });
-              }}
-            />
-            {selectedEquipmentOptions.includes("פולי / כבלים") ? (
-              <SearchMultiOptionField
-                label="מאחזים אפשריים בכבלים"
-                selected={draft.cableGripOptions ?? []}
-                options={CABLE_GRIPS}
-                placeholder="חיפוש מאחז..."
-                onToggle={(value) => {
-                  const current = draft.cableGripOptions ?? [];
-                  set({
-                    cableGripOptions: current.includes(value)
-                      ? current.filter((option) => option !== value)
-                      : [...current, value],
-                  });
-                }}
-              />
+            {!isNew ? (
+              <>
+                <SearchMultiOptionField
+                  label="ציוד אפשרי בעת בניית אימון"
+                  selected={selectedEquipmentOptions}
+                  options={equipmentOptions}
+                  placeholder="חיפוש ציוד אפשרי..."
+                  onToggle={(value) => {
+                    const next = selectedEquipmentOptions.includes(value)
+                      ? selectedEquipmentOptions.filter((option) => option !== value)
+                      : [...selectedEquipmentOptions, value];
+                    if (next.length === 0) return;
+                    set({ equipment: next[0] ?? draft.equipment, equipmentOptions: next });
+                  }}
+                />
+                {selectedEquipmentOptions.includes("פולי / כבלים") ? (
+                  <SearchMultiOptionField
+                    label="מאחזים אפשריים בכבלים"
+                    selected={draft.cableGripOptions ?? []}
+                    options={CABLE_GRIPS.filter(
+                      (grip) => !deletedCableGripOptions.includes(grip),
+                    )}
+                    placeholder="חיפוש מאחז..."
+                    onToggle={(value) => {
+                      const current = draft.cableGripOptions ?? [];
+                      set({
+                        cableGripOptions: current.includes(value)
+                          ? current.filter((option) => option !== value)
+                          : [...current, value],
+                      });
+                    }}
+                  />
+                ) : null}
+              </>
             ) : null}
           </div>
 
+          {!isNew ? (
+            <>
           <OptionImagesEditor
             label="מאגר תמונות למכשירים ולציוד"
             options={selectedEquipmentOptions}
@@ -796,6 +810,13 @@ function ExerciseDetail() {
               placeholder="הערות אישיות לגבי התרגיל..."
             />
           </div>
+            </>
+          ) : (
+            <p className="rounded-2xl bg-secondary/60 p-3 text-[11px] leading-relaxed text-muted-foreground">
+              ליצירה מהירה מספיקים שם, קבוצת שרירים וציוד. אפשר להוסיף אחר כך הוראות, תמונות
+              וסרטונים דרך עריכת התרגיל.
+            </p>
+          )}
 
           {saveError ? (
             <p className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs font-semibold text-destructive">

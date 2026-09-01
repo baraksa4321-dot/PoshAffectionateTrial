@@ -1,15 +1,29 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, Dumbbell, Plus, Search, Shield, SlidersHorizontal } from "lucide-react";
+import {
+  ChevronLeft,
+  Dumbbell,
+  Plus,
+  Search,
+  Shield,
+  SlidersHorizontal,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import {
   exerciseDisplayName,
   exerciseEquipmentOptions,
+  exerciseFamilyKey,
   exerciseGripOptions,
   uniqueCanonicalExercises,
 } from "@/lib/exercise-library";
 import { EmptyState, Pill, SectionHeader } from "@/components/ui-app/primitives";
-import { useGym } from "@/lib/gym-store";
+import {
+  deleteCableGripOption,
+  deleteEquipmentOption,
+  deleteExercise,
+  useGym,
+} from "@/lib/gym-store";
 import { CABLE_GRIPS, EQUIPMENT, MUSCLE_GROUPS } from "@/lib/gym-types";
 import { genderText } from "@/lib/gender-copy";
 
@@ -28,7 +42,12 @@ export const Route = createFileRoute("/exercises/")({
 });
 
 function Library() {
-  const { exercises, userProfile } = useGym();
+  const {
+    exercises,
+    userProfile,
+    deletedEquipmentOptions = [],
+    deletedCableGripOptions = [],
+  } = useGym();
   const navigate = useNavigate();
   const role = userProfile?.role;
   const gender = userProfile?.gender;
@@ -92,7 +111,7 @@ function Library() {
       ...EQUIPMENT,
       ...catalogExercises.flatMap((exercise) => exerciseEquipmentOptions(exercise)),
     ]),
-  );
+  ).filter((name) => !deletedEquipmentOptions.includes(name));
   const equipmentRows = equipmentNames
     .map((name) => {
       const linkedExercises = catalogExercises.filter((exercise) =>
@@ -112,7 +131,7 @@ function Library() {
       ...CABLE_GRIPS,
       ...catalogExercises.flatMap((exercise) => exerciseGripOptions(exercise)),
     ]),
-  );
+  ).filter((name) => !deletedCableGripOptions.includes(name));
   const gripRows = gripNames
     .map((name) => {
       const linkedExercises = catalogExercises.filter(
@@ -129,6 +148,22 @@ function Library() {
       };
     })
     .filter((row) => row.name.toLocaleLowerCase().includes(query));
+
+  const confirmDelete = (message: string) =>
+    typeof window === "undefined" || window.confirm(message);
+  const handleDeleteExercise = (exercise: (typeof catalogExercises)[number]) => {
+    if (
+      !confirmDelete(
+        `למחוק את "${exerciseDisplayName(exercise)}" מהספרייה? הפעולה תסיר גם גרסאות ציוד זהות.`,
+      )
+    ) {
+      return;
+    }
+    const family = exerciseFamilyKey(exercise);
+    exercises
+      .filter((candidate) => exerciseFamilyKey(candidate) === family)
+      .forEach((candidate) => deleteExercise(candidate.id));
+  };
 
   return (
     <AppShell
@@ -268,33 +303,42 @@ function Library() {
           const primary = showCustom ? e.customMuscleGroup! : e.muscleGroup;
           const secondaryCount = (e.muscleGroups?.length ?? 1) - 1;
           return (
-            <Link
-              key={e.id}
-              to="/exercises/$exerciseId"
-              params={{ exerciseId: e.id }}
-              className="surface-card press flex items-center gap-3.5 p-3.5"
-            >
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-sage-soft text-primary">
-                <Dumbbell className="h-5 w-5" strokeWidth={1.8} />
-              </div>
-              <div className="min-w-0 flex-1 text-start">
-                <p className="truncate font-display text-[15px] font-semibold text-ink">
-                  {exerciseDisplayName(e)}
-                </p>
-                <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
-                  {primary}
-                  {e.equipmentOptions && e.equipmentOptions.length > 1 ? (
-                    <span className="ms-1">· {e.equipmentOptions.join(" · ")}</span>
-                  ) : null}
-                  {secondaryCount > 0 ? ` (+${secondaryCount})` : ""}
-                  {e.category ? ` · ${e.category}` : ""}
-                </p>
-              </div>
-              <span className="num-pill shrink-0 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
-                {e.equipment}
-              </span>
-              <ChevronLeft className="h-4 w-4 shrink-0 text-muted-foreground/60" />
-            </Link>
+            <div key={e.id} className="surface-card flex items-center gap-2 p-3.5">
+              <Link
+                to="/exercises/$exerciseId"
+                params={{ exerciseId: e.id }}
+                className="press flex min-w-0 flex-1 items-center gap-3.5"
+              >
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-sage-soft text-primary">
+                  <Dumbbell className="h-5 w-5" strokeWidth={1.8} />
+                </div>
+                <div className="min-w-0 flex-1 text-start">
+                  <p className="truncate font-display text-[15px] font-semibold text-ink">
+                    {exerciseDisplayName(e)}
+                  </p>
+                  <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
+                    {primary}
+                    {e.equipmentOptions && e.equipmentOptions.length > 1 ? (
+                      <span className="ms-1">· {e.equipmentOptions.join(" · ")}</span>
+                    ) : null}
+                    {secondaryCount > 0 ? ` (+${secondaryCount})` : ""}
+                    {e.category ? ` · ${e.category}` : ""}
+                  </p>
+                </div>
+                <span className="num-pill shrink-0 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                  {e.equipment}
+                </span>
+                <ChevronLeft className="h-4 w-4 shrink-0 text-muted-foreground/60" />
+              </Link>
+              <button
+                type="button"
+                onClick={() => handleDeleteExercise(e)}
+                aria-label={`מחיקת ${exerciseDisplayName(e)}`}
+                className="press grid h-8 w-8 shrink-0 place-items-center rounded-xl text-muted-foreground/70 hover:bg-red-50 hover:text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
           );
         })}
       </div>
@@ -350,7 +394,7 @@ function Library() {
                     <Dumbbell className="h-6 w-6" strokeWidth={1.7} />
                   </div>
                 )}
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="font-display text-[15px] font-semibold text-ink">{row.name}</p>
                   <p className="mt-1 text-[11.5px] text-muted-foreground">
                     מופיע ב־{row.count} {row.count === 1 ? "תרגיל" : "תרגילים"}
@@ -361,6 +405,25 @@ function Library() {
                     </p>
                   ) : null}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (
+                      confirmDelete(
+                        `למחוק את "${row.name}" ממאגר ${
+                          activeTab === "equipment" ? "המכשירים" : "המאחזים"
+                        }? הוא לא יוצג בבחירות חדשות.`,
+                      )
+                    ) {
+                      if (activeTab === "equipment") deleteEquipmentOption(row.name);
+                      else deleteCableGripOption(row.name);
+                    }
+                  }}
+                  aria-label={`מחיקת ${row.name}`}
+                  className="press grid h-8 w-8 shrink-0 place-items-center rounded-xl text-muted-foreground/70 hover:bg-red-50 hover:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </div>
             ))}
           </div>

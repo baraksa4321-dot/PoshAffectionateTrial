@@ -813,15 +813,19 @@ function mergeSeedFoods(existing: FoodItem[]): FoodItem[] {
 }
 
 /** Merge the maintained exercise library without overwriting a user's edits. */
-function mergeSeedExercises(existing: Exercise[]): Exercise[] {
-  const migratedExisting = existing.map((exercise) => {
-    const migration = seedExerciseNameMigrations[exercise.id];
-    return migration && exercise.name === migration.from
-      ? { ...exercise, name: migration.to }
-      : exercise;
-  });
+function mergeSeedExercises(existing: Exercise[], deletedExerciseIds: string[] = []): Exercise[] {
+  const deletedIds = new Set(deletedExerciseIds);
+  const migratedExisting = existing
+    .filter((exercise) => !deletedIds.has(exercise.id))
+    .map((exercise) => {
+      const migration = seedExerciseNameMigrations[exercise.id];
+      return migration && exercise.name === migration.from
+        ? { ...exercise, name: migration.to }
+        : exercise;
+    });
   const byId = new Map(migratedExisting.map((exercise) => [exercise.id, exercise]));
   for (const seedExercise of [...seed().exercises, ...additionalExercises]) {
+    if (deletedIds.has(seedExercise.id)) continue;
     const hasSameNameAndMuscle = migratedExisting.some(
       (exercise) =>
         exercise.name.toLocaleLowerCase() === seedExercise.name.toLocaleLowerCase() &&
@@ -849,7 +853,7 @@ function loadReferenceLibraries() {
     data = {
       ...data,
       foods: mergeSeedFoods(data.foods ?? []),
-      exercises: mergeSeedExercises(data.exercises ?? []),
+      exercises: mergeSeedExercises(data.exercises ?? [], data.deletedExerciseIds ?? []),
     };
     persistCacheOnly();
     notifyListeners();
@@ -867,7 +871,10 @@ function migrate(d: Partial<GymData>): GymData {
   }
   const normalizedNutrition = normalizeFixedPlannedMenu(d.plannedMeals, d.nutritionDays ?? []);
   return {
-    exercises: mergeSeedExercises(d.exercises ?? []),
+    exercises: mergeSeedExercises(d.exercises ?? [], d.deletedExerciseIds ?? []),
+    deletedExerciseIds: d.deletedExerciseIds ?? [],
+    deletedEquipmentOptions: d.deletedEquipmentOptions ?? [],
+    deletedCableGripOptions: d.deletedCableGripOptions ?? [],
     workouts,
     programs,
     history: d.history ?? [],
@@ -1459,8 +1466,10 @@ export function repLabel(item: Pick<WorkoutItem, "reps" | "repType" | "repMin" |
 /* ---------- exercises ---------- */
 export function saveExercise(ex: Exercise) {
   const exists = data.exercises.some((e) => e.id === ex.id);
+  const deletedExerciseIds = (data.deletedExerciseIds ?? []).filter((id) => id !== ex.id);
   set({
     ...data,
+    deletedExerciseIds,
     exercises: exists
       ? data.exercises.map((e) => (e.id === ex.id ? ex : e))
       : [...data.exercises, ex],
@@ -1468,13 +1477,37 @@ export function saveExercise(ex: Exercise) {
 }
 
 export function deleteExercise(id: string) {
+  const deletedExerciseIds = Array.from(new Set([...(data.deletedExerciseIds ?? []), id]));
   set({
     ...data,
+    deletedExerciseIds,
     exercises: data.exercises.filter((e) => e.id !== id),
     workouts: data.workouts.map((w) => ({
       ...w,
       items: w.items.filter((i) => i.exerciseId !== id),
     })),
+  });
+}
+
+export function deleteEquipmentOption(option: string) {
+  const normalized = option.trim();
+  if (!normalized) return;
+  set({
+    ...data,
+    deletedEquipmentOptions: Array.from(
+      new Set([...(data.deletedEquipmentOptions ?? []), normalized]),
+    ),
+  });
+}
+
+export function deleteCableGripOption(option: string) {
+  const normalized = option.trim();
+  if (!normalized) return;
+  set({
+    ...data,
+    deletedCableGripOptions: Array.from(
+      new Set([...(data.deletedCableGripOptions ?? []), normalized]),
+    ),
   });
 }
 

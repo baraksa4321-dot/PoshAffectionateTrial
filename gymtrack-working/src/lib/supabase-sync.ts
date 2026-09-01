@@ -1153,7 +1153,10 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         };
         customMap.set(row.id, exItem);
       }
-      nextData.exercises = Array.from(customMap.values());
+      const deletedExerciseIds = new Set(nextData.deletedExerciseIds ?? []);
+      nextData.exercises = Array.from(customMap.values()).filter(
+        (exercise) => !deletedExerciseIds.has(exercise.id),
+      );
     }
 
     // 5. Programs & Days

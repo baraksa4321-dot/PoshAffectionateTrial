@@ -26,6 +26,7 @@
 - [Loading cycle persistence](loading-cycle-persistence.md) — Persist only the per-opening index; keep in-loading animation rotation transient and guard StrictMode from double claims.
 - [PostgREST catalog upserts](postgrest-catalog-upserts.md) — `on_conflict` needs a full unique index on source and source ID; partial indexes are not inferred by the REST upsert.
 - [Catalog source URL normalization](catalog-source-normalization.md) — Canonicalize mixed Hebrew and percent-encoded product URLs before exposing them to catalog consumers.
+- [Library deletion tombstones](library-deletion-tombstones.md) — Built-in exercise catalog merges on hydration, so user deletions need persisted per-user tombstones and a post-pull filter.
 - [Exact product label verification](exact-product-label-verification.md) — A real source is insufficient when the flavor, serving, or package does not match exactly.
 - [Workout history deduplication](history-dedupe.md) — Merge retries only with an exact timestamp or repeated ID; same-day workouts may be legitimate separate executions.
 - [Workout exercise identity drift](workout-exercise-identity-drift.md) — Completed sessions can retain older exercise IDs; coach reports must also match the normalized exercise name.

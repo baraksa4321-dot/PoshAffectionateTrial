@@ -415,6 +415,10 @@ export type UserProfile = {
 
 export type GymData = {
   exercises: Exercise[];
+  /** Library items hidden by this user; kept local so built-in catalog edits persist. */
+  deletedExerciseIds?: string[];
+  deletedEquipmentOptions?: string[];
+  deletedCableGripOptions?: string[];
   workouts: Workout[];
   programs: Program[];
   history: HistorySession[];
