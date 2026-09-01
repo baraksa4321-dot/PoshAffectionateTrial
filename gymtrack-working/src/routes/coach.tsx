@@ -3340,7 +3340,6 @@ export function CoachDashboardPage({
     if (isSelfSelected) {
       saveWorkout({ ...currentDay, items: updatedItems });
       setSelectedExId("");
-      setEditingDayId(null);
       setShowExerciseForm(false);
       setTechniqueNotes("");
       setSupersetGroup("");
@@ -3368,7 +3367,6 @@ export function CoachDashboardPage({
     }
     setSelectedExId("");
     setEditingItemId(null);
-    setEditingDayId(null);
     setShowExerciseForm(false);
     setTechniqueNotes("");
     setSupersetGroup("");
