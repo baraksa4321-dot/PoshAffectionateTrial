@@ -1436,6 +1436,12 @@ html.night-mode .auth-panel {
   text-align: right;
 }
 
+.coach-workout-header,
+.coach-workout-header > div:first-child {
+  direction: rtl;
+  text-align: right;
+}
+
 .coach-workout-surface form {
   width: 100%;
   min-width: 0;
@@ -4723,31 +4729,30 @@ html[data-keyboard-open] .nav-shell {
 }
 
 .workout-report-bookmark {
-  top: 50%;
+  top: 0.5rem;
   right: 0;
   min-height: 5.25rem;
   width: 1.75rem;
   border-left: 0;
   border-radius: 0.75rem 0 0 0.75rem;
-  transform: translateY(-50%);
+  transform: none;
 }
 
 .workout-report-bookmark:hover,
 .workout-report-bookmark:focus-visible {
-  transform: translateY(calc(-50% - 1px));
+  transform: translateY(-1px);
 }
 
 .workout-report-bookmark-open {
-  right: auto;
-  left: 0;
+  right: 0;
+  left: auto;
   border-left: 0;
-  border-right: 1px solid color-mix(in oklch, var(--primary) 35%, var(--border));
-  border-radius: 0.75rem 0 0 0.75rem;
+  border-right: 0;
 }
 
 .workout-report-bookmark-open:hover,
 .workout-report-bookmark-open:focus-visible {
-  transform: translateY(calc(-50% - 1px));
+  transform: translateY(-1px);
 }
 
 .workout-report-bookmark span {
