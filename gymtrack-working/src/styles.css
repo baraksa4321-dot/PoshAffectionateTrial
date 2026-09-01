@@ -1433,6 +1433,7 @@ html.night-mode .auth-panel {
   min-width: 0;
   width: 100%;
   max-width: 100%;
+  text-align: right;
 }
 
 .coach-workout-surface form {
@@ -4760,7 +4761,7 @@ html[data-keyboard-open] .nav-shell {
   position: absolute;
   z-index: 1;
   inset-block: 0;
-  inset-inline: 0 2.75rem;
+  inset-inline: 0 1.75rem;
   overflow-y: auto;
   border-radius: inherit;
   border: 1px solid color-mix(in oklch, var(--primary) 35%, var(--border));
