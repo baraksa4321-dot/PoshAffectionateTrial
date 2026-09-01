@@ -340,8 +340,9 @@ export function AppShell({
     );
     if (currentIndex < 0) return;
 
-    // In RTL layouts, a left swipe advances to the next tab.
-    const nextIndex = deltaX < 0 ? currentIndex + 1 : currentIndex - 1;
+    // Follow the visual direction of the swipe: right-to-left moves to the
+    // page on the left, and left-to-right moves to the page on the right.
+    const nextIndex = deltaX < 0 ? currentIndex - 1 : currentIndex + 1;
     const nextItem = NAV[nextIndex];
     if (!nextItem) return;
     nextItem.onClick?.();
