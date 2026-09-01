@@ -552,7 +552,6 @@ export function getWorkoutReportSessions(
 ): HistorySession[] {
   const weekStart = weekDates[0]!;
   const weekEnd = weekDates[weekDates.length - 1]!;
-
   return dedupeHistorySessions(
     history.filter(
       (session) =>

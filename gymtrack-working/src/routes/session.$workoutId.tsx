@@ -432,6 +432,7 @@ function Session() {
   const videoUploadTasksRef = useRef(new Set<Promise<boolean>>());
   const videoFilesRef = useRef(new Map<number, File>());
   const restoredVideoDraftWorkoutIdRef = useRef<string | null>(null);
+  const completedSaveRef = useRef(false);
   useEffect(() => {
     entriesRef.current = entries;
   }, [entries]);
@@ -500,7 +501,13 @@ function Session() {
   }, [entries, workoutId]);
 
   useEffect(() => {
-    if (!workoutId || feedbackDraft.workoutId !== workoutId) return;
+    if (
+      !workoutId ||
+      feedbackDraft.workoutId !== workoutId ||
+      completedSaveRef.current
+    ) {
+      return;
+    }
     try {
       localStorage.setItem(
         ACTIVE_SESSION_FEEDBACK_KEY(workoutId),
@@ -870,6 +877,7 @@ function Session() {
       setFinishError(syncResult.error ?? "שמירת האימון נכשלה. נסי שוב.");
       return;
     }
+    completedSaveRef.current = true;
     clearSavedSession();
     setShowFeedbackModal(false);
     setIsFinishing(false);

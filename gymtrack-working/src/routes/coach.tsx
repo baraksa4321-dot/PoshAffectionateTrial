@@ -840,14 +840,27 @@ function WorkoutDailyReport({
         >
           <ChevronRight className="h-4 w-4" />
         </button>
-        <input
-          type="date"
-          value={reportDate}
-          max={today}
-          onChange={(event) => setReportDate(event.target.value || today)}
-          className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
-          aria-label="תאריך הדוח"
-        />
+        <div className="relative h-9 min-w-0 flex-1 overflow-hidden rounded-lg border border-border bg-white">
+          <span
+            className="pointer-events-none absolute inset-0 z-0 grid place-items-center px-2 text-center text-xs text-ink"
+            dir="rtl"
+            aria-hidden="true"
+          >
+            {reportDateLabel(reportDate, { day: "numeric", month: "long", year: "numeric" })}
+          </span>
+          <input
+            type="date"
+            value={reportDate}
+            max={today}
+            onChange={(event) => setReportDate(event.target.value || today)}
+            className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+            aria-label={`תאריך הדוח: ${reportDateLabel(reportDate, {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}`}
+          />
+        </div>
         <button
           type="button"
           disabled={reportDate >= today}
@@ -1819,6 +1832,20 @@ export function CoachDashboardPage({
     isSelfSelected,
     selectedClientId,
   ]);
+
+  const refreshSelectedClientForReport = useCallback(() => {
+    if (!selectedClientId || isSelfSelected) return;
+
+    setClientDetailsError("");
+    setClientRefreshInFlight(true);
+    void pullClientDataForCoach(selectedClientId)
+      .then(applySelectedClientRefreshResult)
+      .catch((error: unknown) => {
+        setClientRefreshInFlight(false);
+        setClientDataStale(true);
+        setClientDetailsError(errorMessage(error, "רענון נתוני המתאמן נכשל"));
+      });
+  }, [applySelectedClientRefreshResult, isSelfSelected, selectedClientId]);
 
   useEffect(() => {
     if (!isSelfSelected || !selectedClientId) return;
@@ -7398,11 +7425,13 @@ export function CoachDashboardPage({
                                         )}
                                           <button
                                             type="button"
-                                            onClick={() =>
+                                            onClick={() => {
+                                              const shouldOpen = openWorkoutReportId !== dayItem.id;
                                               setOpenWorkoutReportId((current) =>
                                                 current === dayItem.id ? null : dayItem.id,
-                                              )
-                                            }
+                                              );
+                                              if (shouldOpen) refreshSelectedClientForReport();
+                                            }}
                                             aria-label={
                                               openWorkoutReportId === dayItem.id
                                                 ? "סגירת דוח"
