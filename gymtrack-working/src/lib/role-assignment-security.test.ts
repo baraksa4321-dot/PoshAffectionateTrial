@@ -175,9 +175,9 @@ const migration27 = readFileSync(
   ),
   "utf8",
 );
-const migration28 = readFileSync(
+const migration38 = readFileSync(
   fileURLToPath(
-    new URL("../../supabase/migrations/28_role_assignment_change_cleanup.sql", import.meta.url),
+    new URL("../../supabase/migrations/38_owner_can_promote_users.sql", import.meta.url),
   ),
   "utf8",
 );
@@ -295,10 +295,11 @@ describe("role and assignment security on a disposable dataset", () => {
 
 describe("role and assignment SQL security contract", () => {
   test("latest role transitions require Owner, validate input, and clear both link directions", () => {
-    const body = normalizedFunctionBody(migration28, "change_user_role");
+    const body = normalizedFunctionBody(migration38, "change_user_role");
 
     expect(body).toContain("IF NOT public.is_owner()");
-    expect(body).toContain("new_role NOT IN ('coach', 'client')");
+    expect(body).toContain("target_user_id = auth.uid()");
+    expect(body).toContain("new_role NOT IN ('owner', 'coach', 'client')");
     expect(body).toContain("WHERE id = target_user_id OR coach_id = target_user_id");
     expect(body).toContain("WHERE coach_id = target_user_id OR client_id = target_user_id");
     expect(body).toContain("SET role = new_role");

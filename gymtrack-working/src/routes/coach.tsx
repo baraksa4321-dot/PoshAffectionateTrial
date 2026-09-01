@@ -2425,7 +2425,7 @@ export function CoachDashboardPage({
   // only authority for role changes; this UI never writes profiles.role.
   const handleOwnerChangeRole = async (
     targetUserId: string,
-    newRole: "coach" | "client",
+    newRole: "owner" | "coach" | "client",
   ): Promise<void> => {
     setRoleChangeUserId(targetUserId);
     setRoleChangeNotice("");
@@ -2442,7 +2442,11 @@ export function CoachDashboardPage({
       const refreshed = await loadAllProfilesForOwner();
       if (!refreshed) return;
       await loadCoachClients();
-      setRoleChangeNotice(`תפקיד המשתמש עודכן בהצלחה ל-${newRole === "coach" ? "מאמן" : "מתאמן"}`);
+      setRoleChangeNotice(
+        `תפקיד המשתמש עודכן בהצלחה ל-${
+          newRole === "owner" ? "בעלים" : newRole === "coach" ? "מאמן" : "מתאמן"
+        }`,
+      );
     } catch (err: unknown) {
       setManagementError(`שינוי התפקיד נכשל: ${errorMessage(err, "שגיאה בשינוי תפקיד")}`);
     } finally {
@@ -4549,7 +4553,11 @@ export function CoachDashboardPage({
                           }
                           onChange={(event) => {
                             const nextRole = event.target.value;
-                            if (nextRole === "coach" || nextRole === "client") {
+                             if (
+                               nextRole === "owner" ||
+                               nextRole === "coach" ||
+                               nextRole === "client"
+                             ) {
                               void handleOwnerChangeRole(p.id, nextRole);
                             }
                           }}
