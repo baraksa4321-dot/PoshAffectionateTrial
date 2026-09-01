@@ -1021,7 +1021,7 @@ function LegacyLoadingIllustration({ variant }: { variant: number }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    scripts: [{ async: true, src: "/boot-watchdog.js?v=2" }],
+    scripts: [{ async: true, src: "/boot-watchdog.js?v=4" }],
     meta: [
       { charSet: "utf-8" },
       {
@@ -1149,6 +1149,11 @@ function RootContent() {
       setLoadingGender(undefined);
     }
     (window as Window & { __MY_ROUTINE_BOOTED__?: boolean }).__MY_ROUTINE_BOOTED__ = true;
+    const bootUrl = new URL(window.location.href);
+    if (bootUrl.searchParams.has("__myroutine_boot")) {
+      bootUrl.searchParams.delete("__myroutine_boot");
+      window.history.replaceState(null, "", `${bootUrl.pathname}${bootUrl.search}${bootUrl.hash}`);
+    }
     setLoadingPresentationReady(true);
   }, []);
 
@@ -1390,13 +1395,12 @@ function RootContent() {
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             נסי לטעון מחדש כדי לנקות את גרסת האתר השמורה במכשיר.
           </p>
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
+          <a
+            href="/?__myroutine_clean=1"
             className="mt-5 inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
           >
             טעינה מחדש
-          </button>
+          </a>
         </div>
       </div>
       {loadingRecoveryTimedOut ? (

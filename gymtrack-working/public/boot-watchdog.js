@@ -1,21 +1,31 @@
 (() => {
-  const recoveryKey = "__myroutine_boot_recovery_v2";
+  const recoveryKey = "__myroutine_boot_recovery_v4";
   const isPreviewHost =
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1" ||
     window.location.hostname.endsWith(".replit.dev");
-  const watchdogDelay = isPreviewHost ? 8_000 : 12_000;
+  const watchdogDelay = isPreviewHost ? 30_000 : 12_000;
+
+  const navigateWithFreshShell = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("__myroutine_clean");
+    url.searchParams.set("__myroutine_boot", "3");
+    window.location.replace(url.toString());
+  };
 
   window.setTimeout(async () => {
     if (window.__MY_ROUTINE_BOOTED__) return;
 
     const fallback = document.querySelector("[data-app-boot-fallback]");
-    let shouldRetry = false;
+    const manualRecovery = new URL(window.location.href).searchParams.has("__myroutine_clean");
+    let shouldRetry = manualRecovery;
     try {
-      shouldRetry = window.sessionStorage.getItem(recoveryKey) !== "1";
+      shouldRetry =
+        manualRecovery || window.sessionStorage.getItem(recoveryKey) !== "1";
       if (shouldRetry) window.sessionStorage.setItem(recoveryKey, "1");
+      if (manualRecovery) window.sessionStorage.removeItem(recoveryKey);
     } catch {
-      shouldRetry = false;
+      // A manual recovery link must still work when Safari blocks storage.
     }
 
     if (shouldRetry) {
@@ -31,7 +41,7 @@
       } catch {
         // The second boot attempt is still useful when storage APIs are blocked.
       }
-      window.location.reload();
+      navigateWithFreshShell();
       return;
     }
 
