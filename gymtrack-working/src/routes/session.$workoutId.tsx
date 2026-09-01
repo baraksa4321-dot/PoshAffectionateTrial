@@ -603,6 +603,34 @@ function Session() {
       .slice(0, 12);
   }, [exerciseCatalog, exercises, approvedIds, currentItem?.exerciseId]);
 
+  useEffect(() => {
+    if (!workout || restoredVideoDraftWorkoutIdRef.current === workoutId) return;
+    restoredVideoDraftWorkoutIdRef.current = workoutId;
+    let cancelled = false;
+    void loadWorkoutVideoDrafts(workoutId)
+      .then((drafts) => {
+        if (cancelled) return;
+        drafts.forEach(({ exerciseIndex, file }) => {
+          const existingUrl = entriesRef.current[exerciseIndex]?.videoUrl;
+          if (existingUrl && !existingUrl.startsWith("blob:")) {
+            void removeWorkoutVideoDraft(workoutId, exerciseIndex);
+            return;
+          }
+          selectPerformanceVideo(exerciseIndex, file);
+        });
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setVideoUploadError(
+            error instanceof Error ? error.message : "לא ניתן לשחזר את סרטון האימון",
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [workout, workoutId]);
+
   if (!workout) {
     return (
       <AppShell title="אימון לא נמצא">
@@ -764,34 +792,6 @@ function Session() {
       if (draft) selectPerformanceVideo(exerciseIndex, draft.file);
     });
   };
-
-  useEffect(() => {
-    if (!workout || restoredVideoDraftWorkoutIdRef.current === workoutId) return;
-    restoredVideoDraftWorkoutIdRef.current = workoutId;
-    let cancelled = false;
-    void loadWorkoutVideoDrafts(workoutId)
-      .then((drafts) => {
-        if (cancelled) return;
-        drafts.forEach(({ exerciseIndex, file }) => {
-          const existingUrl = entriesRef.current[exerciseIndex]?.videoUrl;
-          if (existingUrl && !existingUrl.startsWith("blob:")) {
-            void removeWorkoutVideoDraft(workoutId, exerciseIndex);
-            return;
-          }
-          selectPerformanceVideo(exerciseIndex, file);
-        });
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) {
-          setVideoUploadError(
-            error instanceof Error ? error.message : "לא ניתן לשחזר את סרטון האימון",
-          );
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [workout, workoutId]);
 
   const totalSets = entries.reduce((a, e) => a + e.sets.filter((s) => !s.warmup).length, 0);
   const doneSets = entries.reduce(
