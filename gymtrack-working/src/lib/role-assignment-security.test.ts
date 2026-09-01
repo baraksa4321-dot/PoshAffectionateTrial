@@ -187,6 +187,12 @@ const migration11 = readFileSync(
   ),
   "utf8",
 );
+const planBuilderPermissions = readFileSync(
+  fileURLToPath(
+    new URL("../../supabase/migrations/37_plan_builder_permissions.sql", import.meta.url),
+  ),
+  "utf8",
+);
 
 describe("role and assignment security on a disposable dataset", () => {
   test("an assigned coach can read the client, while an unassigned coach and client cannot cross-read", () => {
@@ -331,5 +337,23 @@ describe("role and assignment SQL security contract", () => {
     expect(migration11).toContain(
       "GRANT EXECUTE ON FUNCTION public.change_user_role(UUID, TEXT) TO authenticated",
     );
+  });
+
+  test("owners can write plans while trainees can only read their own plans", () => {
+    expect(planBuilderPermissions).toContain(
+      'DROP POLICY IF EXISTS "Users can manage own programs" ON public.programs',
+    );
+    expect(planBuilderPermissions).toContain('CREATE POLICY "Clients can view own programs"');
+    expect(planBuilderPermissions).toContain('CREATE POLICY "Owners can manage all programs"');
+    expect(planBuilderPermissions).toContain(
+      'DROP POLICY IF EXISTS "Users can manage own program days" ON public.program_days',
+    );
+    expect(planBuilderPermissions).toContain('CREATE POLICY "Clients can view own program days"');
+    expect(planBuilderPermissions).toContain('CREATE POLICY "Owners can manage all program days"');
+    expect(planBuilderPermissions).toContain(
+      'DROP POLICY IF EXISTS "Owners can manage all nutrition" ON public.nutrition_days',
+    );
+    expect(planBuilderPermissions).toContain('CREATE POLICY "Owners can manage all nutrition"');
+    expect(planBuilderPermissions).toContain("WITH CHECK (public.is_owner())");
   });
 });

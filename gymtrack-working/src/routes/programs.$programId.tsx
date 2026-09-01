@@ -231,19 +231,21 @@ function ProgramDetail() {
               "הוסף את יום האימון הראשון שלך לתכנית ובנה בתוכו תרגילים.",
             )}
             action={
-              <button
-                type="button"
-                onClick={() =>
-                  navigate({
-                    to: "/programs/$programId/$dayId",
-                    params: { programId: program.id, dayId: "new" },
-                  })
-                }
-                className="press inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-[13.5px] font-semibold text-primary-foreground"
-              >
-                <Plus className="h-4 w-4" strokeWidth={2.4} />
-                {genderText(gender, "הוסיפי יום אימון", "הוסף יום אימון")}
-              </button>
+              isCoach ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate({
+                      to: "/programs/$programId/$dayId",
+                      params: { programId: program.id, dayId: "new" },
+                    })
+                  }
+                  className="press inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-[13.5px] font-semibold text-primary-foreground"
+                >
+                  <Plus className="h-4 w-4" strokeWidth={2.4} />
+                  {genderText(gender, "הוסיפי יום אימון", "הוסף יום אימון")}
+                </button>
+              ) : undefined
             }
           />
         )}

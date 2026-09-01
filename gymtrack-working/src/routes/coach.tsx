@@ -1422,7 +1422,7 @@ export function CoachDashboardPage({
     } catch {
       context = null;
     }
-    if (context?.clientId) {
+    if (context?.clientId && context.clientId !== authUser?.id) {
       setSelectedClientId(context.clientId);
       setShowClientWorkspace(true);
     }
@@ -1438,7 +1438,7 @@ export function CoachDashboardPage({
       window.sessionStorage.removeItem("gymtrack-exercise-return-context");
     }
     window.sessionStorage.removeItem("gymtrack-created-exercise-id");
-  }, [store.exercises]);
+  }, [authUser?.id, store.exercises]);
   useEffect(() => {
     if (!editingDayId) setShowExerciseForm(false);
     setOpenWorkoutReportId((current) =>
@@ -1797,6 +1797,16 @@ export function CoachDashboardPage({
 
   useEffect(() => {
     if (!clientId) return;
+    // The management workspace is only for assigned trainees. Do not allow a
+    // manually entered self-id (or stale return link) to reopen self-building
+    // inside the trainee editor.
+    if (authUser?.id === clientId) {
+      setSelectedClientId(null);
+      setShowClientWorkspace(false);
+      setClientDetails(null);
+      void navigate({ to: "/coach/clients", replace: true });
+      return;
+    }
     setSelectedClientId(clientId);
     setShowClientWorkspace(true);
     setOpenEditor(trackingLanding || workspaceMode === "all" ? null : workspaceMode);
@@ -1812,7 +1822,7 @@ export function CoachDashboardPage({
     setSelectedTrackingWorkoutId(null);
     setTrackingDate(todayKey());
     trackingClientInitializedRef.current = null;
-  }, [trackingLanding, workspacePage, clientId, workspaceMode]);
+  }, [authUser?.id, trackingLanding, workspacePage, clientId, workspaceMode, navigate]);
 
   useEffect(() => {
     if (!selectedClientId) {
@@ -3456,8 +3466,6 @@ export function CoachDashboardPage({
     return Boolean(q) && (emailStr.includes(q) || nameStr.includes(q));
   });
   const clientSearchQuery = clientSearch.trim().toLocaleLowerCase();
-  const selfMatchesSearch =
-    Boolean(clientSearchQuery) && selfDisplayName.toLocaleLowerCase().includes(clientSearchQuery);
   const selectedClientInfo = clients.find((c) => c.client_id === selectedClientId);
   const latestProgram = clientDetails?.programs?.[clientDetails.programs.length - 1];
   const latestNutritionDay = [...(clientDetails?.nutritionDays ?? [])].sort((a, b) =>
@@ -4567,41 +4575,6 @@ export function CoachDashboardPage({
                   aria-label="חיפוש לפי שם או אימייל"
                 />
               </div>
-
-              {authUser && selfMatchesSearch ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedClientId(isSelfSelected ? null : authUser.id);
-                    setShowClientWorkspace(!isSelfSelected);
-                    setEditingProgramId(null);
-                    setEditingDayId(null);
-                  }}
-                  aria-pressed={isSelfSelected}
-                  className={`surface-card flex w-full items-center justify-between rounded-2xl border p-4 text-start transition-all ${
-                    isSelfSelected
-                      ? "border-primary bg-primary/10 shadow-xs"
-                      : "border-primary/30 bg-primary/5 hover:border-primary/60"
-                  }`}
-                >
-                  <span className="flex min-w-0 items-center gap-3">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
-                      אני
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-bold text-ink">
-                        {selfDisplayName} (הפרופיל שלי)
-                      </span>
-                      <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                        בניית אימונים ותפריט עבורי
-                      </span>
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-xs font-bold text-primary">
-                    {isSelfSelected ? "נבחר" : "פתיחה"}
-                  </span>
-                </button>
-              ) : null}
 
               {clientSearchQuery && filteredClients.length === 0 ? (
                 <div className="surface-card p-6 text-center text-muted-foreground rounded-2xl text-xs space-y-2">
