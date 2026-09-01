@@ -1099,6 +1099,7 @@ function RootContent() {
   const [openingCycleIndex, setOpeningCycleIndex] = useState(0);
   const [loadingRotationTick, setLoadingRotationTick] = useState(0);
   const openingCycleClaimedRef = useRef(false);
+  const [loadingPresentationReady, setLoadingPresentationReady] = useState(false);
   const loadingIndexes = loadingCycleIndexes(
     openingCycleIndex + loadingRotationTick,
     SIMPLE_LOADING_ILLUSTRATIONS.length,
@@ -1126,9 +1127,17 @@ function RootContent() {
     accountApprovalStatus !== "approved";
   const isLoadingScreen = authStatus === "loading" || isProfileHydrating || !minimumLoadingDone;
   const showExpressiveLoading =
+    loadingPresentationReady &&
     authStatus === "authenticated" &&
-    profileHydrationStatus === "ready" &&
     userProfile?.gender === "female";
+  const showPlainLoading = loadingPresentationReady && !showExpressiveLoading;
+
+  useEffect(() => {
+    // Keep SSR and the first browser render identical. The gender-specific
+    // loading surface starts after hydration, avoiding a spinner flash for
+    // women whose cached profile is already available in the browser.
+    setLoadingPresentationReady(true);
+  }, []);
 
   useEffect(() => {
     if (!isLoadingScreen) return;
@@ -1296,9 +1305,9 @@ function RootContent() {
                 </p>
                 <img className="loading-wordmark" src="/myroutine-logo.png" alt="MY routine" />
               </>
-            ) : (
+            ) : showPlainLoading ? (
               <LoadingSpinner label="טוען" />
-            )}
+            ) : null}
           </div>
         </div>
       ) : hasProfileHydrationError ? (
