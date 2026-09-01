@@ -4588,10 +4588,10 @@ html[data-keyboard-open] .nav-shell {
 .workout-report-bookmark {
   top: 5rem;
   right: 0;
-  min-height: 6.5rem;
-  width: 2rem;
-  border-right: 0;
-  border-radius: 0 0.75rem 0.75rem 0;
+  min-height: 5.25rem;
+  width: 1.75rem;
+  border-left: 0;
+  border-radius: 0.75rem 0 0 0.75rem;
   transform: none;
 }
 
@@ -4615,7 +4615,7 @@ html[data-keyboard-open] .nav-shell {
 
 .workout-report-bookmark span {
   writing-mode: vertical-rl;
-  font-size: 0.7rem;
+  font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.04em;
 }
