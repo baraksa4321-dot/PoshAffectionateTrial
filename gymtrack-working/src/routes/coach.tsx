@@ -39,6 +39,7 @@ import {
   saveExercise,
   saveWorkout,
   saveWorkoutInProgram,
+  deleteProgram,
   searchFoods,
   todayKey,
   uid,
@@ -2620,6 +2621,47 @@ export function CoachDashboardPage({
       return;
     }
     pullClientDataForCoach(selectedClientId).then(applyClientDetails);
+  };
+
+  const handleDeleteClientProgram = async (program: Program) => {
+    if (!isCoach || !selectedClientId) return;
+    setManagementError("");
+
+    if (isSelfSelected) {
+      deleteProgram(program.id);
+      setEditingProgramId((current) => (current === program.id ? null : current));
+      setEditingDayId(null);
+      setOpenWorkoutReportId(null);
+      return;
+    }
+
+    const { error: daysError } = await supabase
+      .from("program_days")
+      .delete()
+      .eq("program_id", program.id)
+      .eq("user_id", selectedClientId);
+
+    if (daysError) {
+      setManagementError(`מחיקת ימי האימון נכשלה: ${daysError.message}`);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("programs")
+      .delete()
+      .eq("id", program.id)
+      .eq("user_id", selectedClientId);
+
+    if (error) {
+      setManagementError(`מחיקת התוכנית נכשלה: ${error.message}`);
+      return;
+    }
+
+    setEditingProgramId((current) => (current === program.id ? null : current));
+    setEditingDayId(null);
+    setOpenWorkoutReportId(null);
+    const refreshedDetails = await pullClientDataForCoach(selectedClientId);
+    applyClientDetails(refreshedDetails);
   };
 
   // Add Program Day for Client
@@ -5495,16 +5537,36 @@ export function CoachDashboardPage({
                                   תרגילים
                                 </span>
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => setEditingProgramId(isProgActive ? null : prog.id)}
-                                 className={`shrink-0 rounded-full bg-primary/10 font-bold text-primary hover:bg-primary/20 ${
-                                   clientsOnly ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-[11px]"
-                                 }`}
-                              >
-                                <Edit2 className="h-3 w-3" />
-                                <span>{isProgActive ? "סגירה" : "עריכה"}</span>
-                              </button>
+                              <div className="flex shrink-0 items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setEditingProgramId(isProgActive ? null : prog.id)
+                                  }
+                                  className={`rounded-full bg-primary/10 font-bold text-primary hover:bg-primary/20 ${
+                                    clientsOnly
+                                      ? "px-2 py-1 text-[10px]"
+                                      : "px-3 py-1.5 text-[11px]"
+                                  }`}
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                  <span>{isProgActive ? "סגירה" : "עריכה"}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDeleteClientProgram(prog)}
+                                  className={`inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 font-bold text-destructive hover:bg-destructive/15 ${
+                                    clientsOnly
+                                      ? "px-2 py-1 text-[10px]"
+                                      : "px-3 py-1.5 text-[11px]"
+                                  }`}
+                                  aria-label={`מחק את התוכנית ${prog.name}`}
+                                  title="מחיקת התוכנית וכל ימי האימון שבה"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                  <span>מחק</span>
+                                </button>
+                              </div>
                             </div>
 
                             {(isProgActive || Boolean(progDays?.length)) && (
@@ -7384,7 +7446,7 @@ export function CoachDashboardPage({
                                                 </h3>
                                               </div>
                                               <div className="overflow-hidden rounded-2xl border border-primary/15 bg-primary/[0.025]">
-                                                <WorkoutWeeklyReportWeek
+                                                <WorkoutDailyReport
                                                   workout={dayItem}
                                                   history={clientDetails?.history ?? []}
                                                   exercises={store.exercises}
