@@ -4463,6 +4463,46 @@ export function CoachDashboardPage({
                           </div>
                         </div>
                         {selectedProfile.profile_exists !== false ? (
+                          <div className="mt-3 flex items-center gap-2 rounded-xl border border-purple-100 bg-purple-50 p-2">
+                            <div className="min-w-0 flex-1">
+                              <span className="block text-[10px] font-bold text-muted-foreground">
+                                שינוי תפקיד
+                              </span>
+                              <span className="text-[11px] text-purple-900">
+                                {selectedProfile.id === authUser?.id
+                                  ? "אי אפשר לשנות את התפקיד שלך"
+                                  : "עדכון דרך הרשאת בעלים"}
+                              </span>
+                            </div>
+                            <select
+                              aria-label={`שינוי תפקיד עבור ${profileDisplayName(selectedProfile)}`}
+                              value={selectedProfile.role ?? ""}
+                              disabled={
+                                selectedProfile.id === authUser?.id ||
+                                roleChangeUserId === selectedProfile.id
+                              }
+                              onChange={(event) => {
+                                const nextRole = event.target.value;
+                                if (
+                                  nextRole === "owner" ||
+                                  nextRole === "coach" ||
+                                  nextRole === "client"
+                                ) {
+                                  void handleOwnerChangeRole(selectedProfile.id, nextRole);
+                                }
+                              }}
+                              className="max-w-28 rounded-lg border border-purple-200 bg-white px-2 py-2 text-[11px] font-bold text-purple-900 outline-none focus:border-purple-500 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <option value="" disabled>
+                                לא ידוע
+                              </option>
+                              <option value="owner">בעלים</option>
+                              <option value="coach">מאמן</option>
+                              <option value="client">מתאמן</option>
+                            </select>
+                          </div>
+                        ) : null}
+                        {selectedProfile.profile_exists !== false ? (
                           <div className="mt-3">{renderOwnerCalorieToggle(selectedProfile)}</div>
                         ) : null}
                         {selectedProfile.profile_exists === false ? (
