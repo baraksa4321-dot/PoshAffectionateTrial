@@ -15,7 +15,18 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Copy, GripVertical, Pencil, Play, Plus, Save, Trash2, X } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  Copy,
+  GripVertical,
+  Pencil,
+  Play,
+  Plus,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
@@ -44,7 +55,7 @@ export const Route = createFileRoute("/programs/$programId")({
 function ProgramDetail() {
   const { programId } = Route.useParams();
   const navigate = useNavigate();
-  const { programs, workouts, userProfile } = useGym();
+  const { programs, workouts, history, userProfile } = useGym();
   const role = userProfile?.role;
   const gender = userProfile?.gender;
   const isCoach = role === "coach" || role === "owner";
@@ -204,6 +215,7 @@ function ProgramDetail() {
                     day={day}
                     index={index}
                     programId={program.id}
+                    completed={history.some((session) => session.workoutId === day.id)}
                     onRequestDelete={(id, name) => setPendingDelete({ id, name })}
                   />
                 ))}
@@ -262,11 +274,13 @@ function SortableDayCard({
   day,
   index,
   programId,
+  completed,
   onRequestDelete,
 }: {
   day: Workout;
   index: number;
   programId: string;
+  completed: boolean;
   onRequestDelete: (id: string, name: string) => void;
 }) {
   const { exercises } = useGym();
@@ -318,6 +332,16 @@ function SortableDayCard({
               : ""}
           </p>
         </Link>
+         {completed ? (
+           <span
+             className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-700"
+             title="האימון בוצע"
+             aria-label="האימון בוצע"
+           >
+             <Check className="h-3 w-3" strokeWidth={3} aria-hidden="true" />
+             בוצע
+           </span>
+         ) : null}
         <button
           type="button"
           onClick={goStart}

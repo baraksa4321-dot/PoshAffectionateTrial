@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
   Calendar,
+  Check,
   Copy,
   Dumbbell,
   Music2,
@@ -33,7 +34,7 @@ export const Route = createFileRoute("/programs/")({
 });
 
 function ProgramsPage() {
-  const { programs, workouts, userProfile } = useGym();
+  const { programs, workouts, history, userProfile } = useGym();
   const navigate = useNavigate();
   const role = userProfile?.role;
   const gender = userProfile?.gender;
@@ -151,12 +152,32 @@ function ProgramsPage() {
                 const w = workouts.find((workout) => workout.id === id);
                 return sum + (w?.items.length ?? 0);
               }, 0);
+              const completedDays = program.dayIds.filter((dayId) =>
+                history.some((session) => session.workoutId === dayId),
+              ).length;
               const programNote = visibleProgramNote(program.notes);
               return (
                 <article key={program.id} className="surface-card press p-4">
                   <div className="flex items-start gap-3.5">
-                    <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-sage-soft text-primary">
+                    <div className="relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-sage-soft text-primary">
                       <Calendar className="h-5 w-5" strokeWidth={2} />
+                      {completedDays > 0 ? (
+                        <span
+                          className="absolute -end-1 -top-1 grid h-5 w-5 place-items-center rounded-full border-2 border-background bg-emerald-600 text-white"
+                          title={
+                            completedDays === daysCount
+                              ? "כל ימי האימון בוצעו"
+                              : `${completedDays} ימי אימון בוצעו`
+                          }
+                          aria-label={
+                            completedDays === daysCount
+                              ? "כל ימי האימון בוצעו"
+                              : `${completedDays} ימי אימון בוצעו`
+                          }
+                        >
+                          <Check className="h-3 w-3" strokeWidth={3} aria-hidden="true" />
+                        </span>
+                      ) : null}
                     </div>
                     <div className="min-w-0 flex-1 text-start">
                       <Link
@@ -170,6 +191,16 @@ function ProgramsPage() {
                         <p className="mt-0.5 text-[12.5px] font-medium text-muted-foreground">
                           {daysCount} ימי אימון · {exerciseCount} תרגילים
                         </p>
+                         {completedDays > 0 ? (
+                           <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
+                             <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" />
+                             {completedDays === daysCount
+                               ? "כל האימונים בוצעו"
+                               : `${completedDays} אימון${completedDays === 1 ? "" : "ים"} בוצע${
+                                   completedDays === 1 ? "" : "ו"
+                                 }`}
+                           </p>
+                         ) : null}
                       </Link>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
