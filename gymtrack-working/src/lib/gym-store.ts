@@ -1139,9 +1139,20 @@ export function refreshCurrentUserData(force = false) {
 function startUserHydration(userId: string, cachedData = loadCachedDataForUser(userId)) {
   if (hydrationInFlight?.userId === userId) return hydrationInFlight.promise;
 
-  const promise = handleUserLogin(userId, cachedData).finally(() => {
-    if (hydrationInFlight?.promise === promise) hydrationInFlight = null;
-  });
+  const promise = handleUserLogin(userId, cachedData)
+    .catch((error: unknown) => {
+      // Keep an unexpected pull exception from leaving the root route in its
+      // loading state forever. Expected pull failures already return a
+      // structured result and are handled inside handleUserLogin.
+      if (currentUser?.id !== userId) return;
+      profileHydrationStatus = "error";
+      profileHydrationError = error instanceof Error ? error.message : "טעינת פרטי החשבון נכשלה";
+      syncStatus = "error";
+      notifyListeners();
+    })
+    .finally(() => {
+      if (hydrationInFlight?.promise === promise) hydrationInFlight = null;
+    });
   hydrationInFlight = { userId, promise };
   return promise;
 }
