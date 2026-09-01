@@ -745,6 +745,26 @@ function Dashboard() {
           </div>
         )}
 
+        {/* Weekly Activity Overview */}
+        <section {...homeCardProps("activity")} className="mt-5">
+          <SectionHeader title="פעילות השבוע" subtitle={`${thisWeek.length} אימונים בוצעו השבוע`} />
+          <div className="grid grid-cols-3 gap-2.5">
+            <StatTile label="אימונים" value={String(thisWeek.length)} icon={Flame} tone="rose" />
+            <StatTile
+              label="נפח ק״ג"
+              value={volume >= 1000 ? `${(volume / 1000).toFixed(1)}k` : String(Math.round(volume))}
+              icon={TrendingUp}
+              tone="sage"
+            />
+            <StatTile
+              label="זמן אימון"
+              value={`${totalDurationMin}m`}
+              icon={Dumbbell}
+              tone="cream"
+            />
+          </div>
+        </section>
+
         {/* Weekly Weigh-In & Monthly Check-In Cards */}
         <section {...homeCardProps("check-in")} className="mt-5 text-start space-y-2.5">
           <SectionHeader title="מעקב משקל וצ'ק-אין חודשי" subtitle="דיווח למאמן" />
@@ -780,26 +800,6 @@ function Dashboard() {
                 )}
               </p>
             </div>
-          </div>
-        </section>
-
-        {/* 4. Weekly Activity Overview */}
-        <section {...homeCardProps("activity")} className="mt-5">
-          <SectionHeader title="פעילות השבוע" subtitle={`${thisWeek.length} אימונים בוצעו השבוע`} />
-          <div className="grid grid-cols-3 gap-2.5">
-            <StatTile label="אימונים" value={String(thisWeek.length)} icon={Flame} tone="rose" />
-            <StatTile
-              label="נפח ק״ג"
-              value={volume >= 1000 ? `${(volume / 1000).toFixed(1)}k` : String(Math.round(volume))}
-              icon={TrendingUp}
-              tone="sage"
-            />
-            <StatTile
-              label="זמן אימון"
-              value={`${totalDurationMin}m`}
-              icon={Dumbbell}
-              tone="cream"
-            />
           </div>
         </section>
 
