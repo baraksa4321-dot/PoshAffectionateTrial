@@ -2680,14 +2680,11 @@ export function CoachDashboardPage({
     setManagementError("");
     try {
       if (isCurrentOwnerProfile) {
-        const { error } = await supabase
-          .from("profiles")
-          .update({
-            coach_id: newCoachId || null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", profile.id);
+        const { data, error } = await supabase.rpc("assign_owner_profile_coach", {
+          new_coach_id: newCoachId,
+        });
         if (error) throw error;
+        if (data !== true) throw new Error("בחירת המאמן לא התקבלה במסד הנתונים");
         setAllProfiles((current) =>
           current.map((candidate) =>
             candidate.id === profile.id ? { ...candidate, coach_id: newCoachId || null } : candidate,
