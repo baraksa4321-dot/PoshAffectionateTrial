@@ -1079,7 +1079,7 @@ html:not(.night-mode) .nav-shell {
   display: flex;
   min-width: 0;
   align-self: stretch;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 1.18 / 1;
 }
 
 .dashboard-editorial-shell .home-feature-item > .ink-card,
@@ -1119,6 +1119,11 @@ html:not(.night-mode) .nav-shell {
   border-radius: 0.9rem;
   background: color-mix(in srgb, var(--surface-2) 72%, var(--surface));
   border-color: color-mix(in srgb, var(--primary) 18%, var(--border));
+}
+
+.dashboard-editorial-shell section[data-home-card-id="activity"] .surface-card {
+  min-height: 78px;
+  padding-block: 0.65rem;
 }
 
 .dashboard-editorial-shell .home-feature-section + .surface-card {

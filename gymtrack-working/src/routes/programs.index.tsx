@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { CardioTracker } from "@/components/CardioTracker";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
 import { Overlay } from "@/components/ui-app/Overlay";
 import {
@@ -271,6 +272,8 @@ function ProgramsPage() {
           />
         )}
       </section>
+
+      <CardioTracker />
 
       {showPlaylistMenu ? (
         <Overlay
