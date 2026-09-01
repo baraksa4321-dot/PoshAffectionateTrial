@@ -2472,6 +2472,18 @@ html.night-mode .auth-panel {
   object-fit: contain;
 }
 
+.loading-initial-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+}
+
+.loading-initial-state .loading-spinner {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-width: 2px;
+}
+
 .loading-micro-stage {
   position: relative;
   display: grid;

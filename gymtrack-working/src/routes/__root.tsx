@@ -1021,7 +1021,7 @@ function LegacyLoadingIllustration({ variant }: { variant: number }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    scripts: [{ async: true, src: "/boot-watchdog.js" }],
+    scripts: [{ src: "/boot-watchdog.js" }],
     meta: [
       { charSet: "utf-8" },
       {
@@ -1455,7 +1455,10 @@ function RootContent() {
             ) : showPlainLoading ? (
               <LoadingSpinner label="טוען" />
             ) : (
-              <img className="loading-initial-wordmark" src="/myroutine-logo.png" alt="MY routine" />
+              <div className="loading-initial-state">
+                <LoadingSpinner label="טוען" />
+                <img className="loading-initial-wordmark" src="/myroutine-logo.png" alt="MY routine" />
+              </div>
             )}
           </div>
         </div>

@@ -1,5 +1,10 @@
 (() => {
   const recoveryKey = "__myroutine_boot_recovery_v1";
+  const isPreviewHost =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.hostname.endsWith(".replit.dev");
+  const watchdogDelay = isPreviewHost ? 1_500 : 12_000;
 
   window.setTimeout(async () => {
     if (window.__MY_ROUTINE_BOOTED__) return;
@@ -31,5 +36,5 @@
     }
 
     if (fallback instanceof HTMLElement) fallback.hidden = false;
-  }, 12_000);
+  }, watchdogDelay);
 })();
