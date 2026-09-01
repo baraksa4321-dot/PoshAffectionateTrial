@@ -26,6 +26,7 @@ export type PullResult =
   { success: true; data: GymData } | { success: false; data: GymData; error: string };
 
 export type CoachClientData = {
+  exercises: Exercise[];
   programs: Program[];
   workouts: Workout[];
   nutritionDays: NutritionDay[];
@@ -1361,6 +1362,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
   try {
     const [
       profileResult,
+      customExercisesResult,
       programsResult,
       programDaysResult,
       nutritionResult,
@@ -1369,6 +1371,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       cardioResult,
     ] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", clientId).maybeSingle(),
+      supabase.from("custom_exercises").select("*").eq("user_id", clientId),
       supabase.from("programs").select("*").eq("user_id", clientId),
       supabase.from("program_days").select("*").eq("user_id", clientId),
       supabase
@@ -1415,6 +1418,10 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     const { data: dbCardioLogs, error: cardioError } = cardioResult;
     if (cardioError) {
       console.warn(`[Optional client cardio pull skipped]: ${cardioError.message}`);
+    }
+    const { data: dbCustomExercises, error: customExercisesError } = customExercisesResult;
+    if (customExercisesError) {
+      console.warn(`[Optional client custom exercises pull skipped]: ${customExercisesError.message}`);
     }
 
     const workoutsMap = new Map<string, Workout>();
@@ -1497,8 +1504,25 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       intensity: row.intensity || undefined,
       calories: Number(row.calories ?? 0),
     }));
+    const exerciseList: Exercise[] = (dbCustomExercises || []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      muscleGroup: row.muscle_group,
+      muscleGroups: [row.muscle_group],
+      category: row.category || "מורכב",
+      equipment: row.equipment || "מוט",
+      description: row.description || "",
+      instructions: row.instructions || "",
+      videoUrl: row.video_url || "",
+      videoUrls: Array.isArray(row.video_urls) ? row.video_urls : undefined,
+      videoMaleUrl: row.video_male_url || undefined,
+      videoFemaleUrl: row.video_female_url || undefined,
+      images: [],
+      notes: "",
+    }));
 
     return {
+      exercises: exerciseList,
       programs: programsList,
       workouts: Array.from(workoutsMap.values()),
       nutritionDays: nutritionList,
@@ -1528,6 +1552,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     const error = err instanceof Error && err.message ? err.message : "Client data pull failed";
     console.error("[Pull Client Data Error]:", error);
     return {
+      exercises: [],
       programs: [],
       workouts: [],
       nutritionDays: [],

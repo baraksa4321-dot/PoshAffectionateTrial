@@ -65,6 +65,7 @@ import { exerciseDisplayName } from "../lib/exercise-library";
 import { loadCoachMessages, sendCoachMessage } from "../lib/coach-messages";
 import {
   getNextWorkoutReportWeekOffset,
+  getWorkoutReportSessionForDate,
   getWorkoutReportSessions,
   getWorkoutSessionsForDate,
   getWorkoutReportWeekDates,
@@ -261,15 +262,23 @@ function youtubeEmbedUrl(source: string): string | null {
 
     if (hostname === "youtu.be") {
       videoId = url.pathname.slice(1);
-    } else if (hostname === "youtube.com" || hostname === "m.youtube.com") {
+    } else if (
+      hostname === "youtube.com" ||
+      hostname === "m.youtube.com" ||
+      hostname === "youtube-nocookie.com"
+    ) {
       if (url.pathname === "/watch") {
         videoId = url.searchParams.get("v") ?? "";
-      } else if (url.pathname.startsWith("/shorts/") || url.pathname.startsWith("/embed/")) {
+      } else if (
+        url.pathname.startsWith("/shorts/") ||
+        url.pathname.startsWith("/embed/") ||
+        url.pathname.startsWith("/live/")
+      ) {
         videoId = url.pathname.split("/")[2] ?? "";
       }
     }
 
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    return videoId ? `https://www.youtube-nocookie.com/embed/${videoId}` : null;
   } catch {
     return null;
   }
@@ -291,6 +300,75 @@ function exerciseDemoVideoSources(exercise: Exercise | undefined): string[] {
   );
 }
 
+function WorkoutVideoPlayer({
+  source,
+  title,
+  className,
+}: {
+  source: string;
+  title: string;
+  className?: string | undefined;
+}) {
+  const [hasError, setHasError] = useState(false);
+  const embedUrl = youtubeEmbedUrl(source);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [source]);
+
+  if (hasError) {
+    return (
+      <div className="space-y-1.5 rounded-lg bg-black p-3 text-center text-[11px] text-white">
+        <p>לא ניתן להציג את הסרטון בתוך האפליקציה.</p>
+        <a
+          href={source}
+          target="_blank"
+          rel="noreferrer"
+          className="font-bold text-white underline underline-offset-2"
+        >
+          פתיחת הסרטון בחלון חדש
+        </a>
+      </div>
+    );
+  }
+
+  if (embedUrl) {
+    return (
+      <div className={className}>
+        <iframe
+          src={embedUrl}
+          title={title}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="strict-origin-when-cross-origin"
+          className="aspect-video w-full"
+        />
+        <a
+          href={source}
+          target="_blank"
+          rel="noreferrer"
+          className="block bg-black px-2 py-1.5 text-center text-[10px] font-bold text-white underline underline-offset-2"
+        >
+          פתיחת הסרטון ב־YouTube
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <video
+      src={source}
+      controls
+      playsInline
+      preload="metadata"
+      onError={() => setHasError(true)}
+      className={className ?? "max-h-64 w-full object-contain"}
+      aria-label={title}
+    />
+  );
+}
+
 function WorkoutExerciseDemoVideos({ exercise }: { exercise: Exercise | undefined }) {
   const sources = exerciseDemoVideoSources(exercise);
   const exerciseName = exercise?.name || "תרגיל";
@@ -307,24 +385,11 @@ function WorkoutExerciseDemoVideos({ exercise }: { exercise: Exercise | undefine
           const embedUrl = youtubeEmbedUrl(source);
           return (
             <div key={`${source}-${index}`} className="overflow-hidden rounded-lg bg-black">
-              {embedUrl ? (
-                <iframe
-                  src={embedUrl}
-                  title={`סרטון הדגמה ${index + 1} עבור ${exerciseName}`}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  className="aspect-video w-full"
-                />
-              ) : (
-                <video
-                  src={source}
-                  controls
-                  playsInline
-                  preload="metadata"
-                  className="max-h-64 w-full object-contain"
-                  aria-label={`סרטון הדגמה ${index + 1} עבור ${exerciseName}`}
-                />
-              )}
+              <WorkoutVideoPlayer
+                source={source}
+                title={`סרטון הדגמה ${index + 1} עבור ${exerciseName}`}
+                className={embedUrl ? undefined : "max-h-64 w-full object-contain"}
+              />
             </div>
           );
         })}
@@ -769,10 +834,11 @@ function WorkoutDailyReport({
 }) {
   const [reportDate, setReportDate] = useState(() => reportDateKey(new Date()));
   const today = reportDateKey(new Date());
-  const sessions = useMemo(
-    () => getWorkoutReportSessions(history, workout, [reportDate]),
+  const session = useMemo(
+    () => getWorkoutReportSessionForDate(history, workout, reportDate),
     [history, reportDate, workout],
   );
+  const sessions = session ? [session] : [];
   const exerciseRows = workout.items.map((item) => {
     const entries = sessions.flatMap((session) =>
       session.entries
@@ -832,12 +898,13 @@ function WorkoutDailyReport({
       <div className="flex items-center gap-2 rounded-xl bg-white/80 p-2" dir="ltr">
         <button
           type="button"
-          onClick={() => setReportDate((date) => reportShiftDate(date, -1))}
+          onClick={() => setReportDate((date) => reportShiftDate(date, 1))}
           className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border text-ink transition-colors hover:border-primary hover:text-primary"
-          aria-label="היום הקודם"
-          title="היום הקודם"
+          aria-label="היום הבא"
+          title="היום הבא"
+          disabled={reportDate >= today}
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4" />
         </button>
         <div className="relative h-9 min-w-0 flex-1 overflow-hidden rounded-lg border border-border bg-white">
           <span
@@ -862,13 +929,12 @@ function WorkoutDailyReport({
         </div>
         <button
           type="button"
-          disabled={reportDate >= today}
-          onClick={() => setReportDate((date) => reportShiftDate(date, 1))}
+          onClick={() => setReportDate((date) => reportShiftDate(date, -1))}
           className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border text-ink transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-30"
-          aria-label="היום הבא"
-          title="היום הבא"
+          aria-label="היום הקודם"
+          title="היום הקודם"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
@@ -876,7 +942,7 @@ function WorkoutDailyReport({
         <div className="flex items-center justify-between gap-2">
           <strong className="text-ink">{workout.name || "אימון"}</strong>
           <span className="text-muted-foreground">
-            {sessions.length > 0 ? `${sessions.length} ביצועים בתאריך` : "אין ביצוע בתאריך"}
+            {sessions.length > 0 ? "אימון אחד בתאריך" : "אין ביצוע בתאריך"}
           </span>
         </div>
         {sessions.length > 0 ? (
@@ -947,13 +1013,16 @@ function WorkoutDailyReport({
                             הערה: {entry.feedback?.notes?.trim() || entry.notes.trim()}
                           </p>
                         ) : null}
-                        {entry.videoUrl ? (
-                          <video
-                            src={entry.videoUrl}
-                            controls
-                            preload="metadata"
+                        {entry.videoUrl && !entry.videoUrl.startsWith("blob:") ? (
+                          <WorkoutVideoPlayer
+                            source={entry.videoUrl}
+                            title={`סרטון ביצוע עבור ${entry.exerciseName || "תרגיל"}`}
                             className="mt-1.5 max-h-52 w-full rounded-lg bg-black object-contain"
                           />
+                        ) : entry.videoUrl?.startsWith("blob:") ? (
+                          <p className="mt-1.5 rounded-lg bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-900">
+                            הסרטון עדיין בתהליך העלאה ולא זמין לצפייה כאן.
+                          </p>
                         ) : null}
                       </div>
                     ))
@@ -1878,6 +1947,7 @@ export function CoachDashboardPage({
   useEffect(() => {
     if (!isSelfSelected || !selectedClientId) return;
     setClientDetails({
+      exercises: store.exercises,
       programs: store.programs,
       workouts: store.workouts,
       nutritionDays: store.nutritionDays,
@@ -1892,6 +1962,7 @@ export function CoachDashboardPage({
   }, [
     isSelfSelected,
     selectedClientId,
+    store.exercises,
     store.cardioLogs,
     store.history,
     store.nutritionDays,
@@ -7558,7 +7629,13 @@ export function CoachDashboardPage({
                                                 <WorkoutDailyReport
                                                   workout={dayItem}
                                                   history={clientDetails?.history ?? []}
-                                                  exercises={store.exercises}
+                                                  exercises={Array.from(
+                                                    new Map(
+                                                      [...store.exercises, ...(clientDetails?.exercises ?? [])].map(
+                                                        (exercise) => [exercise.id, exercise],
+                                                      ),
+                                                    ).values(),
+                                                  )}
                                                 />
                                               </div>
                                             </section>

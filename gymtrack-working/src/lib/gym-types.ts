@@ -563,6 +563,19 @@ export function getWorkoutReportSessions(
   );
 }
 
+/**
+ * Daily reports intentionally show one saved execution. History can contain
+ * multiple legitimate executions on the same date, but the daily coach view
+ * is a compact review and should use the newest one.
+ */
+export function getWorkoutReportSessionForDate(
+  history: HistorySession[],
+  workout: Workout,
+  reportDate: string,
+): HistorySession | undefined {
+  return getWorkoutReportSessions(history, workout, [reportDate])[0];
+}
+
 export const MUSCLE_GROUPS = [
   "חזה",
   "חזה עליון",

@@ -3,6 +3,7 @@ import {
   dedupeHistorySessions,
   dedupeWorkoutItems,
   getNextWorkoutReportWeekOffset,
+  getWorkoutReportSessionForDate,
   getWorkoutReportSessions,
   getWorkoutReportWeekDates,
   getWorkoutSessionsForDate,
@@ -182,6 +183,19 @@ describe("workout report week navigation", () => {
         ({ id }) => id,
       ),
     ).toEqual(["second-session", "retry-copy"]);
+  });
+
+  test("daily report selects only the newest execution for a date", () => {
+    expect(
+      getWorkoutReportSessionForDate(
+        [
+          session("earlier", "2026-08-26T09:00:00.000Z"),
+          session("later", "2026-08-26T12:00:00.000Z"),
+        ],
+        workout,
+        "2026-08-26",
+      )?.id,
+    ).toBe("later");
   });
 
   test("keeps only one copy of an exercise in a workout plan", () => {
