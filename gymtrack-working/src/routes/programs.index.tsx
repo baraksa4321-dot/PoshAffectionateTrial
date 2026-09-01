@@ -25,6 +25,7 @@ import {
 import { createProgram, deleteProgram, duplicateProgram, useGym } from "@/lib/gym-store";
 import { genderText } from "@/lib/gender-copy";
 import { BUILT_IN_MUSIC_GENRES, type BuiltInMusicGenre } from "@/lib/music-library";
+import { visibleProgramNote } from "@/lib/gym-types";
 
 export const Route = createFileRoute("/programs/")({
   head: () => ({ meta: [{ title: "תוכניות אימון — MY routine" }] }),
@@ -150,6 +151,7 @@ function ProgramsPage() {
                 const w = workouts.find((workout) => workout.id === id);
                 return sum + (w?.items.length ?? 0);
               }, 0);
+              const programNote = visibleProgramNote(program.notes);
               return (
                 <article key={program.id} className="surface-card press p-4">
                   <div className="flex items-start gap-3.5">
@@ -201,9 +203,9 @@ function ProgramsPage() {
                       </Link>
                     </div>
                   </div>
-                  {program.notes ? (
+                  {programNote ? (
                     <p className="mt-3 line-clamp-2 text-start text-[12.5px] leading-relaxed text-muted-foreground">
-                      {program.notes}
+                      {programNote}
                     </p>
                   ) : null}
                 </article>

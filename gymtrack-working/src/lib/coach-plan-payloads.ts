@@ -5,7 +5,7 @@ export function clientProgramInsertPayload(id: string, userId: string, name: str
     id,
     user_id: userId,
     name,
-    description: "תוכנית נבנתה על ידי המאמן",
+    description: "",
   };
 }
 

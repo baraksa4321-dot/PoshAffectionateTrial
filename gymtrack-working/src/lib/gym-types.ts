@@ -430,6 +430,14 @@ export function reportDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+export function visibleProgramNote(notes?: string | null): string {
+  const value = notes?.trim() ?? "";
+  return value === "תוכנית נבנתה על ידי המאמן" ||
+    value === "תוכנית אישית שנבנתה במרחב הניהול"
+    ? ""
+    : value;
+}
+
 export function reportSessionDateKey(sessionDate: string): string {
   if (/^\d{4}-\d{2}-\d{2}$/.test(sessionDate)) return sessionDate;
 

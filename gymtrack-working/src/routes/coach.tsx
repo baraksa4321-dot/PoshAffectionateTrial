@@ -750,11 +750,6 @@ function WorkoutWeeklyReportWeek({
           הערת תכנון: {workout.notes.trim()}
         </p>
       ) : null}
-      {!reportNotes.length && !hasEntryNotes && !hasVideos ? (
-        <p className="rounded-lg bg-white/70 px-2 py-1 text-center text-[10px] text-muted-foreground">
-          אין הערות, משוב או סרטוני ביצוע נוספים בשבוע הזה.
-        </p>
-      ) : null}
     </section>
   );
 }
@@ -2583,7 +2578,7 @@ export function CoachDashboardPage({
       const program: Program = {
         id: programId,
         name: newProgramName.trim(),
-        notes: "תוכנית אישית שנבנתה במרחב הניהול",
+        notes: "",
         dayIds: [],
       };
       saveProgram(program);

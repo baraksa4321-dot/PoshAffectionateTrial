@@ -26,6 +26,7 @@ import {
   SectionHeader,
 } from "@/components/ui-app/primitives";
 import { genderText } from "@/lib/gender-copy";
+import { visibleProgramNote } from "@/lib/gym-types";
 import {
   deleteWorkout,
   duplicateWorkoutDay,
@@ -150,9 +151,11 @@ function ProgramDetail() {
             </button>
           </div>
         </div>
-      ) : program.notes ? (
+      ) : visibleProgramNote(program.notes) ? (
         <div className="ink-card-soft p-4">
-          <p className="text-start text-[13px] leading-relaxed text-ink-soft">{program.notes}</p>
+          <p className="text-start text-[13px] leading-relaxed text-ink-soft">
+            {visibleProgramNote(program.notes)}
+          </p>
         </div>
       ) : null}
 

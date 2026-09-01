@@ -112,18 +112,55 @@ type SavedSessionFeedback = {
   exerciseFeedback: Record<number, ExerciseFeedbackDraft>;
 };
 
-function loadSavedSessionFeedback(workoutId: string): SavedSessionFeedback {
+function isFeedbackRating(
+  value: unknown,
+): value is NonNullable<ExerciseFeedbackDraft["rating"]> {
+  return value === "easy" || value === "appropriate" || value === "difficult";
+}
+
+function latestHistoryFeedback(
+  history: HistorySession[],
+  workoutId: string,
+): SavedSessionFeedback {
   const empty: SavedSessionFeedback = {
     discomfortNotes: "",
     exerciseFeedback: {},
   };
-  if (typeof window === "undefined") return empty;
+  const latestSession = history
+    .filter((session) => session.workoutId === workoutId)
+    .sort((a, b) => Date.parse(b.date) - Date.parse(a.date))[0];
+  if (!latestSession) return empty;
+
+  const exerciseFeedback: Record<number, ExerciseFeedbackDraft> = {};
+  latestSession.entries.forEach((entry, index) => {
+    if (!entry.feedback) return;
+    exerciseFeedback[index] = {
+      ...(isFeedbackRating(entry.feedback.rating) ? { rating: entry.feedback.rating } : {}),
+      notes: entry.feedback.notes ?? "",
+    };
+  });
+
+  return {
+    ...(isFeedbackRating(latestSession.difficultyRating)
+      ? { difficultyRating: latestSession.difficultyRating }
+      : {}),
+    discomfortNotes: latestSession.discomfortNotes ?? "",
+    exerciseFeedback,
+  };
+}
+
+function loadSavedSessionFeedback(
+  workoutId: string,
+  history: HistorySession[] = [],
+): SavedSessionFeedback {
+  const historyFallback = latestHistoryFeedback(history, workoutId);
+  if (typeof window === "undefined") return historyFallback;
   try {
     const raw = window.localStorage.getItem(ACTIVE_SESSION_FEEDBACK_KEY(workoutId));
-    if (!raw) return empty;
+    if (!raw) return historyFallback;
     try {
       const parsed = JSON.parse(raw) as Partial<SavedSessionFeedback>;
-      if (!parsed || typeof parsed !== "object") return empty;
+      if (!parsed || typeof parsed !== "object") return historyFallback;
       const difficultyRating =
         parsed.difficultyRating === "easy" ||
         parsed.difficultyRating === "appropriate" ||
@@ -140,10 +177,10 @@ function loadSavedSessionFeedback(workoutId: string): SavedSessionFeedback {
       };
     } catch {
       // Support feedback saved by the previous version as plain text.
-      return { ...empty, discomfortNotes: raw };
+      return { ...historyFallback, discomfortNotes: raw };
     }
   } catch {
-    return empty;
+    return historyFallback;
   }
 }
 
@@ -188,6 +225,7 @@ function Session() {
   const regularWorkoutSnapshot = useRef(workout);
   const bodyweightModeWorkoutIdRef = useRef<string | null>(null);
   const hydratedEntriesWorkoutIdRef = useRef<string | null>(null);
+  const hydratedFeedbackWorkoutIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!workout) return;
@@ -215,9 +253,9 @@ function Session() {
   );
   const [difficultyRating, setDifficultyRating] = useState<
     "easy" | "appropriate" | "difficult"
-  >(() => loadSavedSessionFeedback(workoutId).difficultyRating ?? "appropriate");
+  >(() => loadSavedSessionFeedback(workoutId, history).difficultyRating ?? "appropriate");
   const [feedbackDraft, setFeedbackDraft] = useState(() => {
-    const saved = loadSavedSessionFeedback(workoutId);
+    const saved = loadSavedSessionFeedback(workoutId, history);
     return {
       workoutId,
       discomfortNotes: saved.discomfortNotes,
@@ -228,7 +266,7 @@ function Session() {
   const setDiscomfortNotes = (notes: string) =>
     setFeedbackDraft({ workoutId, discomfortNotes: notes });
   const [exerciseFeedback, setExerciseFeedback] = useState<Record<number, ExerciseFeedbackDraft>>(
-    () => loadSavedSessionFeedback(workoutId).exerciseFeedback,
+    () => loadSavedSessionFeedback(workoutId, history).exerciseFeedback,
   );
 
   const [replacingIndex, setReplacingIndex] = useState<number | null>(null);
@@ -356,7 +394,7 @@ function Session() {
 
   const [entries, setEntries] = useState<HistoryEntry[]>(initial);
   useEffect(() => {
-    const saved = loadSavedSessionFeedback(workoutId);
+    const saved = loadSavedSessionFeedback(workoutId, history);
     setFeedbackDraft({
       workoutId,
       discomfortNotes: saved.discomfortNotes,
@@ -364,6 +402,20 @@ function Session() {
     setDifficultyRating(saved.difficultyRating ?? "appropriate");
     setExerciseFeedback(saved.exerciseFeedback);
   }, [workoutId]);
+
+  useEffect(() => {
+    if (hydratedFeedbackWorkoutIdRef.current === workoutId) return;
+    if (!history.some((session) => session.workoutId === workoutId)) return;
+
+    const saved = loadSavedSessionFeedback(workoutId, history);
+    setFeedbackDraft({
+      workoutId,
+      discomfortNotes: saved.discomfortNotes,
+    });
+    setDifficultyRating(saved.difficultyRating ?? "appropriate");
+    setExerciseFeedback(saved.exerciseFeedback);
+    hydratedFeedbackWorkoutIdRef.current = workoutId;
+  }, [history, workoutId]);
 
   useEffect(() => {
     setEntries((current) =>
@@ -1651,14 +1703,12 @@ function Session() {
         title="לצאת מהאימון?"
         description={genderText(
           gender,
-          "הסטים שתיעדת יישמרו רק אם לא תנקי אותם.",
-          "הסטים שתיעדת יישמרו רק אם לא תנקה אותם.",
+          "ההתקדמות והמשוב יישמרו במכשיר כדי שתוכלי להמשיך מאוחר יותר.",
+          "ההתקדמות והמשוב יישמרו במכשיר כדי שתוכל להמשיך מאוחר יותר.",
         )}
-        confirmLabel={genderText(gender, "צאי בלי לשמור", "צא בלי לשמור")}
+        confirmLabel={genderText(gender, "צאי ושמרי להמשך", "צא ושמור להמשך")}
         cancelLabel={genderText(gender, "המשיכי באימון", "המשך באימון")}
-        destructive
         onConfirm={() => {
-          clearSavedSession();
           setPendingExit(false);
           navigate({ to: "/programs" });
         }}
