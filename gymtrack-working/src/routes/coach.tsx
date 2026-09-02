@@ -119,6 +119,38 @@ type ExerciseBuilderReturnContext = {
   scrollY: number;
 };
 
+const sideLoadedEquipment = new Set([
+  "מוט",
+  "מוט w / ez",
+  "סמית' משין",
+  "מכונה",
+  "barbell",
+  "smith machine",
+  "machine",
+]);
+
+function isSideLoadedEquipment(equipment?: string | null) {
+  const normalized = equipment?.trim().toLocaleLowerCase() ?? "";
+  return (
+    sideLoadedEquipment.has(normalized) ||
+    normalized.startsWith("מוט") ||
+    normalized.includes("smith") ||
+    normalized.includes("סמית") ||
+    normalized.includes("מכונה")
+  );
+}
+
+function weightInputLabel(equipment?: string | null, includeUnit = true) {
+  if (isSideLoadedEquipment(equipment)) {
+    return includeUnit ? "משקל לכל צד (ק״ג)" : "משקל לכל צד";
+  }
+  return includeUnit ? "משקל (ק״ג)" : "משקל";
+}
+
+function weightValueUnit(equipment?: string | null) {
+  return isSideLoadedEquipment(equipment) ? "ק״ג לכל צד" : "ק״ג";
+}
+
 function SearchPickerField({
   label,
   value,
@@ -6228,7 +6260,10 @@ export function CoachDashboardPage({
                                                                   : ""
                                                               } · `
                                                             : ""}
-                                                          {exItem.targetWeight || exItem.weight} ק״ג
+                                                           {exItem.targetWeight || exItem.weight}{" "}
+                                                           {weightValueUnit(
+                                                             exItem.equipment || exMeta?.equipment,
+                                                           )}
                                                           · {exItem.sets} סטים ×{" "}
                                                           {exItem.repMin || exItem.reps}
                                                           {exItem.repMax
@@ -6546,7 +6581,10 @@ export function CoachDashboardPage({
                                                         <div className="mt-4 space-y-5 border-t border-border/50 pt-4">
                                                           <div className="grid grid-cols-3 gap-2 border-b border-border/50 pb-4">
                                                             <label className="text-center text-[9px] font-bold text-muted-foreground">
-                                                              משקל יעד
+                                                              {weightInputLabel(
+                                                                exItem.equipment || exMeta?.equipment,
+                                                                false,
+                                                              )}
                                                               <FreeTextInput
                                                                 defaultValue={
                                                                   exItem.targetWeight ||
@@ -6764,7 +6802,7 @@ export function CoachDashboardPage({
                                                                 />
                                                               </label>
                                                               <label className="text-center text-[9px] font-bold text-amber-900">
-                                                                משקל חימום
+                                                                {weightInputLabel(selectedEquipment, false)}
                                                                 <FreeTextInput
                                                                   step={0.5}
                                                                   min={0}
@@ -6816,7 +6854,11 @@ export function CoachDashboardPage({
                                                                 </p>
                                                                 <div className="grid grid-cols-2 gap-1.5">
                                                                   <label className="text-center text-[9px] font-bold text-primary">
-                                                                    משקל דרופ 1
+                                                                    {weightInputLabel(
+                                                                      selectedEquipment,
+                                                                      false,
+                                                                    )}{" "}
+                                                                    דרופ 1
                                                                     <FreeTextInput
                                                                       step={0.5}
                                                                       min={0}
@@ -6866,7 +6908,11 @@ export function CoachDashboardPage({
                                                                     />
                                                                   </label>
                                                                   <label className="text-center text-[9px] font-bold text-primary">
-                                                                    משקל דרופ 2
+                                                                    {weightInputLabel(
+                                                                      selectedEquipment,
+                                                                      false,
+                                                                    )}{" "}
+                                                                    דרופ 2
                                                                     <FreeTextInput
                                                                       step={0.5}
                                                                       min={0}
@@ -6928,7 +6974,15 @@ export function CoachDashboardPage({
                                                                 {renderSupersetPartnerSearch()}
                                                                 <div className="mt-2 grid grid-cols-3 gap-1.5">
                                                                   <label className="text-center text-[9px] font-bold text-violet-900">
-                                                                    משקל תרגיל 2
+                                                                     {weightInputLabel(
+                                                                       store.exercises.find(
+                                                                         (exercise) =>
+                                                                           exercise.id ===
+                                                                           supersetPartnerId,
+                                                                       )?.equipment,
+                                                                       false,
+                                                                     )}{" "}
+                                                                     תרגיל 2
                                                                     <FreeTextInput
                                                                       min={0}
                                                                       step={0.5}
@@ -7386,7 +7440,7 @@ export function CoachDashboardPage({
                                                           mode === "warmup" ? (
                                                             <div className="grid grid-cols-2 gap-2">
                                                               <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                                משקל (ק״ג)
+                                                                {weightInputLabel(selectedEquipment)}
                                                                 <FreeTextInput
                                                                   min={0}
                                                                   step={0.5}
@@ -7500,7 +7554,10 @@ export function CoachDashboardPage({
                                                               </p>
                                                               <div className="mb-3 grid grid-cols-3 gap-1.5">
                                                                  <FreeTextInput
-                                                                   aria-label="תרגיל ראשון משקל"
+                                                                  aria-label={`תרגיל ראשון ${weightInputLabel(
+                                                                    selectedEquipment,
+                                                                    false,
+                                                                  )}`}
                                                                   min={0}
                                                                   step={0.5}
                                                                   value={weight}
@@ -7515,7 +7572,10 @@ export function CoachDashboardPage({
                                                                       return next;
                                                                     });
                                                                   }}
-                                                                  placeholder="משקל"
+                                                                   placeholder={weightInputLabel(
+                                                                     selectedEquipment,
+                                                                     false,
+                                                                   )}
                                                                   className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
                                                                 />
                                                                  <FreeTextInput
@@ -7560,7 +7620,14 @@ export function CoachDashboardPage({
                                                               </div>
                                                               <div className="grid grid-cols-3 gap-1.5">
                                                                 <label className="grid gap-1 text-[9px] font-bold text-violet-900">
-                                                                  משקל
+                                                                  {weightInputLabel(
+                                                                    store.exercises.find(
+                                                                      (exercise) =>
+                                                                        exercise.id ===
+                                                                        supersetPartnerId,
+                                                                    )?.equipment,
+                                                                    false,
+                                                                  )}
                                                                   <FreeTextInput
                                                                     min={0}
                                                                     step={0.5}
@@ -7752,7 +7819,7 @@ export function CoachDashboardPage({
                                                     {warmupEnabled ? (
                                                       <>
                                                         <label className="grid min-w-0 gap-1 text-[10px] font-bold text-muted-foreground">
-                                                          משקל חימום (ק״ג)
+                                                          {weightInputLabel(selectedEquipment)}
                                                                   <FreeTextInput
                                                             min="0"
                                                             step={0.5}
@@ -7822,7 +7889,7 @@ export function CoachDashboardPage({
                                                     {dropSetEnabled ? (
                                                       <>
                                                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                          משקל לפני הדרופ (ק״ג)
+                                                           {weightInputLabel(selectedEquipment)} לפני הדרופ
                                                                       <FreeTextInput
                                                             min="0.1"
                                                             step={0.5}
@@ -7839,7 +7906,7 @@ export function CoachDashboardPage({
                                                           />
                                                         </label>
                                                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                          משקל אחרי הדרופ (ק״ג)
+                                                           {weightInputLabel(selectedEquipment)} אחרי הדרופ
                                                                 <FreeTextInput
                                                             min="0.1"
                                                             step={0.5}
