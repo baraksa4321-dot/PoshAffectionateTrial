@@ -410,6 +410,7 @@ export type UserProfile = {
   coachId?: string;
   foodPreferences?: FoodPreferences;
   todayRoutineEnabled?: boolean;
+  nextCheckinDate?: string;
   /** Presentation-only calorie visibility. Nutrition values remain stored. */
   showCalories?: boolean;
   theme?: ThemePalette;

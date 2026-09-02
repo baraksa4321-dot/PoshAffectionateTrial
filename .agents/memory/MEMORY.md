@@ -37,3 +37,4 @@
 - [Supabase MCP destructive output](supabase-mcp-destructive-output.md) — A blocked destructive response can mean the transaction already committed; verify read-only before retrying.
 - [Stale browser rehydration](stale-browser-rehydration.md) — Stop or clear authenticated preview state before final DB counts; old local state can repopulate rows after cleanup.
 - [GymTrack market research](gymtrack-market-research.md) — Prioritize the adherence loop and Hebrew coach–trainee wedge over generic social, AI-program, or integration breadth.
+- [Coach attention privacy](coach-attention-privacy.md) — Keep reviewed state and private coach notes coach-scoped and local-first unless a dedicated private schema exists.

@@ -21,6 +21,8 @@ import {
   UserCog,
   ArrowRightLeft,
   Activity,
+  CheckCircle2,
+  Clock3,
   Calculator,
   X,
   RefreshCw,
@@ -299,6 +301,69 @@ type ClientFeedbackRow = {
 };
 
 type ClientDetails = Awaited<ReturnType<typeof pullClientDataForCoach>>;
+
+type AttentionReason =
+  | "workout-missing"
+  | "nutrition-missing"
+  | "checkin-late"
+  | "difficulty"
+  | "unanswered-message";
+type AttentionDataStatus = "stable" | "needs-attention" | "insufficient";
+type AttentionItem = {
+  clientId: string;
+  clientName: string;
+  reasons: Array<{ key: AttentionReason; label: string }>;
+  status: AttentionDataStatus;
+  lastActivity: string | null;
+  fourWeekWorkoutRate: number | null;
+  fourWeekNutritionRate: number | null;
+  fourWeekWorkoutChange: number;
+  fourWeekNutritionChange: number;
+  checkinComparison: {
+    currentDifficulty?: string;
+    previousDifficulty?: string;
+    currentDiscomfort?: string;
+    previousDiscomfort?: string;
+  };
+  reviewed: boolean;
+  privateNote: string;
+};
+
+const ATTENTION_STORAGE_KEY = "gymtrack-coach-attention-v1";
+const ATTENTION_DAY_MS = 24 * 60 * 60 * 1000;
+
+function attentionDateKey(value: string | undefined | null) {
+  return value ? value.slice(0, 10) : "";
+}
+
+function attentionDaysAgo(date: string | undefined | null, now: number) {
+  if (!date) return Infinity;
+  return Math.max(0, Math.floor((now - new Date(`${attentionDateKey(date)}T23:59:59`).getTime()) / ATTENTION_DAY_MS));
+}
+
+function attentionActivityDate(details: ClientDetails) {
+  return [
+    ...details.history.map((item) => item.date),
+    ...details.nutritionDays.map((item) => item.date),
+    ...details.habits.map((item) => item.date),
+    ...details.bodyMeasurements.map((item) => item.date),
+    ...details.coachMessages.map((item) => item.createdAt),
+  ]
+    .filter(Boolean)
+    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] ?? null;
+}
+
+function attentionReasonLabel(reason: AttentionReason) {
+  return reason === "workout-missing"
+    ? "אימון חסר"
+    : reason === "nutrition-missing"
+      ? "תזונה חסרה"
+      : reason === "checkin-late"
+        ? "צ׳ק־אין באיחור"
+        : reason === "difficulty"
+          ? "קושי או אי־נוחות"
+          : "הודעה שלא נענתה";
+}
 
 function ExerciseBuilderPlacement({
   exerciseId,
@@ -1690,6 +1755,11 @@ export function CoachDashboardPage({
   const [overviewRows, setOverviewRows] = useState<
     Array<{ client: CoachClientRow; details: ClientDetails }>
   >([]);
+  const [attentionMeta, setAttentionMeta] = useState<
+    Record<string, { reviewed: boolean; privateNote: string }>
+  >({});
+  const [attentionView, setAttentionView] = useState<"open" | "all">("open");
+  const [expandedAttentionClientId, setExpandedAttentionClientId] = useState<string | null>(null);
   const [clientRealtimeStatus, setClientRealtimeStatus] =
     useState<RealtimeConnectionStatus>("connecting");
   const [lastClientRefreshAt, setLastClientRefreshAt] = useState<number | null>(null);
@@ -1896,6 +1966,20 @@ export function CoachDashboardPage({
     if (data) setClientFeedback(data as ClientFeedbackRow[]);
   }, [isCoach]);
 
+  const loadOverviewRows = useCallback(async () => {
+    if (clientsOnly || clients.length === 0) {
+      setOverviewRows([]);
+      return;
+    }
+    const rows = await Promise.all(
+      clients.map(async (client) => ({
+        client,
+        details: await pullClientDataForCoach(client.client_id),
+      })),
+    );
+    setOverviewRows(rows.filter((row) => !row.details.error));
+  }, [clients, clientsOnly]);
+
   useEffect(() => {
     if (!isCoach) return;
 
@@ -1904,6 +1988,7 @@ export function CoachDashboardPage({
       void loadCoachClients();
       if (isOwner) void loadAllProfilesForOwner();
       void loadClientFeedback();
+      void loadOverviewRows();
     };
 
     refreshManagementData();
@@ -1918,7 +2003,14 @@ export function CoachDashboardPage({
       document.removeEventListener("visibilitychange", refreshManagementData);
       window.clearInterval(interval);
     };
-  }, [isCoach, isOwner, loadAllProfilesForOwner, loadCoachClients, loadClientFeedback]);
+  }, [
+    isCoach,
+    isOwner,
+    loadAllProfilesForOwner,
+    loadClientFeedback,
+    loadCoachClients,
+    loadOverviewRows,
+  ]);
 
   useEffect(() => {
     if (!isCoach || !authUser?.id) return;
@@ -1929,6 +2021,7 @@ export function CoachDashboardPage({
       void loadCoachClients();
       if (isOwner) void loadAllProfilesForOwner();
       if (table === "client_feedback") void loadClientFeedback();
+      void loadOverviewRows();
     };
 
     return subscribeToCoachManagementChanges(authUser.id, refreshManagementRealtime);
@@ -1939,6 +2032,7 @@ export function CoachDashboardPage({
     loadAllProfilesForOwner,
     loadClientFeedback,
     loadCoachClients,
+    loadOverviewRows,
   ]);
 
   useEffect(() => {
@@ -1958,23 +2052,186 @@ export function CoachDashboardPage({
   }, [clients, isOwner, isSelfSelected, selectedClientId]);
 
   useEffect(() => {
-    if (clientsOnly || clients.length === 0) {
-      setOverviewRows([]);
+    void loadOverviewRows();
+  }, [loadOverviewRows]);
+
+  useEffect(() => {
+    if (!authUser?.id) {
+      setAttentionMeta({});
       return;
     }
-    let active = true;
-    Promise.all(
-      clients.map(async (client) => ({
-        client,
-        details: await pullClientDataForCoach(client.client_id),
-      })),
-    ).then((rows) => {
-      if (active) setOverviewRows(rows.filter((row) => !row.details.error));
+    try {
+      const raw = window.localStorage.getItem(`${ATTENTION_STORAGE_KEY}:${authUser.id}`);
+      const parsed = raw
+        ? (JSON.parse(raw) as Record<string, { reviewed?: boolean; privateNote?: string }>)
+        : {};
+      setAttentionMeta(
+        Object.fromEntries(
+          Object.entries(parsed).map(([clientId, value]) => [
+            clientId,
+            { reviewed: Boolean(value?.reviewed), privateNote: value?.privateNote ?? "" },
+          ]),
+        ),
+      );
+    } catch {
+      setAttentionMeta({});
+    }
+  }, [authUser?.id]);
+
+  const persistAttentionMeta = (
+    clientId: string,
+    patch: Partial<{ reviewed: boolean; privateNote: string }>,
+  ) => {
+    if (!authUser?.id) return;
+    setAttentionMeta((current) => {
+      const next = {
+        ...current,
+        [clientId]: {
+          reviewed: current[clientId]?.reviewed ?? false,
+          privateNote: current[clientId]?.privateNote ?? "",
+          ...patch,
+        },
+      };
+      window.localStorage.setItem(`${ATTENTION_STORAGE_KEY}:${authUser.id}`, JSON.stringify(next));
+      return next;
     });
-    return () => {
-      active = false;
-    };
-  }, [clients, clientsOnly]);
+  };
+
+  const attentionItems = useMemo<AttentionItem[]>(() => {
+    const now = Date.now();
+    return overviewRows
+      .map(({ client, details }) => {
+        const clientId = client.client_id;
+        const recentHistory = details.history.filter(
+          (item) => attentionDaysAgo(item.date, now) <= 28,
+        );
+        const previousHistory = details.history.filter((item) => {
+          const age = attentionDaysAgo(item.date, now);
+          return age > 28 && age <= 56;
+        });
+        const recentNutrition = details.nutritionDays.filter(
+          (item) =>
+            attentionDaysAgo(item.date, now) <= 28 &&
+            item.meals.some((meal) => meal.foods.length > 0),
+        );
+        const previousNutrition = details.nutritionDays.filter((item) => {
+          const age = attentionDaysAgo(item.date, now);
+          return age > 28 && age <= 56 && item.meals.some((meal) => meal.foods.length > 0);
+        });
+        const latestHistory = details.history[0];
+        const latestNutrition = details.nutritionDays[0];
+        const latestHabit = details.habits[0];
+        const latestMeasurement = details.bodyMeasurements[0];
+        const checkins = [
+          ...details.history
+            .filter((session) => session.difficultyRating || session.discomfortNotes?.trim())
+            .map((session) => ({
+              date: session.date,
+              difficulty: session.difficultyRating,
+              discomfort: session.discomfortNotes?.trim() || undefined,
+            })),
+          ...clientFeedback
+            .filter((feedback) => feedback.client_id === clientId)
+            .map((feedback) => ({
+              date: feedback.created_at ?? "",
+              difficulty: feedback.difficulty_rating,
+              discomfort: feedback.discomfort_notes?.trim() || undefined,
+            })),
+        ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const currentCheckin = checkins[0];
+        const previousCheckin = checkins[1];
+        const lastCheckinDate = [currentCheckin?.date, latestMeasurement?.date]
+          .filter(Boolean)
+          .sort((a, b) => new Date(b!).getTime() - new Date(a!).getTime())[0];
+        const reasons: AttentionItem["reasons"] = [];
+        const hasWorkoutPlan = details.programs.some((program) => program.dayIds.length > 0);
+        const hasWorkoutData = details.history.length > 0 || hasWorkoutPlan;
+        const hasNutritionData =
+          details.nutritionDays.length > 0 ||
+          details.plannedMeals.some((meal) => meal.foods.length > 0);
+
+        if (hasWorkoutData && !recentHistory.some((session) => session.entries.length > 0)) {
+          reasons.push({ key: "workout-missing", label: attentionReasonLabel("workout-missing") });
+        }
+        if (hasNutritionData && recentNutrition.length === 0) {
+          reasons.push({ key: "nutrition-missing", label: attentionReasonLabel("nutrition-missing") });
+        }
+        if (
+          (details.profile?.nextCheckinDate &&
+            attentionDateKey(details.profile.nextCheckinDate) < todayKey()) ||
+          (!details.profile?.nextCheckinDate &&
+            Boolean(details.history.length || details.bodyMeasurements.length) &&
+            attentionDaysAgo(lastCheckinDate, now) > 35)
+        ) {
+          reasons.push({ key: "checkin-late", label: attentionReasonLabel("checkin-late") });
+        }
+        if (
+          recentHistory.some(
+            (session) =>
+              session.difficultyRating === "difficult" || Boolean(session.discomfortNotes?.trim()),
+          ) ||
+          clientFeedback.some(
+            (feedback) =>
+              feedback.client_id === clientId &&
+              (feedback.difficulty_rating === "difficult" ||
+                Boolean(feedback.discomfort_notes?.trim())),
+          )
+        ) {
+          reasons.push({ key: "difficulty", label: attentionReasonLabel("difficulty") });
+        }
+        if (details.coachMessages.some((message) => message.isRead === false)) {
+          reasons.push({
+            key: "unanswered-message",
+            label: attentionReasonLabel("unanswered-message"),
+          });
+        }
+
+        const hasAnyData = Boolean(
+          latestHistory ||
+            latestNutrition ||
+            latestHabit ||
+            latestMeasurement ||
+            details.coachMessages.length ||
+            clientFeedback.some((feedback) => feedback.client_id === clientId),
+        );
+        const status: AttentionDataStatus = !hasAnyData
+          ? "insufficient"
+          : reasons.length > 0
+            ? "needs-attention"
+            : "stable";
+        const meta = attentionMeta[clientId] ?? { reviewed: false, privateNote: "" };
+        return {
+          clientId,
+          clientName: profileDisplayName(client.profiles),
+          reasons,
+          status,
+          lastActivity: attentionActivityDate(details),
+          fourWeekWorkoutRate:
+            recentHistory.length > 0
+              ? Math.min(100, Math.round((recentHistory.length / 4) * 100))
+              : null,
+          fourWeekNutritionRate:
+            recentNutrition.length > 0
+              ? Math.min(100, Math.round((recentNutrition.length / 7) * 100))
+              : null,
+          reviewed: meta.reviewed,
+          privateNote: meta.privateNote,
+          fourWeekWorkoutChange: recentHistory.length - previousHistory.length,
+          fourWeekNutritionChange: recentNutrition.length - previousNutrition.length,
+          checkinComparison: {
+            currentDifficulty: currentCheckin?.difficulty,
+            previousDifficulty: previousCheckin?.difficulty,
+            currentDiscomfort: currentCheckin?.discomfort,
+            previousDiscomfort: previousCheckin?.discomfort,
+          },
+        } as AttentionItem;
+      })
+      .sort((a, b) => {
+        if (a.reviewed !== b.reviewed) return Number(a.reviewed) - Number(b.reviewed);
+        if (a.status !== b.status) return a.status === "needs-attention" ? -1 : 1;
+        return (b.lastActivity ?? "").localeCompare(a.lastActivity ?? "");
+      });
+  }, [attentionMeta, clientFeedback, overviewRows]);
 
   useEffect(() => {
     if (!clientId) return;
@@ -2035,6 +2292,8 @@ export function CoachDashboardPage({
         history: store.history,
         cardioLogs: store.cardioLogs ?? [],
         bodyMeasurements: store.bodyMeasurements ?? [],
+         habits: store.habits ?? [],
+         coachMessages: store.coachMessages ?? [],
         profile: selfProfile,
       });
       setClientRefreshInFlight(false);
@@ -2171,6 +2430,8 @@ export function CoachDashboardPage({
       history: store.history,
       cardioLogs: store.cardioLogs ?? [],
       bodyMeasurements: store.bodyMeasurements ?? [],
+      habits: store.habits ?? [],
+      coachMessages: store.coachMessages ?? [],
       ...(store.userProfile ? { profile: store.userProfile } : {}),
     });
     setLoadingDetails(false);
@@ -4167,6 +4428,11 @@ export function CoachDashboardPage({
   const pendingApprovals = allProfiles.filter(
     (profile) => profile.role === "client" && profile.approval_status === "pending",
   );
+  const visibleAttentionItems =
+    attentionView === "open" ? attentionItems.filter((item) => !item.reviewed) : attentionItems;
+  const attentionOpenCount = attentionItems.filter(
+    (item) => item.status === "needs-attention" && !item.reviewed,
+  ).length;
   const openClientFromOverview = (clientId: string) => {
     if (!trackingLanding && authUser?.id === clientId && !isOwner) {
       // A coach can build their own plan from the client list, but the
@@ -4421,60 +4687,251 @@ export function CoachDashboardPage({
                 : genderText(gender, "טוענת את סיכום המתאמנים...", "טוען את סיכום המתאמנים...")}
             </div>
           ) : (
-            <div className="surface-card space-y-3 p-4">
-              <h3 className="flex items-center gap-2 text-sm font-bold text-ink">
-                <Activity className="h-4 w-4 text-primary" />
-                פעולות שמומלץ לבדוק
-              </h3>
-              {needsPlan.length === 0 &&
-              needsExercises.length === 0 &&
-              quietClients.length === 0 ? (
-                <p className="rounded-xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">
-                  אין כרגע חריגים שדורשים טיפול.
-                </p>
+            <section className="surface-card space-y-3 border-primary/20 bg-primary/[0.025] p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                    Coach Attention Queue
+                  </p>
+                  <h3 className="mt-1 flex items-center gap-2 text-base font-extrabold text-ink">
+                    <Activity className="h-4 w-4 text-primary" />
+                    תור תשומת לב למאמן
+                  </h3>
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                    סיבות ברורות לפעולה, מגמה של 4 שבועות ומצב אמינות הנתונים לכל מתאמן.
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-extrabold text-amber-800">
+                    {attentionOpenCount} פתוחים
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setAttentionView((value) => (value === "open" ? "all" : "open"))}
+                    className="rounded-full border border-border bg-background px-2.5 py-1 text-[10px] font-bold text-muted-foreground hover:border-primary/40 hover:text-primary"
+                  >
+                    {attentionView === "open" ? "הצגת כולם" : "הצגת פתוחים"}
+                  </button>
+                </div>
+              </div>
+              {visibleAttentionItems.length === 0 ? (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">
+                  {attentionView === "open"
+                    ? "כל הפריטים נבדקו. אין כרגע מתאמן שממתין לטיפול."
+                    : "אין כרגע מספיק נתונים להצגת מתאמנים."}
+                </div>
               ) : (
                 <div className="space-y-2">
-                  {[...needsPlan, ...needsExercises, ...quietClients]
-                    .filter(
-                      (row, index, rows) =>
-                        rows.findIndex(
-                          (candidate) => candidate.client.client_id === row.client.client_id,
-                        ) === index,
-                    )
-                    .slice(0, 8)
-                    .map((row) => {
-                      const name = profileDisplayName(row.client.profiles);
-                      const reason = needsPlan.some(
-                        (item) => item.client.client_id === row.client.client_id,
-                      )
-                        ? "אין עדיין תוכנית אימון"
-                        : needsExercises.some(
-                              (item) => item.client.client_id === row.client.client_id,
-                            )
-                          ? "התוכנית עדיין ללא תרגילים"
-                          : "לא נרשם אימון ב־14 הימים האחרונים";
-                      return (
-                        <button
-                          key={row.client.client_id}
-                          type="button"
-                          onClick={() => openClientFromOverview(row.client.client_id)}
-                          className="flex w-full items-center justify-between rounded-xl border border-border/70 bg-surface-2 p-3 text-start transition-colors hover:border-primary/60"
-                        >
-                          <span className="min-w-0">
-                            <span className="block truncate text-xs font-bold text-ink">
-                              {name}
+                  {visibleAttentionItems.map((item) => {
+                    const expanded = expandedAttentionClientId === item.clientId;
+                    const statusLabel =
+                      item.status === "stable"
+                        ? "יציב"
+                        : item.status === "needs-attention"
+                          ? "דורש תשומת לב"
+                          : "אין מספיק נתונים";
+                    const statusClass =
+                      item.status === "stable"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : item.status === "needs-attention"
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-slate-100 text-slate-700";
+                    return (
+                      <div
+                        key={item.clientId}
+                        className={`rounded-2xl border bg-background p-3 transition-colors ${
+                          item.reviewed ? "border-border/60 opacity-75" : "border-primary/20"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedAttentionClientId(expanded ? null : item.clientId)
+                            }
+                            className="min-w-0 flex-1 text-start"
+                            aria-expanded={expanded}
+                          >
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="truncate text-sm font-extrabold text-ink">
+                                {item.clientName}
+                              </span>
+                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${statusClass}`}>
+                                {statusLabel}
+                              </span>
+                              {item.reviewed ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
+                                  <CheckCircle2 className="h-3 w-3" /> נבדק
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              {item.reasons.length > 0
+                                ? item.reasons.map((reason) => reason.label).join(" · ")
+                                : "אין חריגה מזוהה"}
+                            </p>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              openClientFromOverview(item.clientId);
+                              window.setTimeout(
+                                () =>
+                                  document
+                                    .getElementById("coach-checkin")
+                                    ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+                                450,
+                              );
+                            }}
+                            className="flex shrink-0 items-center gap-1 rounded-xl bg-primary/10 px-2.5 py-2 text-[10px] font-extrabold text-primary hover:bg-primary/15"
+                          >
+                            <ClipboardList className="h-3.5 w-3.5" />
+                            צ׳ק־אין
+                          </button>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {item.reasons.map((reason) => (
+                            <span
+                              key={reason.key}
+                              className="rounded-full bg-secondary px-2 py-1 text-[10px] font-bold text-ink"
+                            >
+                              {reason.label}
                             </span>
-                            <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                              {reason}
-                            </span>
+                          ))}
+                          <span className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+                            <Clock3 className="h-3 w-3" />
+                            פעילות אחרונה:{" "}
+                            {item.lastActivity
+                              ? new Date(item.lastActivity).toLocaleDateString("he-IL")
+                              : "אין"}
                           </span>
-                          <ChevronLeft className="h-4 w-4 shrink-0 text-primary" />
-                        </button>
-                      );
-                    })}
+                        </div>
+                        {expanded ? (
+                          <div className="mt-3 space-y-2 border-t border-border/60 pt-3">
+                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                              <div className="rounded-xl bg-surface-2 p-2 text-center">
+                                <span className="block text-[10px] text-muted-foreground">אימונים · 4 שבועות</span>
+                                <strong className="text-sm text-ink">
+                                  {item.fourWeekWorkoutRate === null
+                                    ? "—"
+                                    : `${item.fourWeekWorkoutRate}%`}
+                                </strong>
+                                <span className="block text-[10px] text-muted-foreground">
+                                  {item.fourWeekWorkoutChange >= 0 ? "+" : ""}
+                                  {item.fourWeekWorkoutChange} מול 4 קודמים
+                                </span>
+                              </div>
+                              <div className="rounded-xl bg-surface-2 p-2 text-center">
+                                <span className="block text-[10px] text-muted-foreground">תזונה · 4 שבועות</span>
+                                <strong className="text-sm text-ink">
+                                  {item.fourWeekNutritionRate === null
+                                    ? "—"
+                                    : `${item.fourWeekNutritionRate}%`}
+                                </strong>
+                                <span className="block text-[10px] text-muted-foreground">
+                                  {item.fourWeekNutritionChange >= 0 ? "+" : ""}
+                                  {item.fourWeekNutritionChange} מול 4 קודמים
+                                </span>
+                              </div>
+                              <div className="rounded-xl bg-surface-2 p-2 text-center">
+                                <span className="block text-[10px] text-muted-foreground">הרגלים</span>
+                                <strong className="text-sm text-ink">
+                                  {item.status === "insufficient" ? "—" : "נרשמו"}
+                                </strong>
+                                <span className="block text-[10px] text-muted-foreground">לפי נתוני המתאמן</span>
+                              </div>
+                              <div className="rounded-xl bg-surface-2 p-2 text-center">
+                                <span className="block text-[10px] text-muted-foreground">משוב ומדידות</span>
+                                <strong className="text-sm text-ink">
+                                  {item.reasons.some((reason) => reason.key === "difficulty")
+                                    ? "דורש שיחה"
+                                    : item.status === "insufficient"
+                                      ? "חסר"
+                                      : "זמין"}
+                                </strong>
+                                <span className="block text-[10px] text-muted-foreground">תמונת מצב</span>
+                              </div>
+                            </div>
+                            <div className="rounded-xl border border-primary/10 bg-primary/[0.02] p-2.5">
+                              <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-ink">
+                                <ClipboardList className="h-3.5 w-3.5 text-primary" />
+                                השוואת צ׳ק־אין לתשובה קודמת
+                              </div>
+                              <div className="mt-2 grid gap-1.5 text-[11px] sm:grid-cols-2">
+                                <p className="rounded-lg bg-background p-2 text-muted-foreground">
+                                  <strong className="text-ink">נוכחי: </strong>
+                                  {item.checkinComparison.currentDifficulty
+                                    ? `קושי ${item.checkinComparison.currentDifficulty}`
+                                    : "אין דירוג קושי"}
+                                  {item.checkinComparison.currentDiscomfort
+                                    ? ` · ${item.checkinComparison.currentDiscomfort}`
+                                    : ""}
+                                </p>
+                                <p className="rounded-lg bg-background p-2 text-muted-foreground">
+                                  <strong className="text-ink">קודם: </strong>
+                                  {item.checkinComparison.previousDifficulty
+                                    ? `קושי ${item.checkinComparison.previousDifficulty}`
+                                    : "אין תשובה קודמת"}
+                                  {item.checkinComparison.previousDiscomfort
+                                    ? ` · ${item.checkinComparison.previousDiscomfort}`
+                                    : ""}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => openClientFromOverview(item.clientId)}
+                                className="rounded-xl bg-primary px-3 py-2 text-[10px] font-extrabold text-white hover:bg-primary/90"
+                              >
+                                פתיחת סביבת עבודה
+                              </button>
+                              <Link
+                                to="/coach/tracking/$clientId"
+                                params={{ clientId: item.clientId }}
+                                className="rounded-xl border border-primary/20 bg-background px-3 py-2 text-[10px] font-extrabold text-primary hover:bg-primary/5"
+                              >
+                                פתיחת tracking
+                              </Link>
+                            </div>
+                            <textarea
+                              value={item.privateNote}
+                              onChange={(event) =>
+                                persistAttentionMeta(item.clientId, {
+                                  privateNote: event.target.value,
+                                })
+                              }
+                              placeholder="הערה פרטית למאמן — לא מוצגת למתאמן"
+                              className="min-h-16 w-full rounded-xl border border-primary/15 bg-primary/[0.02] p-2.5 text-xs text-ink outline-none focus:border-primary"
+                              aria-label={`הערה פרטית עבור ${item.clientName}`}
+                            />
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="text-[10px] text-muted-foreground">
+                                ההערה נשמרת מקומית במכשיר המאמן בלבד.
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  persistAttentionMeta(item.clientId, { reviewed: !item.reviewed })
+                                }
+                                className={`inline-flex items-center gap-1 rounded-xl px-3 py-2 text-[10px] font-extrabold ${
+                                  item.reviewed
+                                    ? "border border-border bg-background text-muted-foreground"
+                                    : "bg-emerald-600 text-white hover:bg-emerald-700"
+                                }`}
+                              >
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                {item.reviewed ? "החזרה לתור הפתוח" : "סימון כ־reviewed"}
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
-            </div>
+            </section>
           )}
 
           {isOwner ? (
@@ -5513,6 +5970,7 @@ export function CoachDashboardPage({
 
                           {/* Coach-managed monthly measurements */}
                           <div
+                            id="coach-checkin"
                             className="surface-card rounded-2xl p-4 space-y-3"
                             onChange={markMeasurementDraftDirty}
                           >

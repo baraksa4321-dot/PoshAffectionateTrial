@@ -35,6 +35,8 @@ export type CoachClientData = {
   history: HistorySession[];
   cardioLogs: CardioLog[];
   bodyMeasurements: BodyMeasurement[];
+  habits: ClientHabits[];
+  coachMessages: CoachMessage[];
   profile?: UserProfile;
   error?: string;
 };
@@ -1438,6 +1440,8 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       measurementsResult,
       sessionsResult,
       cardioResult,
+      habitsResult,
+      coachMessagesResult,
     ] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", clientId).maybeSingle(),
       supabase.from("custom_exercises").select("*").eq("user_id", clientId),
@@ -1459,6 +1463,16 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
         .eq("user_id", clientId)
         .order("date", { ascending: false }),
       supabase.from("cardio_logs").select("*").eq("user_id", clientId),
+      supabase
+        .from("client_habits")
+        .select("*")
+        .eq("user_id", clientId)
+        .order("date", { ascending: false }),
+      supabase
+        .from("coach_messages")
+        .select("id, coach_id, client_id, message, created_at, is_read")
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: false }),
     ]);
 
     const { data: profile, error: profileError } = profileResult;
@@ -1504,6 +1518,21 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       console.warn(`[Optional client cardio pull skipped]: ${cardioError.message}`);
     } else if (cardioError) {
       throw new Error(`Client cardio pull failed: ${cardioError.message}`);
+    }
+    const { data: dbHabits, error: habitsError } = habitsResult;
+    if (habitsError && isMissingTableInSchemaCache(habitsError, "client_habits")) {
+      console.warn(`[Optional client habits pull skipped]: ${habitsError.message}`);
+    } else if (habitsError) {
+      throw new Error(`Client habits pull failed: ${habitsError.message}`);
+    }
+    const { data: dbCoachMessages, error: coachMessagesError } = coachMessagesResult;
+    if (
+      coachMessagesError &&
+      isMissingTableInSchemaCache(coachMessagesError, "coach_messages")
+    ) {
+      console.warn(`[Optional client messages pull skipped]: ${coachMessagesError.message}`);
+    } else if (coachMessagesError) {
+      throw new Error(`Client messages pull failed: ${coachMessagesError.message}`);
     }
 
     const workoutsMap = new Map<string, Workout>();
@@ -1602,6 +1631,23 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       intensity: row.intensity || undefined,
       calories: Number(row.calories ?? 0),
     }));
+    const habitsList: ClientHabits[] = (dbHabits || []).map((row) => ({
+      id: row.id,
+      date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
+      steps: Number(row.steps ?? 0),
+      stepsTarget: Number(row.steps_target ?? 0),
+      weighInDone: Boolean(row.weigh_in_done),
+      workoutDone: Boolean(row.workout_done),
+      busyDayMode: Boolean(row.busy_day_mode),
+    }));
+    const coachMessagesList: CoachMessage[] = (dbCoachMessages || []).map((row) => ({
+      id: row.id,
+      coachId: row.coach_id,
+      clientId: row.client_id,
+      message: row.message,
+      createdAt: row.created_at,
+      isRead: Boolean(row.is_read),
+    }));
     return {
       exercises: exerciseList,
       programs: programsList,
@@ -1613,6 +1659,8 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       history: historyList,
       cardioLogs: cardioList,
       bodyMeasurements: measurementList,
+      habits: habitsList,
+      coachMessages: coachMessagesList,
       ...(profile
         ? {
             weight: Number(profile.weight_kg || 65),
@@ -1634,6 +1682,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
               ? { gender: profile.gender }
               : {}),
             ...(profile.coach_id ? { coachId: profile.coach_id } : {}),
+             ...(profile.next_checkin_date ? { nextCheckinDate: profile.next_checkin_date } : {}),
           }
         : {}),
     };
@@ -1650,6 +1699,8 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       history: [],
       cardioLogs: [],
       bodyMeasurements: [],
+      habits: [],
+      coachMessages: [],
       error,
     };
   }
