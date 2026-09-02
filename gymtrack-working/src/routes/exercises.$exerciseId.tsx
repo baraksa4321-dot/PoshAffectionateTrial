@@ -85,6 +85,18 @@ function SearchOptionField({
           setQuery(next);
           onChange(next);
         }}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          const next = query.trim();
+          if (!next) return;
+          const matchingOption = options.find(
+            (option) => option.toLocaleLowerCase() === next.toLocaleLowerCase(),
+          );
+          const committedValue = matchingOption ?? next;
+          setQuery(committedValue);
+          onChange(committedValue);
+        }}
         placeholder={placeholder}
         role="combobox"
         aria-label={label}
@@ -139,6 +151,15 @@ function SearchMultiOptionField({
     .slice(0, 8);
   const customValue = query.trim();
   const hasCustomValue = customValue && !options.includes(customValue);
+  const commitQuery = () => {
+    if (!customValue) return;
+    const matchingOption = options.find(
+      (option) => option.toLocaleLowerCase() === customValue.toLocaleLowerCase(),
+    );
+    const value = matchingOption ?? customValue;
+    if (!selected.includes(value)) onToggle(value);
+    setQuery("");
+  };
 
   return (
     <div>
@@ -150,6 +171,11 @@ function SearchMultiOptionField({
         className={`${field} mt-2`}
         value={query}
         onChange={(event) => setQuery(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          commitQuery();
+        }}
         placeholder={placeholder}
         role="combobox"
         aria-label={label}

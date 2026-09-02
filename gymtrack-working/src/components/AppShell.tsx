@@ -64,6 +64,24 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
+function findScrollableAncestor(field: HTMLElement, boundary: HTMLElement | null) {
+  let current = field.parentElement;
+  while (current) {
+    const styles = window.getComputedStyle(current);
+    if (
+      /(auto|scroll)/.test(styles.overflowY) &&
+      current.scrollHeight > current.clientHeight + 1
+    ) {
+      return current;
+    }
+    if (current === boundary) break;
+    current = current.parentElement;
+  }
+
+  if (boundary && boundary.scrollHeight > boundary.clientHeight + 1) return boundary;
+  return document.scrollingElement instanceof HTMLElement ? document.scrollingElement : null;
+}
+
 export function AppShell({
   title,
   subtitle,
@@ -184,6 +202,7 @@ export function AppShell({
     if (typeof window === "undefined") return;
     const visualViewport = window.visualViewport;
     let focusTimer = 0;
+    let delayedFocusTimer = 0;
 
     const updateKeyboardMetrics = () => {
       const visibleHeight = visualViewport?.height ?? window.innerHeight;
@@ -216,20 +235,39 @@ export function AppShell({
         const headerHeight = topbarRef.current?.offsetHeight ?? 0;
         const navHeight =
           shellRef.current?.querySelector<HTMLElement>(".nav-shell")?.offsetHeight ?? 0;
-        const visibleTop = viewportTop + headerHeight + 12;
-        const visibleBottom =
+        const scrollContainer = findScrollableAncestor(field, mainRef.current);
+        const containerRect = scrollContainer?.getBoundingClientRect();
+        const visibleTop = Math.max(
+          viewportTop + headerHeight + 12,
+          containerRect ? containerRect.top + 12 : Number.NEGATIVE_INFINITY,
+        );
+        const visibleBottom = Math.min(
           viewportTop +
-          viewportHeight -
-          (document.documentElement.hasAttribute("data-keyboard-open") ? 16 : navHeight + 16);
+            viewportHeight -
+            (document.documentElement.hasAttribute("data-keyboard-open") ? 16 : navHeight + 16),
+          containerRect ? containerRect.bottom - 16 : Number.POSITIVE_INFINITY,
+        );
         const rect = field.getBoundingClientRect();
-        const scrollContainer = mainRef.current;
+        const delta =
+          rect.bottom > visibleBottom
+            ? rect.bottom - visibleBottom
+            : rect.top < visibleTop
+              ? rect.top - visibleTop
+              : 0;
 
-        if (rect.bottom > visibleBottom) {
-          scrollContainer?.scrollBy({ top: rect.bottom - visibleBottom, behavior: "auto" });
-        } else if (rect.top < visibleTop) {
-          scrollContainer?.scrollBy({ top: rect.top - visibleTop, behavior: "auto" });
+        if (scrollContainer && delta) {
+          scrollContainer.scrollTo({
+            top: Math.max(0, scrollContainer.scrollTop + delta),
+            behavior: "auto",
+          });
         }
       }, 120);
+    };
+
+    const onFocusIn = () => {
+      keepDocumentFieldVisible();
+      window.clearTimeout(delayedFocusTimer);
+      delayedFocusTimer = window.setTimeout(keepDocumentFieldVisible, 360);
     };
 
     const onViewportChange = () => {
@@ -237,13 +275,14 @@ export function AppShell({
       keepDocumentFieldVisible();
     };
     updateKeyboardMetrics();
-    window.addEventListener("focusin", keepDocumentFieldVisible);
+    window.addEventListener("focusin", onFocusIn);
     visualViewport?.addEventListener("resize", onViewportChange);
     visualViewport?.addEventListener("scroll", onViewportChange);
 
     return () => {
       window.clearTimeout(focusTimer);
-      window.removeEventListener("focusin", keepDocumentFieldVisible);
+      window.clearTimeout(delayedFocusTimer);
+      window.removeEventListener("focusin", onFocusIn);
       visualViewport?.removeEventListener("resize", onViewportChange);
       visualViewport?.removeEventListener("scroll", onViewportChange);
       document.documentElement.style.removeProperty("--keyboard-inset");

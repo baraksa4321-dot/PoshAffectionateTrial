@@ -4601,7 +4601,9 @@ html.night-mode .auth-panel {
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
-  scroll-padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+  scroll-padding-bottom: calc(
+    6.5rem + env(safe-area-inset-bottom) + var(--keyboard-inset, 0px)
+  );
 }
 
 input:not([type="hidden"]):not([type="file"]),
