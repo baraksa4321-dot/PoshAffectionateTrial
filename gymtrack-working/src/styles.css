@@ -7228,6 +7228,18 @@ html.night-mode [class*="border-border/"] {
   overflow: hidden;
 }
 
+.overlay-root.workout-builder-overlay
+  :is(input:not([type="hidden"]):not([type="file"]), textarea, select, [contenteditable="true"]) {
+  /* The fullscreen builder has no app header. The global header-based
+     scroll-margin makes iOS snap a changed input to the old header line. */
+  scroll-margin-top: 0 !important;
+  scroll-margin-bottom: 0 !important;
+}
+
+.overlay-root.workout-builder-overlay [data-coach-workspace="true"] {
+  scroll-padding: 0;
+}
+
 .overlay-root[data-overlay-variant="full"] [data-coach-workspace="true"] {
   min-height: 100%;
   max-height: none;
