@@ -6570,23 +6570,12 @@ html:not(.night-mode) .dashboard-editorial-shell {
   --card-foreground: #1b191a;
   --popover: #ffffff;
   --popover-foreground: #1b191a;
-  --primary: #c78389;
-  --primary-foreground: #ffffff;
-  --secondary: #f3e3e1;
-  --secondary-foreground: #70484b;
-  --sage: #84a894;
-  --sage-soft: #e7f2eb;
-  --rose: #b97179;
-  --rose-soft: #f7e9e8;
-  --accent: #d5b57e;
-  --accent-foreground: #65502e;
   --ink: #1b191a;
   --ink-soft: #706a6b;
   --muted: #f2f0ee;
   --muted-foreground: #706a6b;
   --border: #ded9d6;
   --input: #d5cbc8;
-  --ring: #b97179;
   --shadow-color: 44 37 37;
   background: var(--background) !important;
   color: var(--ink);
@@ -6690,15 +6679,20 @@ html:not(.night-mode) .dashboard-editorial-shell .home-calorie-card {
   border-radius: 1.15rem;
 }
 
-/* The daily workout is the single dark, high-contrast action surface. */
+/* The daily workout is the theme's deep accent action surface. */
 html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card {
   isolation: isolate;
   overflow: hidden;
   border: 1px solid #121114;
-  background: #262529 !important;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--rose) 82%, var(--primary) 18%) 0%,
+      color-mix(in srgb, var(--rose) 76%, var(--ink) 24%) 100%
+    ) !important;
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 12%),
-    0 9px 18px rgb(28 24 25 / 15%);
+    0 9px 18px color-mix(in srgb, var(--rose) 18%, transparent);
 }
 
 html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card::before,
@@ -6942,4 +6936,21 @@ html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-lin
   html:not(.night-mode) .dashboard-editorial-shell .home-feature-grid {
     gap: 0.55rem;
   }
+}
+
+/* Keep the brand row compact on program, workout, and dashboard screens. */
+html:not(.night-mode) .app-topbar > div {
+  padding-top: 0.22rem;
+  padding-bottom: 0.38rem;
+}
+
+html:not(.night-mode) .app-topbar > div > div:first-child {
+  min-height: 2rem;
+  margin-bottom: 0.28rem !important;
+  padding-bottom: 0.22rem;
+}
+
+html:not(.night-mode) .app-topbar img[src*="myroutine-logo"] {
+  width: 6.5rem;
+  height: 1.72rem;
 }
