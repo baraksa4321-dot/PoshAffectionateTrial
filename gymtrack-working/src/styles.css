@@ -2521,7 +2521,7 @@ html.night-mode .auth-panel {
 .loading-initial-wordmark {
   position: fixed;
   left: 50%;
-  bottom: max(24px, calc(env(safe-area-inset-bottom) + 24px));
+  bottom: calc(0.75rem - env(safe-area-inset-bottom));
   z-index: 2;
   display: block;
   height: auto;
@@ -6123,6 +6123,10 @@ body {
   .app-shell > nav > .nav-shell {
     margin-bottom: 0.8rem;
   }
+}
+
+.app-shell > nav {
+  bottom: calc(0px - env(safe-area-inset-bottom));
 }
 
 /* -------------------------------------------------------------------------
