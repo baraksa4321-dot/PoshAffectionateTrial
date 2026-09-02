@@ -1481,6 +1481,11 @@ function RootContent() {
               </>
             )}
           </div>
+          <img
+            src="/myroutine-logo.png"
+            alt="MY routine"
+            className="loading-wordmark"
+          />
         </div>
       ) : hasProfileHydrationError ? (
         <div

@@ -2511,15 +2511,10 @@ html.night-mode .auth-panel {
 }
 
 .loading-brand {
-  position: fixed;
-  left: 50%;
-  bottom: max(2rem, calc(env(safe-area-inset-bottom) + 2rem));
-  z-index: 2;
   width: min(100%, 240px);
   padding: 14px 0 10px;
   background: transparent;
   text-align: center;
-  transform: translateX(-50%);
 }
 
 .loading-wordmark,
@@ -2536,11 +2531,11 @@ html.night-mode .auth-panel {
 }
 
 .loading-wordmark {
-  width: min(120px, 38vw);
+  width: min(92px, 28vw);
 }
 
 .loading-initial-wordmark {
-  width: min(130px, 40vw);
+  width: min(92px, 28vw);
   opacity: 0.82;
 }
 
