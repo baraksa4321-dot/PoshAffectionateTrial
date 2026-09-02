@@ -15,6 +15,10 @@ const openOverlayTokens: number[] = [];
 function scrollFocusedFieldWithinPanel(field: HTMLElement, panel: HTMLElement) {
   const fieldRect = field.getBoundingClientRect();
   const panelRect = panel.getBoundingClientRect();
+  const { viewportTop, visibleHeight, keyboardOpen } = getKeyboardViewportMetrics();
+  const visibleViewportTop = viewportTop + 12;
+  const visibleViewportBottom =
+    viewportTop + visibleHeight - (keyboardOpen ? 16 : 20);
   let scrollParent: HTMLElement | null = field.parentElement;
   while (scrollParent && scrollParent !== panel) {
     const overflowY = window.getComputedStyle(scrollParent).overflowY;
@@ -23,8 +27,16 @@ function scrollFocusedFieldWithinPanel(field: HTMLElement, panel: HTMLElement) {
       scrollParent.scrollHeight > scrollParent.clientHeight + 1
     ) {
       const parentRect = scrollParent.getBoundingClientRect();
-      const safeTop = Math.max(panelRect.top + 16, parentRect.top + 12);
-      const safeBottom = Math.min(panelRect.bottom - 20, parentRect.bottom - 16);
+      const safeTop = Math.max(
+        panelRect.top + 16,
+        parentRect.top + 12,
+        visibleViewportTop,
+      );
+      const safeBottom = Math.min(
+        panelRect.bottom - 20,
+        parentRect.bottom - 16,
+        visibleViewportBottom,
+      );
       let delta = 0;
       if (fieldRect.top < safeTop) delta = fieldRect.top - safeTop;
       else if (fieldRect.bottom > safeBottom) delta = fieldRect.bottom - safeBottom;
@@ -35,8 +47,8 @@ function scrollFocusedFieldWithinPanel(field: HTMLElement, panel: HTMLElement) {
     scrollParent = scrollParent.parentElement;
   }
 
-  const safeTop = panelRect.top + 16;
-  const safeBottom = panelRect.bottom - 20;
+  const safeTop = Math.max(panelRect.top + 16, visibleViewportTop);
+  const safeBottom = Math.min(panelRect.bottom - 20, visibleViewportBottom);
   let delta = 0;
   if (fieldRect.top < safeTop) delta = fieldRect.top - safeTop;
   else if (fieldRect.bottom > safeBottom) delta = fieldRect.bottom - safeBottom;
@@ -203,7 +215,9 @@ export function Overlay({
   const isFull = variant === "full";
   const panelBottomGap = isFull ? 0 : isBottom ? 16 : 32;
   const panelMaxHeight =
-    viewportHeight === null
+    isFull
+      ? "100lvh"
+      : viewportHeight === null
       ? `calc(100lvh - ${panelBottomGap}px)`
       : `${Math.max(0, viewportHeight - panelBottomGap)}px`;
 
@@ -228,10 +242,6 @@ export function Overlay({
       data-overlay-root="true"
       data-overlay-variant={variant}
       data-keyboard-open={keyboardOffset > 0 ? "true" : undefined}
-      // Keep centered dialogs anchored to the layout viewport when the
-      // keyboard opens. Re-centering against the shorter visual viewport
-      // makes profile/edit cards jump upward as soon as an input is focused.
-      style={viewportHeight !== null && isFull ? { height: `${viewportHeight}px` } : undefined}
       className={`overlay-root fixed inset-0 z-[100] flex touch-pan-y overflow-x-hidden ${
         isFull
           ? "items-stretch justify-center"
