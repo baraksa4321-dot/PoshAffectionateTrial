@@ -2521,7 +2521,7 @@ html.night-mode .auth-panel {
 .loading-initial-wordmark {
   position: fixed;
   left: 50%;
-  bottom: calc(0.75rem - env(safe-area-inset-bottom));
+  bottom: 0.75rem;
   z-index: 2;
   display: block;
   height: auto;
@@ -6125,10 +6125,6 @@ body {
   }
 }
 
-.app-shell > nav {
-  bottom: calc(0px - env(safe-area-inset-bottom));
-}
-
 /* -------------------------------------------------------------------------
  * MY ROUTINE / HOME VISUAL REVISION
  * Direction: warm daylight utility — a quiet ivory canvas, precise white
@@ -6947,7 +6943,6 @@ html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-lin
   .app-shell > nav {
     background: var(--surface);
     padding-bottom: 0;
-    bottom: calc(0px - env(safe-area-inset-bottom));
   }
 }
 
