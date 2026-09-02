@@ -6554,296 +6554,392 @@ body {
 }
 
 /* -------------------------------------------------------------------------
- * Reference match: the supplied app screens use a white canvas, near-black
- * type, a muted dusty-rose accent, and one dark workout surface. Keep the
- * existing DOM and routes, but let the dashboard read as that same app.
+ * MY ROUTINE / REFERENCE-LED APP SKIN
+ * Compact mobile utility chrome, warm white surfaces, dusty rose details,
+ * and one deliberately dark workout action. Presentation only: the existing
+ * DOM, home order, routes, and interactions remain untouched.
  * ------------------------------------------------------------------------- */
-.dashboard-editorial-shell {
-  --background: #ffffff;
-  --foreground: #19181b;
+
+html:not(.night-mode) .dashboard-editorial-shell {
+  --background: #fffefd;
+  --foreground: #1b191a;
   --surface: #ffffff;
-  --surface-2: #f3f2f1;
+  --surface-2: #f3f1ef;
   --cream: #faf4e8;
   --card: #ffffff;
-  --card-foreground: #19181b;
+  --card-foreground: #1b191a;
   --popover: #ffffff;
-  --popover-foreground: #19181b;
+  --popover-foreground: #1b191a;
   --primary: #c78389;
   --primary-foreground: #ffffff;
-  --secondary: #f0dddd;
-  --secondary-foreground: #6d3f45;
-  --sage: #8daf9e;
-  --sage-soft: #e4f3ec;
-  --rose: #b96f78;
-  --rose-soft: #f5e8e7;
-  --accent: #d8b36f;
-  --accent-foreground: #5e4827;
-  --ink: #19181b;
-  --ink-soft: #6d696a;
-  --muted: #f3f2f1;
-  --muted-foreground: #6d696a;
-  --border: #ddd9d7;
-  --input: #d2c9c7;
-  --ring: #b96f78;
-  --gradient-start: #2e2d31;
-  --gradient-mid: #242327;
-  --gradient-end: #171619;
-  --shadow-color: 35 30 31;
+  --secondary: #f3e3e1;
+  --secondary-foreground: #70484b;
+  --sage: #84a894;
+  --sage-soft: #e7f2eb;
+  --rose: #b97179;
+  --rose-soft: #f7e9e8;
+  --accent: #d5b57e;
+  --accent-foreground: #65502e;
+  --ink: #1b191a;
+  --ink-soft: #706a6b;
+  --muted: #f2f0ee;
+  --muted-foreground: #706a6b;
+  --border: #ded9d6;
+  --input: #d5cbc8;
+  --ring: #b97179;
+  --shadow-color: 44 37 37;
   background: var(--background) !important;
   color: var(--ink);
 }
 
-.dashboard-editorial-shell .app-topbar {
-  border-bottom: 1px solid #e7e4e2 !important;
+html:not(.night-mode) .dashboard-editorial-shell .app-topbar {
+  border-bottom: 1px solid #e6e1df !important;
   border-radius: 0 !important;
-  background: rgb(255 255 255 / 96%) !important;
-  box-shadow: 0 2px 12px rgb(24 22 23 / 4%) !important;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  background: #ffffff !important;
+  box-shadow: 0 2px 10px rgb(35 30 30 / 4%) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-.dashboard-editorial-shell .app-topbar > div {
+html:not(.night-mode) .dashboard-editorial-shell .app-topbar > div {
   max-width: 42rem;
-  padding-inline: 1rem;
+  padding: 0.45rem 1rem 0.55rem;
 }
 
-.dashboard-editorial-shell .app-topbar > div > div {
-  border-bottom-color: #ece9e7 !important;
+html:not(.night-mode) .dashboard-editorial-shell .app-topbar > div > div {
+  border-bottom-color: #ece8e6 !important;
 }
 
-.dashboard-editorial-shell .app-topbar h1 {
+html:not(.night-mode) .dashboard-editorial-shell .app-topbar > div > div:first-child {
+  min-height: 2.45rem;
+  padding-bottom: 0.4rem;
+}
+
+html:not(.night-mode) .dashboard-editorial-shell .app-topbar img[src*="myroutine-logo"] {
+  width: 7.4rem;
+  height: 2.1rem;
+}
+
+html:not(.night-mode) .dashboard-editorial-shell .app-topbar h1 {
   color: var(--ink);
+  font-size: clamp(1.05rem, 4.4vw, 1.3rem);
   font-weight: 700;
   letter-spacing: -0.025em;
 }
 
-.dashboard-editorial-shell .app-shell-kicker {
+html:not(.night-mode) .dashboard-editorial-shell .app-shell-kicker {
+  margin-bottom: 0.25rem;
   color: var(--rose);
+  font-size: 0.62rem;
   font-weight: 700;
+  letter-spacing: 0.06em;
 }
 
-.dashboard-editorial-shell .app-main {
+html:not(.night-mode) .dashboard-editorial-shell .app-topbar .rounded-full {
+  box-shadow: none;
+}
+
+html:not(.night-mode) .dashboard-editorial-shell .app-main {
+  width: 100%;
   max-width: 42rem;
-  padding-inline: 1rem;
+  padding: 1rem 1rem 6.5rem;
   background: var(--background);
 }
 
-.dashboard-editorial-shell main > .home-card-stack {
-  gap: 1rem;
-}
-
-.dashboard-editorial-shell .surface-card {
-  border: 1px solid var(--border);
-  border-radius: 1.25rem;
-  background: var(--surface) !important;
-  box-shadow:
-    0 1px 0 rgb(255 255 255 / 92%),
-    0 7px 18px rgb(var(--shadow-color) / 6%);
-}
-
-.dashboard-editorial-shell .home-feature-grid {
+html:not(.night-mode) .dashboard-editorial-shell main > .home-card-stack {
+  display: flex;
+  flex-direction: column;
   gap: 0.8rem;
 }
 
-.dashboard-editorial-shell .home-feature-item {
-  aspect-ratio: 1.12 / 1;
+html:not(.night-mode) .dashboard-editorial-shell .home-card-stack > [data-home-card-id] {
+  margin-top: 0 !important;
 }
 
-.dashboard-editorial-shell .home-feature-item > .ink-card,
-.dashboard-editorial-shell .home-calorie-card {
-  border-radius: 1.35rem;
+html:not(.night-mode) .dashboard-editorial-shell .home-card-stack > [data-home-card-id]::before,
+html:not(.night-mode) .dashboard-editorial-shell .home-feature-item::after {
+  display: none;
 }
 
-/* The reference app reserves its strongest color for the workout action. */
-.dashboard-editorial-shell .home-primary-card > .ink-card {
-  border: 1px solid #121114;
-  background:
-    radial-gradient(circle at 84% 8%, rgb(255 255 255 / 12%) 0 1.1rem, transparent 1.16rem),
-    radial-gradient(circle at 89% 16%, rgb(255 255 255 / 7%) 0 3.3rem, transparent 3.36rem),
-    linear-gradient(145deg, #333237 0%, #26252a 54%, #171619 100%) !important;
+html:not(.night-mode) .dashboard-editorial-shell .surface-card {
+  border: 1px solid var(--border);
+  border-radius: 1.15rem;
+  background: var(--surface) !important;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 13%),
-    0 12px 26px rgb(21 18 20 / 17%);
+    0 1px 0 rgb(255 255 255 / 90%),
+    0 5px 14px rgb(var(--shadow-color) / 5%);
 }
 
-.dashboard-editorial-shell .home-primary-card > .ink-card::before,
-.dashboard-editorial-shell .home-primary-card > .ink-card::after {
-  border-color: rgb(255 255 255 / 16%);
+html:not(.night-mode) .dashboard-editorial-shell .home-feature-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: stretch;
+  gap: 0.65rem;
 }
 
-.dashboard-editorial-shell .home-primary-card > .ink-card h2 {
+html:not(.night-mode) .dashboard-editorial-shell .home-feature-item {
+  display: flex;
+  min-width: 0;
+  aspect-ratio: 1.08 / 1;
+}
+
+html:not(.night-mode) .dashboard-editorial-shell .home-feature-item > .ink-card,
+html:not(.night-mode) .dashboard-editorial-shell .home-calorie-card {
+  width: 100%;
+  height: 100% !important;
+  min-height: 0 !important;
+  border-radius: 1.15rem;
+}
+
+/* The daily workout is the single dark, high-contrast action surface. */
+html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card {
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid #121114;
+  background: #262529 !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 12%),
+    0 9px 18px rgb(28 24 25 / 15%);
+}
+
+html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card::before,
+html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card::after {
+  display: none;
+}
+
+html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card h2 {
+  position: relative;
+  z-index: 1;
+  max-width: 94%;
+  margin-top: 0.65rem;
   color: #ffffff;
+  font-size: clamp(1.1rem, 5vw, 1.45rem);
   font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
 }
 
-.dashboard-editorial-shell .home-primary-card > .ink-card p {
+html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card p {
   color: rgb(255 255 255 / 72%);
 }
 
-.dashboard-editorial-shell .home-primary-card > .ink-card button {
+html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card button {
+  position: relative;
+  z-index: 1;
+  min-height: 2.45rem;
+  margin-top: 0.65rem;
   border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 0.78rem;
   background: #ffffff;
-  color: #1d1b1f;
-  box-shadow: 0 5px 12px rgb(0 0 0 / 18%);
+  color: #1b191a;
+  box-shadow: 0 4px 10px rgb(0 0 0 / 16%);
 }
 
-.dashboard-editorial-shell .home-primary-card > .ink-card > div:first-child svg {
-  border-color: rgb(255 255 255 / 22%);
-  background: rgb(255 255 255 / 10%);
+html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card > div:first-child svg {
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0.4rem;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 0.7rem;
+  background: rgb(255 255 255 / 9%);
   color: #ffffff;
 }
 
-/* Nutrition is the quiet white companion to the dark workout surface. */
-.dashboard-editorial-shell .home-secondary-card {
-  border: 1px solid #3f3b3d;
-  background:
-    radial-gradient(circle at 100% 0%, #f8eeee 0%, transparent 42%),
-    #ffffff !important;
+/* Nutrition uses blush-white with a restrained sage/cream supporting rhythm. */
+html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  padding: 0.9rem !important;
+  border: 1px solid #d9d2cf;
+  border-radius: 1.15rem;
+  background: #fffdfb !important;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 94%),
-    0 8px 20px rgb(var(--shadow-color) / 6%);
+    inset 0 1px 0 rgb(255 255 255 / 92%),
+    0 6px 15px rgb(var(--shadow-color) / 5%);
 }
 
-.dashboard-editorial-shell .home-secondary-card > div:first-child svg {
-  border-color: transparent;
-  background: transparent;
-  color: var(--ink);
+html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card::before {
+  display: none;
 }
 
-.dashboard-editorial-shell .home-secondary-card > p.font-display {
+html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card > div:first-child,
+html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card > p,
+html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card > div:last-child {
+  position: relative;
+  z-index: 1;
+}
+
+html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card > div:first-child svg {
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0.4rem;
+  border: 0;
+  border-radius: 0.7rem;
+  background: var(--rose-soft);
+  color: var(--rose);
+}
+
+html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card > p.font-display {
+  margin-top: 0.55rem;
   color: var(--ink);
+  font-size: clamp(1.45rem, 6.4vw, 2rem);
   font-weight: 700;
+  letter-spacing: -0.045em;
 }
 
-.dashboard-editorial-shell .home-secondary-card > p:not(.font-display) {
+html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card > p:not(.font-display) {
+  margin-top: 0.15rem;
   color: var(--muted-foreground);
 }
 
-.dashboard-editorial-shell .home-secondary-card > div:last-child {
-  border-color: #ece9e7;
-  background: #f5f5f4;
+html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card > div:last-child {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.2rem;
+  margin-top: 0.55rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #ece7e4;
+  border-radius: 0.75rem;
+  background: #f5f3f1;
   color: var(--ink);
   box-shadow: none;
 }
 
-.dashboard-editorial-shell .dashboard-support-card {
-  border: 1px solid #c9c4c2;
+/* Supporting modules are compact, clearly separated, and never oversized. */
+html:not(.night-mode) .dashboard-editorial-shell .dashboard-support-card {
+  min-height: 5.5rem;
+  border: 1px solid #d9d3d0;
+  border-radius: 1.15rem;
   background: #ffffff !important;
   box-shadow:
-    0 1px 0 rgb(255 255 255 / 94%),
-    0 8px 20px rgb(var(--shadow-color) / 7%) !important;
+    0 1px 0 rgb(255 255 255 / 92%),
+    0 6px 15px rgb(var(--shadow-color) / 5%) !important;
 }
 
-.dashboard-editorial-shell .dashboard-notice {
-  border-inline-start-color: var(--rose);
-  background: #fbf1f0 !important;
+html:not(.night-mode) .dashboard-editorial-shell .dashboard-notice {
+  border-radius: 1.05rem;
+  border-inline-start: 0.18rem solid var(--rose);
+  background: var(--rose-soft) !important;
+  box-shadow: none !important;
 }
 
-.dashboard-editorial-shell .dashboard-module {
+html:not(.night-mode) .dashboard-editorial-shell .dashboard-module {
+  margin-top: 0 !important;
   padding: 0;
+  border: 0;
   background: transparent;
 }
 
-.dashboard-editorial-shell .dashboard-module .surface-card {
-  border-radius: 1.05rem;
-  box-shadow:
-    0 1px 0 rgb(255 255 255 / 88%),
-    0 6px 14px rgb(var(--shadow-color) / 5%);
+html:not(.night-mode) .dashboard-editorial-shell .dashboard-module .grid {
+  gap: 0.6rem;
 }
 
-.dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(1) {
+html:not(.night-mode) .dashboard-editorial-shell .dashboard-module .surface-card {
+  border-radius: 0.95rem;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 84%),
+    0 5px 12px rgb(var(--shadow-color) / 4%);
+}
+
+html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(1),
+html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--check-in .surface-card:first-of-type {
   background: #faece9 !important;
 }
 
-.dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(2) {
-  background: #f5f0e7 !important;
+html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(2) {
+  background: var(--cream) !important;
 }
 
-.dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(3) {
-  background: #eaf2ed !important;
+html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(3) {
+  background: var(--sage-soft) !important;
 }
 
-.dashboard-editorial-shell .dashboard-module--check-in .surface-card:first-of-type {
-  background: #fbf0ee !important;
-}
-
-.dashboard-editorial-shell .dashboard-module--check-in .surface-card:last-child {
+html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--check-in .surface-card:last-child {
   background: #faf3e7 !important;
 }
 
-.dashboard-editorial-shell .dashboard-module--measurements .surface-card {
+html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--measurements .surface-card {
   background: #ffffff !important;
 }
 
-.dashboard-editorial-shell .consistency-linear-track {
-  background: #e9e7e5;
+html:not(.night-mode) .dashboard-editorial-shell .consistency-linear-track {
+  height: 0.3rem;
+  background: #ebe8e6;
 }
 
-.dashboard-editorial-shell .consistency-linear-track .progress-fill,
-.dashboard-editorial-shell .consistency-ring-value {
+html:not(.night-mode) .dashboard-editorial-shell .consistency-linear-track .progress-fill,
+html:not(.night-mode) .dashboard-editorial-shell .consistency-ring-value {
   background: var(--rose);
   stroke: var(--rose);
 }
 
-.dashboard-editorial-shell .consistency-ring-track {
-  stroke: #e6e1df;
+html:not(.night-mode) .dashboard-editorial-shell .consistency-ring-track {
+  stroke: #e8e1df;
 }
 
-/* The reference uses a native-looking white tab bar rather than a dark
- * website footer. Keep the same links and active-state behavior. */
-.dashboard-editorial-shell > nav > .nav-shell {
+/* Quiet native tab bar: one separator, no floating website footer treatment. */
+html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell {
   width: 100%;
   max-width: 42rem;
   margin-inline: auto;
   margin-bottom: 0;
-  padding: 0.35rem 0.55rem;
+  padding: 0.28rem 0.45rem max(0.28rem, env(safe-area-inset-bottom));
   border: 0;
-  border-top: 1px solid #e7e4e2;
+  border-top: 1px solid #e7e3e1;
   border-radius: 0;
   background: rgb(255 255 255 / 98%) !important;
-  box-shadow: 0 -5px 18px rgb(var(--shadow-color) / 7%) !important;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 -3px 12px rgb(var(--shadow-color) / 5%) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-.dashboard-editorial-shell > nav > .nav-shell .app-nav-link {
-  min-height: 3.3rem;
-  border-radius: 0.9rem;
-  color: #787274;
+html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-link {
+  min-height: 3.15rem;
+  border-radius: 0.75rem;
+  color: #7c7475;
 }
 
-.dashboard-editorial-shell > nav > .nav-shell .app-nav-link > span:first-child {
+html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-link > span:first-child {
   display: none;
 }
 
-.dashboard-editorial-shell > nav > .nav-shell .app-nav-link > svg {
-  width: 1.15rem;
-  height: 1.15rem;
-  padding: 0.38rem;
+html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-link > svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0.36rem;
   border: 0;
   border-radius: 999px;
   background: transparent;
 }
 
-.dashboard-editorial-shell > nav > .nav-shell .app-nav-link[data-status="active"] {
-  background: #f5f1ef;
+html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-link[data-status="active"] {
+  background: #f6f0ef;
   color: var(--ink);
   font-weight: 700;
 }
 
-.dashboard-editorial-shell > nav > .nav-shell .app-nav-link[data-status="active"] > svg {
+html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-link[data-status="active"] > svg {
   background: var(--ink);
   color: #ffffff;
   box-shadow: none;
 }
 
 @media (max-width: 639px) {
-  .dashboard-editorial-shell .app-topbar > div,
-  .dashboard-editorial-shell .app-main {
+  html:not(.night-mode) .dashboard-editorial-shell .app-topbar > div,
+  html:not(.night-mode) .dashboard-editorial-shell .app-main {
     padding-inline: 0.9rem;
   }
 
-  .dashboard-editorial-shell > nav > .nav-shell {
-    max-width: none;
+  html:not(.night-mode) .dashboard-editorial-shell .home-feature-grid {
+    gap: 0.55rem;
   }
 }
