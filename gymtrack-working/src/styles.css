@@ -6954,3 +6954,163 @@ html:not(.night-mode) .app-topbar img[src*="myroutine-logo"] {
   width: 6.5rem;
   height: 1.72rem;
 }
+
+/* -------------------------------------------------------------------------
+ * Night comfort pass
+ * Keep the selected hue, but move every neutral surface into a layered,
+ * low-glare charcoal range. This is intentionally softer than pure black and
+ * avoids using bright pastel fills as large dark-mode surfaces.
+ * ------------------------------------------------------------------------- */
+html.night-mode,
+html.night-mode[data-theme] {
+  --background: #17161b;
+  --foreground: #f2edf0;
+  --surface: #242229;
+  --surface-2: #2d2932;
+  --cream: color-mix(in srgb, var(--accent) 12%, var(--background) 88%);
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: #29252e;
+  --popover-foreground: var(--foreground);
+  --ink: #f2edf0;
+  --ink-soft: #c9bec7;
+  --muted: #211f26;
+  --muted-foreground: #b8adb6;
+  --secondary: #352d36;
+  --secondary-foreground: #f1e9ee;
+  --rose-soft: color-mix(in srgb, var(--rose) 24%, var(--background) 76%);
+  --sage-soft: color-mix(in srgb, var(--sage) 18%, var(--background) 82%);
+  --border: #48414b;
+  --input: #514954;
+  --accent-foreground: #f2e9ee;
+  --ring: color-mix(in srgb, var(--primary) 76%, white 24%);
+  --shadow-color: 8 7 11;
+}
+
+html.night-mode,
+html.night-mode body,
+html.night-mode #root {
+  background: var(--background) !important;
+  background-color: var(--background) !important;
+  color: var(--foreground);
+}
+
+html.night-mode .app-topbar,
+html.night-mode .nav-shell {
+  background: var(--surface) !important;
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 3%),
+    0 6px 18px rgb(0 0 0 / 18%) !important;
+}
+
+html.night-mode .app-main,
+html.night-mode .page-scroll-container {
+  background: var(--background) !important;
+}
+
+html.night-mode .surface-card,
+html.night-mode .dashboard-support-card {
+  border-color: var(--border) !important;
+  background: var(--surface) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 3%),
+    0 6px 18px rgb(0 0 0 / 15%) !important;
+}
+
+html.night-mode .ink-card {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--ink);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 4%),
+    0 8px 20px rgb(0 0 0 / 18%);
+}
+
+html.night-mode .dashboard-editorial-shell .home-primary-card > .ink-card {
+  border-color: color-mix(in srgb, var(--rose) 56%, var(--border));
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--rose) 42%, var(--surface-2) 58%),
+      color-mix(in srgb, var(--rose) 23%, var(--background) 77%)
+    ) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 6%),
+    0 10px 24px rgb(0 0 0 / 24%);
+}
+
+html.night-mode .dashboard-editorial-shell .home-primary-card > .ink-card button {
+  border-color: rgb(255 255 255 / 12%);
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  box-shadow: 0 5px 12px rgb(0 0 0 / 20%);
+}
+
+html.night-mode .dashboard-editorial-shell .home-secondary-card {
+  border-color: var(--border);
+  background: var(--surface) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .dashboard-notice {
+  border-inline-start-color: color-mix(in srgb, var(--rose) 80%, white 20%);
+  background: color-mix(in srgb, var(--rose) 18%, var(--surface)) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .dashboard-module .surface-card {
+  background: var(--surface-2) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(1),
+html.night-mode .dashboard-editorial-shell .dashboard-module--check-in .surface-card:first-of-type {
+  background: color-mix(in srgb, var(--rose) 17%, var(--surface)) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(2),
+html.night-mode .dashboard-editorial-shell .dashboard-module--check-in .surface-card:last-child {
+  background: color-mix(in srgb, var(--accent) 13%, var(--surface)) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(3) {
+  background: color-mix(in srgb, var(--sage) 16%, var(--surface)) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .consistency-linear-track {
+  background: #3a343d;
+}
+
+html.night-mode .dashboard-editorial-shell .consistency-linear-track .progress-fill,
+html.night-mode .dashboard-editorial-shell .consistency-ring-value {
+  background: color-mix(in srgb, var(--rose) 82%, white 18%);
+  stroke: color-mix(in srgb, var(--rose) 82%, white 18%);
+}
+
+html.night-mode .dashboard-editorial-shell .consistency-ring-track {
+  stroke: #423b45;
+}
+
+html.night-mode .app-shell > nav > .nav-shell .app-nav-link[data-status="active"] {
+  background: color-mix(in srgb, var(--primary) 18%, var(--surface));
+  color: color-mix(in srgb, var(--primary) 72%, white 28%);
+}
+
+html.night-mode .app-shell > nav > .nav-shell .app-nav-link[data-status="active"] > svg {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--primary) 82%, white 18%);
+  color: #241d23;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 28%, transparent);
+}
+
+html.night-mode input,
+html.night-mode textarea,
+html.night-mode select {
+  border-color: var(--input);
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+html.night-mode .border-border,
+html.night-mode [class*="border-border/"] {
+  border-color: var(--border) !important;
+}
