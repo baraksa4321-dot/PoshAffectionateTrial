@@ -5903,3 +5903,14 @@ body {
       var(--surface)
     ) !important;
 }
+
+/* Give each home section room to breathe without changing its order. */
+.dashboard-editorial-shell main > .home-card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.dashboard-editorial-shell main > .home-card-stack > * {
+  margin-top: 0 !important;
+}
