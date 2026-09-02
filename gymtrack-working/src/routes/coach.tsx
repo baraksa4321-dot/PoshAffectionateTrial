@@ -5038,7 +5038,9 @@ export function CoachDashboardPage({
           >
             <div
               data-coach-workspace="true"
-              className={`w-full ${editingDayId ? "workout-builder-workspace min-h-full flex flex-col" : ""} ${trackingLanding ? "space-y-1" : "space-y-4"} bg-background ${
+                className={`w-full ${editingDayId ? "workout-builder-workspace min-h-full flex flex-col" : ""} ${
+                  clientsOnly ? "space-y-1.5" : trackingLanding ? "space-y-1" : "space-y-4"
+                } bg-background ${
                 workspacePage || openEditor
                   ? "min-w-0 max-w-full overflow-x-hidden pb-10"
                   : "max-w-2xl rounded-3xl shadow-2xl"
@@ -5046,19 +5048,23 @@ export function CoachDashboardPage({
             >
               {!editingDayId ? (
                 <div
-                  className={`flex min-w-0 items-center justify-between gap-2 overflow-x-hidden border-b border-border/60 ${
-                    trackingLanding ? "px-3 pb-2" : "px-4 pb-3 sm:px-6"
+                    className={`flex min-w-0 items-center justify-between gap-2 overflow-x-hidden border-b border-border/60 ${
+                      clientsOnly ? "px-2 pb-1.5" : trackingLanding ? "px-3 pb-2" : "px-4 pb-3 sm:px-6"
                   }`}
                 >
                   <h3 className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden font-bold text-base text-ink">
-                    <Users
-                      className={
-                        trackingLanding ? "h-4 w-4 text-primary" : "h-5 w-5 text-primary"
-                      }
-                    />
-                    <span className="shrink-0">
-                      {trackingLanding ? "דוח המעקב:" : "תכנית המתאמן:"}
-                    </span>
+                      {!clientsOnly || trackingLanding ? (
+                        <Users
+                          className={
+                            trackingLanding ? "h-4 w-4 text-primary" : "h-5 w-5 text-primary"
+                          }
+                        />
+                      ) : null}
+                      {!clientsOnly || trackingLanding ? (
+                        <span className="shrink-0">
+                          {trackingLanding ? "דוח המעקב:" : "תכנית המתאמן:"}
+                        </span>
+                      ) : null}
                     <span className="truncate text-primary font-extrabold">
                       {isSelfSelected
                         ? `התוכנית של ${selfDisplayName}`
@@ -5087,7 +5093,7 @@ export function CoachDashboardPage({
                     }}
                     aria-label="סגירת תכנית המתאמן"
                     className={`grid place-items-center border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-ink ${
-                      trackingLanding ? "h-8 w-8" : "h-9 w-9"
+                      clientsOnly ? "h-8 w-8" : trackingLanding ? "h-8 w-8" : "h-9 w-9"
                     }`}
                   >
                     <X className="h-4 w-4" />
@@ -5142,7 +5148,7 @@ export function CoachDashboardPage({
                   <nav
                     aria-label="ניווט בסביבת העריכה"
                     className={`sticky top-2 z-10 grid grid-cols-2 rounded-2xl border border-border/70 bg-background/95 shadow-sm backdrop-blur ${
-                      trackingLanding ? "gap-1 p-1" : "gap-2 p-1.5"
+                      clientsOnly || trackingLanding ? "gap-1 p-1" : "gap-2 p-1.5"
                     }`}
                     onTouchStart={(event) => {
                       const touch = event.changedTouches[0];
@@ -5171,7 +5177,7 @@ export function CoachDashboardPage({
                       aria-selected={activeWorkspaceTab === "programs"}
                       role="tab"
                       className={`flex items-center justify-center rounded-xl font-bold transition-colors ${
-                        trackingLanding
+                        clientsOnly || trackingLanding
                           ? "gap-1 px-2 py-1.5 text-[11px]"
                           : "gap-1.5 px-3 py-2.5 text-xs"
                       } ${
@@ -5192,7 +5198,7 @@ export function CoachDashboardPage({
                       aria-selected={activeWorkspaceTab === "nutrition"}
                       role="tab"
                       className={`flex items-center justify-center rounded-xl font-bold transition-colors ${
-                        trackingLanding
+                        clientsOnly || trackingLanding
                           ? "gap-1 px-2 py-1.5 text-[11px]"
                           : "gap-1.5 px-3 py-2.5 text-xs"
                       } ${
@@ -5918,57 +5924,44 @@ export function CoachDashboardPage({
                   {/* Client Programs & Full Exercise Prescription Builder */}
                   <div
                     id="coach-programs"
-                    className={`scroll-mt-24 ${clientsOnly ? "space-y-2" : "space-y-4"} ${
+                    className={`scroll-mt-24 ${clientsOnly ? "space-y-1" : "space-y-4"} ${
                       workspacePage
                         ? "bg-background"
                         : clientsOnly
-                          ? "surface-card rounded-2xl border-primary/15 bg-primary/[0.02] p-2.5"
+                          ? "surface-card rounded-2xl border-primary/15 bg-primary/[0.02] p-1.5"
                           : "surface-card rounded-[1.75rem] border-primary/15 bg-primary/[0.02] p-4"
                     } ${!showProgramBuilder || editingDayId ? "hidden" : ""}`}
                   >
-                    <div
-                      className={`flex items-center justify-between border-b border-border/50 ${
-                        clientsOnly ? "pb-1.5" : "pb-3"
-                      }`}
-                    >
-                      <div>
-                        <h3
-                          className={`flex items-center gap-2 font-display font-extrabold text-ink ${
-                            clientsOnly ? "text-sm" : "text-lg"
-                          }`}
-                        >
-                          <Dumbbell className="h-4 w-4 text-primary" /> תוכנית האימונים
-                        </h3>
-                        <p
-                          className={`text-muted-foreground ${
-                            clientsOnly ? "mt-0.5 text-[10px]" : "mt-1 text-[11px]"
-                          }`}
-                        >
-                          בחר יום כדי לפתוח את מרחב העבודה שלו
-                        </p>
+                    {!clientsOnly ? (
+                      <div className="flex items-center justify-between border-b border-border/50 pb-3">
+                        <div>
+                          <h3 className="flex items-center gap-2 font-display text-lg font-extrabold text-ink">
+                            <Dumbbell className="h-4 w-4 text-primary" /> תוכנית האימונים
+                          </h3>
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            בחר יום כדי לפתוח את מרחב העבודה שלו
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary">
+                          {clientDetails?.programs?.length || 0} תוכניות
+                        </span>
                       </div>
-                      <span
-                        className={`rounded-full bg-primary/10 font-bold text-primary ${
-                          clientsOnly ? "px-2 py-0.5 text-[9px]" : "px-2.5 py-1 text-[10px]"
-                        }`}
-                      >
-                        {clientDetails?.programs?.length || 0} תוכניות
-                      </span>
-                    </div>
+                    ) : null}
 
                     <div
-                      className={`flex items-center justify-between gap-2 border border-dashed border-primary/25 bg-primary/[0.035] ${
-                        clientsOnly ? "rounded-xl p-1.5" : "rounded-2xl p-2.5"
+                      className={`flex items-center gap-2 border border-dashed border-primary/25 bg-primary/[0.035] ${
+                        clientsOnly ? "rounded-xl p-1" : "justify-between rounded-2xl p-2.5"
                       }`}
                     >
-                      <p
-                        className={`font-semibold text-muted-foreground ${
-                          clientsOnly ? "text-[10px]" : "text-[11px]"
-                        }`}
+                      {!clientsOnly ? (
+                        <p className="font-semibold text-[11px] text-muted-foreground">
+                          צריך תוכנית חדשה?
+                        </p>
+                      ) : null}
+                      <form
+                        onSubmit={handleCreateClientProgram}
+                        className={`flex gap-1.5 ${clientsOnly ? "w-full" : ""}`}
                       >
-                        צריך תוכנית חדשה?
-                      </p>
-                      <form onSubmit={handleCreateClientProgram} className="flex gap-2">
                         <input
                           type="text"
                           required
@@ -5977,7 +5970,7 @@ export function CoachDashboardPage({
                           placeholder="שם תוכנית חדשה"
                           className={`rounded-xl border border-border bg-background outline-none focus:border-primary ${
                             clientsOnly
-                              ? "w-28 px-2 py-1 text-[11px]"
+                              ? "min-w-0 flex-1 px-2 py-1 text-[11px]"
                               : "w-36 px-3 py-1.5 text-xs sm:w-52"
                           }`}
                         />
