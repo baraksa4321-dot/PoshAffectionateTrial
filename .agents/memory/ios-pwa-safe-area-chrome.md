@@ -7,4 +7,4 @@ In an installed iOS PWA, do not move fixed app content into a negative bottom of
 
 **Why:** Safari reserves the home-indicator area separately from the scroll content, so a child tab bar alone may not paint the full viewport edge.
 
-**How to apply:** Keep fixed chrome at `bottom: 0`, keep loading marks inside the visual viewport with a small positive bottom gap, and avoid negative safe-area offsets. If the OS inset remains visible, treat it as system chrome rather than placing app content beneath it.
+**How to apply:** Use the large viewport height (`100lvh`) for full-screen PWA shells and loading surfaces, keep fixed chrome at `bottom: 0`, keep loading marks inside the viewport with a small positive bottom gap, and avoid negative safe-area offsets.

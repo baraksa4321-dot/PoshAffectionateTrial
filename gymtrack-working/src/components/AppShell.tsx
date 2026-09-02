@@ -645,8 +645,8 @@ export function AppShell({
       ref={shellRef}
       className={
         authOnly
-          ? `app-shell fixed inset-0 z-[100] min-h-[100dvh] w-full overflow-auto bg-background text-foreground ${pageClassName}`
-          : `app-shell flex h-[100dvh] min-h-0 w-full flex-col overflow-hidden bg-background text-foreground ${pageClassName}`
+            ? `app-shell fixed inset-0 z-[100] min-h-[100lvh] w-full overflow-auto bg-background text-foreground ${pageClassName}`
+            : `app-shell flex h-[100lvh] min-h-0 w-full flex-col overflow-hidden bg-background text-foreground ${pageClassName}`
       }
       dir="rtl"
     >
