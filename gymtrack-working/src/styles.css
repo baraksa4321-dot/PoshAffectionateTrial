@@ -4730,10 +4730,11 @@ html[data-keyboard-open] .nav-shell {
 
 .workout-report-bookmark {
   top: 0.5rem;
-  right: 0;
+  left: 0;
+  right: auto;
   min-height: 5.25rem;
   width: 1.75rem;
-  border-left: 0;
+  border-right: 0;
   border-radius: 0.75rem 0 0 0.75rem;
   transform: none;
 }
@@ -4744,10 +4745,10 @@ html[data-keyboard-open] .nav-shell {
 }
 
 .workout-report-bookmark-open {
-  right: 0;
-  left: auto;
-  border-left: 0;
+  left: 0;
+  right: auto;
   border-right: 0;
+  border-left: 0;
 }
 
 .workout-report-bookmark-open:hover,
@@ -4766,7 +4767,7 @@ html[data-keyboard-open] .nav-shell {
   position: absolute;
   z-index: 1;
   inset-block: 0;
-  inset-inline: 0 1.75rem;
+  inset-inline: 1.75rem 0;
   overflow-y: auto;
   border-radius: inherit;
   border: 1px solid color-mix(in oklch, var(--primary) 35%, var(--border));
@@ -4774,6 +4775,18 @@ html[data-keyboard-open] .nav-shell {
   padding: 1rem;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+}
+
+.workout-report-panel > .workout-daily-report {
+  margin-top: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.workout-report-exercise-list > article {
+  border-radius: 0.85rem;
+  padding: 0.7rem;
 }
 
 /* --- Glass panels --- */
