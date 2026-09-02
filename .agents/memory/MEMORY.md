@@ -16,6 +16,7 @@
 - [Coach tracking deep links](coach-tracking-deep-links.md) — Tracking-to-editor navigation must not abort when program/day associations are stale; pass day and exercise IDs independently.
 - [Coach-to-trainee synchronization](coach-trainee-sync.md) — Remote coach edits need explicit trainee rehydration, without overwriting pending offline-first local changes.
 - [iOS loading scroll lock](loading-scroll-lock.md) — A fixed splash layer does not stop Safari body dragging; lock html/body overflow and touch behavior during loading.
+- [Installed PWA safe-area chrome](ios-pwa-safe-area-chrome.md) — Paint the iOS home-indicator inset through the fixed navigation wrapper to avoid an empty strip below the tab bar.
 - [Targeted formatting checks](targeted-formatting-checks.md) — Compare formatting against the baseline and avoid broad rewrites when a large UI file already has style drift.
 - [Remote refresh draft ownership](remote-refresh-draft-ownership.md) — Keep user-edited controlled fields in a local draft so periodic server refreshes cannot erase in-progress input.
 - [Food library ownership](food-library-ownership.md) — User edits to seeded foods must become owned overrides so sync does not restore the original values.

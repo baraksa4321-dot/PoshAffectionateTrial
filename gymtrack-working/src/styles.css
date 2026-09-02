@@ -530,6 +530,8 @@ html.night-mode textarea::placeholder {
  * also covers responsive, hover, focus and disabled utility variants.
  */
 :root[data-theme] {
+  --sage: color-mix(in srgb, var(--primary) 72%, var(--surface));
+  --sage-soft: color-mix(in srgb, var(--primary) 12%, var(--surface));
   --destructive: var(--rose);
   --destructive-foreground: var(--primary-foreground);
   --status-success: color-mix(in srgb, var(--primary) 78%, var(--ink));
@@ -4936,20 +4938,8 @@ textarea {
   border-color: var(--border);
 }
 
-/* All ordinary copy stays black across the selectable palettes. */
-:root,
-:root[data-theme] {
-  --foreground: #111111;
-  --ink-soft: #111111;
-  --muted-foreground: #111111;
-  --secondary-foreground: #111111;
-  --accent-foreground: #111111;
-  --card-foreground: #111111;
-  --popover-foreground: #111111;
-}
-
 body {
-  color: #111111;
+  color: var(--foreground);
 }
 
 /* Keep legacy utility colors inside the approved blush / ivory palette. */
@@ -6143,42 +6133,6 @@ body {
  * Presentation only: existing DOM, order, routes, and interactions are kept.
  * ------------------------------------------------------------------------- */
 
-:root:not(.night-mode)[data-theme="light-brown"] {
-  --background: #f6f0e9;
-  --foreground: #30282b;
-  --surface: #fffdfb;
-  --surface-2: #f7e8e3;
-  --cream: #fbf2e8;
-  --card: #fffdfb;
-  --card-foreground: #30282b;
-  --popover: #fffdfb;
-  --popover-foreground: #30282b;
-  --primary: #e97870;
-  --primary-foreground: #fffaf7;
-  --secondary: #f1dcd7;
-  --secondary-foreground: #75433e;
-  --rose: #d9646b;
-  --rose-soft: #f8e2df;
-  --accent: #d5a05c;
-  --accent-foreground: #694b2b;
-  --ink: #30282b;
-  --ink-soft: #74686b;
-  --muted: #f1eae5;
-  --muted-foreground: #74686b;
-  --border: #e8d9d3;
-  --input: #dfcbc4;
-  --ring: #e97870;
-  --gradient-start: #ef8b7f;
-  --gradient-mid: #e97870;
-  --gradient-end: #d9646b;
-  --shadow-color: 68 46 47;
-}
-
-:root:not(.night-mode)[data-theme="light-brown"] body,
-:root:not(.night-mode)[data-theme="light-brown"] #root {
-  background-color: var(--background) !important;
-}
-
 body {
   background: var(--background) !important;
 }
@@ -6627,31 +6581,15 @@ body {
  * ------------------------------------------------------------------------- */
 
 html:not(.night-mode) .dashboard-editorial-shell {
-  --background: #fffefd;
-  --foreground: #1b191a;
-  --surface: #ffffff;
-  --surface-2: #f3f1ef;
-  --cream: #faf4e8;
-  --card: #ffffff;
-  --card-foreground: #1b191a;
-  --popover: #ffffff;
-  --popover-foreground: #1b191a;
-  --ink: #1b191a;
-  --ink-soft: #706a6b;
-  --muted: #f2f0ee;
-  --muted-foreground: #706a6b;
-  --border: #ded9d6;
-  --input: #d5cbc8;
-  --shadow-color: 44 37 37;
   background: var(--background) !important;
   color: var(--ink);
 }
 
 html:not(.night-mode) .dashboard-editorial-shell .app-topbar {
-  border-bottom: 1px solid #e6e1df !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 78%, transparent) !important;
   border-radius: 0 !important;
-  background: #ffffff !important;
-  box-shadow: 0 2px 10px rgb(35 30 30 / 4%) !important;
+  background: var(--surface) !important;
+  box-shadow: 0 2px 10px rgb(var(--shadow-color) / 4%) !important;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -6662,7 +6600,7 @@ html:not(.night-mode) .dashboard-editorial-shell .app-topbar > div {
 }
 
 html:not(.night-mode) .dashboard-editorial-shell .app-topbar > div > div {
-  border-bottom-color: #ece8e6 !important;
+  border-bottom-color: color-mix(in srgb, var(--border) 55%, transparent) !important;
 }
 
 html:not(.night-mode) .dashboard-editorial-shell .app-topbar > div > div:first-child {
@@ -6749,7 +6687,7 @@ html:not(.night-mode) .dashboard-editorial-shell .home-calorie-card {
 html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card {
   isolation: isolate;
   overflow: hidden;
-  border: 1px solid #121114;
+  border: 1px solid color-mix(in srgb, var(--primary) 78%, var(--ink));
   background:
     linear-gradient(
       145deg,
@@ -6771,7 +6709,7 @@ html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card 
   z-index: 1;
   max-width: 94%;
   margin-top: 0.65rem;
-  color: #ffffff;
+  color: var(--primary-foreground);
   font-size: clamp(1.1rem, 5vw, 1.45rem);
   font-weight: 700;
   line-height: 1.08;
@@ -6779,7 +6717,7 @@ html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card 
 }
 
 html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card p {
-  color: rgb(255 255 255 / 72%);
+  color: color-mix(in srgb, var(--primary-foreground) 72%, transparent);
 }
 
 html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card button {
@@ -6787,10 +6725,10 @@ html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card 
   z-index: 1;
   min-height: 2.45rem;
   margin-top: 0.65rem;
-  border: 1px solid rgb(255 255 255 / 12%);
+  border: 1px solid color-mix(in srgb, var(--primary-foreground) 18%, transparent);
   border-radius: 0.78rem;
-  background: #ffffff;
-  color: #1b191a;
+  background: var(--surface);
+  color: var(--ink);
   box-shadow: 0 4px 10px rgb(0 0 0 / 16%);
 }
 
@@ -6798,10 +6736,10 @@ html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card 
   width: 1.85rem;
   height: 1.85rem;
   padding: 0.4rem;
-  border: 1px solid rgb(255 255 255 / 22%);
+  border: 1px solid color-mix(in srgb, var(--primary-foreground) 28%, transparent);
   border-radius: 0.7rem;
-  background: rgb(255 255 255 / 9%);
-  color: #ffffff;
+  background: color-mix(in srgb, var(--primary-foreground) 12%, transparent);
+  color: var(--primary-foreground);
 }
 
 /* Nutrition uses blush-white with a restrained sage/cream supporting rhythm. */
@@ -6813,9 +6751,9 @@ html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card {
   align-items: stretch;
   justify-content: space-between;
   padding: 0.9rem !important;
-  border: 1px solid #d9d2cf;
+  border: 1px solid var(--border);
   border-radius: 1.15rem;
-  background: #fffdfb !important;
+  background: var(--surface) !important;
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 92%),
     0 6px 15px rgb(var(--shadow-color) / 5%);
@@ -6867,9 +6805,9 @@ html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card > div:last
   min-height: 2.2rem;
   margin-top: 0.55rem;
   padding: 0.5rem 0.6rem;
-  border: 1px solid #ece7e4;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
   border-radius: 0.75rem;
-  background: #f5f3f1;
+  background: color-mix(in srgb, var(--secondary) 45%, var(--surface));
   color: var(--ink);
   box-shadow: none;
 }
@@ -6877,9 +6815,9 @@ html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card > div:last
 /* Supporting modules are compact, clearly separated, and never oversized. */
 html:not(.night-mode) .dashboard-editorial-shell .dashboard-support-card {
   min-height: 5.5rem;
-  border: 1px solid #d9d3d0;
+  border: 1px solid var(--border);
   border-radius: 1.15rem;
-  background: #ffffff !important;
+  background: var(--surface) !important;
   box-shadow:
     0 1px 0 rgb(255 255 255 / 92%),
     0 6px 15px rgb(var(--shadow-color) / 5%) !important;
@@ -6912,23 +6850,23 @@ html:not(.night-mode) .dashboard-editorial-shell .dashboard-module .surface-card
 
 html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(1),
 html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--check-in .surface-card:first-of-type {
-  background: #faece9 !important;
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface)) !important;
 }
 
 html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(2) {
-  background: var(--cream) !important;
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface)) !important;
 }
 
 html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(3) {
-  background: var(--sage-soft) !important;
+  background: color-mix(in srgb, var(--secondary) 24%, var(--surface)) !important;
 }
 
 html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--check-in .surface-card:last-child {
-  background: #faf3e7 !important;
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface)) !important;
 }
 
 html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--measurements .surface-card {
-  background: #ffffff !important;
+  background: var(--surface) !important;
 }
 
 html:not(.night-mode) .dashboard-editorial-shell .consistency-linear-track {
@@ -6952,11 +6890,11 @@ html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell {
   max-width: 42rem;
   margin-inline: auto;
   margin-bottom: 0;
-  padding: 0.28rem 0.45rem max(0.28rem, env(safe-area-inset-bottom));
+  padding: 0.28rem 0.45rem;
   border: 0;
-  border-top: 1px solid #e7e3e1;
+  border-top: 1px solid var(--border);
   border-radius: 0;
-  background: rgb(255 255 255 / 98%) !important;
+  background: var(--surface) !important;
   box-shadow: 0 -3px 12px rgb(var(--shadow-color) / 5%) !important;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -6965,7 +6903,7 @@ html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell {
 html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-link {
   min-height: 3.15rem;
   border-radius: 0.75rem;
-  color: #7c7475;
+  color: var(--muted-foreground);
 }
 
 html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-link > span:first-child {
@@ -6982,15 +6920,31 @@ html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-lin
 }
 
 html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-link[data-status="active"] {
-  background: #f6f0ef;
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
   color: var(--ink);
   font-weight: 700;
 }
 
 html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-link[data-status="active"] > svg {
   background: var(--ink);
-  color: #ffffff;
+  color: var(--surface);
   box-shadow: none;
+}
+
+/* In an installed iOS PWA, the home-indicator inset belongs to the app
+ * chrome, not to an empty strip below it. Paint the fixed nav parent through
+ * that inset so the bottom edge stays part of the selected palette. */
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  html,
+  body,
+  #root {
+    background: var(--background) !important;
+  }
+
+  .app-shell > nav {
+    background: var(--surface);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 @media (max-width: 639px) {
