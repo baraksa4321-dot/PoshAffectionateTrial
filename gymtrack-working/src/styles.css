@@ -5914,3 +5914,57 @@ body {
 .dashboard-editorial-shell main > .home-card-stack > * {
   margin-top: 0 !important;
 }
+
+/* Increase visual separation with the existing blush palette. */
+.dashboard-editorial-shell .home-primary-card > .ink-card {
+  background:
+    radial-gradient(
+      circle at 88% 18%,
+      color-mix(in srgb, var(--primary-foreground) 24%, transparent) 0 8%,
+      transparent 8.5% 19%,
+      color-mix(in srgb, var(--primary-foreground) 12%, transparent) 19.5% 20%,
+      transparent 20.5%
+    ),
+    linear-gradient(
+      145deg,
+      var(--rose) 0%,
+      var(--primary) 56%,
+      var(--gradient-end) 100%
+    );
+}
+
+.dashboard-editorial-shell .home-secondary-card {
+  border-color: color-mix(in srgb, var(--rose) 42%, var(--border));
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--rose-soft) 76%, var(--surface)),
+      color-mix(in srgb, var(--cream) 48%, var(--surface))
+    ) !important;
+}
+
+.dashboard-editorial-shell .dashboard-support-card {
+  border-color: color-mix(in srgb, var(--rose) 34%, var(--border));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--rose-soft) 58%, var(--surface)),
+      var(--surface)
+    ) !important;
+}
+
+.dashboard-editorial-shell .dashboard-notice {
+  border-inline-start-color: var(--rose);
+  background: color-mix(in srgb, var(--rose-soft) 58%, var(--surface)) !important;
+}
+
+.dashboard-editorial-shell .dashboard-module--activity .surface-card,
+.dashboard-editorial-shell .dashboard-module--measurements .surface-card {
+  border-color: color-mix(in srgb, var(--rose) 34%, var(--border));
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--rose-soft) 32%, var(--surface)),
+      var(--surface)
+    ) !important;
+}
