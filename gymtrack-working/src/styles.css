@@ -767,7 +767,23 @@ html.night-mode .bg-background {
    controls comfortably below it without changing the normal browser layout. */
 @media (display-mode: standalone), (display-mode: fullscreen) {
   .app-topbar {
-    padding-top: max(1.25rem, env(safe-area-inset-top)) !important;
+    padding-top: max(3rem, env(safe-area-inset-top)) !important;
+  }
+
+  /* Full-screen coach surfaces and the report drawer start at viewport top,
+     so they need their own safe-area clearance instead of relying on the
+     regular app header. */
+  .overlay-root[data-overlay-variant="full"] > [data-overlay-panel] {
+    box-sizing: border-box;
+    padding-top: max(3rem, env(safe-area-inset-top)) !important;
+  }
+
+  .workout-report-bookmark {
+    top: max(3rem, env(safe-area-inset-top)) !important;
+  }
+
+  .workout-report-panel {
+    padding-top: calc(1rem + max(3rem, env(safe-area-inset-top))) !important;
   }
 }
 
