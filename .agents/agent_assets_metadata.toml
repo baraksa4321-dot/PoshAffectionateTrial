@@ -168,3 +168,45 @@ mtime_ms = 1787490757124
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3f652e60-dff6-430e-b204-89fb141ec257/d9b38989-c431-4661-a745-9f5a9bfb382d/6842a8a5-f846-440a-a2fb-6341e3c66652"
 storage_version_token = "1787490766925936"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "1Go81Kufe0zOx4fYwY5jE"
+uri = "file://research/notes.md"
+type = "text"
+title = "Research Notes"
+description = "Research plan, findings log, limitations, and current GymTrack capability coverage."
+logical_id = "9825e0fd-f8fd-4720-8a4a-b633bc82d62e"
+content_hash = "sha256:0c466f26c546cd848fdff9b2a1e6811f7734376eb5abc4de920c5b049e7e57da"
+size = 9225
+mtime_ms = 1788354404342
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:9f99d2e5-5d2e-4b5a-bf24-93a3957a7bb5/9825e0fd-f8fd-4720-8a4a-b633bc82d62e/a2ea385a-6a1f-49bc-b8d6-f5b52b991555"
+storage_version_token = "1788354421661909"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "WA8PX4yk5_fJzK3P4vw8G"
+uri = "file://research/gymtrack-market-analysis.md"
+type = "text"
+title = "GymTrack Market Analysis"
+description = "Evidence-based Hebrew market research and prioritized product recommendations for GymTrack/MyRoutine."
+logical_id = "a1b63519-2c63-4789-ae14-429cbdf50589"
+content_hash = "sha256:063628b47e21e01989da4d174129e1e09321d4fe6112c72cdb6514ea5f5403f9"
+size = 30894
+mtime_ms = 1788354404434
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:9f99d2e5-5d2e-4b5a-bf24-93a3957a7bb5/a1b63519-2c63-4789-ae14-429cbdf50589/7c503318-80a6-4f7d-8b7d-ff3924c29763"
+storage_version_token = "1788354420369932"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "ZRmwCBw02EON7Te9fW7cC"
+uri = "file://research/sources.json"
+type = "unspecified"
+title = "Research Source Registry"
+description = "41-source registry with URLs, dates, evidence types, tiers, and local evidence paths."
+logical_id = "b39f9b03-d849-4c04-aa11-f30226ae388a"
+content_hash = "sha256:a97249d12bc068b70428db97857253ee20c8fb5c1bf0fcaf39ed4d7d8cc31e29"
+size = 21882
+mtime_ms = 1788354270762
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:9f99d2e5-5d2e-4b5a-bf24-93a3957a7bb5/b39f9b03-d849-4c04-aa11-f30226ae388a/ed763d74-3bf5-4274-ae3a-ed047eee3db0"
+storage_version_token = "1788354422990271"
+content_type = "application/octet-stream"
