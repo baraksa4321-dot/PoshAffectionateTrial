@@ -5058,6 +5058,23 @@ body {
 .app-nav-link {
   min-height: 3.35rem;
   border-radius: 0.95rem;
+  padding-top: 0.35rem;
+  padding-bottom: 0.45rem;
+}
+
+.app-nav-link > svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0.35rem;
+  box-sizing: content-box;
+  border: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
 }
 
 .app-nav-link > span:first-child {
@@ -5072,9 +5089,189 @@ body {
   background: color-mix(in srgb, var(--primary) 8%, transparent);
 }
 
+.app-nav-link[data-status="active"] > svg {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 5px 12px color-mix(in srgb, var(--primary) 22%, transparent);
+  transform: translateY(-1px);
+}
+
+.dashboard-editorial-shell .home-card-stack > [data-home-card-id] {
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-editorial-shell .home-card-stack > [data-home-card-id]::before {
+  position: absolute;
+  inset: 0.75rem 0.9rem auto;
+  height: 0.18rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 34%, transparent);
+  content: "";
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.dashboard-editorial-shell .home-card-stack > [data-home-card-id="workout"]::before {
+  background: color-mix(in srgb, var(--primary-foreground) 38%, transparent);
+}
+
+.dashboard-editorial-shell .home-feature-item > .ink-card h2,
+.dashboard-editorial-shell .home-calorie-card p.font-display {
+  letter-spacing: -0.03em;
+}
+
+.dashboard-editorial-shell .home-feature-item > .ink-card button,
+.dashboard-editorial-shell .home-calorie-card > div:last-child {
+  min-height: 2.35rem;
+  border-radius: 0.8rem;
+}
+
 @media (min-width: 640px) {
   .nav-shell {
     width: calc(100% - 2rem);
     margin-inline: 1rem;
+  }
+}
+
+/* Stronger product-level composition: the reference images use one quiet
+ * canvas with distinct content modules instead of a flat column of panels. */
+body {
+  background:
+    radial-gradient(
+      circle at 100% -4%,
+      color-mix(in srgb, var(--rose-soft) 54%, transparent),
+      transparent 31%
+    ),
+    radial-gradient(
+      circle at 0% 32%,
+      color-mix(in srgb, var(--cream) 44%, transparent),
+      transparent 28%
+    ),
+    var(--background);
+}
+
+.app-shell {
+  background: transparent !important;
+}
+
+.app-topbar {
+  border-radius: 0 0 1.55rem 1.55rem;
+}
+
+.app-topbar > div,
+.app-main {
+  max-width: 60rem;
+}
+
+.dashboard-editorial-shell {
+  background:
+    radial-gradient(
+      circle at 10% 9%,
+      color-mix(in srgb, var(--cream) 48%, transparent),
+      transparent 25%
+    ),
+    transparent;
+}
+
+.dashboard-editorial-shell .home-card-stack {
+  max-width: 58rem;
+}
+
+.dashboard-editorial-shell .home-card-stack > [data-home-card-id="consistency"] {
+  min-height: 7.25rem;
+  padding: 1.1rem;
+  border-color: color-mix(in srgb, var(--primary) 24%, var(--border));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--surface) 82%, var(--rose-soft)),
+      var(--surface)
+    );
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 76%),
+    0 12px 28px rgb(var(--shadow-color) / 9%);
+}
+
+.dashboard-editorial-shell .home-feature-section {
+  margin-top: 0.1rem;
+}
+
+.dashboard-editorial-shell .home-feature-item > .ink-card,
+.dashboard-editorial-shell .home-calorie-card {
+  min-height: 12rem !important;
+  padding: 1rem;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 22%),
+    0 16px 34px rgb(var(--shadow-color) / 15%);
+}
+
+.dashboard-editorial-shell .home-feature-item > .ink-card {
+  background:
+    radial-gradient(
+      circle at 12% 8%,
+      color-mix(in srgb, var(--primary-foreground) 20%, transparent),
+      transparent 27%
+    ),
+    linear-gradient(
+      145deg,
+      var(--gradient-start) 0%,
+      var(--gradient-mid) 58%,
+      var(--gradient-end) 100%
+    );
+}
+
+.dashboard-editorial-shell .home-feature-item > .ink-card::after {
+  inset: auto -2rem -5rem auto;
+  width: 15rem;
+  height: 15rem;
+  border-width: 2px;
+  opacity: 0.7;
+}
+
+.dashboard-editorial-shell .home-calorie-card {
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--surface) 82%, var(--rose-soft)),
+      color-mix(in srgb, var(--surface) 96%, var(--accent))
+    );
+}
+
+.dashboard-editorial-shell section[data-home-card-id="activity"],
+.dashboard-editorial-shell section[data-home-card-id="check-in"],
+.dashboard-editorial-shell section[data-home-card-id="measurements"] {
+  padding: 1rem;
+  border-radius: 1.45rem;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 64%),
+    0 10px 24px rgb(var(--shadow-color) / 6%);
+}
+
+.dashboard-editorial-shell section[data-home-card-id="activity"] > .surface-card,
+.dashboard-editorial-shell section[data-home-card-id="check-in"] .surface-card,
+.dashboard-editorial-shell section[data-home-card-id="measurements"] .surface-card {
+  box-shadow: 0 4px 14px rgb(var(--shadow-color) / 6%);
+}
+
+.app-nav-link[data-status="active"] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+@media (max-width: 420px) {
+  .app-topbar > div {
+    padding-inline: 1rem;
+  }
+
+  .dashboard-editorial-shell .home-feature-grid {
+    gap: 0.65rem;
+  }
+
+  .dashboard-editorial-shell .home-feature-item > .ink-card,
+  .dashboard-editorial-shell .home-calorie-card {
+    min-height: 11.25rem !important;
+    padding: 0.85rem;
   }
 }
