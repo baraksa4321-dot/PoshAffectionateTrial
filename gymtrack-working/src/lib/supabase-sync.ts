@@ -1340,7 +1340,11 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     // 8b. Public supermarket catalog. This is additive and optional: no
     // catalog response can remove seed, imported, or personal food records.
     const { data: dbPublicFoods, error: publicFoodsError } = publicFoodsResult;
-    if (publicFoodsError && isMissingTableInSchemaCache(publicFoodsError, "foods")) {
+    if (
+      publicFoodsError &&
+      (isMissingTableInSchemaCache(publicFoodsError, "foods") ||
+        isMissingColumnInSchema(publicFoodsError, "foods"))
+    ) {
       console.warn(`[Optional public food catalog skipped]: ${publicFoodsError.message}`);
     } else if (publicFoodsError) {
       throw new Error(`Public food catalog pull failed: ${publicFoodsError.message}`);
