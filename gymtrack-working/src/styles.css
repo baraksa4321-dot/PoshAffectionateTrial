@@ -4782,14 +4782,14 @@ html[data-keyboard-open] .nav-shell {
 
 .workout-builder-surface {
   flex: 1 1 auto;
-  min-height: 0;
-  height: 100%;
+  min-height: calc(100dvh - 5rem);
+  height: auto;
   border-radius: 0;
 }
 
 .workout-builder-workspace > .coach-workout-surface-slot {
   display: flex;
-  min-height: 0;
+  min-height: calc(100dvh - 5rem);
   flex: 1 1 auto;
 }
 
