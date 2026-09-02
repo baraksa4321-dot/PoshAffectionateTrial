@@ -3682,13 +3682,12 @@ export function CoachDashboardPage({
     const latestSession = [...clientDetails.history].sort((a, b) =>
       b.date.localeCompare(a.date),
     )[0];
-    const latestWorkout = latestSession
-      ? clientWorkouts.find((workout) => historySessionMatchesWorkout(latestSession, workout))
-      : undefined;
     if (latestSession) {
       setTrackingDate(reportSessionDateKey(latestSession.date));
     }
-    setSelectedTrackingWorkoutId(latestWorkout?.id ?? clientWorkouts[0]?.id ?? null);
+    // Start the tracking workspace with the workout list visible. A report is
+    // opened only after the coach explicitly chooses a workout.
+    setSelectedTrackingWorkoutId(null);
   }, [clientDetails, clientWorkouts, selectedClientId]);
 
   if (role === undefined) {
@@ -5211,33 +5210,25 @@ export function CoachDashboardPage({
                       {trackingLanding ? "תזונה" : "תפריט תזונה"}
                     </button>
                   </nav>
-                  {trackingLanding && activeWorkspaceTab === "programs" ? (
+                  {trackingLanding &&
+                  activeWorkspaceTab === "programs" &&
+                  !selectedTrackingWorkout ? (
                     <section className="rounded-2xl border border-primary/20 bg-primary/5 p-1.5">
                       <div className="mb-0.5">
                         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
-                          בחירת אימון
+                          רשימת אימונים
                         </p>
                       </div>
-                      <div className="grid grid-cols-2 gap-1">
+                      <div className="space-y-1">
                         {clientWorkouts.map((workout) => (
                           <button
                             key={workout.id}
                             type="button"
                             onClick={() => setSelectedTrackingWorkoutId(workout.id)}
-                            className={`rounded-xl border px-2 py-1 text-[10px] text-start font-bold transition-colors ${
-                              selectedTrackingWorkoutId === workout.id
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-primary/20 bg-white text-ink hover:border-primary/50"
-                            }`}
+                            className="flex w-full items-center justify-between gap-2 rounded-xl border border-primary/20 bg-white px-3 py-2 text-start text-[11px] font-bold text-ink transition-colors hover:border-primary/50 hover:bg-primary/[0.03]"
                           >
-                            <span className="block truncate">{workout.name}</span>
-                            <span
-                              className={`mt-0.5 block text-[9px] ${
-                                selectedTrackingWorkoutId === workout.id
-                                  ? "text-primary-foreground/80"
-                                  : "text-muted-foreground"
-                              }`}
-                            >
+                            <span className="min-w-0 truncate">{workout.name}</span>
+                            <span className="shrink-0 text-[9px] text-muted-foreground">
                               {workout.items.length} תרגילים
                             </span>
                           </button>
@@ -5653,9 +5644,10 @@ export function CoachDashboardPage({
 
                   {(trackingLanding || workspacePage) &&
                   ((trackingLanding && activeWorkspaceTab === "programs") ||
-                    (!trackingLanding && workspaceMode === "programs" && openEditor === null)) ? (
+                    (!trackingLanding && workspaceMode === "programs" && openEditor === null)) &&
+                  selectedTrackingWorkout ? (
                     <section className="surface-card space-y-3 rounded-2xl border border-amber-200 bg-amber-50/35 p-4">
-                      <div className="flex items-center justify-between border-b border-amber-200 pb-2">
+                      <div className="flex items-start justify-between gap-2 border-b border-amber-200 pb-2">
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">
                             מה המתאמן ביצע בפועל
@@ -5664,9 +5656,21 @@ export function CoachDashboardPage({
                             היסטוריית אימונים והערות
                           </h4>
                         </div>
-                        <span className="illustrated-mark inline-grid h-9 w-9 shrink-0 place-items-center text-amber-700">
-                          <Activity className="h-5 w-5" />
-                        </span>
+                        {trackingLanding ? (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedTrackingWorkoutId(null)}
+                            aria-label="חזרה לרשימת האימונים"
+                            title="חזרה לרשימת האימונים"
+                            className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-border bg-white text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+                          >
+                            <X className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                        ) : (
+                          <span className="illustrated-mark inline-grid h-9 w-9 shrink-0 place-items-center text-amber-700">
+                            <Activity className="h-5 w-5" />
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 rounded-xl bg-white/80 p-2" dir="ltr">
                         <button
@@ -5779,12 +5783,7 @@ export function CoachDashboardPage({
                             </div>
                           ))}
                         </div>
-                      ) : (
-                        <p className="text-center text-xs text-muted-foreground">
-                          genderText( gender, "בחרי אימון מהרשימה כדי לראות את הדוח שלו.", "בחר
-                          אימון מהרשימה כדי לראות את הדוח שלו.", )
-                        </p>
-                      )}
+                      ) : null}
                     </section>
                   ) : null}
 
