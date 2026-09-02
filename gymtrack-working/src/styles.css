@@ -7005,28 +7005,112 @@ html:not(.night-mode) .app-topbar img[src*="myroutine-logo"] {
  * ------------------------------------------------------------------------- */
 html.night-mode,
 html.night-mode[data-theme] {
-  --background: #17161b;
-  --foreground: #f2edf0;
-  --surface: #242229;
-  --surface-2: #2d2932;
-  --cream: color-mix(in srgb, var(--accent) 12%, var(--background) 88%);
+  --background: #101116;
+  --foreground: #f5f2f5;
+  --surface: #191a20;
+  --surface-2: #22242b;
+  --cream: #1b1c22;
   --card: var(--surface);
   --card-foreground: var(--foreground);
-  --popover: #29252e;
+  --popover: #1c1e24;
   --popover-foreground: var(--foreground);
-  --ink: #f2edf0;
-  --ink-soft: #c9bec7;
-  --muted: #211f26;
-  --muted-foreground: #b8adb6;
-  --secondary: #352d36;
-  --secondary-foreground: #f1e9ee;
-  --rose-soft: color-mix(in srgb, var(--rose) 24%, var(--background) 76%);
-  --sage-soft: color-mix(in srgb, var(--sage) 18%, var(--background) 82%);
-  --border: #48414b;
-  --input: #514954;
-  --accent-foreground: #f2e9ee;
-  --ring: color-mix(in srgb, var(--primary) 76%, white 24%);
-  --shadow-color: 8 7 11;
+  --ink: #f5f2f5;
+  --ink-soft: #c9c5cc;
+  --muted: #15171c;
+  --muted-foreground: #b4afb8;
+  --secondary: #25262d;
+  --secondary-foreground: #f2eef2;
+  --border: #353842;
+  --input: #30333d;
+  --accent-foreground: #eee7de;
+  --ring: color-mix(in srgb, var(--primary) 68%, white 32%);
+  --shadow-color: 5 6 9;
+  --night-rose: color-mix(in srgb, var(--rose) 70%, var(--background) 30%);
+  --night-sage: color-mix(in srgb, var(--sage) 68%, var(--background) 32%);
+  --night-accent: color-mix(in srgb, var(--accent) 68%, var(--background) 32%);
+  --rose-soft: color-mix(in srgb, var(--night-rose) 24%, var(--background) 76%);
+  --sage-soft: color-mix(in srgb, var(--night-sage) 18%, var(--background) 82%);
+  --status-success: color-mix(in srgb, var(--night-sage) 72%, white 28%);
+  --status-success-soft: color-mix(in srgb, var(--night-sage) 18%, var(--background) 82%);
+  --status-success-border: color-mix(in srgb, var(--night-sage) 44%, var(--border));
+  --status-warning: color-mix(in srgb, var(--night-accent) 76%, white 24%);
+  --status-warning-soft: color-mix(in srgb, var(--night-accent) 18%, var(--background) 82%);
+  --status-warning-border: color-mix(in srgb, var(--night-accent) 44%, var(--border));
+  --status-info: color-mix(in srgb, var(--primary) 72%, white 28%);
+  --status-info-soft: color-mix(in srgb, var(--primary) 16%, var(--background) 84%);
+  --status-info-border: color-mix(in srgb, var(--primary) 42%, var(--border));
+  --status-danger: color-mix(in srgb, var(--night-rose) 72%, white 28%);
+  --status-danger-soft: color-mix(in srgb, var(--night-rose) 18%, var(--background) 82%);
+  --status-danger-border: color-mix(in srgb, var(--night-rose) 44%, var(--border));
+}
+
+/* Each palette keeps its hue in night mode, but drops the daytime pastel
+   luminance so accents remain calm on deep charcoal surfaces. */
+html.night-mode[data-theme="pink"] {
+  --primary: #b86d7d;
+  --rose: #a85e70;
+  --accent: #b49362;
+  --sage: #6f927b;
+}
+html.night-mode[data-theme="blue"] {
+  --primary: #4d8fb9;
+  --rose: #3c739e;
+  --accent: #6faac1;
+  --sage: #5c9072;
+}
+html.night-mode[data-theme="beige"] {
+  --primary: #9a7665;
+  --rose: #956f60;
+  --accent: #b59c87;
+  --sage: #718c78;
+}
+html.night-mode[data-theme="green"] {
+  --primary: #4a9872;
+  --rose: #3b7d5d;
+  --accent: #73aa8a;
+  --sage: #5d9171;
+}
+html.night-mode[data-theme="yellow"] {
+  --primary: #b2934b;
+  --rose: #957a3c;
+  --accent: #b89d50;
+  --sage: #8a9468;
+}
+html.night-mode[data-theme="lavender"] {
+  --primary: #9277c4;
+  --rose: #8364a9;
+  --accent: #a89bc9;
+  --sage: #71899a;
+}
+html.night-mode[data-theme="peach"] {
+  --primary: #b97861;
+  --rose: #a96555;
+  --accent: #b99068;
+  --sage: #768d78;
+}
+html.night-mode[data-theme="rose-gold"] {
+  --primary: #b66f70;
+  --rose: #ab6667;
+  --accent: #b28b63;
+  --sage: #71907f;
+}
+html.night-mode[data-theme="dark-brown"] {
+  --primary: #8c6253;
+  --rose: #815746;
+  --accent: #aa8c78;
+  --sage: #6e8877;
+}
+html.night-mode[data-theme="light-brown"] {
+  --primary: #9f7660;
+  --rose: #956a54;
+  --accent: #ae906f;
+  --sage: #738b79;
+}
+html.night-mode[data-theme="cream"] {
+  --primary: #9d835d;
+  --rose: #90764f;
+  --accent: #ac956c;
+  --sage: #748a78;
 }
 
 html.night-mode,
@@ -7313,6 +7397,86 @@ html.night-mode [class*="border-border/"] {
 .surface-cream {
   box-shadow:
     0 4px 12px rgb(var(--shadow-color) / 6%) !important;
+}
+
+/* The editorial dashboard has a few deliberately art-directed daytime
+   surfaces with literal colors. Re-map every one of them in night mode so
+   no white card or pastel block can punch through the charcoal system. */
+html.night-mode .dashboard-editorial-shell .home-primary-card > .ink-card {
+  border-color: color-mix(in srgb, var(--night-rose) 54%, var(--border)) !important;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--night-rose) 42%, var(--surface-2) 58%),
+      color-mix(in srgb, var(--night-rose) 22%, var(--background) 78%)
+    ) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 4%),
+    0 10px 24px rgb(0 0 0 / 30%) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .home-primary-card > .ink-card button {
+  border-color: var(--border) !important;
+  background: var(--surface-2) !important;
+  color: var(--ink) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .home-secondary-card,
+html.night-mode .dashboard-editorial-shell .dashboard-support-card,
+html.night-mode .dashboard-editorial-shell .home-card-stack > [data-home-card-id="consistency"] {
+  border-color: var(--border) !important;
+  background: var(--surface-2) !important;
+  color: var(--ink) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .home-secondary-card > div:first-child svg {
+  border-color: color-mix(in srgb, var(--night-rose) 40%, var(--border)) !important;
+  background: color-mix(in srgb, var(--night-rose) 20%, var(--surface)) !important;
+  color: var(--status-danger) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .home-secondary-card > div:last-child {
+  border-color: var(--border) !important;
+  background: var(--surface) !important;
+  color: var(--ink-soft) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .dashboard-module .surface-card {
+  border-color: var(--border) !important;
+  background: var(--surface-2) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(1),
+html.night-mode .dashboard-editorial-shell .dashboard-module--check-in .surface-card:first-of-type {
+  background: color-mix(in srgb, var(--night-rose) 13%, var(--surface-2)) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(2),
+html.night-mode .dashboard-editorial-shell .dashboard-module--check-in .surface-card:last-child {
+  background: color-mix(in srgb, var(--night-accent) 10%, var(--surface-2)) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(3) {
+  background: color-mix(in srgb, var(--night-sage) 11%, var(--surface-2)) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .dashboard-notice {
+  border-inline-start-color: var(--status-danger) !important;
+  background: color-mix(in srgb, var(--night-rose) 13%, var(--surface-2)) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .consistency-linear-track {
+  background: #2b2e37 !important;
+}
+
+html.night-mode .dashboard-editorial-shell .consistency-linear-track .progress-fill,
+html.night-mode .dashboard-editorial-shell .consistency-ring-value {
+  background: var(--status-danger) !important;
+  stroke: var(--status-danger) !important;
+}
+
+html.night-mode .dashboard-editorial-shell .consistency-ring-track {
+  stroke: #30333d !important;
 }
 
 @media (hover: none) {
