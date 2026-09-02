@@ -5968,3 +5968,103 @@ body {
       var(--surface)
     ) !important;
 }
+
+/* Native-feeling app chrome: one calm canvas, compact header, and a
+ * floating bottom tab bar instead of a web-page frame. */
+.app-shell {
+  background: var(--background) !important;
+}
+
+.app-topbar {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 74%, transparent) !important;
+  background: color-mix(in srgb, var(--surface) 92%, var(--background)) !important;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 72%),
+    0 5px 18px rgb(var(--shadow-color) / 6%) !important;
+}
+
+.app-topbar > div {
+  max-width: 42rem;
+  padding-inline: 1rem;
+}
+
+.app-topbar > div > div {
+  border-bottom-color: transparent !important;
+}
+
+.app-main {
+  max-width: 42rem;
+  padding-inline: 1rem;
+}
+
+.page-scroll-container {
+  scrollbar-width: none;
+}
+
+.page-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.app-shell > nav > .nav-shell {
+  width: min(calc(100% - 1rem), 36rem);
+  margin-inline: auto;
+  margin-bottom: 0.55rem;
+  padding: 0.45rem 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  border-radius: 1.45rem;
+  background: color-mix(in srgb, var(--surface) 96%, var(--background)) !important;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 78%),
+    0 12px 28px rgb(var(--shadow-color) / 14%) !important;
+}
+
+.app-shell > nav > .nav-shell .app-nav-link {
+  min-height: 3.4rem;
+  border-radius: 1.05rem;
+  color: var(--muted-foreground);
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.app-shell > nav > .nav-shell .app-nav-link > svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 0.8rem;
+  background: transparent;
+}
+
+.app-shell > nav > .nav-shell .app-nav-link[data-status="active"] {
+  background: color-mix(in srgb, var(--primary) 13%, var(--surface));
+  color: var(--rose);
+}
+
+.app-shell > nav > .nav-shell .app-nav-link[data-status="active"] > svg {
+  border-color: color-mix(in srgb, var(--primary) 24%, transparent);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+.app-shell > nav > .nav-shell .app-nav-link:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 639px) {
+  .app-topbar > div {
+    padding-inline: 0.9rem;
+  }
+
+  .app-main {
+    padding-inline: 0.9rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .app-shell > nav > .nav-shell {
+    margin-bottom: 0.8rem;
+  }
+}
