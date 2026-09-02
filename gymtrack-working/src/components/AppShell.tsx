@@ -482,6 +482,13 @@ export function AppShell({
           throw error;
         }
       }
+      try {
+        // Seed the loading surface from the choice already made in the auth
+        // form, before profile hydration has returned from Supabase.
+        window.localStorage.setItem(LOADING_GENDER_STORAGE_KEY, gender);
+      } catch {
+        // The auth metadata/profile remains the source of truth if storage is unavailable.
+      }
       const { error: themeSaveError } = await supabase.auth.updateUser({
         data: {
           theme,

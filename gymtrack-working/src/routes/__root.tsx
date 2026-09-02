@@ -1184,7 +1184,7 @@ function RootContent() {
     return () => data.subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
+  useLoadingCycleEffect(() => {
     if (authStatus === "unauthenticated") {
       setLoadingGender(undefined);
       try {
@@ -1194,7 +1194,18 @@ function RootContent() {
       }
       return;
     }
-    if (authStatus !== "authenticated" || !userProfile?.gender) return;
+    if (authStatus !== "authenticated") return;
+    if (!userProfile?.gender) {
+      try {
+        const storedGender = readLoadingGender(
+          window.localStorage.getItem(LOADING_GENDER_STORAGE_KEY),
+        );
+        if (storedGender) setLoadingGender(storedGender);
+      } catch {
+        // The auth/profile state can still provide the gender later.
+      }
+      return;
+    }
 
     setLoadingGender(userProfile.gender);
     try {
@@ -1457,10 +1468,10 @@ function RootContent() {
             ) : showPlainLoading ? (
               <LoadingSpinner label="טוען" />
             ) : (
-              <div className="loading-initial-state">
-                <LoadingSpinner label="טוען" />
-                <img className="loading-initial-wordmark" src="/myroutine-logo.png" alt="MY routine" />
-              </div>
+              // Do not guess before the persisted/profile gender is known.
+              // A visible fallback spinner would flash before the female
+              // animation and make the loading screen show both surfaces.
+              null
             )}
           </div>
         </div>
