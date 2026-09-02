@@ -481,7 +481,10 @@ function ExerciseDetail() {
         window.sessionStorage.setItem("gymtrack-created-exercise-id", savedExercise.id);
         // The coach screen reads this together with the created id and restores
         // the exact client/program/day context before assigning the exercise.
-        window.location.assign(returnUrl);
+        const returnPath = new URL(returnUrl, window.location.origin);
+        void navigate({
+          to: `${returnPath.pathname}${returnPath.search}${returnPath.hash}` as never,
+        });
         return;
       }
       navigate({ to: "/exercises/$exerciseId", params: { exerciseId: savedExercise.id } });
