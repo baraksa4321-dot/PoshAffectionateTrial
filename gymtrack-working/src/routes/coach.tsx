@@ -5168,7 +5168,13 @@ export function CoachDashboardPage({
             ariaLabel="בניית תוכנית ותפריט למתאמן"
             inline={clientsOnly && !editingDayId}
             variant={editingDayId || workspacePage || openEditor ? "full" : "center"}
-            className={editingDayId || workspacePage || openEditor ? "bg-background" : ""}
+            className={
+              editingDayId
+                ? "bg-background workout-builder-overlay"
+                : workspacePage || openEditor
+                  ? "bg-background"
+                  : ""
+            }
             panelClassName={editingDayId || workspacePage || openEditor ? "bg-background" : ""}
           >
             <div
