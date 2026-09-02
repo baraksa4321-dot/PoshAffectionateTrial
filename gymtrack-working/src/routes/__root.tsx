@@ -1297,7 +1297,7 @@ function RootContent() {
         // Keep the offline app shell in production, where compiled asset URLs
         // remain stable for the lifetime of a deployed build.
         void navigator.serviceWorker
-          .register("/sw.js?v=9", { updateViaCache: "none" })
+          .register("/sw.js?v=10", { updateViaCache: "none" })
           .then((registration) => registration.update())
           .catch((error) => {
             console.warn("[App shell cache unavailable]:", error);
@@ -1468,10 +1468,17 @@ function RootContent() {
             ) : showPlainLoading ? (
               <LoadingSpinner label="טוען" />
             ) : (
-              // Do not guess before the persisted/profile gender is known.
-              // A visible fallback spinner would flash before the female
-              // animation and make the loading screen show both surfaces.
-              null
+              // Keep the pre-hydration surface consistent with the selected
+              // female experience: animation and copy only, never a spinner.
+              <>
+                <SimpleLoadingIllustration
+                  key={`fallback-illustration-${loadingVariant}`}
+                  variant={loadingVariant}
+                />
+                <p key={`fallback-message-${loadingMessageIndex}`} className="loading-witty-message">
+                  {loadingMessageForGender(loadingMessageIndex, "female")}
+                </p>
+              </>
             )}
           </div>
         </div>
