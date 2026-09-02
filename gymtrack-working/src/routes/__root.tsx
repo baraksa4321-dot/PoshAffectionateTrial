@@ -1135,13 +1135,15 @@ function RootContent() {
   const isLoadingScreen = authStatus === "loading" || isProfileHydrating || !minimumLoadingDone;
   const activeLoadingGender =
     authStatus === "unauthenticated" ? undefined : (userProfile?.gender ?? loadingGender);
-  // Once a gender is known, render only its intended loading surface. The
-  // persisted gender is read in the layout effect below before the browser
-  // paints, while a hydrated profile can switch the surface without first
-  // showing the other gender's loader.
+  const isInitialAuthLoading = authStatus === "loading" || !minimumLoadingDone;
+  // The login bootstrap must open directly on the expressive loading surface.
+  // Once the authenticated profile is available, the owner's preference can
+  // still select the plain spinner for the in-app hydration state.
   const showExpressiveLoading =
-    activeLoadingGender !== undefined &&
-    (userProfile?.loadingAnimationsEnabled ?? activeLoadingGender === "female");
+    isInitialAuthLoading ||
+    (activeLoadingGender !== undefined &&
+      (userProfile?.loadingAnimationsEnabled ?? activeLoadingGender === "female"));
+  const loadingCopyGender = activeLoadingGender ?? "female";
   const loadingMode = showExpressiveLoading ? "expressive" : "plain";
 
   useLoadingCycleEffect(() => {
@@ -1467,7 +1469,7 @@ function RootContent() {
                   variant={loadingVariant}
                 />
                 <p key={`message-${loadingMessageIndex}`} className="loading-witty-message">
-                  {loadingMessageForGender(loadingMessageIndex, activeLoadingGender)}
+                  {loadingMessageForGender(loadingMessageIndex, loadingCopyGender)}
                 </p>
               </>
             ) : (
