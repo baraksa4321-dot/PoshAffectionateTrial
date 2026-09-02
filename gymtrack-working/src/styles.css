@@ -7207,3 +7207,75 @@ html.night-mode [class*="border-border/"] {
 .overlay-root[data-overlay-variant="full"] .workout-builder-surface {
   min-height: 100%;
 }
+
+/* -------------------------------------------------------------------------
+ * Crisp surfaces
+ * Decorative arcs and inset highlights were reading as broken borders on
+ * narrow screens. Surfaces should have one complete edge, or no edge at all.
+ * ------------------------------------------------------------------------- */
+.ink-card::after,
+.app-nav-link::after,
+.dashboard-editorial-shell .home-card-stack > [data-home-card-id]::before,
+.dashboard-editorial-shell .home-feature-item::after,
+.dashboard-editorial-shell .home-primary-card > .ink-card::before,
+.dashboard-editorial-shell .home-primary-card > .ink-card::after,
+.dashboard-editorial-shell .home-secondary-card::before,
+.dashboard-editorial-shell .dashboard-support-card::after {
+  display: none !important;
+  content: none !important;
+  box-shadow: none !important;
+}
+
+.dashboard-editorial-shell .home-feature-item,
+.dashboard-editorial-shell .home-primary-card > .ink-card,
+.dashboard-editorial-shell .home-secondary-card,
+.dashboard-editorial-shell .dashboard-support-card {
+  overflow: visible;
+}
+
+.dashboard-editorial-shell .surface-card {
+  border: 1px solid var(--border);
+  box-shadow: 0 5px 14px rgb(var(--shadow-color) / 5%) !important;
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card {
+  border: 1px solid color-mix(in srgb, var(--primary) 78%, var(--ink));
+  box-shadow: 0 9px 18px color-mix(in srgb, var(--rose) 18%, transparent) !important;
+}
+
+.dashboard-editorial-shell .home-secondary-card {
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 15px rgb(var(--shadow-color) / 5%) !important;
+}
+
+.dashboard-editorial-shell .dashboard-support-card {
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 15px rgb(var(--shadow-color) / 5%) !important;
+}
+
+.dashboard-editorial-shell .dashboard-module {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.dashboard-editorial-shell .dashboard-module .surface-card {
+  border: 1px solid var(--border);
+  box-shadow: 0 5px 12px rgb(var(--shadow-color) / 4%) !important;
+}
+
+/* Apply the same complete-edge treatment to shared cards on every route. */
+.surface-card,
+.surface-card:hover,
+.surface-card-soft,
+.surface-cream {
+  box-shadow:
+    0 4px 12px rgb(var(--shadow-color) / 6%) !important;
+}
+
+@media (hover: none) {
+  .surface-card:hover {
+    box-shadow:
+      0 4px 12px rgb(var(--shadow-color) / 6%) !important;
+  }
+}
