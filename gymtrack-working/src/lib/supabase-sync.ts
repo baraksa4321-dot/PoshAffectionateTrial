@@ -296,6 +296,25 @@ function isMissingTableInSchemaCache(error: unknown, tableName: string): boolean
   );
 }
 
+function isMissingColumnInSchema(error: unknown, tableName: string): boolean {
+  const candidate = error as { code?: unknown; message?: unknown } | null;
+  const code = typeof candidate?.code === "string" ? candidate.code : "";
+  const message = error instanceof Error ? error.message : String(candidate?.message ?? error);
+  const mentionsMissingColumn =
+    code === "PGRST204" ||
+    code === "42703" ||
+    /column .* does not exist/i.test(message) ||
+    /could not find the .* column/i.test(message);
+  return mentionsMissingColumn && message.includes(tableName);
+}
+
+function isOptionalBodyWeightSchemaError(error: unknown): boolean {
+  return (
+    isMissingTableInSchemaCache(error, "body_weight_logs") ||
+    isMissingColumnInSchema(error, "body_weight_logs")
+  );
+}
+
 function cardioCloudId(localId: string): string {
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(localId)) {
     return localId;
@@ -616,8 +635,12 @@ export async function syncLocalToSupabase(
         );
       }
     } catch (error: unknown) {
-      if (isMissingTableInSchemaCache(error, "body_weight_logs")) {
-        console.warn("[Optional body weight sync skipped]: public.body_weight_logs is unavailable");
+      if (isOptionalBodyWeightSchemaError(error)) {
+        console.warn(
+          `[Optional body weight sync skipped]: public.body_weight_logs schema is incompatible: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
       } else {
         throw error;
       }
@@ -1207,7 +1230,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
 
     // 7. Body Weight Logs
-    if (bodyWeightError && isMissingTableInSchemaCache(bodyWeightError, "body_weight_logs")) {
+    if (bodyWeightError && isOptionalBodyWeightSchemaError(bodyWeightError)) {
       console.warn(`[Optional body weight pull skipped]: ${bodyWeightError.message}`);
     } else if (bodyWeightError) {
       throw new Error(`Body weight pull failed: ${bodyWeightError.message}`);
