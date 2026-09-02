@@ -7215,3 +7215,12 @@ html.night-mode [class*="border-border/"] {
   line-height: 1.25;
   letter-spacing: normal;
 }
+
+/* Keep the first dashboard row clear of the multi-line mobile app header.
+ * The header includes the workspace switcher, checklist action, greeting,
+ * and account control, so the feature tiles need their own breathing room. */
+@media (max-width: 639px) {
+  html:not(.night-mode) .dashboard-editorial-shell .app-main {
+    padding-top: 2.5rem !important;
+  }
+}
