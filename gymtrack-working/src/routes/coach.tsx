@@ -1504,6 +1504,9 @@ export function CoachDashboardPage({
     exerciseId: string;
     context: ExerciseBuilderReturnContext;
   } | null>(null);
+  const [autoAssignCreatedExerciseId, setAutoAssignCreatedExerciseId] = useState<string | null>(
+    null,
+  );
   const hydratedBuilderRouteKeyRef = useRef<string | null>(null);
 
   const selectExerciseForBuilder = (
@@ -2546,8 +2549,9 @@ export function CoachDashboardPage({
     setShowExerciseForm(true);
     setEditingItemId(null);
     selectExerciseForBuilder(pending.exerciseId);
-    // The new exercise is now selected for set/reps configuration. Do not
-    // submit it here: the user still needs to choose the workout settings.
+    // The new exercise has already been saved from the catalog screen. Queue
+    // the assignment after this render so the selected day receives it too.
+    setAutoAssignCreatedExerciseId(pending.exerciseId);
     setPendingCreatedExercise(null);
     if (Number.isFinite(pending.context.scrollY)) {
       window.requestAnimationFrame(() => {
@@ -3068,15 +3072,16 @@ export function CoachDashboardPage({
   };
 
   // Assign Prescribed Exercise to Program Day
-  const handleAddExerciseToDay = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isCoach || !selectedClientId || !editingDayId || !selectedExId) return;
+  const handleAddExerciseToDay = async (e: React.FormEvent | null, exerciseIdOverride?: string) => {
+    e?.preventDefault();
+    const exerciseId = exerciseIdOverride ?? selectedExId;
+    if (!isCoach || !selectedClientId || !editingDayId || !exerciseId) return;
     setManagementError("");
 
     const currentDay = clientDetails?.workouts?.find((w) => w.id === editingDayId);
     if (!currentDay) return;
     const selectedExercise = uniqueCanonicalExercises(store.exercises).find(
-      (exercise) => exercise.id === selectedExId,
+      (exercise) => exercise.id === exerciseId,
     );
     const selectedExerciseName = selectedExercise
       ? exerciseDisplayName(selectedExercise)
@@ -3127,7 +3132,7 @@ export function CoachDashboardPage({
         item.id === editingItemId
           ? {
               ...item,
-              exerciseId: selectedExId,
+              exerciseId,
               ...(selectedExerciseName ? { exerciseName: selectedExerciseName } : {}),
               ...(selectedEquipment ? { equipment: selectedEquipment } : {}),
               cableGrip:
@@ -3236,7 +3241,7 @@ export function CoachDashboardPage({
 
     const newWorkoutItem: WorkoutItem = {
       id: uid(),
-      exerciseId: selectedExId,
+      exerciseId,
       ...(selectedExerciseName ? { exerciseName: selectedExerciseName } : {}),
       ...(selectedEquipment ? { equipment: selectedEquipment } : {}),
       ...(selectedEquipment === "פולי / כבלים" && selectedCableGrip
@@ -3340,7 +3345,7 @@ export function CoachDashboardPage({
             ...newWorkoutItem,
             id: uid(),
             exerciseId: supersetPartnerId,
-            supersetPartnerId: selectedExId,
+            supersetPartnerId: exerciseId,
             supersetOrder: 2 as const,
             supersetTargetWeight: targetWeight,
           }
@@ -3393,6 +3398,22 @@ export function CoachDashboardPage({
     setBodyweightAlternativeId("");
     pullClientDataForCoach(selectedClientId).then(applyClientDetails);
   };
+
+  useEffect(() => {
+    const exerciseId = autoAssignCreatedExerciseId;
+    if (!exerciseId || !clientDetails || !editingDayId || !selectedClientId) return;
+
+    // This state is only produced by the create-and-return flow. Clear it
+    // before awaiting the write so a realtime refresh cannot submit twice.
+    setAutoAssignCreatedExerciseId(null);
+    void handleAddExerciseToDay(null, exerciseId);
+  }, [
+    autoAssignCreatedExerciseId,
+    clientDetails,
+    editingDayId,
+    handleAddExerciseToDay,
+    selectedClientId,
+  ]);
 
   // Delete exercise from day
   const handleRemoveExerciseFromDay = async (dayId: string, itemId: string) => {
