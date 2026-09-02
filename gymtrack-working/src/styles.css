@@ -7180,3 +7180,38 @@ html.night-mode .border-border,
 html.night-mode [class*="border-border/"] {
   border-color: var(--border) !important;
 }
+
+/* Hebrew glyphs need breathing room at narrow mobile widths. Avoid clipping
+ * side bearings or the second line when a dashboard card becomes compact. */
+.dashboard-editorial-shell .app-topbar h1 {
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card h2,
+.dashboard-editorial-shell .home-secondary-card > p,
+.dashboard-editorial-shell .dashboard-module h2,
+.dashboard-editorial-shell .dashboard-module p,
+.dashboard-editorial-shell .dashboard-module span {
+  overflow-wrap: anywhere;
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card h2 {
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card > div:first-child,
+.dashboard-editorial-shell .home-secondary-card > div:first-child,
+.dashboard-editorial-shell .dashboard-module .surface-card > div:first-child {
+  min-width: 0;
+}
+
+.dashboard-editorial-shell .dashboard-module .surface-card > div:first-child > p {
+  min-width: 0;
+  line-height: 1.25;
+  letter-spacing: normal;
+}

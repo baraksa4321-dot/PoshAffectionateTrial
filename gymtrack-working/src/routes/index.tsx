@@ -535,12 +535,12 @@ function Dashboard() {
               >
                 <div className="ink-card flex min-h-[150px] flex-col p-3 text-start">
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-[10px] font-bold text-primary-foreground/80">
+                    <span className="min-w-0 break-words text-[10px] font-bold leading-[1.25] text-primary-foreground/80">
                       אימון יומי
                     </span>
                     <Dumbbell className="h-4 w-4 text-primary-foreground/80" />
                   </div>
-                  <h2 className="mt-2 line-clamp-2 font-display text-[17px] font-bold leading-tight text-primary-foreground">
+                  <h2 className="mt-2 break-words font-display text-[17px] font-bold leading-tight text-primary-foreground">
                     {nextWorkout.name}
                   </h2>
                   <p className="mt-1 text-[10px] text-primary-foreground/75">
@@ -602,7 +602,9 @@ function Dashboard() {
               }`}
             >
               <div className="flex items-center justify-between gap-1">
-                <span className="text-[10px] font-bold text-primary">תזונה יומית</span>
+                <span className="min-w-0 break-words text-[10px] font-bold leading-[1.25] text-primary">
+                  תזונה יומית
+                </span>
                 <Apple className="h-4 w-4 text-primary" />
               </div>
               {showCalories ? (

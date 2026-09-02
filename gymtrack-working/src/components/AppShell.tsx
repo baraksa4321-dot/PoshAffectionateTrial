@@ -738,7 +738,7 @@ export function AppShell({
                 {kicker ? <p className="app-shell-kicker">{kicker}</p> : null}
                 {title ? (
                   <h1
-                    className={`min-w-0 truncate whitespace-nowrap font-display font-extrabold leading-snug tracking-tight text-ink ${
+                    className={`min-w-0 break-words font-display font-extrabold leading-snug tracking-tight text-ink ${
                       compactHeader
                         ? "text-[clamp(15px,4vw,18px)]"
                         : "text-[clamp(16px,4.5vw,20px)]"
