@@ -14,7 +14,11 @@ export const getRouter = () => {
     // scroll-to-top — which is what was leaving the destination page at the
     // bottom when the user was deep-scrolled on the source list page.
     scrollRestoration: false,
-    defaultPreloadStaleTime: 0,
+    // Keep route chunks warm after the first intent. A zero stale time made
+    // every hover/tap pay the module-loading cost again.
+    defaultPreload: "intent",
+    defaultPreloadStaleTime: 60_000,
+    defaultPendingMs: 120,
     // Use the browser View Transitions API when available so route changes
     // animate as a continuous slide instead of replacing the whole page.
     // TanStack Router falls back to its normal navigation automatically.

@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 import {
   Apple,
   Activity,
@@ -141,6 +141,7 @@ export function AppShell({
   const profileGender = store.userProfile?.gender;
   const location = useLocation();
   const navigate = useNavigate();
+  const router = useRouter();
   const isManagementRoute = isManagementPath(location.pathname);
   const showHomeOnlyHeaderControls =
     location.pathname === "/" || location.pathname === "/coach";
@@ -208,6 +209,35 @@ export function AppShell({
       window.localStorage.setItem("gymtrack.night-mode", String(isNightMode));
     }
   }, [isNightMode]);
+
+  useEffect(() => {
+    if (!user?.id || !isCoach || typeof window === "undefined") return;
+
+    const warmManagementRoute = () => {
+      void router.preloadRoute({ to: "/coach" }).catch(() => undefined);
+    };
+    const requestIdle = (
+      window as typeof window & {
+        requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      }
+    ).requestIdleCallback;
+    const cancelIdle = (
+      window as typeof window & { cancelIdleCallback?: (handle: number) => void }
+    ).cancelIdleCallback;
+    let idleHandle: number | null = null;
+    let timerHandle: number | null = null;
+
+    if (requestIdle) {
+      idleHandle = requestIdle(warmManagementRoute, { timeout: 1_200 });
+    } else {
+      timerHandle = window.setTimeout(warmManagementRoute, 700);
+    }
+
+    return () => {
+      if (idleHandle !== null) cancelIdle?.(idleHandle);
+      if (timerHandle !== null) window.clearTimeout(timerHandle);
+    };
+  }, [isCoach, router, user?.id]);
 
   useEffect(() => {
     const shell = shellRef.current;
@@ -816,6 +846,7 @@ export function AppShell({
                 >
                   <Link
                     to="/"
+                    preload="intent"
                     onClick={() => setWorkspace("personal")}
                     aria-current={activeMode === "personal" ? "page" : undefined}
                     className={`press min-w-20 rounded-full px-3 ${
@@ -830,6 +861,7 @@ export function AppShell({
                   </Link>
                   <Link
                     to="/coach"
+                    preload="intent"
                     onClick={() => setWorkspace("management")}
                     aria-current={activeMode === "management" ? "page" : undefined}
                     className={`press min-w-20 rounded-full px-3 ${
@@ -1434,6 +1466,7 @@ export function AppShell({
               <Link
                 key={to}
                 to={to}
+                preload="intent"
                 onClick={onClick}
                 activeOptions={{ exact: to === "/" || to === "/coach" }}
                 data-testid={`link-nav-${id}`}

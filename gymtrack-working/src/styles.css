@@ -4573,6 +4573,31 @@ html.night-mode .auth-panel {
   animation: page-enter-in 260ms cubic-bezier(0.22, 0.8, 0.24, 1) both;
 }
 
+.route-progress {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 1000;
+  height: 2px;
+  pointer-events: none;
+  opacity: 0;
+  background: var(--primary);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--primary) 45%, transparent);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition:
+    opacity 120ms ease,
+    transform 160ms ease-out;
+}
+
+.route-progress-active {
+  opacity: 1;
+  transform: scaleX(1);
+  transition:
+    opacity 120ms ease,
+    transform 360ms cubic-bezier(0.22, 0.72, 0.18, 1);
+}
+
 /* Keep the document and nested mobile sheets explicitly pannable vertically. */
 .page-scroll-container,
 [data-overlay-panel="true"] {
@@ -4645,8 +4670,8 @@ html[data-keyboard-open] .nav-shell {
 
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 220ms;
-  animation-timing-function: ease-out;
+  animation-duration: 340ms;
+  animation-timing-function: cubic-bezier(0.22, 0.72, 0.18, 1);
 }
 
 ::view-transition-old(root) {
@@ -4665,15 +4690,15 @@ html[data-keyboard-open] .nav-shell {
     transform: translate3d(0, 0, 0);
   }
   to {
-    opacity: 1;
-    transform: translate3d(-1.5rem, 0, 0);
+    opacity: 0.92;
+    transform: translate3d(-0.7rem, 0, 0) scale(0.995);
   }
 }
 
 @keyframes route-slide-in {
   from {
-    opacity: 1;
-    transform: translate3d(1.5rem, 0, 0);
+    opacity: 0.92;
+    transform: translate3d(0.7rem, 0, 0) scale(0.995);
   }
   to {
     opacity: 1;
@@ -4706,6 +4731,19 @@ html[data-keyboard-open] .nav-shell {
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .tab-content-enter,
+  .workspace-tab-content {
+    animation: none !important;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 1ms !important;
   }
 }
 

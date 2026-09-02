@@ -6,6 +6,7 @@ import {
   Scripts,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
 } from "@tanstack/react-router";
 import {
   Component,
@@ -1096,6 +1097,19 @@ function ScrollToTop() {
   return null;
 }
 
+function NavigationProgress() {
+  const isNavigating = useRouterState({
+    select: (state) => state.status === "pending",
+  });
+
+  return (
+    <div
+      className={`route-progress ${isNavigating ? "route-progress-active" : ""}`}
+      aria-hidden="true"
+    />
+  );
+}
+
 function RootContent() {
   const { queryClient } = Route.useRouteContext();
   const authStatus = useAuthStatus();
@@ -1391,6 +1405,7 @@ function RootContent() {
   return (
     <QueryClientProvider client={queryClient}>
       <HeadContent />
+      <NavigationProgress />
       <ScrollToTop />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <div
