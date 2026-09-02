@@ -3227,9 +3227,9 @@ export function CoachDashboardPage({
       }
       setEditingItemId(null);
       setSelectedExId("");
-      setEditingDayId(null);
       setShowExerciseForm(false);
       setTechniqueNotes("");
+      setExerciseBuilderNotice("השינויים נשמרו. אפשר להמשיך לבנות את האימון.");
       return;
     }
 
@@ -3389,7 +3389,8 @@ export function CoachDashboardPage({
     if (isSelfSelected) {
       saveWorkout({ ...currentDay, items: updatedItems });
       setSelectedExId("");
-      setShowExerciseForm(false);
+      setEditingItemId(null);
+      setShowExerciseForm(true);
       setTechniqueNotes("");
       setSupersetGroup("");
       setSupersetPartnerId("");
@@ -3401,6 +3402,7 @@ export function CoachDashboardPage({
       setSetNotes(["", "", ""]);
       setApprovedAltIds([]);
       setBodyweightAlternativeId("");
+      setExerciseBuilderNotice("התרגיל נוסף. אפשר לבחור תרגיל נוסף ולהמשיך לבנות.");
       return;
     }
 
@@ -3416,7 +3418,7 @@ export function CoachDashboardPage({
     }
     setSelectedExId("");
     setEditingItemId(null);
-    setShowExerciseForm(false);
+    setShowExerciseForm(true);
     setTechniqueNotes("");
     setSupersetGroup("");
     setSupersetPartnerId("");
@@ -3428,6 +3430,7 @@ export function CoachDashboardPage({
     setSetNotes(["", "", ""]);
     setApprovedAltIds([]);
     setBodyweightAlternativeId("");
+    setExerciseBuilderNotice("התרגיל נוסף. אפשר לבחור תרגיל נוסף ולהמשיך לבנות.");
     pullClientDataForCoach(selectedClientId).then(applyClientDetails);
   };
 
