@@ -32,7 +32,10 @@ import { BrandLogo } from "./BrandLogo";
 import { FreeTextInput } from "./FreeTextInput";
 import { genderText } from "../lib/gender-copy";
 import { LOADING_GENDER_STORAGE_KEY } from "../lib/loading-copy";
-import { getKeyboardViewportMetrics } from "../lib/keyboard-viewport";
+import {
+  getKeyboardViewportMetrics,
+  isKeyboardEditableElement,
+} from "../lib/keyboard-viewport";
 
 const WORKSPACE_KEY = "gymtrack.workspace";
 const FULL_NAME_REQUIRED_ERROR = "יש להזין שם פרטי ושם משפחה כדי ליצור חשבון.";
@@ -81,6 +84,31 @@ function findScrollableAncestor(field: HTMLElement, boundary: HTMLElement | null
 
   if (boundary && boundary.scrollHeight > boundary.clientHeight + 1) return boundary;
   return document.scrollingElement instanceof HTMLElement ? document.scrollingElement : null;
+}
+
+type InputScrollSnapshot = {
+  field: HTMLElement;
+  positions: Array<{ element: HTMLElement; top: number; left: number }>;
+};
+
+function scrollAncestorsFor(field: HTMLElement) {
+  const ancestors: HTMLElement[] = [];
+  let current = field.parentElement;
+  while (current) {
+    const styles = window.getComputedStyle(current);
+    if (
+      /(auto|scroll)/.test(styles.overflowY) &&
+      current.scrollHeight > current.clientHeight + 1
+    ) {
+      ancestors.push(current);
+    }
+    current = current.parentElement;
+  }
+
+  const documentScroller =
+    document.scrollingElement instanceof HTMLElement ? document.scrollingElement : null;
+  if (documentScroller && !ancestors.includes(documentScroller)) ancestors.push(documentScroller);
+  return ancestors;
 }
 
 export function AppShell({
@@ -204,6 +232,10 @@ export function AppShell({
     const visualViewport = window.visualViewport;
     let focusTimer = 0;
     let delayedFocusTimer = 0;
+    let snapshotTimer = 0;
+    let inputRestoreFrame = 0;
+    let inputRestoreSecondFrame = 0;
+    let inputScrollSnapshot: InputScrollSnapshot | null = null;
 
     const updateKeyboardMetrics = () => {
       const { keyboardInset, keyboardOpen } = getKeyboardViewportMetrics();
@@ -260,15 +292,52 @@ export function AppShell({
       }, 120);
     };
 
+    const captureInputScrollSnapshot = (field: HTMLElement) => {
+      const positions = scrollAncestorsFor(field).map((element) => ({
+        element,
+        top: element.scrollTop,
+        left: element.scrollLeft,
+      }));
+      if (positions.length) inputScrollSnapshot = { field, positions };
+    };
+
     const onFocusIn = () => {
       updateKeyboardMetrics();
       keepDocumentFieldVisible();
       window.clearTimeout(delayedFocusTimer);
       delayedFocusTimer = window.setTimeout(keepDocumentFieldVisible, 360);
+
+      const field = document.activeElement;
+      if (!(field instanceof HTMLElement) || !isKeyboardEditableElement(field)) return;
+      window.clearTimeout(snapshotTimer);
+      captureInputScrollSnapshot(field);
+      snapshotTimer = window.setTimeout(() => {
+        if (document.activeElement === field) captureInputScrollSnapshot(field);
+      }, 280);
     };
 
     const onFocusOut = () => {
       window.setTimeout(updateKeyboardMetrics, 0);
+      window.clearTimeout(snapshotTimer);
+      inputScrollSnapshot = null;
+    };
+
+    const onInput = (event: Event) => {
+      const field = event.target;
+      if (!(field instanceof HTMLElement) || !isKeyboardEditableElement(field)) return;
+      if (document.activeElement !== field || inputScrollSnapshot?.field !== field) return;
+
+      window.cancelAnimationFrame(inputRestoreFrame);
+      window.cancelAnimationFrame(inputRestoreSecondFrame);
+      inputRestoreFrame = window.requestAnimationFrame(() => {
+        inputRestoreSecondFrame = window.requestAnimationFrame(() => {
+          if (document.activeElement !== field || inputScrollSnapshot?.field !== field) return;
+          for (const position of inputScrollSnapshot.positions) {
+            position.element.scrollTop = position.top;
+            position.element.scrollLeft = position.left;
+          }
+        });
+      });
     };
 
     const onViewportResize = () => {
@@ -277,13 +346,18 @@ export function AppShell({
     updateKeyboardMetrics();
     window.addEventListener("focusin", onFocusIn);
     window.addEventListener("focusout", onFocusOut);
+    window.addEventListener("input", onInput, true);
     visualViewport?.addEventListener("resize", onViewportResize);
 
     return () => {
       window.clearTimeout(focusTimer);
       window.clearTimeout(delayedFocusTimer);
+      window.clearTimeout(snapshotTimer);
+      window.cancelAnimationFrame(inputRestoreFrame);
+      window.cancelAnimationFrame(inputRestoreSecondFrame);
       window.removeEventListener("focusin", onFocusIn);
       window.removeEventListener("focusout", onFocusOut);
+      window.removeEventListener("input", onInput, true);
       visualViewport?.removeEventListener("resize", onViewportResize);
       document.documentElement.style.removeProperty("--keyboard-inset");
       document.documentElement.removeAttribute("data-keyboard-open");

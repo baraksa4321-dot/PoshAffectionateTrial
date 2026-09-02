@@ -10,3 +10,9 @@ Long application pages should retain one native document scroll path. When the k
 **Why:** On mobile browsers, `100dvh` can already shrink to the visual viewport when the keyboard opens. Subtracting the keyboard offset twice collapses sheets, while nested `overflow` regions and competing body/page scrollers can leave fields hidden or stop long coach pages from moving. Safari's URL/tool-bar chrome can also create a small visual-viewport reduction that is not a keyboard.
 
 **How to apply:** Keep the keyboard offset as `margin-bottom` for bottom sheets, but do not subtract it again from a visual-viewport maximum height. For regular pages, leave vertical scrolling to the document and add temporary keyboard clearance. For nested sheets, scroll the closest ancestor whose content actually overflows. Re-test focused fields near the bottom of long pages and nested overlays.
+
+Header-based `scroll-margin` is unsafe for fullscreen or portal editors: iOS can reapply that header offset after a controlled input rerender and visibly jump the page. Use zero input scroll margins there, and globally snapshot all overflowing ancestors on focus and restore them after `input` when the field remains active.
+
+**Why:** The jump can happen after typing rather than on focus, so focus-only visibility logic misses it; the resulting position often matches the old header height exactly.
+
+**How to apply:** Keep intentional visibility scrolling on focus, but do not add header-based `scroll-margin` to editable controls. Restore the captured scroll chain in the next two animation frames after each active-field input.
