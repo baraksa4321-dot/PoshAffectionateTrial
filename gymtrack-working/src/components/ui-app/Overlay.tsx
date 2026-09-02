@@ -214,6 +214,14 @@ export function Overlay({
     };
   }, [inline, open]);
 
+  useEffect(() => {
+    if (!open || inline) return;
+    const frame = window.requestAnimationFrame(() => {
+      panelRef.current?.scrollTo({ top: 0, behavior: "auto" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [inline, open, variant]);
+
   if (!open || !mounted || typeof document === "undefined") return null;
 
   const isBottom = variant === "bottom";

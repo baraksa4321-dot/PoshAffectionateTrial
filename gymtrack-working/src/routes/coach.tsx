@@ -6094,10 +6094,10 @@ export function CoachDashboardPage({
                                         active={clientsOnly && workspacePage}
                                       >
                                           <div
-                                            className={`coach-workout-surface workout-builder-frame relative w-full overflow-hidden ${
+                                            className={`coach-workout-surface workout-builder-frame relative w-full ${
                                               editingDayId
-                                                ? "workout-builder-surface min-h-full rounded-none border-0 p-4 shadow-none ring-0 sm:p-6"
-                                                : "min-h-[calc(100dvh-12rem)] rounded-[1.5rem] border border-primary/25 bg-background p-4 shadow-sm ring-1 ring-primary/10 sm:p-6"
+                                                ? "workout-builder-surface rounded-none border-0 p-4 shadow-none ring-0 sm:p-6"
+                                                : "overflow-hidden min-h-[calc(100dvh-12rem)] rounded-[1.5rem] border border-primary/25 bg-background p-4 shadow-sm ring-1 ring-primary/10 sm:p-6"
                                             }`}
                                           >
                                             <div className="coach-workout-header workout-builder-header flex flex-col gap-3 border-b border-border/60 pb-3 sm:flex-row sm:items-start sm:justify-between">
