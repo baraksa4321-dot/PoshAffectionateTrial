@@ -7234,3 +7234,23 @@ html.night-mode [class*="border-border/"] {
     min-height: 12rem !important;
   }
 }
+
+/* A fullscreen workout builder no longer shares space with the app header.
+ * Remove the coach-workspace header subtraction in that mode so the editor
+ * surface and its background continue all the way to the viewport bottom. */
+.overlay-root[data-overlay-variant="full"] > [data-overlay-panel] {
+  display: flex;
+  flex-direction: column;
+}
+
+.overlay-root[data-overlay-variant="full"] [data-coach-workspace="true"] {
+  min-height: 100%;
+  max-height: none;
+}
+
+.overlay-root[data-overlay-variant="full"] .workout-builder-workspace,
+.overlay-root[data-overlay-variant="full"] .workout-builder-workspace
+  > .coach-workout-surface-slot,
+.overlay-root[data-overlay-variant="full"] .workout-builder-surface {
+  min-height: 100%;
+}
