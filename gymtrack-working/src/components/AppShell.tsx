@@ -645,16 +645,16 @@ export function AppShell({
     >
       <header
         ref={topbarRef}
-        className="app-topbar app-topbar--editorial shrink-0 sticky top-0 z-30 border-b border-border/70 bg-background/90 shadow-[0_8px_24px_oklch(0.2_0.03_35_/_0.035)] backdrop-blur-xl"
+        className="app-topbar shrink-0 sticky top-0 z-30 border-b border-border/70 bg-background/90 shadow-[0_8px_24px_oklch(0.2_0.03_35_/_0.035)] backdrop-blur-xl"
         style={{ paddingTop: "max(0.35rem, env(safe-area-inset-top))" }}
       >
         <div
-          className={`app-topbar__inner mx-auto w-full max-w-3xl px-4 sm:px-6 ${
+          className={`mx-auto w-full max-w-3xl px-4 sm:px-6 ${
             compactHeader ? "pb-1.5 pt-0" : "pb-2 pt-0"
           }`}
         >
           <div
-            className={`app-topbar__brand-row flex items-center justify-between gap-3 border-b border-border/50 ${
+            className={`flex items-center justify-between gap-3 border-b border-border/50 ${
               compactHeader ? "mb-1 pb-0.5" : "mb-2 pb-1"
             }`}
           >
@@ -676,7 +676,7 @@ export function AppShell({
           </div>
           {headerAccessory || (isCoach && showHomeOnlyHeaderControls) ? (
             <div
-              className={`app-topbar__utility-row flex items-center justify-between gap-2 border-b border-border/50 ${
+              className={`flex items-center justify-between gap-2 border-b border-border/50 ${
                 compactHeader ? "mb-1 pb-0.5" : "mb-2 pb-1"
               }`}
             >
@@ -726,12 +726,12 @@ export function AppShell({
             </div>
           ) : null}
           {title || action || (user && showHomeOnlyHeaderControls) || !user ? (
-            <div className="app-topbar__heading flex items-start gap-3">
+            <div className="flex items-start gap-3">
               <div className="min-w-0 flex-1 text-start">
                 {kicker ? <p className="app-shell-kicker">{kicker}</p> : null}
                 {title ? (
                   <h1
-                    className={`app-shell-title min-w-0 font-display font-extrabold leading-snug tracking-tight text-ink ${
+                    className={`min-w-0 truncate whitespace-nowrap font-display font-extrabold leading-snug tracking-tight text-ink ${
                       compactHeader
                         ? "text-[clamp(15px,4vw,18px)]"
                         : "text-[clamp(16px,4.5vw,20px)]"
@@ -739,11 +739,6 @@ export function AppShell({
                   >
                     {headerTitle}
                   </h1>
-                ) : null}
-                {headerSubtitle ? (
-                  <p className="app-shell-subtitle mt-1 max-w-[34rem] text-xs text-muted-foreground">
-                    {headerSubtitle}
-                  </p>
                 ) : null}
               </div>
               <div className="flex shrink-0 items-center gap-2 pt-0.5">
@@ -807,7 +802,7 @@ export function AppShell({
       <main
         ref={mainRef}
         data-app-scroll-container="true"
-        className={`app-main app-main--editorial page-enter page-scroll-container mx-auto w-full max-w-3xl px-4 pb-8 sm:px-6 ${
+        className={`app-main page-enter page-scroll-container mx-auto w-full max-w-3xl px-4 pb-8 sm:px-6 ${
           compactHeader ? "flex flex-col pt-1.5" : "pt-5 sm:pt-7"
         }`}
         onTouchStart={handleMainTouchStart}
@@ -1306,7 +1301,7 @@ export function AppShell({
       {!authOnly ? (
         <nav aria-label="ניווט ראשי" className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
           <div
-            className="nav-shell app-bottom-nav pointer-events-auto mx-auto flex w-full max-w-3xl items-center justify-between border-t bg-background/95 backdrop-blur-xl"
+            className="nav-shell pointer-events-auto mx-auto flex w-full max-w-3xl items-center justify-between border-t bg-background/95 backdrop-blur-xl"
             style={{ paddingBottom: "max(0.25rem, env(safe-area-inset-bottom))" }}
           >
             {NAV.map(({ to, label, id, icon: Icon, onClick }) => (
