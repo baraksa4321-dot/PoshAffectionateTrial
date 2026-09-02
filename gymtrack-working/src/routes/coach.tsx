@@ -4056,6 +4056,20 @@ export function CoachDashboardPage({
     (profile) => profile.role === "client" && profile.approval_status === "pending",
   );
   const openClientFromOverview = (clientId: string) => {
+    if (!trackingLanding && authUser?.id === clientId && !isOwner) {
+      // A coach can build their own plan from the client list, but the
+      // self-id route is intentionally guarded against opening as a trainee.
+      // Open the local workspace directly instead of navigating through that
+      // guarded route, which would immediately return to the list.
+      setSelectedClientId(clientId);
+      setShowClientWorkspace(true);
+      setOpenEditor(null);
+      setActiveWorkspaceTab("programs");
+      setSelectedTrackingWorkoutId(null);
+      setTrackingDate(todayKey());
+      trackingClientInitializedRef.current = null;
+      return;
+    }
     navigate({
       to: trackingLanding ? "/coach/tracking/$clientId" : "/coach/clients/$clientId",
       params: { clientId },
