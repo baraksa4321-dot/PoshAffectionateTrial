@@ -4729,7 +4729,8 @@ html[data-keyboard-open] .nav-shell {
 }
 
 .workout-report-bookmark {
-  top: 0.5rem;
+  position: fixed;
+  top: max(0.75rem, env(safe-area-inset-top));
   right: 0;
   min-height: 5.25rem;
   width: 1.75rem;
@@ -4763,7 +4764,7 @@ html[data-keyboard-open] .nav-shell {
 }
 
 .workout-report-panel {
-  position: absolute;
+  position: fixed;
   z-index: 1;
   inset-block: 0;
   inset-inline: 0 1.75rem;
@@ -4778,6 +4779,7 @@ html[data-keyboard-open] .nav-shell {
 
 .workout-report-bookmark-open ~ .workout-report-panel {
   inset-inline: 1.75rem 0;
+  border-radius: 0;
 }
 
 .workout-builder-surface {
