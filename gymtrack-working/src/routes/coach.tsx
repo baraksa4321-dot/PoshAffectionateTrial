@@ -5179,21 +5179,6 @@ export function CoachDashboardPage({
           >
             <div
               data-coach-workspace="true"
-              onInputCapture={(event) => {
-                if (!document.documentElement.hasAttribute("data-keyboard-open")) return;
-                const target = event.target;
-                if (!(target instanceof HTMLElement)) return;
-                const workspace = event.currentTarget;
-                const scrollTop = workspace.scrollTop;
-                const scrollLeft = workspace.scrollLeft;
-                window.requestAnimationFrame(() => {
-                  window.requestAnimationFrame(() => {
-                    if (document.activeElement !== target) return;
-                    workspace.scrollTop = scrollTop;
-                    workspace.scrollLeft = scrollLeft;
-                  });
-                });
-              }}
                 className={`w-full ${editingDayId ? "workout-builder-workspace min-h-full flex flex-col" : ""} ${
                   clientsOnly ? "space-y-1.5" : trackingLanding ? "space-y-1" : "space-y-4"
                 } bg-background ${

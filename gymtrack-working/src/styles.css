@@ -4586,7 +4586,7 @@ html.night-mode .auth-panel {
   overflow-y: auto;
   overscroll-behavior-y: contain;
   scroll-padding-top: calc(var(--app-topbar-height, 5rem) + 1rem);
-  scroll-padding-bottom: calc(6.5rem + var(--keyboard-inset, 0px));
+  scroll-padding-bottom: 6.5rem;
 }
 
 /* iOS may otherwise move the scroll anchor when keyboard clearance changes
@@ -4608,17 +4608,14 @@ html[data-keyboard-open] [data-coach-workspace="true"] {
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
-  scroll-padding-bottom: calc(
-    6.5rem + env(safe-area-inset-bottom) + var(--keyboard-inset, 0px)
-  );
+  scroll-padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
 }
 
 input:not([type="hidden"]):not([type="file"]),
 textarea,
 select,
 [contenteditable="true"] {
-  scroll-margin-top: calc(var(--app-topbar-height, 5rem) + 1rem);
-  scroll-margin-bottom: calc(6.5rem + var(--keyboard-inset, 0px));
+  scroll-margin: 0;
 }
 
 .workout-progress-sticky {
