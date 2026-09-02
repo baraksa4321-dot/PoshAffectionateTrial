@@ -4785,6 +4785,53 @@ html[data-keyboard-open] .nav-shell {
   min-height: calc(100dvh - 5rem);
   height: auto;
   border-radius: 0;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--primary) 4%, var(--background)),
+      var(--background) 16rem
+    );
+}
+
+.workout-builder-header {
+  border-color: color-mix(in oklch, var(--primary) 18%, var(--border));
+  padding-block: 0.35rem 0.9rem;
+}
+
+.workout-builder-header > div:first-child {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.workout-builder-name {
+  border-color: color-mix(in oklch, var(--primary) 28%, var(--border));
+  background: color-mix(in oklch, var(--surface) 84%, var(--primary));
+  text-align: right;
+}
+
+.workout-builder-add-button {
+  min-width: 7.25rem;
+  background: color-mix(in oklch, var(--primary) 82%, #ffffff);
+  box-shadow: 0 8px 18px color-mix(in oklch, var(--primary) 18%, transparent);
+}
+
+.workout-builder-close-button {
+  border-color: color-mix(in oklch, var(--primary) 30%, var(--border));
+  background: var(--background);
+}
+
+.workout-builder-exercise-list {
+  margin-top: 0.3rem;
+  border-top: 1px solid color-mix(in oklch, var(--primary) 16%, var(--border));
+}
+
+.workout-builder-exercise-row {
+  border-bottom: 1px solid color-mix(in oklch, var(--primary) 14%, var(--border));
+  padding-block: 0.9rem;
+}
+
+.workout-builder-exercise-row:last-child {
+  border-bottom: 0;
 }
 
 .workout-builder-workspace > .coach-workout-surface-slot {

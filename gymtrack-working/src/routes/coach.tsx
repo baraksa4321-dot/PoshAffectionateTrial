@@ -4991,53 +4991,57 @@ export function CoachDashboardPage({
                   : "max-w-2xl rounded-3xl shadow-2xl"
               } ${workspacePage || openEditor ? "" : "p-4 sm:p-6"}`}
             >
-              <div
-                className={`flex min-w-0 items-center justify-between gap-2 overflow-x-hidden border-b border-border/60 ${
-                  trackingLanding ? "px-3 pb-2" : "px-4 pb-3 sm:px-6"
-                }`}
-              >
-                <h3 className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden font-bold text-base text-ink">
-                  <Users
-                    className={trackingLanding ? "h-4 w-4 text-primary" : "h-5 w-5 text-primary"}
-                  />
-                  <span className="shrink-0">
-                    {trackingLanding ? "דוח המעקב:" : "תכנית המתאמן:"}
-                  </span>
-                  <span className="truncate text-primary font-extrabold">
-                    {isSelfSelected
-                      ? `התוכנית של ${selfDisplayName}`
-                      : profileDisplayName(selectedClientInfo?.profiles)}
-                  </span>
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (clientId) {
-                      if (workspaceMode !== "all" && selectedClientId) {
-                        navigate({
-                          to: "/coach/clients/$clientId",
-                          params: { clientId: selectedClientId },
-                        });
-                      } else
-                        navigate({
-                          to: trackingLanding ? "/coach/tracking" : "/coach/clients",
-                        });
-                      return;
-                    }
-                    setShowClientWorkspace(false);
-                    setSelectedClientId(null);
-                    setEditingProgramId(null);
-                    setEditingDayId(null);
-                  }}
-                  aria-label="סגירת תכנית המתאמן"
-                  className={`grid place-items-center border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-ink ${
-                    trackingLanding ? "h-8 w-8" : "h-9 w-9"
+              {!editingDayId ? (
+                <div
+                  className={`flex min-w-0 items-center justify-between gap-2 overflow-x-hidden border-b border-border/60 ${
+                    trackingLanding ? "px-3 pb-2" : "px-4 pb-3 sm:px-6"
                   }`}
                 >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              {selectedClientId && !isSelfSelected ? (
+                  <h3 className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden font-bold text-base text-ink">
+                    <Users
+                      className={
+                        trackingLanding ? "h-4 w-4 text-primary" : "h-5 w-5 text-primary"
+                      }
+                    />
+                    <span className="shrink-0">
+                      {trackingLanding ? "דוח המעקב:" : "תכנית המתאמן:"}
+                    </span>
+                    <span className="truncate text-primary font-extrabold">
+                      {isSelfSelected
+                        ? `התוכנית של ${selfDisplayName}`
+                        : profileDisplayName(selectedClientInfo?.profiles)}
+                    </span>
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (clientId) {
+                        if (workspaceMode !== "all" && selectedClientId) {
+                          navigate({
+                            to: "/coach/clients/$clientId",
+                            params: { clientId: selectedClientId },
+                          });
+                        } else
+                          navigate({
+                            to: trackingLanding ? "/coach/tracking" : "/coach/clients",
+                          });
+                        return;
+                      }
+                      setShowClientWorkspace(false);
+                      setSelectedClientId(null);
+                      setEditingProgramId(null);
+                      setEditingDayId(null);
+                    }}
+                    aria-label="סגירת תכנית המתאמן"
+                    className={`grid place-items-center border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-ink ${
+                      trackingLanding ? "h-8 w-8" : "h-9 w-9"
+                    }`}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : null}
+              {selectedClientId && !isSelfSelected && !editingDayId ? (
                 <div
                   data-client-freshness="true"
                   title={
@@ -6089,12 +6093,14 @@ export function CoachDashboardPage({
                                         key={dayItem.id}
                                         active={clientsOnly && workspacePage}
                                       >
-                                        <div className={`coach-workout-surface relative w-full overflow-hidden ${
-                                          editingDayId
-                                            ? "workout-builder-surface min-h-full rounded-none border-0 p-4 shadow-none ring-0 sm:p-6"
-                                            : "min-h-[calc(100dvh-12rem)] rounded-[1.5rem] border border-primary/25 bg-background p-4 shadow-sm ring-1 ring-primary/10 sm:p-6"
-                                        }`}>
-                                          <div className="coach-workout-header flex flex-col gap-3 border-b border-border/60 pb-3 sm:flex-row sm:items-start sm:justify-between">
+                                          <div
+                                            className={`coach-workout-surface workout-builder-frame relative w-full overflow-hidden ${
+                                              editingDayId
+                                                ? "workout-builder-surface min-h-full rounded-none border-0 p-4 shadow-none ring-0 sm:p-6"
+                                                : "min-h-[calc(100dvh-12rem)] rounded-[1.5rem] border border-primary/25 bg-background p-4 shadow-sm ring-1 ring-primary/10 sm:p-6"
+                                            }`}
+                                          >
+                                            <div className="coach-workout-header workout-builder-header flex flex-col gap-3 border-b border-border/60 pb-3 sm:flex-row sm:items-start sm:justify-between">
                                             <div className="min-w-0 w-full flex-1">
                                               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
                                                 בניית אימון
@@ -6112,7 +6118,7 @@ export function CoachDashboardPage({
                                                   if (event.key === "Enter")
                                                     event.currentTarget.blur();
                                                 }}
-                                                className="mt-1 w-full max-w-xl rounded-xl border border-primary/30 bg-background px-3 py-2 text-base font-extrabold text-ink outline-none focus:border-primary"
+                                                className="workout-builder-name mt-1 w-full max-w-xl rounded-xl border border-primary/30 bg-background px-3 py-2 text-base font-extrabold text-ink outline-none focus:border-primary"
                                               />
                                               <p className="mt-1 text-[11px] text-muted-foreground">
                                                 {dayItem.items?.length || 0} תרגילים בתוכנית
@@ -6128,7 +6134,7 @@ export function CoachDashboardPage({
                                                   setOpenWorkoutReportId(null);
                                                 }}
                                                 aria-expanded={showExerciseForm}
-                                                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3 text-[11px] font-extrabold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                className="workout-builder-add-button inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3 text-[11px] font-extrabold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                               >
                                                 <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                                                 {showExerciseForm ? "סגירת הוספה" : "הוספת תרגיל"}
@@ -6145,7 +6151,7 @@ export function CoachDashboardPage({
                                                 aria-label="סגירת בניית אימון"
                                                 title="סגירת בניית אימון"
                                                 data-testid="button-close-coach-workout"
-                                                className="ui-icon-button grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border bg-surface text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                className="ui-icon-button workout-builder-close-button grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border bg-surface text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                               >
                                                 <X className="h-4 w-4" aria-hidden="true" />
                                               </button>
@@ -6153,7 +6159,7 @@ export function CoachDashboardPage({
                                           </div>
 
                                           {dayItem.items?.length > 0 && (
-                                            <div className="space-y-1.5 pt-1">
+                                            <div className="workout-builder-exercise-list space-y-1.5 pt-1">
                                               {dayItem.items.map((exItem: WorkoutItem) => {
                                                 const exMeta = store.exercises.find(
                                                   (e) => e.id === exItem.exerciseId,
@@ -6163,7 +6169,7 @@ export function CoachDashboardPage({
                                                   <div
                                                     key={exItem.id}
                                                     id={`coach-exercise-${exItem.exerciseId}`}
-                                                    className={`px-1 py-3 text-xs transition-colors ${
+                                                    className={`workout-builder-exercise-row px-1 py-3 text-xs transition-colors ${
                                                       focusedExerciseId === exItem.exerciseId
                                                         ? "border-s-2 border-primary ps-3"
                                                         : ""
