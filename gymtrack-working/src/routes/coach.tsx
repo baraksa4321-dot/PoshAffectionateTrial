@@ -998,22 +998,34 @@ function WorkoutDailyReport({
 
   return (
     <section
-      className="workout-daily-report mt-2 space-y-2 rounded-2xl border border-primary/20 bg-primary/[0.035] p-2.5"
+      className="mt-3 space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.035] p-3"
       aria-label={`היסטוריית אימונים והערות עבור ${workout.name}`}
       data-testid="coach-workout-daily-report"
     >
-      <div className="flex items-center gap-1.5 rounded-xl border border-primary/15 bg-white/80 p-1.5" dir="ltr">
+      <div className="flex items-start gap-3 border-b border-primary/15 pb-3">
+        <span className="illustrated-mark inline-grid h-11 w-11 shrink-0 place-items-center text-primary">
+          <Activity className="h-6 w-6" />
+        </span>
+        <div className="min-w-0 text-start">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+            מה המתאמן ביצע בפועל
+          </p>
+          <h4 className="mt-1 text-base font-extrabold text-ink">היסטוריית אימונים והערות</h4>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 rounded-xl bg-white/80 p-2" dir="ltr">
         <button
           type="button"
           onClick={() => setReportDate((date) => reportShiftDate(date, 1))}
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-border text-ink transition-colors hover:border-primary hover:text-primary"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border text-ink transition-colors hover:border-primary hover:text-primary"
           aria-label="היום הבא"
           title="היום הבא"
           disabled={reportDate >= today}
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <div className="relative h-8 min-w-0 flex-1 overflow-hidden rounded-lg border border-border bg-white">
+        <div className="relative h-9 min-w-0 flex-1 overflow-hidden rounded-lg border border-border bg-white">
           <span
             className="pointer-events-none absolute inset-0 z-0 grid place-items-center px-2 text-center text-xs text-ink"
             dir="rtl"
@@ -1037,7 +1049,7 @@ function WorkoutDailyReport({
         <button
           type="button"
           onClick={() => setReportDate((date) => reportShiftDate(date, -1))}
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-border text-ink transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-30"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border text-ink transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-30"
           aria-label="היום הקודם"
           title="היום הקודם"
         >
@@ -1045,36 +1057,117 @@ function WorkoutDailyReport({
         </button>
       </div>
 
-      <div className="flex items-center justify-between gap-2 px-1 text-[10px]">
+      <div className="rounded-xl bg-white/80 p-3 text-[11px]">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-bold text-primary">{workout.name || "אימון"}</span>
+          <strong className="text-ink">{workout.name || "אימון"}</strong>
+          <span className="text-muted-foreground">
+            {sessions.length > 0 ? "אימון אחד בתאריך" : "אין ביצוע בתאריך"}
+          </span>
         </div>
-        <span className="text-muted-foreground">
-          {sessions.length > 0 ? `${completedSets}/${totalSets} סטים בוצעו` : "אין ביצוע בתאריך"}
-        </span>
+        {sessions.length > 0 ? (
+          <div className="mt-1 space-y-1 text-muted-foreground">
+            <p>
+              {completedSets} מתוך {totalSets} סטים בוצעו בפועל
+            </p>
+            {sessions.map((session) =>
+              session.difficultyRating ? (
+                <p key={`${session.id}-difficulty`}>
+                  משוב על קושי: {ratingLabel(session.difficultyRating)}
+                </p>
+              ) : null,
+            )}
+          </div>
+        ) : null}
       </div>
 
-      <div className="workout-report-exercise-list space-y-2">
+      <div className="space-y-1.5">
         {exerciseRows.length > 0 ? (
           exerciseRows.map(({ item, entries, replacementEntry, exercise }) => (
-            <WorkoutReviewExerciseCard
+            <div
               key={item.id}
-              item={item}
-              exercise={exercise}
-              replacementEntry={replacementEntry}
-              records={entries.map(({ sessionId, entry }) => ({ sessionId, entry }))}
-            />
+              className={`rounded-xl border px-3 py-2.5 text-[11px] ${
+                entries.length > 0
+                  ? "border-emerald-200 bg-emerald-50/70"
+                  : "border-border/60 bg-white/80"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 text-start">
+                  <strong className="block truncate text-ink">
+                    {entries[0]?.entry.exerciseName ||
+                      item.exerciseName ||
+                      exercise?.name ||
+                      "תרגיל"}
+                  </strong>
+                  {entries.length === 0 ? (
+                    <>
+                      <p className="mt-1 text-muted-foreground">
+                        תוכנן: {item.sets} סטים × {item.repMin || item.reps}
+                        {item.repMax ? `–${item.repMax}` : ""} חזרות ·{" "}
+                        {item.targetWeight || item.weight} ק״ג
+                      </p>
+                      {replacementEntry ? (
+                        <p className="mt-1 font-semibold text-primary">
+                          הוחלף ב־{replacementEntry.exerciseName || "תרגיל אחר"}
+                        </p>
+                      ) : null}
+                    </>
+                  ) : (
+                    entries.map(({ entry, sessionId }, entryIndex) => (
+                      <div key={`${sessionId}-${entry.exerciseId}-${entryIndex}`}>
+                        <p className="mt-1 text-muted-foreground">
+                          {entry.sets.length > 0
+                            ? entry.sets
+                                .map(
+                                  (set, setIndex) =>
+                                    `סט ${setIndex + 1}: ${set.weight} ק״ג × ${set.reps}${
+                                      set.done ? " ✓" : " — לא בוצע"
+                                    }`,
+                                )
+                                .join(" · ")
+                            : "לא נרשמו סטים"}
+                        </p>
+                        {entry.notes?.trim() || entry.feedback?.notes?.trim() ? (
+                          <p className="mt-1 text-ink">
+                            הערה: {entry.feedback?.notes?.trim() || entry.notes.trim()}
+                          </p>
+                        ) : null}
+                        {entry.videoUrl && !entry.videoUrl.startsWith("blob:") ? (
+                          <WorkoutVideoPlayer
+                            source={entry.videoUrl}
+                            title={`סרטון ביצוע עבור ${entry.exerciseName || "תרגיל"}`}
+                            className="mt-1.5 max-h-52 w-full rounded-lg bg-black object-contain"
+                          />
+                        ) : entry.videoUrl?.startsWith("blob:") ? (
+                          <p className="mt-1.5 rounded-lg bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-900">
+                            הסרטון עדיין בתהליך העלאה ולא זמין לצפייה כאן.
+                          </p>
+                        ) : null}
+                      </div>
+                    ))
+                  )}
+                </div>
+                <span
+                  className={`shrink-0 text-[10px] font-bold ${
+                    entries.length > 0 ? "text-emerald-700" : "text-muted-foreground"
+                  }`}
+                >
+                  {entries.length > 0 ? "בוצע בפועל" : "טרם בוצע"}
+                </span>
+              </div>
+              <WorkoutExerciseDemoVideos exercise={exercise} />
+            </div>
           ))
         ) : (
-          <p className="rounded-xl bg-white/80 p-3 text-center text-[11px] text-muted-foreground">
+          <p className="rounded-xl bg-white/80 p-3 text-center text-xs text-muted-foreground">
             באימון הזה עדיין לא הוגדרו תרגילים.
           </p>
         )}
       </div>
 
       {additionalEntries.length > 0 ? (
-        <div className="space-y-2">
-          <p className="px-1 text-[11px] font-extrabold text-ink">תרגילים שבוצעו ואינם בתוכנית</p>
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-extrabold text-ink">תרגילים שבוצעו ואינם בתוכנית</p>
           {additionalEntries.map(({ entry, sessionId, index }) => {
             const exercise =
               exercises.find((candidate) => candidate.id === entry.exerciseId) ??
@@ -1086,23 +1179,28 @@ function WorkoutDailyReport({
                   )
                 : undefined);
             return (
-              <WorkoutReviewExerciseCard
+              <div
                 key={`additional-${sessionId}-${entry.exerciseId}-${index}`}
-                item={{
-                  id: `additional-${sessionId}-${entry.exerciseId}-${index}`,
-                  exerciseId: entry.exerciseId,
-                  exerciseName: entry.exerciseName,
-                  sets: entry.sets.length,
-                  reps: entry.targetReps || 0,
-                  weight: entry.sets[0]?.weight || 0,
-                  rest: 0,
-                  notes: "",
-                  workingSets: [],
-                  ...(entry.targetReps ? { repMin: entry.targetReps } : {}),
-                }}
-                exercise={exercise}
-                records={[{ sessionId, entry }]}
-              />
+                className="rounded-xl border border-sky-200 bg-sky-50/65 p-2.5 text-[10px]"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <strong className="text-start text-ink">{entry.exerciseName || "תרגיל"}</strong>
+                  <span className="shrink-0 font-bold text-sky-800">בוצע בפועל</span>
+                </div>
+                <WorkoutExerciseDemoVideos exercise={exercise} />
+                <p className="mt-1 text-muted-foreground">
+                  {entry.sets.length > 0
+                    ? entry.sets
+                        .map(
+                          (set, setIndex) =>
+                            `סט ${setIndex + 1}: ${set.weight} ק״ג × ${set.reps}${
+                              set.done ? " ✓" : " — לא בוצע"
+                            }`,
+                        )
+                        .join(" · ")
+                    : "לא נרשמו סטים"}
+                </p>
+              </div>
             );
           })}
         </div>
@@ -4880,14 +4978,14 @@ export function CoachDashboardPage({
               setEditingDayId(null);
             }}
             ariaLabel="בניית תוכנית ותפריט למתאמן"
-            inline={clientsOnly}
-            variant={workspacePage || openEditor ? "full" : "center"}
-            className={workspacePage || openEditor ? "bg-background" : ""}
-            panelClassName={workspacePage || openEditor ? "bg-background" : ""}
+            inline={clientsOnly && !editingDayId}
+            variant={editingDayId || workspacePage || openEditor ? "full" : "center"}
+            className={editingDayId || workspacePage || openEditor ? "bg-background" : ""}
+            panelClassName={editingDayId || workspacePage || openEditor ? "bg-background" : ""}
           >
             <div
               data-coach-workspace="true"
-              className={`w-full ${trackingLanding ? "space-y-1" : "space-y-4"} bg-background ${
+              className={`w-full ${editingDayId ? "workout-builder-workspace min-h-full flex flex-col" : ""} ${trackingLanding ? "space-y-1" : "space-y-4"} bg-background ${
                 workspacePage || openEditor
                   ? "min-w-0 max-w-full overflow-x-hidden pb-10"
                   : "max-w-2xl rounded-3xl shadow-2xl"
@@ -4980,7 +5078,9 @@ export function CoachDashboardPage({
                 </div>
               ) : null}
 
-              {(trackingLanding || workspacePage || openEditor) && clientDetails ? (
+              <div data-coach-workout-surface-slot="true" className="coach-workout-surface-slot" />
+
+              {!editingDayId && (trackingLanding || workspacePage || openEditor) && clientDetails ? (
                 <>
                   <nav
                     aria-label="ניווט בסביבת העריכה"
@@ -5089,8 +5189,6 @@ export function CoachDashboardPage({
                   ) : null}
                 </>
               ) : null}
-
-              <div data-coach-workout-surface-slot="true" className="coach-workout-surface-slot" />
 
               {loadingDetails ? (
                 <div className="surface-card p-6 text-center text-xs text-muted-foreground animate-pulse">
@@ -5991,7 +6089,11 @@ export function CoachDashboardPage({
                                         key={dayItem.id}
                                         active={clientsOnly && workspacePage}
                                       >
-                                        <div className="coach-workout-surface relative min-h-[calc(100dvh-12rem)] w-full overflow-hidden rounded-[1.5rem] border border-primary/25 bg-background p-4 shadow-sm ring-1 ring-primary/10 sm:p-6">
+                                        <div className={`coach-workout-surface relative w-full overflow-hidden ${
+                                          editingDayId
+                                            ? "workout-builder-surface min-h-full rounded-none border-0 p-4 shadow-none ring-0 sm:p-6"
+                                            : "min-h-[calc(100dvh-12rem)] rounded-[1.5rem] border border-primary/25 bg-background p-4 shadow-sm ring-1 ring-primary/10 sm:p-6"
+                                        }`}>
                                           <div className="coach-workout-header flex flex-col gap-3 border-b border-border/60 pb-3 sm:flex-row sm:items-start sm:justify-between">
                                             <div className="min-w-0 w-full flex-1">
                                               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
