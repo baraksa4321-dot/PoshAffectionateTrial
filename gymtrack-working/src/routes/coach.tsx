@@ -66,6 +66,7 @@ import {
   exerciseDisplayName,
   exerciseEquipmentOptions,
   exerciseGripOptions,
+  selectedExerciseEquipmentOptions,
   uniqueCanonicalExercises,
 } from "../lib/exercise-library";
 import { loadCoachMessages, sendCoachMessage } from "../lib/coach-messages";
@@ -3950,7 +3951,7 @@ export function CoachDashboardPage({
       setNewExerciseError("יש להזין שם תרגיל.");
       return;
     }
-    const equipmentChoices = exerciseEquipmentOptions(newExerciseDraft);
+    const equipmentChoices = selectedExerciseEquipmentOptions(newExerciseDraft);
     const exercise = {
       ...newExerciseDraft,
       name,
@@ -8856,14 +8857,16 @@ export function CoachDashboardPage({
                     {EQUIPMENT.filter(
                       (equipment) => !store.deletedEquipmentOptions?.includes(equipment),
                     ).map((equipment) => {
-                      const selected = exerciseEquipmentOptions(newExerciseDraft).includes(equipment);
+                      const selected = selectedExerciseEquipmentOptions(newExerciseDraft).includes(
+                        equipment,
+                      );
                       return (
                         <button
                           key={equipment}
                           type="button"
                           onClick={() =>
                             setNewExerciseDraft((current) => {
-                              const options = exerciseEquipmentOptions(current);
+                              const options = selectedExerciseEquipmentOptions(current);
                               const next = selected
                                 ? options.filter((option) => option !== equipment)
                                 : [...options, equipment];
@@ -8886,7 +8889,7 @@ export function CoachDashboardPage({
                       );
                     })}
                   </div>
-                  {exerciseEquipmentOptions(newExerciseDraft).includes("פולי / כבלים") ? (
+                  {selectedExerciseEquipmentOptions(newExerciseDraft).includes("פולי / כבלים") ? (
                     <p className="mt-2 text-[10px] font-medium text-muted-foreground">
                       באימון עצמו תופיע גם בחירת מאחז לכבלים.
                     </p>

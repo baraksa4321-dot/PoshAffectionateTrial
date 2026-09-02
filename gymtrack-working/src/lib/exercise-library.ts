@@ -188,6 +188,18 @@ export function exerciseEquipmentOptions(exercise: Pick<Exercise, "equipment" | 
   );
 }
 
+export function selectedExerciseEquipmentOptions(
+  exercise: Pick<Exercise, "equipment" | "equipmentOptions">,
+): string[] {
+  return Array.from(
+    new Set(
+      [...(exercise.equipmentOptions?.length ? exercise.equipmentOptions : []), exercise.equipment]
+        .map((option) => option.trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
 export function exerciseGripOptions(
   exercise: Pick<Exercise, "cableGripOptions">,
 ): string[] {

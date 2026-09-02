@@ -333,7 +333,7 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
 
   const thirdSetMode = page.getByRole("combobox", { name: "סוג סט 3" });
   await thirdSetMode.selectOption("drop");
-  const dropRestInput = page.getByRole("spinbutton", { name: "דרופ סט זמן מנוחה" });
+  const dropRestInput = page.getByRole("textbox", { name: "דרופ סט זמן מנוחה" });
   await dropRestInput.fill("45");
   await expect(dropRestInput).toHaveValue("45");
 

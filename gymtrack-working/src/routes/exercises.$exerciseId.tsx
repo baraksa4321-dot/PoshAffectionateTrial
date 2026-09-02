@@ -16,6 +16,7 @@ import { IconButton, Pill, PrimaryButton, SecondaryButton } from "@/components/u
 import {
   deleteExercise,
   emptyExercise,
+  flushCloudSync,
   lastPerformance,
   personalRecords,
   saveExercise,
@@ -32,6 +33,7 @@ import {
   exerciseDisplayName,
   exerciseEquipmentOptions,
   exerciseGripOptions,
+  selectedExerciseEquipmentOptions,
 } from "@/lib/exercise-library";
 import { genderText } from "@/lib/gender-copy";
 
@@ -384,7 +386,7 @@ function ExerciseDetail() {
   const equipmentOptions = Array.from(
     new Set([...EQUIPMENT, ...exercises.map((exercise) => exercise.equipment)].filter(Boolean)),
   ).filter((option) => !deletedEquipmentOptions.includes(option));
-  const selectedEquipmentOptions = exerciseEquipmentOptions(draft);
+  const selectedEquipmentOptions = selectedExerciseEquipmentOptions(draft);
   const categoryOptions = Array.from(
     new Set(
       [...EXERCISE_CATEGORIES, ...exercises.map((exercise) => exercise.category)].filter(
@@ -414,7 +416,7 @@ function ExerciseDetail() {
       .catch(() => setVideoUploadError("לא ניתן לקרוא את הסרטון שנבחר."));
   };
 
-  const onSave = () => {
+  const onSave = async () => {
     if (!canManageLibrary) return;
     setSaveError("");
     const isOther = draft.muscleGroup === "אחר" || (draft.muscleGroups ?? []).includes("אחר");
@@ -429,22 +431,34 @@ function ExerciseDetail() {
       setSaveError("יש לבחור קבוצת שרירים לפני השמירה.");
       return;
     }
-    saveExercise({
+    const equipmentOptions = selectedExerciseEquipmentOptions({
+      ...draft,
+      equipment: draft.equipment,
+    });
+    const savedExercise = {
       ...draft,
       muscleGroup: finalMuscleGroup,
+      equipment: equipmentOptions[0] ?? draft.equipment,
+      equipmentOptions,
       ...(customValue === undefined ? {} : { customMuscleGroup: customValue }),
-    });
+    };
+    saveExercise(savedExercise);
     if (isNew) {
+      const syncResult = await flushCloudSync();
+      if (!syncResult.success) {
+        setSaveError(syncResult.error || "שמירת התרגיל בענן נכשלה. אפשר לנסות שוב.");
+        return;
+      }
       const returnUrl = window.sessionStorage.getItem("gymtrack-exercise-return-url");
       if (returnUrl) {
         window.sessionStorage.removeItem("gymtrack-exercise-return-url");
-        window.sessionStorage.setItem("gymtrack-created-exercise-id", draft.id);
+        window.sessionStorage.setItem("gymtrack-created-exercise-id", savedExercise.id);
         // The coach screen reads this together with the created id and restores
         // the exact client/program/day context before assigning the exercise.
         window.location.assign(returnUrl);
         return;
       }
-      navigate({ to: "/exercises/$exerciseId", params: { exerciseId: draft.id } });
+      navigate({ to: "/exercises/$exerciseId", params: { exerciseId: savedExercise.id } });
     } else {
       setEditing(false);
     }
@@ -535,133 +549,127 @@ function ExerciseDetail() {
               onChange={(value) =>
                 set({
                   equipment: value,
-                  equipmentOptions: Array.from(
-                    new Set([...(draft.equipmentOptions ?? []), value].filter(Boolean)),
-                  ),
                 })
               }
             />
-            {!isNew ? (
-              <>
+            <>
+              <SearchMultiOptionField
+                label="ציוד אפשרי בעת בניית אימון"
+                selected={selectedEquipmentOptions}
+                options={equipmentOptions}
+                placeholder="חיפוש ציוד אפשרי..."
+                onToggle={(value) => {
+                  const next = selectedEquipmentOptions.includes(value)
+                    ? selectedEquipmentOptions.filter((option) => option !== value)
+                    : [...selectedEquipmentOptions, value];
+                  if (next.length === 0) return;
+                  set({ equipment: next[0] ?? draft.equipment, equipmentOptions: next });
+                }}
+              />
+              {selectedEquipmentOptions.includes("פולי / כבלים") ? (
                 <SearchMultiOptionField
-                  label="ציוד אפשרי בעת בניית אימון"
-                  selected={selectedEquipmentOptions}
-                  options={equipmentOptions}
-                  placeholder="חיפוש ציוד אפשרי..."
+                  label="מאחזים אפשריים בכבלים"
+                  selected={draft.cableGripOptions ?? []}
+                  options={CABLE_GRIPS.filter(
+                    (grip) => !deletedCableGripOptions.includes(grip),
+                  )}
+                  placeholder="חיפוש מאחז..."
                   onToggle={(value) => {
-                    const next = selectedEquipmentOptions.includes(value)
-                      ? selectedEquipmentOptions.filter((option) => option !== value)
-                      : [...selectedEquipmentOptions, value];
-                    if (next.length === 0) return;
-                    set({ equipment: next[0] ?? draft.equipment, equipmentOptions: next });
+                    const current = draft.cableGripOptions ?? [];
+                    set({
+                      cableGripOptions: current.includes(value)
+                        ? current.filter((option) => option !== value)
+                        : [...current, value],
+                    });
                   }}
                 />
-                {selectedEquipmentOptions.includes("פולי / כבלים") ? (
-                  <SearchMultiOptionField
-                    label="מאחזים אפשריים בכבלים"
-                    selected={draft.cableGripOptions ?? []}
-                    options={CABLE_GRIPS.filter(
-                      (grip) => !deletedCableGripOptions.includes(grip),
-                    )}
-                    placeholder="חיפוש מאחז..."
-                    onToggle={(value) => {
-                      const current = draft.cableGripOptions ?? [];
-                      set({
-                        cableGripOptions: current.includes(value)
-                          ? current.filter((option) => option !== value)
-                          : [...current, value],
-                      });
-                    }}
-                  />
-                ) : null}
-              </>
-            ) : null}
+              ) : null}
+            </>
           </div>
 
-          {!isNew ? (
-            <>
-          <OptionImagesEditor
-            label="מאגר תמונות למכשירים ולציוד"
-            options={selectedEquipmentOptions}
-            images={draft.equipmentImages}
-            onChange={(equipmentImages) => set({ equipmentImages })}
-          />
-
-          {selectedEquipmentOptions.includes("פולי / כבלים") ? (
+          <>
             <OptionImagesEditor
-              label="מאגר תמונות למאחזים"
-              options={exerciseGripOptions(draft)}
-              images={draft.cableGripImages}
-              onChange={(cableGripImages) => set({ cableGripImages })}
+              label="מאגר תמונות למכשירים ולציוד"
+              options={selectedEquipmentOptions}
+              images={draft.equipmentImages}
+              onChange={(equipmentImages) => set({ equipmentImages })}
             />
-          ) : null}
 
-          <div className="surface-card p-4">
-            <SearchOptionField
-              label="קטגוריה"
-              value={draft.category ?? ""}
-              options={categoryOptions}
-              placeholder="חיפוש או כתיבת קטגוריה חדשה..."
-              onChange={(value) => set({ category: value })}
-            />
-          </div>
+            {selectedEquipmentOptions.includes("פולי / כבלים") ? (
+              <OptionImagesEditor
+                label="מאגר תמונות למאחזים"
+                options={exerciseGripOptions(draft)}
+                images={draft.cableGripImages}
+                onChange={(cableGripImages) => set({ cableGripImages })}
+              />
+            ) : null}
 
-          <div className="surface-card p-4">
-            <SearchMultiOptionField
-              label="קבוצות שרירים עובדות"
-              selected={draft.muscleGroups ?? [draft.muscleGroup].filter(Boolean)}
-              options={muscleOptions}
-              placeholder="חיפוש קבוצת שרירים עובדת..."
-              onToggle={(value) => toggleMuscleGroup(value)}
-            />
-          </div>
+            <div className="surface-card p-4">
+              <SearchOptionField
+                label="קטגוריה"
+                value={draft.category ?? ""}
+                options={categoryOptions}
+                placeholder="חיפוש או כתיבת קטגוריה חדשה..."
+                onChange={(value) => set({ category: value })}
+              />
+            </div>
 
-          <div className="surface-card p-4">
-            <SearchMultiOptionField
-              label="שרירים משניים (עוזרים)"
-              selected={draft.secondaryMuscles ?? []}
-              options={muscleOptions}
-              placeholder="חיפוש שריר משני..."
-              onToggle={(value) => toggleSecondary(value)}
-            />
-          </div>
+            <div className="surface-card p-4">
+              <SearchMultiOptionField
+                label="קבוצות שרירים עובדות"
+                selected={draft.muscleGroups ?? [draft.muscleGroup].filter(Boolean)}
+                options={muscleOptions}
+                placeholder="חיפוש קבוצת שרירים עובדת..."
+                onToggle={(value) => toggleMuscleGroup(value)}
+              />
+            </div>
 
-          <div className="surface-card p-4">
-            <label className={labelCls}>תיאור התרגיל</label>
-            <textarea
-              rows={3}
-              className={field}
-              value={draft.description}
-              onChange={(e) => set({ description: e.target.value })}
-              placeholder="תיאור קצר על התרגיל..."
-            />
-          </div>
+            <div className="surface-card p-4">
+              <SearchMultiOptionField
+                label="שרירים משניים (עוזרים)"
+                selected={draft.secondaryMuscles ?? []}
+                options={muscleOptions}
+                placeholder="חיפוש שריר משני..."
+                onToggle={(value) => toggleSecondary(value)}
+              />
+            </div>
 
-          <div className="surface-card p-4">
-            <label className={labelCls}>הוראות ביצוע</label>
-            <textarea
-              rows={3}
-              className={field}
-              value={draft.instructions ?? ""}
-              onChange={(e) => set({ instructions: e.target.value })}
-              placeholder="1. אחוז במוט ברוחב כתפיים..."
-            />
-          </div>
+            <div className="surface-card p-4">
+              <label className={labelCls}>תיאור התרגיל</label>
+              <textarea
+                rows={3}
+                className={field}
+                value={draft.description}
+                onChange={(e) => set({ description: e.target.value })}
+                placeholder="תיאור קצר על התרגיל..."
+              />
+            </div>
 
-          <div className="surface-card p-4">
-            <label className={labelCls}>דגשי טכניקה וטיפים</label>
-            <textarea
-              rows={2}
-              className={field}
-              value={draft.tips ?? ""}
-              onChange={(e) => set({ tips: e.target.value })}
-              placeholder="למשל: לשמור על מרפקים בזווית 45 מעלות"
-            />
-          </div>
+            <div className="surface-card p-4">
+              <label className={labelCls}>הוראות ביצוע</label>
+              <textarea
+                rows={3}
+                className={field}
+                value={draft.instructions ?? ""}
+                onChange={(e) => set({ instructions: e.target.value })}
+                placeholder="1. אחוז במוט ברוחב כתפיים..."
+              />
+            </div>
 
-          <div className="surface-card p-4">
-            <label className={labelCls}>סרטוני הדגמה לפי מגדר</label>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="surface-card p-4">
+              <label className={labelCls}>דגשי טכניקה וטיפים</label>
+              <textarea
+                rows={2}
+                className={field}
+                value={draft.tips ?? ""}
+                onChange={(e) => set({ tips: e.target.value })}
+                placeholder="למשל: לשמור על מרפקים בזווית 45 מעלות"
+              />
+            </div>
+
+            <div className="surface-card p-4">
+              <label className={labelCls}>סרטוני הדגמה לפי מגדר</label>
+              <div className="grid gap-3 sm:grid-cols-2">
               {(
                 [
                   ["videoMaleUrl", "סרטון הדגמה לגבר"],
@@ -707,18 +715,18 @@ function ExerciseDetail() {
                   </div>
                 );
               })}
-            </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
               {genderText(
                 userProfile?.gender,
                 "בחרי סרטון נפרד לכל מגדר. אם אין סרטון מותאם, אפשר להשאיר את השדה ריק.",
                 "בחר סרטון נפרד לכל מגדר. אם אין סרטון מותאם, אפשר להשאיר את השדה ריק.",
               )}
-            </p>
-            {videoUploadError ? (
-              <p className="mt-2 text-[11px] font-semibold text-destructive">{videoUploadError}</p>
-            ) : null}
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              </p>
+              {videoUploadError ? (
+                <p className="mt-2 text-[11px] font-semibold text-destructive">{videoUploadError}</p>
+              ) : null}
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {(draft.videoUrls?.length
                 ? draft.videoUrls
                 : draft.videoUrl
@@ -752,31 +760,31 @@ function ExerciseDetail() {
                   </button>
                 </div>
               ))}
+              </div>
             </div>
-          </div>
 
-          <div className="surface-card p-4">
-            <label className={labelCls}>קישור לסרטון חיצוני (אופציונלי)</label>
-            <input
-              className={field}
-              value={draft.videoUrl}
-              onChange={(e) => set({ videoUrl: e.target.value })}
-              placeholder="https://youtube.com/..."
-            />
-          </div>
+            <div className="surface-card p-4">
+              <label className={labelCls}>קישור לסרטון חיצוני (אופציונלי)</label>
+              <input
+                className={field}
+                value={draft.videoUrl}
+                onChange={(e) => set({ videoUrl: e.target.value })}
+                placeholder="https://youtube.com/..."
+              />
+            </div>
 
-          <div className="surface-card p-4">
-            <label className={labelCls}>תרגילים חלופיים</label>
-            <p className="text-[11.5px] text-muted-foreground">
-              למשל: במקום מוט חופשי אפשר לבחור מכונה או דמבלים.
-            </p>
-            <input
-              className={`${field} mt-2`}
-              value={alternativeQuery}
-              onChange={(event) => setAlternativeQuery(event.target.value)}
-              placeholder="חיפוש תרגיל חלופי..."
-            />
-            <div className="mt-2 max-h-48 space-y-1.5 overflow-y-auto">
+            <div className="surface-card p-4">
+              <label className={labelCls}>תרגילים חלופיים</label>
+              <p className="text-[11.5px] text-muted-foreground">
+                למשל: במקום מוט חופשי אפשר לבחור מכונה או דמבלים.
+              </p>
+              <input
+                className={`${field} mt-2`}
+                value={alternativeQuery}
+                onChange={(event) => setAlternativeQuery(event.target.value)}
+                placeholder="חיפוש תרגיל חלופי..."
+              />
+              <div className="mt-2 max-h-48 space-y-1.5 overflow-y-auto">
               {alternativeOptions.slice(0, 12).map((exercise) => {
                 const selected = selectedAlternativeIds.includes(exercise.id);
                 return (
@@ -795,28 +803,22 @@ function ExerciseDetail() {
                   </button>
                 );
               })}
+              </div>
             </div>
-          </div>
 
-          <ImagesEditor images={draft.images} onChange={(images) => set({ images })} />
+            <ImagesEditor images={draft.images} onChange={(images) => set({ images })} />
 
-          <div className="surface-card p-4">
-            <label className={labelCls}>הערות אישיות</label>
-            <textarea
-              rows={3}
-              className={field}
-              value={draft.notes}
-              onChange={(e) => set({ notes: e.target.value })}
-              placeholder="הערות אישיות לגבי התרגיל..."
-            />
-          </div>
-            </>
-          ) : (
-            <p className="rounded-2xl bg-secondary/60 p-3 text-[11px] leading-relaxed text-muted-foreground">
-              ליצירה מהירה מספיקים שם, קבוצת שרירים וציוד. אפשר להוסיף אחר כך הוראות, תמונות
-              וסרטונים דרך עריכת התרגיל.
-            </p>
-          )}
+            <div className="surface-card p-4">
+              <label className={labelCls}>הערות אישיות</label>
+              <textarea
+                rows={3}
+                className={field}
+                value={draft.notes}
+                onChange={(e) => set({ notes: e.target.value })}
+                placeholder="הערות אישיות לגבי התרגיל..."
+              />
+            </div>
+          </>
 
           {saveError ? (
             <p className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs font-semibold text-destructive">
