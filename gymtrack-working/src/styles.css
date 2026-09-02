@@ -6943,7 +6943,6 @@ html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-lin
 
   .app-shell > nav {
     background: var(--surface);
-    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 

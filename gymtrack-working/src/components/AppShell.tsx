@@ -1306,10 +1306,14 @@ export function AppShell({
       )}
 
       {!authOnly ? (
-        <nav aria-label="ניווט ראשי" className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
+        <nav
+          aria-label="ניווט ראשי"
+          className="pointer-events-none fixed inset-x-0 bottom-0 z-40"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
           <div
             className="nav-shell pointer-events-auto mx-auto flex w-full max-w-3xl items-center justify-between border-t bg-background/95 backdrop-blur-xl"
-            style={{ paddingBottom: "max(0.25rem, env(safe-area-inset-bottom))" }}
+            style={{ paddingBottom: "0.25rem" }}
           >
             {NAV.map(({ to, label, id, icon: Icon, onClick }) => (
               <Link
