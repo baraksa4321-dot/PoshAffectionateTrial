@@ -1142,7 +1142,7 @@ function RootContent() {
   const showExpressiveLoading =
     activeLoadingGender !== undefined &&
     (userProfile?.loadingAnimationsEnabled ?? activeLoadingGender === "female");
-  const showPlainLoading = !showExpressiveLoading;
+  const loadingMode = showExpressiveLoading ? "expressive" : "plain";
 
   useLoadingCycleEffect(() => {
     try {
@@ -1446,12 +1446,15 @@ function RootContent() {
         </div>
       ) : isLoadingScreen ? (
         <div
+          key={loadingMode}
+          data-loading-mode={loadingMode}
           className={`loading-screen flex min-h-[100dvh] items-center justify-center bg-background px-4 ${
-            showExpressiveLoading ? "" : "loading-screen-plain"
+            loadingMode === "plain" ? "loading-screen-plain" : ""
           }`}
           dir="rtl"
         >
           <div
+            key={`loading-brand-${loadingMode}`}
             className="loading-brand"
             role="status"
             aria-live="polite"
@@ -1467,19 +1470,8 @@ function RootContent() {
                   {loadingMessageForGender(loadingMessageIndex, activeLoadingGender)}
                 </p>
               </>
-            ) : showPlainLoading ? (
-              <LoadingSpinner label="טוען" />
             ) : (
-              // An unknown gender must never flash the expressive experience.
-              <>
-                <SimpleLoadingIllustration
-                  key={`fallback-illustration-${loadingVariant}`}
-                  variant={loadingVariant}
-                />
-                <p key={`fallback-message-${loadingMessageIndex}`} className="loading-witty-message">
-                  {loadingMessageForGender(loadingMessageIndex, "female")}
-                </p>
-              </>
+              <LoadingSpinner label="טוען" />
             )}
           </div>
           <img
