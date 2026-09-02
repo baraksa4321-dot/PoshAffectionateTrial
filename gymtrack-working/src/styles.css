@@ -6068,3 +6068,782 @@ body {
     margin-bottom: 0.8rem;
   }
 }
+
+/* -------------------------------------------------------------------------
+ * MY ROUTINE / HOME VISUAL REVISION
+ * Direction: warm daylight utility — a quiet ivory canvas, precise white
+ * surfaces, and one coral action color. The shell stays intentionally narrow
+ * so the product reads as a mobile app even on a larger screen.
+ * Presentation only: existing DOM, order, routes, and interactions are kept.
+ * ------------------------------------------------------------------------- */
+
+:root:not(.night-mode)[data-theme="light-brown"] {
+  --background: #f6f0e9;
+  --foreground: #30282b;
+  --surface: #fffdfb;
+  --surface-2: #f7e8e3;
+  --cream: #fbf2e8;
+  --card: #fffdfb;
+  --card-foreground: #30282b;
+  --popover: #fffdfb;
+  --popover-foreground: #30282b;
+  --primary: #e97870;
+  --primary-foreground: #fffaf7;
+  --secondary: #f1dcd7;
+  --secondary-foreground: #75433e;
+  --rose: #d9646b;
+  --rose-soft: #f8e2df;
+  --accent: #d5a05c;
+  --accent-foreground: #694b2b;
+  --ink: #30282b;
+  --ink-soft: #74686b;
+  --muted: #f1eae5;
+  --muted-foreground: #74686b;
+  --border: #e8d9d3;
+  --input: #dfcbc4;
+  --ring: #e97870;
+  --gradient-start: #ef8b7f;
+  --gradient-mid: #e97870;
+  --gradient-end: #d9646b;
+  --shadow-color: 68 46 47;
+}
+
+:root:not(.night-mode)[data-theme="light-brown"] body,
+:root:not(.night-mode)[data-theme="light-brown"] #root {
+  background-color: var(--background) !important;
+}
+
+body {
+  background: var(--background) !important;
+}
+
+.app-shell {
+  background: var(--background) !important;
+}
+
+.app-topbar {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 78%, transparent) !important;
+  border-radius: 0 !important;
+  background: color-mix(in srgb, var(--background) 90%, transparent) !important;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 66%),
+    0 8px 22px rgb(var(--shadow-color) / 5%) !important;
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+.app-topbar > div {
+  max-width: 44rem;
+  padding-inline: 1.1rem;
+  padding-top: 0.65rem;
+  padding-bottom: 0.8rem;
+}
+
+.app-topbar > div > div {
+  border-bottom-color: color-mix(in srgb, var(--border) 55%, transparent) !important;
+}
+
+.app-topbar > div > div:first-child {
+  min-height: 2.45rem;
+  padding-bottom: 0.55rem;
+}
+
+.app-topbar h1 {
+  color: var(--ink);
+  font-size: clamp(1.08rem, 4.8vw, 1.35rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.app-shell-kicker {
+  margin-bottom: 0.3rem;
+  color: var(--rose);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+}
+
+.dashboard-editorial-shell main,
+.dashboard-editorial-shell .app-main {
+  width: 100%;
+  max-width: 44rem;
+  padding-inline: 1.1rem;
+  padding-top: 1.2rem;
+}
+
+.dashboard-editorial-shell main > .home-card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.dashboard-editorial-shell .home-card-stack > [data-home-card-id] {
+  margin-top: 0 !important;
+}
+
+.dashboard-editorial-shell .home-card-stack > [data-home-card-id]::before,
+.dashboard-editorial-shell .home-feature-item::after {
+  display: none;
+}
+
+.dashboard-editorial-shell .surface-card {
+  border: 1px solid var(--border);
+  border-radius: 1.2rem;
+  background: var(--surface) !important;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 74%),
+    0 8px 20px rgb(var(--shadow-color) / 6%);
+}
+
+.dashboard-editorial-shell .surface-card:hover {
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 78%),
+    0 10px 24px rgb(var(--shadow-color) / 8%);
+}
+
+/* The two feature tiles remain the same two-column home grid. */
+.dashboard-editorial-shell .home-feature-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.dashboard-editorial-shell .home-feature-item {
+  display: flex;
+  min-width: 0;
+  aspect-ratio: 1.12 / 1;
+}
+
+.dashboard-editorial-shell .home-feature-item > .ink-card,
+.dashboard-editorial-shell .home-calorie-card {
+  width: 100%;
+  height: 100% !important;
+  min-height: 0 !important;
+  border-radius: 1.35rem;
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card {
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgb(255 250 247 / 26%);
+  background:
+    radial-gradient(circle at 84% 10%, rgb(255 250 247 / 20%) 0 1.2rem, transparent 1.25rem),
+    radial-gradient(circle at 89% 17%, rgb(255 250 247 / 9%) 0 3.5rem, transparent 3.55rem),
+    linear-gradient(145deg, #ef8b7f 0%, #e97870 56%, #d9646b 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 250 247 / 22%),
+    0 14px 28px rgb(186 82 83 / 20%);
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card::before {
+  position: absolute;
+  inset: auto -3.8rem -4.6rem auto;
+  width: 12rem;
+  height: 12rem;
+  border: 1px solid rgb(255 250 247 / 28%);
+  border-radius: 999px;
+  content: "";
+  pointer-events: none;
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card::after {
+  inset: auto -2.5rem -3.3rem auto;
+  width: 9rem;
+  height: 9rem;
+  border-color: rgb(255 250 247 / 17%);
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card h2 {
+  position: relative;
+  z-index: 1;
+  max-width: 94%;
+  margin-top: 0.8rem;
+  color: var(--primary-foreground);
+  font-size: clamp(1.2rem, 5.5vw, 1.65rem);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card p {
+  position: relative;
+  z-index: 1;
+  color: rgb(255 250 247 / 76%);
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card button {
+  position: relative;
+  z-index: 1;
+  min-height: 2.6rem;
+  margin-top: 0.7rem;
+  border: 1px solid rgb(109 48 51 / 8%);
+  border-radius: 0.9rem;
+  background: #fff9f5;
+  color: #4a3031;
+  box-shadow: 0 5px 12px rgb(122 54 55 / 14%);
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card button:hover {
+  background: #fffdfb;
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card > div:first-child svg {
+  position: relative;
+  z-index: 1;
+  width: 2rem;
+  height: 2rem;
+  padding: 0.43rem;
+  border: 1px solid rgb(255 250 247 / 26%);
+  border-radius: 0.8rem;
+  background: rgb(255 250 247 / 13%);
+  color: var(--primary-foreground);
+}
+
+/* Nutrition deliberately stays quieter than the workout CTA. */
+.dashboard-editorial-shell .home-secondary-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  padding: 1rem !important;
+  border: 1px solid #eadbd3;
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(circle at 100% 0%, #f9e7df 0%, transparent 45%),
+    linear-gradient(145deg, #fffdfb 0%, #fbf3ec 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 82%),
+    0 9px 22px rgb(var(--shadow-color) / 6%);
+}
+
+.dashboard-editorial-shell .home-secondary-card::before {
+  inset: auto -3rem -4.5rem auto;
+  width: 10rem;
+  height: 10rem;
+  border-color: rgb(217 100 107 / 14%);
+  box-shadow: 0 0 0 1.2rem rgb(217 100 107 / 5%);
+}
+
+.dashboard-editorial-shell .home-secondary-card > div:first-child,
+.dashboard-editorial-shell .home-secondary-card > p,
+.dashboard-editorial-shell .home-secondary-card > div:last-child {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-editorial-shell .home-secondary-card > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dashboard-editorial-shell .home-secondary-card > div:first-child svg {
+  width: 2rem;
+  height: 2rem;
+  padding: 0.43rem;
+  border: 1px solid rgb(217 100 107 / 18%);
+  border-radius: 0.8rem;
+  background: #f9e7df;
+  color: var(--rose);
+}
+
+.dashboard-editorial-shell .home-secondary-card > p.font-display {
+  margin-top: 0.65rem;
+  color: var(--ink);
+  font-size: clamp(1.65rem, 7vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.055em;
+}
+
+.dashboard-editorial-shell .home-secondary-card > p:not(.font-display) {
+  margin-top: 0.2rem;
+  color: var(--muted-foreground);
+}
+
+.dashboard-editorial-shell .home-secondary-card > div:last-child {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.35rem;
+  margin-top: 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgb(217 100 107 / 12%);
+  border-radius: 0.82rem;
+  background: rgb(246 240 233 / 72%);
+  color: #5c4c4d;
+}
+
+/* Quiet metric modules: no nested card pile, only clear numeric cells. */
+.dashboard-editorial-shell .dashboard-module {
+  margin-top: 0 !important;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.dashboard-editorial-shell .dashboard-module .grid {
+  gap: 0.65rem;
+}
+
+.dashboard-editorial-shell .dashboard-module .surface-card {
+  border-radius: 1.05rem;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 75%),
+    0 6px 16px rgb(var(--shadow-color) / 5%);
+}
+
+.dashboard-editorial-shell .dashboard-module--activity .surface-card,
+.dashboard-editorial-shell .dashboard-module--measurements .surface-card {
+  background: #fffdfb !important;
+}
+
+.dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(1) {
+  background: #faebe6 !important;
+}
+
+.dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(2) {
+  background: #f4eee5 !important;
+}
+
+.dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(3) {
+  background: #edf2ec !important;
+}
+
+.dashboard-editorial-shell .dashboard-module--check-in .surface-card:first-of-type {
+  background: #fbedE9 !important;
+}
+
+.dashboard-editorial-shell .dashboard-module--check-in .surface-card:last-child {
+  background: #f8f0e4 !important;
+}
+
+.dashboard-editorial-shell .dashboard-module--measurements .surface-card {
+  background: #fffdfb !important;
+}
+
+.dashboard-editorial-shell .dashboard-module .surface-card svg {
+  filter: none;
+}
+
+.dashboard-editorial-shell .dashboard-support-card {
+  min-height: 6rem;
+  border: 1px solid #eadbd3;
+  border-radius: 1.25rem;
+  background: #fffdfb !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 76%),
+    0 8px 18px rgb(var(--shadow-color) / 5%) !important;
+}
+
+.dashboard-editorial-shell .dashboard-notice {
+  border-radius: 1.15rem;
+  border-inline-start: 0.22rem solid var(--rose);
+  background: #fae9e5 !important;
+  box-shadow: none !important;
+}
+
+.dashboard-editorial-shell .home-card-stack > [data-home-card-id="consistency"] {
+  min-height: 6.8rem;
+  padding: 1rem;
+  border-color: #eadbd3;
+  border-radius: 1.25rem;
+  background: #fffdfb !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 78%),
+    0 8px 20px rgb(var(--shadow-color) / 6%);
+}
+
+.dashboard-editorial-shell .consistency-linear-track {
+  display: block;
+  height: 0.3rem;
+  margin-top: 0.8rem;
+  background: #f1e5df;
+}
+
+.dashboard-editorial-shell .consistency-linear-track .progress-fill {
+  background: var(--rose);
+}
+
+.dashboard-editorial-shell .consistency-ring {
+  width: 4rem;
+  height: 4rem;
+}
+
+.dashboard-editorial-shell .consistency-ring-track {
+  stroke: #f0ded8;
+}
+
+.dashboard-editorial-shell .consistency-ring-value {
+  stroke: var(--rose);
+}
+
+/* Floating mobile tab bar. It keeps the original nav links and behavior. */
+.app-shell > nav > .nav-shell {
+  width: min(calc(100% - 1.15rem), 34rem);
+  margin-inline: auto;
+  margin-bottom: max(0.6rem, env(safe-area-inset-bottom));
+  padding: 0.42rem 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 1.45rem;
+  background: color-mix(in srgb, var(--surface) 94%, var(--background)) !important;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 82%),
+    0 12px 30px rgb(var(--shadow-color) / 14%) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.app-shell > nav > .nav-shell .app-nav-link {
+  min-height: 3.35rem;
+  border-radius: 1.05rem;
+  color: var(--muted-foreground);
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.app-shell > nav > .nav-shell .app-nav-link > span:first-child {
+  display: none;
+}
+
+.app-shell > nav > .nav-shell .app-nav-link > svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0.43rem;
+  border: 1px solid transparent;
+  border-radius: 0.78rem;
+  background: transparent;
+}
+
+.app-shell > nav > .nav-shell .app-nav-link[data-status="active"] {
+  background: #fae8e4;
+  color: #c9575f;
+}
+
+.app-shell > nav > .nav-shell .app-nav-link[data-status="active"] > svg {
+  border-color: rgb(217 100 107 / 22%);
+  background: var(--rose);
+  color: var(--primary-foreground);
+  box-shadow: 0 4px 11px rgb(217 100 107 / 22%);
+  transform: translateY(-1px);
+}
+
+.app-shell > nav > .nav-shell .app-nav-link:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 639px) {
+  .app-topbar > div,
+  .dashboard-editorial-shell main,
+  .dashboard-editorial-shell .app-main {
+    padding-inline: 0.9rem;
+  }
+
+  .dashboard-editorial-shell .home-primary-card > .ink-card,
+  .dashboard-editorial-shell .home-secondary-card {
+    padding: 0.9rem !important;
+  }
+}
+
+@media (min-width: 640px) {
+  .app-shell > nav > .nav-shell {
+    margin-bottom: max(0.8rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* -------------------------------------------------------------------------
+ * Reference match: the supplied app screens use a white canvas, near-black
+ * type, a muted dusty-rose accent, and one dark workout surface. Keep the
+ * existing DOM and routes, but let the dashboard read as that same app.
+ * ------------------------------------------------------------------------- */
+.dashboard-editorial-shell {
+  --background: #ffffff;
+  --foreground: #19181b;
+  --surface: #ffffff;
+  --surface-2: #f3f2f1;
+  --cream: #faf4e8;
+  --card: #ffffff;
+  --card-foreground: #19181b;
+  --popover: #ffffff;
+  --popover-foreground: #19181b;
+  --primary: #c78389;
+  --primary-foreground: #ffffff;
+  --secondary: #f0dddd;
+  --secondary-foreground: #6d3f45;
+  --sage: #8daf9e;
+  --sage-soft: #e4f3ec;
+  --rose: #b96f78;
+  --rose-soft: #f5e8e7;
+  --accent: #d8b36f;
+  --accent-foreground: #5e4827;
+  --ink: #19181b;
+  --ink-soft: #6d696a;
+  --muted: #f3f2f1;
+  --muted-foreground: #6d696a;
+  --border: #ddd9d7;
+  --input: #d2c9c7;
+  --ring: #b96f78;
+  --gradient-start: #2e2d31;
+  --gradient-mid: #242327;
+  --gradient-end: #171619;
+  --shadow-color: 35 30 31;
+  background: var(--background) !important;
+  color: var(--ink);
+}
+
+.dashboard-editorial-shell .app-topbar {
+  border-bottom: 1px solid #e7e4e2 !important;
+  border-radius: 0 !important;
+  background: rgb(255 255 255 / 96%) !important;
+  box-shadow: 0 2px 12px rgb(24 22 23 / 4%) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.dashboard-editorial-shell .app-topbar > div {
+  max-width: 42rem;
+  padding-inline: 1rem;
+}
+
+.dashboard-editorial-shell .app-topbar > div > div {
+  border-bottom-color: #ece9e7 !important;
+}
+
+.dashboard-editorial-shell .app-topbar h1 {
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.dashboard-editorial-shell .app-shell-kicker {
+  color: var(--rose);
+  font-weight: 700;
+}
+
+.dashboard-editorial-shell .app-main {
+  max-width: 42rem;
+  padding-inline: 1rem;
+  background: var(--background);
+}
+
+.dashboard-editorial-shell main > .home-card-stack {
+  gap: 1rem;
+}
+
+.dashboard-editorial-shell .surface-card {
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: var(--surface) !important;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 92%),
+    0 7px 18px rgb(var(--shadow-color) / 6%);
+}
+
+.dashboard-editorial-shell .home-feature-grid {
+  gap: 0.8rem;
+}
+
+.dashboard-editorial-shell .home-feature-item {
+  aspect-ratio: 1.12 / 1;
+}
+
+.dashboard-editorial-shell .home-feature-item > .ink-card,
+.dashboard-editorial-shell .home-calorie-card {
+  border-radius: 1.35rem;
+}
+
+/* The reference app reserves its strongest color for the workout action. */
+.dashboard-editorial-shell .home-primary-card > .ink-card {
+  border: 1px solid #121114;
+  background:
+    radial-gradient(circle at 84% 8%, rgb(255 255 255 / 12%) 0 1.1rem, transparent 1.16rem),
+    radial-gradient(circle at 89% 16%, rgb(255 255 255 / 7%) 0 3.3rem, transparent 3.36rem),
+    linear-gradient(145deg, #333237 0%, #26252a 54%, #171619 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 13%),
+    0 12px 26px rgb(21 18 20 / 17%);
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card::before,
+.dashboard-editorial-shell .home-primary-card > .ink-card::after {
+  border-color: rgb(255 255 255 / 16%);
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card h2 {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card p {
+  color: rgb(255 255 255 / 72%);
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card button {
+  border: 1px solid rgb(255 255 255 / 12%);
+  background: #ffffff;
+  color: #1d1b1f;
+  box-shadow: 0 5px 12px rgb(0 0 0 / 18%);
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card > div:first-child svg {
+  border-color: rgb(255 255 255 / 22%);
+  background: rgb(255 255 255 / 10%);
+  color: #ffffff;
+}
+
+/* Nutrition is the quiet white companion to the dark workout surface. */
+.dashboard-editorial-shell .home-secondary-card {
+  border: 1px solid #3f3b3d;
+  background:
+    radial-gradient(circle at 100% 0%, #f8eeee 0%, transparent 42%),
+    #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 94%),
+    0 8px 20px rgb(var(--shadow-color) / 6%);
+}
+
+.dashboard-editorial-shell .home-secondary-card > div:first-child svg {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink);
+}
+
+.dashboard-editorial-shell .home-secondary-card > p.font-display {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.dashboard-editorial-shell .home-secondary-card > p:not(.font-display) {
+  color: var(--muted-foreground);
+}
+
+.dashboard-editorial-shell .home-secondary-card > div:last-child {
+  border-color: #ece9e7;
+  background: #f5f5f4;
+  color: var(--ink);
+  box-shadow: none;
+}
+
+.dashboard-editorial-shell .dashboard-support-card {
+  border: 1px solid #c9c4c2;
+  background: #ffffff !important;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 94%),
+    0 8px 20px rgb(var(--shadow-color) / 7%) !important;
+}
+
+.dashboard-editorial-shell .dashboard-notice {
+  border-inline-start-color: var(--rose);
+  background: #fbf1f0 !important;
+}
+
+.dashboard-editorial-shell .dashboard-module {
+  padding: 0;
+  background: transparent;
+}
+
+.dashboard-editorial-shell .dashboard-module .surface-card {
+  border-radius: 1.05rem;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 88%),
+    0 6px 14px rgb(var(--shadow-color) / 5%);
+}
+
+.dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(1) {
+  background: #faece9 !important;
+}
+
+.dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(2) {
+  background: #f5f0e7 !important;
+}
+
+.dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(3) {
+  background: #eaf2ed !important;
+}
+
+.dashboard-editorial-shell .dashboard-module--check-in .surface-card:first-of-type {
+  background: #fbf0ee !important;
+}
+
+.dashboard-editorial-shell .dashboard-module--check-in .surface-card:last-child {
+  background: #faf3e7 !important;
+}
+
+.dashboard-editorial-shell .dashboard-module--measurements .surface-card {
+  background: #ffffff !important;
+}
+
+.dashboard-editorial-shell .consistency-linear-track {
+  background: #e9e7e5;
+}
+
+.dashboard-editorial-shell .consistency-linear-track .progress-fill,
+.dashboard-editorial-shell .consistency-ring-value {
+  background: var(--rose);
+  stroke: var(--rose);
+}
+
+.dashboard-editorial-shell .consistency-ring-track {
+  stroke: #e6e1df;
+}
+
+/* The reference uses a native-looking white tab bar rather than a dark
+ * website footer. Keep the same links and active-state behavior. */
+.dashboard-editorial-shell > nav > .nav-shell {
+  width: 100%;
+  max-width: 42rem;
+  margin-inline: auto;
+  margin-bottom: 0;
+  padding: 0.35rem 0.55rem;
+  border: 0;
+  border-top: 1px solid #e7e4e2;
+  border-radius: 0;
+  background: rgb(255 255 255 / 98%) !important;
+  box-shadow: 0 -5px 18px rgb(var(--shadow-color) / 7%) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.dashboard-editorial-shell > nav > .nav-shell .app-nav-link {
+  min-height: 3.3rem;
+  border-radius: 0.9rem;
+  color: #787274;
+}
+
+.dashboard-editorial-shell > nav > .nav-shell .app-nav-link > span:first-child {
+  display: none;
+}
+
+.dashboard-editorial-shell > nav > .nav-shell .app-nav-link > svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0.38rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.dashboard-editorial-shell > nav > .nav-shell .app-nav-link[data-status="active"] {
+  background: #f5f1ef;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.dashboard-editorial-shell > nav > .nav-shell .app-nav-link[data-status="active"] > svg {
+  background: var(--ink);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+@media (max-width: 639px) {
+  .dashboard-editorial-shell .app-topbar > div,
+  .dashboard-editorial-shell .app-main {
+    padding-inline: 0.9rem;
+  }
+
+  .dashboard-editorial-shell > nav > .nav-shell {
+    max-width: none;
+  }
+}

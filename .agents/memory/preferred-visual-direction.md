@@ -3,8 +3,8 @@ name: Preferred visual direction
 description: The user's approved visual baseline for My Routine.
 ---
 
-The preferred direction is a professional, realistic mobile fitness experience inspired by the supplied references through card and feature treatment—not by reorganizing the page. Keep the existing layout/order and restrained branded palette, while making surfaces feel richer and more finished.
+The preferred direction is a polished mobile fitness app, not a website: use a white/ivory canvas, near-black type, a restrained dusty-rose accent, and one dark workout action surface. Keep the existing layout/order and product flows while making the shell and surfaces feel native, smooth, and finished.
 
-**Why:** The user clarified that the redesign must preserve the current organization, placement and flows; the visual change should come from more polished, reference-led cards and feature surfaces using the existing palette.
+**Why:** The user approved changing the visual design but wants the result to match the supplied mobile app references: clean native chrome, precise color roles, stronger contrast, and calm surfaces without a website feel.
 
-**How to apply:** Do not reorder or restructure dashboard content. Change card skins, feature treatments, borders, shadows, gradients, icon presentation and visual realism only. Preserve existing product features, flows and illustrations.
+**How to apply:** Do not reorder or restructure dashboard content. Keep routes, state, data, and interactions intact. Change the app shell, card skins, feature treatments, borders, shadows, gradients, icon presentation, touch targets, and visual realism only. Prefer white surfaces, dark workout CTAs, dusty-rose accents, and subtle pastel metric cells.
