@@ -1821,6 +1821,14 @@ export function saveUserProfile(profile: UserProfile) {
   set({ ...data, userProfile: profile, bodyWeightLogs: logs });
 }
 
+export function saveLoadingAnimationsPreference(enabled: boolean) {
+  const profile = data.userProfile ?? { weight: 0 };
+  set({
+    ...data,
+    userProfile: { ...profile, loadingAnimationsEnabled: enabled },
+  });
+}
+
 export async function saveTheme(
   theme: ThemePalette,
 ): Promise<{ success: boolean; error?: string }> {

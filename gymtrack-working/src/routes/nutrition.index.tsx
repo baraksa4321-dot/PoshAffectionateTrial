@@ -258,7 +258,10 @@ function NutritionLog() {
   const [scannedMeal, setScannedMeal] = useState<ScannedMeal | null>(null);
   const [scanCycle, setScanCycle] = useState(0);
   const activeLoadingGender = loadingGender ?? gender;
-  const plainScanLoading = scanState === "analyzing" && activeLoadingGender !== "female";
+  const loadingAnimationsEnabled =
+    activeLoadingGender !== undefined &&
+    (gym.userProfile?.loadingAnimationsEnabled ?? activeLoadingGender === "female");
+  const plainScanLoading = scanState === "analyzing" && !loadingAnimationsEnabled;
   const day = nutritionDay(gym, date);
   const totals = dayTotals(day);
   const { nutritionTargets: targets } = gym;
@@ -364,10 +367,10 @@ function NutritionLog() {
   }, [gender]);
 
   useEffect(() => {
-    if (scanState !== "analyzing" || activeLoadingGender !== "female") return;
+    if (scanState !== "analyzing" || !loadingAnimationsEnabled) return;
     const interval = window.setInterval(() => setScanCycle((cycle) => cycle + 1), 1_500);
     return () => window.clearInterval(interval);
-  }, [activeLoadingGender, scanState]);
+  }, [loadingAnimationsEnabled, scanState]);
 
   const confirmScannedMeal = () => {
     if (!scannedMeal) return;

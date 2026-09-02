@@ -1,5 +1,6 @@
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { getKeyboardViewportMetrics } from "../../lib/keyboard-viewport";
 
 type OverlayVariant = "center" | "bottom" | "top" | "full";
 
@@ -79,35 +80,6 @@ export function Overlay({
   }, []);
 
   useEffect(() => {
-    if (!open || !inline || typeof window === "undefined") return;
-
-    const visualViewport = window.visualViewport;
-    const keepFocusedFieldVisible = () => {
-      const activeElement = document.activeElement;
-      if (!(activeElement instanceof HTMLElement)) return;
-
-      window.requestAnimationFrame(() => {
-        if (document.activeElement !== activeElement) return;
-        const inlinePanel = activeElement.closest<HTMLElement>(
-          '[data-overlay-inline-panel="true"]',
-        );
-        if (inlinePanel) scrollFocusedFieldWithinPanel(activeElement, inlinePanel);
-        else activeElement.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
-      });
-    };
-
-    visualViewport?.addEventListener("resize", keepFocusedFieldVisible);
-    visualViewport?.addEventListener("scroll", keepFocusedFieldVisible);
-    window.addEventListener("focusin", keepFocusedFieldVisible);
-
-    return () => {
-      visualViewport?.removeEventListener("resize", keepFocusedFieldVisible);
-      visualViewport?.removeEventListener("scroll", keepFocusedFieldVisible);
-      window.removeEventListener("focusin", keepFocusedFieldVisible);
-    };
-  }, [inline, open]);
-
-  useEffect(() => {
     if (!open || inline || typeof document === "undefined") return;
 
     const overlayToken = ++activeOverlayToken;
@@ -175,17 +147,14 @@ export function Overlay({
       });
     };
     const updateKeyboardOffset = () => {
-      const visibleHeight = visualViewport?.height ?? window.innerHeight;
-      const viewportTop = visualViewport?.offsetTop ?? 0;
-      const rawKeyboardOffset = Math.max(0, window.innerHeight - visibleHeight - viewportTop);
-      const nextKeyboardOffset = rawKeyboardOffset > 80 ? rawKeyboardOffset : 0;
+      const { visibleHeight, keyboardInset, keyboardOpen } = getKeyboardViewportMetrics();
+      const nextKeyboardOffset = keyboardOpen ? keyboardInset : 0;
       setViewportHeight(visibleHeight);
       setKeyboardOffset(nextKeyboardOffset);
-      if (visibleHeight < window.innerHeight) keepFocusedFieldVisible();
+      if (keyboardOpen) keepFocusedFieldVisible();
     };
     updateKeyboardOffset();
     visualViewport?.addEventListener("resize", updateKeyboardOffset);
-    visualViewport?.addEventListener("scroll", updateKeyboardOffset);
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("focusin", keepFocusedFieldVisible);
     const focusFrame = window.requestAnimationFrame(() => {
@@ -196,7 +165,6 @@ export function Overlay({
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("focusin", keepFocusedFieldVisible);
       visualViewport?.removeEventListener("resize", updateKeyboardOffset);
-      visualViewport?.removeEventListener("scroll", updateKeyboardOffset);
       window.cancelAnimationFrame(focusFrame);
       setKeyboardOffset(0);
       setViewportHeight(null);
@@ -230,7 +198,7 @@ export function Overlay({
   const panelBottomGap = isFull ? 0 : isBottom ? 16 : 32;
   const panelMaxHeight =
     viewportHeight === null
-      ? `calc(100dvh - ${panelBottomGap}px)`
+      ? `calc(100lvh - ${panelBottomGap}px)`
       : `${Math.max(0, viewportHeight - panelBottomGap)}px`;
 
   if (inline) {
@@ -283,10 +251,10 @@ export function Overlay({
           isFull
             ? "h-full max-h-full max-w-none rounded-none"
             : isBottom
-              ? "max-h-[calc(100dvh-1rem)] max-w-xl rounded-t-[2rem] pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+              ? "max-h-[calc(100lvh-1rem)] max-w-xl rounded-t-[2rem] pb-[max(1.25rem,env(safe-area-inset-bottom))]"
               : isTop
-                ? "max-h-[calc(100dvh-2rem)] max-w-lg rounded-3xl"
-                : "max-h-[calc(100dvh-2rem)] max-w-lg rounded-3xl"
+              ? "max-h-[calc(100lvh-2rem)] max-w-lg rounded-3xl"
+              : "max-h-[calc(100lvh-2rem)] max-w-lg rounded-3xl"
         } overflow-y-auto overscroll-contain bg-card shadow-2xl ${panelClassName}`}
         onClick={(event) => event.stopPropagation()}
       >

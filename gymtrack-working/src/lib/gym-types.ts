@@ -402,6 +402,8 @@ export type UserProfile = {
   height?: number; // cm
   age?: number;
   gender?: "female" | "male";
+  /** Owner-controlled loading presentation override. Undefined follows gender defaults. */
+  loadingAnimationsEnabled?: boolean;
   workoutsPerWeek?: number;
   role?: UserRole;
   approvalStatus?: "pending" | "approved" | "rejected";

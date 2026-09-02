@@ -1139,8 +1139,10 @@ function RootContent() {
   // persisted gender is read in the layout effect below before the browser
   // paints, while a hydrated profile can switch the surface without first
   // showing the other gender's loader.
-  const showExpressiveLoading = activeLoadingGender === "female";
-  const showPlainLoading = activeLoadingGender === "male";
+  const showExpressiveLoading =
+    activeLoadingGender !== undefined &&
+    (userProfile?.loadingAnimationsEnabled ?? activeLoadingGender === "female");
+  const showPlainLoading = !showExpressiveLoading;
 
   useLoadingCycleEffect(() => {
     try {
@@ -1468,8 +1470,7 @@ function RootContent() {
             ) : showPlainLoading ? (
               <LoadingSpinner label="טוען" />
             ) : (
-              // Keep the pre-hydration surface consistent with the selected
-              // female experience: animation and copy only, never a spinner.
+              // An unknown gender must never flash the expressive experience.
               <>
                 <SimpleLoadingIllustration
                   key={`fallback-illustration-${loadingVariant}`}

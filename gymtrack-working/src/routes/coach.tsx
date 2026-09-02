@@ -38,6 +38,7 @@ import {
   savePlannedMeals,
   saveProgram,
   saveExercise,
+  saveLoadingAnimationsPreference,
   saveWorkout,
   saveWorkoutInProgram,
   deleteProgram,
@@ -273,6 +274,7 @@ type ProfileRow = {
   weight_kg?: number | null;
   workouts_per_week?: number | null;
   gender?: string | null;
+  loading_animations_enabled?: boolean | null;
   profile_exists?: boolean;
   email_confirmed_at?: string | null;
   last_sign_in_at?: string | null;
@@ -1358,6 +1360,7 @@ export function CoachDashboardPage({
   const [roleChangeUserId, setRoleChangeUserId] = useState<string | null>(null);
   const [roleChangeNotice, setRoleChangeNotice] = useState("");
   const [ownerCalorieUserId, setOwnerCalorieUserId] = useState<string | null>(null);
+  const [ownerLoadingUserId, setOwnerLoadingUserId] = useState<string | null>(null);
   const [ownerCalorieNotice, setOwnerCalorieNotice] = useState("");
   const [approvalCoachByUser, setApprovalCoachByUser] = useState<Record<string, string>>({});
   const [approvalNameByUser, setApprovalNameByUser] = useState<Record<string, string>>({});
@@ -2381,6 +2384,70 @@ export function CoachDashboardPage({
       setOwnerCalorieNotice("הגדרת תצוגת הקלוריות נשמרה.");
     }
     setOwnerCalorieUserId(null);
+  };
+
+  const saveOwnerProfileLoadingPreference = async (
+    profileId: string,
+    loadingAnimationsEnabled: boolean,
+  ) => {
+    if (!isOwner) return;
+    const profile = allProfiles.find((candidate) => candidate.id === profileId);
+    if (!profile || profile.profile_exists === false) return;
+
+    const previous = profile.loading_animations_enabled;
+    setOwnerLoadingUserId(profileId);
+    setOwnerCalorieNotice("");
+    setAllProfiles((current) =>
+      current.map((candidate) =>
+        candidate.id === profileId
+          ? { ...candidate, loading_animations_enabled: loadingAnimationsEnabled }
+          : candidate,
+      ),
+    );
+    setSelectedOwnerProfileDetails((current) =>
+      current?.profile
+        ? {
+            ...current,
+            profile: { ...current.profile, loadingAnimationsEnabled },
+          }
+        : current,
+    );
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ loading_animations_enabled: loadingAnimationsEnabled })
+      .eq("id", profileId);
+    if (error) {
+      setAllProfiles((current) =>
+        current.map((candidate) =>
+          candidate.id === profileId
+            ? { ...candidate, loading_animations_enabled: previous ?? null }
+            : candidate,
+        ),
+      );
+      setSelectedOwnerProfileDetails((current) =>
+        current?.profile
+          ? {
+              ...current,
+              profile:
+                typeof previous !== "boolean"
+                  ? (() => {
+                      const restored = { ...current.profile };
+                      delete restored.loadingAnimationsEnabled;
+                      return restored;
+                    })()
+                  : { ...current.profile, loadingAnimationsEnabled: previous },
+            }
+          : current,
+      );
+      setOwnerCalorieNotice(`שמירת תצוגת הטעינה נכשלה: ${error.message}`);
+    } else {
+      setOwnerCalorieNotice("הגדרת תצוגת הטעינה נשמרה.");
+      if (profileId === authUser?.id) {
+        saveLoadingAnimationsPreference(loadingAnimationsEnabled);
+      }
+    }
+    setOwnerLoadingUserId(null);
   };
 
   const saveClientMeasurements = async () => {
@@ -3665,6 +3732,53 @@ export function CoachDashboardPage({
     );
   };
 
+  const renderOwnerLoadingToggle = (profile: ProfileRow, compact = false) => {
+    const hasProfile = profile.profile_exists !== false;
+    const isFemale = profile.gender === "female";
+    const animationsEnabled = profile.loading_animations_enabled ?? isFemale;
+    const isSaving = ownerLoadingUserId === profile.id;
+    const label = hasProfile
+      ? `תצוגת טעינה עבור ${profileDisplayName(profile)}`
+      : `תצוגת טעינה אינה זמינה עבור ${profileDisplayName(profile)}`;
+
+    return (
+      <button
+        type="button"
+        disabled={!hasProfile || isSaving}
+        onClick={(event) => {
+          event.stopPropagation();
+          void saveOwnerProfileLoadingPreference(profile.id, !animationsEnabled);
+        }}
+        aria-label={label}
+        aria-pressed={hasProfile ? animationsEnabled : undefined}
+        className={`flex items-center gap-1.5 rounded-xl border px-2 py-1.5 text-[10px] font-bold transition-colors ${
+          !hasProfile
+            ? "cursor-not-allowed border-border/60 bg-surface-2 text-muted-foreground"
+            : animationsEnabled
+              ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
+              : "border-border bg-surface-2 text-muted-foreground hover:border-primary/30"
+        } ${compact ? "shrink-0" : "w-full justify-between"}`}
+      >
+        <span className={compact ? "hidden sm:inline" : ""}>טעינה</span>
+        <span className="flex items-center gap-1">
+          <span>{!hasProfile ? "—" : animationsEnabled ? "אנימציות" : "גלגל"}</span>
+          <span
+            className={`relative h-4 w-7 rounded-full ${
+              !hasProfile ? "bg-border/70" : animationsEnabled ? "bg-primary" : "bg-border"
+            }`}
+            aria-hidden="true"
+          >
+            <span
+              className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow ${
+                animationsEnabled ? "start-3.5" : "start-0.5"
+              }`}
+            />
+          </span>
+        </span>
+      </button>
+    );
+  };
+
   const clientWorkouts = useMemo(() => {
     const seen = new Set<string>();
     return (clientDetails?.workouts ?? []).filter((workout) => {
@@ -3984,18 +4098,9 @@ export function CoachDashboardPage({
   const openCreateExercise = () => {
     if (!isCoach) return;
     setShowExercisePicker(false);
-    window.sessionStorage.setItem("gymtrack-exercise-return-url", window.location.href);
-    window.sessionStorage.setItem(
-      "gymtrack-exercise-return-context",
-      JSON.stringify({
-        returnUrl: window.location.href,
-        clientId: selectedClientId,
-        programId: editingProgramId,
-        dayId: editingDayId,
-        scrollY: getAppScrollContainer()?.scrollTop ?? window.scrollY,
-      } satisfies ExerciseBuilderReturnContext),
-    );
-    navigate({ to: "/exercises/$exerciseId", params: { exerciseId: "new" } });
+    setNewExerciseDraft(emptyExercise());
+    setNewExerciseError("");
+    setShowCreateExercise(true);
   };
 
   const handleCreateExercise = (event: React.FormEvent<HTMLFormElement>) => {
@@ -4020,7 +4125,14 @@ export function CoachDashboardPage({
     selectExerciseForBuilder(exercise.id, undefined, undefined, exercise);
     setExerciseQuery("");
     setShowCreateExercise(false);
+    setShowExercisePicker(false);
+    setShowExerciseForm(true);
     setExerciseBuilderNotice(`התרגיל "${exercise.name}" נוסף למאגר ונבחר לאימון.`);
+    if (selectedClientId && editingDayId) {
+      // Queue the assignment after the selection state is committed so the
+      // new exercise's equipment is used by the workout item as well.
+      setAutoAssignCreatedExerciseId(exercise.id);
+    }
   };
   const ownerUserSearchLower = ownerUserSearch.trim().toLocaleLowerCase();
   const filteredOwnerProfiles = ownerUserSearchLower
@@ -4536,6 +4648,9 @@ export function CoachDashboardPage({
                             />
                           </span>
                         </button>
+                        <div className="mt-2">
+                          {renderOwnerLoadingToggle(profile)}
+                        </div>
                         <p className="mt-1 text-[10px] text-muted-foreground">
                           {profile.email || "ללא אימייל מוצג"}
                         </p>
@@ -4698,6 +4813,9 @@ export function CoachDashboardPage({
                         {selectedProfile.profile_exists !== false ? (
                           <div className="mt-3">{renderOwnerCalorieToggle(selectedProfile)}</div>
                         ) : null}
+                        {selectedProfile.profile_exists !== false ? (
+                          <div className="mt-2">{renderOwnerLoadingToggle(selectedProfile)}</div>
+                        ) : null}
                         {selectedProfile.profile_exists === false ? (
                           <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
                             <p className="font-bold">חשבון Auth קיים, אך שורת הפרופיל חסרה.</p>
@@ -4856,6 +4974,7 @@ export function CoachDashboardPage({
 
                       <div className="flex shrink-0 items-center gap-1.5">
                         {renderOwnerCalorieToggle(p, true)}
+                        {renderOwnerLoadingToggle(p, true)}
                         <select
                           aria-label={`שינוי תפקיד עבור ${profileDisplayName(p)}`}
                           value={p.role || ""}
@@ -8908,7 +9027,7 @@ export function CoachDashboardPage({
           variant="bottom"
           panelClassName="p-0"
         >
-          <div dir="rtl" className="max-h-[88dvh] overflow-y-auto p-5 text-start">
+          <div dir="rtl" className="p-5 text-start">
             <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>

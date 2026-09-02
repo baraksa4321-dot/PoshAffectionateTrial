@@ -32,6 +32,7 @@ import { BrandLogo } from "./BrandLogo";
 import { FreeTextInput } from "./FreeTextInput";
 import { genderText } from "../lib/gender-copy";
 import { LOADING_GENDER_STORAGE_KEY } from "../lib/loading-copy";
+import { getKeyboardViewportMetrics } from "../lib/keyboard-viewport";
 
 const WORKSPACE_KEY = "gymtrack.workspace";
 const FULL_NAME_REQUIRED_ERROR = "יש להזין שם פרטי ושם משפחה כדי ליצור חשבון.";
@@ -205,15 +206,9 @@ export function AppShell({
     let delayedFocusTimer = 0;
 
     const updateKeyboardMetrics = () => {
-      const visibleHeight = visualViewport?.height ?? window.innerHeight;
-      const viewportTop = visualViewport?.offsetTop ?? 0;
-      const rawKeyboardInset = Math.max(0, window.innerHeight - visibleHeight - viewportTop);
-      // Safari can report a shorter visual viewport while its browser chrome is
-      // visible. Only reserve space once the reduction is large enough to be a
-      // keyboard; otherwise the page gets an unnecessary bottom gap.
-      const keyboardInset = rawKeyboardInset > 80 ? rawKeyboardInset : 0;
+      const { keyboardInset, keyboardOpen } = getKeyboardViewportMetrics();
       document.documentElement.style.setProperty("--keyboard-inset", `${keyboardInset}px`);
-      document.documentElement.toggleAttribute("data-keyboard-open", keyboardInset > 80);
+      document.documentElement.toggleAttribute("data-keyboard-open", keyboardOpen);
     };
 
     const keepDocumentFieldVisible = () => {
@@ -230,8 +225,8 @@ export function AppShell({
           return;
         }
 
-        const viewportTop = visualViewport?.offsetTop ?? 0;
-        const viewportHeight = visualViewport?.height ?? window.innerHeight;
+        const { viewportTop, visibleHeight: viewportHeight, keyboardOpen } =
+          getKeyboardViewportMetrics();
         const headerHeight = topbarRef.current?.offsetHeight ?? 0;
         const navHeight =
           shellRef.current?.querySelector<HTMLElement>(".nav-shell")?.offsetHeight ?? 0;
@@ -244,7 +239,7 @@ export function AppShell({
         const visibleBottom = Math.min(
           viewportTop +
             viewportHeight -
-            (document.documentElement.hasAttribute("data-keyboard-open") ? 16 : navHeight + 16),
+            (keyboardOpen ? 16 : navHeight + 16),
           containerRect ? containerRect.bottom - 16 : Number.POSITIVE_INFINITY,
         );
         const rect = field.getBoundingClientRect();
@@ -261,30 +256,42 @@ export function AppShell({
             behavior: "auto",
           });
         }
+
+        const nextRect = field.getBoundingClientRect();
+        const stillOutsideVisibleArea =
+          nextRect.bottom > visibleBottom || nextRect.top < visibleTop;
+        if (stillOutsideVisibleArea) {
+          field.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
+        }
       }, 120);
     };
 
     const onFocusIn = () => {
+      updateKeyboardMetrics();
       keepDocumentFieldVisible();
       window.clearTimeout(delayedFocusTimer);
       delayedFocusTimer = window.setTimeout(keepDocumentFieldVisible, 360);
     };
 
-    const onViewportChange = () => {
+    const onFocusOut = () => {
+      window.setTimeout(updateKeyboardMetrics, 0);
+    };
+
+    const onViewportResize = () => {
       updateKeyboardMetrics();
       keepDocumentFieldVisible();
     };
     updateKeyboardMetrics();
     window.addEventListener("focusin", onFocusIn);
-    visualViewport?.addEventListener("resize", onViewportChange);
-    visualViewport?.addEventListener("scroll", onViewportChange);
+    window.addEventListener("focusout", onFocusOut);
+    visualViewport?.addEventListener("resize", onViewportResize);
 
     return () => {
       window.clearTimeout(focusTimer);
       window.clearTimeout(delayedFocusTimer);
       window.removeEventListener("focusin", onFocusIn);
-      visualViewport?.removeEventListener("resize", onViewportChange);
-      visualViewport?.removeEventListener("scroll", onViewportChange);
+      window.removeEventListener("focusout", onFocusOut);
+      visualViewport?.removeEventListener("resize", onViewportResize);
       document.documentElement.style.removeProperty("--keyboard-inset");
       document.documentElement.removeAttribute("data-keyboard-open");
     };
@@ -401,7 +408,7 @@ export function AppShell({
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
-  const [gender, setGender] = useState<"female" | "male">("female");
+  const [gender, setGender] = useState<"female" | "male" | undefined>(undefined);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() =>
     profileDraftFrom(store.userProfile),
@@ -474,6 +481,9 @@ export function AppShell({
         if (normalizedFullName.split(" ").filter(Boolean).length < 2) {
           throw new Error(FULL_NAME_REQUIRED_ERROR);
         }
+        if (!gender) {
+          throw new Error("יש לבחור מין כדי להתאים את חוויית הטעינה.");
+        }
         const { data, error } = await supabase.auth.signUp({
           email: normalizedEmail,
           password,
@@ -524,7 +534,7 @@ export function AppShell({
       try {
         // Seed the loading surface from the choice already made in the auth
         // form, before profile hydration has returned from Supabase.
-        window.localStorage.setItem(LOADING_GENDER_STORAGE_KEY, gender);
+        if (gender) window.localStorage.setItem(LOADING_GENDER_STORAGE_KEY, gender);
       } catch {
         // The auth metadata/profile remains the source of truth if storage is unavailable.
       }

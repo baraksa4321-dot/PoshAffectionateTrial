@@ -436,6 +436,9 @@ export async function syncLocalToSupabase(
             gender: p.gender,
             coach_id: p.coachId ?? null,
             today_routine_enabled: p.todayRoutineEnabled ?? true,
+             ...(p.loadingAnimationsEnabled === undefined
+               ? {}
+               : { loading_animations_enabled: p.loadingAnimationsEnabled }),
             updated_at: new Date().toISOString(),
             ...(p.role === "coach" || p.role === "owner"
               ? {
@@ -897,6 +900,14 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       profile.gender === "male" || profile.gender === "female"
         ? profile.gender
         : nextData.userProfile?.gender;
+    const hasLoadingAnimationsSetting = Object.prototype.hasOwnProperty.call(
+      profile,
+      "loading_animations_enabled",
+    );
+    const loadingAnimationsEnabled =
+      typeof profile.loading_animations_enabled === "boolean"
+        ? profile.loading_animations_enabled
+        : undefined;
     // `coach_id` is nullable and an explicit null means the assignment was
     // removed. Do not preserve the old cached pointer in that case.
     const coachId = profile.coach_id || undefined;
@@ -922,6 +933,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       ...(age === undefined ? {} : { age }),
       ...(workoutsPerWeek === undefined ? {} : { workoutsPerWeek }),
       ...(gender === undefined ? {} : { gender }),
+      ...(hasLoadingAnimationsSetting ? { loadingAnimationsEnabled } : {}),
       ...(coachId === undefined ? {} : { coachId }),
       ...(approvalStatus === undefined ? {} : { approvalStatus }),
     };
@@ -1608,6 +1620,14 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
             role: profile.role as UserRole,
             todayRoutineEnabled: profile.today_routine_enabled ?? true,
             showCalories: profile.show_calories ?? true,
+             ...(Object.prototype.hasOwnProperty.call(profile, "loading_animations_enabled")
+               ? {
+                   loadingAnimationsEnabled:
+                     typeof profile.loading_animations_enabled === "boolean"
+                       ? profile.loading_animations_enabled
+                       : undefined,
+                 }
+               : {}),
             ...(profile.email ? { email: profile.email } : {}),
             ...(profile.full_name ? { name: profile.full_name } : {}),
             ...(profile.gender === "male" || profile.gender === "female"
