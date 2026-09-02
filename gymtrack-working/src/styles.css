@@ -7223,4 +7223,14 @@ html.night-mode [class*="border-border/"] {
   html:not(.night-mode) .dashboard-editorial-shell .app-main {
     padding-top: 2.5rem !important;
   }
+
+  html:not(.night-mode) .dashboard-editorial-shell .home-feature-item {
+    aspect-ratio: auto;
+  }
+
+  html:not(.night-mode) .dashboard-editorial-shell .home-feature-item > .ink-card,
+  html:not(.night-mode) .dashboard-editorial-shell .home-calorie-card {
+    height: auto !important;
+    min-height: 12rem !important;
+  }
 }
