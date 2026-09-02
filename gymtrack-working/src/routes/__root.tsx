@@ -1106,7 +1106,6 @@ function RootContent() {
   const [loadingRotationTick, setLoadingRotationTick] = useState(0);
   const [loadingGender, setLoadingGender] = useState<LoadingGender | undefined>(undefined);
   const openingCycleClaimedRef = useRef(false);
-  const [loadingPresentationReady, setLoadingPresentationReady] = useState(false);
   const [loadingRecoveryTimedOut, setLoadingRecoveryTimedOut] = useState(false);
   const loadingIndexes = loadingCycleIndexes(
     openingCycleIndex + loadingRotationTick,
@@ -1136,13 +1135,14 @@ function RootContent() {
   const isLoadingScreen = authStatus === "loading" || isProfileHydrating || !minimumLoadingDone;
   const activeLoadingGender =
     authStatus === "unauthenticated" ? undefined : (userProfile?.gender ?? loadingGender);
-  const showExpressiveLoading = loadingPresentationReady && activeLoadingGender === "female";
-  const showPlainLoading = loadingPresentationReady && activeLoadingGender === "male";
+  // Once a gender is known, render only its intended loading surface. The
+  // persisted gender is read in the layout effect below before the browser
+  // paints, while a hydrated profile can switch the surface without first
+  // showing the other gender's loader.
+  const showExpressiveLoading = activeLoadingGender === "female";
+  const showPlainLoading = activeLoadingGender === "male";
 
   useLoadingCycleEffect(() => {
-    // Keep SSR and the first browser render identical. The gender-specific
-    // loading surface starts after hydration, avoiding a spinner flash for
-    // women whose cached profile is already available in the browser.
     try {
       setLoadingGender(readLoadingGender(window.localStorage.getItem(LOADING_GENDER_STORAGE_KEY)));
     } catch {
@@ -1154,7 +1154,6 @@ function RootContent() {
       bootUrl.searchParams.delete("__myroutine_boot");
       window.history.replaceState(null, "", `${bootUrl.pathname}${bootUrl.search}${bootUrl.hash}`);
     }
-    setLoadingPresentationReady(true);
   }, []);
 
   useEffect(() => {
@@ -1454,7 +1453,6 @@ function RootContent() {
                 <p key={`message-${loadingMessageIndex}`} className="loading-witty-message">
                   {loadingMessageForGender(loadingMessageIndex, activeLoadingGender)}
                 </p>
-                <img className="loading-wordmark" src="/myroutine-logo.png" alt="MY routine" />
               </>
             ) : showPlainLoading ? (
               <LoadingSpinner label="טוען" />

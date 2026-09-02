@@ -360,6 +360,8 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
 
   await page.getByRole("tab", { name: "תוכנית אימונים" }).click();
   await dayButtons.nth(0).click();
+  await expect(page.getByRole("tab", { name: "תפריט תזונה" })).toBeHidden();
+  await page.getByRole("button", { name: "סגירת בניית אימון", exact: true }).click();
   await page.getByRole("tab", { name: "תפריט תזונה" }).click();
   await expect(menuDraft).toHaveValue("טיוטת תפריט לפני פתיחת הדוח");
 
