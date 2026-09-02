@@ -393,7 +393,7 @@ function Dashboard() {
         {latestCoachMsg && (
           <div
             {...homeCardProps("coach-message")}
-            className="surface-card space-y-1.5 border-primary/20 bg-primary/5 p-4 text-start"
+            className="dashboard-notice surface-card space-y-1.5 border-primary/20 bg-primary/5 p-4 text-start"
           >
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 font-bold text-xs text-primary">
@@ -422,7 +422,7 @@ function Dashboard() {
         {latestBroadcast && (
           <div
             {...homeCardProps("coach-message")}
-            className="surface-card space-y-1.5 border-accent/40 bg-accent/10 p-4 text-start"
+            className="dashboard-notice surface-card space-y-1.5 border-accent/40 bg-accent/10 p-4 text-start"
           >
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-xs font-bold text-ink">
@@ -451,7 +451,7 @@ function Dashboard() {
         {/* Consistency Banner */}
         <div
           {...homeCardProps("consistency")}
-          className="surface-card flex items-center justify-between gap-4 border-primary/20 bg-surface p-4 text-start"
+          className="dashboard-support-card surface-card flex items-center justify-between gap-4 border-primary/20 bg-surface p-4 text-start"
         >
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 text-sm font-bold text-ink">
@@ -525,7 +525,7 @@ function Dashboard() {
           <div className="home-feature-grid grid grid-cols-2 gap-2">
             {nextWorkout ? (
               <div
-                className={`home-feature-item ${isBodyweightWorkout ? "home-bodyweight-tile" : ""} ${draggingHomeCard === "workout" ? "home-feature-dragging" : ""}`}
+                className={`home-feature-item home-primary-card ${isBodyweightWorkout ? "home-bodyweight-tile" : ""} ${draggingHomeCard === "workout" ? "home-feature-dragging" : ""}`}
                 data-home-card-id="workout"
                 style={{ order: homeCardOrder.indexOf("workout") }}
                 onPointerDown={(event) => startHomeCardHold("workout", event)}
@@ -567,7 +567,7 @@ function Dashboard() {
               </div>
             ) : (
               <div
-                className={`home-feature-item ${draggingHomeCard === "workout" ? "home-feature-dragging" : ""}`}
+                className={`home-feature-item home-primary-card ${draggingHomeCard === "workout" ? "home-feature-dragging" : ""}`}
                 data-home-card-id="workout"
                 style={{ order: homeCardOrder.indexOf("workout") }}
                 onPointerDown={(event) => startHomeCardHold("workout", event)}
@@ -597,7 +597,7 @@ function Dashboard() {
               onPointerCancel={finishHomeCardPointer}
               onClick={preventHomeNavigation}
               style={{ order: homeCardOrder.indexOf("nutrition") }}
-              className={`home-feature-item home-calorie-card surface-card flex min-h-[150px] flex-col p-3 text-start transition-colors ${
+              className={`home-feature-item home-secondary-card home-calorie-card surface-card flex min-h-[150px] flex-col p-3 text-start transition-colors ${
                 draggingHomeCard === "nutrition" ? "home-feature-dragging" : ""
               }`}
             >
@@ -642,7 +642,7 @@ function Dashboard() {
         )}
 
         {/* Weekly Activity Overview */}
-        <section {...homeCardProps("activity")} className="mt-5">
+        <section {...homeCardProps("activity")} className="dashboard-module dashboard-module--activity mt-5">
           <SectionHeader title="פעילות השבוע" subtitle={`${thisWeek.length} אימונים בוצעו השבוע`} />
           <div className="grid grid-cols-3 gap-2.5">
             <StatTile label="אימונים" value={String(thisWeek.length)} icon={Flame} tone="rose" />
@@ -662,7 +662,7 @@ function Dashboard() {
         </section>
 
         {/* Weekly Weigh-In & Monthly Check-In Cards */}
-        <section {...homeCardProps("check-in")} className="mt-5 text-start space-y-2.5">
+        <section {...homeCardProps("check-in")} className="dashboard-module dashboard-module--check-in mt-5 text-start space-y-2.5">
           <SectionHeader title="מעקב משקל וצ'ק-אין חודשי" subtitle="דיווח למאמן" />
           <div className="grid grid-cols-2 gap-2.5">
             <div
@@ -700,7 +700,7 @@ function Dashboard() {
         </section>
 
         {latestMeasurement ? (
-          <section {...homeCardProps("measurements")} className="mt-5 text-start">
+          <section {...homeCardProps("measurements")} className="dashboard-module dashboard-module--measurements mt-5 text-start">
             <SectionHeader
               title="המדידות החודשיות שלי"
               subtitle={genderText(
