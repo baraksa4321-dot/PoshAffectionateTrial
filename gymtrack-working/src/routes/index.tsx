@@ -18,6 +18,11 @@ import {
   Heart,
   X,
   Check,
+  CalendarDays,
+  Clock3,
+  ChevronDown,
+  BarChart3,
+  RotateCcw,
 } from "lucide-react";
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import { AppShell } from "@/components/AppShell";
@@ -40,9 +45,16 @@ import {
   toggleChecklistItem,
   useGym,
   useAuthUser,
+  personalRecords,
 } from "@/lib/gym-store";
 import { genderText } from "@/lib/gender-copy";
 import { supabase } from "@/lib/supabase";
+import {
+  getCurrentWeekDates,
+  getCurrentWeekWorkoutSession,
+  getWorkoutCompletion,
+  type WeeklyWorkoutStatus,
+} from "@/lib/workout-session";
 
 type HomeCardId =
   | "profile"
@@ -86,6 +98,56 @@ function formatNumericDate(date: Date) {
   });
 }
 
+type WeeklyOverride = {
+  date: string;
+  status?: "skipped";
+  reason?: string;
+};
+
+type WeeklyOverrides = Record<string, WeeklyOverride>;
+
+const WEEKLY_OVERRIDES_PREFIX = "myroutine-weekly-overrides:";
+
+function loadWeeklyOverrides(userId: string | undefined, weekStart: string): WeeklyOverrides {
+  if (!userId || typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(`${WEEKLY_OVERRIDES_PREFIX}${userId}:${weekStart}`);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : {};
+    return parsed && typeof parsed === "object" ? (parsed as WeeklyOverrides) : {};
+  } catch {
+    return {};
+  }
+}
+
+function formatDayDate(date: string) {
+  const parsed = new Date(`${date}T12:00:00`);
+  return parsed.toLocaleDateString("he-IL", { day: "numeric", month: "short" });
+}
+
+function sessionStats(session: import("@/lib/gym-types").HistorySession | undefined) {
+  const entries = session?.entries ?? [];
+  const sets = entries.flatMap((entry) => entry.sets).filter((set) => !set.warmup);
+  const doneSets = sets.filter((set) => set.done);
+  const volume = doneSets.reduce((sum, set) => sum + set.weight * set.reps, 0);
+  return {
+    doneSets: doneSets.length,
+    totalSets: sets.length,
+    volume,
+    durationSec: session?.durationSec ?? 0,
+  };
+}
+
+function progressEntryForExercise(
+  session: import("@/lib/gym-types").HistorySession,
+  exerciseId: string,
+  exerciseName: string,
+) {
+  return (
+    session.entries.find((entry) => entry.exerciseId === exerciseId) ??
+    session.entries.find((entry) => entry.exerciseName.trim() === exerciseName.trim())
+  );
+}
+
 function Dashboard() {
   const navigate = useNavigate();
   const {
@@ -100,10 +162,14 @@ function Dashboard() {
     preExitChecklist,
     coachMessages,
     broadcasts,
+    habits,
+    bodyWeightLogs,
   } = useGym();
   const authUser = useAuthUser();
 
   const now = new Date();
+  const weekDays = getCurrentWeekDates(now);
+  const weekStartKey = weekDays[0]?.date ?? todayKey(now);
 
   const [showWeighInModal, setShowWeighInModal] = useState(false);
   const [showBodyProfileModal, setShowBodyProfileModal] = useState(false);
@@ -121,6 +187,14 @@ function Dashboard() {
   const [checkInSuccessMsg, setCheckInSuccessMsg] = useState("");
   const [checklistInput, setChecklistInput] = useState("");
   const [showChecklistModal, setShowChecklistModal] = useState(false);
+  const [showSkipModal, setShowSkipModal] = useState(false);
+  const [skipWorkoutId, setSkipWorkoutId] = useState<string | null>(null);
+  const [skipReason, setSkipReason] = useState("");
+  const [weeklyOverrides, setWeeklyOverrides] = useState<WeeklyOverrides>({});
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [progressRange, setProgressRange] = useState<7 | 30 | 90>(30);
+  const [progressExerciseId, setProgressExerciseId] = useState("");
+  const weeklyOverridesLoadedKeyRef = useRef("");
   const [homeCardOrder, setHomeCardOrder] = useState<HomeCardId[]>(() => {
     if (typeof window === "undefined") return DEFAULT_HOME_CARD_ORDER;
     try {
@@ -139,6 +213,27 @@ function Dashboard() {
   const holdTimer = useRef<number | null>(null);
   const holdStart = useRef({ x: 0, y: 0 });
   const suppressHomeClick = useRef(false);
+
+  useEffect(() => {
+    const key = authUser?.id ? `${authUser.id}:${weekStartKey}` : "";
+    weeklyOverridesLoadedKeyRef.current = key;
+    setWeeklyOverrides(loadWeeklyOverrides(authUser?.id, weekStartKey));
+  }, [authUser?.id, weekStartKey]);
+
+  useEffect(() => {
+    if (!authUser?.id || typeof window === "undefined") return;
+    if (weeklyOverridesLoadedKeyRef.current !== `${authUser.id}:${weekStartKey}`) return;
+    window.localStorage.setItem(
+      `${WEEKLY_OVERRIDES_PREFIX}${authUser.id}:${weekStartKey}`,
+      JSON.stringify(weeklyOverrides),
+    );
+  }, [authUser?.id, weekStartKey, weeklyOverrides]);
+
+  useEffect(() => {
+    if (progressExerciseId || !exercises.length) return;
+    const firstWorkoutExercise = workouts[0]?.items[0]?.exerciseId;
+    setProgressExerciseId(firstWorkoutExercise ?? exercises[0]?.id ?? "");
+  }, [exercises, progressExerciseId, workouts]);
 
   useEffect(() => {
     window.localStorage.setItem(HOME_CARD_ORDER_KEY, JSON.stringify(homeCardOrder));
@@ -273,7 +368,7 @@ function Dashboard() {
 
   // Weekly Activity calculation
   const startOfWeek = new Date(now);
-  const dow = (now.getDay() + 6) % 7;
+  const dow = now.getDay();
   startOfWeek.setDate(now.getDate() - dow);
   startOfWeek.setHours(0, 0, 0, 0);
 
@@ -326,6 +421,73 @@ function Dashboard() {
     ? programs.find((p) => p.dayIds.includes(nextWorkout.id))
     : undefined;
 
+  const scheduledWorkouts = workouts.slice(0, Math.min(workouts.length, 7)).map((workout, index) => {
+    const defaultDate = weekDays[index]?.date ?? weekDays[weekDays.length - 1]?.date ?? todayDateStr;
+    const override = weeklyOverrides[workout.id];
+    const scheduledDate = override?.date ?? defaultDate;
+    const session = getCurrentWeekWorkoutSession(history, workout.id, now);
+    const plannedSets = workout.items.reduce((sum, item) => sum + Math.max(0, item.sets), 0);
+    const completion = getWorkoutCompletion(session, plannedSets);
+    let status: WeeklyWorkoutStatus = completion.status;
+    if (override?.status === "skipped") status = "skipped";
+    else if (!session && scheduledDate < todayDateStr) status = "missed";
+    else if (!session) status = "scheduled";
+    return { workout, scheduledDate, session, completion, status, override };
+  });
+
+  const nextScheduledWorkout =
+    scheduledWorkouts.find((item) => item.status === "scheduled" || item.status === "partial") ??
+    scheduledWorkouts.find((item) => item.status === "missed");
+  const primaryWorkout = nextScheduledWorkout?.workout ?? nextWorkout;
+  const primaryIsBodyweightWorkout = Boolean(primaryWorkout?.name.includes("משקל גוף"));
+  const weekNutritionDays = nutritionDays.filter(
+    (day) => day.date >= weekStartKey && day.date <= (weekDays[6]?.date ?? weekStartKey),
+  );
+  const loggedNutritionDays = weekNutritionDays.filter((day) =>
+    day.meals.some((meal) => meal.foods.length > 0),
+  ).length;
+  const weekWeighIns = (bodyWeightLogs ?? []).filter(
+    (log) => log.date >= weekStartKey && log.date <= (weekDays[6]?.date ?? weekStartKey),
+  ).length;
+  const weekHabitDays = (habits ?? []).filter(
+    (habit) => habit.date >= weekStartKey && habit.date <= (weekDays[6]?.date ?? weekStartKey),
+  );
+
+  const selectedProgressExercise =
+    exercises.find((exercise) => exercise.id === progressExerciseId) ??
+    exercises.find((exercise) => exercise.id === primaryWorkout?.items[0]?.exerciseId);
+  const progressCutoff = new Date(now);
+  progressCutoff.setDate(progressCutoff.getDate() - (progressRange - 1));
+  progressCutoff.setHours(0, 0, 0, 0);
+  const progressSessions = history
+    .filter((session) => new Date(session.date) >= progressCutoff)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const progressPoints = selectedProgressExercise
+    ? progressSessions
+        .map((session) => {
+          const entry = progressEntryForExercise(
+            session,
+            selectedProgressExercise.id,
+            selectedProgressExercise.name,
+          );
+          if (!entry) return null;
+          const sets = entry.sets.filter((set) => !set.warmup && set.done);
+          if (!sets.length) return null;
+          return {
+            date: session.date,
+            volume: sets.reduce((sum, set) => sum + set.weight * set.reps, 0),
+            maxWeight: Math.max(...sets.map((set) => set.weight)),
+            reps: Math.max(...sets.map((set) => set.reps)),
+          };
+        })
+        .filter((point): point is NonNullable<typeof point> => Boolean(point))
+    : [];
+  const progressFirst = progressPoints[0];
+  const progressLast = progressPoints[progressPoints.length - 1];
+  const progressRecords = selectedProgressExercise
+    ? personalRecords(history, selectedProgressExercise.id)
+    : null;
+
   const [dismissedMessageIds, setDismissedMessageIds] = useState<string[]>([]);
   useEffect(() => {
     if (!authUser?.id) return;
@@ -367,6 +529,48 @@ function Dashboard() {
     if (!checklistInput.trim()) return;
     addChecklistItem(checklistInput);
     setChecklistInput("");
+  };
+
+  const setWeeklyOverride = (workoutId: string, override: WeeklyOverride | null) => {
+    setWeeklyOverrides((current) => {
+      const next = { ...current };
+      if (override) next[workoutId] = override;
+      else delete next[workoutId];
+      return next;
+    });
+  };
+
+  const postponeWorkout = (workoutId: string, date: string) => {
+    const nextDate = new Date(`${date}T12:00:00`);
+    nextDate.setDate(nextDate.getDate() + 1);
+    const nextDateKey = todayKey(nextDate);
+    setWeeklyOverride(workoutId, { date: nextDateKey });
+    setCheckInSuccessMsg(`האימון נדחה ל־${formatDayDate(nextDateKey)}.`);
+    window.setTimeout(() => setCheckInSuccessMsg(""), 3000);
+  };
+
+  const openSkipModal = (workoutId: string) => {
+    setSkipWorkoutId(workoutId);
+    setSkipReason("");
+    setShowSkipModal(true);
+  };
+
+  const confirmSkipWorkout = () => {
+    if (!skipWorkoutId) return;
+    const scheduled = scheduledWorkouts.find((item) => item.workout.id === skipWorkoutId);
+    if (!scheduled) return;
+    setWeeklyOverride(skipWorkoutId, {
+      date: scheduled.scheduledDate,
+      status: "skipped",
+      reason: skipReason.trim() || "ללא סיבה שנמסרה",
+    });
+    setShowSkipModal(false);
+    setSkipWorkoutId(null);
+    setSkipReason("");
+  };
+
+  const startWorkout = (workoutId: string) => {
+    void navigate({ to: "/session/$workoutId", params: { workoutId } });
   };
 
   return (
@@ -505,6 +709,145 @@ function Dashboard() {
           </div>
         </div>
 
+        {/* Weekly plan */}
+        <section
+          {...homeCardProps("workout")}
+          data-testid="weekly-plan"
+          className="dashboard-module mt-5 text-start"
+        >
+          <SectionHeader
+            title="השבוע שלי"
+            subtitle={
+              nextScheduledWorkout
+                ? `הפעולה הבאה: ${nextScheduledWorkout.status === "missed" ? "להשלים" : "להתחיל"} ${nextScheduledWorkout.workout.name}`
+                : "כל מה שחשוב כדי להישאר במסלול"
+            }
+          />
+          <div className="mb-3 grid grid-cols-3 gap-2">
+            {[
+              {
+                label: "תזונה",
+                value: `${loggedNutritionDays}/7`,
+                detail: loggedNutritionDays ? "ימים מתועדים" : "עדיין לא תועד",
+                icon: Apple,
+              },
+              {
+                label: "שקילה",
+                value: weekWeighIns ? "בוצע" : "ממתין",
+                detail: weekWeighIns ? "השבוע עודכן" : "פעולה קצרה להיום",
+                icon: Scale,
+              },
+              {
+                label: "הרגלים",
+                value: weekHabitDays.length ? `${weekHabitDays.length}/7` : "—",
+                detail: weekHabitDays.length ? "ימים עם מעקב" : "אין דיווחים עדיין",
+                icon: CheckCircle2,
+              },
+            ].map(({ label, value, detail, icon: Icon }) => (
+              <div key={label} className="surface-card border-border/70 bg-secondary/35 p-2.5">
+                <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
+                <p className="mt-2 text-[10px] font-bold text-muted-foreground">{label}</p>
+                <p className="mt-0.5 text-sm font-extrabold text-ink">{value}</p>
+                <p className="mt-0.5 text-[9px] leading-tight text-muted-foreground">{detail}</p>
+              </div>
+            ))}
+          </div>
+          {scheduledWorkouts.length ? (
+            <div className="space-y-2">
+              {scheduledWorkouts.map(({ workout, scheduledDate, completion, status, override }) => {
+                const day = weekDays.find((item) => item.date === scheduledDate) ?? weekDays[0];
+                const statusCopy: Record<WeeklyWorkoutStatus, string> = {
+                  scheduled: "מתוכנן",
+                  completed: "הושלם",
+                  partial: "הושלם חלקית",
+                  skipped: "דולג",
+                  missed: "לא הושלם",
+                };
+                const statusTone: Record<WeeklyWorkoutStatus, string> = {
+                  scheduled: "bg-secondary text-muted-foreground",
+                  completed: "bg-emerald-100 text-emerald-800",
+                  partial: "bg-amber-100 text-amber-800",
+                  skipped: "bg-slate-100 text-slate-700",
+                  missed: "bg-rose-100 text-rose-800",
+                };
+                return (
+                  <div
+                    key={workout.id}
+                    className="surface-card flex items-center gap-2.5 border-border/70 bg-background p-3"
+                  >
+                    <div
+                      className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${
+                        status === "completed"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : status === "missed"
+                            ? "bg-rose-100 text-rose-700"
+                            : "bg-primary/10 text-primary"
+                      }`}
+                    >
+                      {status === "completed" ? (
+                        <Check className="h-5 w-5" aria-hidden="true" />
+                      ) : (
+                        <Dumbbell className="h-5 w-5" aria-hidden="true" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-primary">
+                          {day?.shortLabel ?? "השבוע"} · {formatDayDate(scheduledDate)}
+                        </span>
+                        <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${statusTone[status]}`}>
+                          {statusCopy[status]}
+                        </span>
+                      </div>
+                      <p className="mt-1 truncate text-[13px] font-bold text-ink">{workout.name}</p>
+                      <p className="mt-0.5 text-[10px] text-muted-foreground">
+                        {status === "completed" || status === "partial"
+                          ? `${completion.doneSets}/${completion.targetSets} סטים · ${completion.percent}%`
+                          : override?.reason && status === "skipped"
+                            ? `סיבה: ${override.reason}`
+                            : `${workout.items.length} תרגילים · יעד ברור להיום`}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col gap-1">
+                      {status === "scheduled" || status === "missed" || status === "partial" ? (
+                        <button
+                          type="button"
+                          onClick={() => startWorkout(workout.id)}
+                          className="press rounded-xl bg-primary px-2.5 py-2 text-[10px] font-bold text-primary-foreground"
+                        >
+                          {status === "missed" ? "השלמה" : status === "partial" ? "המשך" : "התחלה"}
+                        </button>
+                      ) : null}
+                      {status === "scheduled" || status === "missed" ? (
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => postponeWorkout(workout.id, scheduledDate)}
+                            className="press rounded-lg bg-secondary px-2 py-1.5 text-[9px] font-bold text-ink"
+                          >
+                            דחה
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openSkipModal(workout.id)}
+                            className="press rounded-lg bg-secondary px-2 py-1.5 text-[9px] font-bold text-muted-foreground"
+                          >
+                            דלג
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="surface-card border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+              עדיין אין אימונים מתוזמנים. אפשר לבנות תכנית ראשונה במסך האימונים.
+            </div>
+          )}
+        </section>
+
         {/* 1. Daily workout + nutrition tiles */}
         <div className="home-feature-section mt-3">
           {isArrangingHome ? (
@@ -523,9 +866,9 @@ function Dashboard() {
             </div>
           ) : null}
           <div className="home-feature-grid grid grid-cols-2 gap-2">
-            {nextWorkout ? (
+            {primaryWorkout ? (
               <div
-                className={`home-feature-item home-primary-card ${isBodyweightWorkout ? "home-bodyweight-tile" : ""} ${draggingHomeCard === "workout" ? "home-feature-dragging" : ""}`}
+                className={`home-feature-item home-primary-card ${primaryIsBodyweightWorkout ? "home-bodyweight-tile" : ""} ${draggingHomeCard === "workout" ? "home-feature-dragging" : ""}`}
                 data-home-card-id="workout"
                 style={{ order: homeCardOrder.indexOf("workout") }}
                 onPointerDown={(event) => startHomeCardHold("workout", event)}
@@ -541,10 +884,10 @@ function Dashboard() {
                     <Dumbbell className="h-4 w-4 text-primary-foreground/80" />
                   </div>
                   <h2 className="mt-2 break-words font-display text-[17px] font-bold leading-tight text-primary-foreground">
-                    {nextWorkout.name}
+                    {primaryWorkout.name}
                   </h2>
                   <p className="mt-1 text-[10px] text-primary-foreground/75">
-                    {nextWorkout.items.length} תרגילים · כ־{nextWorkout.items.length * 12 + 15} דק׳
+                    {primaryWorkout.items.length} תרגילים · כ־{primaryWorkout.items.length * 12 + 15} דק׳
                   </p>
                   <button
                     type="button"
@@ -555,7 +898,7 @@ function Dashboard() {
                       }
                       navigate({
                         to: "/session/$workoutId",
-                        params: { workoutId: nextWorkout.id },
+                        params: { workoutId: primaryWorkout.id },
                       });
                     }}
                     className="press mt-auto inline-flex h-9 cursor-pointer items-center justify-center gap-1 rounded-xl bg-background px-2 text-[11px] font-bold text-ink shadow-sm"
@@ -645,7 +988,18 @@ function Dashboard() {
 
         {/* Weekly Activity Overview */}
         <section {...homeCardProps("activity")} className="dashboard-module dashboard-module--activity mt-5">
-          <SectionHeader title="פעילות השבוע" subtitle={`${thisWeek.length} אימונים בוצעו השבוע`} />
+          <div className="flex items-start justify-between gap-3">
+            <SectionHeader title="פעילות השבוע" subtitle={`${thisWeek.length} אימונים בוצעו השבוע`} />
+            <button
+              type="button"
+              onClick={() => setShowProgressModal(true)}
+              className="press inline-flex shrink-0 items-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2.5 py-2 text-[10px] font-bold text-primary"
+              aria-label="פתיחת מגמות והיסטוריית תרגיל"
+            >
+              <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
+              מגמות
+            </button>
+          </div>
           <div className="grid grid-cols-3 gap-2.5">
             <StatTile label="אימונים" value={String(thisWeek.length)} icon={Flame} tone="rose" />
             <StatTile
@@ -827,6 +1181,192 @@ function Dashboard() {
           </div>
         </Overlay>
       ) : null}
+      {showSkipModal ? (
+        <Overlay
+          open={showSkipModal}
+          onClose={() => setShowSkipModal(false)}
+          ariaLabel="דחיית או דילוג על אימון"
+        >
+          <div
+            className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold tracking-[0.14em] text-primary uppercase">השבוע שלי</p>
+                <h2 className="mt-1 font-display text-lg font-extrabold text-ink">למה מדלגים היום?</h2>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  הסיבה נשמרת לצד התכנון האישי כדי שתוכלי לחזור אליה בלי לנחש.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSkipModal(false)}
+                className="press grid h-8 w-8 place-items-center rounded-xl text-muted-foreground hover:bg-secondary"
+                aria-label="סגירת דילוג על אימון"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <textarea
+              value={skipReason}
+              onChange={(event) => setSkipReason(event.target.value)}
+              placeholder="למשל: יום עמוס, מנוחה, אי־נוחות..."
+              aria-label="סיבת דילוג על אימון"
+              className="min-h-24 w-full rounded-2xl border border-border bg-background p-3 text-sm text-ink outline-none placeholder:text-muted-foreground focus:border-primary"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowSkipModal(false)}
+                className="press flex-1 rounded-2xl bg-secondary py-3 text-xs font-bold text-ink"
+              >
+                ביטול
+              </button>
+              <button
+                type="button"
+                onClick={confirmSkipWorkout}
+                className="press flex-1 rounded-2xl bg-primary py-3 text-xs font-bold text-primary-foreground"
+              >
+                שמירת דילוג
+              </button>
+            </div>
+          </div>
+        </Overlay>
+      ) : null}
+
+      {showProgressModal ? (
+        <Overlay
+          open={showProgressModal}
+          onClose={() => setShowProgressModal(false)}
+          ariaLabel="מגמות והיסטוריית תרגיל"
+        >
+          <div
+            className="w-full max-w-lg space-y-4 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
+              <div>
+                <p className="text-[10px] font-bold tracking-[0.14em] text-primary uppercase">Progress</p>
+                <h2 className="mt-1 font-display text-xl font-extrabold text-ink">מגמות והיסטוריית תרגיל</h2>
+                <p className="mt-1 text-xs text-muted-foreground">נתונים מהביצועים שנשמרו, בלי להסיק מסקנות רפואיות.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowProgressModal(false)}
+                className="press grid h-8 w-8 place-items-center rounded-xl text-muted-foreground hover:bg-secondary"
+                aria-label="סגירת מגמות"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <label className="block text-xs font-bold text-muted-foreground">
+              תרגיל
+              <span className="relative mt-1 block">
+                <select
+                  value={selectedProgressExercise?.id ?? ""}
+                  onChange={(event) => setProgressExerciseId(event.target.value)}
+                  aria-label="בחירת תרגיל למגמה"
+                  className="w-full appearance-none rounded-xl border border-border bg-background p-3 pe-9 text-sm font-bold text-ink outline-none focus:border-primary"
+                >
+                  {exercises.map((exercise) => (
+                    <option key={exercise.id} value={exercise.id}>
+                      {exercise.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-muted-foreground" />
+              </span>
+            </label>
+            <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-secondary/60 p-1">
+              {([7, 30, 90] as const).map((days) => (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => setProgressRange(days)}
+                  className={`press rounded-xl px-2 py-2 text-xs font-bold ${
+                    progressRange === days ? "bg-background text-primary shadow-sm" : "text-muted-foreground"
+                  }`}
+                >
+                  {days === 7 ? "שבוע" : days === 30 ? "חודש" : "3 חודשים"}
+                </button>
+              ))}
+            </div>
+            {progressPoints.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border p-5 text-center">
+                <BarChart3 className="mx-auto h-7 w-7 text-primary/60" />
+                <p className="mt-2 text-sm font-bold text-ink">אין מספיק נתונים לטווח הזה</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  שמרי עוד ביצוע אחד של התרגיל כדי להתחיל לראות מגמה אמיתית.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-2">
+                  <StatTile
+                    label="נפח אחרון"
+                    value={`${Math.round(progressLast?.volume ?? 0)} ק״ג`}
+                    icon={TrendingUp}
+                    tone="sage"
+                  />
+                  <StatTile
+                    label="משקל מרבי"
+                    value={`${progressRecords?.heaviest ?? progressLast?.maxWeight ?? 0} ק״ג`}
+                    icon={Dumbbell}
+                    tone="rose"
+                  />
+                  <StatTile
+                    label="ביצועים"
+                    value={`${progressPoints.length}`}
+                    icon={CalendarDays}
+                    tone="cream"
+                  />
+                </div>
+                <div className="space-y-2">
+                  {progressPoints.slice(-6).map((point) => {
+                    const maxVolume = Math.max(...progressPoints.map((item) => item.volume), 1);
+                    return (
+                      <div key={`${point.date}-${point.volume}`} className="rounded-2xl bg-secondary/45 p-3">
+                        <div className="flex items-center justify-between gap-3 text-[11px]">
+                          <span className="font-bold text-ink">{formatDayDate(point.date.slice(0, 10))}</span>
+                          <span className="text-muted-foreground">
+                            {Math.round(point.volume)} ק״ג · עד {point.maxWeight} ק״ג · {point.reps} חזרות
+                          </span>
+                        </div>
+                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-background">
+                          <div
+                            className="h-full rounded-full bg-primary transition-all"
+                            style={{ width: `${Math.max(8, Math.round((point.volume / maxVolume) * 100))}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3 text-xs">
+                  <p className="font-bold text-primary">מה אפשר לעשות מכאן?</p>
+                  <p className="mt-1 leading-relaxed text-ink">
+                    {progressFirst && progressLast && progressLast.volume > progressFirst.volume
+                      ? "הנפח במגמת עלייה בטווח שנבחר. שמרי על ביצוע נשלט ובדקי את היעד הבא באימון."
+                      : "המשיכי לתעד באותו תרגיל ובאותו טווח. יותר נתונים יעזרו לך ולמאמן לזהות שינוי אמיתי."}
+                  </p>
+                  {primaryWorkout ? (
+                    <button
+                      type="button"
+                      onClick={() => startWorkout(primaryWorkout.id)}
+                      className="press mt-3 inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground"
+                    >
+                      <Play className="h-3.5 w-3.5 fill-current" />
+                      לאימון הבא
+                    </button>
+                  ) : null}
+                </div>
+              </>
+            )}
+          </div>
+        </Overlay>
+      ) : null}
+
       {/* Modal: Weekly Weigh-In */}
       {showBodyProfileModal && (
         <Overlay

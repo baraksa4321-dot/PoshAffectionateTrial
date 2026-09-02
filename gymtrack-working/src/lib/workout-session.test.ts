@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import type { HistorySession } from "./gym-types";
-import { completedSetForReopenedWorkout, getCurrentWeekWorkoutSession } from "./workout-session";
+import {
+  completedSetForReopenedWorkout,
+  getCurrentWeekWorkoutSession,
+  getWorkoutCompletion,
+} from "./workout-session";
 
 const session = (date: string): HistorySession => ({
   id: "session-1",
@@ -43,5 +47,33 @@ describe("reopening a completed workout", () => {
     );
 
     expect(completed).toBeUndefined();
+  });
+});
+
+describe("weekly workout completion", () => {
+  test("distinguishes a partial session from a fully completed plan", () => {
+    const partial = getWorkoutCompletion(session("2026-08-31T12:00:00.000Z"), 3);
+    expect(partial.doneSets).toBe(2);
+    expect(partial.targetSets).toBe(3);
+    expect(partial.percent).toBe(67);
+    expect(partial.status).toBe("partial");
+
+    const complete = getWorkoutCompletion(
+      {
+        ...session("2026-08-31T12:00:00.000Z"),
+        entries: [
+          {
+            ...session("2026-08-31T12:00:00.000Z").entries[0]!,
+            sets: [
+              ...session("2026-08-31T12:00:00.000Z").entries[0]!.sets,
+              { reps: 8, weight: 20, done: true },
+            ],
+          },
+        ],
+      },
+      3,
+    );
+    expect(complete.percent).toBe(100);
+    expect(complete.status).toBe("completed");
   });
 });

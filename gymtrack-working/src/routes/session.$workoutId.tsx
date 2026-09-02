@@ -21,6 +21,7 @@ import {
   Meh,
   Frown,
   ImagePlus,
+  TrendingUp,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
@@ -35,7 +36,14 @@ import {
   SecondaryButton,
   SectionHeader,
 } from "@/components/ui-app/primitives";
-import { flushCloudSync, lastPerformance, saveSession, uid, useGym } from "@/lib/gym-store";
+import {
+  flushCloudSync,
+  lastPerformance,
+  personalRecords,
+  saveSession,
+  uid,
+  useGym,
+} from "@/lib/gym-store";
 import { BODYWEIGHT_EXERCISES, replaceWithBodyweight } from "@/lib/bodyweight-exercises";
 import type {
   Exercise,
@@ -184,6 +192,46 @@ function loadSavedSessionFeedback(
   }
 }
 
+function sessionSummaryStats(session: HistorySession | null) {
+  const sets = session?.entries.flatMap((entry) => entry.sets).filter((set) => !set.warmup) ?? [];
+  const doneSets = sets.filter((set) => set.done);
+  return {
+    doneSets: doneSets.length,
+    volume: doneSets.reduce((sum, set) => sum + set.weight * set.reps, 0),
+    maxWeight: doneSets.length ? Math.max(...doneSets.map((set) => set.weight)) : 0,
+    exercises: session?.entries.filter((entry) => entry.sets.some((set) => set.done && !set.warmup)).length ?? 0,
+    durationSec: session?.durationSec ?? 0,
+  };
+}
+
+function progressionSuggestion(
+  history: HistorySession[],
+  entry: HistoryEntry,
+  targetRepMax: number | undefined,
+  difficultyRating: HistorySession["difficultyRating"],
+) {
+  const previous = lastPerformance(history, entry.exerciseId);
+  const previousSet = previous?.sets.at(-1);
+  if (!previousSet || previousSet.weight <= 0) return null;
+  if (difficultyRating === "difficult") {
+    return {
+      weight: previousSet.weight,
+      text: `הפעם הקודמת הרגישה קשה. הצעה: להישאר על ${previousSet.weight} ק״ג ולשמור על שליטה.`,
+    };
+  }
+  if (targetRepMax && previousSet.reps >= targetRepMax) {
+    const nextWeight = Math.round((previousSet.weight + 2.5) * 10) / 10;
+    return {
+      weight: nextWeight,
+      text: `הגעת לטווח העליון בפעם הקודמת. הצעה: לנסות ${nextWeight} ק״ג בסט הבא.`,
+    };
+  }
+  return {
+    weight: previousSet.weight,
+    text: `הצעה: לחזור על ${previousSet.weight} ק״ג ולנסות להוסיף חזרה אחת אם הביצוע מרגיש יציב.`,
+  };
+}
+
 function isExercisePlaceholder(value: unknown): value is string {
   const normalized = typeof value === "string" ? value.trim() : "";
   return !normalized || normalized === "תרגיל" || normalized === "תרגיל שהוסר";
@@ -226,6 +274,8 @@ function Session() {
   const bodyweightModeWorkoutIdRef = useRef<string | null>(null);
   const hydratedEntriesWorkoutIdRef = useRef<string | null>(null);
   const hydratedFeedbackWorkoutIdRef = useRef<string | null>(null);
+  const summaryNavigationTimerRef = useRef<number | null>(null);
+  const [approvedProgression, setApprovedProgression] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     if (!workout) return;
@@ -241,9 +291,19 @@ function Session() {
     return () => window.clearTimeout(timeoutId);
   }, [bodyweightNotice]);
 
+  useEffect(() => {
+    return () => {
+      if (summaryNavigationTimerRef.current !== null) {
+        window.clearTimeout(summaryNavigationTimerRef.current);
+      }
+    };
+  }, []);
+
   const [isPaused, setIsPaused] = useState(false);
 
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [savedSummary, setSavedSummary] = useState<HistorySession | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
   const [finishError, setFinishError] = useState("");
   const [videoUploadsInFlight, setVideoUploadsInFlight] = useState(0);
@@ -898,12 +958,18 @@ function Session() {
     clearSavedSession();
     setShowFeedbackModal(false);
     setIsFinishing(false);
+    setSavedSummary(finishedSessionRef.current);
+    setShowSummaryModal(true);
     if (allSetsCompleted) {
       setShowCompletionConfetti(true);
-      window.setTimeout(() => navigate({ to: "/programs" }), 3200);
-    } else {
-      navigate({ to: "/programs" });
     }
+    if (summaryNavigationTimerRef.current !== null) {
+      window.clearTimeout(summaryNavigationTimerRef.current);
+    }
+    summaryNavigationTimerRef.current = window.setTimeout(() => {
+      setShowSummaryModal(false);
+      navigate({ to: "/programs" });
+    }, 3200);
   };
 
   const progress = totalSets ? (doneSets / totalSets) * 100 : 0;
@@ -1114,6 +1180,14 @@ function Session() {
         {entries.map((entry, ei) => {
           const item = workout.items[ei];
           const supersetLabel = labels[ei];
+          const previousPerformance = lastPerformance(history, entry.exerciseId);
+          const suggestion = progressionSuggestion(
+            history,
+            entry,
+            entry.targetRepMax,
+            history.find((session) => session.entries.some((itemEntry) => itemEntry.exerciseId === entry.exerciseId))
+              ?.difficultyRating,
+          );
           const fullExercise =
             findExerciseForItem({ exerciseId: entry.exerciseId } as WorkoutItem, exerciseCatalog) ??
             exerciseCatalog.find((e) => e.name === entry.exerciseName);
@@ -1190,6 +1264,60 @@ function Session() {
                 <div className="mt-2.5 rounded-2xl bg-primary/5 p-2.5 text-[12px] text-primary font-medium border border-primary/10 flex items-center gap-2">
                   <Sparkles className="h-4 w-4 shrink-0" />
                   <span>הנחיית טכניקה ממאמן: {item.techniqueNotes}</span>
+                </div>
+              ) : null}
+
+              <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
+                <div className="rounded-2xl border border-border/60 bg-secondary/35 p-2.5 text-[11px]">
+                  <p className="font-bold text-muted-foreground">יעד היום</p>
+                  <p className="mt-1 font-extrabold text-ink">
+                    {entry.targetSets ?? item?.sets ?? 0} סטים · {entry.targetReps ?? item?.reps ?? 0}
+                    {entry.targetRepMax ? `–${entry.targetRepMax}` : ""} חזרות
+                    {item?.targetWeight || item?.weight ? ` · ${item.targetWeight || item.weight} ק״ג` : ""}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border/60 bg-secondary/35 p-2.5 text-[11px]">
+                  <p className="font-bold text-muted-foreground">בפעם הקודמת</p>
+                  <p className="mt-1 font-extrabold text-ink">
+                    {previousPerformance
+                      ? `${previousPerformance.sets.length} סטים · עד ${Math.max(
+                          ...previousPerformance.sets.map((set) => set.weight),
+                        )} ק״ג`
+                      : "אין ביצוע קודם עדיין"}
+                  </p>
+                </div>
+              </div>
+              {suggestion ? (
+                <div className="mt-2.5 rounded-2xl border border-primary/20 bg-primary/5 p-3">
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-bold text-primary">הצעה להמשך · באישור שלך</p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-ink">{suggestion.text}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEntries((current) =>
+                          current.map((currentEntry, index) =>
+                            index !== ei
+                              ? currentEntry
+                              : {
+                                  ...currentEntry,
+                                  sets: currentEntry.sets.map((set) =>
+                                    set.warmup || set.done ? set : { ...set, weight: suggestion.weight },
+                                  ),
+                                },
+                          ),
+                        );
+                        setApprovedProgression((current) => ({ ...current, [ei]: true }));
+                      }}
+                      disabled={approvedProgression[ei]}
+                      className="press shrink-0 rounded-xl bg-primary px-2.5 py-2 text-[10px] font-bold text-primary-foreground disabled:opacity-60"
+                    >
+                      {approvedProgression[ei] ? "אושר" : "אישור"}
+                    </button>
+                  </div>
                 </div>
               ) : null}
 
@@ -1491,7 +1619,9 @@ function Session() {
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
                 <Award className="h-6 w-6" />
               </div>
-              <h3 className="font-display text-lg font-bold text-ink">אימון מצוין! איך הרגשת?</h3>
+              <h3 className="font-display text-lg font-bold text-ink">
+                {doneSets >= totalSets ? "אימון מצוין! איך הרגשת?" : "סיימת את החלק שמתאים לך היום"}
+              </h3>
               <p className="text-xs text-muted-foreground">המשוב יישמר בהיסטוריית האימון שלך</p>
             </div>
 
@@ -1550,6 +1680,101 @@ function Session() {
           </div>
         </Overlay>
       )}
+
+      {showSummaryModal && savedSummary ? (
+        <Overlay
+          open={showSummaryModal}
+          onClose={() => setShowSummaryModal(false)}
+          ariaLabel="סיכום אימון"
+        >
+          <div
+            className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="text-center">
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary">
+                {sessionSummaryStats(savedSummary).doneSets >= totalSets ? (
+                  <Award className="h-7 w-7" />
+                ) : (
+                  <Check className="h-7 w-7" />
+                )}
+              </div>
+              <p className="mt-3 text-[10px] font-bold tracking-[0.14em] text-primary uppercase">Workout report</p>
+              <h2 className="mt-1 font-display text-xl font-extrabold text-ink">
+                {sessionSummaryStats(savedSummary).doneSets >= totalSets ? "האימון הושלם" : "האימון נשמר חלקית"}
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">הנה תמונת מצב קצרה של הביצוע שלך.</p>
+            </div>
+            {(() => {
+              const summary = sessionSummaryStats(savedSummary);
+              const firstEntry = savedSummary.entries.find((entry) =>
+                entry.sets.some((set) => set.done && !set.warmup),
+              );
+              const previousPr = firstEntry ? personalRecords(history, firstEntry.exerciseId) : null;
+              const currentMax = summary.maxWeight;
+              const isNewPr = Boolean(firstEntry && previousPr && currentMax > previousPr.heaviest);
+              return (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      ["סטים", `${summary.doneSets}/${totalSets}`],
+                      ["נפח", `${Math.round(summary.volume)} ק״ג`],
+                      ["משך", `${Math.max(1, Math.round(summary.durationSec / 60))} דק׳`],
+                      ["קושי", savedSummary.difficultyRating === "easy" ? "קל" : savedSummary.difficultyRating === "difficult" ? "קשה" : "מדויק"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-2xl bg-secondary/55 p-3">
+                        <p className="text-[10px] font-bold text-muted-foreground">{label}</p>
+                        <p className="mt-1 text-sm font-extrabold text-ink">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className={`rounded-2xl border p-3 ${isNewPr ? "border-amber-300 bg-amber-50" : "border-primary/20 bg-primary/5"}`}>
+                    <p className="flex items-center gap-1.5 text-xs font-bold text-primary">
+                      {isNewPr ? <Award className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
+                      {isNewPr ? "שיא אישי חדש" : "הצעד הבא"}
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-ink">
+                      {isNewPr
+                        ? `המשקל המרבי שלך היום היה ${currentMax} ק״ג. כל הכבוד על ההתקדמות.`
+                        : savedSummary.discomfortNotes
+                          ? "שמנו לב שדיווחת על אי־נוחות. כדאי לעדכן את המאמן לפני האימון הבא."
+                          : "הנתונים נשמרו. באימון הבא בדקי את היעד וההצעה לפני שאת מתחילה."}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (summaryNavigationTimerRef.current !== null) {
+                          window.clearTimeout(summaryNavigationTimerRef.current);
+                        }
+                        setShowSummaryModal(false);
+                        navigate({ to: "/" });
+                      }}
+                      className="press flex-1 rounded-2xl bg-primary py-3 text-xs font-bold text-primary-foreground"
+                    >
+                      חזרה לשבוע שלי
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (summaryNavigationTimerRef.current !== null) {
+                          window.clearTimeout(summaryNavigationTimerRef.current);
+                        }
+                        setShowSummaryModal(false);
+                        navigate({ to: "/programs" });
+                      }}
+                      className="press rounded-2xl bg-secondary px-3 py-3 text-xs font-bold text-ink"
+                    >
+                      לתכניות
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </Overlay>
+      ) : null}
 
       {/* Portal the timer to body so page-entry transforms and scrolling can never hide it. */}
       {typeof document !== "undefined"
