@@ -257,12 +257,6 @@ export function AppShell({
           });
         }
 
-        const nextRect = field.getBoundingClientRect();
-        const stillOutsideVisibleArea =
-          nextRect.bottom > visibleBottom || nextRect.top < visibleTop;
-        if (stillOutsideVisibleArea) {
-          field.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
-        }
       }, 120);
     };
 
@@ -279,7 +273,6 @@ export function AppShell({
 
     const onViewportResize = () => {
       updateKeyboardMetrics();
-      keepDocumentFieldVisible();
     };
     updateKeyboardMetrics();
     window.addEventListener("focusin", onFocusIn);

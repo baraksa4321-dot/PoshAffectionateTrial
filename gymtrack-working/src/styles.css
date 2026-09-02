@@ -4589,6 +4589,13 @@ html.night-mode .auth-panel {
   scroll-padding-bottom: calc(6.5rem + var(--keyboard-inset, 0px));
 }
 
+/* iOS may otherwise move the scroll anchor when keyboard clearance changes
+   during typing. The focused-field handler performs the one intentional move. */
+html[data-keyboard-open] .page-scroll-container,
+html[data-keyboard-open] [data-coach-workspace="true"] {
+  overflow-anchor: none;
+}
+
 [data-coach-workspace="true"] {
   max-height: calc(100lvh - var(--app-topbar-height, 5rem) - 0.5rem);
   min-height: 0;

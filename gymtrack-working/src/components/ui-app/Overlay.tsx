@@ -135,6 +135,7 @@ export function Overlay({
       }
     };
     const visualViewport = window.visualViewport;
+    const keyboardOpenRef = { current: false };
     const keepFocusedFieldVisible = () => {
       const activeElement = document.activeElement;
       const panel = panelRef.current;
@@ -149,9 +150,13 @@ export function Overlay({
     const updateKeyboardOffset = () => {
       const { visibleHeight, keyboardInset, keyboardOpen } = getKeyboardViewportMetrics();
       const nextKeyboardOffset = keyboardOpen ? keyboardInset : 0;
+      const keyboardJustOpened = keyboardOpen && !keyboardOpenRef.current;
+      keyboardOpenRef.current = keyboardOpen;
       setViewportHeight(visibleHeight);
       setKeyboardOffset(nextKeyboardOffset);
-      if (keyboardOpen) keepFocusedFieldVisible();
+      if (keyboardJustOpened) {
+        window.requestAnimationFrame(keepFocusedFieldVisible);
+      }
     };
     updateKeyboardOffset();
     visualViewport?.addEventListener("resize", updateKeyboardOffset);
@@ -166,6 +171,7 @@ export function Overlay({
       window.removeEventListener("focusin", keepFocusedFieldVisible);
       visualViewport?.removeEventListener("resize", updateKeyboardOffset);
       window.cancelAnimationFrame(focusFrame);
+      keyboardOpenRef.current = false;
       setKeyboardOffset(0);
       setViewportHeight(null);
       scrollLockCount = Math.max(0, scrollLockCount - 1);
