@@ -2263,6 +2263,14 @@ export function CoachDashboardPage({
   }, [authUser?.id, isOwner, trackingLanding, workspacePage, clientId, workspaceMode, navigate]);
 
   useEffect(() => {
+    if (!clientsOnly || !workspacePage || clientId) return;
+    setSelectedClientId(null);
+    setShowClientWorkspace(false);
+    setClientDetails(null);
+    setOpenEditor(null);
+  }, [clientId, clientsOnly, workspacePage]);
+
+  useEffect(() => {
     if (!selectedClientId) {
       setClientDetails(null);
       setClientRealtimeStatus("connecting");
@@ -4126,6 +4134,7 @@ export function CoachDashboardPage({
     return !q ? isOwner || c.client_id === authUser?.id : emailStr.includes(q) || nameStr.includes(q);
   });
   const clientSearchQuery = clientSearch.trim().toLocaleLowerCase();
+  const clientPickerRoute = clientsOnly && workspacePage && !clientId;
   const selectedClientInfo = selectableClients.find((c) => c.client_id === selectedClientId);
   const latestProgram = clientDetails?.programs?.[clientDetails.programs.length - 1];
   const latestNutritionDay = [...(clientDetails?.nutritionDays ?? [])].sort((a, b) =>
@@ -5500,7 +5509,7 @@ export function CoachDashboardPage({
             {/* Client Search & List */}
             <section
               className={`space-y-3 rounded-3xl border border-border/70 bg-surface p-4 shadow-sm ${
-                selectedClientId ? "hidden" : ""
+                selectedClientId && !clientPickerRoute ? "hidden" : ""
               }`}
             >
               <div className="flex items-end justify-between gap-3">
