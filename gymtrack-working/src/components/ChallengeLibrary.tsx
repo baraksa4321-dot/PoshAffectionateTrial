@@ -104,7 +104,7 @@ export function ChallengeLibrary({ compact = false }: { compact?: boolean }) {
         אתגרים
       </button>
 
-      <Overlay open={open} onClose={close} ariaLabel="אתגרי ספורט">
+      <Overlay open={open} onClose={close} ariaLabel="אתגרי ספורט" safeTop>
         <div className="w-full max-w-lg rounded-3xl border border-border bg-surface p-4 text-start shadow-xl">
           <div className="mb-4 flex items-start justify-between gap-3 border-b border-border/60 pb-3">
             <div>
