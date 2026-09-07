@@ -56,6 +56,21 @@ describe("food portion conversions", () => {
     };
 
     expect(defaultFoodQuantity(unweightedOil)).toEqual({ quantity: 100, unit: "g" });
+    expect(foodQuantityOptions(unweightedOil).map(({ value }) => value)).toEqual(["g"]);
+  });
+
+  test("falls back to serving when a food has no usable weight or volume", () => {
+    const unmeasurableDrink: FoodItem = {
+      ...peanutButter,
+      id: "unmeasurable-drink",
+      name: "משקה ללא נפח",
+      servingSize: "מנה",
+    };
+
+    expect(foodQuantityOptions(unmeasurableDrink)).toEqual([
+      { value: "serving", label: "מנה" },
+    ]);
+    expect(mealFoodFromPortion(unmeasurableDrink, 1, "serving").calories).toBe(94);
   });
 
   test("falls back to cups when a drink has no milliliter reference", () => {

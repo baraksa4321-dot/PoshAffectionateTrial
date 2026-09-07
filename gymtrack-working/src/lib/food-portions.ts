@@ -117,91 +117,78 @@ function isProteinOrStaple(food: FoodItem) {
 }
 
 export function foodQuantityOptions(food: FoodItem): FoodQuantityOption[] {
+  let options: FoodQuantityOption[];
+
   if (isCherryTomato(food)) {
-    return [
+    options = [
       { value: "unit", label: "עגבניות שרי" },
       ...(canConvertToGrams(food) ? [{ value: "g" as const, label: unitLabels.g }] : []),
     ];
-  }
-
-  if (isBread(food)) {
-    return [
+  } else if (isBread(food)) {
+    options = [
       { value: "slice", label: unitLabels.slice },
       ...(canConvertToGrams(food) ? [{ value: "g" as const, label: unitLabels.g }] : []),
     ];
-  }
-
-  if (isPita(food)) {
-    return [
+  } else if (isPita(food)) {
+    options = [
       { value: "unit", label: unitLabels.unit },
       ...(canConvertToGrams(food) ? [{ value: "g" as const, label: unitLabels.g }] : []),
     ];
-  }
-
-  if (isOilOrSauce(food)) {
-    return [
+  } else if (isOilOrSauce(food)) {
+    options = [
       ...(canConvertToGrams(food) ? [{ value: "g" as const, label: unitLabels.g }] : []),
       { value: "tbsp", label: unitLabels.tbsp },
       { value: "tsp", label: unitLabels.tsp },
     ];
-  }
-
-  if (isMilkOrDrink(food)) {
-    return [
+  } else if (isMilkOrDrink(food)) {
+    options = [
       { value: "ml", label: unitLabels.ml },
       { value: "cup", label: unitLabels.cup },
     ];
-  }
-
-  if (isBellPepper(food)) {
-    return [
+  } else if (isBellPepper(food)) {
+    options = [
       { value: "medium", label: unitLabels.medium },
       { value: "small", label: unitLabels.small },
       { value: "large", label: unitLabels.large },
       ...(canConvertToGrams(food) ? [{ value: "g" as const, label: unitLabels.g }] : []),
     ];
-  }
-
-  if (isCucumber(food)) {
-    return [
+  } else if (isCucumber(food)) {
+    options = [
       { value: "unit", label: "מלפפון" },
       ...(canConvertToGrams(food) ? [{ value: "g" as const, label: unitLabels.g }] : []),
     ];
-  }
-
-  if (isAvocado(food) || isProteinOrStaple(food)) {
-    return canConvertToGrams(food)
+  } else if (isAvocado(food) || isProteinOrStaple(food)) {
+    options = canConvertToGrams(food)
       ? [{ value: "g", label: unitLabels.g }]
       : [{ value: "serving", label: unitLabels.serving }];
-  }
-
-  if (millilitersFromServing(food.servingSize) !== null) {
-    return [
+  } else if (millilitersFromServing(food.servingSize) !== null) {
+    options = [
       { value: "ml", label: unitLabels.ml },
       { value: "tbsp", label: unitLabels.tbsp },
       { value: "tsp", label: unitLabels.tsp },
     ];
-  }
-
-  if (servingIsSlice(food.servingSize)) {
-    return [
+  } else if (servingIsSlice(food.servingSize)) {
+    options = [
       { value: "slice", label: unitLabels.slice },
       ...(canConvertToGrams(food) ? [{ value: "g" as const, label: unitLabels.g }] : []),
     ];
-  }
-
-  if (servingIsUnit(food.servingSize)) {
-    return [
+  } else if (servingIsUnit(food.servingSize)) {
+    options = [
       { value: "unit", label: unitLabels.unit },
       ...(canConvertToGrams(food) ? [{ value: "g" as const, label: unitLabels.g }] : []),
     ];
+  } else {
+    options = canConvertToGrams(food)
+      ? [
+          { value: "g", label: unitLabels.g },
+          { value: "serving", label: unitLabels.serving },
+        ]
+      : [{ value: "serving", label: unitLabels.serving }];
   }
 
-  return canConvertToGrams(food)
-    ? [
-        { value: "g", label: unitLabels.g },
-        { value: "serving", label: unitLabels.serving },
-      ]
+  const supportedOptions = options.filter((option) => servingMultiplier(food, option.value) !== null);
+  return supportedOptions.length > 0
+    ? supportedOptions
     : [{ value: "serving", label: unitLabels.serving }];
 }
 
