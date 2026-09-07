@@ -66,6 +66,7 @@ export function Overlay({
   className = "",
   ariaLabel,
   inline = false,
+  safeTop = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -76,6 +77,7 @@ export function Overlay({
   className?: string;
   ariaLabel?: string;
   inline?: boolean;
+  safeTop?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
@@ -214,12 +216,13 @@ export function Overlay({
   const isTop = variant === "top";
   const isFull = variant === "full";
   const panelBottomGap = isFull ? 0 : isBottom ? 16 : 32;
+  const panelTopGap = safeTop ? "max(3rem, env(safe-area-inset-top))" : "0px";
   const panelMaxHeight =
     isFull
       ? "100lvh"
       : viewportHeight === null
-      ? `calc(100lvh - ${panelBottomGap}px)`
-      : `${Math.max(0, viewportHeight - panelBottomGap)}px`;
+      ? `calc(100lvh - ${panelBottomGap}px - ${panelTopGap})`
+      : `calc(${Math.max(0, viewportHeight - panelBottomGap)}px - ${panelTopGap})`;
 
   if (inline) {
     return (
@@ -243,14 +246,17 @@ export function Overlay({
       data-overlay-variant={variant}
       data-keyboard-open={keyboardOffset > 0 ? "true" : undefined}
       className={`overlay-root fixed inset-0 z-[100] flex touch-pan-y overflow-x-hidden ${
-        isFull
-          ? "items-stretch justify-center"
-          : isBottom
-            ? "items-end justify-center"
-            : isTop
-              ? "items-start justify-center"
-              : "items-center justify-center"
+        safeTop
+          ? "items-start justify-center"
+          : isFull
+            ? "items-stretch justify-center"
+            : isBottom
+              ? "items-end justify-center"
+              : isTop
+                ? "items-start justify-center"
+                : "items-center justify-center"
       } ${isFull ? "bg-background p-0" : backdrop ? "bg-foreground/40 p-4" : "bg-transparent p-4"} ${className}`}
+      style={safeTop ? { paddingTop: panelTopGap } : undefined}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
