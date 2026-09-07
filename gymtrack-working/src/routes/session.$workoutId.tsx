@@ -1096,6 +1096,8 @@ function Session() {
       kicker={currentProgram?.name ?? "אימון"}
       title={workout.name}
       subtitle={`${doneSets} מתוך ${totalSets} סטים · בהצלחה!`}
+      compactHeader
+      pageClassName="session-compact"
       headerAccessory={
         <button
           type="button"
@@ -1178,8 +1180,8 @@ function Session() {
       )}
 
       {/* Progress bar */}
-      <div className="workout-progress-sticky surface-card flex items-center gap-3 px-4 py-3">
-        <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground">
+      <div className="workout-progress-sticky surface-card flex items-center gap-2 px-3 py-2.5">
+        <div className="grid h-8 w-8 place-items-center rounded-xl bg-primary text-primary-foreground">
           <Play className="h-3.5 w-3.5 fill-current" />
         </div>
         <div className="min-w-0 flex-1 text-start">
@@ -1191,7 +1193,7 @@ function Session() {
               {Math.round(progress)}%
             </p>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-secondary">
+          <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
             <div
               className="h-full rounded-full bg-primary transition-all duration-500"
               style={{ width: `${progress}%` }}
@@ -1204,7 +1206,7 @@ function Session() {
           {bodyweightNotice}
         </p>
       ) : null}
-      <div className="mt-5 space-y-4">
+      <div className="mt-3 space-y-3">
         {entries.map((entry, ei) => {
           const item = workout.items[ei];
           const supersetLabel = labels[ei];
@@ -1225,15 +1227,15 @@ function Session() {
           return (
             <article
               key={`${entry.exerciseId}-${ei}`}
-              className={`surface-card p-4 text-start ${
+              className={`surface-card rounded-[1.1rem] p-3 text-start ${
                 supersetLabel ? "border-s-4 border-s-primary rounded-s-none" : ""
               }`}
             >
-              <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
+              <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2">
                 <button
                   type="button"
                   onClick={() => fullExercise && setCardExercise(fullExercise)}
-                  className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-sage-soft text-primary press cursor-pointer"
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-sage-soft text-primary press cursor-pointer"
                   aria-label={`פתח פרטי ${entry.exerciseName}`}
                 >
                   <Info className="h-4 w-4" strokeWidth={2} />
@@ -1248,7 +1250,7 @@ function Session() {
                     <button
                       type="button"
                       onClick={() => fullExercise && setCardExercise(fullExercise)}
-                      className="min-w-0 flex-1 whitespace-normal break-normal text-start font-display text-[15px] leading-snug font-semibold text-ink hover:text-primary cursor-pointer"
+                      className="min-w-0 flex-1 whitespace-normal break-normal text-start font-display text-[14px] leading-snug font-semibold text-ink hover:text-primary cursor-pointer"
                     >
                       {entry.exerciseName}
                     </button>
@@ -1265,7 +1267,7 @@ function Session() {
                   <button
                     type="button"
                     onClick={() => setReplacingIndex(ei)}
-                    className="press grid h-9 w-9 place-items-center rounded-full bg-secondary text-muted-foreground hover:text-primary cursor-pointer"
+                    className="press grid h-8 w-8 place-items-center rounded-full bg-secondary text-muted-foreground hover:text-primary cursor-pointer"
                     title="תחליף מורשה"
                     aria-label="תחליף מורשה"
                   >
@@ -1279,7 +1281,7 @@ function Session() {
                         setRest(item?.rest ?? 60);
                         setRestPaused(false);
                       }}
-                      className="press flex shrink-0 items-center gap-1 rounded-full bg-secondary px-3 py-2 text-[12px] font-semibold text-ink cursor-pointer"
+                      className="press flex shrink-0 items-center gap-1 rounded-full bg-secondary px-2.5 py-1.5 text-[11px] font-semibold text-ink cursor-pointer"
                       aria-label="התחל מנוחה"
                     >
                       <Timer className="h-3.5 w-3.5 text-primary" />
@@ -1290,14 +1292,14 @@ function Session() {
               </div>
 
               {item?.techniqueNotes ? (
-                <div className="mt-2.5 rounded-2xl bg-primary/5 p-2.5 text-[12px] text-primary font-medium border border-primary/10 flex items-center gap-2">
+                <div className="mt-2 rounded-2xl bg-primary/5 p-2 text-[11px] text-primary font-medium border border-primary/10 flex items-center gap-2">
                   <Sparkles className="h-4 w-4 shrink-0" />
                   <span>הנחיית טכניקה ממאמן: {item.techniqueNotes}</span>
                 </div>
               ) : null}
 
-              <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
-                <div className="rounded-2xl border border-border/60 bg-secondary/35 p-2.5 text-[11px]">
+              <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
+                <div className="rounded-2xl border border-border/60 bg-secondary/35 p-2 text-[10px]">
                   <p className="font-bold text-muted-foreground">יעד היום</p>
                   <p className="mt-1 font-extrabold text-ink">
                     {entry.targetSets ?? item?.sets ?? 0} סטים · {entry.targetReps ?? item?.reps ?? 0}
@@ -1305,7 +1307,7 @@ function Session() {
                     {item?.targetWeight || item?.weight ? ` · ${item.targetWeight || item.weight} ק״ג` : ""}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-border/60 bg-secondary/35 p-2.5 text-[11px]">
+                <div className="rounded-2xl border border-border/60 bg-secondary/35 p-2 text-[10px]">
                   <p className="font-bold text-muted-foreground">בפעם הקודמת</p>
                   <p className="mt-1 font-extrabold text-ink">
                     {previousPerformance
@@ -1317,7 +1319,7 @@ function Session() {
                 </div>
               </div>
               {suggestion ? (
-                <div className="mt-2.5 rounded-2xl border border-primary/20 bg-primary/5 p-3">
+                <div className="mt-2 rounded-2xl border border-primary/20 bg-primary/5 p-2.5">
                   <div className="flex items-start gap-2">
                     <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                     <div className="min-w-0 flex-1">
@@ -1350,11 +1352,11 @@ function Session() {
                 </div>
               ) : null}
 
-              <div className="mt-3">
-                <p className="mb-2 text-[10px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
+                <div className="mt-2">
+                <p className="mb-1.5 text-[10px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
                   ביצוע בפועל
                 </p>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {entry.sets.map((s, si) => {
                     const workingIndex = entry.sets
                       .slice(0, si + 1)
@@ -1363,15 +1365,15 @@ function Session() {
                     return (
                       <div
                         key={si}
-                        className={`rounded-2xl border p-3 transition-all ${
+                        className={`rounded-2xl border p-2.5 transition-all ${
                           s.done
                             ? "border-primary bg-primary/10 shadow-sm"
                             : "border-border/60 bg-secondary/60"
                         }`}
                       >
-                        <div className="flex items-center gap-2">
+                         <div className="flex items-center gap-1.5">
                           <span
-                            className={`grid h-7 w-7 place-items-center rounded-lg text-[11px] font-bold ${
+                             className={`grid h-6 w-6 place-items-center rounded-lg text-[10px] font-bold ${
                               s.done
                                 ? "bg-primary text-primary-foreground"
                                 : "bg-primary/15 text-primary"
@@ -1380,7 +1382,7 @@ function Session() {
                             {s.warmup ? "ח" : workingIndex}
                           </span>
                           <div className="min-w-0 flex-1 text-start">
-                            <p className="break-words text-[12.5px] leading-snug font-semibold text-ink">
+                            <p className="break-words text-[12px] leading-snug font-semibold text-ink">
                               {s.dropSet ? `דרופ סט ${s.dropLevel ?? ""}` : setLabel}
                               <span className="ms-1 text-[11px] font-normal text-muted-foreground">
                                 · {s.weight} ק״ג · {s.targetReps}
@@ -1392,14 +1394,14 @@ function Session() {
                           <button
                             type="button"
                             onClick={() => toggleSetDone(ei, si)}
-                            className={`press grid h-11 w-11 place-items-center rounded-2xl text-[13px] font-bold transition-colors cursor-pointer ${
+                             className={`press grid h-10 w-10 place-items-center rounded-2xl text-[12px] font-bold transition-colors cursor-pointer ${
                               s.done
                                 ? "bg-primary text-primary-foreground"
                                 : "bg-secondary text-muted-foreground hover:bg-secondary/80"
                             }`}
                             aria-label={s.done ? "בטל סיום סט" : "סמן סט כבוצע"}
                           >
-                            <Check className="h-5 w-5" strokeWidth={2.6} />
+                             <Check className="h-4 w-4" strokeWidth={2.6} />
                           </button>
                         </div>
                         {s.notes ? (
@@ -1407,18 +1409,20 @@ function Session() {
                             {s.notes}
                           </p>
                         ) : null}
-                        <div className="mt-2 grid grid-cols-2 gap-2">
+                         <div className="mt-1.5 grid grid-cols-2 gap-1.5">
                           <Stepper
                             label="משקל בפועל"
                             value={s.weight}
                             step={0.5}
                             suffix="ק״ג"
+                            compact
                             onChange={(v) => patchSet(ei, si, { weight: v })}
                           />
                           <Stepper
                             label="חזרות בפועל"
                             value={s.reps}
                             min={0}
+                            compact
                             onChange={(v) => patchSet(ei, si, { reps: v })}
                           />
                         </div>

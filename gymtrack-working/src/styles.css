@@ -5636,6 +5636,14 @@ body {
 }
 
 @media (max-width: 767px) {
+  .session-compact .app-main {
+    padding-inline: 0.75rem;
+  }
+
+  .session-compact .workout-progress-sticky {
+    margin-inline: -0.05rem;
+  }
+
   .app-topbar--editorial .app-shell-title {
     max-width: 15rem;
   }

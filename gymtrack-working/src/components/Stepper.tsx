@@ -8,6 +8,7 @@ export function Stepper({
   min = 0,
   max,
   suffix,
+  compact = false,
   onChange,
 }: {
   label: string;
@@ -17,6 +18,7 @@ export function Stepper({
   /** Optional upper bound. Omit to allow any large number (e.g. warm-up reps > 9). */
   max?: number;
   suffix?: string;
+  compact?: boolean;
   onChange: (v: number) => void;
 }) {
   const clamp = (v: number) => {
@@ -50,19 +52,27 @@ export function Stepper({
 
   return (
     <div className="min-w-0">
-      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <p
+        className={`${compact ? "mb-0.5 text-[10px]" : "mb-1 text-[11px]"} font-semibold uppercase tracking-wide text-muted-foreground`}
+      >
         {label}
       </p>
-      <div className="flex items-center gap-1.5" dir="ltr">
+      <div className={`flex items-center ${compact ? "gap-1" : "gap-1.5"}`} dir="ltr">
         <button
           type="button"
           aria-label={`הורד ${label}`}
           onClick={() => onChange(clamp(value - step))}
-          className="grid h-11 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-secondary-foreground transition-transform active:scale-95"
+          className={`grid shrink-0 place-items-center bg-secondary text-secondary-foreground transition-transform active:scale-95 ${
+            compact ? "h-10 w-9 rounded-lg" : "h-11 w-10 rounded-xl"
+          }`}
         >
           <Minus className="h-4 w-4" />
         </button>
-        <div className="num-pill flex h-11 min-w-0 flex-1 items-center justify-center px-1">
+        <div
+          className={`num-pill flex min-w-0 flex-1 items-center justify-center px-1 ${
+            compact ? "h-10" : "h-11"
+          }`}
+        >
           <input
             inputMode="decimal"
             enterKeyHint="done"
@@ -84,17 +94,23 @@ export function Stepper({
                 commitDraft();
               }
             }}
-            className="w-full min-w-0 bg-transparent text-center text-base font-semibold outline-none"
+            className={`w-full min-w-0 bg-transparent text-center font-semibold outline-none ${
+              compact ? "text-sm" : "text-base"
+            }`}
           />
           {suffix ? (
-            <span className="pe-1.5 text-xs font-medium text-muted-foreground">{suffix}</span>
+            <span className={`pe-1.5 font-medium text-muted-foreground ${compact ? "text-[11px]" : "text-xs"}`}>
+              {suffix}
+            </span>
           ) : null}
         </div>
         <button
           type="button"
           aria-label={`הגדל ${label}`}
           onClick={() => onChange(clamp(value + step))}
-          className="grid h-11 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-secondary-foreground transition-transform active:scale-95"
+          className={`grid shrink-0 place-items-center bg-secondary text-secondary-foreground transition-transform active:scale-95 ${
+            compact ? "h-10 w-9 rounded-lg" : "h-11 w-10 rounded-xl"
+          }`}
         >
           <Plus className="h-4 w-4" />
         </button>
