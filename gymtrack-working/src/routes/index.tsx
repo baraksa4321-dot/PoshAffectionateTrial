@@ -98,27 +98,6 @@ function formatNumericDate(date: Date) {
   });
 }
 
-type WeeklyOverride = {
-  date: string;
-  status?: "skipped";
-  reason?: string;
-};
-
-type WeeklyOverrides = Record<string, WeeklyOverride>;
-
-const WEEKLY_OVERRIDES_PREFIX = "myroutine-weekly-overrides:";
-
-function loadWeeklyOverrides(userId: string | undefined, weekStart: string): WeeklyOverrides {
-  if (!userId || typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(`${WEEKLY_OVERRIDES_PREFIX}${userId}:${weekStart}`);
-    const parsed = raw ? (JSON.parse(raw) as unknown) : {};
-    return parsed && typeof parsed === "object" ? (parsed as WeeklyOverrides) : {};
-  } catch {
-    return {};
-  }
-}
-
 function formatDayDate(date: string) {
   const parsed = new Date(`${date}T12:00:00`);
   return parsed.toLocaleDateString("he-IL", { day: "numeric", month: "short" });
@@ -184,14 +163,9 @@ function Dashboard() {
   const [checkInSuccessMsg, setCheckInSuccessMsg] = useState("");
   const [checklistInput, setChecklistInput] = useState("");
   const [showChecklistModal, setShowChecklistModal] = useState(false);
-  const [showSkipModal, setShowSkipModal] = useState(false);
-  const [skipWorkoutId, setSkipWorkoutId] = useState<string | null>(null);
-  const [skipReason, setSkipReason] = useState("");
-  const [weeklyOverrides, setWeeklyOverrides] = useState<WeeklyOverrides>({});
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [progressRange, setProgressRange] = useState<7 | 30 | 90>(30);
   const [progressExerciseId, setProgressExerciseId] = useState("");
-  const weeklyOverridesLoadedKeyRef = useRef("");
   const [homeCardOrder, setHomeCardOrder] = useState<HomeCardId[]>(() => {
     if (typeof window === "undefined") return DEFAULT_HOME_CARD_ORDER;
     try {
@@ -210,21 +184,6 @@ function Dashboard() {
   const holdTimer = useRef<number | null>(null);
   const holdStart = useRef({ x: 0, y: 0 });
   const suppressHomeClick = useRef(false);
-
-  useEffect(() => {
-    const key = authUser?.id ? `${authUser.id}:${weekStartKey}` : "";
-    weeklyOverridesLoadedKeyRef.current = key;
-    setWeeklyOverrides(loadWeeklyOverrides(authUser?.id, weekStartKey));
-  }, [authUser?.id, weekStartKey]);
-
-  useEffect(() => {
-    if (!authUser?.id || typeof window === "undefined") return;
-    if (weeklyOverridesLoadedKeyRef.current !== `${authUser.id}:${weekStartKey}`) return;
-    window.localStorage.setItem(
-      `${WEEKLY_OVERRIDES_PREFIX}${authUser.id}:${weekStartKey}`,
-      JSON.stringify(weeklyOverrides),
-    );
-  }, [authUser?.id, weekStartKey, weeklyOverrides]);
 
   useEffect(() => {
     if (progressExerciseId || !exercises.length) return;
@@ -414,16 +373,14 @@ function Dashboard() {
 
   const scheduledWorkouts = workouts.slice(0, Math.min(workouts.length, 7)).map((workout, index) => {
     const defaultDate = weekDays[index]?.date ?? weekDays[weekDays.length - 1]?.date ?? todayDateStr;
-    const override = weeklyOverrides[workout.id];
-    const scheduledDate = override?.date ?? defaultDate;
+    const scheduledDate = defaultDate;
     const session = getCurrentWeekWorkoutSession(history, workout.id, now);
     const plannedSets = workout.items.reduce((sum, item) => sum + Math.max(0, item.sets), 0);
     const completion = getWorkoutCompletion(session, plannedSets);
     let status: WeeklyWorkoutStatus = completion.status;
-    if (override?.status === "skipped") status = "skipped";
-    else if (!session && scheduledDate < todayDateStr) status = "missed";
+    if (!session && scheduledDate < todayDateStr) status = "missed";
     else if (!session) status = "scheduled";
-    return { workout, scheduledDate, session, completion, status, override };
+    return { workout, scheduledDate, session, completion, status };
   });
 
   const todayScheduledWorkout = scheduledWorkouts.find(
@@ -507,44 +464,6 @@ function Dashboard() {
     if (!checklistInput.trim()) return;
     addChecklistItem(checklistInput);
     setChecklistInput("");
-  };
-
-  const setWeeklyOverride = (workoutId: string, override: WeeklyOverride | null) => {
-    setWeeklyOverrides((current) => {
-      const next = { ...current };
-      if (override) next[workoutId] = override;
-      else delete next[workoutId];
-      return next;
-    });
-  };
-
-  const postponeWorkout = (workoutId: string, date: string) => {
-    const nextDate = new Date(`${date}T12:00:00`);
-    nextDate.setDate(nextDate.getDate() + 1);
-    const nextDateKey = todayKey(nextDate);
-    setWeeklyOverride(workoutId, { date: nextDateKey });
-    setCheckInSuccessMsg(`האימון נדחה ל־${formatDayDate(nextDateKey)}.`);
-    window.setTimeout(() => setCheckInSuccessMsg(""), 3000);
-  };
-
-  const openSkipModal = (workoutId: string) => {
-    setSkipWorkoutId(workoutId);
-    setSkipReason("");
-    setShowSkipModal(true);
-  };
-
-  const confirmSkipWorkout = () => {
-    if (!skipWorkoutId) return;
-    const scheduled = scheduledWorkouts.find((item) => item.workout.id === skipWorkoutId);
-    if (!scheduled) return;
-    setWeeklyOverride(skipWorkoutId, {
-      date: scheduled.scheduledDate,
-      status: "skipped",
-      reason: skipReason.trim() || "ללא סיבה שנמסרה",
-    });
-    setShowSkipModal(false);
-    setSkipWorkoutId(null);
-    setSkipReason("");
   };
 
   const startWorkout = (workoutId: string) => {
@@ -746,28 +665,6 @@ function Dashboard() {
                     <Play className="h-3.5 w-3.5 fill-current text-primary" />
                     {todayScheduledWorkout?.status === "partial" ? "המשך אימון" : "התחלת אימון"}
                   </button>
-                  {todayScheduledWorkout &&
-                  (todayScheduledWorkout.status === "scheduled" ||
-                    todayScheduledWorkout.status === "missed") ? (
-                    <div className="mt-2 flex gap-1">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          postponeWorkout(primaryWorkout.id, todayScheduledWorkout.scheduledDate)
-                        }
-                        className="press flex-1 rounded-lg bg-primary-foreground/15 px-2 py-1.5 text-[9px] font-bold text-primary-foreground"
-                      >
-                        דחה
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openSkipModal(primaryWorkout.id)}
-                        className="press flex-1 rounded-lg bg-primary-foreground/15 px-2 py-1.5 text-[9px] font-bold text-primary-foreground/80"
-                      >
-                        דלג
-                      </button>
-                    </div>
-                  ) : null}
                 </div>
               </div>
             ) : (
@@ -1041,59 +938,6 @@ function Dashboard() {
                   )}
                 </p>
               ) : null}
-            </div>
-          </div>
-        </Overlay>
-      ) : null}
-      {showSkipModal ? (
-        <Overlay
-          open={showSkipModal}
-          onClose={() => setShowSkipModal(false)}
-          ariaLabel="דחיית או דילוג על אימון"
-        >
-          <div
-            className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-bold tracking-[0.14em] text-primary uppercase">השבוע שלי</p>
-                <h2 className="mt-1 font-display text-lg font-extrabold text-ink">למה מדלגים היום?</h2>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  הסיבה נשמרת לצד התכנון האישי כדי שתוכלי לחזור אליה בלי לנחש.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowSkipModal(false)}
-                className="press grid h-8 w-8 place-items-center rounded-xl text-muted-foreground hover:bg-secondary"
-                aria-label="סגירת דילוג על אימון"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <textarea
-              value={skipReason}
-              onChange={(event) => setSkipReason(event.target.value)}
-              placeholder="למשל: יום עמוס, מנוחה, אי־נוחות..."
-              aria-label="סיבת דילוג על אימון"
-              className="min-h-24 w-full rounded-2xl border border-border bg-background p-3 text-sm text-ink outline-none placeholder:text-muted-foreground focus:border-primary"
-            />
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setShowSkipModal(false)}
-                className="press flex-1 rounded-2xl bg-secondary py-3 text-xs font-bold text-ink"
-              >
-                ביטול
-              </button>
-              <button
-                type="button"
-                onClick={confirmSkipWorkout}
-                className="press flex-1 rounded-2xl bg-primary py-3 text-xs font-bold text-primary-foreground"
-              >
-                שמירת דילוג
-              </button>
             </div>
           </div>
         </Overlay>
