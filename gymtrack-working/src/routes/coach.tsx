@@ -28,6 +28,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AppShell } from "../components/AppShell";
+import { ChallengeLibrary } from "../components/ChallengeLibrary";
 import { FreeTextInput } from "../components/FreeTextInput";
 import { Overlay } from "../components/ui-app/Overlay";
 import {
@@ -6643,6 +6644,7 @@ export function CoachDashboardPage({
                                               </p>
                                             </div>
                                             <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
+                                              <ChallengeLibrary compact />
                                               <button
                                                 type="button"
                                                 onClick={() => {

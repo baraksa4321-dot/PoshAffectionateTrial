@@ -756,6 +756,14 @@ html.night-mode .bg-background {
   background-color: var(--background) !important;
 }
 
+html.night-mode .nutrition-balance-card {
+  background: var(--surface-2) !important;
+  border-color: var(--border) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 7%),
+    0 8px 22px rgb(0 0 0 / 18%);
+}
+
 /* Keep sticky chrome composited while iOS scrolls a focused search field
  * into view above the keyboard. */
 .app-topbar {
