@@ -21,7 +21,7 @@ import {
   type FoodCatalogMetadata,
 } from "./gym-types";
 
-export type SyncStatus = "idle" | "syncing" | "synced" | "pending" | "error" | "offline";
+export type SyncStatus = "idle" | "syncing" | "synced" | "pending" | "conflict" | "error" | "offline";
 export type PullResult =
   { success: true; data: GymData } | { success: false; data: GymData; error: string };
 

@@ -424,6 +424,24 @@ export type UserProfile = {
   theme?: ThemePalette;
 };
 
+export type ReminderPreferences = {
+  enabled: boolean;
+  quietHoursStart: string;
+  quietHoursEnd: string;
+  types: Array<"workout" | "nutrition" | "checkin">;
+  deliveryState: "not-configured" | "ready" | "paused" | "error";
+  lastAttemptAt?: string;
+};
+
+export type SyncConflict = {
+  id: string;
+  detectedAt: string;
+  scope: "workspace";
+  status: "unresolved" | "keep-local" | "use-remote";
+  localSnapshot: GymData;
+  remoteSnapshot: GymData;
+};
+
 export type GymData = {
   exercises: Exercise[];
   /** Library items hidden by this user; kept local so built-in catalog edits persist. */
@@ -464,6 +482,10 @@ export type GymData = {
   userProfile?: UserProfile;
   clients?: ClientLink[];
   preExitChecklist?: ChecklistItem[];
+  /** Local-first preferences until a delivery channel is explicitly connected. */
+  reminderPreferences?: ReminderPreferences;
+  /** Never resolve a concurrent edit silently; the UI presents these snapshots. */
+  syncConflicts?: SyncConflict[];
 };
 
 export function reportDateKey(date: Date): string {

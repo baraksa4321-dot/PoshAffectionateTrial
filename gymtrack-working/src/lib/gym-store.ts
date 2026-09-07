@@ -17,6 +17,8 @@ import {
   type NutritionDay,
   type NutritionTargets,
   type Program,
+  type ReminderPreferences,
+  type SyncConflict,
   type SavedRecipe,
   type UserProfile,
   type ThemePalette,
@@ -35,6 +37,14 @@ const USER_PENDING_PREFIX = "gymtrack.v1.pending.";
 const AUTH_TIMEOUT_MS = 15_000;
 const INITIAL_DATA_TIMEOUT_MS = 30_000;
 const SYNC_FLUSH_TIMEOUT_MS = 12_000;
+const DEFAULT_REMINDER_PREFERENCES: ReminderPreferences = {
+  enabled: false,
+  quietHoursStart: "22:00",
+  quietHoursEnd: "07:00",
+  types: ["workout", "nutrition", "checkin"],
+  deliveryState: "not-configured",
+};
+const EMPTY_SYNC_CONFLICTS: SyncConflict[] = [];
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -538,6 +548,8 @@ const seed = (): GymData => {
     bodyWeightLogs: [],
     cardioLogs: [],
     preExitChecklist: [],
+    reminderPreferences: DEFAULT_REMINDER_PREFERENCES,
+    syncConflicts: EMPTY_SYNC_CONFLICTS,
     userProfile: { weight: 0 },
   };
 };
@@ -596,6 +608,37 @@ function mergeRemotePlanRefresh(localData: GymData, remoteData: GymData): GymDat
       ...localProfile,
       ...(remoteData.userProfile ?? {}),
     },
+  };
+}
+
+function stripSyncMetadata(snapshot: GymData): GymData {
+  const { syncConflicts: _syncConflicts, ...withoutSyncMetadata } = snapshot;
+  return withoutSyncMetadata;
+}
+
+function detectConcurrentWorkspaceConflict(
+  localSnapshot: GymData,
+  remoteSnapshot: GymData,
+): SyncConflict | null {
+  if (localSnapshot.userProfile?.role === "client") return null;
+  const comparableFields: Array<keyof GymData> = [
+    "programs",
+    "workouts",
+    "plannedMeals",
+    "nutritionTargets",
+    "userProfile",
+  ];
+  const hasRemoteChange = comparableFields.some(
+    (field) => JSON.stringify(localSnapshot[field]) !== JSON.stringify(remoteSnapshot[field]),
+  );
+  if (!hasRemoteChange) return null;
+  return {
+    id: `sync-${Date.now()}-${uid()}`,
+    detectedAt: new Date().toISOString(),
+    scope: "workspace",
+    status: "unresolved",
+    localSnapshot: stripSyncMetadata(localSnapshot),
+    remoteSnapshot: stripSyncMetadata(remoteSnapshot),
   };
 }
 
@@ -911,6 +954,8 @@ function migrate(d: Partial<GymData>): GymData {
     bodyMeasurements: d.bodyMeasurements ?? [],
     cardioLogs: d.cardioLogs ?? [],
     preExitChecklist: d.preExitChecklist ?? [],
+    reminderPreferences: d.reminderPreferences ?? DEFAULT_REMINDER_PREFERENCES,
+    syncConflicts: d.syncConflicts ?? [],
     userProfile: {
       ...(d.userProfile ?? { weight: 0 }),
       showCalories: d.userProfile?.showCalories ?? true,
@@ -1189,6 +1234,25 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
     notifyListeners();
     return;
   }
+  const concurrentConflict =
+    (dataRevision !== revisionAtPullStart || pendingAtPullStart) &&
+    detectConcurrentWorkspaceConflict(data, pulled.data);
+  if (concurrentConflict) {
+    data = {
+      ...data,
+      syncConflicts: [
+        ...(data.syncConflicts ?? []).filter((conflict) => conflict.status === "unresolved"),
+        concurrentConflict,
+      ],
+    };
+    persistCacheOnly();
+    profileHydrationStatus = "ready";
+    profileHydrationError = "";
+    hasPendingCloudChanges = true;
+    syncStatus = "conflict";
+    notifyListeners();
+    return;
+  }
   // A local edit made while the pull was in flight always wins. The next
   // background sync uploads that newer snapshot instead of clobbering it.
   if (dataRevision === revisionAtPullStart && !pendingAtPullStart) {
@@ -1236,6 +1300,11 @@ function scheduleCloudRetry(userId: string) {
 function queueCloudSync() {
   const user = currentUser;
   if (!user || !hasPendingCloudChanges) return;
+  if ((data.syncConflicts ?? []).some((conflict) => conflict.status === "unresolved")) {
+    syncStatus = "conflict";
+    notifyListeners();
+    return;
+  }
   if (browserIsOffline()) {
     syncStatus = "offline";
     notifyListeners();
@@ -1431,6 +1500,76 @@ export function useCloudSyncStatus() {
     () => syncStatus,
     () => "idle" as const,
   );
+}
+
+export function useSyncConflicts() {
+  return useSyncExternalStore(
+    subscribe,
+    () => data.syncConflicts ?? EMPTY_SYNC_CONFLICTS,
+    () => EMPTY_SYNC_CONFLICTS,
+  );
+}
+
+export function resolveSyncConflict(conflictId: string, choice: "keep-local" | "use-remote") {
+  const conflict = (data.syncConflicts ?? []).find(
+    (candidate) => candidate.id === conflictId && candidate.status === "unresolved",
+  );
+  if (!conflict) return false;
+  const nextConflicts = (data.syncConflicts ?? []).map((candidate) =>
+    candidate.id === conflictId ? { ...candidate, status: choice } : candidate,
+  );
+  if (choice === "use-remote") {
+    data = migrate({ ...conflict.remoteSnapshot, syncConflicts: nextConflicts });
+    hasPendingCloudChanges = false;
+    syncStatus = nextConflicts.some((candidate) => candidate.status === "unresolved")
+      ? "conflict"
+      : "synced";
+    persistCacheOnly();
+    if (typeof window !== "undefined" && currentUser?.id) {
+      try {
+        window.localStorage.removeItem(userPendingKey(currentUser.id));
+      } catch {
+        /* ignore storage failures */
+      }
+    }
+    notifyListeners();
+    return true;
+  }
+  data = migrate({ ...conflict.localSnapshot, syncConflicts: nextConflicts });
+  hasPendingCloudChanges = true;
+  syncStatus = nextConflicts.some((candidate) => candidate.status === "unresolved")
+    ? "conflict"
+    : "pending";
+  persist();
+  notifyListeners();
+  return true;
+}
+
+export function saveReminderPreferences(preferences: ReminderPreferences) {
+  set({
+    ...data,
+    reminderPreferences: {
+      ...DEFAULT_REMINDER_PREFERENCES,
+      ...preferences,
+      deliveryState: preferences.enabled ? "ready" : "paused",
+    },
+  });
+}
+
+export function clearCurrentUserLocalCache() {
+  const userId = currentUser?.id;
+  if (typeof window !== "undefined" && userId) {
+    try {
+      window.localStorage.removeItem(userCacheKey(userId));
+      window.localStorage.removeItem(userPendingKey(userId));
+    } catch {
+      /* ignore storage failures */
+    }
+  }
+  data = seed();
+  hasPendingCloudChanges = false;
+  syncStatus = "idle";
+  notifyListeners();
 }
 
 export function retryProfileHydration() {

@@ -18,8 +18,13 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   completeUserProfileName,
+  clearCurrentUserLocalCache,
+  getGymStoreSnapshot,
   saveTheme,
+  saveReminderPreferences,
   saveUserProfile,
+  resolveSyncConflict,
+  useSyncConflicts,
   useAuthUser,
   useCloudSyncStatus,
   useGym,
@@ -135,6 +140,7 @@ export function AppShell({
   const store = useGym();
   const user = useAuthUser();
   const cloudSyncStatus = useCloudSyncStatus();
+  const syncConflicts = useSyncConflicts().filter((conflict) => conflict.status === "unresolved");
   const role = store.userProfile?.role;
   const isOwner = role === "owner";
   const isCoach = role === "coach" || isOwner;
@@ -169,6 +175,8 @@ export function AppShell({
   const syncIconClass =
     cloudSyncStatus === "offline"
       ? "text-amber-700"
+      : cloudSyncStatus === "conflict"
+        ? "text-amber-700"
       : cloudSyncStatus === "error"
         ? "text-destructive"
         : cloudSyncStatus === "syncing" || cloudSyncStatus === "pending"
@@ -181,6 +189,8 @@ export function AppShell({
         ? "מסנכרנים את השינויים לענן"
         : cloudSyncStatus === "pending"
           ? "שינויים ממתינים לסנכרון"
+          : cloudSyncStatus === "conflict"
+            ? "נמצאה התנגשות — נדרשת בחירה לפני סנכרון"
           : cloudSyncStatus === "error"
             ? "השינויים נשמרו במכשיר — הסנכרון דורש תשומת לב"
             : "הנתונים מסונכרנים";
@@ -507,6 +517,7 @@ export function AppShell({
   const [password, setPassword] = useState("");
   const [gender, setGender] = useState<"female" | "male" | undefined>(undefined);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showSyncModal, setShowSyncModal] = useState(false);
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() =>
     profileDraftFrom(store.userProfile),
   );
@@ -520,6 +531,15 @@ export function AppShell({
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
+  const [reminderDraft, setReminderDraft] = useState(
+    store.reminderPreferences ?? {
+      enabled: false,
+      quietHoursStart: "22:00",
+      quietHoursEnd: "07:00",
+      types: ["workout", "nutrition", "checkin"] as Array<"workout" | "nutrition" | "checkin">,
+      deliveryState: "not-configured" as const,
+    },
+  );
   const headerTitle = authOnly ? genderText(gender, "ברוכה הבאה", "ברוך הבא") : title;
   const headerSubtitle = authOnly
     ? genderText(gender, "התחברי כדי להמשיך לאימונים ולתזונה", "התחבר כדי להמשיך לאימונים ולתזונה")
@@ -723,8 +743,32 @@ export function AppShell({
 
   const openProfileModal = () => {
     setProfileDraft(profileDraftFrom(store.userProfile));
+    setReminderDraft(
+      store.reminderPreferences ?? {
+        enabled: false,
+        quietHoursStart: "22:00",
+        quietHoursEnd: "07:00",
+        types: ["workout", "nutrition", "checkin"],
+        deliveryState: "not-configured",
+      },
+    );
     setProfileError("");
     setShowProfileModal(true);
+  };
+
+  const exportLocalData = () => {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      format: "gymtrack-local-export-v1",
+      data: getGymStoreSnapshot(),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `gymtrack-export-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleProfileSave = async () => {
@@ -899,12 +943,20 @@ export function AppShell({
               <div className="flex shrink-0 items-center gap-2 pt-0.5">
                 {user && showHomeOnlyHeaderControls ? (
                   <div className="flex items-center gap-2 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-[12px] font-bold text-ink shadow-sm">
-                    <SyncIcon
-                      className={`h-3.5 w-3.5 ${syncIconClass} ${
-                        cloudSyncStatus === "syncing" ? "animate-pulse" : ""
-                      }`}
-                      aria-hidden="true"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSyncModal(true)}
+                      aria-label={syncTitle}
+                      title={syncTitle}
+                      className="cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <SyncIcon
+                        className={`h-3.5 w-3.5 ${syncIconClass} ${
+                          cloudSyncStatus === "syncing" ? "animate-pulse" : ""
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </button>
                     <button
                       type="button"
                       onClick={openProfileModal}
@@ -946,7 +998,22 @@ export function AppShell({
                     <LogIn className="h-3.5 w-3.5" />
                     <span>התחברות</span>
                   </button>
-                ) : null}
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowSyncModal(true)}
+                    aria-label={syncTitle}
+                    title={syncTitle}
+                    className="grid h-8 w-8 place-items-center rounded-full border border-border/70 bg-surface text-muted-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <SyncIcon
+                      className={`h-4 w-4 ${syncIconClass} ${
+                        cloudSyncStatus === "syncing" ? "animate-pulse" : ""
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </button>
+                )}
                 {action}
               </div>
             </div>
@@ -969,6 +1036,92 @@ export function AppShell({
         {user ? <span className="sr-only">{syncTitle}</span> : null}
         {!authOnly ? children : null}
       </main>
+
+      {showSyncModal ? (
+        <Overlay
+          open={showSyncModal}
+          onClose={() => setShowSyncModal(false)}
+          ariaLabel="מצב סנכרון ופתרון התנגשויות"
+        >
+          <div
+            className="w-full max-w-md space-y-4 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-border/70 pb-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                  שקיפות נתונים
+                </p>
+                <h2 className="mt-1 font-display text-lg font-extrabold text-ink">
+                  מצב סנכרון
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSyncModal(false)}
+                aria-label="סגירת מצב הסנכרון"
+                className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-ink"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-2xl border border-border bg-background px-3 py-3">
+              <SyncIcon className={`h-5 w-5 ${syncIconClass}`} aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="text-sm font-extrabold text-ink">{syncTitle}</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                  העריכות נשמרות קודם במכשיר. רענון מרוחק לא יחליף עריכה מקומית ממתינה.
+                </p>
+              </div>
+            </div>
+
+            {syncConflicts.length > 0 ? (
+              <div className="space-y-3">
+                <div>
+                  <h3 className="text-sm font-extrabold text-ink">נדרשת הכרעה</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    נמצאו עריכות מקומיות ומרוחקות לאותו מרחב. בחרי איזה snapshot לשמור — אין
+                    דריסה אוטומטית.
+                  </p>
+                </div>
+                {syncConflicts.map((conflict) => (
+                  <div key={conflict.id} className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3">
+                    <p className="text-xs font-bold text-ink">
+                      זוהתה התנגשות ב־{new Date(conflict.detectedAt).toLocaleString("he-IL")}
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => resolveSyncConflict(conflict.id, "keep-local")}
+                        className="rounded-xl border border-border bg-surface px-3 py-2 text-xs font-bold text-ink transition-colors hover:border-primary"
+                      >
+                        לשמור את המקומי
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => resolveSyncConflict(conflict.id, "use-remote")}
+                        className="rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+                      >
+                        להשתמש בענן
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-2xl bg-primary/10 px-3 py-2.5 text-xs font-semibold text-primary">
+                אין התנגשויות פתוחות.
+              </p>
+            )}
+
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              במצב offline אפשר להמשיך לעבוד. ניסיון חוזר יופעל כשהחיבור יחזור, ובמקרה של
+              שגיאה הנתונים המקומיים יישארו זמינים.
+            </p>
+          </div>
+        </Overlay>
+      ) : null}
 
       {showProfileModal ? (
         <Overlay
@@ -1124,11 +1277,108 @@ export function AppShell({
                   </span>
                 </label>
               ) : null}
+
+              <section className="space-y-3 rounded-2xl border border-border bg-background p-3">
+                <div>
+                  <h3 className="text-sm font-extrabold text-ink">תזכורות</h3>
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                    opt-in בלבד. כרגע לא מחובר ערוץ push או email, לכן ההעדפה נשמרת מקומית
+                    ומוצגת כ״מוכן״ רק כהכנה לערוץ מסירה.
+                  </p>
+                </div>
+                <label className="flex items-center justify-between gap-3 text-xs font-bold text-ink">
+                  <span>לאפשר תזכורות</span>
+                  <input
+                    type="checkbox"
+                    checked={reminderDraft.enabled}
+                    onChange={(event) =>
+                      setReminderDraft((current) => ({
+                        ...current,
+                        enabled: event.target.checked,
+                        deliveryState: event.target.checked ? "ready" : "paused",
+                      }))
+                    }
+                    className="h-4 w-4 accent-[hsl(var(--primary))]"
+                  />
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="text-[11px] font-bold text-muted-foreground">
+                    התחלה שקטה
+                    <input
+                      type="time"
+                      value={reminderDraft.quietHoursStart}
+                      onChange={(event) =>
+                        setReminderDraft((current) => ({
+                          ...current,
+                          quietHoursStart: event.target.value,
+                        }))
+                      }
+                      className="mt-1 w-full rounded-xl border border-border bg-surface px-2 py-2 text-xs font-bold text-ink"
+                    />
+                  </label>
+                  <label className="text-[11px] font-bold text-muted-foreground">
+                    סיום שקט
+                    <input
+                      type="time"
+                      value={reminderDraft.quietHoursEnd}
+                      onChange={(event) =>
+                        setReminderDraft((current) => ({
+                          ...current,
+                          quietHoursEnd: event.target.value,
+                        }))
+                      }
+                      className="mt-1 w-full rounded-xl border border-border bg-surface px-2 py-2 text-xs font-bold text-ink"
+                    />
+                  </label>
+                </div>
+                <p className="text-[10px] font-semibold text-muted-foreground">
+                  מצב מסירה: {reminderDraft.enabled ? "מוכן להגדרת ערוץ" : "מושהה"} · סוגים:
+                  אימון, תזונה, צ׳ק־אין
+                </p>
+              </section>
+
+              <section className="space-y-3 rounded-2xl border border-border bg-background p-3">
+                <div>
+                  <h3 className="text-sm font-extrabold text-ink">פרטיות ונתונים</h3>
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                    הנתונים נשמרים במכשיר לצורך offline ובענן כדי לאפשר סנכרון. המאמן רואה רק
+                    מידע שמותר לו לפי הקישור וההרשאות של החשבון.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={exportLocalData}
+                    className="rounded-xl border border-border bg-surface px-3 py-2.5 text-xs font-bold text-ink transition-colors hover:border-primary"
+                  >
+                    ייצוא הנתונים שלי
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "למחוק את העותק המקומי מהמכשיר? נתוני הענן לא יימחקו, והאפליקציה תטען אותם מחדש בחיבור הבא.",
+                        )
+                      ) {
+                        clearCurrentUserLocalCache();
+                        setShowProfileModal(false);
+                      }
+                    }}
+                    className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-xs font-bold text-destructive transition-colors hover:bg-destructive/15"
+                  >
+                    ניקוי העותק מהמכשיר
+                  </button>
+                </div>
+              </section>
             </div>
 
             <button
               type="button"
-              onClick={() => void handleProfileSave()}
+              onClick={() => {
+                saveReminderPreferences(reminderDraft);
+                void handleProfileSave();
+              }}
               disabled={profileSaving}
               className="w-full cursor-pointer rounded-2xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60"
             >

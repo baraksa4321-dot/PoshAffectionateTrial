@@ -255,6 +255,37 @@ describe("offline store lifecycle", () => {
     );
   });
 
+  test("records a concurrent workspace conflict and allows selecting the remote snapshot", async () => {
+    Object.assign(navigator, { onLine: true });
+    const localData = makeSessionData({ weight: 82, role: "owner" });
+    localData.programs = [{ id: "program-local", name: "Local plan", notes: "", dayIds: [] }];
+    storage.set("gymtrack.v1.user.user-a", JSON.stringify(localData));
+    const pull = deferred<{ success: true; data: Record<string, unknown> }>();
+    pullImplementation = async () => pull.promise;
+
+    const store = await loadStore("workspace-conflict");
+    await eventually(() => pullCalls.length > 0);
+    store.saveProgram({ id: "program-local", name: "Local edit", notes: "", dayIds: [] });
+    pull.resolve({
+      success: true,
+      data: {
+        ...localData,
+        programs: [{ id: "program-remote", name: "Remote edit", notes: "", dayIds: [] }],
+      },
+    });
+
+    await eventually(() => store.getGymStoreSyncStatus() === "conflict");
+    expect(store.getGymStoreSnapshot().programs[0]?.name).toBe("Local edit");
+    expect(store.getGymStoreSnapshot().syncConflicts).toHaveLength(1);
+
+    const conflictId = store.getGymStoreSnapshot().syncConflicts?.[0]?.id;
+    expect(typeof conflictId).toBe("string");
+    expect(store.resolveSyncConflict(conflictId!, "use-remote")).toBe(true);
+    expect(store.getGymStoreSnapshot().programs[0]?.name).toBe("Remote edit");
+    expect(store.getGymStoreSnapshot().syncConflicts?.[0]?.status).toBe("use-remote");
+    expect(store.getGymStoreSyncStatus()).toBe("synced");
+  });
+
   test("does not let a pending cached edit get overwritten on re-login", async () => {
     Object.assign(navigator, { onLine: true });
     storage.set(

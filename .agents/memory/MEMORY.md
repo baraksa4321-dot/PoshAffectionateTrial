@@ -38,3 +38,4 @@
 - [Stale browser rehydration](stale-browser-rehydration.md) — Stop or clear authenticated preview state before final DB counts; old local state can repopulate rows after cleanup.
 - [GymTrack market research](gymtrack-market-research.md) — Prioritize the adherence loop and Hebrew coach–trainee wedge over generic social, AI-program, or integration breadth.
 - [Coach attention privacy](coach-attention-privacy.md) — Keep reviewed state and private coach notes coach-scoped and local-first unless a dedicated private schema exists.
+- [External store snapshot stability](external-store-snapshot-stability.md) — Optional array snapshots need stable empty constants or React can enter an infinite update loop.
