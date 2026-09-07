@@ -36,6 +36,39 @@ describe("food portion conversions", () => {
     expect(defaultFoodQuantity(peanutButter)).toEqual({ quantity: 1, unit: "tbsp" });
   });
 
+  test("chooses a supported fallback unit for foods without a reference weight", () => {
+    const unknownServingFood: FoodItem = {
+      ...peanutButter,
+      id: "unknown-serving",
+      name: "מאכל ללא יחידת משקל",
+      servingSize: "מנה",
+    };
+
+    expect(defaultFoodQuantity(unknownServingFood)).toEqual({ quantity: 1, unit: "serving" });
+  });
+
+  test("does not choose an unconvertible spoon unit for a sauce", () => {
+    const unweightedOil: FoodItem = {
+      ...peanutButter,
+      id: "unweighted-oil",
+      name: "שמן זית",
+      servingSize: "100 גרם",
+    };
+
+    expect(defaultFoodQuantity(unweightedOil)).toEqual({ quantity: 100, unit: "g" });
+  });
+
+  test("falls back to cups when a drink has no milliliter reference", () => {
+    const cupDrink: FoodItem = {
+      ...peanutButter,
+      id: "cup-drink",
+      name: "משקה",
+      servingSize: "כוס",
+    };
+
+    expect(defaultFoodQuantity(cupDrink)).toEqual({ quantity: 1, unit: "cup" });
+  });
+
   test("keeps teaspoon and tablespoon ratios explicit", () => {
     expect(Math.abs(mealFoodFromPortion(peanutButter, 1, "tsp").calories - 94 / 3) < 1e-9).toBe(
       true,

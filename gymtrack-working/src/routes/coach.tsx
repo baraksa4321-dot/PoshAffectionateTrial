@@ -3880,7 +3880,10 @@ export function CoachDashboardPage({
   const addPlannedFood = (mealId: string) => {
     if (!isCoach) return;
     const food = store.foods.find((item) => item.id === menuFoodId);
-    if (!food || menuFoodQuantity <= 0) return;
+    if (!food || !Number.isFinite(menuFoodQuantity) || menuFoodQuantity <= 0) {
+      setMenuNotice("יש לבחור מאכל ולהזין כמות גדולה מאפס.");
+      return;
+    }
     const scrollContainer = getAppScrollContainer() ?? document.scrollingElement;
     const scrollTop = scrollContainer?.scrollTop ?? window.scrollY;
     const mealElement = document.getElementById(`coach-menu-meal-${mealId}`);
@@ -3891,7 +3894,13 @@ export function CoachDashboardPage({
     // prevents mobile browsers from scrolling the disappearing focused field
     // back into view.
     activeElement?.blur();
-    const plannedFood: MealFood = mealFoodFromPortion(food, menuFoodQuantity, menuFoodUnit);
+    let plannedFood: MealFood;
+    try {
+      plannedFood = mealFoodFromPortion(food, menuFoodQuantity, menuFoodUnit);
+    } catch (error) {
+      setMenuNotice(error instanceof Error ? error.message : "לא ניתן להוסיף את המאכל בכמות הזו.");
+      return;
+    }
     markPlannedMealsDraftDirty();
     setPlannedMeals((current) =>
       current.map((meal) =>
@@ -3903,6 +3912,7 @@ export function CoachDashboardPage({
     setMenuFoodQuery("");
     setMenuFoodQuantity(1);
     setMenuFoodUnit("serving");
+    setMenuNotice("");
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
         if (scrollContainer) {
@@ -8972,7 +8982,11 @@ export function CoachDashboardPage({
                                   </label>
                                   <button
                                     type="button"
-                                    disabled={!menuFoodId || menuFoodQuantity <= 0}
+                                    disabled={
+                                      !menuFoodId ||
+                                      !Number.isFinite(menuFoodQuantity) ||
+                                      menuFoodQuantity <= 0
+                                    }
                                     onClick={() => addPlannedFood(meal.id)}
                                     className="rounded-lg bg-emerald-700 px-3 py-2 text-[12px] font-bold text-white disabled:opacity-40"
                                   >

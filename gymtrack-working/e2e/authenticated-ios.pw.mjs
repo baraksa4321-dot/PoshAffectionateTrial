@@ -355,6 +355,13 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await foodSearch.fill("אורז");
   await assertKeyboardVisible(foodSearch);
   await expect(foodSearch).toHaveValue("אורז");
+  await page.getByRole("option", { name: /אורז/ }).first().click();
+  const addFoodButton = page.getByRole("button", { name: "הוסיפי לארוחה", exact: true }).first();
+  await expect(addFoodButton).toBeEnabled();
+  await addFoodButton.click();
+  await expect(
+    page.locator('[id^="coach-menu-meal-"]').first().getByText(/אורז ·/).last(),
+  ).toBeVisible();
   const menuDraft = page.getByRole("textbox", { name: "שם הארוחה" }).first();
   await menuDraft.fill("טיוטת תפריט לפני פתיחת הדוח");
   await expect(menuDraft).toHaveValue("טיוטת תפריט לפני פתיחת הדוח");
