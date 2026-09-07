@@ -8,7 +8,6 @@ import { AppShell } from "@/components/AppShell";
 import { Stepper } from "@/components/Stepper";
 import { IconButton, PrimaryButton, SecondaryButton } from "@/components/ui-app/primitives";
 import { deleteFood, emptyFood, findFoodReplacements, saveFood, useGym } from "@/lib/gym-store";
-import { nutritionSourceFor } from "@/lib/nutrition-integrity";
 import type { FoodItem } from "@/lib/gym-types";
 import { supabase } from "@/lib/supabase";
 
@@ -238,8 +237,6 @@ function FoodDetail() {
     navigate({ to: "/nutrition/foods" });
   };
 
-  const source = nutritionSourceFor(draft);
-
   return (
     <AppShell
       kicker={isNew ? "מאכל חדש" : "ספריית מאכלים"}
@@ -281,26 +278,6 @@ function FoodDetail() {
             </p>
           )}
           <p className="mt-1 text-[12.5px] text-muted-foreground">{draft.servingSize || "מנה 1"}</p>
-        </div>
-      </div>
-
-      <div className="mt-3 border-s border-primary/30 bg-primary/5 px-3.5 py-3 text-start">
-        <p className="text-[11px] font-bold text-primary">{source.label}</p>
-        <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{source.detail}</p>
-        <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold">
-          {source.checkedAt ? (
-            <span className="rounded-full bg-white/70 px-2 py-1 text-muted-foreground">
-              נבדק {source.checkedAt}
-            </span>
-          ) : null}
-          {source.confidence ? (
-            <span className="rounded-full bg-white/70 px-2 py-1 text-muted-foreground">
-              ביטחון {source.confidence === "high" ? "גבוה" : source.confidence === "medium" ? "בינוני" : "נמוך"}
-            </span>
-          ) : null}
-          {source.needsReview ? (
-            <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-800">נדרשת בדיקה</span>
-          ) : null}
         </div>
       </div>
 
@@ -379,9 +356,6 @@ function FoodDetail() {
             חיפוש
           </button>
         </div>
-        <p className="text-[10.5px] leading-relaxed text-muted-foreground">
-          החיפוש משתמש במקור חיצוני לא מאומת. השווי תמיד לתווית המוצר שבידך.
-        </p>
         {barcodeError ? <p className="text-[11px] font-semibold text-destructive">{barcodeError}</p> : null}
       </div>
 
