@@ -1128,6 +1128,7 @@ function RootContent() {
   const loadingVariant = loadingIndexes.animationIndex;
   const loadingMessageIndex = loadingIndexes.messageIndex;
   const [minimumLoadingDone, setMinimumLoadingDone] = useState(false);
+  const [initialLoadingComplete, setInitialLoadingComplete] = useState(false);
   const profileHydrationStatus = useProfileHydrationStatus();
   const profileHydrationError = useProfileHydrationError();
   const hasProfileHydrationError =
@@ -1146,10 +1147,18 @@ function RootContent() {
     profileHydrationStatus === "ready" &&
     userProfile?.role === "client" &&
     accountApprovalStatus !== "approved";
-  const isLoadingScreen = authStatus === "loading" || isProfileHydrating || !minimumLoadingDone;
+  const initialDataReady =
+    authStatus === "unauthenticated" ||
+    (authStatus === "authenticated" &&
+      (profileHydrationStatus === "ready" || profileHydrationStatus === "error"));
+  // The splash belongs to the current WebView lifetime, not to every
+  // background refresh. Once the first screen is ready, auth/profile refreshes
+  // must stay invisible so they cannot interrupt an active workout.
+  const isLoadingScreen =
+    !initialLoadingComplete && (authStatus === "loading" || isProfileHydrating || !minimumLoadingDone);
   const activeLoadingGender =
     authStatus === "unauthenticated" ? undefined : (userProfile?.gender ?? loadingGender);
-  const isInitialAuthLoading = authStatus === "loading" || !minimumLoadingDone;
+  const isInitialAuthLoading = !initialLoadingComplete;
   // The login bootstrap must open directly on the expressive loading surface.
   // Once the authenticated profile is available, the owner's preference can
   // still select the plain spinner for the in-app hydration state.
@@ -1159,6 +1168,11 @@ function RootContent() {
       (userProfile?.loadingAnimationsEnabled ?? activeLoadingGender === "female"));
   const loadingCopyGender = activeLoadingGender ?? "female";
   const loadingMode = showExpressiveLoading ? "expressive" : "plain";
+
+  useEffect(() => {
+    if (initialLoadingComplete || !minimumLoadingDone || !initialDataReady) return;
+    setInitialLoadingComplete(true);
+  }, [initialDataReady, initialLoadingComplete, minimumLoadingDone]);
 
   useLoadingCycleEffect(() => {
     try {
@@ -1322,12 +1336,6 @@ function RootContent() {
           });
       }
     }
-    const advanceForRestoredPage = (event: PageTransitionEvent) => {
-      if (!event.persisted) return;
-      setOpeningCycleIndex(claimOpeningCycle());
-      setLoadingRotationTick(0);
-    };
-    window.addEventListener("pageshow", advanceForRestoredPage);
     const illustrationTimer = window.setInterval(() => {
       setLoadingRotationTick((current) => current + 1);
     }, 1_500);
@@ -1337,7 +1345,6 @@ function RootContent() {
     return () => {
       window.clearInterval(illustrationTimer);
       window.clearTimeout(minimumLoadingTimer);
-      window.removeEventListener("pageshow", advanceForRestoredPage);
     };
   }, []);
 
