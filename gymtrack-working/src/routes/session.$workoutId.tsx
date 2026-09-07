@@ -1201,7 +1201,7 @@ function Session() {
                 supersetLabel ? "border-s-4 border-s-primary rounded-s-none" : ""
               }`}
             >
-              <div className="flex items-start gap-3">
+              <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
                 <button
                   type="button"
                   onClick={() => fullExercise && setCardExercise(fullExercise)}
@@ -1211,7 +1211,7 @@ function Session() {
                   <Info className="h-4 w-4" strokeWidth={2} />
                 </button>
                 <div className="min-w-0 flex-1 text-start">
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 items-start gap-2">
                     {supersetLabel ? (
                       <span className="shrink-0 rounded-lg bg-primary px-2 py-0.5 text-[11px] font-bold text-primary-foreground">
                         {supersetLabel}
@@ -1220,18 +1220,18 @@ function Session() {
                     <button
                       type="button"
                       onClick={() => fullExercise && setCardExercise(fullExercise)}
-                      className="min-w-0 break-words text-start font-display text-[15px] leading-snug font-semibold text-ink hover:text-primary cursor-pointer"
+                      className="min-w-0 flex-1 whitespace-normal break-normal text-start font-display text-[15px] leading-snug font-semibold text-ink hover:text-primary cursor-pointer"
                     >
                       {entry.exerciseName}
                     </button>
                   </div>
+                  {entry.equipment ? (
+                    <p className="mt-1 text-[11px] font-medium text-muted-foreground">
+                      {entry.equipment}
+                      {entry.cableGrip ? ` · מאחז: ${entry.cableGrip}` : ""}
+                    </p>
+                  ) : null}
                 </div>
-                {entry.equipment ? (
-                  <p className="mt-1 text-[11px] font-medium text-muted-foreground">
-                    {entry.equipment}
-                    {entry.cableGrip ? ` · מאחז: ${entry.cableGrip}` : ""}
-                  </p>
-                ) : null}
 
                 <div className="flex items-center gap-1.5">
                   <button
