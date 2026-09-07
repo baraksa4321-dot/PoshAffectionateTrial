@@ -450,9 +450,9 @@ export function AppShell({
           onClick: () => setWorkspace("personal"),
         },
         {
-          to: "/programs",
+          to: "/workouts",
           label: "האימונים שלי",
-          id: "programs",
+          id: "workouts",
           icon: LayoutGrid,
           onClick: () => setWorkspace("personal"),
         },

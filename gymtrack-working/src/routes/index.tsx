@@ -154,7 +154,6 @@ function Dashboard() {
     workouts,
     exercises,
     history,
-    programs,
     nutritionDays,
     nutritionTargets,
     userProfile,
@@ -162,8 +161,6 @@ function Dashboard() {
     preExitChecklist,
     coachMessages,
     broadcasts,
-    habits,
-    bodyWeightLogs,
   } = useGym();
   const authUser = useAuthUser();
 
@@ -415,12 +412,6 @@ function Dashboard() {
       ? Math.min(100, Math.round((totalsToday.calories / targetCals) * 100))
       : undefined;
 
-  const nextWorkout = workouts[0];
-  const isBodyweightWorkout = Boolean(nextWorkout?.name.includes("משקל גוף"));
-  const nextProgram = nextWorkout
-    ? programs.find((p) => p.dayIds.includes(nextWorkout.id))
-    : undefined;
-
   const scheduledWorkouts = workouts.slice(0, Math.min(workouts.length, 7)).map((workout, index) => {
     const defaultDate = weekDays[index]?.date ?? weekDays[weekDays.length - 1]?.date ?? todayDateStr;
     const override = weeklyOverrides[workout.id];
@@ -435,24 +426,11 @@ function Dashboard() {
     return { workout, scheduledDate, session, completion, status, override };
   });
 
-  const nextScheduledWorkout =
-    scheduledWorkouts.find((item) => item.status === "scheduled" || item.status === "partial") ??
-    scheduledWorkouts.find((item) => item.status === "missed");
-  const primaryWorkout = nextScheduledWorkout?.workout ?? nextWorkout;
+  const todayScheduledWorkout = scheduledWorkouts.find(
+    (item) => item.scheduledDate === todayDateStr,
+  );
+  const primaryWorkout = todayScheduledWorkout?.workout;
   const primaryIsBodyweightWorkout = Boolean(primaryWorkout?.name.includes("משקל גוף"));
-  const weekNutritionDays = nutritionDays.filter(
-    (day) => day.date >= weekStartKey && day.date <= (weekDays[6]?.date ?? weekStartKey),
-  );
-  const loggedNutritionDays = weekNutritionDays.filter((day) =>
-    day.meals.some((meal) => meal.foods.length > 0),
-  ).length;
-  const weekWeighIns = (bodyWeightLogs ?? []).filter(
-    (log) => log.date >= weekStartKey && log.date <= (weekDays[6]?.date ?? weekStartKey),
-  ).length;
-  const weekHabitDays = (habits ?? []).filter(
-    (habit) => habit.date >= weekStartKey && habit.date <= (weekDays[6]?.date ?? weekStartKey),
-  );
-
   const selectedProgressExercise =
     exercises.find((exercise) => exercise.id === progressExerciseId) ??
     exercises.find((exercise) => exercise.id === primaryWorkout?.items[0]?.exerciseId);
@@ -709,145 +687,6 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Weekly plan */}
-        <section
-          {...homeCardProps("workout")}
-          data-testid="weekly-plan"
-          className="dashboard-module mt-5 text-start"
-        >
-          <SectionHeader
-            title="השבוע שלי"
-            subtitle={
-              nextScheduledWorkout
-                ? `הפעולה הבאה: ${nextScheduledWorkout.status === "missed" ? "להשלים" : "להתחיל"} ${nextScheduledWorkout.workout.name}`
-                : "כל מה שחשוב כדי להישאר במסלול"
-            }
-          />
-          <div className="mb-3 grid grid-cols-3 gap-2">
-            {[
-              {
-                label: "תזונה",
-                value: `${loggedNutritionDays}/7`,
-                detail: loggedNutritionDays ? "ימים מתועדים" : "עדיין לא תועד",
-                icon: Apple,
-              },
-              {
-                label: "שקילה",
-                value: weekWeighIns ? "בוצע" : "ממתין",
-                detail: weekWeighIns ? "השבוע עודכן" : "פעולה קצרה להיום",
-                icon: Scale,
-              },
-              {
-                label: "הרגלים",
-                value: weekHabitDays.length ? `${weekHabitDays.length}/7` : "—",
-                detail: weekHabitDays.length ? "ימים עם מעקב" : "אין דיווחים עדיין",
-                icon: CheckCircle2,
-              },
-            ].map(({ label, value, detail, icon: Icon }) => (
-              <div key={label} className="surface-card border-border/70 bg-secondary/35 p-2.5">
-                <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
-                <p className="mt-2 text-[10px] font-bold text-muted-foreground">{label}</p>
-                <p className="mt-0.5 text-sm font-extrabold text-ink">{value}</p>
-                <p className="mt-0.5 text-[9px] leading-tight text-muted-foreground">{detail}</p>
-              </div>
-            ))}
-          </div>
-          {scheduledWorkouts.length ? (
-            <div className="space-y-2">
-              {scheduledWorkouts.map(({ workout, scheduledDate, completion, status, override }) => {
-                const day = weekDays.find((item) => item.date === scheduledDate) ?? weekDays[0];
-                const statusCopy: Record<WeeklyWorkoutStatus, string> = {
-                  scheduled: "מתוכנן",
-                  completed: "הושלם",
-                  partial: "הושלם חלקית",
-                  skipped: "דולג",
-                  missed: "לא הושלם",
-                };
-                const statusTone: Record<WeeklyWorkoutStatus, string> = {
-                  scheduled: "bg-secondary text-muted-foreground",
-                  completed: "bg-emerald-100 text-emerald-800",
-                  partial: "bg-amber-100 text-amber-800",
-                  skipped: "bg-slate-100 text-slate-700",
-                  missed: "bg-rose-100 text-rose-800",
-                };
-                return (
-                  <div
-                    key={workout.id}
-                    className="surface-card flex items-center gap-2.5 border-border/70 bg-background p-3"
-                  >
-                    <div
-                      className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${
-                        status === "completed"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : status === "missed"
-                            ? "bg-rose-100 text-rose-700"
-                            : "bg-primary/10 text-primary"
-                      }`}
-                    >
-                      {status === "completed" ? (
-                        <Check className="h-5 w-5" aria-hidden="true" />
-                      ) : (
-                        <Dumbbell className="h-5 w-5" aria-hidden="true" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] font-bold text-primary">
-                          {day?.shortLabel ?? "השבוע"} · {formatDayDate(scheduledDate)}
-                        </span>
-                        <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${statusTone[status]}`}>
-                          {statusCopy[status]}
-                        </span>
-                      </div>
-                      <p className="mt-1 truncate text-[13px] font-bold text-ink">{workout.name}</p>
-                      <p className="mt-0.5 text-[10px] text-muted-foreground">
-                        {status === "completed" || status === "partial"
-                          ? `${completion.doneSets}/${completion.targetSets} סטים · ${completion.percent}%`
-                          : override?.reason && status === "skipped"
-                            ? `סיבה: ${override.reason}`
-                            : `${workout.items.length} תרגילים · יעד ברור להיום`}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 flex-col gap-1">
-                      {status === "scheduled" || status === "missed" || status === "partial" ? (
-                        <button
-                          type="button"
-                          onClick={() => startWorkout(workout.id)}
-                          className="press rounded-xl bg-primary px-2.5 py-2 text-[10px] font-bold text-primary-foreground"
-                        >
-                          {status === "missed" ? "השלמה" : status === "partial" ? "המשך" : "התחלה"}
-                        </button>
-                      ) : null}
-                      {status === "scheduled" || status === "missed" ? (
-                        <div className="flex gap-1">
-                          <button
-                            type="button"
-                            onClick={() => postponeWorkout(workout.id, scheduledDate)}
-                            className="press rounded-lg bg-secondary px-2 py-1.5 text-[9px] font-bold text-ink"
-                          >
-                            דחה
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openSkipModal(workout.id)}
-                            className="press rounded-lg bg-secondary px-2 py-1.5 text-[9px] font-bold text-muted-foreground"
-                          >
-                            דלג
-                          </button>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="surface-card border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
-              עדיין אין אימונים מתוזמנים. אפשר לבנות תכנית ראשונה במסך האימונים.
-            </div>
-          )}
-        </section>
-
         {/* 1. Daily workout + nutrition tiles */}
         <div className="home-feature-section mt-3">
           {isArrangingHome ? (
@@ -887,6 +726,7 @@ function Dashboard() {
                     {primaryWorkout.name}
                   </h2>
                   <p className="mt-1 text-[10px] text-primary-foreground/75">
+                    {weekDays.find((day) => day.date === todayDateStr)?.label ?? "היום"} ·{" "}
                     {primaryWorkout.items.length} תרגילים · כ־{primaryWorkout.items.length * 12 + 15} דק׳
                   </p>
                   <button
@@ -904,8 +744,30 @@ function Dashboard() {
                     className="press mt-auto inline-flex h-9 cursor-pointer items-center justify-center gap-1 rounded-xl bg-background px-2 text-[11px] font-bold text-ink shadow-sm"
                   >
                     <Play className="h-3.5 w-3.5 fill-current text-primary" />
-                    התחלת אימון
+                    {todayScheduledWorkout?.status === "partial" ? "המשך אימון" : "התחלת אימון"}
                   </button>
+                  {todayScheduledWorkout &&
+                  (todayScheduledWorkout.status === "scheduled" ||
+                    todayScheduledWorkout.status === "missed") ? (
+                    <div className="mt-2 flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          postponeWorkout(primaryWorkout.id, todayScheduledWorkout.scheduledDate)
+                        }
+                        className="press flex-1 rounded-lg bg-primary-foreground/15 px-2 py-1.5 text-[9px] font-bold text-primary-foreground"
+                      >
+                        דחה
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openSkipModal(primaryWorkout.id)}
+                        className="press flex-1 rounded-lg bg-primary-foreground/15 px-2 py-1.5 text-[9px] font-bold text-primary-foreground/80"
+                      >
+                        דלג
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ) : (
@@ -919,8 +781,10 @@ function Dashboard() {
                 onPointerCancel={finishHomeCardPointer}
               >
                 <Card className="flex min-h-[150px] flex-col p-3 text-start">
-                  <p className="font-display text-sm font-bold text-ink">אין אימון יומי</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">עדיין אין תכנית אימונים.</p>
+                   <p className="font-display text-sm font-bold text-ink">אין אימון להיום</p>
+                   <p className="mt-1 text-[11px] text-muted-foreground">
+                     האימונים שלך מחכים במסך האימונים.
+                   </p>
                   <Link
                     to="/programs"
                     className="press mt-auto inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-primary px-2 text-[11px] font-bold text-primary-foreground"
