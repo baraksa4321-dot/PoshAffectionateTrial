@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Apple, ArrowRight, Heart, Plus, Search, SlidersHorizontal } from "lucide-react";
+import { Apple, ArrowRight, Barcode, Heart, Plus, Search, SlidersHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState, SectionHeader } from "@/components/ui-app/primitives";
@@ -19,6 +19,7 @@ function FoodLibrary() {
   const gender = userProfile?.gender;
   const showCalories = userProfile?.showCalories !== false;
   const [query, setQuery] = useState("");
+  const [barcode, setBarcode] = useState("");
   const [category, setCategory] = useState("הכל");
   const [productType, setProductType] = useState("הכל");
   const [brand, setBrand] = useState("הכל");
@@ -108,10 +109,32 @@ function FoodLibrary() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={genderText(gender, "חפשי מאכל בספרייה...", "חפש מאכל בספרייה...")}
+          placeholder={genderText(
+            gender,
+            "חפשי לפי שם, מותג או ברקוד...",
+            "חפש לפי שם, מותג או ברקוד...",
+          )}
           className="w-full min-w-0 bg-transparent text-[14px] outline-none placeholder:text-muted-foreground"
         />
+        <Barcode className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
       </div>
+      <label className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+        <Barcode className="h-3.5 w-3.5 text-primary" />
+        <span className="sr-only">חיפוש ברקוד</span>
+        <input
+          value={barcode}
+          onChange={(event) => {
+            const value = event.target.value.replace(/\D/g, "");
+            setBarcode(value);
+            setQuery(value);
+          }}
+          inputMode="numeric"
+          pattern="[0-9]*"
+          placeholder="אפשר להדביק כאן ברקוד"
+          className="min-w-0 flex-1 border-b border-border/60 bg-transparent px-1 py-1.5 text-[12px] text-ink outline-none placeholder:text-muted-foreground"
+          aria-label="חיפוש לפי ברקוד"
+        />
+      </label>
 
       <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
         <button
@@ -221,13 +244,30 @@ function FoodLibrary() {
                       {showCalories ? ` · ${food.calories} קלוריות` : ""} · חלבון {food.protein}g ·
                       פחמימות {food.carbs}g · שומן {food.fat}g · סיבים {food.fiber ?? 0}g
                     </p>
-                    <p
-                      className={`mt-1 text-[10px] font-semibold ${
-                        source.verified ? "text-primary" : "text-muted-foreground"
-                      }`}
-                    >
-                      {source.label}
-                    </p>
+                     <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-semibold">
+                       <span
+                         className={`rounded-full px-2 py-0.5 ${
+                           source.status === "verified"
+                             ? "bg-primary/10 text-primary"
+                             : source.status === "label"
+                               ? "bg-amber-100 text-amber-800"
+                               : "bg-secondary text-muted-foreground"
+                         }`}
+                       >
+                         {source.label}
+                       </span>
+                       {source.checkedAt ? (
+                         <span className="text-muted-foreground">נבדק {source.checkedAt}</span>
+                       ) : null}
+                       {source.confidence ? (
+                         <span className="text-muted-foreground">
+                           ביטחון {source.confidence === "high" ? "גבוה" : source.confidence === "medium" ? "בינוני" : "נמוך"}
+                         </span>
+                       ) : null}
+                     </div>
+                     {source.needsReview ? (
+                       <p className="mt-1 text-[10px] font-semibold text-amber-700">נדרשת בדיקת תווית</p>
+                     ) : null}
                     {food.catalog?.barcode ? (
                       <p className="mt-0.5 text-[10px] text-muted-foreground">
                         ברקוד: {food.catalog.barcode}

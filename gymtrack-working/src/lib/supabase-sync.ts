@@ -714,12 +714,26 @@ export async function syncLocalToSupabase(
           carbs: f.carbs,
           fat: f.fat,
           fiber: f.fiber ?? 0,
+          nutrition_review: f.nutritionReview ?? null,
           updated_at: new Date().toISOString(),
         }));
-        await requireSuccessfulWrite(
-          supabase.from("custom_foods").upsert(customFoodPayload, { onConflict: "id" }),
-          "Custom foods sync",
-        );
+        const extendedWrite = await supabase
+          .from("custom_foods")
+          .upsert(customFoodPayload, { onConflict: "id" });
+        if (extendedWrite.error && isMissingColumnInSchema(extendedWrite.error, "custom_foods")) {
+          // Keep older Supabase projects usable until the additive provenance
+          // migration is applied; the food values still sync safely.
+          await requireSuccessfulWrite(
+            supabase
+              .from("custom_foods")
+              .upsert(customFoodPayload.map(({ nutrition_review: _review, ...food }) => food), {
+                onConflict: "id",
+              }),
+            "Custom foods sync",
+          );
+        } else if (extendedWrite.error) {
+          throw new Error(`Custom foods sync: ${extendedWrite.error.message}`);
+        }
       }
       await deleteRowsExplicitlyDeleted(
         userId,
@@ -1345,6 +1359,9 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
           carbs: Number(row.carbs),
           fat: Number(row.fat),
           fiber: Number(row.fiber || 0),
+          ...(row.nutrition_review && typeof row.nutrition_review === "object"
+            ? { nutritionReview: row.nutrition_review }
+            : {}),
         };
         foodMap.set(row.id, foodItem);
       }

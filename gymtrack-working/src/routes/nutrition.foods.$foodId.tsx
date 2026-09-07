@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Apple, ArrowRight, Check, Shuffle, Trash2 } from "lucide-react";
+import { Apple, ArrowRight, Barcode, Camera, Check, LoaderCircle, Shuffle, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 // useEffect is still used below for syncing the draft when the underlying
 // food changes; the explicit scrollTo on foodId change has been removed in
@@ -10,6 +10,7 @@ import { IconButton, PrimaryButton, SecondaryButton } from "@/components/ui-app/
 import { deleteFood, emptyFood, findFoodReplacements, saveFood, useGym } from "@/lib/gym-store";
 import { nutritionSourceFor } from "@/lib/nutrition-integrity";
 import type { FoodItem } from "@/lib/gym-types";
+import { supabase } from "@/lib/supabase";
 
 type FoodSearch = {
   mealDate?: string | undefined;
@@ -34,6 +35,22 @@ const field =
 const labelCls =
   "mb-1.5 block text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase";
 
+async function imageDataUrl(file: File) {
+  if (!["image/jpeg", "image/jpg", "image/png"].includes(file.type)) {
+    throw new Error("אפשר להעלות צילום JPG או PNG בלבד.");
+  }
+  if (file.size > 8 * 1024 * 1024) {
+    throw new Error("התמונה גדולה מדי. הגודל המרבי הוא 8MB.");
+  }
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () =>
+      typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("לא ניתן לקרוא את התמונה."));
+    reader.onerror = () => reject(new Error("לא ניתן לקרוא את התמונה."));
+    reader.readAsDataURL(file);
+  });
+}
+
 function FoodDetail() {
   const { foodId } = Route.useParams();
   const search = Route.useSearch();
@@ -50,6 +67,11 @@ function FoodDetail() {
   const [swapQuery, setSwapQuery] = useState("");
   const [showSwaps, setShowSwaps] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [barcodeQuery, setBarcodeQuery] = useState(existing?.catalog?.barcode ?? "");
+  const [barcodeState, setBarcodeState] = useState<"idle" | "loading" | "error">("idle");
+  const [barcodeError, setBarcodeError] = useState("");
+  const [labelScanState, setLabelScanState] = useState<"idle" | "loading" | "error">("idle");
+  const [labelScanError, setLabelScanError] = useState("");
 
   // Scroll reset is handled centrally in __root.tsx (ScrollToTop subscribed to
   // router.subscribe('onResolved')); no per-page effect needed.
@@ -59,12 +81,89 @@ function FoodDetail() {
       setDraftFoodId(foodId);
       setDraft(existing ?? emptyFood());
       setDraftIsDirty(false);
+      setBarcodeQuery(existing?.catalog?.barcode ?? "");
       return;
     }
     // A realtime pull may replace `existing` while this form is open. Never
     // overwrite fields the user has already started editing.
     if (!draftIsDirty && existing) setDraft(existing);
   }, [draftFoodId, draftIsDirty, existing, foodId]);
+
+  const lookupBarcode = async () => {
+    const barcode = barcodeQuery.replace(/\D/g, "");
+    if (!barcode) {
+      setBarcodeError("יש להזין ברקוד לפני החיפוש.");
+      setBarcodeState("error");
+      return;
+    }
+    setBarcodeState("loading");
+    setBarcodeError("");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const response = await fetch(`/nutrition-lookup-barcode?barcode=${encodeURIComponent(barcode)}`, {
+        headers: session?.access_token ? { authorization: `Bearer ${session.access_token}` } : {},
+      });
+      const result = (await response.json()) as { food?: FoodItem; error?: string };
+      if (!response.ok || !result.food) throw new Error(result.error || "לא נמצאה התאמה.");
+      setDraft({ ...result.food, id: draft.id, approvalStatus: "pending" });
+      setDraftIsDirty(true);
+      setBarcodeQuery(barcode);
+      setBarcodeState("idle");
+    } catch (error) {
+      setBarcodeError(error instanceof Error ? error.message : "חיפוש הברקוד נכשל.");
+      setBarcodeState("error");
+    }
+  };
+
+  const scanLabel = async (file: File) => {
+    setLabelScanState("loading");
+    setLabelScanError("");
+    try {
+      const image = await imageDataUrl(file);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("יש להתחבר כדי לנתח תווית.");
+      const response = await fetch("/nutrition-scan-label", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ image }),
+      });
+      const result = (await response.json()) as { food?: Partial<FoodItem>; error?: string };
+      if (!response.ok || !result.food) throw new Error(result.error || "לא ניתן לקרוא את התווית.");
+      setDraft((current) => ({
+        ...current,
+        ...result.food,
+        id: current.id,
+        approvalStatus: "pending",
+        nutritionReview: {
+          status: "unreviewed",
+          origin: "label",
+          checkedAt: new Date().toISOString().slice(0, 10),
+          confidence: "medium",
+          sources: [
+            {
+              name: "צילום תווית שהועלה על ידי המשתמש",
+              kind: "label-photo",
+              match: "same-food",
+              valuesPer: "serving",
+            },
+          ],
+          notes: "נוצר כמועמד לעריכה. אין לראות בערכים אימות עד להשוואה לתווית.",
+        },
+      }));
+      setDraftIsDirty(true);
+      setLabelScanState("idle");
+    } catch (error) {
+      setLabelScanError(error instanceof Error ? error.message : "ניתוח התווית נכשל.");
+      setLabelScanState("error");
+    }
+  };
 
   const replacements = useMemo(() => {
     if (!existing) return [];
@@ -107,6 +206,10 @@ function FoodDetail() {
 
   const onSave = () => {
     if (!draft.name.trim()) return;
+    if (!draft.servingSize.trim()) {
+      setSaveError("יש להזין גודל מנת ייחוס ברור.");
+      return;
+    }
     try {
       saveFood({
         ...draft,
@@ -184,6 +287,21 @@ function FoodDetail() {
       <div className="mt-3 border-s border-primary/30 bg-primary/5 px-3.5 py-3 text-start">
         <p className="text-[11px] font-bold text-primary">{source.label}</p>
         <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{source.detail}</p>
+        <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold">
+          {source.checkedAt ? (
+            <span className="rounded-full bg-white/70 px-2 py-1 text-muted-foreground">
+              נבדק {source.checkedAt}
+            </span>
+          ) : null}
+          {source.confidence ? (
+            <span className="rounded-full bg-white/70 px-2 py-1 text-muted-foreground">
+              ביטחון {source.confidence === "high" ? "גבוה" : source.confidence === "medium" ? "בינוני" : "נמוך"}
+            </span>
+          ) : null}
+          {source.needsReview ? (
+            <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-800">נדרשת בדיקה</span>
+          ) : null}
+        </div>
       </div>
 
       {draft.catalog ? (
@@ -234,6 +352,69 @@ function FoodDetail() {
           ) : null}
         </div>
       ) : null}
+
+      <div className="surface-card mt-3 space-y-2 p-4 text-start">
+        <label className={labelCls}>חיפוש מהיר לפי ברקוד</label>
+        <div className="flex gap-2">
+          <input
+            className={`${field} min-w-0 flex-1`}
+            value={barcodeQuery}
+            onChange={(event) => setBarcodeQuery(event.target.value.replace(/\D/g, ""))}
+            inputMode="numeric"
+            pattern="[0-9]*"
+            placeholder="8–14 ספרות"
+            aria-label="ברקוד מוצר"
+          />
+          <button
+            type="button"
+            onClick={() => void lookupBarcode()}
+            disabled={barcodeState === "loading"}
+            className="press inline-flex shrink-0 items-center gap-1.5 rounded-2xl bg-primary px-3 text-[12px] font-bold text-primary-foreground disabled:opacity-60"
+          >
+            {barcodeState === "loading" ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : (
+              <Barcode className="h-4 w-4" />
+            )}
+            חיפוש
+          </button>
+        </div>
+        <p className="text-[10.5px] leading-relaxed text-muted-foreground">
+          החיפוש משתמש במקור חיצוני לא מאומת. השווי תמיד לתווית המוצר שבידך.
+        </p>
+        {barcodeError ? <p className="text-[11px] font-semibold text-destructive">{barcodeError}</p> : null}
+      </div>
+
+      <div className="surface-card mt-3 space-y-2 p-4 text-start">
+        <label className={labelCls}>יצירת מועמד מצילום תווית</label>
+        <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-3">
+          {labelScanState === "loading" ? (
+            <LoaderCircle className="h-5 w-5 animate-spin text-primary" />
+          ) : (
+            <Camera className="h-5 w-5 text-primary" />
+          )}
+          <span className="text-[12px] font-semibold text-ink">
+            {labelScanState === "loading" ? "קורא את התווית…" : "צלמי או העלי תווית ערכים"}
+            <span className="mt-0.5 block text-[10.5px] font-normal text-muted-foreground">
+              התוצאה תיפתח כאן כטיוטה לעריכה ולא תישמר בלי אישור.
+            </span>
+          </span>
+          <input
+            type="file"
+            accept="image/jpeg,image/jpg,image/png"
+            capture="environment"
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              if (file) void scanLabel(file);
+            }}
+          />
+        </label>
+        {labelScanError ? (
+          <p className="text-[11px] font-semibold text-destructive">{labelScanError}</p>
+        ) : null}
+      </div>
 
       <div className="mt-4 space-y-3 text-start">
         <div className="surface-card p-4">

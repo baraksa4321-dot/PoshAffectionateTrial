@@ -235,18 +235,21 @@ export type FoodItem = {
   /** Audit trail for nutrition values; empty means the legacy value was not re-verified. */
   nutritionReview?: {
     status: "unreviewed" | "reviewed";
+    /** How the values entered the library; this is intentionally separate from approval. */
+    origin?: "estimated" | "label" | "verified";
     checkedAt?: string;
     confidence?: "low" | "medium" | "high";
     sources: Array<{
       name: string;
-      url: string;
+      url?: string;
       kind:
         | "manufacturer"
         | "retailer-product-page"
         | "israeli-database"
         | "food-dictionary"
         | "usda"
-        | "open-food-facts";
+        | "open-food-facts"
+        | "label-photo";
       match: "exact-product" | "same-food" | "comparison";
       valuesPer: "100g" | "100ml" | "serving";
     }>;
@@ -271,6 +274,11 @@ export type MealFood = {
   /** Links a logged food back to a prescribed menu food for per-food tracking. */
   sourcePlanMealId?: string;
   sourcePlanFoodId?: string;
+  /** Coach-approved food IDs that may replace this planned/logged item. */
+  approvedSubstitutes?: string[];
+  /** Set only on the actual log when a planned food was replaced. */
+  substitutedFromFoodId?: string;
+  substitutedFromFoodName?: string;
 };
 
 export type Meal = {

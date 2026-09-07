@@ -2073,6 +2073,8 @@ export function logPlannedMeal(date: string, plannedMealId: string) {
           foods: plannedMeal.foods.map((food) => ({
             ...food,
             id: uid(),
+            sourcePlanMealId: plannedMealId,
+            sourcePlanFoodId: food.id,
             timeLogged: new Date().toLocaleTimeString("he-IL", {
               hour: "2-digit",
               minute: "2-digit",
@@ -2135,6 +2137,60 @@ export function togglePlannedFoodEaten(date: string, plannedMealId: string, plan
         {
           id: uid(),
           name: plannedMeal?.name ?? "ארוחה",
+          sourcePlanId: plannedMealId,
+          foods: [loggedFood],
+        },
+      ],
+    };
+  });
+}
+
+export function logPlannedFoodSubstitution(
+  date: string,
+  plannedMealId: string,
+  plannedFood: MealFood,
+  replacement: MealFood,
+) {
+  withDay(date, (day) => {
+    const plannedMeal = data.plannedMeals?.find((meal) => meal.id === plannedMealId);
+    if (!plannedMeal) return day;
+    const loggedFood: MealFood = {
+      ...replacement,
+      id: uid(),
+      sourcePlanMealId: plannedMealId,
+      sourcePlanFoodId: plannedFood.id,
+      ...(plannedFood.foodId ? { substitutedFromFoodId: plannedFood.foodId } : {}),
+      substitutedFromFoodName: plannedFood.name,
+      notes: `${replacement.notes ? `${replacement.notes} · ` : ""}החלפה מאושרת של ${plannedFood.name}`,
+      timeLogged: new Date().toLocaleTimeString("he-IL", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
+    const existingMeal = day.meals.find((meal) => meal.sourcePlanId === plannedMealId);
+    if (existingMeal) {
+      return {
+        ...day,
+        meals: day.meals.map((meal) =>
+          meal.id !== existingMeal.id
+            ? meal
+            : {
+                ...meal,
+                foods: [
+                  ...meal.foods.filter((food) => food.sourcePlanFoodId !== plannedFood.id),
+                  loggedFood,
+                ],
+              },
+        ),
+      };
+    }
+    return {
+      ...day,
+      meals: [
+        ...day.meals,
+        {
+          id: uid(),
+          name: plannedMeal.name,
           sourcePlanId: plannedMealId,
           foods: [loggedFood],
         },
@@ -2318,6 +2374,7 @@ export function addMeal(date: string, name = "") {
 }
 
 export function addMealWithFoods(date: string, name: string, foods: MealFood[]) {
+  foods.forEach(assertValidMealFood);
   withDay(date, (day) => ({
     ...day,
     meals: [
@@ -2471,7 +2528,10 @@ export type FoodReplacementMode = "calories" | "protein" | "calories-protein";
 
 export function findFoodReplacements(
   foods: FoodItem[],
-  current: Pick<MealFood, "foodId" | "name" | "calories" | "protein" | "quantity">,
+  current: Pick<
+    MealFood,
+    "foodId" | "name" | "calories" | "protein" | "quantity" | "approvedSubstitutes"
+  >,
   query = "",
   mode: FoodReplacementMode = "calories",
 ) {
@@ -2483,6 +2543,14 @@ export function findFoodReplacements(
     .filter((food) => {
       if (current.foodId && food.id === current.foodId) return false;
       if (!current.foodId && current.name && food.name === current.name) return false;
+      if (food.approvalStatus === "rejected") return false;
+      if (
+        current.approvedSubstitutes &&
+        current.approvedSubstitutes.length > 0 &&
+        !current.approvedSubstitutes.includes(food.id)
+      ) {
+        return false;
+      }
       return food.calories > 0 || food.protein > 0;
     })
     .map((food) => {

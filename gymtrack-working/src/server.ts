@@ -29,6 +29,18 @@ type ScanFood = {
   eggCount?: number;
 };
 
+type BarcodeLookupProduct = {
+  code?: unknown;
+  product_name?: unknown;
+  product_name_he?: unknown;
+  brands?: unknown;
+  categories?: unknown;
+  serving_size?: unknown;
+  quantity?: unknown;
+  image_url?: unknown;
+  nutriments?: Record<string, unknown>;
+};
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -420,6 +432,202 @@ async function analyzeMealImage(request: Request): Promise<Response> {
   }
 }
 
+function finiteNutritionValue(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.round(parsed * 10) / 10 : 0;
+}
+
+async function lookupFoodByBarcode(request: Request): Promise<Response> {
+  if (request.method !== "GET") return jsonResponse({ error: "Method not allowed" }, 405);
+  const auth = await authenticatedScanUser(request);
+  if (auth.error === "unauthorized") return jsonResponse({ error: "יש להתחבר כדי לחפש מוצר." }, 401);
+  if (auth.error === "server-config") return jsonResponse({ error: "חיבור המשתמש עדיין לא הוגדר." }, 503);
+
+  const barcode = new URL(request.url).searchParams.get("barcode")?.replace(/\D/g, "") ?? "";
+  if (!/^\d{8,14}$/.test(barcode)) {
+    return jsonResponse({ error: "יש להזין ברקוד של 8–14 ספרות." }, 400);
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+  try {
+    const response = await fetch(
+      `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=code,product_name,product_name_he,brands,categories,serving_size,quantity,image_url,nutriments`,
+      { headers: { accept: "application/json" }, signal: controller.signal },
+    );
+    if (!response.ok) return jsonResponse({ error: "שירות חיפוש הברקוד לא זמין כרגע." }, 502);
+    const payload = (await response.json()) as { status?: number; product?: BarcodeLookupProduct };
+    const product = payload.status === 1 ? payload.product : undefined;
+    const name = String(product?.product_name_he || product?.product_name || "").trim();
+    if (!product || !name) return jsonResponse({ error: "לא נמצאה התאמה לברקוד הזה." }, 404);
+
+    const nutriments = product.nutriments ?? {};
+    const servingSize = String(product.serving_size || "100 גרם").trim() || "100 גרם";
+    const food = {
+      id: `f-open-food-facts-${barcode}`,
+      name,
+      brand: String(product.brands ?? "").split(",")[0]?.trim() || undefined,
+      category: String(product.categories ?? "").split(",")[0]?.trim() || "מוצר ארוז",
+      servingSize,
+      calories: finiteNutritionValue(
+        nutriments["energy-kcal_serving"] ?? nutriments["energy-kcal_100g"],
+      ),
+      protein: finiteNutritionValue(nutriments["proteins_serving"] ?? nutriments["proteins_100g"]),
+      carbs: finiteNutritionValue(
+        nutriments["carbohydrates_serving"] ?? nutriments["carbohydrates_100g"],
+      ),
+      fat: finiteNutritionValue(nutriments["fat_serving"] ?? nutriments["fat_100g"]),
+      fiber: finiteNutritionValue(nutriments["fiber_serving"] ?? nutriments["fiber_100g"]),
+      notes: "נמצא לפי ברקוד במקור חיצוני. יש להשוות לתווית האריזה לפני שימוש מדויק.",
+      catalog: {
+        barcode,
+        source: "open-food-facts" as const,
+        sourceProductId: String(product.code || barcode),
+        sourceUrl: `https://world.openfoodfacts.org/product/${barcode}`,
+        productType: "other" as const,
+        market: "IL" as const,
+        packageSize: String(product.quantity || "").trim() || undefined,
+        verificationStatus: "external-unverified" as const,
+      },
+      nutritionReview: {
+        status: "unreviewed" as const,
+        origin: "estimated" as const,
+        confidence: "low" as const,
+        checkedAt: new Date().toISOString().slice(0, 10),
+        sources: [
+          {
+            name: "Open Food Facts",
+            url: `https://world.openfoodfacts.org/product/${barcode}`,
+            kind: "open-food-facts" as const,
+            match: "same-food" as const,
+            valuesPer: "100g" as const,
+          },
+        ],
+        notes: "מקור חיצוני לא מאומת מול האריזה שבידי המשתמש.",
+      },
+    };
+    return jsonResponse({ food });
+  } catch {
+    return jsonResponse({ error: "חיפוש הברקוד נכשל. אפשר ליצור מועמד ידני מתווית המוצר." }, 504);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function normalizeLabelResult(value: unknown): {
+  name: string;
+  brand?: string;
+  servingSize: string;
+  servingGrams?: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  notes?: string;
+} | null {
+  if (!value || typeof value !== "object") return null;
+  const input = value as Record<string, unknown>;
+  const name = String(input["name"] ?? "").trim();
+  if (!name) return null;
+  const servingSize = String(input["servingSize"] ?? "").trim();
+  if (!servingSize) return null;
+  const servingGrams = Number(input["servingGrams"]);
+  return {
+    name,
+    ...(String(input["brand"] ?? "").trim() ? { brand: String(input["brand"]).trim() } : {}),
+    servingSize,
+    ...(Number.isFinite(servingGrams) && servingGrams > 0 ? { servingGrams } : {}),
+    calories: finiteNutritionValue(input["calories"]),
+    protein: finiteNutritionValue(input["protein"]),
+    carbs: finiteNutritionValue(input["carbs"]),
+    fat: finiteNutritionValue(input["fat"]),
+    fiber: finiteNutritionValue(input["fiber"]),
+    ...(String(input["notes"] ?? "").trim() ? { notes: String(input["notes"]).trim() } : {}),
+  };
+}
+
+async function scanFoodLabel(request: Request): Promise<Response> {
+  const scanId = crypto.randomUUID().slice(0, 8);
+  const startedAt = Date.now();
+  if (request.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
+  const auth = await authenticatedScanUser(request);
+  if (auth.error === "unauthorized") {
+    return scanResponse({ error: "יש להתחבר כדי לקרוא תווית." }, 401, scanId, startedAt);
+  }
+  if (auth.error === "server-config") {
+    return scanResponse({ error: "חיבור המשתמש עדיין לא הוגדר." }, 503, scanId, startedAt);
+  }
+  if (scanRateLimited([`user:${auth.userId}`, `ip:${auth.ip}`])) {
+    return scanResponse({ error: "יותר מדי ניסיונות. נסי שוב בעוד דקה." }, 429, scanId, startedAt);
+  }
+
+  let payload: { image?: unknown };
+  try {
+    payload = JSON.parse(await readBodyWithLimit(request, MAX_SCAN_REQUEST_BYTES)) as {
+      image?: unknown;
+    };
+  } catch (error) {
+    return scanResponse(
+      { error: error instanceof Error && error.message === "payload-too-large"
+          ? "הבקשה גדולה מדי. הגודל המרבי הוא 8MB."
+          : "לא ניתן לקרוא את התמונה." },
+      error instanceof Error && error.message === "payload-too-large" ? 413 : 400,
+      scanId,
+      startedAt,
+    );
+  }
+  if (!isImageDataUrl(payload.image)) {
+    return scanResponse({ error: "יש להעלות תמונת PNG או JPG תקינה, עד 8MB." }, 400, scanId, startedAt);
+  }
+
+  const imageMatch = payload.image.match(/^data:(image\/(?:jpeg|jpg|png));base64,(.+)$/i);
+  const apiKey = process.env["GEMINI_API_KEY"];
+  if (!imageMatch || !apiKey) {
+    return scanResponse({ error: "חיבור קריאת התוויות עדיין לא הוגדר." }, 503, scanId, startedAt);
+  }
+  const [, mimeType, imageData] = imageMatch;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{
+              text: "אתה קורא תווית ערכים תזונתיים. החזר JSON בלבד במבנה {name,brand?,servingSize,servingGrams?,calories,protein,carbs,fat,fiber,notes?}. קרא רק טקסט שנראה בתמונה. הערכים צריכים להיות לפי המנה שמופיעה ב-servingSize, לא להמיר ל-100 גרם. אם שדה לא מופיע, החזר 0 והסבר ב-notes. אל תשלים ערכים מניחוש ואל תציג את התוצאה כאימות. השתמש בעברית.",
+            }],
+          },
+          contents: [{
+            parts: [
+              { text: "קרא את תווית המוצר וייצר מועמד שניתן לעריכה. אין להוסיף טקסט מחוץ ל-JSON." },
+              { inlineData: { mimeType, data: imageData } },
+            ],
+          }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 1600, responseMimeType: "application/json" },
+        }),
+      },
+    );
+    if (!response.ok) return scanResponse({ error: "קריאת התווית נכשלה כרגע. נסי שוב." }, 502, scanId, startedAt);
+    const completion = (await response.json()) as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    };
+    const content = completion.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("").trim();
+    if (!content) return scanResponse({ error: "לא התקבלה תוצאה מקריאת התווית." }, 422, scanId, startedAt);
+    const food = normalizeLabelResult(parseModelJson(content));
+    if (!food) return scanResponse({ error: "התווית לא נקראה בצורה מספקת. נסי צילום חד יותר." }, 422, scanId, startedAt);
+    return scanResponse({ food }, 200, scanId, startedAt);
+  } catch {
+    return scanResponse({ error: "שירות קריאת התוויות לא זמין כרגע. נסי שוב." }, 504, scanId, startedAt);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
     serverEntryPromise = import("@tanstack/react-start/server-entry").then(
@@ -461,6 +669,12 @@ export default {
       const url = new URL(request.url);
       if (url.pathname === "/nutrition-scan-meal") {
         return await analyzeMealImage(request);
+      }
+      if (url.pathname === "/nutrition-scan-label") {
+        return await scanFoodLabel(request);
+      }
+      if (url.pathname === "/nutrition-lookup-barcode") {
+        return await lookupFoodByBarcode(request);
       }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);

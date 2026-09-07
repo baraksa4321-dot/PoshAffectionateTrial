@@ -9,6 +9,10 @@ export type NutritionSource = {
   label: string;
   detail: string;
   verified: boolean;
+  status: "estimated" | "label" | "verified";
+  checkedAt?: string | undefined;
+  confidence?: "low" | "medium" | "high" | undefined;
+  needsReview: boolean;
 };
 
 export type NutritionValidationIssue = {
@@ -20,9 +24,16 @@ function hasExactProductReview(food: Pick<FoodItem, "nutritionReview">): boolean
   return (
     food.nutritionReview?.status === "reviewed" &&
     food.nutritionReview.sources.some(
-      (source) => source.match === "exact-product" && source.url.trim().length > 0,
+      (source) => source.match === "exact-product" && Boolean(source.url?.trim()),
     )
   );
+}
+
+function confidenceLabel(confidence?: "low" | "medium" | "high") {
+  if (confidence === "high") return "גבוהה";
+  if (confidence === "medium") return "בינונית";
+  if (confidence === "low") return "נמוכה";
+  return undefined;
 }
 
 const REQUIRED_MACROS = [
@@ -49,6 +60,43 @@ export function nutritionSourceFor(
         : "נבדק מול דף מוצר מתועד",
       detail: `${sourceNames || "מקורות מתועדים"}${confidence ? ` ${confidence}` : ""}`,
       verified: true,
+      status: "verified",
+      checkedAt: review.checkedAt,
+      confidence: review.confidence,
+      needsReview: false,
+    };
+  }
+
+  if (
+    review?.origin === "label" ||
+    review?.sources.some((source) => source.kind === "label-photo")
+  ) {
+    const confidence = confidenceLabel(review.confidence);
+    return {
+      label: "נקלט מתווית — ממתין לאימות",
+      detail: `ערכים שהוזנו מצילום תווית${review.checkedAt ? ` · נבדק בתאריך ${review.checkedAt}` : ""}${
+        confidence ? ` · ביטחון ${confidence}` : ""
+      }. יש להשוות לאריזה לפני שימוש מדויק.`,
+      verified: false,
+      status: "label",
+      checkedAt: review.checkedAt,
+      confidence: review.confidence,
+      needsReview: true,
+    };
+  }
+
+  if (review?.sources.some((source) => source.kind === "open-food-facts")) {
+    const confidence = confidenceLabel(review.confidence);
+    return {
+      label: "ברקוד — מקור חיצוני לא מאומת",
+      detail: `נמצא דרך Open Food Facts${review.checkedAt ? ` · נבדק בתאריך ${review.checkedAt}` : ""}${
+        confidence ? ` · ביטחון ${confidence}` : ""
+      }. יש להשוות לערכי התווית המקומית.`,
+      verified: false,
+      status: "estimated",
+      checkedAt: review.checkedAt,
+      confidence: review.confidence,
+      needsReview: true,
     };
   }
 
@@ -57,6 +105,10 @@ export function nutritionSourceFor(
       label: "טרם אומת מול מקור חיצוני",
       detail: "זהו ערך קיים מהקטלוג המקומי. הוא נשמר ללא שינוי עד לבדיקה מול מקור ישראלי או יצרן.",
       verified: false,
+      status: "estimated",
+      checkedAt: review?.checkedAt,
+      confidence: review?.confidence,
+      needsReview: true,
     };
   }
 
@@ -65,6 +117,10 @@ export function nutritionSourceFor(
       label: "קטלוג ישראלי — נדרש אימות תווית",
       detail: "הערך נשמר כ־seed לשימוש offline; בדקי את תווית המוצר לפני שימוש מדויק.",
       verified: false,
+      status: "estimated",
+      checkedAt: review?.checkedAt,
+      confidence: review?.confidence,
+      needsReview: true,
     };
   }
 
@@ -73,6 +129,10 @@ export function nutritionSourceFor(
       label: "מקור חיצוני — טרם אומת",
       detail: "המוצר הגיע ממקור ברקודים חיצוני. יש לבדוק את תווית היצרן לפני שימוש מדויק.",
       verified: false,
+      status: "estimated",
+      checkedAt: review?.checkedAt,
+      confidence: review?.confidence,
+      needsReview: true,
     };
   }
 
@@ -80,6 +140,10 @@ export function nutritionSourceFor(
     label: "טרם אומת מול מקור חיצוני",
     detail: "הערך הקיים נשמר ללא שינוי עד שתושלם בדיקה מול מקור אמין.",
     verified: false,
+    status: "estimated",
+    checkedAt: review?.checkedAt,
+    confidence: review?.confidence,
+    needsReview: true,
   };
 }
 

@@ -40,6 +40,7 @@ import {
   deleteRecipe,
   findFoodReplacements,
   foodTotals,
+  logPlannedFoodSubstitution,
   logPlannedMeal,
   mealFoodFromLibrary,
   nutritionDay,
@@ -50,6 +51,7 @@ import {
   saveNutritionTargets,
   searchFoods,
   todayKey,
+  togglePlannedFoodEaten,
   uid,
   updateMealFood,
   useGym,
@@ -228,6 +230,7 @@ function NutritionLog() {
   const [substituteFor, setSubstituteFor] = useState<{
     mealId: string;
     food: MealFood;
+    plannedMealId?: string;
   } | null>(null);
   const [substituteQuery, setSubstituteQuery] = useState("");
   const [showTargets, setShowTargets] = useState(false);
@@ -511,7 +514,7 @@ function NutritionLog() {
     },
   ) => {
     const lib = replacement.food;
-    updateMealFood(date, mealId, {
+    const replacementFood: MealFood = {
       id: current.id,
       foodId: lib.id,
       name: lib.name,
@@ -523,7 +526,12 @@ function NutritionLog() {
       fat: lib.fat,
       ...(lib.fiber === undefined ? {} : { fiber: lib.fiber }),
       ...(current.notes === undefined ? {} : { notes: current.notes }),
-    });
+    };
+    if (substituteFor?.plannedMealId) {
+      logPlannedFoodSubstitution(date, substituteFor.plannedMealId, current, replacementFood);
+    } else {
+      updateMealFood(date, mealId, replacementFood);
+    }
     setSubstituteFor(null);
     setSubstituteQuery("");
   };
@@ -974,6 +982,7 @@ function NutritionLog() {
           <div className="space-y-2.5">
             {day.plannedMeals.map((meal) => {
               const plannedTotals = foodTotals(meal.foods);
+              const loggedMeal = day.meals.find((logged) => logged.sourcePlanId === meal.id);
               return (
                 <article
                   key={meal.id}
@@ -1008,22 +1017,80 @@ function NutritionLog() {
                   </div>
                   {meal.foods.length > 0 ? (
                     <div className="mt-3 space-y-1.5">
-                      {meal.foods.map((food) => (
-                        <div
-                          key={food.id}
-                          className="flex items-center justify-between gap-2 rounded-xl bg-white/80 px-3 py-2 text-start"
-                        >
-                          <span className="min-w-0 truncate text-[13px] font-semibold text-ink">
-                            {food.name}
-                          </span>
-                          <span className="shrink-0 text-[11px] text-muted-foreground">
-                            × {food.quantity}
-                            {showCalories
-                              ? ` · ${Math.round(food.calories * food.quantity)} קל׳`
-                              : ""}
-                          </span>
-                        </div>
-                      ))}
+                      {meal.foods.map((food) => {
+                        const loggedFood = loggedMeal?.foods.find(
+                          (item) => item.sourcePlanFoodId === food.id,
+                        );
+                        const status = loggedFood
+                          ? loggedFood.substitutedFromFoodName
+                            ? "substituted"
+                            : "logged"
+                          : "planned";
+                        return (
+                          <div
+                            key={food.id}
+                            className="rounded-xl bg-white/80 px-3 py-2 text-start"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="min-w-0 truncate text-[13px] font-semibold text-ink">
+                                {status === "substituted"
+                                  ? loggedFood?.name
+                                  : food.name}
+                              </span>
+                              <span
+                                className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                  status === "substituted"
+                                    ? "bg-amber-100 text-amber-800"
+                                    : status === "logged"
+                                      ? "bg-emerald-100 text-emerald-800"
+                                      : "bg-secondary text-muted-foreground"
+                                }`}
+                              >
+                                {status === "substituted"
+                                  ? "הוחלף"
+                                  : status === "logged"
+                                    ? "נרשם"
+                                    : "מתוכנן"}
+                              </span>
+                            </div>
+                            <div className="mt-1 flex items-center justify-between gap-2">
+                              <span className="text-[11px] text-muted-foreground">
+                                × {loggedFood?.quantity ?? food.quantity}
+                                {showCalories
+                                  ? ` · ${Math.round(
+                                      (loggedFood ?? food).calories *
+                                        (loggedFood ?? food).quantity,
+                                    )} קל׳`
+                                  : ""}
+                              </span>
+                              <div className="flex items-center gap-1.5">
+                                {status === "planned" ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => togglePlannedFoodEaten(date, meal.id, food.id)}
+                                    className="rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary"
+                                  >
+                                    סימון
+                                  </button>
+                                ) : null}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setSubstituteFor({
+                                      mealId: loggedMeal?.id ?? "",
+                                      food,
+                                      plannedMealId: meal.id,
+                                    })
+                                  }
+                                  className="rounded-lg bg-secondary px-2 py-1 text-[10px] font-bold text-muted-foreground"
+                                >
+                                  החלפה
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="mt-2 text-[12px] text-muted-foreground">

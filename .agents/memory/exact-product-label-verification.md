@@ -8,3 +8,9 @@ Treat a nutrition record as verified only when its provenance explicitly identif
 **Why:** Israeli protein products frequently have near-identical names while their serving sizes, protein amounts, and formulations differ; promoting a near match creates more misleading precision than leaving a record unverified.
 
 **How to apply:** Keep unmatched catalog rows unreviewed and preserve their existing values. Record manufacturer and retailer sources separately when an exact match is eventually confirmed.
+
+Barcode lookup and label-photo extraction are intake aids, not verification. Keep both as editable candidates with visible low/medium confidence and a review-needed state until the user confirms the exact package and serving.
+
+**Why:** External barcode databases and OCR can return a nearby market variant or misread a serving line; silently promoting either source would recreate the misleading precision this rule is meant to prevent.
+
+**How to apply:** Store the source/origin with the food record, show it in the library and editor, and only use the verified tier for claims that match the exact product and serving.
