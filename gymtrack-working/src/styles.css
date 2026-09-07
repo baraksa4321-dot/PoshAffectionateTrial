@@ -6793,6 +6793,43 @@ html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card 
   box-shadow: 0 4px 10px rgb(0 0 0 / 16%);
 }
 
+/* Keep the two home tiles compact on phones without shrinking their touch
+ * targets. The workout tile has extra actions, so the nutrition tile should
+ * not stretch to match it. */
+@media (max-width: 639px) {
+  .dashboard-editorial-shell .home-feature-grid {
+    align-items: start;
+    gap: 0.55rem;
+  }
+
+  .dashboard-editorial-shell .home-feature-item {
+    align-self: start;
+    aspect-ratio: auto;
+  }
+
+  .dashboard-editorial-shell .home-primary-card > .ink-card,
+  .dashboard-editorial-shell .home-primary-card > .surface-card,
+  .dashboard-editorial-shell .home-secondary-card {
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0.7rem !important;
+  }
+
+  .dashboard-editorial-shell .home-primary-card > .ink-card h2 {
+    margin-top: 0.4rem;
+    font-size: 1.1rem;
+  }
+
+  .dashboard-editorial-shell .home-primary-card > .ink-card button {
+    min-height: 2.15rem;
+    margin-top: 0.45rem;
+  }
+
+  .dashboard-editorial-shell .home-secondary-card > div:last-child {
+    min-height: 2.05rem;
+  }
+}
+
 html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card > div:first-child svg {
   width: 1.85rem;
   height: 1.85rem;
@@ -7329,7 +7366,7 @@ html.night-mode [class*="border-border/"] {
   html:not(.night-mode) .dashboard-editorial-shell .home-feature-item > .ink-card,
   html:not(.night-mode) .dashboard-editorial-shell .home-calorie-card {
     height: auto !important;
-    min-height: 12rem !important;
+    min-height: 0 !important;
   }
 }
 
