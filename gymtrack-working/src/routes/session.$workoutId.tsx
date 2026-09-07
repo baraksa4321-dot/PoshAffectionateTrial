@@ -206,34 +206,6 @@ function sessionSummaryStats(session: HistorySession | null) {
   };
 }
 
-function progressionSuggestion(
-  history: HistorySession[],
-  entry: HistoryEntry,
-  targetRepMax: number | undefined,
-  difficultyRating: HistorySession["difficultyRating"],
-) {
-  const previous = lastPerformance(history, entry.exerciseId);
-  const previousSet = previous?.sets.at(-1);
-  if (!previousSet || previousSet.weight <= 0) return null;
-  if (difficultyRating === "difficult") {
-    return {
-      weight: previousSet.weight,
-      text: `הפעם הקודמת הרגישה קשה. הצעה: להישאר על ${previousSet.weight} ק״ג ולשמור על שליטה.`,
-    };
-  }
-  if (targetRepMax && previousSet.reps >= targetRepMax) {
-    const nextWeight = Math.round((previousSet.weight + 2.5) * 10) / 10;
-    return {
-      weight: nextWeight,
-      text: `הגעת לטווח העליון בפעם הקודמת. הצעה: לנסות ${nextWeight} ק״ג בסט הבא.`,
-    };
-  }
-  return {
-    weight: previousSet.weight,
-    text: `הצעה: לחזור על ${previousSet.weight} ק״ג ולנסות להוסיף חזרה אחת אם הביצוע מרגיש יציב.`,
-  };
-}
-
 function isExercisePlaceholder(value: unknown): value is string {
   const normalized = typeof value === "string" ? value.trim() : "";
   return !normalized || normalized === "תרגיל" || normalized === "תרגיל שהוסר";
@@ -277,8 +249,6 @@ function Session() {
   const hydratedEntriesWorkoutIdRef = useRef<string | null>(null);
   const hydratedFeedbackWorkoutIdRef = useRef<string | null>(null);
   const summaryNavigationTimerRef = useRef<number | null>(null);
-  const [approvedProgression, setApprovedProgression] = useState<Record<number, boolean>>({});
-
   useEffect(() => {
     if (!workout) return;
     regularWorkoutSnapshot.current = workout;
@@ -1210,14 +1180,6 @@ function Session() {
         {entries.map((entry, ei) => {
           const item = workout.items[ei];
           const supersetLabel = labels[ei];
-          const previousPerformance = lastPerformance(history, entry.exerciseId);
-          const suggestion = progressionSuggestion(
-            history,
-            entry,
-            entry.targetRepMax,
-            history.find((session) => session.entries.some((itemEntry) => itemEntry.exerciseId === entry.exerciseId))
-              ?.difficultyRating,
-          );
           const fullExercise =
             findExerciseForItem({ exerciseId: entry.exerciseId } as WorkoutItem, exerciseCatalog) ??
             exerciseCatalog.find((e) => e.name === entry.exerciseName);
@@ -1295,60 +1257,6 @@ function Session() {
                 <div className="mt-2 rounded-2xl bg-primary/5 p-2 text-[11px] text-primary font-medium border border-primary/10 flex items-center gap-2">
                   <Sparkles className="h-4 w-4 shrink-0" />
                   <span>הנחיית טכניקה ממאמן: {item.techniqueNotes}</span>
-                </div>
-              ) : null}
-
-              <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
-                <div className="rounded-2xl border border-border/60 bg-secondary/35 p-2 text-[10px]">
-                  <p className="font-bold text-muted-foreground">יעד היום</p>
-                  <p className="mt-1 font-extrabold text-ink">
-                    {entry.targetSets ?? item?.sets ?? 0} סטים · {entry.targetReps ?? item?.reps ?? 0}
-                    {entry.targetRepMax ? `–${entry.targetRepMax}` : ""} חזרות
-                    {item?.targetWeight || item?.weight ? ` · ${item.targetWeight || item.weight} ק״ג` : ""}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-border/60 bg-secondary/35 p-2 text-[10px]">
-                  <p className="font-bold text-muted-foreground">בפעם הקודמת</p>
-                  <p className="mt-1 font-extrabold text-ink">
-                    {previousPerformance
-                      ? `${previousPerformance.sets.length} סטים · עד ${Math.max(
-                          ...previousPerformance.sets.map((set) => set.weight),
-                        )} ק״ג`
-                      : "אין ביצוע קודם עדיין"}
-                  </p>
-                </div>
-              </div>
-              {suggestion ? (
-                <div className="mt-2 rounded-2xl border border-primary/20 bg-primary/5 p-2.5">
-                  <div className="flex items-start gap-2">
-                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-bold text-primary">הצעה להמשך · באישור שלך</p>
-                      <p className="mt-1 text-[11px] leading-relaxed text-ink">{suggestion.text}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEntries((current) =>
-                          current.map((currentEntry, index) =>
-                            index !== ei
-                              ? currentEntry
-                              : {
-                                  ...currentEntry,
-                                  sets: currentEntry.sets.map((set) =>
-                                    set.warmup || set.done ? set : { ...set, weight: suggestion.weight },
-                                  ),
-                                },
-                          ),
-                        );
-                        setApprovedProgression((current) => ({ ...current, [ei]: true }));
-                      }}
-                      disabled={approvedProgression[ei]}
-                      className="press shrink-0 rounded-xl bg-primary px-2.5 py-2 text-[10px] font-bold text-primary-foreground disabled:opacity-60"
-                    >
-                      {approvedProgression[ei] ? "אושר" : "אישור"}
-                    </button>
-                  </div>
                 </div>
               ) : null}
 
