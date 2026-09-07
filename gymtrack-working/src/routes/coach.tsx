@@ -24,9 +24,6 @@ import {
   CheckCircle2,
   Calculator,
   X,
-  RefreshCw,
-  Wifi,
-  WifiOff,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -1759,11 +1756,7 @@ export function CoachDashboardPage({
   >({});
   const [attentionView, setAttentionView] = useState<"open" | "all">("open");
   const [expandedAttentionClientId, setExpandedAttentionClientId] = useState<string | null>(null);
-  const [clientRealtimeStatus, setClientRealtimeStatus] =
-    useState<RealtimeConnectionStatus>("connecting");
-  const [lastClientRefreshAt, setLastClientRefreshAt] = useState<number | null>(null);
   const [clientRefreshInFlight, setClientRefreshInFlight] = useState(false);
-  const [clientDataStale, setClientDataStale] = useState(false);
   const draftOwnerRef = useRef<string | null>(null);
   const measurementDraftDirtyRef = useRef(false);
   const profileDraftDirtyRef = useRef(false);
@@ -1793,56 +1786,10 @@ export function CoachDashboardPage({
     (workspaceMode === "nutrition" ||
       openEditor === "nutrition" ||
       (workspaceMode === "all" && activeWorkspaceTab === "nutrition"));
-  const formattedLastClientRefresh = lastClientRefreshAt
-    ? new Date(lastClientRefreshAt).toLocaleTimeString("he-IL", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : null;
-  const clientFreshnessLabel = clientRefreshInFlight
-    ? "מרענן נתוני מתאמן…"
-    : clientRealtimeStatus === "disconnected"
-      ? formattedLastClientRefresh
-        ? `החיבור לא זמין · מוצג עותק מ־${formattedLastClientRefresh}`
-        : "החיבור לא זמין · ממתין לנתונים"
-      : clientRealtimeStatus === "reconnecting"
-        ? formattedLastClientRefresh
-          ? `החיבור מתחדש · עודכן ב־${formattedLastClientRefresh}`
-          : "החיבור מתחדש…"
-        : clientDataStale
-          ? formattedLastClientRefresh
-            ? `הנתונים לא עודכנו · מוצג עותק מ־${formattedLastClientRefresh}`
-            : "הנתונים לא עודכנו · ממתין לנתונים"
-          : clientRealtimeStatus === "connecting"
-            ? "מתחבר לנתוני המתאמן…"
-            : clientRefreshInFlight
-              ? "מסנכרן נתוני מתאמן…"
-              : formattedLastClientRefresh
-                ? `מחובר · עודכן ב־${formattedLastClientRefresh}`
-                : "מחובר לנתוני המתאמן";
-  const clientFreshnessClass =
-    clientRealtimeStatus === "disconnected" ||
-    clientRealtimeStatus === "reconnecting" ||
-    clientDataStale
-      ? "border-amber-200 bg-amber-50 text-amber-700"
-      : clientRefreshInFlight || clientRealtimeStatus === "connecting"
-        ? "border-blue-200 bg-blue-50 text-blue-700"
-        : "border-emerald-200 bg-emerald-50 text-emerald-700";
-  const ClientFreshnessIcon =
-    clientRealtimeStatus === "disconnected"
-      ? WifiOff
-      : clientRefreshInFlight || clientRealtimeStatus === "connecting" || clientDataStale
-        ? RefreshCw
-        : Wifi;
-
   const applySelectedClientRefreshResult = useCallback(
     (result: ClientDetails) => {
       applyClientDetails(result, { preserveOnError: true });
       setClientRefreshInFlight(false);
-      setClientDataStale(Boolean(result.error));
-      if (!result.error) {
-        setLastClientRefreshAt(Date.now());
-      }
     },
     [applyClientDetails],
   );
@@ -2272,10 +2219,7 @@ export function CoachDashboardPage({
   useEffect(() => {
     if (!selectedClientId) {
       setClientDetails(null);
-      setClientRealtimeStatus("connecting");
-      setLastClientRefreshAt(null);
       setClientRefreshInFlight(false);
-      setClientDataStale(false);
       return;
     }
 
@@ -2283,10 +2227,7 @@ export function CoachDashboardPage({
     setLoadingDetails(true);
     setClientDetailsError("");
     setManagementError("");
-    setClientRealtimeStatus(isSelfSelected ? "connected" : "connecting");
-    setLastClientRefreshAt(isSelfSelected ? Date.now() : null);
     setClientRefreshInFlight(!isSelfSelected);
-    setClientDataStale(false);
     if (isSelfSelected) {
       const selfProfile = store.userProfile ?? { weight: 0, role: "owner" as const };
       setClientDetails({
@@ -2314,16 +2255,11 @@ export function CoachDashboardPage({
         applyClientDetails(res);
         setLoadingDetails(false);
         setClientRefreshInFlight(false);
-        setClientDataStale(Boolean(res.error));
-        if (!res.error) {
-          setLastClientRefreshAt(Date.now());
-        }
       })
       .catch((error: unknown) => {
         if (!active) return;
         setLoadingDetails(false);
         setClientRefreshInFlight(false);
-        setClientDataStale(true);
         setClientDetailsError(errorMessage(error, "טעינת נתוני המתאמן נכשלה"));
       });
     return () => {
@@ -2338,7 +2274,6 @@ export function CoachDashboardPage({
     let refreshTimer: number | null = null;
     const refreshSelectedClient = (table?: string, status?: RealtimeConnectionStatus) => {
       if (status) {
-        if (active) setClientRealtimeStatus(status);
         if (status !== "connected") return;
       }
       if (!active || document.visibilityState === "hidden" || refreshTimer !== null) return;
@@ -2362,7 +2297,6 @@ export function CoachDashboardPage({
           .catch((error: unknown) => {
             if (!active) return;
             setClientRefreshInFlight(false);
-            setClientDataStale(true);
             setClientDetailsError(errorMessage(error, "רענון נתוני המתאמן נכשל"));
           });
         void fetchSentCoachMessages(selectedClientId)
@@ -2395,33 +2329,6 @@ export function CoachDashboardPage({
     isSelfSelected,
     loadClientFeedback,
     loadCoachClients,
-    selectedClientId,
-  ]);
-
-  const retrySelectedClientRefresh = useCallback(() => {
-    if (!selectedClientId || isSelfSelected || clientRefreshInFlight) return;
-
-    setClientDetailsError("");
-    setClientRefreshInFlight(true);
-    void pullClientDataForCoach(selectedClientId)
-      .then(applySelectedClientRefreshResult)
-      .catch((error: unknown) => {
-        setClientRefreshInFlight(false);
-        setClientDataStale(true);
-        setClientDetailsError(errorMessage(error, "רענון נתוני המתאמן נכשל"));
-      });
-    void fetchSentCoachMessages(selectedClientId)
-      .then(setSentCoachMessages)
-      .catch((error: unknown) => {
-        setSentCoachMessagesError(
-          `טעינת היסטוריית ההודעות נכשלה: ${errorMessage(error, "שגיאה בטעינת ההודעות")}`,
-        );
-      });
-  }, [
-    applySelectedClientRefreshResult,
-    clientRefreshInFlight,
-    fetchSentCoachMessages,
-    isSelfSelected,
     selectedClientId,
   ]);
 
@@ -5705,47 +5612,6 @@ export function CoachDashboardPage({
                   </button>
                 </div>
               ) : null}
-              {selectedClientId && !isSelfSelected && !editingDayId ? (
-                <div
-                  data-client-freshness="true"
-                  title={
-                    lastClientRefreshAt
-                      ? `רענון מוצלח אחרון: ${new Date(lastClientRefreshAt).toLocaleString("he-IL")}`
-                      : "מצב החיבור לנתוני המתאמן"
-                  }
-                  className={`mx-4 mt-2 flex min-w-0 max-w-full items-center gap-1.5 self-start rounded-full border px-2.5 py-1 text-[11px] font-bold sm:mx-6 ${clientFreshnessClass}`}
-                >
-                  <span
-                    role="status"
-                    aria-live="polite"
-                    className="flex min-w-0 items-center gap-1.5"
-                  >
-                    <ClientFreshnessIcon
-                      aria-hidden="true"
-                      className={`h-3.5 w-3.5 shrink-0 ${
-                        clientRefreshInFlight || clientRealtimeStatus === "connecting"
-                          ? "animate-spin"
-                          : ""
-                      }`}
-                    />
-                    <span className="min-w-0 truncate">{clientFreshnessLabel}</span>
-                  </span>
-                  {clientDataStale ||
-                  clientRealtimeStatus === "disconnected" ||
-                  clientRealtimeStatus === "reconnecting" ? (
-                    <button
-                      type="button"
-                      onClick={retrySelectedClientRefresh}
-                      disabled={clientRefreshInFlight}
-                      aria-label="נסה שוב לרענן את נתוני המתאמן"
-                      className="shrink-0 rounded-full border border-current/25 px-2 py-0.5 text-[10px] font-extrabold whitespace-nowrap transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-55"
-                    >
-                      נסה שוב
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
-
               <div data-coach-workout-surface-slot="true" className="coach-workout-surface-slot" />
 
               {!editingDayId && (trackingLanding || workspacePage || openEditor) && clientDetails ? (
