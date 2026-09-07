@@ -532,6 +532,55 @@ function Session() {
   } | null>(null);
   const restDraggedRef = useRef(false);
 
+  const prepareRestAudio = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const AudioContextCtor =
+      window.AudioContext ||
+      (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (!AudioContextCtor) return;
+
+    try {
+      if (!vibrationAudioRef.current) {
+        vibrationAudioRef.current = new AudioContextCtor();
+      }
+      if (vibrationAudioRef.current.state === "suspended") {
+        void vibrationAudioRef.current.resume();
+      }
+    } catch {
+      vibrationAudioRef.current = null;
+    }
+  }, []);
+
+  const playRestCompletionSound = useCallback(() => {
+    const audioContext = vibrationAudioRef.current;
+    if (!audioContext) return;
+
+    const playTone = () => {
+      try {
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.value = 880;
+        gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.18, audioContext.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.34);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.36);
+      } catch {
+        // Some browsers can still block audio after the initial gesture.
+      }
+    };
+
+    if (audioContext.state === "suspended") {
+      void audioContext.resume().then(playTone).catch(() => undefined);
+    } else {
+      playTone();
+    }
+  }, []);
+
   const nextSmartTimerPosition = useCallback(
     (position: SmartTimerPosition): SmartTimerPosition | null => {
       const currentEntry = entries[position.exerciseIndex];
@@ -623,30 +672,13 @@ function Session() {
       restCompletionVibratedRef.current = true;
       setRestFinished(true);
       setSmartTimerPosition((current) => (current ? nextSmartTimerPosition(current) : current));
-      // Vibration is not exposed by every iOS browser. Use both the native
-      // pattern and a short user-activated audio fallback when available.
+      // Android browsers can vibrate. iOS Safari/PWA does not expose this API,
+      // so the audio fallback is the important path there.
       navigator.vibrate?.([180, 80, 180, 80, 320]);
-      const audioContext = vibrationAudioRef.current;
-      if (audioContext) {
-        try {
-          const oscillator = audioContext.createOscillator();
-          const gain = audioContext.createGain();
-          oscillator.frequency.value = 880;
-          gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.16, audioContext.currentTime + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.32);
-          oscillator.connect(gain);
-          gain.connect(audioContext.destination);
-          oscillator.start();
-          oscillator.stop(audioContext.currentTime + 0.34);
-        } catch {
-          // Some browsers block audio even after a gesture; vibration remains
-          // the primary notification in those browsers.
-        }
-      }
+      playRestCompletionSound();
     }
     previousRestRef.current = rest;
-  }, [entries, nextSmartTimerPosition, rest]);
+  }, [entries, nextSmartTimerPosition, playRestCompletionSound, rest]);
 
   const labels = useMemo(() => supersetLabels(workout?.items ?? []), [workout?.items]);
   const exerciseCatalog = useMemo(
@@ -731,22 +763,7 @@ function Session() {
     patchSet(ei, si, { done: isNowDone });
 
     if (isNowDone && !currentSet.warmup) {
-      if (typeof window !== "undefined" && !vibrationAudioRef.current) {
-        const AudioContextCtor =
-          window.AudioContext ||
-          (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext })
-            .webkitAudioContext;
-        if (AudioContextCtor) {
-          try {
-            vibrationAudioRef.current = new AudioContextCtor();
-            void vibrationAudioRef.current.resume();
-          } catch {
-            vibrationAudioRef.current = null;
-          }
-        }
-      } else {
-        void vibrationAudioRef.current?.resume();
-      }
+      prepareRestAudio();
       const setNumber = entries[ei]?.sets.slice(0, si + 1).filter((set) => !set.warmup).length ?? 1;
       setSmartTimerPosition({ exerciseIndex: ei, setNumber });
       setSmartTimerStarted(true);
@@ -759,6 +776,7 @@ function Session() {
 
   const startSmartRest = () => {
     if (smartTimerStarted && !smartTimerPosition) return;
+    prepareRestAudio();
     const position = smartTimerPosition ?? { exerciseIndex: 0, setNumber: 1 };
     const restSeconds = workout?.items[position.exerciseIndex]?.rest ?? 60;
     setSmartTimerPosition(position);
@@ -1247,6 +1265,7 @@ function Session() {
                     <button
                       type="button"
                       onClick={() => {
+                        prepareRestAudio();
                         setRest(item?.rest ?? 60);
                         setRestPaused(false);
                       }}
@@ -1819,7 +1838,7 @@ function Session() {
                       ? "המשך טיימר מנוחה"
                       : "עצור טיימר מנוחה"
                     : restFinished
-                      ? "Time over"
+                      ? "הזמן הסתיים"
                       : "פתח טיימר מנוחה"
                 }
                 onKeyDown={(event) => {
@@ -1842,11 +1861,14 @@ function Session() {
                       <p className="text-[9px] font-semibold tracking-[0.14em] text-primary-foreground/80 uppercase">
                         זמן מנוחה
                       </p>
-                      <p className="font-display text-[17px] font-semibold tabular-nums text-primary-foreground">
+                      <p
+                        className="font-display text-[17px] font-semibold tabular-nums text-primary-foreground"
+                        aria-live="assertive"
+                      >
                         {rest > 0
                           ? `${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, "0")}`
                           : restFinished
-                            ? "Time over"
+                            ? "הזמן הסתיים"
                             : "מוכן"}
                       </p>
                       {smartTimerPosition ? (
@@ -1884,11 +1906,14 @@ function Session() {
                 ) : (
                   <div className="text-center">
                     <Timer className="mx-auto h-4 w-4 text-primary-foreground/80" />
-                    <p className="mt-0.5 font-display text-[12px] font-bold tabular-nums text-primary-foreground">
+                    <p
+                      className="mt-0.5 font-display text-[12px] font-bold tabular-nums text-primary-foreground"
+                      aria-live="assertive"
+                    >
                       {rest > 0
                         ? `${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, "0")}`
                         : restFinished
-                          ? "Time over"
+                          ? "הזמן הסתיים"
                           : "טיימר"}
                     </p>
                   </div>
