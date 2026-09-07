@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MY routine</string>
+    <string name="title_activity_main">MY routine</string>
+    <string name="package_name">com.myroutine.app</string>
+    <string name="custom_url_scheme">com.myroutine.app</string>
+</resources>

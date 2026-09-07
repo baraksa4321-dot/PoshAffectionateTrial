@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Capacitor } from "@capacitor/core";
+import { Haptics, NotificationType } from "@capacitor/haptics";
 import { createPortal } from "react-dom";
 import {
   Check,
@@ -581,6 +583,15 @@ function Session() {
     }
   }, []);
 
+  const notifyRestCompletion = useCallback(() => {
+    if (Capacitor.isNativePlatform()) {
+      void Haptics.notification({ type: NotificationType.Success }).catch(() => undefined);
+    } else if (typeof navigator !== "undefined") {
+      navigator.vibrate?.([180, 80, 180, 80, 320]);
+    }
+    playRestCompletionSound();
+  }, [playRestCompletionSound]);
+
   const nextSmartTimerPosition = useCallback(
     (position: SmartTimerPosition): SmartTimerPosition | null => {
       const currentEntry = entries[position.exerciseIndex];
@@ -672,13 +683,12 @@ function Session() {
       restCompletionVibratedRef.current = true;
       setRestFinished(true);
       setSmartTimerPosition((current) => (current ? nextSmartTimerPosition(current) : current));
-      // Android browsers can vibrate. iOS Safari/PWA does not expose this API,
-      // so the audio fallback is the important path there.
-      navigator.vibrate?.([180, 80, 180, 80, 320]);
-      playRestCompletionSound();
+      // Native Capacitor builds use the real iOS/Android haptics API.
+      // Web/PWA keeps the existing browser vibration fallback.
+      notifyRestCompletion();
     }
     previousRestRef.current = rest;
-  }, [entries, nextSmartTimerPosition, playRestCompletionSound, rest]);
+  }, [entries, nextSmartTimerPosition, notifyRestCompletion, rest]);
 
   const labels = useMemo(() => supersetLabels(workout?.items ?? []), [workout?.items]);
   const exerciseCatalog = useMemo(
