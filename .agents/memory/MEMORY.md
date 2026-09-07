@@ -40,3 +40,4 @@
 - [Coach attention privacy](coach-attention-privacy.md) — Keep reviewed state and private coach notes coach-scoped and local-first unless a dedicated private schema exists.
 - [External store snapshot stability](external-store-snapshot-stability.md) — Optional array snapshots need stable empty constants or React can enter an infinite update loop.
 - [Capacitor static build](capacitor-static-build.md) — The TanStack Start app needs a separate client-only Vite entry and root index.html for native wrapping.
+- [Remote persistence smoke fixtures](remote-persistence-smoke-fixtures.md) — Reopening tests must make mocked mutation responses visible to later reads, not return only the initial fixture.

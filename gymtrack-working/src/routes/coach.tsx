@@ -3508,6 +3508,7 @@ export function CoachDashboardPage({
                   ? selectedCableGrip
                   : undefined,
               sets: workingSetPayload.length,
+              repType: "range" as const,
               reps: Math.max(1, repMin),
               repMin: Math.max(1, repMin),
               repMax: Math.max(repMin, repMax),
@@ -7234,6 +7235,12 @@ export function CoachDashboardPage({
                                                                     Number(event.target.value),
                                                                   );
                                                                   if (Number.isFinite(value)) {
+                                                                       setRepMin(value);
+                                                                       setSetRepMins((current) => {
+                                                                         const next = [...current];
+                                                                         next[0] = value;
+                                                                         return next;
+                                                                       });
                                                                     void handleUpdateExerciseItem(
                                                                       dayItem.id,
                                                                       exItem.id,
@@ -7263,6 +7270,12 @@ export function CoachDashboardPage({
                                                                     Number(event.target.value),
                                                                   );
                                                                   if (Number.isFinite(value)) {
+                                                                       setRepMax(value);
+                                                                       setSetRepMaxes((current) => {
+                                                                         const next = [...current];
+                                                                         next[0] = value;
+                                                                         return next;
+                                                                       });
                                                                     void handleUpdateExerciseItem(
                                                                       dayItem.id,
                                                                       exItem.id,
@@ -7667,88 +7680,7 @@ export function CoachDashboardPage({
                                                             <button
                                                               type="button"
                                                               onClick={() => {
-                                                                void handleUpdateExerciseItem(
-                                                                  dayItem.id,
-                                                                  exItem.id,
-                                                                  {
-                                                                    targetWeight,
-                                                                    weight: targetWeight,
-                                                                    sets: Math.max(1, setsCount),
-                                                                    reps: Math.max(1, repMin),
-                                                                    repMin: Math.max(1, repMin),
-                                                                    repMax: Math.max(
-                                                                      repMin,
-                                                                      repMax,
-                                                                    ),
-                                                                    rest: Math.max(0, restSec),
-                                                                    notes: techNotes.trim(),
-                                                                    warmups: warmupEnabled
-                                                                      ? Array.from(
-                                                                          {
-                                                                            length: Math.max(
-                                                                              1,
-                                                                              warmupSetsCount,
-                                                                            ),
-                                                                          },
-                                                                          (_, index) => ({
-                                                                            id:
-                                                                              exItem.warmups?.[
-                                                                                index
-                                                                              ]?.id || uid(),
-                                                                            weight: warmupWeight,
-                                                                            reps: warmupReps,
-                                                                            repsMax: warmupRepsMax,
-                                                                          }),
-                                                                        )
-                                                                      : [],
-                                                                    dropSetConfig: dropSetEnabled
-                                                                      ? {
-                                                                          enabled: true,
-                                                                          drops: 2,
-                                                                          levels: [
-                                                                            {
-                                                                              weight:
-                                                                                Number(
-                                                                                  dropLevel1Weight,
-                                                                                ) || targetWeight,
-                                                                              repsMin:
-                                                                                dropLevel1RepsMin,
-                                                                              repsMax:
-                                                                                dropLevel1RepsMax,
-                                                                            },
-                                                                            {
-                                                                              weight:
-                                                                                Number(
-                                                                                  dropLevel2Weight,
-                                                                                ) || targetWeight,
-                                                                              repsMin:
-                                                                                dropLevel2RepsMin,
-                                                                              repsMax:
-                                                                                dropLevel2RepsMax,
-                                                                            },
-                                                                          ],
-                                                                        }
-                                                                      : {
-                                                                          enabled: false,
-                                                                          drops: 0,
-                                                                          levels: [],
-                                                                        },
-                                                                    supersetId: supersetGroup || "",
-                                                                    supersetPartnerId: supersetGroup
-                                                                      ? supersetPartnerId
-                                                                      : "",
-                                                                    supersetRepsMin: supersetGroup
-                                                                      ? Math.max(1, supersetRepsMin)
-                                                                      : 0,
-                                                                    supersetRepsMax: supersetGroup
-                                                                      ? Math.max(
-                                                                          supersetRepsMin,
-                                                                          supersetRepsMax,
-                                                                        )
-                                                                      : 0,
-                                                                  },
-                                                                );
-                                                                setEditingItemId(null);
+                                                                void handleAddExerciseToDay(null);
                                                               }}
                                                               className="h-11 w-full rounded-full bg-primary text-sm font-bold text-primary-foreground shadow-sm"
                                                             >

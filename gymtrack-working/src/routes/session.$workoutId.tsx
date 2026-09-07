@@ -401,8 +401,12 @@ function Session() {
       const working: LoggedSet[] = Array.from({ length: item.sets }, (_, i) => {
         const configuredSet = item.workingSets?.[i];
         const isDropSet = configuredSet?.dropSet ?? false;
+        const configuredTargetReps = configuredSet?.reps ?? targetReps;
+        const configuredTargetRepMax = isRange
+          ? (configuredSet?.repMax ?? targetRepMax)
+          : undefined;
         return {
-          reps: last?.sets[i]?.reps ?? configuredSet?.reps ?? targetReps,
+          reps: last?.sets[i]?.reps ?? configuredTargetReps,
           weight:
             configuredSet?.weight ??
             (isDropSet
@@ -420,9 +424,11 @@ function Session() {
                 )
               : prescribedWeight),
           done: completedSetForReopenedWorkout(completedEntry, i),
-          targetReps,
+          targetReps: configuredTargetReps,
           warmup: false,
-          ...(targetRepMax !== undefined ? { targetRepMax } : {}),
+          ...(configuredTargetRepMax !== undefined
+            ? { targetRepMax: configuredTargetRepMax }
+            : {}),
           ...(configuredSet?.notes ? { notes: configuredSet.notes } : {}),
           ...(isDropSet ? { dropSet: true } : {}),
         };
@@ -1192,12 +1198,6 @@ function Session() {
             <p className="text-[11.5px] font-semibold tabular-nums text-ink">
               {Math.round(progress)}%
             </p>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
           </div>
         </div>
       </div>

@@ -664,6 +664,32 @@ function makeBlankWorkout(): Workout {
   };
 }
 
+function normalizeWorkingSets(item: WorkoutItem): WorkingSet[] {
+  const saved = item.workingSets ?? [];
+  const defaultReps = item.repType === "range" ? (item.repMin ?? item.reps) : item.reps;
+  const defaultRepMax = item.repType === "range" ? (item.repMax ?? defaultReps) : undefined;
+
+  return Array.from({ length: Math.max(1, item.sets) }, (_, index) => {
+    const source = saved[index] ?? saved[saved.length - 1];
+    const next: WorkingSet = {
+      id: source?.id ?? `${item.id}-set-${index}`,
+      setNumber: index + 1,
+      weight: source?.weight ?? item.weight,
+      reps: source?.reps ?? defaultReps,
+      rest: source?.rest ?? item.rest,
+      notes: source?.notes ?? "",
+    };
+    if (source?.repMax !== undefined) {
+      next.repMax = source.repMax;
+    } else if (defaultRepMax !== undefined) {
+      next.repMax = defaultRepMax;
+    }
+    if (source?.setType) next.setType = source.setType;
+    if (source?.dropSet !== undefined) next.dropSet = source.dropSet;
+    return next;
+  });
+}
+
 function SortableItem({
   item,
   exercise,
@@ -693,32 +719,32 @@ function SortableItem({
   const availableCableGrips = exercise ? exerciseGripOptions(exercise) : [];
   const isRange = item.repType === "range";
   const warmups = item.warmups ?? [];
-  const fallbackWorkingSets: WorkingSet[] = Array.from(
-    { length: item.sets },
-    (_, index): WorkingSet => ({
-      id: `${item.id}-set-${index}`,
-      setNumber: index + 1,
-      weight: item.weight,
-      reps: item.reps,
-      repMax: item.repMax ?? item.reps,
-      rest: item.rest,
-      notes: "",
-    }),
-  );
-  const workingSets: WorkingSet[] = item.workingSets ?? fallbackWorkingSets;
+  const workingSets = normalizeWorkingSets(item);
+
+  const patchRepRange = (min: number, max: number) =>
+    onPatch(item.id, {
+      repType: "range",
+      reps: min,
+      repMin: min,
+      repMax: max,
+      workingSets: workingSets.map((set) => ({ ...set, reps: min, repMax: max })),
+    });
 
   const setRepType = (type: "fixed" | "range") => {
     if (type === "range") {
       const min = Math.max(1, item.repMin ?? item.reps);
       const max = Math.max(min, item.repMax ?? item.reps + 2);
-      onPatch(item.id, {
-        repType: "range",
-        reps: min,
-        repMin: min,
-        repMax: max,
-      });
+      patchRepRange(min, max);
     } else {
-      onPatch(item.id, { repType: "fixed" });
+      const reps = Math.max(1, item.repMin ?? item.reps);
+      onPatch(item.id, {
+        repType: "fixed",
+        reps,
+        workingSets: workingSets.map((set) => {
+          const { repMax: _repMax, ...withoutRepMax } = set;
+          return { ...withoutRepMax, reps };
+        }),
+      });
     }
   };
 
@@ -846,7 +872,13 @@ function SortableItem({
           label="סטים"
           value={item.sets}
           min={1}
-          onChange={(value) => onPatch(item.id, { sets: value })}
+          onChange={(value) => {
+            const sets = Math.max(1, value);
+            onPatch(item.id, {
+              sets,
+              workingSets: normalizeWorkingSets({ ...item, sets }),
+            });
+          }}
         />
         <Stepper
           label="מנוחה"
@@ -887,11 +919,7 @@ function SortableItem({
               min={1}
               onChange={(value) => {
                 const min = Math.max(1, value);
-                onPatch(item.id, {
-                  reps: min,
-                  repMin: min,
-                  repMax: Math.max(min, item.repMax ?? min),
-                });
+                  patchRepRange(min, Math.max(min, item.repMax ?? min));
               }}
             />
             <Stepper
@@ -900,7 +928,7 @@ function SortableItem({
               min={1}
               onChange={(value) => {
                 const min = Math.max(1, item.repMin ?? item.reps);
-                onPatch(item.id, { repMin: min, repMax: Math.max(min, value) });
+                  patchRepRange(min, Math.max(min, value));
               }}
             />
           </div>

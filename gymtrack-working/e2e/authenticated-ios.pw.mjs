@@ -203,6 +203,10 @@ async function installFixture(page) {
       window.sessionStorage.setItem("gymtrack.workspace", "management");
 
       const originalFetch = window.fetch.bind(window);
+      let remoteWorkouts = workouts.map((workout) => ({
+        ...workout,
+        items: JSON.parse(JSON.stringify(workout.items)),
+      }));
       window.fetch = async (input, init) => {
         const url = typeof input === "string" ? input : input.url;
         if (url.includes("/auth/v1/user")) {
@@ -233,7 +237,17 @@ async function installFixture(page) {
           } else if (path === "programs") {
             body = [{ id: program.id, user_id: clientProfile.id, name: program.name, description: program.notes }];
           } else if (path === "program_days") {
-            body = workouts.map((workout, index) => ({
+            const method = (init?.method ?? "GET").toUpperCase();
+            if (method === "PATCH" || method === "PUT") {
+              const requestBody = typeof init?.body === "string" ? JSON.parse(init.body) : null;
+              const dayId = parsed.searchParams.get("id")?.replace(/^eq\./, "");
+              if (requestBody?.items && dayId) {
+                remoteWorkouts = remoteWorkouts.map((workout) =>
+                  workout.id === dayId ? { ...workout, items: requestBody.items } : workout,
+                );
+              }
+            }
+            body = remoteWorkouts.map((workout, index) => ({
               id: workout.id,
               program_id: program.id,
               user_id: clientProfile.id,
@@ -331,6 +345,31 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
 
   await page.getByRole("button", { name: "עריכה", exact: true }).first().click();
   await expect(page.getByText("עריכת תרגיל באימון", { exact: true })).toBeVisible();
+
+  const setCountInput = page.getByRole("textbox", { name: "מספר סטים", exact: true });
+  await setCountInput.fill("4");
+  await expect(page.getByText("סט 4", { exact: true })).toBeVisible();
+  const fourthSet = page
+    .getByText("סט 4", { exact: true })
+    .locator("..")
+    .locator("..");
+  await fourthSet.getByRole("textbox", { name: "חזרות מינ׳", exact: true }).fill("8");
+  await fourthSet.getByRole("textbox", { name: "חזרות מקס׳", exact: true }).fill("12");
+  await page.getByRole("button", { name: "שמור שינויי תרגיל", exact: true }).click();
+
+  await page.getByRole("button", { name: "עריכה", exact: true }).first().click();
+  await expect(page.getByText("עריכת תרגיל באימון", { exact: true })).toBeVisible();
+  await expect(setCountInput).toHaveValue("4");
+  const reopenedFourthSet = page
+    .getByText("סט 4", { exact: true })
+    .locator("..")
+    .locator("..");
+  await expect(
+    reopenedFourthSet.getByRole("textbox", { name: "חזרות מינ׳", exact: true }),
+  ).toHaveValue("8");
+  await expect(
+    reopenedFourthSet.getByRole("textbox", { name: "חזרות מקס׳", exact: true }),
+  ).toHaveValue("12");
 
   const thirdSetMode = page.getByRole("combobox", { name: "סוג סט 3" });
   await thirdSetMode.selectOption("drop");
