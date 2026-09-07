@@ -54,6 +54,7 @@ import {
   togglePlannedFoodEaten,
   uid,
   updateMealFood,
+  useProfileHydrationStatus,
   useGym,
 } from "@/lib/gym-store";
 import type { FoodItem, MealFood } from "@/lib/gym-types";
@@ -218,10 +219,13 @@ type ScannedMeal = { mealName: string; foods: ScannedFood[] };
 
 function NutritionLog() {
   const gym = useGym();
+  const profileHydrationStatus = useProfileHydrationStatus();
   const gender = gym.userProfile?.gender;
   const [loadingGender, setLoadingGender] = useState<LoadingGender | undefined>(gender);
   const showCalories = gym.userProfile?.showCalories !== false;
-  const canManageTargets = gym.userProfile?.role === "coach" || gym.userProfile?.role === "owner";
+  const canManageTargets =
+    profileHydrationStatus === "ready" &&
+    (gym.userProfile?.role === "coach" || gym.userProfile?.role === "owner");
   const [date, setDate] = useState(todayKey());
   const [pickerMealId, setPickerMealId] = useState<string | null>(null);
   const [pickerQuery, setPickerQuery] = useState("");
@@ -368,6 +372,12 @@ function NutritionLog() {
       setLoadingGender(undefined);
     }
   }, [gender]);
+
+  useEffect(() => {
+    if (!canManageTargets && showTargets) {
+      setShowTargets(false);
+    }
+  }, [canManageTargets, showTargets]);
 
   useEffect(() => {
     if (scanState !== "analyzing" || !loadingAnimationsEnabled) return;
