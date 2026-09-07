@@ -715,7 +715,7 @@ function Dashboard() {
                 onPointerUp={finishHomeCardPointer}
                 onPointerCancel={finishHomeCardPointer}
               >
-                <div className="ink-card flex min-h-[150px] flex-col p-3 text-start">
+                <div className="ink-card flex min-h-0 flex-col p-2.5 text-start">
                   <div className="flex items-center justify-between gap-1">
                     <span className="min-w-0 break-words text-[10px] font-bold leading-[1.25] text-primary-foreground/80">
                       אימון יומי
@@ -741,7 +741,7 @@ function Dashboard() {
                         params: { workoutId: primaryWorkout.id },
                       });
                     }}
-                    className="press mt-auto inline-flex h-9 cursor-pointer items-center justify-center gap-1 rounded-xl bg-background px-2 text-[11px] font-bold text-ink shadow-sm"
+                     className="press mt-auto inline-flex h-8 cursor-pointer items-center justify-center gap-1 rounded-xl bg-background px-2 text-[11px] font-bold text-ink shadow-sm"
                   >
                     <Play className="h-3.5 w-3.5 fill-current text-primary" />
                     {todayScheduledWorkout?.status === "partial" ? "המשך אימון" : "התחלת אימון"}
@@ -780,7 +780,7 @@ function Dashboard() {
                 onPointerUp={finishHomeCardPointer}
                 onPointerCancel={finishHomeCardPointer}
               >
-                <Card className="flex min-h-[150px] flex-col p-3 text-start">
+                <Card className="flex min-h-0 flex-col p-2.5 text-start">
                    <p className="font-display text-sm font-bold text-ink">אין אימון להיום</p>
                    <p className="mt-1 text-[11px] text-muted-foreground">
                      האימונים שלך מחכים במסך האימונים.
@@ -804,7 +804,7 @@ function Dashboard() {
               onPointerCancel={finishHomeCardPointer}
               onClick={preventHomeNavigation}
               style={{ order: homeCardOrder.indexOf("nutrition") }}
-              className={`home-feature-item home-secondary-card home-calorie-card surface-card flex min-h-[150px] flex-col p-3 text-start transition-colors ${
+              className={`home-feature-item home-secondary-card home-calorie-card surface-card flex min-h-0 flex-col p-2.5 text-start transition-colors ${
                 draggingHomeCard === "nutrition" ? "home-feature-dragging" : ""
               }`}
             >
