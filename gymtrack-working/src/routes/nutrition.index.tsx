@@ -58,7 +58,6 @@ import {
   useGym,
 } from "@/lib/gym-store";
 import type { FoodItem, MealFood } from "@/lib/gym-types";
-import { nutritionSourceFor } from "@/lib/nutrition-integrity";
 import { buildShoppingList, type ShoppingListPeriod } from "@/lib/nutrition-planning";
 import { RECIPE_LIBRARY, type RecipeDefinition } from "@/lib/recipe-library";
 import { genderText } from "@/lib/gender-copy";
@@ -1789,7 +1788,6 @@ function NutritionLog() {
               (() => {
                 const selectedFood = gym.foods.find((food) => food.id === pickerFoodId);
                 if (!selectedFood) return null;
-                const source = nutritionSourceFor(selectedFood);
                 const quantityControl = quantityControlFor(selectedFood);
                 return (
                   <div className="space-y-3">
@@ -1807,11 +1805,6 @@ function NutritionLog() {
                         {showCalories ? ` · ${selectedFood.calories} קל׳` : ""} · חלבון{" "}
                         {selectedFood.protein}ג׳ · פחמימות {selectedFood.carbs}ג׳ · שומן{" "}
                         {selectedFood.fat}ג׳ · סיבים {selectedFood.fiber ?? 0}ג׳
-                      </p>
-                      <p
-                        className={`mt-1.5 text-[10.5px] font-semibold ${source.verified ? "text-primary" : "text-muted-foreground"}`}
-                      >
-                        {source.label}
                       </p>
                     </div>
                     <Stepper

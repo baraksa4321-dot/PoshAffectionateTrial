@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState, SectionHeader } from "@/components/ui-app/primitives";
 import { searchFoods, toggleFavoriteFood, useGym } from "@/lib/gym-store";
-import { nutritionSourceFor } from "@/lib/nutrition-integrity";
 import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/nutrition/foods/")({
@@ -222,7 +221,6 @@ function FoodLibrary() {
 
       <div className="space-y-2">
         {filtered.map((food) => {
-          const source = nutritionSourceFor(food);
           return (
             <div key={food.id} className="surface-card flex items-center gap-2 p-3.5">
               <Link
@@ -244,30 +242,6 @@ function FoodLibrary() {
                       {showCalories ? ` · ${food.calories} קלוריות` : ""} · חלבון {food.protein}g ·
                       פחמימות {food.carbs}g · שומן {food.fat}g · סיבים {food.fiber ?? 0}g
                     </p>
-                     <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-semibold">
-                       <span
-                         className={`rounded-full px-2 py-0.5 ${
-                           source.status === "verified"
-                             ? "bg-primary/10 text-primary"
-                             : source.status === "label"
-                               ? "bg-amber-100 text-amber-800"
-                               : "bg-secondary text-muted-foreground"
-                         }`}
-                       >
-                         {source.label}
-                       </span>
-                       {source.checkedAt ? (
-                         <span className="text-muted-foreground">נבדק {source.checkedAt}</span>
-                       ) : null}
-                       {source.confidence ? (
-                         <span className="text-muted-foreground">
-                           ביטחון {source.confidence === "high" ? "גבוה" : source.confidence === "medium" ? "בינוני" : "נמוך"}
-                         </span>
-                       ) : null}
-                     </div>
-                     {source.needsReview ? (
-                       <p className="mt-1 text-[10px] font-semibold text-amber-700">נדרשת בדיקת תווית</p>
-                     ) : null}
                     {food.catalog?.barcode ? (
                       <p className="mt-0.5 text-[10px] text-muted-foreground">
                         ברקוד: {food.catalog.barcode}
