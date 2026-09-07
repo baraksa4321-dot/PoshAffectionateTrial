@@ -1979,6 +1979,8 @@ export function CoachDashboardPage({
     );
     setOverviewRows(rows.filter((row) => !row.details.error));
   }, [clients, clientsOnly]);
+  const loadOverviewRowsRef = useRef(loadOverviewRows);
+  loadOverviewRowsRef.current = loadOverviewRows;
 
   useEffect(() => {
     if (!isCoach) return;
@@ -1988,7 +1990,7 @@ export function CoachDashboardPage({
       void loadCoachClients();
       if (isOwner) void loadAllProfilesForOwner();
       void loadClientFeedback();
-      void loadOverviewRows();
+      void loadOverviewRowsRef.current();
     };
 
     refreshManagementData();
@@ -2009,7 +2011,6 @@ export function CoachDashboardPage({
     loadAllProfilesForOwner,
     loadClientFeedback,
     loadCoachClients,
-    loadOverviewRows,
   ]);
 
   useEffect(() => {
@@ -2021,7 +2022,7 @@ export function CoachDashboardPage({
       void loadCoachClients();
       if (isOwner) void loadAllProfilesForOwner();
       if (table === "client_feedback") void loadClientFeedback();
-      void loadOverviewRows();
+      void loadOverviewRowsRef.current();
     };
 
     return subscribeToCoachManagementChanges(authUser.id, refreshManagementRealtime);
@@ -2032,7 +2033,6 @@ export function CoachDashboardPage({
     loadAllProfilesForOwner,
     loadClientFeedback,
     loadCoachClients,
-    loadOverviewRows,
   ]);
 
   useEffect(() => {
