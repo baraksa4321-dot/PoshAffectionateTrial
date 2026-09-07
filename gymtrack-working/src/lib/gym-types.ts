@@ -149,6 +149,21 @@ export type Workout = {
   items: WorkoutItem[];
 };
 
+export type Challenge = {
+  id: string;
+  title: string;
+  description: string;
+  category: "סבולת" | "כוח" | "מיומנות" | "עצימות";
+  difficulty: "מתחילים" | "ביניים" | "מתקדמים";
+  durationLabel: string;
+  accent: "sage" | "peach" | "lavender" | "sand";
+  sessions: Workout[];
+  ownerId?: string;
+  isBuiltIn?: boolean;
+  isPublished?: boolean;
+  updatedAt?: string;
+};
+
 export type Program = {
   id: string;
   name: string;
@@ -453,6 +468,7 @@ export type GymData = {
   /** Explicit local deletions; sync must never infer deletion from an incomplete snapshot. */
   deletedWorkoutIds?: string[];
   deletedProgramIds?: string[];
+  deletedChallengeIds?: string[];
   deletedSessionIds?: string[];
   deletedBodyWeightLogDates?: string[];
   deletedNutritionDayIds?: string[];
@@ -461,6 +477,7 @@ export type GymData = {
   deletedFavoriteFoodIds?: string[];
   workouts: Workout[];
   programs: Program[];
+  challenges: Challenge[];
   history: HistorySession[];
   /* nutrition */
   foods: FoodItem[];

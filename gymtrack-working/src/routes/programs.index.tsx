@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { CardioTracker } from "@/components/CardioTracker";
+import { ChallengeLibrary } from "@/components/ChallengeLibrary";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
 import { Overlay } from "@/components/ui-app/Overlay";
 import {
@@ -132,17 +133,20 @@ function ProgramsPage() {
         <SectionHeader
           title="התוכניות שלך"
           subtitle={`${programs.length} תוכניות פעילות`}
-          action={
-            <button
-              type="button"
-              onClick={() => setShowPlaylistMenu(true)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 text-[10px] font-bold text-ink transition-colors hover:bg-primary/20"
-              aria-label="פתיחת פלייליסטים לפי אווירה"
-            >
-              <Music2 className="h-3.5 w-3.5 text-primary" />
-              אווירה
-            </button>
-          }
+            action={
+              <div className="flex items-center gap-1.5">
+                <ChallengeLibrary compact />
+                <button
+                  type="button"
+                  onClick={() => setShowPlaylistMenu(true)}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 text-[10px] font-bold text-ink transition-colors hover:bg-primary/20"
+                  aria-label="פתיחת פלייליסטים לפי אווירה"
+                >
+                  <Music2 className="h-3.5 w-3.5 text-primary" />
+                  אווירה
+                </button>
+              </div>
+            }
         />
 
         {programs.length > 0 ? (

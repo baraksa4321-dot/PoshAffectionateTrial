@@ -2,6 +2,7 @@ import { supabase } from "./supabase";
 import {
   type ClientLink,
   type CardioLog,
+  type Challenge,
   type CoachMessage,
   type Exercise,
   type FoodItem,
@@ -20,6 +21,7 @@ import {
   type BroadcastAnnouncement,
   type FoodCatalogMetadata,
 } from "./gym-types";
+import { BUILT_IN_CHALLENGES, cloneChallenge } from "./challenge-library";
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "pending" | "conflict" | "error" | "offline";
 export type PullResult =
@@ -549,6 +551,46 @@ export async function syncLocalToSupabase(
       "Program days",
     );
 
+    // 3b. Challenge catalog. This table is additive and optional while older
+    // connected projects are waiting for the challenge migration.
+    try {
+      const challengePayload = (localData.challenges ?? [])
+        .filter((challenge) => !challenge.isBuiltIn && challenge.ownerId === userId)
+        .map((challenge) => ({
+          id: challenge.id,
+          owner_id: userId,
+          title: challenge.title,
+          description: challenge.description,
+          category: challenge.category,
+          difficulty: challenge.difficulty,
+          duration_label: challenge.durationLabel,
+          accent: challenge.accent,
+          sessions: challenge.sessions,
+          is_published: challenge.isPublished ?? true,
+          updated_at: challenge.updatedAt ?? new Date().toISOString(),
+        }));
+      if (challengePayload.length > 0) {
+        await requireSuccessfulWrite(
+          supabase.from("challenges").upsert(challengePayload, { onConflict: "id" }),
+          "Challenges sync",
+        );
+      }
+      await deleteRowsExplicitlyDeleted(
+        userId,
+        "challenges",
+        (localData.deletedChallengeIds ?? []).filter(
+          (id) => !BUILT_IN_CHALLENGES.some((challenge) => challenge.id === id),
+        ),
+        "Challenges",
+      );
+    } catch (error) {
+      if (isMissingTableInSchemaCache(error, "challenges")) {
+        console.warn("[Optional challenges sync skipped]: public.challenges is unavailable");
+      } else {
+        throw error;
+      }
+    }
+
     // 4. Workout Sessions / History (including difficulty rating & discomfort notes)
     if (localData.history.length > 0) {
       const historyPayload = localData.history.map((s) => ({
@@ -1006,6 +1048,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .eq("user_id", userId);
     const programsPromise = supabase.from("programs").select("*").eq("user_id", userId);
     const programDaysPromise = supabase.from("program_days").select("*").eq("user_id", userId);
+    const challengesPromise = supabase.from("challenges").select("*");
     const sessionsPromise = supabase
       .from("workout_sessions")
       .select("*")
@@ -1053,6 +1096,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       customExercisesResult,
       programsResult,
       programDaysResult,
+      challengesResult,
       sessionsResult,
       bodyWeightResult,
       cardioResult,
@@ -1070,6 +1114,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       customExercisesPromise,
       programsPromise,
       programDaysPromise,
+      challengesPromise,
       sessionsPromise,
       bodyWeightPromise,
       cardioPromise,
@@ -1230,6 +1275,36 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       nextData.workouts = Array.from(workoutsMap.values()).filter(
         (workout) => !deletedWorkoutIds.has(workout.id),
       );
+    }
+
+    // Challenge templates are shared through RLS: a coach sees their own
+    // templates and a trainee sees published templates.
+    const { data: dbChallenges, error: challengesError } = challengesResult;
+    if (challengesError && !isMissingTableInSchemaCache(challengesError, "challenges")) {
+      throw new Error(`Challenges pull failed: ${challengesError.message}`);
+    }
+    if (!challengesError && dbChallenges) {
+      const deletedChallengeIds = new Set(nextData.deletedChallengeIds ?? []);
+      const builtIns = BUILT_IN_CHALLENGES.map(cloneChallenge);
+      const remoteChallenges: Challenge[] = dbChallenges
+        .map((row): Challenge => ({
+          id: row.id,
+          title: row.title,
+          description: row.description || "",
+          category: row.category,
+          difficulty: row.difficulty,
+          durationLabel: row.duration_label || "אימון אחד",
+          accent: row.accent || "sage",
+          sessions: row.sessions || [],
+          ownerId: row.owner_id,
+          isPublished: row.is_published !== false,
+          updatedAt: row.updated_at,
+        }))
+        .filter((challenge) => !deletedChallengeIds.has(challenge.id));
+      nextData.challenges = [
+        ...builtIns.filter((challenge) => !deletedChallengeIds.has(challenge.id)),
+        ...remoteChallenges.filter((challenge) => !challenge.isBuiltIn),
+      ];
     }
 
     // 6–7c. Independent logs are part of the same parallel pull.

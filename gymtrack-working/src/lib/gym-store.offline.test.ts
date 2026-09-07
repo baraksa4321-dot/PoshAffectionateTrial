@@ -36,6 +36,7 @@ function makeSessionData(userProfile: NonNullable<GymData["userProfile"]>): GymD
     exercises: [],
     workouts: [],
     programs: [],
+    challenges: [],
     history: [],
     foods: [],
     nutritionDays: [],

@@ -5,6 +5,7 @@ import { supabase } from "./supabase";
 import { pullSupabaseData, syncLocalToSupabase, type SyncStatus } from "./supabase-sync";
 import { normalizeFixedPlannedMenu } from "./nutrition-planning";
 import {
+  type Challenge,
   type BodyMeasurement,
   type BodyWeightLog,
   type CardioLog,
@@ -26,6 +27,7 @@ import {
   type Workout,
   type WorkoutItem,
 } from "./gym-types";
+import { BUILT_IN_CHALLENGES, cloneChallenge } from "./challenge-library";
 
 const KEY = "gymtrack.v1";
 const CACHED_USER_KEY = "gymtrack.v1.userId";
@@ -536,6 +538,7 @@ const seed = (): GymData => {
     // created by an explicit user or coach action, never by initial hydration.
     workouts: [],
     programs: [],
+    challenges: BUILT_IN_CHALLENGES.map(cloneChallenge),
     history: [],
     foods: ISRAELI_PROTEIN_PRODUCTS,
     nutritionDays: [],
@@ -601,7 +604,11 @@ function mergeRemotePlanRefresh(localData: GymData, remoteData: GymData): GymDat
   return {
     ...localData,
     programs: remoteData.programs,
-    workouts: remoteData.workouts,
+    workouts: [
+      ...remoteData.workouts,
+      ...localData.workouts.filter((workout) => workout.id.startsWith("challenge-run-")),
+    ],
+    challenges: remoteData.challenges,
     plannedMeals: remoteData.plannedMeals ?? [],
     nutritionTargets: remoteData.nutritionTargets,
     userProfile: {
@@ -702,6 +709,7 @@ function startPlanRealtime(userId: string, preserveReconnectBackoff = false) {
   addTableSubscription("profiles", `id=eq.${userId}`);
   addTableSubscription("programs", `user_id=eq.${userId}`);
   addTableSubscription("program_days", `user_id=eq.${userId}`);
+  addTableSubscription("challenges");
   addTableSubscription("nutrition_days", `user_id=eq.${userId}`);
   addTableSubscription("workout_sessions", `user_id=eq.${userId}`);
   addTableSubscription("body_weight_logs", `user_id=eq.${userId}`);
@@ -893,6 +901,18 @@ function mergeSeedExercises(existing: Exercise[], deletedExerciseIds: string[] =
   return Array.from(byId.values());
 }
 
+function mergeChallenges(existing: Challenge[], deletedChallengeIds: string[] = []): Challenge[] {
+  const deleted = new Set(deletedChallengeIds);
+  const byId = new Map<string, Challenge>();
+  for (const challenge of BUILT_IN_CHALLENGES) {
+    if (!deleted.has(challenge.id)) byId.set(challenge.id, cloneChallenge(challenge));
+  }
+  for (const challenge of existing) {
+    if (!deleted.has(challenge.id)) byId.set(challenge.id, challenge);
+  }
+  return Array.from(byId.values());
+}
+
 function loadReferenceLibraries() {
   if (referenceLibrariesPromise) return referenceLibrariesPromise;
 
@@ -933,6 +953,7 @@ function migrate(d: Partial<GymData>): GymData {
     deletedCableGripOptions: d.deletedCableGripOptions ?? [],
     deletedWorkoutIds: d.deletedWorkoutIds ?? [],
     deletedProgramIds: d.deletedProgramIds ?? [],
+    deletedChallengeIds: d.deletedChallengeIds ?? [],
     deletedSessionIds: d.deletedSessionIds ?? [],
     deletedBodyWeightLogDates: d.deletedBodyWeightLogDates ?? [],
     deletedNutritionDayIds: d.deletedNutritionDayIds ?? [],
@@ -941,6 +962,7 @@ function migrate(d: Partial<GymData>): GymData {
     deletedFavoriteFoodIds: d.deletedFavoriteFoodIds ?? [],
     workouts,
     programs,
+    challenges: mergeChallenges(d.challenges ?? [], d.deletedChallengeIds ?? []),
     history: d.history ?? [],
     foods: mergeSeedFoods(d.foods ?? [], d.deletedFoodIds ?? []),
     nutritionDays: normalizedNutrition.nutritionDays,
@@ -1700,6 +1722,84 @@ export function saveWorkout(w: Workout) {
   });
 }
 
+export function saveChallenge(challenge: Challenge) {
+  if (!canManageAssignedPlans()) return;
+  const normalized: Challenge = {
+    ...challenge,
+    title: challenge.title.trim(),
+    description: challenge.description.trim(),
+    isBuiltIn: false,
+    isPublished: challenge.isPublished ?? true,
+    updatedAt: new Date().toISOString(),
+    ...(currentUser?.id ? { ownerId: currentUser.id } : challenge.ownerId ? { ownerId: challenge.ownerId } : {}),
+  };
+  if (!normalized.title || normalized.sessions.length === 0) return;
+  const exists = data.challenges.some((item) => item.id === normalized.id);
+  set({
+    ...data,
+    deletedChallengeIds: (data.deletedChallengeIds ?? []).filter((id) => id !== normalized.id),
+    challenges: exists
+      ? data.challenges.map((item) => (item.id === normalized.id ? normalized : item))
+      : [...data.challenges, normalized],
+  });
+}
+
+export function deleteChallenge(id: string) {
+  if (!canManageAssignedPlans() || BUILT_IN_CHALLENGES.some((challenge) => challenge.id === id)) return;
+  set({
+    ...data,
+    deletedChallengeIds: Array.from(new Set([...(data.deletedChallengeIds ?? []), id])),
+    challenges: data.challenges.filter((challenge) => challenge.id !== id),
+  });
+}
+
+export function duplicateChallenge(id: string): Challenge | undefined {
+  if (!canManageAssignedPlans()) return;
+  const source = data.challenges.find((challenge) => challenge.id === id);
+  if (!source) return;
+  const copy: Challenge = {
+    ...cloneChallenge(source),
+    id: `challenge-${uid()}`,
+    title: `${source.title} — גרסה אישית`,
+    isBuiltIn: false,
+    sessions: source.sessions.map((session) => ({
+      ...session,
+      id: `challenge-session-${uid()}`,
+      items: session.items.map((item) => {
+        const copy = { ...item, id: `challenge-item-${uid()}` };
+        if (item.workingSets) {
+          copy.workingSets = item.workingSets.map((set) => ({ ...set, id: `challenge-set-${uid()}` }));
+        }
+        return copy;
+      }),
+    })),
+  };
+  if (currentUser?.id) copy.ownerId = currentUser.id;
+  saveChallenge(copy);
+  return copy;
+}
+
+export function startChallenge(challengeId: string, sessionId?: string): Workout | undefined {
+  const challenge = data.challenges.find((item) => item.id === challengeId);
+  const source = challenge?.sessions.find((session) => session.id === sessionId) ?? challenge?.sessions[0];
+  if (!challenge || !source) return;
+  const startedWorkout: Workout = {
+    ...source,
+    id: `challenge-run-${uid()}`,
+    name: `${challenge.title} · ${source.name}`,
+    notes: `${source.notes}\n\nאתגר: ${challenge.title}`,
+    items: source.items.map((item) => {
+      const copy = { ...item, id: `challenge-run-item-${uid()}` };
+      if (item.workingSets) {
+        copy.workingSets = item.workingSets.map((set) => ({ ...set, id: `challenge-run-set-${uid()}` }));
+      }
+      return copy;
+    }),
+  };
+  set({ ...data, workouts: [...data.workouts, startedWorkout] });
+  return startedWorkout;
+}
+
 export function saveWorkoutInProgram(programId: string, w: Workout) {
   if (!canManageAssignedPlans()) return;
   const exists = data.workouts.some((x) => x.id === w.id);
@@ -1761,6 +1861,22 @@ export function reorderProgramDays(programId: string, dayIds: string[]) {
 
 export function emptyWorkout(): Workout {
   return { id: uid(), name: "", notes: "", items: [] };
+}
+
+export function emptyChallenge(): Challenge {
+  const sessionId = `challenge-session-${uid()}`;
+  return {
+    id: `challenge-${uid()}`,
+    title: "",
+    description: "",
+    category: "כוח",
+    difficulty: "מתחילים",
+    durationLabel: "אימון אחד",
+    accent: "sage",
+    isBuiltIn: false,
+    isPublished: true,
+    sessions: [{ id: sessionId, name: "אימון ראשון", notes: "", items: [] }],
+  };
 }
 
 export function emptyItem(exerciseId: string, equipment?: string, cableGrip?: string): WorkoutItem {

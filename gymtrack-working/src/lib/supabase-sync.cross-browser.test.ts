@@ -128,6 +128,7 @@ function makeLocalData(
     ],
     workouts: [],
     programs: [],
+    challenges: [],
     history: [],
     foods: [],
     nutritionDays: [],

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Dumbbell } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { ChallengeLibrary } from "@/components/ChallengeLibrary";
 import { EmptyState, SectionHeader } from "@/components/ui-app/primitives";
 import { useGym } from "@/lib/gym-store";
 import { getCurrentWeekDates } from "@/lib/workout-session";
@@ -23,7 +24,11 @@ function Workouts() {
   return (
     <AppShell kicker="אימונים" title="האימונים שלי" subtitle="רשימה פשוטה של כל האימונים שלך">
       <section className="mt-5 text-start">
-        <SectionHeader title="כל האימונים" subtitle={`${workouts.length} אימונים`} />
+         <SectionHeader
+           title="כל האימונים"
+           subtitle={`${workouts.length} אימונים`}
+           action={<ChallengeLibrary compact />}
+         />
         {workouts.length > 0 ? (
           <div className="mt-3 space-y-2.5">
             {workouts.map((workout, index) => {
