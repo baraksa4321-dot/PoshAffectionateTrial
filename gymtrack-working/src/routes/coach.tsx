@@ -4707,28 +4707,28 @@ export function CoachDashboardPage({
                 : genderText(gender, "טוענת את סיכום המתאמנים...", "טוען את סיכום המתאמנים...")}
             </div>
           ) : (
-            <section className="surface-card space-y-3 border-primary/20 bg-primary/[0.025] p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
+            <section className="surface-card space-y-2 border-primary/20 bg-primary/[0.025] p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-primary">
                     Coach Attention Queue
                   </p>
-                  <h3 className="mt-1 flex items-center gap-2 text-base font-extrabold text-ink">
-                    <Activity className="h-4 w-4 text-primary" />
+                  <h3 className="mt-0.5 flex items-center gap-1.5 text-sm font-extrabold text-ink">
+                    <Activity className="h-3.5 w-3.5 text-primary" />
                     תור תשומת לב למאמן
                   </h3>
-                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                  <p className="mt-0.5 hidden text-[10px] leading-relaxed text-muted-foreground sm:block">
                     סיבות ברורות לפעולה, מגמה של 4 שבועות ומצב אמינות הנתונים לכל מתאמן.
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-extrabold text-amber-800">
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-extrabold text-amber-800">
                     {attentionOpenCount} פתוחים
                   </span>
                   <button
                     type="button"
                     onClick={() => setAttentionView((value) => (value === "open" ? "all" : "open"))}
-                    className="rounded-full border border-border bg-background px-2.5 py-1 text-[10px] font-bold text-muted-foreground hover:border-primary/40 hover:text-primary"
+                    className="rounded-full border border-border bg-background px-2 py-0.5 text-[9px] font-bold text-muted-foreground hover:border-primary/40 hover:text-primary"
                   >
                     {attentionView === "open" ? "הצגת כולם" : "הצגת פתוחים"}
                   </button>
@@ -4759,36 +4759,41 @@ export function CoachDashboardPage({
                     return (
                       <div
                         key={item.clientId}
-                        className={`rounded-2xl border bg-background p-3 transition-colors ${
+                        className={`rounded-xl border bg-background p-2 transition-colors ${
                           item.reviewed ? "border-border/60 opacity-75" : "border-primary/20"
                         }`}
                       >
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() =>
                               setExpandedAttentionClientId(expanded ? null : item.clientId)
                             }
-                            className="min-w-0 flex-1 text-start"
+                            className="min-w-0 flex-1 text-start leading-tight"
                             aria-expanded={expanded}
                           >
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="truncate text-sm font-extrabold text-ink">
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <span className="truncate text-[13px] font-extrabold text-ink">
                                 {item.clientName}
                               </span>
-                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${statusClass}`}>
+                              <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${statusClass}`}>
                                 {statusLabel}
                               </span>
                               {item.reviewed ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
-                                  <CheckCircle2 className="h-3 w-3" /> נבדק
+                                <span className="inline-flex shrink-0 items-center gap-0.5 text-[9px] font-bold text-muted-foreground">
+                                  <CheckCircle2 className="h-2.5 w-2.5" /> נבדק
                                 </span>
                               ) : null}
                             </div>
-                            <p className="mt-1 text-[11px] text-muted-foreground">
+                            <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
                               {item.reasons.length > 0
                                 ? item.reasons.map((reason) => reason.label).join(" · ")
                                 : "אין חריגה מזוהה"}
+                              {" · "}
+                              פעילות אחרונה:{" "}
+                              {item.lastActivity
+                                ? new Date(item.lastActivity).toLocaleDateString("he-IL")
+                                : "אין"}
                             </p>
                           </button>
                           <button
@@ -4803,31 +4808,14 @@ export function CoachDashboardPage({
                                 450,
                               );
                             }}
-                            className="flex shrink-0 items-center gap-1 rounded-xl bg-primary/10 px-2.5 py-2 text-[10px] font-extrabold text-primary hover:bg-primary/15"
+                            className="flex shrink-0 items-center gap-1 rounded-lg bg-primary/10 px-2 py-1.5 text-[9px] font-extrabold text-primary hover:bg-primary/15"
                           >
-                            <ClipboardList className="h-3.5 w-3.5" />
+                            <ClipboardList className="h-3 w-3" />
                             צ׳ק־אין
                           </button>
                         </div>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {item.reasons.map((reason) => (
-                            <span
-                              key={reason.key}
-                              className="rounded-full bg-secondary px-2 py-1 text-[10px] font-bold text-ink"
-                            >
-                              {reason.label}
-                            </span>
-                          ))}
-                          <span className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2 py-1 text-[10px] font-semibold text-muted-foreground">
-                            <Clock3 className="h-3 w-3" />
-                            פעילות אחרונה:{" "}
-                            {item.lastActivity
-                              ? new Date(item.lastActivity).toLocaleDateString("he-IL")
-                              : "אין"}
-                          </span>
-                        </div>
                         {expanded ? (
-                          <div className="mt-3 space-y-2 border-t border-border/60 pt-3">
+                          <div className="mt-2 space-y-2 border-t border-border/60 pt-2">
                             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                               <div className="rounded-xl bg-surface-2 p-2 text-center">
                                 <span className="block text-[10px] text-muted-foreground">אימונים · 4 שבועות</span>
