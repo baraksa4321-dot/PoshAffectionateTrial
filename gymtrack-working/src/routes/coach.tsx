@@ -6554,6 +6554,11 @@ export function CoachDashboardPage({
                                 }`}
                               >
                                 {isProgActive && !editingDayId ? (
+                                  <div className="flex items-center justify-end">
+                                    <ChallengeLibrary compact />
+                                  </div>
+                                ) : null}
+                                {isProgActive && !editingDayId ? (
                                   <form onSubmit={handleAddProgramDay} className="flex gap-2">
                                     <input
                                       type="text"
@@ -6644,7 +6649,6 @@ export function CoachDashboardPage({
                                               </p>
                                             </div>
                                             <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
-                                              <ChallengeLibrary compact />
                                               <button
                                                 type="button"
                                                 onClick={() => {

@@ -792,7 +792,7 @@ html.night-mode .nutrition-balance-card {
   }
 
   .workout-report-panel {
-    padding-top: calc(1rem + max(3rem, env(safe-area-inset-top))) !important;
+    padding-top: 1rem !important;
   }
 }
 
@@ -4800,8 +4800,8 @@ html[data-keyboard-open] .nav-shell {
 }
 
 .workout-report-bookmark {
-  position: fixed;
-  top: max(0.75rem, env(safe-area-inset-top));
+  position: absolute;
+  top: 1rem;
   right: 0;
   min-height: 5.25rem;
   width: 1.75rem;
@@ -4835,22 +4835,27 @@ html[data-keyboard-open] .nav-shell {
 }
 
 .workout-report-panel {
-  position: fixed;
+  position: absolute;
   z-index: 1;
-  inset-block: 0;
+  inset-block: 1rem;
   inset-inline: 0 1.75rem;
+  box-sizing: border-box;
   overflow-y: auto;
+  max-height: calc(100% - 2rem);
   border-radius: inherit;
   border: 1px solid color-mix(in oklch, var(--primary) 35%, var(--border));
   background: var(--background);
   padding: 1rem;
+  box-shadow:
+    0 14px 34px rgb(var(--shadow-color) / 14%),
+    0 2px 8px rgb(var(--shadow-color) / 8%);
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 
 .workout-report-bookmark-open ~ .workout-report-panel {
   inset-inline: 1.75rem 0;
-  border-radius: 0;
+  border-radius: 1.25rem;
 }
 
 .workout-builder-surface {
