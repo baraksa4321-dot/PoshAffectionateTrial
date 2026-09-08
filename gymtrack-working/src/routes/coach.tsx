@@ -3858,13 +3858,6 @@ export function CoachDashboardPage({
     if (!isCoach || !selectedClientId || savingPlannedMenu) return;
     setSavingPlannedMenu(true);
     setMenuNotice("שומר את התפריט...");
-    if (isSelfSelected) {
-      savePlannedMeals(plannedMeals);
-      plannedMealsDraftDirtyRef.current = false;
-      setMenuNotice("התפריט האישי נשמר ויופיע גם באזור התזונה שלך.");
-      setSavingPlannedMenu(false);
-      return;
-    }
 
     try {
       const { data: saved, error } = await supabase.rpc(
@@ -3892,11 +3885,19 @@ export function CoachDashboardPage({
       }
 
       plannedMealsDraftDirtyRef.current = false;
-      setClientDetails((current) =>
-        current ? { ...current, plannedMeals: persistedPlannedMeals } : current,
-      );
+      if (isSelfSelected) {
+        savePlannedMeals(persistedPlannedMeals);
+      } else {
+        setClientDetails((current) =>
+          current ? { ...current, plannedMeals: persistedPlannedMeals } : current,
+        );
+      }
       setPlannedMeals(persistedPlannedMeals);
-      setMenuNotice("התפריט נשמר ויופיע למתאמן במסך התזונה האישי.");
+      setMenuNotice(
+        isSelfSelected
+          ? "התפריט האישי נשמר ויופיע גם באזור התזונה שלך."
+          : "התפריט נשמר ויופיע למתאמן במסך התזונה האישי.",
+      );
     } catch (error: unknown) {
       plannedMealsDraftDirtyRef.current = true;
       setMenuNotice(`שמירת התפריט נכשלה: ${errorMessage(error, "שגיאה לא ידועה")}`);
