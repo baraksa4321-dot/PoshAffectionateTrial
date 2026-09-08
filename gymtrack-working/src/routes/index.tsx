@@ -140,6 +140,7 @@ function Dashboard() {
     preExitChecklist,
     coachMessages,
     broadcasts,
+    challengeEnrollments,
   } = useGym();
   const authUser = useAuthUser();
 
@@ -371,7 +372,16 @@ function Dashboard() {
       ? Math.min(100, Math.round((totalsToday.calories / targetCals) * 100))
       : undefined;
 
-  const scheduledWorkouts = workouts.slice(0, Math.min(workouts.length, 7)).map((workout, index) => {
+  const activeChallengeWorkoutIds = new Set(
+    (challengeEnrollments ?? [])
+      .filter((enrollment) => enrollment.active)
+      .flatMap((enrollment) => enrollment.workoutIds),
+  );
+  const weeklyWorkouts = [
+    ...workouts.filter((workout) => !activeChallengeWorkoutIds.has(workout.id)),
+    ...workouts.filter((workout) => activeChallengeWorkoutIds.has(workout.id)),
+  ];
+  const scheduledWorkouts = weeklyWorkouts.slice(0, Math.min(weeklyWorkouts.length, 7)).map((workout, index) => {
     const defaultDate = weekDays[index]?.date ?? weekDays[weekDays.length - 1]?.date ?? todayDateStr;
     const scheduledDate = defaultDate;
     const session = getCurrentWeekWorkoutSession(history, workout.id, now);

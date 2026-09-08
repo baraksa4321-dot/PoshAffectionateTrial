@@ -20,8 +20,8 @@ import {
   duplicateChallenge,
   emptyChallenge,
   emptyItem,
+  enrollInChallenge,
   saveChallenge,
-  startChallenge,
   useGym,
 } from "@/lib/gym-store";
 import { cloneChallenge } from "@/lib/challenge-library";
@@ -54,10 +54,10 @@ export function ChallengeLibrary({ compact = false }: { compact?: boolean }) {
   };
 
   const begin = (challenge: Challenge, sessionId?: string) => {
-    const workout = startChallenge(challenge.id, sessionId);
-    if (!workout) return;
+    const enrolled = enrollInChallenge(challenge.id, sessionId);
+    if (!enrolled) return;
     close();
-    void navigate({ to: "/session/$workoutId", params: { workoutId: workout.id } });
+    void navigate({ to: "/workouts" });
   };
 
   const startEditing = (challenge?: Challenge) => {
@@ -275,8 +275,8 @@ function ChallengeDetail({
       ) : null}
       <div className="mt-4 flex flex-wrap gap-2">
         <PrimaryButton onClick={onStart}>
-          <Play className="h-4 w-4" />
-           יאללה, מתחילים
+          <Dumbbell className="h-4 w-4" />
+           הוסיפי לשבוע
         </PrimaryButton>
         {isCoach ? (
           <>

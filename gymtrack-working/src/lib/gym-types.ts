@@ -168,6 +168,14 @@ export type Challenge = {
   updatedAt?: string;
 };
 
+export type ChallengeEnrollment = {
+  id: string;
+  challengeId: string;
+  workoutIds: string[];
+  startedAt: string;
+  active: boolean;
+};
+
 export type Program = {
   id: string;
   name: string;
@@ -482,6 +490,8 @@ export type GymData = {
   workouts: Workout[];
   programs: Program[];
   challenges: Challenge[];
+  /** Personal, local-first challenge journeys selected from the library. */
+  challengeEnrollments?: ChallengeEnrollment[];
   history: HistorySession[];
   /* nutrition */
   foods: FoodItem[];

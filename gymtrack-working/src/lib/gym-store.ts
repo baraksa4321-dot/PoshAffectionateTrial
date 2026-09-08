@@ -6,6 +6,7 @@ import { pullSupabaseData, syncLocalToSupabase, type SyncStatus } from "./supaba
 import { normalizeFixedPlannedMenu } from "./nutrition-planning";
 import {
   type Challenge,
+  type ChallengeEnrollment,
   type BodyMeasurement,
   type BodyWeightLog,
   type CardioLog,
@@ -543,6 +544,7 @@ const seed = (): GymData => {
     workouts: [],
     programs: [],
     challenges: BUILT_IN_CHALLENGES.map(cloneChallenge),
+    challengeEnrollments: [],
     history: [],
     foods: ISRAELI_PROTEIN_PRODUCTS,
     nutritionDays: [],
@@ -976,6 +978,7 @@ function migrate(d: Partial<GymData>): GymData {
     workouts,
     programs,
     challenges: mergeChallenges(d.challenges ?? [], d.deletedChallengeIds ?? []),
+    challengeEnrollments: d.challengeEnrollments ?? [],
     history: d.history ?? [],
     foods: mergeSeedFoods(d.foods ?? [], d.deletedFoodIds ?? []),
     nutritionDays: normalizedNutrition.nutritionDays,
@@ -1795,25 +1798,70 @@ export function duplicateChallenge(id: string): Challenge | undefined {
   return copy;
 }
 
-export function startChallenge(challengeId: string, sessionId?: string): Workout | undefined {
-  const challenge = data.challenges.find((item) => item.id === challengeId);
-  const source = challenge?.sessions.find((session) => session.id === sessionId) ?? challenge?.sessions[0];
-  if (!challenge || !source) return;
-  const startedWorkout: Workout = {
+function createChallengeWorkout(challenge: Challenge, source: Workout): Workout {
+  return {
     ...source,
     id: `challenge-run-${uid()}`,
     name: `${challenge.title} · ${source.name}`,
-    notes: `${source.notes}\n\nאתגר: ${challenge.title}`,
+    notes: [source.notes, `אתגר: ${challenge.title}`].filter(Boolean).join("\n\n"),
     items: source.items.map((item) => {
       const copy = { ...item, id: `challenge-run-item-${uid()}` };
       if (item.workingSets) {
-        copy.workingSets = item.workingSets.map((set) => ({ ...set, id: `challenge-run-set-${uid()}` }));
+        copy.workingSets = item.workingSets.map((set) => ({
+          ...set,
+          id: `challenge-run-set-${uid()}`,
+        }));
       }
       return copy;
     }),
   };
-  set({ ...data, workouts: [...data.workouts, startedWorkout] });
-  return startedWorkout;
+}
+
+/**
+ * Enroll the trainee in a challenge as an ongoing personal journey.
+ *
+ * Challenge enrollments are intentionally local-first: unlike a coach-assigned
+ * program, selecting a challenge is a personal choice and must remain available
+ * offline without trying to write a trainee-owned program through RLS.
+ */
+export function enrollInChallenge(challengeId: string, sessionId?: string) {
+  const challenge = data.challenges.find((item) => item.id === challengeId);
+  if (!challenge || challenge.sessions.length === 0) return;
+  const firstSession = challenge.sessions[0];
+  if (!firstSession) return;
+
+  const existing = (data.challengeEnrollments ?? []).find(
+    (enrollment) => enrollment.challengeId === challengeId && enrollment.active,
+  );
+  if (existing) {
+    const workout = data.workouts.find((item) => item.id === existing.workoutIds[0]);
+    if (workout) return { enrollment: existing, workout, alreadyActive: true };
+  }
+
+  const sourceSessions = sessionId
+    ? challenge.sessions.filter((session) => session.id === sessionId)
+    : challenge.sessions;
+  const sessions = sourceSessions.length > 0 ? sourceSessions : [firstSession];
+  const challengeWorkouts = sessions.map((session) => createChallengeWorkout(challenge, session));
+  const enrollment: ChallengeEnrollment = {
+    id: `challenge-enrollment-${uid()}`,
+    challengeId,
+    workoutIds: challengeWorkouts.map((workout) => workout.id),
+    startedAt: new Date().toISOString(),
+    active: true,
+  };
+
+  set({
+    ...data,
+    workouts: [...data.workouts, ...challengeWorkouts],
+    challengeEnrollments: [...(data.challengeEnrollments ?? []), enrollment],
+  });
+
+  return { enrollment, workout: challengeWorkouts[0], alreadyActive: false };
+}
+
+export function startChallenge(challengeId: string, sessionId?: string): Workout | undefined {
+  return enrollInChallenge(challengeId, sessionId)?.workout;
 }
 
 export function saveWorkoutInProgram(programId: string, w: Workout) {

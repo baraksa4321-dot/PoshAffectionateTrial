@@ -17,21 +17,41 @@ export const Route = createFileRoute("/workouts/")({
 });
 
 function Workouts() {
-  const { workouts, userProfile } = useGym();
+  const { workouts, challengeEnrollments, challenges, userProfile } = useGym();
   const weekDays = getCurrentWeekDates();
   const gender = userProfile?.gender;
+  const activeEnrollments = (challengeEnrollments ?? []).filter((enrollment) => enrollment.active);
+  const activeChallengeWorkoutIds = new Set(activeEnrollments.flatMap((enrollment) => enrollment.workoutIds));
+  const activeChallengeNames = activeEnrollments
+    .map((enrollment) => challenges.find((challenge) => challenge.id === enrollment.challengeId)?.title)
+    .filter((title): title is string => Boolean(title));
+  const weeklyWorkouts = [
+    ...workouts.filter((workout) => !activeChallengeWorkoutIds.has(workout.id)),
+    ...workouts.filter((workout) => activeChallengeWorkoutIds.has(workout.id)),
+  ];
 
   return (
     <AppShell kicker="אימונים" title="האימונים שלי" subtitle="רשימה פשוטה של כל האימונים שלך">
       <section className="mt-5 text-start">
-         <SectionHeader
-           title="כל האימונים"
-           subtitle={`${workouts.length} אימונים`}
-           action={<ChallengeLibrary compact />}
-         />
-        {workouts.length > 0 ? (
+          <SectionHeader
+            title="אימוני השבוע"
+            subtitle={`${weeklyWorkouts.length} אימונים`}
+            action={<ChallengeLibrary compact />}
+          />
+          {activeChallengeNames.length > 0 ? (
+            <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/5 px-3.5 py-3 text-start">
+              <p className="text-[10px] font-bold tracking-[0.12em] text-primary uppercase">תהליך פעיל</p>
+              <p className="mt-1 text-xs font-extrabold text-ink">
+                {activeChallengeNames.join(" · ")}
+              </p>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                האימונים של האתגר נשארים כאן בכל שבוע. פשוט נכנסים לאימון הבא וממשיכים מאיפה שעצרת.
+              </p>
+            </div>
+          ) : null}
+        {weeklyWorkouts.length > 0 ? (
           <div className="mt-3 space-y-2.5">
-            {workouts.map((workout, index) => {
+            {weeklyWorkouts.map((workout, index) => {
               const day = weekDays[index];
               return (
                 <Link
