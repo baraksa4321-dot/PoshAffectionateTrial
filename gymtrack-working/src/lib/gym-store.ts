@@ -572,6 +572,7 @@ let syncRetryTimer: ReturnType<typeof setTimeout> | null = null;
 let refreshInFlight: Promise<void> | null = null;
 let hydrationInFlight: { userId: string; promise: Promise<void> } | null = null;
 let lastCloudRefreshAt = 0;
+let profileAccessVerified = false;
 let everydayFoodDatabase: FoodItem[] = ISRAELI_PROTEIN_PRODUCTS;
 let additionalExercises: Exercise[] = [];
 let seedExerciseNameMigrations: Record<string, { from: string; to: string }> = {};
@@ -580,6 +581,10 @@ let referenceLibrariesPromise: Promise<void> | null = null;
 function canManageAssignedPlans() {
   const role = data.userProfile?.role;
   return role === "coach" || role === "owner";
+}
+
+function canManageNutritionTargets() {
+  return profileAccessVerified && profileHydrationStatus === "ready" && canManageAssignedPlans();
 }
 
 function mergeRemotePlanRefresh(localData: GymData, remoteData: GymData): GymData {
@@ -603,14 +608,14 @@ function mergeRemotePlanRefresh(localData: GymData, remoteData: GymData): GymDat
   } = localData.userProfile;
   return {
     ...localData,
-    programs: remoteData.programs,
+    programs: remoteData.programs ?? localData.programs,
     workouts: [
-      ...remoteData.workouts,
+      ...(remoteData.workouts ?? []),
       ...localData.workouts.filter((workout) => workout.id.startsWith("challenge-run-")),
     ],
-    challenges: remoteData.challenges,
-    plannedMeals: remoteData.plannedMeals ?? [],
-    nutritionTargets: remoteData.nutritionTargets,
+    challenges: remoteData.challenges ?? localData.challenges,
+    plannedMeals: remoteData.plannedMeals ?? localData.plannedMeals ?? [],
+    nutritionTargets: remoteData.nutritionTargets ?? localData.nutritionTargets,
     userProfile: {
       ...localProfile,
       ...(remoteData.userProfile ?? {}),
@@ -1187,6 +1192,7 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
   const generation = ++hydrationGeneration;
   const trustedOfflineCache = hasUsableOfflineCache(cachedData);
   const pendingAtPullStart = trustedOfflineCache && hasPersistedPendingChanges(userId);
+  profileAccessVerified = false;
   if (cachedData && trustedOfflineCache) {
     data = cachedData;
     profileHydrationStatus = "ready";
@@ -1260,6 +1266,7 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
     (dataRevision !== revisionAtPullStart || pendingAtPullStart) &&
     detectConcurrentWorkspaceConflict(data, pulled.data);
   if (concurrentConflict) {
+    profileAccessVerified = true;
     data = {
       ...data,
       syncConflicts: [
@@ -1298,6 +1305,7 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
   } else {
     void queueCloudSync();
   }
+  profileAccessVerified = true;
   notifyListeners();
   drainQueuedRealtimeRefresh();
 }
@@ -1513,6 +1521,14 @@ export function useProfileHydrationError() {
     subscribe,
     () => profileHydrationError,
     () => "",
+  );
+}
+
+export function useCanManageNutritionTargets() {
+  return useSyncExternalStore(
+    subscribe,
+    canManageNutritionTargets,
+    () => false,
   );
 }
 
@@ -2304,7 +2320,7 @@ export function emptyFood(): FoodItem {
 }
 
 export function saveNutritionTargets(targets: NutritionTargets) {
-  if (!canManageAssignedPlans()) return;
+  if (!canManageNutritionTargets()) return;
   set({ ...data, nutritionTargets: targets });
 }
 
@@ -2898,6 +2914,7 @@ export function resetGymStoreForTests() {
   authStatus = "loading";
   profileHydrationStatus = "loading";
   profileHydrationError = "";
+  profileAccessVerified = false;
   authResolved = false;
   hydrationGeneration += 1;
   syncStatus = "idle";

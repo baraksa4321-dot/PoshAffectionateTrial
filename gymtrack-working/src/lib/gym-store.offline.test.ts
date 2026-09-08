@@ -256,6 +256,38 @@ describe("offline store lifecycle", () => {
     );
   });
 
+  test("does not allow cached coach access to edit targets before live role hydration", async () => {
+    Object.assign(navigator, { onLine: true });
+    const pull = deferred<{ success: true; data: Record<string, unknown> }>();
+    storage.set(
+      "gymtrack.v1.user.user-a",
+      JSON.stringify({
+        ...cachedClientData,
+        userProfile: { weight: 80, role: "coach" },
+        nutritionTargets: { calories: 2_000 },
+      }),
+    );
+    pullImplementation = async () => pull.promise;
+
+    const store = await loadStore("cached-coach-target-guard");
+    authenticate();
+    await eventually(() => pullCalls.length > 0);
+
+    store.saveNutritionTargets({ calories: 999 });
+    expect(store.getGymStoreSnapshot().nutritionTargets).toEqual({ calories: 2_000 });
+
+    pull.resolve({
+      success: true,
+      data: {
+        ...cachedClientData,
+        userProfile: { weight: 80, role: "client" },
+        nutritionTargets: { calories: 1_800 },
+      },
+    });
+    await eventually(() => store.getGymStoreSnapshot().userProfile.role === "client");
+    expect(store.getGymStoreSnapshot().nutritionTargets).toEqual({ calories: 1_800 });
+  });
+
   test("records a concurrent workspace conflict and allows selecting the remote snapshot", async () => {
     Object.assign(navigator, { onLine: true });
     const localData = makeSessionData({ weight: 82, role: "owner" });

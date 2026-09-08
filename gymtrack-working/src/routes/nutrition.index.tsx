@@ -54,7 +54,7 @@ import {
   togglePlannedFoodEaten,
   uid,
   updateMealFood,
-  useProfileHydrationStatus,
+  useCanManageNutritionTargets,
   useGym,
 } from "@/lib/gym-store";
 import type { FoodItem, MealFood } from "@/lib/gym-types";
@@ -218,13 +218,11 @@ type ScannedMeal = { mealName: string; foods: ScannedFood[] };
 
 function NutritionLog() {
   const gym = useGym();
-  const profileHydrationStatus = useProfileHydrationStatus();
+  const canManageNutritionTargets = useCanManageNutritionTargets();
   const gender = gym.userProfile?.gender;
   const [loadingGender, setLoadingGender] = useState<LoadingGender | undefined>(gender);
   const showCalories = gym.userProfile?.showCalories !== false;
-  const canManageTargets =
-    profileHydrationStatus === "ready" &&
-    (gym.userProfile?.role === "coach" || gym.userProfile?.role === "owner");
+  const canManageTargets = canManageNutritionTargets;
   const [date, setDate] = useState(todayKey());
   const [pickerMealId, setPickerMealId] = useState<string | null>(null);
   const [pickerQuery, setPickerQuery] = useState("");

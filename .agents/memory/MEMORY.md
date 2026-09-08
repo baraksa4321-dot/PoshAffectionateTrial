@@ -19,6 +19,7 @@
 - [Installed PWA safe-area chrome](ios-pwa-safe-area-chrome.md) — Paint the iOS home-indicator inset through the fixed navigation wrapper to avoid an empty strip below the tab bar.
 - [Targeted formatting checks](targeted-formatting-checks.md) — Compare formatting against the baseline and avoid broad rewrites when a large UI file already has style drift.
 - [Remote refresh draft ownership](remote-refresh-draft-ownership.md) — Keep user-edited controlled fields in a local draft so periodic server refreshes cannot erase in-progress input.
+- [Nutrition target permission verification](nutrition-target-permission-verification.md) — Verify target-edit access separately from cached workspace role so offline coach editing remains intact while trainee access is blocked.
 - [Food library ownership](food-library-ownership.md) — User edits to seeded foods must become owned overrides so sync does not restore the original values.
 - [Supabase MCP fallback](supabase-mcp-fallback.md) — If generated Supabase MCP callbacks are unavailable, the installed custom MCP connection may still expose the streamable `/mcp` endpoint.
 - [Live Supabase sync drift](live-supabase-sync-drift.md) — Local realtime mocks can pass while the live schema or publication is behind; verify both before declaring cross-user sync ready.
