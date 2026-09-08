@@ -220,7 +220,42 @@ function ChallengeDetail({
               <Dumbbell className="h-4 w-4 text-primary" />
               <p className="text-sm font-extrabold text-ink">{session.name || `אימון ${index + 1}`}</p>
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">{session.items.length} תרגילים · בנוי עם סטים, חזרות וזמני מנוחה</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              {session.items.length} תרגילים · פירוט מלא של הסטים וההנחיות
+            </p>
+            <div className="mt-3 space-y-2">
+              {session.items.map((item, itemIndex) => (
+                <div
+                  key={item.id}
+                  className="rounded-2xl border border-border/50 bg-surface px-3 py-2.5"
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/10 text-[10px] font-extrabold text-primary">
+                      {itemIndex + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-extrabold text-ink">
+                        {item.exerciseName ?? "תרגיל"}
+                      </p>
+                      <p className="mt-0.5 text-[10px] font-bold text-primary">
+                        {item.sets} סטים · {item.reps} חזרות / שניות · {item.rest} שנ׳ מנוחה
+                      </p>
+                      {item.notes ? (
+                        <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                          {item.notes}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {session.notes ? (
+              <p className="mt-3 rounded-xl bg-primary/5 px-3 py-2 text-[10px] leading-relaxed text-muted-foreground">
+                <span className="font-extrabold text-ink">איך לבצע: </span>
+                {session.notes}
+              </p>
+            ) : null}
           </div>
         ))}
       </div>

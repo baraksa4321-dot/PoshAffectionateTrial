@@ -1119,7 +1119,7 @@ function RootContent() {
   const [openingCycleIndex, setOpeningCycleIndex] = useState(0);
   const [loadingRotationTick, setLoadingRotationTick] = useState(0);
   const [loadingGender, setLoadingGender] = useState<LoadingGender | undefined>(undefined);
-  const openingCycleClaimedRef = useRef(false);
+  const loadingWasVisibleRef = useRef(false);
   const [loadingRecoveryTimedOut, setLoadingRecoveryTimedOut] = useState(false);
   const loadingIndexes = loadingCycleIndexes(
     openingCycleIndex + loadingRotationTick,
@@ -1159,13 +1159,10 @@ function RootContent() {
   const activeLoadingGender =
     authStatus === "unauthenticated" ? undefined : (userProfile?.gender ?? loadingGender);
   const isInitialAuthLoading = !initialLoadingComplete;
-  // The login bootstrap must open directly on the expressive loading surface.
-  // Once the authenticated profile is available, the owner's preference can
-  // still select the plain spinner for the in-app hydration state.
-  const showExpressiveLoading =
-    isInitialAuthLoading ||
-    (activeLoadingGender !== undefined &&
-      (userProfile?.loadingAnimationsEnabled ?? activeLoadingGender === "female"));
+  // Loading is intentionally determined by the profile gender:
+  // women get the expressive animated surface and men get the spinner.
+  // Until a gender is known, stay on the neutral spinner rather than guessing.
+  const showExpressiveLoading = activeLoadingGender === "female";
   const loadingCopyGender = activeLoadingGender ?? "female";
   const loadingMode = showExpressiveLoading ? "expressive" : "plain";
 
@@ -1289,23 +1286,6 @@ function RootContent() {
     document.documentElement.lang = "he";
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
-    const claimOpeningCycle = () => {
-      try {
-        const cycleIndex = readLoadingCycle(window.localStorage.getItem(LOADING_CYCLE_STORAGE_KEY));
-        const nextCycleIndex = cycleIndex === Number.MAX_SAFE_INTEGER ? 0 : cycleIndex + 1;
-        window.localStorage.setItem(LOADING_CYCLE_STORAGE_KEY, String(nextCycleIndex));
-        return cycleIndex;
-      } catch {
-        // Private browsing can disable storage. Keep the deterministic first
-        // choice for this open rather than introducing a random fallback.
-        return 0;
-      }
-    };
-
-    if (!openingCycleClaimedRef.current) {
-      openingCycleClaimedRef.current = true;
-      setOpeningCycleIndex(claimOpeningCycle());
-    }
     if ("serviceWorker" in navigator) {
       if (import.meta.env.DEV) {
         // A Service Worker is unsafe in Vite development: it can serve stale
@@ -1347,6 +1327,27 @@ function RootContent() {
       window.clearTimeout(minimumLoadingTimer);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isLoadingScreen) {
+      loadingWasVisibleRef.current = false;
+      return;
+    }
+    if (loadingWasVisibleRef.current) return;
+
+    loadingWasVisibleRef.current = true;
+    try {
+      const cycleIndex = readLoadingCycle(
+        window.localStorage.getItem(LOADING_CYCLE_STORAGE_KEY),
+      );
+      const nextCycleIndex = cycleIndex === Number.MAX_SAFE_INTEGER ? 0 : cycleIndex + 1;
+      window.localStorage.setItem(LOADING_CYCLE_STORAGE_KEY, String(nextCycleIndex));
+      setOpeningCycleIndex(cycleIndex);
+    } catch {
+      // Private browsing can disable storage. Keep the current in-memory
+      // cycle rather than showing a random or unstable fallback.
+    }
+  }, [isLoadingScreen]);
 
   useEffect(() => {
     if (isLoadingScreen || !navigator.onLine) return;
