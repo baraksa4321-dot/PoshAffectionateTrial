@@ -8526,7 +8526,7 @@ export function CoachDashboardPage({
                       />
                     </div>
 
-                    <div className="sticky top-2 z-10 grid grid-cols-4 gap-1.5 rounded-xl border border-emerald-200 bg-white/95 p-2 shadow-sm backdrop-blur">
+                    <div className="sticky top-2 z-10 grid grid-cols-4 gap-1.5 rounded-xl border border-emerald-200 bg-white/80 p-2 shadow-sm backdrop-blur">
                       <div className="rounded-lg bg-orange-50 px-1.5 py-2 text-center">
                         <div className="text-[10px] font-bold text-orange-700">קלוריות</div>
                         <div className="mt-0.5 text-sm font-black text-orange-950">
