@@ -110,9 +110,9 @@ export function ChallengeLibrary({ compact = false }: { compact?: boolean }) {
           <div className="mb-4 flex items-start justify-between gap-3 border-b border-border/60 pb-3">
             <div>
               <p className="text-[10px] font-bold tracking-[0.16em] text-primary uppercase">Challenge library</p>
-              <h2 className="mt-1 font-display text-lg font-extrabold text-ink">אתגרי ספורט</h2>
+               <h2 className="mt-1 font-display text-lg font-extrabold text-ink">בואי לבחור אתגר</h2>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                בחר אתגר, התחל אימון קצר, או בנה גרסה אישית עם סטים, חזרות ומנוחה.
+                 משהו קצר, ריצה, גמישות או שפגאט — תבחרי מה שמתאים לך היום.
               </p>
             </div>
             <button type="button" onClick={close} aria-label="סגירת אתגרים" className="grid h-8 w-8 place-items-center rounded-xl text-muted-foreground hover:bg-secondary">
@@ -222,7 +222,7 @@ function ChallengeDetail({
               <p className="text-sm font-extrabold text-ink">{session.name || `אימון ${index + 1}`}</p>
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              {session.items.length} תרגילים · פירוט מלא של הסטים וההנחיות
+               {session.items.length} תרגילים · הנה בדיוק מה עושים
             </p>
             <div className="mt-3 space-y-2">
               {session.items.map((item, itemIndex) => (
@@ -255,7 +255,7 @@ function ChallengeDetail({
             </div>
             {session.notes ? (
               <p className="mt-3 rounded-xl bg-primary/5 px-3 py-2 text-[10px] leading-relaxed text-muted-foreground">
-                <span className="font-extrabold text-ink">איך לבצע: </span>
+                 <span className="font-extrabold text-ink">איך עושים: </span>
                 {session.notes}
               </p>
             ) : null}
@@ -276,7 +276,7 @@ function ChallengeDetail({
       <div className="mt-4 flex flex-wrap gap-2">
         <PrimaryButton onClick={onStart}>
           <Play className="h-4 w-4" />
-          התחל אתגר
+           יאללה, מתחילים
         </PrimaryButton>
         {isCoach ? (
           <>
