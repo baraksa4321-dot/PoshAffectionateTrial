@@ -288,6 +288,35 @@ describe("offline store lifecycle", () => {
     expect(store.getGymStoreSnapshot().nutritionTargets).toEqual({ calories: 1_800 });
   });
 
+  test("does not restore target-edit access from a stale coach cache during a client conflict", async () => {
+    Object.assign(navigator, { onLine: true });
+    const localData = makeSessionData({ weight: 80, role: "coach" });
+    localData.programs = [{ id: "program-local", name: "Local plan", notes: "", dayIds: [] }];
+    localData.nutritionTargets = { calories: 2_000 };
+    storage.set("gymtrack.v1.user.user-a", JSON.stringify(localData));
+    const pull = deferred<{ success: true; data: Record<string, unknown> }>();
+    pullImplementation = async () => pull.promise;
+
+    const store = await loadStore("stale-coach-conflict");
+    authenticate();
+    await eventually(() => pullCalls.length > 0);
+    store.saveProgram({ id: "program-local", name: "Local edit", notes: "", dayIds: [] });
+
+    pull.resolve({
+      success: true,
+      data: {
+        ...localData,
+        userProfile: { weight: 80, role: "client" },
+        programs: [{ id: "program-remote", name: "Remote plan", notes: "", dayIds: [] }],
+        nutritionTargets: { calories: 1_800 },
+      },
+    });
+    await eventually(() => store.getGymStoreSyncStatus() === "conflict");
+
+    store.saveNutritionTargets({ calories: 999 });
+    expect(store.getGymStoreSnapshot().nutritionTargets).toEqual({ calories: 2_000 });
+  });
+
   test("records a concurrent workspace conflict and allows selecting the remote snapshot", async () => {
     Object.assign(navigator, { onLine: true });
     const localData = makeSessionData({ weight: 82, role: "owner" });

@@ -578,9 +578,12 @@ let additionalExercises: Exercise[] = [];
 let seedExerciseNameMigrations: Record<string, { from: string; to: string }> = {};
 let referenceLibrariesPromise: Promise<void> | null = null;
 
-function canManageAssignedPlans() {
-  const role = data.userProfile?.role;
+function canManageAssignedPlansRole(role: UserProfile["role"] | undefined) {
   return role === "coach" || role === "owner";
+}
+
+function canManageAssignedPlans() {
+  return canManageAssignedPlansRole(data.userProfile?.role);
 }
 
 function canManageNutritionTargets() {
@@ -1266,7 +1269,7 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
     (dataRevision !== revisionAtPullStart || pendingAtPullStart) &&
     detectConcurrentWorkspaceConflict(data, pulled.data);
   if (concurrentConflict) {
-    profileAccessVerified = true;
+    profileAccessVerified = canManageAssignedPlansRole(pulled.data.userProfile?.role);
     data = {
       ...data,
       syncConflicts: [
@@ -1305,7 +1308,7 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
   } else {
     void queueCloudSync();
   }
-  profileAccessVerified = true;
+  profileAccessVerified = canManageAssignedPlansRole(pulled.data.userProfile?.role);
   notifyListeners();
   drainQueuedRealtimeRefresh();
 }

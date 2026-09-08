@@ -7,4 +7,4 @@ Nutrition-target writes and controls must require a live-verified coach or owner
 
 **Why:** Removing the cached role during profile hydration protects the target editor but also blocks legitimate coach workspace edits and breaks offline-first conflict handling. A separate verification flag keeps general workspace behavior intact while preventing stale trainee/coach cache access from changing targets.
 
-**How to apply:** Reset the target permission state when a user hydration begins, enable it only after a successful profile pull, and keep both the UI guard and `saveNutritionTargets` guard on that state. Failed or offline hydration must not enable target editing.
+**How to apply:** Reset the target permission state when a user hydration begins, enable it only from the role in the successful live pull (including conflict responses), and keep both the UI guard and `saveNutritionTargets` guard on that state. Failed or offline hydration must not enable target editing.
