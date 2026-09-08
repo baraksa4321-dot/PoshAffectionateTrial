@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Trophy,
   X,
+  Apple,
 } from "lucide-react";
 import { Overlay } from "@/components/ui-app/Overlay";
 import { PrimaryButton, SecondaryButton } from "@/components/ui-app/primitives";
@@ -238,7 +239,9 @@ function ChallengeDetail({
                         {item.exerciseName ?? "תרגיל"}
                       </p>
                       <p className="mt-0.5 text-[10px] font-bold text-primary">
-                        {item.sets} סטים · {item.reps} חזרות / שניות · {item.rest} שנ׳ מנוחה
+                         {item.distanceKm
+                           ? `יעד ${item.distanceKm} ק״מ · ${item.rest} שנ׳ התאוששות`
+                           : `${item.sets} סטים · ${item.reps} חזרות / שניות · ${item.rest} שנ׳ מנוחה`}
                       </p>
                       {item.notes ? (
                         <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
@@ -259,6 +262,17 @@ function ChallengeDetail({
           </div>
         ))}
       </div>
+      {challenge.nutritionTips?.length ? (
+        <div className="mt-3 rounded-2xl border border-emerald-200/70 bg-emerald-50/70 p-3">
+          <div className="flex items-center gap-2">
+            <Apple className="h-4 w-4 text-emerald-700" />
+            <p className="text-xs font-extrabold text-emerald-950">תדלוק והתאוששות</p>
+          </div>
+          <ul className="mt-2 space-y-1.5 text-[10px] leading-relaxed text-emerald-950/75">
+            {challenge.nutritionTips.map((tip) => <li key={tip}>• {tip}</li>)}
+          </ul>
+        </div>
+      ) : null}
       <div className="mt-4 flex flex-wrap gap-2">
         <PrimaryButton onClick={onStart}>
           <Play className="h-4 w-4" />

@@ -133,6 +133,8 @@ export type WorkoutItem = {
   tempo?: string;
   rir?: number | null;
   rpe?: number | null;
+  /** Optional running distance target represented by this item. */
+  distanceKm?: number;
   warmups?: WarmupSet[];
   supersetId?: string;
   supersetPartnerId?: string;
@@ -157,6 +159,8 @@ export type Challenge = {
   difficulty: "מתחילים" | "ביניים" | "מתקדמים";
   durationLabel: string;
   accent: "sage" | "peach" | "lavender" | "sand";
+  /** General fueling and recovery guidance shown with built-in challenges. */
+  nutritionTips?: string[];
   sessions: Workout[];
   ownerId?: string;
   isBuiltIn?: boolean;

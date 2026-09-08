@@ -27,7 +27,11 @@ import {
   type Workout,
   type WorkoutItem,
 } from "./gym-types";
-import { BUILT_IN_CHALLENGES, cloneChallenge } from "./challenge-library";
+import {
+  BUILT_IN_CHALLENGES,
+  RETIRED_BUILT_IN_CHALLENGE_IDS,
+  cloneChallenge,
+} from "./challenge-library";
 
 const KEY = "gymtrack.v1";
 const CACHED_USER_KEY = "gymtrack.v1.userId";
@@ -911,12 +915,13 @@ function mergeSeedExercises(existing: Exercise[], deletedExerciseIds: string[] =
 
 function mergeChallenges(existing: Challenge[], deletedChallengeIds: string[] = []): Challenge[] {
   const deleted = new Set(deletedChallengeIds);
+  const retired = new Set<string>(RETIRED_BUILT_IN_CHALLENGE_IDS);
   const byId = new Map<string, Challenge>();
   for (const challenge of BUILT_IN_CHALLENGES) {
     if (!deleted.has(challenge.id)) byId.set(challenge.id, cloneChallenge(challenge));
   }
   for (const challenge of existing) {
-    if (!deleted.has(challenge.id)) byId.set(challenge.id, challenge);
+    if (!deleted.has(challenge.id) && !retired.has(challenge.id)) byId.set(challenge.id, challenge);
   }
   return Array.from(byId.values());
 }
