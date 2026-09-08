@@ -18,7 +18,59 @@ const gramBasedSpread: FoodItem = {
   servingSize: "כף (16 גרם)",
 };
 
+const mediumEgg: FoodItem = {
+  id: "medium-egg",
+  name: "ביצה M",
+  category: "ביצים",
+  servingSize: "יחידה 1 (53g)",
+  calories: 72,
+  protein: 6.3,
+  carbs: 0.5,
+  fat: 5,
+};
+
 describe("food portion conversions", () => {
+  test("keeps an egg serving as units even when its reference weight is present", () => {
+    expect(defaultFoodQuantity(mediumEgg)).toEqual({ quantity: 1, unit: "unit" });
+    expect(foodQuantityOptions(mediumEgg).map(({ value }) => value)).toEqual(["unit", "g"]);
+
+    const mealFood = mealFoodFromPortion(mediumEgg, 2, "unit");
+    expect(mealFood.calories).toBe(72);
+    expect(mealFood.quantity).toBe(2);
+    expect(mealFood.servingSize).toBe("יחידה למנה");
+  });
+
+  test("uses the source spoon or slice instead of falling back to grams", () => {
+    const measuredOats: FoodItem = {
+      ...peanutButter,
+      id: "measured-oats",
+      name: "קוואקר",
+      servingSize: "כף גדושה (15g)",
+    };
+    const slicedCheese: FoodItem = {
+      ...peanutButter,
+      id: "sliced-cheese",
+      name: "גבינה צהובה",
+      servingSize: "פרוסה (28g)",
+    };
+
+    expect(defaultFoodQuantity(measuredOats)).toEqual({ quantity: 1, unit: "tbsp" });
+    expect(defaultFoodQuantity(slicedCheese)).toEqual({ quantity: 1, unit: "slice" });
+  });
+
+  test("treats packaged servings as one unit", () => {
+    const yogurt: FoodItem = {
+      ...peanutButter,
+      id: "yogurt-cup",
+      name: "יוגורט",
+      category: "יוגורט",
+      servingSize: "גביע (200g)",
+    };
+
+    expect(defaultFoodQuantity(yogurt)).toEqual({ quantity: 1, unit: "unit" });
+    expect(foodQuantityOptions(yogurt).map(({ value }) => value)).toEqual(["unit", "g"]);
+  });
+
   test("does not offer grams when a spoon serving has no reliable weight", () => {
     expect(foodQuantityOptions(peanutButter).map(({ value }) => value)).toEqual(["tbsp", "tsp"]);
   });
