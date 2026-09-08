@@ -1755,6 +1755,7 @@ export function CoachDashboardPage({
   const [menuFoodQuantity, setMenuFoodQuantity] = useState(1);
   const [menuFoodUnit, setMenuFoodUnit] = useState<FoodQuantityUnit>("serving");
   const [menuNotice, setMenuNotice] = useState("");
+  const [savingPlannedMenu, setSavingPlannedMenu] = useState(false);
   const [focusedNutritionFoodId, setFocusedNutritionFoodId] = useState<string | null>(null);
   const [focusedNutritionMealId, setFocusedNutritionMealId] = useState<string | null>(null);
   const trackingClientInitializedRef = useRef<string | null>(null);
@@ -3854,26 +3855,44 @@ export function CoachDashboardPage({
   };
 
   const savePlannedMenu = async () => {
-    if (!isCoach || !selectedClientId) return;
+    if (!isCoach || !selectedClientId || savingPlannedMenu) return;
+    setSavingPlannedMenu(true);
+    setMenuNotice("שומר את התפריט...");
     if (isSelfSelected) {
       savePlannedMeals(plannedMeals);
       plannedMealsDraftDirtyRef.current = false;
       setMenuNotice("התפריט האישי נשמר ויופיע גם באזור התזונה שלך.");
+      setSavingPlannedMenu(false);
       return;
     }
 
-    const { error } = await supabase.rpc(
-      "save_user_planned_menu",
-      clientPlannedMenuRpcPayload(selectedClientId, plannedMeals),
-    );
-    if (error) {
-      setMenuNotice(`שמירת התפריט נכשלה: ${error.message}`);
-      return;
+    try {
+      const { data: saved, error } = await supabase.rpc(
+        "save_user_planned_menu",
+        clientPlannedMenuRpcPayload(selectedClientId, plannedMeals),
+      );
+      if (error) throw error;
+      if (saved !== true) {
+        throw new Error("השרת לא אישר את שמירת התפריט.");
+      }
+
+      const refreshed = await pullClientDataForCoach(selectedClientId);
+      if (refreshed.error) {
+        throw new Error(`אימות השמירה נכשל: ${refreshed.error}`);
+      }
+      if (JSON.stringify(refreshed.plannedMeals) !== JSON.stringify(plannedMeals)) {
+        throw new Error("התפריט שחזר מהשרת אינו זה שנשלח.");
+      }
+
+      plannedMealsDraftDirtyRef.current = false;
+      applyClientDetails(refreshed);
+      setMenuNotice("התפריט נשמר ויופיע למתאמן במסך התזונה האישי.");
+    } catch (error: unknown) {
+      plannedMealsDraftDirtyRef.current = true;
+      setMenuNotice(`שמירת התפריט נכשלה: ${errorMessage(error, "שגיאה לא ידועה")}`);
+    } finally {
+      setSavingPlannedMenu(false);
     }
-    plannedMealsDraftDirtyRef.current = false;
-    setMenuNotice("התפריט נשמר ויופיע למתאמן במסך התזונה האישי.");
-    const refreshed = await pullClientDataForCoach(selectedClientId);
-    applyClientDetails(refreshed);
   };
 
   const renderOwnerCalorieToggle = (profile: ProfileRow, compact = false) => {
@@ -8805,9 +8824,12 @@ export function CoachDashboardPage({
                       <button
                         type="button"
                         onClick={savePlannedMenu}
-                        className="flex-1 rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800"
+                        disabled={savingPlannedMenu}
+                        className="flex-1 rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 disabled:cursor-wait disabled:opacity-60"
                       >
-                        {genderText(gender, "שמרי תפריט", "שמור תפריט")}
+                        {savingPlannedMenu
+                          ? "שומר..."
+                          : genderText(gender, "שמרי תפריט", "שמור תפריט")}
                       </button>
                     </div>
                     {menuNotice ? (
