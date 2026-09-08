@@ -242,7 +242,17 @@ function SearchPickerField({
 }
 
 function getAppScrollContainer() {
-  return document.querySelector<HTMLElement>('[data-app-scroll-container="true"]');
+  const appMain = document.querySelector<HTMLElement>('[data-app-scroll-container="true"]');
+  if (appMain) {
+    const styles = window.getComputedStyle(appMain);
+    if (
+      /(auto|scroll)/.test(styles.overflowY) &&
+      appMain.scrollHeight > appMain.clientHeight + 1
+    ) {
+      return appMain;
+    }
+  }
+  return document.scrollingElement instanceof HTMLElement ? document.scrollingElement : appMain;
 }
 
 type WorkoutSetMode = "normal" | "warmup" | "drop" | "superset";
@@ -3792,10 +3802,8 @@ export function CoachDashboardPage({
       setMenuNotice("יש לבחור מאכל ולהזין כמות גדולה מאפס.");
       return;
     }
-    const scrollContainer = getAppScrollContainer() ?? document.scrollingElement;
+    const scrollContainer = getAppScrollContainer();
     const scrollTop = scrollContainer?.scrollTop ?? window.scrollY;
-    const mealElement = document.getElementById(`coach-menu-meal-${mealId}`);
-    const mealTop = mealElement?.getBoundingClientRect().top ?? null;
     const activeElement =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     // The search field is removed immediately after adding. Blurring it first
@@ -3825,14 +3833,9 @@ export function CoachDashboardPage({
       window.requestAnimationFrame(() => {
         if (scrollContainer) {
           scrollContainer.scrollTop = scrollTop;
-        }
-        scrollContainer?.scrollTo({ top: scrollTop, behavior: "auto" });
-        const updatedMealElement = document.getElementById(`coach-menu-meal-${mealId}`);
-        if (mealTop !== null && updatedMealElement) {
-          const topDelta = updatedMealElement.getBoundingClientRect().top - mealTop;
-          if (Math.abs(topDelta) > 1) {
-            scrollContainer?.scrollBy({ top: topDelta, behavior: "auto" });
-          }
+          scrollContainer.scrollTo({ top: scrollTop, behavior: "auto" });
+        } else {
+          window.scrollTo({ top: scrollTop, behavior: "auto" });
         }
       });
     });
