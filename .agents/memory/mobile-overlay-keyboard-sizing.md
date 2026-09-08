@@ -15,4 +15,4 @@ Header-based `scroll-margin` is unsafe for fullscreen or portal editors: iOS can
 
 **Why:** The jump can happen after typing rather than on focus, so focus-only visibility logic misses it; the resulting position often matches the old header height exactly.
 
-**How to apply:** Keep intentional visibility scrolling on focus, but do not add header-based `scroll-margin` to editable controls. Restore the captured scroll chain in the next two animation frames after each active-field input.
+**How to apply:** Keep intentional visibility scrolling on focus, but do not add header-based `scroll-margin` to editable controls. Refresh the scroll-chain snapshot at the start of each active-field input, then restore it in the next two animation frames. When a fixed bottom navigation remains above the keyboard, use its actual viewport top as the lower visibility boundary.

@@ -297,27 +297,33 @@ export function AppShell({
           return;
         }
 
-        const { viewportTop, visibleHeight: viewportHeight, keyboardOpen } =
-          getKeyboardViewportMetrics();
+        const { viewportTop, visibleHeight: viewportHeight } = getKeyboardViewportMetrics();
         const headerHeight = topbarRef.current?.offsetHeight ?? 0;
-        const navHeight =
-          shellRef.current?.querySelector<HTMLElement>(".nav-shell")?.offsetHeight ?? 0;
+        const navElement = shellRef.current?.querySelector<HTMLElement>(".nav-shell");
+        const navRect = navElement?.getBoundingClientRect();
         const scrollContainer = findScrollableAncestor(field, mainRef.current);
         const containerRect = scrollContainer?.getBoundingClientRect();
         const visibleTop = Math.max(
           viewportTop + headerHeight + 12,
           containerRect ? containerRect.top + 12 : Number.NEGATIVE_INFINITY,
         );
+        const viewportBottom = viewportTop + viewportHeight;
+        const navCoversViewport =
+          navRect &&
+          navRect.top < viewportBottom &&
+          navRect.bottom > viewportTop;
         const visibleBottom = Math.min(
-          viewportTop +
-            viewportHeight -
-            (keyboardOpen ? 16 : navHeight + 16),
+          viewportBottom - 16,
+          navCoversViewport ? navRect.top - 12 : Number.POSITIVE_INFINITY,
+        );
+        const constrainedVisibleBottom = Math.min(
+          visibleBottom,
           containerRect ? containerRect.bottom - 16 : Number.POSITIVE_INFINITY,
         );
         const rect = field.getBoundingClientRect();
         const delta =
-          rect.bottom > visibleBottom
-            ? rect.bottom - visibleBottom
+          rect.bottom > constrainedVisibleBottom
+            ? rect.bottom - constrainedVisibleBottom
             : rect.top < visibleTop
               ? rect.top - visibleTop
               : 0;
@@ -366,6 +372,19 @@ export function AppShell({
       const field = event.target;
       if (!(field instanceof HTMLElement) || !isKeyboardEditableElement(field)) return;
       if (document.activeElement !== field || inputScrollSnapshot?.field !== field) return;
+
+      // Capture the position at the start of this input event. On iOS the
+      // browser can move the document while opening the keyboard, so a
+      // snapshot captured on focus may be stale by the time a controlled
+      // input rerenders.
+      const currentPositions = scrollAncestorsFor(field).map((element) => ({
+        element,
+        top: element.scrollTop,
+        left: element.scrollLeft,
+      }));
+      if (currentPositions.length) {
+        inputScrollSnapshot = { field, positions: currentPositions };
+      }
 
       window.cancelAnimationFrame(inputRestoreFrame);
       window.cancelAnimationFrame(inputRestoreSecondFrame);
