@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Settings2,
   ShoppingBag,
   Shuffle,
   Sparkles,
@@ -48,13 +47,11 @@ import {
   renameMeal,
   renameRecipe,
   saveRecipe,
-  saveNutritionTargets,
   searchFoods,
   todayKey,
   togglePlannedFoodEaten,
   uid,
   updateMealFood,
-  useCanManageNutritionTargets,
   useGym,
 } from "@/lib/gym-store";
 import type { FoodItem, MealFood } from "@/lib/gym-types";
@@ -82,7 +79,6 @@ function shiftDate(key: string, delta: number) {
   date.setDate(date.getDate() + delta);
   return todayKey(date);
 }
-
 function formatDayLabel(key: string) {
   const today = todayKey();
   if (key === today) return "היום";
@@ -218,11 +214,9 @@ type ScannedMeal = { mealName: string; foods: ScannedFood[] };
 
 function NutritionLog() {
   const gym = useGym();
-  const canManageNutritionTargets = useCanManageNutritionTargets();
   const gender = gym.userProfile?.gender;
   const [loadingGender, setLoadingGender] = useState<LoadingGender | undefined>(gender);
   const showCalories = gym.userProfile?.showCalories !== false;
-  const canManageTargets = canManageNutritionTargets;
   const [date, setDate] = useState(todayKey());
   const [pickerMealId, setPickerMealId] = useState<string | null>(null);
   const [pickerQuery, setPickerQuery] = useState("");
@@ -234,8 +228,6 @@ function NutritionLog() {
     plannedMealId?: string;
   } | null>(null);
   const [substituteQuery, setSubstituteQuery] = useState("");
-  const [showTargets, setShowTargets] = useState(false);
-  const [targetsDraft, setTargetsDraft] = useState(gym.nutritionTargets);
   const [balanceMode, setBalanceMode] = useState<"daily" | "weekly">("daily");
 
   // New smart nutrition features state
@@ -369,12 +361,6 @@ function NutritionLog() {
       setLoadingGender(undefined);
     }
   }, [gender]);
-
-  useEffect(() => {
-    if (!canManageTargets && showTargets) {
-      setShowTargets(false);
-    }
-  }, [canManageTargets, showTargets]);
 
   useEffect(() => {
     if (scanState !== "analyzing" || !loadingAnimationsEnabled) return;
@@ -563,17 +549,6 @@ function NutritionLog() {
           >
             <BookOpen className="h-5 w-5" />
           </Link>
-          {canManageTargets ? (
-            <IconButton
-              aria-label="הגדר יעדים"
-              onClick={() => {
-                setTargetsDraft(gym.nutritionTargets);
-                setShowTargets(true);
-              }}
-            >
-              <Settings2 className="h-5 w-5" />
-            </IconButton>
-          ) : null}
         </div>
       }
     >
@@ -1955,93 +1930,6 @@ function NutritionLog() {
         </Overlay>
       ) : null}
 
-      {/* Targets modal */}
-      {showTargets && canManageTargets ? (
-        <Overlay
-          open={showTargets}
-          onClose={() => setShowTargets(false)}
-          ariaLabel="יעדים יומיים"
-          variant="bottom"
-          panelClassName="contents"
-          className="fade-in"
-        >
-          <div
-            className="scale-in max-h-[88dvh] w-full max-w-xl overflow-y-auto rounded-t-[2rem] border-t border-border/40 bg-card p-5 text-start shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
-            <p className="text-[11px] font-semibold tracking-[0.14em] text-primary uppercase">
-              יעדים יומיים
-            </p>
-            <h2 className="mt-1 font-display text-[20px] font-semibold text-ink">
-              {genderText(gender, "הגדירי יעדים תזונתיים", "הגדר יעדים תזונתיים")}
-            </h2>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <TargetField
-                label="קלוריות"
-                value={targetsDraft.calories}
-                onChange={(v) =>
-                  setTargetsDraft(({ calories: _old, ...rest }) => ({
-                    ...rest,
-                    ...(v === undefined ? {} : { calories: v }),
-                  }))
-                }
-              />
-              <TargetField
-                label="חלבון (g)"
-                value={targetsDraft.protein}
-                onChange={(v) =>
-                  setTargetsDraft(({ protein: _old, ...rest }) => ({
-                    ...rest,
-                    ...(v === undefined ? {} : { protein: v }),
-                  }))
-                }
-              />
-              <TargetField
-                label="פחמימות (g)"
-                value={targetsDraft.carbs}
-                onChange={(v) =>
-                  setTargetsDraft(({ carbs: _old, ...rest }) => ({
-                    ...rest,
-                    ...(v === undefined ? {} : { carbs: v }),
-                  }))
-                }
-              />
-              <TargetField
-                label="שומן (g)"
-                value={targetsDraft.fat}
-                onChange={(v) =>
-                  setTargetsDraft(({ fat: _old, ...rest }) => ({
-                    ...rest,
-                    ...(v === undefined ? {} : { fat: v }),
-                  }))
-                }
-              />
-              <TargetField
-                label="סיבים (g)"
-                value={targetsDraft.fiber}
-                onChange={(v) =>
-                  setTargetsDraft(({ fiber: _old, ...rest }) => ({
-                    ...rest,
-                    ...(v === undefined ? {} : { fiber: v }),
-                  }))
-                }
-              />
-            </div>
-            <div className="mt-4 flex gap-2">
-              <PrimaryButton
-                onClick={() => {
-                  saveNutritionTargets(targetsDraft);
-                  setShowTargets(false);
-                }}
-              >
-                שמור יעדים
-              </PrimaryButton>
-              <SecondaryButton onClick={() => setShowTargets(false)}>ביטול</SecondaryButton>
-            </div>
-          </div>
-        </Overlay>
-      ) : null}
     </AppShell>
   );
 }
@@ -2102,33 +1990,5 @@ function CalRing({ pct }: { pct: number }) {
         </span>
       </div>
     </div>
-  );
-}
-
-function TargetField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value?: number | undefined;
-  onChange: (v: number | undefined) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-        {label}
-      </span>
-      <input
-        inputMode="numeric"
-        value={value ?? ""}
-        onChange={(e) => {
-          const raw = e.target.value.replace(/\D/g, "");
-          onChange(raw === "" ? undefined : Number(raw));
-        }}
-        placeholder="—"
-        className="mt-1.5 w-full rounded-2xl border border-border/60 bg-secondary px-4 py-3 text-[15px] outline-none focus:border-primary"
-      />
-    </label>
   );
 }

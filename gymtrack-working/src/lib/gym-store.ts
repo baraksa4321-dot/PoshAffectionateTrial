@@ -1527,14 +1527,6 @@ export function useProfileHydrationError() {
   );
 }
 
-export function useCanManageNutritionTargets() {
-  return useSyncExternalStore(
-    subscribe,
-    canManageNutritionTargets,
-    () => false,
-  );
-}
-
 export function useCloudSyncStatus() {
   return useSyncExternalStore(
     subscribe,
