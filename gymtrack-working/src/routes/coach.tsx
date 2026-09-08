@@ -3876,16 +3876,26 @@ export function CoachDashboardPage({
         throw new Error("השרת לא אישר את שמירת התפריט.");
       }
 
-      const refreshed = await pullClientDataForCoach(selectedClientId);
-      if (refreshed.error) {
-        throw new Error(`אימות השמירה נכשל: ${refreshed.error}`);
+      const { data: persistedProfile, error: verificationError } = await supabase
+        .from("profiles")
+        .select("planned_menu")
+        .eq("id", selectedClientId)
+        .single();
+      if (verificationError) {
+        throw new Error(`אימות השמירה נכשל: ${verificationError.message}`);
       }
-      if (JSON.stringify(refreshed.plannedMeals) !== JSON.stringify(plannedMeals)) {
+      const persistedPlannedMeals = Array.isArray(persistedProfile?.planned_menu)
+        ? (persistedProfile.planned_menu as Meal[])
+        : [];
+      if (JSON.stringify(persistedPlannedMeals) !== JSON.stringify(plannedMeals)) {
         throw new Error("התפריט שחזר מהשרת אינו זה שנשלח.");
       }
 
       plannedMealsDraftDirtyRef.current = false;
-      applyClientDetails(refreshed);
+      setClientDetails((current) =>
+        current ? { ...current, plannedMeals: persistedPlannedMeals } : current,
+      );
+      setPlannedMeals(persistedPlannedMeals);
       setMenuNotice("התפריט נשמר ויופיע למתאמן במסך התזונה האישי.");
     } catch (error: unknown) {
       plannedMealsDraftDirtyRef.current = true;
