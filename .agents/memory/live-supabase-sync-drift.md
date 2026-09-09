@@ -9,6 +9,12 @@ The live Supabase schema and Realtime publication must be checked separately fro
 
 **How to apply:** For sync releases, read-only verify applied migrations, required RPCs/columns, publication membership, and delete behavior before any live two-account smoke test; never apply schema changes without explicit approval.
 
+Live drift can be semantic, not just a missing table: legacy activity tables may exist with different column names, and missing coach RLS can silently return empty reports while client pulls fail loudly.
+
+**Why:** A present table can still reject the client's mapper or filter rows from a permitted coach, so existence checks and local mocks do not prove compatibility.
+
+**How to apply:** Compare every selected/upserted column and every role-specific policy against the live catalog; test both trainee hydration and coach detail pulls.
+
 The release gate fails closed when any disposable smoke-account setting exists without the explicit `GYMTRACK_SMOKE_ALLOW_LIVE=true` guard.
 
 **Why:** Preventing a release check from silently contacting live Supabase is safer than assuming configured credentials are disposable or intended for smoke testing.
