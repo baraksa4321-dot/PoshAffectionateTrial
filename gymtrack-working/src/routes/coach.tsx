@@ -3979,6 +3979,10 @@ export function CoachDashboardPage({
   const latestNutritionDay = [...(clientDetails?.nutritionDays ?? [])].sort((a, b) =>
     b.date.localeCompare(a.date),
   )[0];
+  const clientBodyWeightLogs = clientDetails?.bodyWeightLogs ?? [];
+  const clientBodyMeasurements = clientDetails?.bodyMeasurements ?? [];
+  const clientHabits = clientDetails?.habits ?? [];
+  const clientCoachMessages = clientDetails?.coachMessages ?? [];
   const clientNutritionNotes = (clientDetails?.nutritionDays ?? []).flatMap((day) =>
     day.meals.flatMap((meal) =>
       meal.foods
@@ -5646,7 +5650,8 @@ export function CoachDashboardPage({
                   className="workspace-tab-content space-y-4"
                   data-active-tab={activeWorkspaceTab}
                 >
-                  {showClientOverview && !trackingLanding ? (
+                  {!trackingLanding &&
+                  (showClientOverview || (workspacePage && openEditor === null)) ? (
                     <>
                       {!trackingLanding ? (
                         <>
@@ -5876,6 +5881,148 @@ export function CoachDashboardPage({
                               </div>
                             ) : null}
                           </div>
+
+                          <section
+                            data-testid="coach-activity-history"
+                            className="surface-card space-y-3 rounded-2xl border border-primary/15 bg-primary/[0.025] p-4"
+                            aria-label="היסטוריית פעילות"
+                          >
+                            <div className="flex items-center justify-between border-b border-primary/15 pb-2">
+                              <div>
+                                <h4 className="flex items-center gap-1.5 text-sm font-bold text-ink">
+                                  <Activity className="h-4 w-4 text-primary" /> היסטוריית פעילות
+                                </h4>
+                                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                  נתונים שנמשכו עבור המתאמנת שנבחרה בלבד
+                                </p>
+                              </div>
+                              <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+                                {clientBodyWeightLogs.length +
+                                  clientBodyMeasurements.length +
+                                  clientHabits.length +
+                                  clientCoachMessages.length}{" "}
+                                רשומות
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-[11px]">
+                              <div
+                                data-testid="coach-activity-nutrition"
+                                className="rounded-xl bg-white/80 p-2.5"
+                              >
+                                <span className="block text-muted-foreground">תזונה אחרונה</span>
+                                <strong className="mt-1 block text-ink">
+                                  {clientDetails.nutritionDays[0]
+                                    ? `${clientDetails.nutritionDays[0].date} · יעד ${clientDetails.nutritionTargets.calories ?? "—"} קל׳`
+                                    : "אין נתונים"}
+                                </strong>
+                                {clientDetails.nutritionDays[0] ? (
+                                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                                    {clientDetails.nutritionDays[0].meals.reduce(
+                                      (total, meal) => total + meal.foods.length,
+                                      0,
+                                    )}{" "}
+                                    מאכלים בפועל
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div
+                                data-testid="coach-activity-cardio"
+                                className="rounded-xl bg-white/80 p-2.5"
+                              >
+                                <span className="block text-muted-foreground">אירובי אחרון</span>
+                                <strong className="mt-1 block text-ink">
+                                  {clientDetails.cardioLogs?.[0]
+                                    ? `${clientDetails.cardioLogs[0].type} · ${clientDetails.cardioLogs[0].durationMin} דקות`
+                                    : "אין נתונים"}
+                                </strong>
+                                {clientDetails.cardioLogs?.[0] ? (
+                                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                                    {clientDetails.cardioLogs[0].calories} קל׳
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div
+                                data-testid="coach-activity-weight"
+                                className="rounded-xl bg-white/80 p-2.5"
+                              >
+                                <span className="block text-muted-foreground">משקל אחרון</span>
+                                <strong className="mt-1 block text-ink">
+                                  {clientBodyWeightLogs[0]
+                                    ? `${clientBodyWeightLogs[0].weight} ק״ג`
+                                    : "לא נמדד"}
+                                </strong>
+                                {clientBodyWeightLogs[0] ? (
+                                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                                    {clientBodyWeightLogs[0].date}
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div
+                                data-testid="coach-activity-measurements"
+                                className="rounded-xl bg-white/80 p-2.5"
+                              >
+                                <span className="block text-muted-foreground">מדידה אחרונה</span>
+                                <strong className="mt-1 block text-ink">
+                                  {clientBodyMeasurements[0]?.waistCm
+                                    ? `מותניים ${clientBodyMeasurements[0].waistCm} ס״מ`
+                                    : "לא נמדד"}
+                                </strong>
+                                {clientBodyMeasurements[0]?.bodyFatPct ? (
+                                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                                    שומן {clientBodyMeasurements[0].bodyFatPct}%
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div
+                                data-testid="coach-activity-habits"
+                                className="rounded-xl bg-white/80 p-2.5"
+                              >
+                                <span className="block text-muted-foreground">הרגלים אחרונים</span>
+                                <strong className="mt-1 block text-ink">
+                                  {clientHabits[0]
+                                    ? `${clientHabits[0].steps.toLocaleString("he-IL")} צעדים`
+                                    : "אין נתונים"}
+                                </strong>
+                                {clientHabits[0] ? (
+                                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                                    {clientHabits[0].workoutDone
+                                      ? "אימון בוצע"
+                                      : "אימון טרם סומן"}
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div
+                                data-testid="coach-activity-messages"
+                                className="rounded-xl bg-white/80 p-2.5"
+                              >
+                                <span className="block text-muted-foreground">הודעות</span>
+                                <strong className="mt-1 block text-ink">
+                                  {clientCoachMessages.length} הודעות שמורות
+                                </strong>
+                                {clientCoachMessages[0] ? (
+                                  <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                                    {clientCoachMessages[0].message}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+
+                            <div
+                              data-testid="coach-activity-challenges"
+                              className="rounded-xl border border-amber-200 bg-amber-50/70 p-2.5 text-[11px]"
+                            >
+                              <span className="block font-bold text-amber-900">אתגרים זמינים</span>
+                              <p className="mt-1 text-amber-900/75">
+                                {store.challenges.length > 0
+                                  ? [...store.challenges.filter((challenge) => !challenge.isBuiltIn), ...store.challenges.filter((challenge) => challenge.isBuiltIn)]
+                                      .slice(0, 3)
+                                      .map((challenge) => challenge.title)
+                                      .join(" · ")
+                                  : "אין אתגרים זמינים"}
+                              </p>
+                            </div>
+                          </section>
                         </>
                       ) : null}
                     </>

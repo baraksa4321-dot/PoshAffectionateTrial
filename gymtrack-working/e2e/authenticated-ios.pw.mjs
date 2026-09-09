@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const COACH_ID = "ios-smoke-coach";
 const CLIENT_ID = "ios-smoke-client";
+const OTHER_CLIENT_ID = "ios-smoke-other-client";
 const WORKOUT_ID = "ios-smoke-workout";
 const PROGRAM_ID = "ios-smoke-program";
 const ACTIVE_SESSION_FEEDBACK_KEY = `gymtrack.active_session_feedback.${WORKOUT_ID}`;
@@ -118,22 +119,130 @@ const nutritionDay = {
   water_target_ml: 2500,
 };
 
+const clientNutritionDay = {
+  id: nutritionDay.id,
+  date: nutritionDay.date,
+  meals: nutritionDay.meals,
+  plannedMeals: [],
+  waterMl: nutritionDay.water_ml,
+  waterTargetMl: nutritionDay.water_target_ml,
+};
+
+const cardioLog = {
+  id: "ios-smoke-cardio",
+  date: "2026-08-25",
+  type: "הליכה מהירה",
+  durationMin: 32,
+  calories: 215,
+  intensity: "בינונית",
+};
+
+const bodyWeightLog = {
+  id: "ios-smoke-weight",
+  date: "2026-08-24",
+  weight: 63.4,
+};
+
+const bodyMeasurement = {
+  id: "ios-smoke-measurement",
+  date: "2026-08-23",
+  waistCm: 74,
+  bodyFatPct: 24.5,
+  muscleMassKg: 42.1,
+  notes: "מדידת בדיקה",
+};
+
+const habit = {
+  id: "ios-smoke-habit",
+  date: "2026-08-25",
+  steps: 8500,
+  stepsTarget: 10000,
+  weighInDone: true,
+  workoutDone: true,
+  busyDayMode: false,
+};
+
+const coachMessage = {
+  id: "ios-smoke-message",
+  coach_id: COACH_ID,
+  client_id: CLIENT_ID,
+  message: "כל הכבוד על ההתמדה השבוע",
+  created_at: "2026-08-25T08:30:00.000Z",
+  is_read: false,
+};
+
+const challenge = {
+  id: "ios-smoke-challenge",
+  title: "אתגר בדיקת התמדה",
+  description: "אתגר בדיקה שנשמר במטמון של המתאמנת.",
+  category: "סבולת",
+  difficulty: "מתחילים",
+  durationLabel: "שבוע אחד",
+  accent: "sage",
+  isPublished: true,
+  sessions: [
+    {
+      id: "ios-smoke-challenge-session",
+      name: "אימון אתגר בדיקה",
+      notes: "",
+      items: [],
+    },
+  ],
+};
+
+const otherClientProfile = {
+  id: OTHER_CLIENT_ID,
+  email: "ios-smoke-other-client@example.test",
+  full_name: "מתאמנת אחרת",
+  role: "client",
+  approval_status: "approved",
+  coach_id: COACH_ID,
+  weight_kg: 71,
+  height_cm: 170,
+  age_years: 34,
+  workouts_per_week: 2,
+  gender: "female",
+  show_calories: true,
+  today_routine_enabled: true,
+  planned_menu: [],
+};
+
+const otherProgram = {
+  id: "ios-smoke-other-program",
+  name: "תוכנית של מתאמנת אחרת",
+  notes: "",
+  dayIds: ["ios-smoke-other-workout"],
+};
+
 const gymData = {
   exercises,
   workouts,
   programs: [program],
   history: [],
   foods: [],
-  nutritionDays: [],
-  nutritionTargets: {},
+  nutritionDays: [clientNutritionDay],
+  nutritionTargets: { calories: nutritionDay.target_calories },
   plannedMeals: clientProfile.planned_menu,
   mealTemplate: [],
   recipes: [],
   recentFoods: [],
   favoriteFoods: [],
-  bodyWeightLogs: [],
-  bodyMeasurements: [],
-  cardioLogs: [],
+  bodyWeightLogs: [bodyWeightLog],
+  bodyMeasurements: [bodyMeasurement],
+  cardioLogs: [cardioLog],
+  habits: [habit],
+  coachMessages: [
+    {
+      id: coachMessage.id,
+      coachId: coachMessage.coach_id,
+      clientId: coachMessage.client_id,
+      message: coachMessage.message,
+      createdAt: coachMessage.created_at,
+      isRead: coachMessage.is_read,
+    },
+  ],
+  challenges: [challenge],
+  challengeEnrollments: [],
   preExitChecklist: [],
   userProfile: {
     fullName: "מאמנת בדיקה",
@@ -186,7 +295,24 @@ function authSession() {
 
 async function installFixture(page) {
   await page.addInitScript(
-    ({ cacheKey, cacheValue, session, clientProfile, coachProfile, program, workouts, nutritionDay }) => {
+    ({
+      cacheKey,
+      cacheValue,
+      session,
+      clientProfile,
+      otherClientProfile,
+      coachProfile,
+      program,
+      otherProgram,
+      workouts,
+      nutritionDay,
+      cardioLog,
+      bodyWeightLog,
+      bodyMeasurement,
+      habit,
+      coachMessage,
+      challenge,
+    }) => {
       Object.defineProperty(window.navigator, "onLine", {
         configurable: true,
         get: () => false,
@@ -231,11 +357,37 @@ async function installFixture(page) {
                   weight_kg: clientProfile.weight_kg,
                 },
               },
+              {
+                id: "ios-smoke-other-link",
+                client_id: otherClientProfile.id,
+                created_at: "2026-01-03T00:00:00.000Z",
+                profiles: {
+                  email: otherClientProfile.email,
+                  full_name: otherClientProfile.full_name,
+                  weight_kg: otherClientProfile.weight_kg,
+                },
+              },
             ];
           } else if (path === "profiles") {
-            body = [parsed.searchParams.get("id")?.includes(clientProfile.id) ? clientProfile : coachProfile];
+            const requestedId = parsed.searchParams.get("id")?.replace(/^eq\./, "");
+            body = [
+              requestedId === clientProfile.id
+                ? clientProfile
+                : requestedId === otherClientProfile.id
+                  ? otherClientProfile
+                  : coachProfile,
+            ];
           } else if (path === "programs") {
-            body = [{ id: program.id, user_id: clientProfile.id, name: program.name, description: program.notes }];
+            const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
+            const selectedProgram = requestedUserId === otherClientProfile.id ? otherProgram : program;
+            body = [
+              {
+                id: selectedProgram.id,
+                user_id: requestedUserId === otherClientProfile.id ? otherClientProfile.id : clientProfile.id,
+                name: selectedProgram.name,
+                description: selectedProgram.notes,
+              },
+            ];
           } else if (path === "program_days") {
             const method = (init?.method ?? "GET").toUpperCase();
             if (method === "PATCH" || method === "PUT") {
@@ -247,16 +399,103 @@ async function installFixture(page) {
                 );
               }
             }
-            body = remoteWorkouts.map((workout, index) => ({
-              id: workout.id,
-              program_id: program.id,
-              user_id: clientProfile.id,
-              name: workout.name,
-              items: workout.items,
-              sort_order: index,
-            }));
+            const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
+            body =
+              requestedUserId === otherClientProfile.id
+                ? [
+                    {
+                      id: "ios-smoke-other-workout",
+                      program_id: otherProgram.id,
+                      user_id: otherClientProfile.id,
+                      name: "אימון של מתאמנת אחרת",
+                      items: [],
+                      sort_order: 0,
+                    },
+                  ]
+                : remoteWorkouts.map((workout, index) => ({
+                    id: workout.id,
+                    program_id: program.id,
+                    user_id: clientProfile.id,
+                    name: workout.name,
+                    items: workout.items,
+                    sort_order: index,
+                  }));
           } else if (path === "nutrition_days") {
-            body = [nutritionDay];
+            const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
+            body = requestedUserId === otherClientProfile.id ? [] : [nutritionDay];
+          } else if (path === "workout_sessions") {
+            const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
+            body =
+              requestedUserId === otherClientProfile.id
+                ? []
+                : [
+                    {
+                      id: "ios-smoke-session",
+                      user_id: clientProfile.id,
+                      workout_id: workouts[0].id,
+                      workout_name: workouts[0].name,
+                      program_name: program.name,
+                      date: "2026-08-25T07:00:00.000Z",
+                      duration_sec: 1800,
+                      entries: [],
+                      notes: "",
+                    },
+                  ];
+          } else if (path === "cardio_logs") {
+            const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
+            body =
+              requestedUserId === otherClientProfile.id
+                ? []
+                : [{ ...cardioLog, user_id: clientProfile.id, duration_min: cardioLog.durationMin, estimated_calories: cardioLog.calories }];
+          } else if (path === "body_weight_logs") {
+            const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
+            body =
+              requestedUserId === otherClientProfile.id
+                ? []
+                : [{ id: bodyWeightLog.id, user_id: clientProfile.id, date: bodyWeightLog.date, weight_kg: bodyWeightLog.weight }];
+          } else if (path === "body_measurements") {
+            const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
+            body =
+              requestedUserId === otherClientProfile.id
+                ? []
+                : [
+                    {
+                      id: bodyMeasurement.id,
+                      user_id: clientProfile.id,
+                      date: bodyMeasurement.date,
+                      waist_cm: bodyMeasurement.waistCm,
+                      body_fat_pct: bodyMeasurement.bodyFatPct,
+                      muscle_mass_kg: bodyMeasurement.muscleMassKg,
+                      notes: bodyMeasurement.notes,
+                    },
+                  ];
+          } else if (path === "client_habits") {
+            const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
+            body =
+              requestedUserId === otherClientProfile.id
+                ? []
+                : [
+                    {
+                      ...habit,
+                      user_id: clientProfile.id,
+                      steps_target: habit.stepsTarget,
+                      weigh_in_done: habit.weighInDone,
+                      workout_done: habit.workoutDone,
+                      busy_day_mode: habit.busyDayMode,
+                    },
+                  ];
+          } else if (path === "coach_messages") {
+            const requestedClientId = parsed.searchParams.get("client_id")?.replace(/^eq\./, "");
+            body = requestedClientId === otherClientProfile.id ? [] : [coachMessage];
+          } else if (path === "challenges") {
+            body = [
+              {
+                ...challenge,
+                duration_label: challenge.durationLabel,
+                owner_id: COACH_ID,
+                updated_at: "2026-08-20T00:00:00.000Z",
+              },
+            ];
           }
           return new Response(JSON.stringify(body), {
             status: 200,
@@ -274,10 +513,18 @@ async function installFixture(page) {
       cacheValue: gymData,
       session: authSession(),
       clientProfile,
+      otherClientProfile,
       coachProfile,
       program,
+      otherProgram,
       workouts,
       nutritionDay,
+      cardioLog,
+      bodyWeightLog,
+      bodyMeasurement,
+      habit,
+      coachMessage,
+      challenge,
     },
   );
 }
@@ -311,6 +558,16 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await expect(page.locator('[data-coach-workspace="true"]')).toBeVisible();
 
   const workspace = page.locator('[data-coach-workspace="true"]');
+  const activityHistory = page.getByTestId("coach-activity-history");
+  await expect(activityHistory).toBeVisible();
+  await expect(page.getByTestId("coach-activity-weight")).toContainText("63.4");
+  await expect(page.getByTestId("coach-activity-measurements")).toContainText("74");
+  await expect(page.getByTestId("coach-activity-habits")).toContainText("8,500");
+  await expect(page.getByTestId("coach-activity-messages")).toContainText("כל הכבוד על ההתמדה השבוע");
+  await expect(page.getByTestId("coach-activity-challenges")).toContainText("אתגר בדיקת התמדה");
+  await expect(page.getByText("מתאמנת אחרת", { exact: true })).toBeHidden();
+  await expect(activityHistory).not.toContainText("נתון של מתאמנת אחרת");
+
   await expect(workspace).toHaveCSS("overflow-y", "auto");
   await workspace.evaluate((element) => {
     element.scrollTop = element.scrollHeight;

@@ -33,6 +33,7 @@
 - [Workout history deduplication](history-dedupe.md) — Merge retries only with an exact timestamp or repeated ID; same-day workouts may be legitimate separate executions.
 - [Workout exercise identity drift](workout-exercise-identity-drift.md) — Completed sessions can retain older exercise IDs; coach reports must also match the normalized exercise name.
 - [Coach workspace fixtures](coach-workspace-fixtures.md) — The authenticated coach fixture can hydrate with the first workout day already open; tests should accept that valid initial state.
+- [Coach activity workspace states](coach-activity-workspace-states.md) — Coach activity assertions must cover the selected-client route before editors open; editor overlays can legitimately hide the overview.
 - [Focused workspace portals](focused-workspace-portals.md) — Portal targets for focused coach editors belong inside the owning workspace, not the global app main.
 - [Completed session draft guard](session-feedback-persistence.md) — After a successful save, stop hydration effects from recreating cleared feedback drafts.
 - [Supabase MCP destructive output](supabase-mcp-destructive-output.md) — A blocked destructive response can mean the transaction already committed; verify read-only before retrying.
