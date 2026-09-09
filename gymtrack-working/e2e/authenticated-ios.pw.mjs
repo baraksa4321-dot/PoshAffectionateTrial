@@ -366,6 +366,8 @@ async function installFixture(page, { role = "coach", online = false } = {}) {
           return [coachMessage];
         }
       })();
+      let coachMessageReads = 0;
+      window.__iosSmokeCoachMessageReads = () => coachMessageReads;
       const persistRemoteCoachMessages = () => {
         window.localStorage.setItem(remoteMessagesKey, JSON.stringify(remoteCoachMessages));
       };
@@ -538,6 +540,7 @@ async function installFixture(page, { role = "coach", online = false } = {}) {
                     },
                   ];
           } else if (path === "coach_messages") {
+            if ((init?.method ?? "GET").toUpperCase() === "GET") coachMessageReads += 1;
             const requestedClientId = parsed.searchParams.get("client_id")?.replace(/^eq\./, "");
             body = remoteCoachMessages
               .filter(
@@ -830,6 +833,37 @@ test("trainee sees the message sent from the coach profile after reconnecting", 
 
   await traineePage.evaluate(() => window.__iosSmokeSetOnline(true));
   await expect(traineeMessage).toContainText(profileMessageText);
+});
+
+test("trainee reopens a received coach message offline before reconnect refresh", async ({
+  page,
+}) => {
+  await installFixture(page, { role: "trainee" });
+
+  await page.goto("/");
+  const traineeMessage = page.getByTestId("coach-message-banner");
+  await expect(traineeMessage).toContainText("כל הכבוד על ההתמדה השבוע");
+  await expect.poll(() => page.evaluate(() => window.__iosSmokeCoachMessageReads())).toBe(0);
+
+  await page.reload();
+  const reopenedMessage = page.getByTestId("coach-message-banner");
+  await expect(reopenedMessage).toContainText("כל הכבוד על ההתמדה השבוע");
+  await expect.poll(() => page.evaluate(() => window.__iosSmokeCoachMessageReads())).toBe(0);
+
+  await page.evaluate(() => window.__iosSmokeSetOnline(true));
+  await expect
+    .poll(() => page.evaluate(() => window.__iosSmokeCoachMessageReads()))
+    .toBeGreaterThan(0);
+  await expect(reopenedMessage).toContainText("כל הכבוד על ההתמדה השבוע");
+  await expect
+    .poll(async () => {
+      const cached = await page.evaluate(
+        (key) => JSON.parse(window.localStorage.getItem(key) ?? "{}"),
+        "gymtrack.v1.user.ios-smoke-client",
+      );
+      return cached.coachMessages?.length ?? 0;
+    })
+    .toBe(1);
 });
 
 test("active workout values survive leaving and reopening the session", async ({ page }) => {

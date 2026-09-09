@@ -43,3 +43,4 @@
 - [External store snapshot stability](external-store-snapshot-stability.md) — Optional array snapshots need stable empty constants or React can enter an infinite update loop.
 - [Capacitor static build](capacitor-static-build.md) — The TanStack Start app needs a separate client-only Vite entry and root index.html for native wrapping.
 - [Remote persistence smoke fixtures](remote-persistence-smoke-fixtures.md) — Reopening tests must make mocked mutation responses visible to later reads, not return only the initial fixture.
+- [Offline hydration reconnect timing](offline-hydration-reconnect-timing.md) — Let offline hydration settle before dispatching online in lifecycle tests, or the event can reuse the in-flight promise and skip refresh.

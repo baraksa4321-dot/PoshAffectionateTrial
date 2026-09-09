@@ -321,6 +321,61 @@ describe("offline store lifecycle", () => {
     expect(snapshot.coachMessages[0]?.message).toBe("כל הכבוד");
   });
 
+  test("keeps a received coach message visible after offline reload and refreshes it once", async () => {
+    Object.assign(navigator, { onLine: true });
+    const remoteData = makeSessionData({
+      weight: 72,
+      role: "client",
+      coachId: "coach-a",
+      approvalStatus: "approved",
+    });
+    remoteData.coachMessages = [
+      {
+        id: "received-message",
+        coachId: "coach-a",
+        clientId: "user-a",
+        message: "הודעה שנשמרה למתאמנת",
+        createdAt: "2026-08-26T09:00:00.000Z",
+        isRead: false,
+      },
+    ];
+    let remotePullCount = 0;
+    pullImplementation = async (_userId, _localState) => {
+      remotePullCount += 1;
+      return { success: true, data: remoteData as unknown as Record<string, unknown> };
+    };
+
+    const firstStore = await loadStore("received-message-online");
+    authenticate();
+    await eventually(
+      () => firstStore.getGymStoreSnapshot().coachMessages?.[0]?.message === "הודעה שנשמרה למתאמנת",
+    );
+    expect(JSON.parse(storage.get("gymtrack.v1.user.user-a") ?? "{}").coachMessages).toHaveLength(
+      1,
+    );
+
+    const pullsBeforeOfflineReload = remotePullCount;
+    Object.assign(navigator, { onLine: false });
+    const reloadedStore = await loadStore("received-message-offline-reload");
+    authenticate();
+    await eventually(
+      () =>
+        reloadedStore.getGymStoreSyncStatus() === "offline" &&
+        reloadedStore.getGymStoreSnapshot().coachMessages?.[0]?.message === "הודעה שנשמרה למתאמנת",
+    );
+    expect(remotePullCount).toBe(pullsBeforeOfflineReload);
+    expect(reloadedStore.getGymStoreSnapshot().coachMessages).toHaveLength(1);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    Object.assign(navigator, { onLine: true });
+    emit("online");
+    await eventually(() => remotePullCount > pullsBeforeOfflineReload);
+    expect(reloadedStore.getGymStoreSnapshot().coachMessages?.[0]?.message).toBe(
+      "הודעה שנשמרה למתאמנת",
+    );
+    expect(reloadedStore.getGymStoreSnapshot().coachMessages).toHaveLength(1);
+  });
+
   test("keeps an offline mutation after reload and uploads it on reconnect", async () => {
     storage.set("gymtrack.v1.user.user-a", JSON.stringify(cachedClientData));
     const firstStore = await loadStore("offline-edit");
