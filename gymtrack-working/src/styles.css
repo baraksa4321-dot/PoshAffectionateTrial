@@ -7475,6 +7475,20 @@ html.night-mode [class*="border-border/"] {
   box-shadow: 0 6px 15px rgb(var(--shadow-color) / 5%) !important;
 }
 
+/* iOS can composite rounded cards as transparent at the antialiased corners
+ * when a card has gradients, shadows, or translucent children. Keep the
+ * surface and its edge on one isolated clipping layer so the corners remain
+ * filled on Safari and in the installed PWA. */
+.dashboard-editorial-shell .home-feature-item > .ink-card,
+.dashboard-editorial-shell .home-secondary-card,
+.dashboard-editorial-shell .dashboard-module .surface-card,
+.dashboard-editorial-shell .dashboard-support-card {
+  isolation: isolate;
+  overflow: hidden;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  mask-image: radial-gradient(white, black);
+}
+
 .dashboard-editorial-shell .dashboard-module {
   border: 0 !important;
   background: transparent !important;
