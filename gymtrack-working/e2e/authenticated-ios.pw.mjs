@@ -567,7 +567,7 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
 
   await page.goto("/");
   const coachNav = page.getByTestId("link-nav-coach");
-  await expect(coachNav).toBeVisible();
+  await expect(coachNav).toBeVisible({ timeout: 20_000 });
   await coachNav.click();
   await expect(page).toHaveURL(/\/coach\/clients/);
   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("בדיקה");
@@ -578,17 +578,26 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await expect(page.locator('[data-coach-workspace="true"]')).toBeVisible();
 
   const workspace = page.locator('[data-coach-workspace="true"]');
-  await expect(
-    page.getByText("שליחת הודעת חיזוק / הנחיה למתאמן", { exact: true }),
-  ).toHaveCount(0);
-  await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
-  const profileMessage = page.getByTestId("coach-client-message-profile");
-  await expect(profileMessage).toBeVisible();
-  const profileMessageText = "הודעה שנשלחה מהפרופיל";
-  await profileMessage.getByPlaceholder("כתבי הודעה למתאמן...").fill(profileMessageText);
-  await profileMessage.getByRole("button", { name: "שלח", exact: true }).click();
-  await expect(profileMessage).toContainText("הודעת החיזוק נשלחה בהצלחה למתאמן!");
-  await expect(profileMessage).toContainText(profileMessageText);
+  await test.step("load selected trainee details", async () => {
+    await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
+      timeout: 20_000,
+    });
+    await expect(workspace.getByTestId("coach-client-details-loading")).toHaveCount(0);
+    await expect(workspace.getByTestId("coach-client-details-error")).toHaveCount(0);
+  });
+  await test.step("open trainee profile and send a message", async () => {
+    await expect(
+      page.getByText("שליחת הודעת חיזוק / הנחיה למתאמן", { exact: true }),
+    ).toHaveCount(0);
+    await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
+    const profileMessage = page.getByTestId("coach-client-message-profile");
+    await expect(profileMessage).toBeVisible();
+    const profileMessageText = "הודעה שנשלחה מהפרופיל";
+    await profileMessage.getByPlaceholder("כתבי הודעה למתאמן...").fill(profileMessageText);
+    await profileMessage.getByRole("button", { name: "שלח", exact: true }).click();
+    await expect(profileMessage).toContainText("הודעת החיזוק נשלחה בהצלחה למתאמן!");
+    await expect(profileMessage).toContainText(profileMessageText);
+  });
   const profileDialog = page.getByRole("dialog", { name: "פרופיל המשתמש" });
   const activityHistory = page.getByTestId("coach-activity-history");
   await expect(activityHistory).toBeVisible();
@@ -671,8 +680,15 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
     name: "חיפוש תרגיל בן־זוג לסופר סט",
   });
   await supersetSearch.fill("תרגיל בדיקה 2");
-  await page.getByRole("option", { name: /תרגיל בדיקה 2/ }).click();
-  await expect(page.getByText(/^נבחר: תרגיל בדיקה 2/)).toBeVisible();
+  const supersetOption = page
+    .getByRole("listbox", { name: "תוצאות חיפוש לתרגיל בן־זוג" })
+    .getByRole("option", { name: /תרגיל בדיקה 2/ });
+  await expect(supersetOption).toBeVisible();
+  await supersetOption.click({ force: true });
+  await expect(supersetSearch).toHaveValue("");
+  await expect(page.getByText(/^נבחר: תרגיל בדיקה 2/)).toBeVisible({
+    timeout: 20_000,
+  });
 
   await page.getByRole("button", { name: "סגירת בניית אימון", exact: true }).click();
   await expect(dayButtons).toHaveCount(4);

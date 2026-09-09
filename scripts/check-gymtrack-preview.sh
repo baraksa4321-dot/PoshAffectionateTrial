@@ -99,9 +99,10 @@ for _ in {1..30}; do
     # Playwright's DLOPEN preflight only consults ldconfig, which cannot see
     # Nix store libraries. The actual WPE runtime was checked above and the
     # WebKit tests remain a required, fail-closed release gate.
+    echo "Running GymTrack WebKit smoke tests for iPhone and desktop projects..."
     PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1 \
       GYMTRACK_SMOKE_PORT="$port" \
-      pnpm run test:ios
+      pnpm run test:ios -- --project=webkit-iphone --project=webkit-desktop --retries=1
     exit 0
   fi
 

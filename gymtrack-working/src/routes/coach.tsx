@@ -2213,8 +2213,14 @@ export function CoachDashboardPage({
       void navigate({ to: "/coach/clients", replace: true });
       return;
     }
+    if (selectedClientId !== clientId) {
+      setClientDetails(null);
+      setClientDetailsError("");
+      setLoadingDetails(true);
+    }
     setSelectedClientId(clientId);
     setShowClientWorkspace(true);
+    setShowClientProfile(false);
     setOpenEditor(trackingLanding || workspaceMode === "all" ? null : workspaceMode);
     setActiveWorkspaceTab(
       trackingLanding
@@ -2228,7 +2234,16 @@ export function CoachDashboardPage({
     setSelectedTrackingWorkoutId(null);
     setTrackingDate(todayKey());
     trackingClientInitializedRef.current = null;
-  }, [authUser?.id, isOwner, trackingLanding, workspacePage, clientId, workspaceMode, navigate]);
+  }, [
+    authUser?.id,
+    isOwner,
+    trackingLanding,
+    workspacePage,
+    clientId,
+    selectedClientId,
+    workspaceMode,
+    navigate,
+  ]);
 
   useEffect(() => {
     if (!clientsOnly || !workspacePage || clientId) return;
@@ -3191,7 +3206,8 @@ export function CoachDashboardPage({
       return;
     }
     setNewProgramName("");
-    pullClientDataForCoach(selectedClientId).then(applyClientDetails);
+         const refreshedClientData = await pullClientDataForCoach(selectedClientId);
+         applyClientDetails(refreshedClientData);
   };
 
   const handleRenameClientProgram = async (program: Program, name: string) => {
@@ -3211,7 +3227,8 @@ export function CoachDashboardPage({
       setManagementError(`עדכון שם התוכנית נכשל: ${error.message}`);
       return;
     }
-    pullClientDataForCoach(selectedClientId).then(applyClientDetails);
+    const refreshedClientData = await pullClientDataForCoach(selectedClientId);
+    applyClientDetails(refreshedClientData);
   };
 
   const handleDeleteClientProgram = async (program: Program) => {
@@ -5511,6 +5528,10 @@ export function CoachDashboardPage({
           >
             <div
               data-coach-workspace="true"
+              data-coach-details-state={
+                loadingDetails ? "loading" : clientDetails ? "ready" : "error"
+              }
+              aria-busy={loadingDetails}
               className={`w-full ${editingDayId ? "workout-builder-workspace min-h-full flex flex-col" : ""} ${
                 clientsOnly ? "space-y-1.5" : trackingLanding ? "space-y-1" : "space-y-4"
               } bg-background ${
@@ -5553,9 +5574,10 @@ export function CoachDashboardPage({
                       type="button"
                       onClick={() => setShowClientProfile(true)}
                       aria-label="פתיחת פרופיל המשתמש"
+                      disabled={!clientDetails || loadingDetails}
                       className={`flex items-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10 ${
                         clientsOnly || trackingLanding ? "h-8" : "h-9"
-                      }`}
+                      } disabled:cursor-not-allowed disabled:opacity-50`}
                     >
                       <UserCheck className="h-3.5 w-3.5" aria-hidden="true" />
                       פרופיל
@@ -5697,7 +5719,10 @@ export function CoachDashboardPage({
               ) : null}
 
               {loadingDetails ? (
-                <div className="surface-card p-6 text-center text-xs text-muted-foreground animate-pulse">
+                <div
+                  data-testid="coach-client-details-loading"
+                  className="surface-card p-6 text-center text-xs text-muted-foreground animate-pulse"
+                >
                   {genderText(
                     gender,
                     "טוענת נתוני מתאמן מ-Supabase...",
@@ -5706,6 +5731,7 @@ export function CoachDashboardPage({
                 </div>
               ) : clientDetails ? (
                 <div
+                  data-testid="coach-client-details-ready"
                   className="workspace-tab-content space-y-4"
                   data-active-tab={activeWorkspaceTab}
                 >
@@ -9161,6 +9187,7 @@ export function CoachDashboardPage({
                 </div>
               ) : (
                 <div
+                  data-testid="coach-client-details-error"
                   role="alert"
                   className="surface-card space-y-3 rounded-2xl border border-destructive/25 bg-destructive/5 p-5 text-center"
                 >
@@ -9173,10 +9200,14 @@ export function CoachDashboardPage({
                     onClick={() => {
                       if (!selectedClientId) return;
                       setLoadingDetails(true);
-                      void pullClientDataForCoach(selectedClientId).then((result) => {
-                        applyClientDetails(result);
-                        setLoadingDetails(false);
-                      });
+                      void pullClientDataForCoach(selectedClientId)
+                        .then((result) => {
+                          applyClientDetails(result);
+                        })
+                        .catch((error: unknown) => {
+                          setClientDetailsError(errorMessage(error, "טעינת נתוני המתאמן נכשלה"));
+                        })
+                        .finally(() => setLoadingDetails(false));
                     }}
                     className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground"
                   >
