@@ -7485,8 +7485,6 @@ html.night-mode [class*="border-border/"] {
 .dashboard-editorial-shell .dashboard-support-card {
   isolation: isolate;
   overflow: hidden;
-  -webkit-mask-image: -webkit-radial-gradient(white, black);
-  mask-image: radial-gradient(white, black);
 }
 
 .dashboard-editorial-shell .dashboard-module {
@@ -7497,7 +7495,6 @@ html.night-mode [class*="border-border/"] {
 
 .dashboard-editorial-shell .dashboard-module .surface-card {
   border: 1px solid var(--border);
-  border-radius: 0 !important;
   box-shadow: 0 5px 12px rgb(var(--shadow-color) / 4%) !important;
 }
 
