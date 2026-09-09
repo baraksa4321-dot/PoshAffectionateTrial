@@ -109,11 +109,11 @@ export function ChallengeLibrary({ compact = false }: { compact?: boolean }) {
         <div className="w-full max-w-lg rounded-3xl border border-border bg-surface p-4 text-start shadow-xl">
           <div className="mb-4 flex items-start justify-between gap-3 border-b border-border/60 pb-3">
             <div>
-              <p className="text-[10px] font-bold tracking-[0.16em] text-primary uppercase">Challenge library</p>
-               <h2 className="mt-1 font-display text-lg font-extrabold text-ink">בואי לבחור אתגר</h2>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                 משהו קצר, ריצה, גמישות או שפגאט — תבחרי מה שמתאים לך היום.
-              </p>
+               <p className="text-[10px] font-bold tracking-[0.16em] text-primary uppercase">אתגרי סקיל</p>
+                <h2 className="mt-1 font-display text-lg font-extrabold text-ink">איזה סקיל בא לך?</h2>
+               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  בוחרות מטרה. עושות את האימון. חוזרות על זה.
+               </p>
             </div>
             <button type="button" onClick={close} aria-label="סגירת אתגרים" className="grid h-8 w-8 place-items-center rounded-xl text-muted-foreground hover:bg-secondary">
               <X className="h-4 w-4" />
@@ -171,9 +171,9 @@ export function ChallengeLibrary({ compact = false }: { compact?: boolean }) {
                   יצירת אתגר חדש
                 </button>
               ) : null}
-              <div className="mt-4 flex items-start gap-2 rounded-2xl bg-primary/5 p-3 text-[11px] leading-relaxed text-muted-foreground">
+               <div className="mt-4 flex items-start gap-2 rounded-2xl bg-primary/5 p-3 text-[11px] leading-relaxed text-muted-foreground">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                מתחילים בגרסה שמתאימה ליכולת הנוכחית ומפסיקים במקרה של כאב חד, סחרחורת או אובדן שליטה.
+                 מתחילות קל. כאב חד או חוסר שליטה? עוצרות.
               </div>
             </>
           )}
@@ -221,9 +221,9 @@ function ChallengeDetail({
               <Dumbbell className="h-4 w-4 text-primary" />
               <p className="text-sm font-extrabold text-ink">{session.name || `אימון ${index + 1}`}</p>
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-               {session.items.length} תרגילים · הנה בדיוק מה עושים
-            </p>
+             <p className="mt-1 text-[11px] text-muted-foreground">
+                {session.items.length} תרגילים · האימון שלך
+             </p>
             <div className="mt-3 space-y-2">
               {session.items.map((item, itemIndex) => (
                 <div
@@ -240,8 +240,8 @@ function ChallengeDetail({
                       </p>
                       <p className="mt-0.5 text-[10px] font-bold text-primary">
                          {item.distanceKm
-                           ? `יעד ${item.distanceKm} ק״מ · ${item.rest} שנ׳ התאוששות`
-                           : `${item.sets} סטים · ${item.reps} חזרות / שניות · ${item.rest} שנ׳ מנוחה`}
+                           ? `יעד ${item.distanceKm} ק״מ · ${item.rest} שנ׳ מנוחה`
+                           : `${item.sets} סטים · ${item.targetLabel ?? `${item.reps} חזרות`} · ${item.rest} שנ׳ מנוחה`}
                       </p>
                       {item.notes ? (
                         <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">

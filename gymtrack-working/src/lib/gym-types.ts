@@ -115,6 +115,8 @@ export type WorkoutItem = {
   cableGrip?: string | undefined;
   sets: number;
   reps: number;
+  /** Human-readable unit for skill challenges, e.g. "שניות" or "ניסיונות". */
+  targetLabel?: string;
   repType?: RepType;
   repMin?: number;
   repMax?: number;
