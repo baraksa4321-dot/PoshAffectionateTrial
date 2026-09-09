@@ -36,6 +36,17 @@ const skillWorkout = (id: string, name: string, notes: string, items: WorkoutIte
   items,
 });
 
+const cardioWorkout = (
+  id: string,
+  name: string,
+  notes: string,
+  cardioType: string,
+  items: WorkoutItem[],
+): Workout => ({
+  ...skillWorkout(id, name, notes, items),
+  cardioType,
+});
+
 const skillChallenge = (
   id: string,
   title: string,
@@ -58,6 +69,30 @@ const skillChallenge = (
   isBuiltIn: true,
   isPublished: true,
   sessions: [skillWorkout(`${id}-session`, sessionName, sessionNotes, items)],
+});
+
+const cardioChallenge = (
+  id: string,
+  title: string,
+  description: string,
+  difficulty: Challenge["difficulty"],
+  durationLabel: string,
+  accent: Challenge["accent"],
+  sessionName: string,
+  sessionNotes: string,
+  cardioType: string,
+  items: WorkoutItem[],
+): Challenge => ({
+  id,
+  title,
+  description,
+  category: "אירובי",
+  difficulty,
+  durationLabel,
+  accent,
+  isBuiltIn: true,
+  isPublished: true,
+  sessions: [cardioWorkout(`${id}-session`, sessionName, sessionNotes, cardioType, items)],
 });
 
 /**
@@ -264,6 +299,70 @@ export const BUILT_IN_CHALLENGES: Challenge[] = [
       challengeItem("challenge-bridge-shoulders", "ex-plank", "פתיחת כתפיים על הקיר", 3, 30, "30 שניות", 30, "צלעות בפנים, בלי לקשת את הגב."),
       challengeItem("challenge-bridge-table", "ex-plank", "שולחן הפוך", 3, 20, "20 שניות", 45, "דוחפות רצפה ומרימות חזה."),
       challengeItem("challenge-bridge-hold", "ex-plank", "גשר עם הגבהה", 4, 15, "15 שניות", 60, "מתחילות עם ידיים על בלוקים."),
+    ],
+  ),
+  cardioChallenge(
+    "challenge-treadmill-intervals",
+    "הליכון — אינטרוולים",
+    "בונות קצב וסיבולת על ההליכון, עם מקטעים ברורים שאפשר לחזור עליהם.",
+    "מתחילים",
+    "4 שבועות",
+    "peach",
+    "הליכון — קצב ושליטה",
+    "מתחילות בקצב שאפשר לשלוט בו. מאטות אם הנשימה יוצאת משליטה.",
+    "הליכון (Treadmill)",
+    [
+      challengeItem("challenge-treadmill-warmup", "ex-treadmill", "חימום הליכון", 1, 600, "10 דקות", 60, "הליכה מהירה או ריצה קלה."),
+      challengeItem("challenge-treadmill-intervals", "ex-treadmill", "מקטעי קצב", 6, 60, "דקה מהירה", 60, "דקה מהירה ואז דקה קלה."),
+      challengeItem("challenge-treadmill-cooldown", "ex-treadmill", "שחרור בהליכה", 1, 300, "5 דקות", 0, "מורידות קצב בהדרגה."),
+    ],
+  ),
+  cardioChallenge(
+    "challenge-stair-climber",
+    "מדרגות — קצב רציף",
+    "אתגר מדרגות קצר ומדורג לחיזוק הסיבולת בלי לרדוף אחרי מספר הקומות.",
+    "מתחילים",
+    "4 שבועות",
+    "lavender",
+    "מדרגות — קצב יציב",
+    "שומרות על קצב שאפשר להחזיק. אוחזות במעקה רק לצורך יציבות.",
+    "מדרגות (StairMaster)",
+    [
+      challengeItem("challenge-stairs-warmup", "ex-stair-climber", "חימום מדרגות", 1, 300, "5 דקות", 60, "קצב קל."),
+      challengeItem("challenge-stairs-sets", "ex-stair-climber", "מקטעי מדרגות", 5, 90, "90 שניות", 60, "מעלות קצב בלי לאבד יציבה."),
+      challengeItem("challenge-stairs-finish", "ex-stair-climber", "סיום קל", 1, 300, "5 דקות", 0, "מסיימות בהורדת קצב."),
+    ],
+  ),
+  cardioChallenge(
+    "challenge-elliptical-intervals",
+    "אליפטיקל — דופק עולה",
+    "אימון אליפטיקל נעים למפרקים, עם מקטעים קצרים שמעלים את הדופק.",
+    "מתחילים",
+    "4 שבועות",
+    "sage",
+    "אליפטיקל — קצב משתנה",
+    "שומרות על תנועה חלקה. התנגדות נמוכה יותר אם הברכיים או הגב מתחילים להתעייף.",
+    "אליפטיקל",
+    [
+      challengeItem("challenge-elliptical-warmup", "ex-elliptical", "חימום אליפטיקל", 1, 600, "10 דקות", 60, "קצב קל ונוח."),
+      challengeItem("challenge-elliptical-intervals", "ex-elliptical", "מקטעי התנגדות", 8, 45, "45 שניות", 45, "מקטע חזק ואז 45 שניות קלות."),
+      challengeItem("challenge-elliptical-cooldown", "ex-elliptical", "שחרור אליפטיקל", 1, 300, "5 דקות", 0, "נשימה חוזרת לקצב רגוע."),
+    ],
+  ),
+  cardioChallenge(
+    "challenge-bike-sprints",
+    "אופניים — ספרינטים",
+    "מכניסות קצב לאופני הכושר עם ספרינטים קצרים ומנוחה מסודרת.",
+    "ביניים",
+    "4 שבועות",
+    "sand",
+    "אופניים — ספרינטים קצרים",
+    "הספרינט חזק אבל נשאר בשליטה. לא צריך להגיע למקסימום בכל סבב.",
+    "אופני כושר",
+    [
+      challengeItem("challenge-bike-warmup", "ex-stationary-bike", "חימום אופניים", 1, 600, "10 דקות", 60, "סיבוב קל עם התנגדות נמוכה."),
+      challengeItem("challenge-bike-sprints", "ex-stationary-bike", "ספרינטים", 8, 20, "20 שניות", 60, "20 שניות חזקות ואז דקה קלה."),
+      challengeItem("challenge-bike-cooldown", "ex-stationary-bike", "שחרור אופניים", 1, 300, "5 דקות", 0, "מורידות התנגדות בהדרגה."),
     ],
   ),
 ];

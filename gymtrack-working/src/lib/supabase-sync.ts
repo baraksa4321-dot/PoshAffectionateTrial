@@ -7,6 +7,7 @@ import {
   type Exercise,
   type FoodItem,
   type GymData,
+  type HistoryEntry,
   type HistorySession,
   type NutritionTargets,
   type NutritionDay,
@@ -45,6 +46,40 @@ export type CoachClientData = {
 
 export type RealtimeCleanup = () => void;
 export type RealtimeConnectionStatus = "connecting" | "connected" | "reconnecting" | "disconnected";
+
+function workoutFromHistorySession(session: HistorySession): Workout | undefined {
+  if (!session.workoutId || !session.workoutName) return undefined;
+  const items = (session.entries ?? []).map((entry: HistoryEntry, index) => {
+    const firstSet = entry.sets[0];
+    const reps = entry.targetReps ?? firstSet?.targetReps ?? firstSet?.reps ?? 1;
+    const sets = Math.max(1, entry.targetSets ?? entry.sets.length);
+    return {
+      id: `history-${session.workoutId}-${entry.exerciseId || index}`,
+      exerciseId: entry.exerciseId,
+      exerciseName: entry.exerciseName,
+      ...(entry.equipment ? { equipment: entry.equipment } : {}),
+      sets,
+      reps,
+      targetReps: reps,
+      repType: entry.repType ?? "fixed",
+      weight: firstSet?.weight ?? 0,
+      rest: 0,
+      notes: entry.notes ?? "",
+      workingSets: entry.sets.map((set, setIndex) => ({
+        id: `history-${session.id}-${index}-${setIndex}`,
+        setNumber: setIndex + 1,
+        weight: set.weight,
+        reps: set.targetReps ?? set.reps,
+      })),
+    };
+  });
+  return {
+    id: session.workoutId,
+    name: session.workoutName,
+    notes: session.notes ?? "",
+    items,
+  };
+}
 
 function isBuiltInFood(food: FoodItem) {
   return (
@@ -1715,6 +1750,12 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       difficultyRating: row.difficulty_rating || undefined,
       discomfortNotes: row.discomfort_notes || undefined,
     }));
+    for (const session of historyList) {
+      if (!workoutsMap.has(session.workoutId)) {
+        const historyWorkout = workoutFromHistorySession(session);
+        if (historyWorkout) workoutsMap.set(historyWorkout.id, historyWorkout);
+      }
+    }
     const cardioList: CardioLog[] = (dbCardioLogs || []).map((row) => ({
       id: row.id,
       date: row.date,

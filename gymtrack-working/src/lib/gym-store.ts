@@ -2071,10 +2071,37 @@ export function programDays(d: GymData, programId: string): Workout[] {
 
 /* ---------- history ---------- */
 export function saveSession(session: HistorySession) {
+  const workout = data.workouts.find((item) => item.id === session.workoutId);
+  const cardioLogId = `challenge-cardio-${session.id}`;
+  const shouldCreateCardioLog =
+    Boolean(workout?.cardioType) &&
+    !(data.cardioLogs ?? []).some((log) => log.id === cardioLogId);
+  const cardioLog = shouldCreateCardioLog
+    ? {
+        id: cardioLogId,
+        date: session.date.slice(0, 10),
+        type: workout?.cardioType ?? "אירובי",
+        durationMin: Math.max(1, Math.round((session.durationSec ?? 0) / 60)),
+        intensity: "moderate" as const,
+        calories: calculateCardioCalories(
+          workout?.cardioType ?? "אירובי",
+          Math.max(1, Math.round((session.durationSec ?? 0) / 60)),
+          data.userProfile?.weight ?? 65,
+        ),
+      }
+    : undefined;
   set({
     ...data,
     deletedSessionIds: (data.deletedSessionIds ?? []).filter((id) => id !== session.id),
     history: [session, ...data.history.filter((existing) => existing.id !== session.id)],
+    ...(cardioLog
+      ? {
+          deletedCardioLogIds: (data.deletedCardioLogIds ?? []).filter(
+            (id) => id !== cardioLog.id,
+          ),
+          cardioLogs: [cardioLog, ...(data.cardioLogs ?? [])],
+        }
+      : {}),
   });
 }
 

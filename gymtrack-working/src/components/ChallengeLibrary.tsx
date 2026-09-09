@@ -109,8 +109,8 @@ export function ChallengeLibrary({ compact = false }: { compact?: boolean }) {
         <div className="w-full max-w-lg rounded-3xl border border-border bg-surface p-4 text-start shadow-xl">
           <div className="mb-4 flex items-start justify-between gap-3 border-b border-border/60 pb-3">
             <div>
-               <p className="text-[10px] font-bold tracking-[0.16em] text-primary uppercase">אתגרי סקיל</p>
-                <h2 className="mt-1 font-display text-lg font-extrabold text-ink">איזה סקיל בא לך?</h2>
+               <p className="text-[10px] font-bold tracking-[0.16em] text-primary uppercase">אתגרי אימון</p>
+                <h2 className="mt-1 font-display text-lg font-extrabold text-ink">איזה אתגר בא לך?</h2>
                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                   בוחרות מטרה. עושות את האימון. חוזרות על זה.
                </p>

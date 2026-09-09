@@ -151,13 +151,15 @@ export type Workout = {
   name: string;
   notes: string;
   items: WorkoutItem[];
+  /** Marks challenge workouts that should also appear in the cardio log. */
+  cardioType?: string;
 };
 
 export type Challenge = {
   id: string;
   title: string;
   description: string;
-  category: "סבולת" | "כוח" | "מיומנות" | "עצימות";
+  category: "סבולת" | "כוח" | "מיומנות" | "עצימות" | "אירובי";
   difficulty: "מתחילים" | "ביניים" | "מתקדמים";
   durationLabel: string;
   accent: "sage" | "peach" | "lavender" | "sand";
