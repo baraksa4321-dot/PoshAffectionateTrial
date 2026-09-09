@@ -210,3 +210,17 @@ mtime_ms = 1788354270762
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:9f99d2e5-5d2e-4b5a-bf24-93a3957a7bb5/b39f9b03-d849-4c04-aa11-f30226ae388a/ed763d74-3bf5-4274-ae3a-ed047eee3db0"
 storage_version_token = "1788354422990271"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "PYxpw59iZijyipsQsX7X1"
+uri = "file://gymtrack-code.zip"
+type = "unspecified"
+title = "GymTrack website code"
+description = "ZIP containing the GymTrack web source code, configuration, tests, and lightweight project files. Dependencies, build outputs, native Android/iOS projects, loading media assets, and environment secrets are excluded."
+logical_id = "43b572e4-203b-4132-95fd-342daaf76e50"
+content_hash = "sha256:7473aec243e5a20f036f6e0d2ddfd3c2318187d12bf0814bea3e0d73c01bfe0a"
+size = 1038447
+mtime_ms = 1788942731647
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:9f99d2e5-5d2e-4b5a-bf24-93a3957a7bb5/43b572e4-203b-4132-95fd-342daaf76e50/e024cf80-e946-4855-a4ea-67db0a999764"
+storage_version_token = "1788942738573005"
+content_type = "application/octet-stream"
