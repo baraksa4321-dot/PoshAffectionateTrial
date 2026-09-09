@@ -7352,7 +7352,7 @@ html.night-mode [class*="border-border/"] {
 .dashboard-editorial-shell .dashboard-module h2,
 .dashboard-editorial-shell .dashboard-module p,
 .dashboard-editorial-shell .dashboard-module span {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .dashboard-editorial-shell .home-primary-card > .ink-card h2 {
