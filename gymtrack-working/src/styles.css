@@ -7495,6 +7495,8 @@ html.night-mode [class*="border-border/"] {
 
 .dashboard-editorial-shell .dashboard-module .surface-card {
   border: 1px solid var(--border);
+  border-radius: 1.15rem !important;
+  background-clip: border-box;
   box-shadow: 0 5px 12px rgb(var(--shadow-color) / 4%) !important;
 }
 
