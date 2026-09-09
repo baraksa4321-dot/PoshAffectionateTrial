@@ -9374,7 +9374,7 @@ export function CoachDashboardPage({
                       : profileDisplayName(selectedClientInfo?.profiles)}
                   </h2>
                   <p className="mt-1 text-[11px] text-muted-foreground">
-                    היסטוריית פעילות, צ׳ק־אין ומדידות חודשיות במקום אחד
+                    הודעות, היסטוריית פעילות, צ׳ק־אין ומדידות חודשיות במקום אחד
                   </p>
                 </div>
                 <button
@@ -9386,6 +9386,87 @@ export function CoachDashboardPage({
                   <X className="h-4 w-4" />
                 </button>
               </div>
+
+              <section
+                data-testid="coach-client-message-profile"
+                className="space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.035] p-4"
+              >
+                <div className="flex items-center gap-2 border-b border-primary/15 pb-2">
+                  <MessageSquare className="h-4 w-4 text-primary" />
+                  <div>
+                    <h3 className="text-sm font-bold text-ink">שליחת הודעה</h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      ההודעה תופיע במסך הבית של המתאמן
+                    </p>
+                  </div>
+                </div>
+                {msgSentNotice ? (
+                  <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs font-bold text-emerald-700">
+                    {msgSentNotice}
+                  </p>
+                ) : null}
+                {msgSendError ? (
+                  <p
+                    role="alert"
+                    className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs font-bold text-rose-700"
+                  >
+                    {msgSendError}
+                  </p>
+                ) : null}
+                <form onSubmit={handleSendCoachMessage} className="flex gap-2">
+                  <textarea
+                    required
+                    value={coachMsgText}
+                    onChange={(event) => setCoachMsgText(event.target.value)}
+                    placeholder="כתבי הודעה למתאמן..."
+                    rows={2}
+                    className="min-h-16 flex-1 resize-none rounded-xl border border-border bg-white px-3 py-2 text-xs leading-relaxed outline-none focus:border-primary"
+                  />
+                  <button
+                    type="submit"
+                    className="self-end rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-xs transition-colors hover:bg-primary/90"
+                  >
+                    שלח
+                  </button>
+                </form>
+                {failedCoachMessage ? (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-[11px] font-semibold text-amber-900">
+                    השליחה האחרונה לא אושרה. הטיוטה נשמרה ואפשר לנסות שוב.
+                  </p>
+                ) : null}
+                {sentCoachMessagesError ? (
+                  <p
+                    role="alert"
+                    className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-[11px] font-semibold text-rose-700"
+                  >
+                    {sentCoachMessagesError}
+                  </p>
+                ) : null}
+                {sentCoachMessages.length > 0 ? (
+                  <div className="space-y-2 rounded-xl border border-border/60 bg-white/70 p-3">
+                    <p className="text-[11px] font-bold text-muted-foreground">הודעות שנשלחו</p>
+                    {sentCoachMessages.slice(0, 3).map((message) => (
+                      <div
+                        key={message.id}
+                        className="border-t border-border/50 pt-2 first:border-t-0 first:pt-0"
+                      >
+                        <p className="text-xs leading-relaxed text-ink">{message.message}</p>
+                        <time
+                          dateTime={message.createdAt}
+                          className="mt-1 block text-[10px] text-muted-foreground"
+                        >
+                          {new Date(message.createdAt).toLocaleString("he-IL", {
+                            day: "numeric",
+                            month: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </time>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </section>
 
               <section
                 data-testid="coach-client-checkin-profile"
