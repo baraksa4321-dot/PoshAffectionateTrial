@@ -109,7 +109,30 @@ function supersetLabels(items: WorkoutItem[]) {
 
 const ACTIVE_SESSION_KEY = (id: string) => `gymtrack.active_session.${id}`;
 const ACTIVE_SESSION_FEEDBACK_KEY = (id: string) => `gymtrack.active_session_feedback.${id}`;
-const VIDEO_UPLOAD_TIMEOUT_MS = 15_000;
+const VIDEO_UPLOAD_MIN_TIMEOUT_MS = 90_000;
+const VIDEO_UPLOAD_MAX_TIMEOUT_MS = 10 * 60_000;
+const VIDEO_UPLOAD_FINISH_TIMEOUT_MS = VIDEO_UPLOAD_MAX_TIMEOUT_MS + 60_000;
+const VIDEO_UPLOAD_BYTES_PER_SECOND = 512 * 1024;
+
+function videoUploadTimeoutMs(fileSize: number) {
+  const estimatedUploadMs =
+    30_000 + Math.ceil(Math.max(0, fileSize) / VIDEO_UPLOAD_BYTES_PER_SECOND) * 1_000;
+  return Math.min(
+    VIDEO_UPLOAD_MAX_TIMEOUT_MS,
+    Math.max(VIDEO_UPLOAD_MIN_TIMEOUT_MS, estimatedUploadMs),
+  );
+}
+
+function videoUploadErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  if (/413|too large|maximum|exceed|payload|size limit|file size/i.test(message)) {
+    return "הסרטון גדול מדי להעלאה. נסי סרטון קצר יותר או איכות צילום נמוכה יותר.";
+  }
+  if (/timeout|timed out|זמן רב מדי/i.test(message)) {
+    return "העלאת הסרטון לוקחת זמן רב. נסי להמתין עוד רגע או לבחור סרטון קצר יותר.";
+  }
+  return message || "העלאת סרטון הביצוע נכשלה";
+}
 
 type ExerciseFeedbackDraft = {
   rating?: "easy" | "appropriate" | "difficult";
@@ -805,7 +828,12 @@ function Session() {
   };
 
   const selectPerformanceVideo = (exerciseIndex: number, file: File | undefined) => {
-    if (!file || !file.type.startsWith("video/")) return;
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      setVideoUploadErrorExerciseIndex(exerciseIndex);
+      setVideoUploadError("אפשר להעלות קובץ וידאו בלבד.");
+      return;
+    }
     const nextUrl = URL.createObjectURL(file);
     const previousUrl = entries[exerciseIndex]?.videoUrl;
     if (previousUrl?.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
@@ -831,10 +859,11 @@ function Session() {
         exerciseId: entries[exerciseIndex]?.exerciseId ?? String(exerciseIndex),
       }),
     );
+    const uploadTimeoutMs = videoUploadTimeoutMs(file.size);
     const timeout = new Promise<never>((_, reject) => {
       timeoutId = window.setTimeout(
-        () => reject(new Error("העלאת הסרטון נמשכת זמן רב מדי; אפשר להמשיך בלי הסרטון")),
-        VIDEO_UPLOAD_TIMEOUT_MS,
+        () => reject(new Error("העלאת הסרטון נמשכת זמן רב מדי")),
+        uploadTimeoutMs,
       );
     });
     const uploadTask = Promise.race([upload, timeout])
@@ -851,7 +880,7 @@ function Session() {
       })
       .catch((error: unknown) => {
         setVideoUploadErrorExerciseIndex(exerciseIndex);
-        setVideoUploadError(error instanceof Error ? error.message : "העלאת סרטון הביצוע נכשלה");
+        setVideoUploadError(videoUploadErrorMessage(error));
         return false;
       })
       .finally(() => {
@@ -889,7 +918,7 @@ function Session() {
       const uploadResults = await Promise.race([
         Promise.all(pendingVideoUploads),
         new Promise<boolean[] | null>((resolve) =>
-          window.setTimeout(() => resolve(null), VIDEO_UPLOAD_TIMEOUT_MS),
+          window.setTimeout(() => resolve(null), VIDEO_UPLOAD_FINISH_TIMEOUT_MS),
         ),
       ]);
       if (uploadResults === null || uploadResults.some((uploaded) => !uploaded)) {
