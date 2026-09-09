@@ -5,6 +5,7 @@ import {
   clientProgramDayInsertPayload,
   clientProgramDayItemsUpdatePayload,
   clientProgramInsertPayload,
+  jsonValuesEqual,
 } from "./coach-plan-payloads";
 
 describe("coach plan payload boundaries", () => {
@@ -62,5 +63,14 @@ describe("coach plan payload boundaries", () => {
       target_user_id: "trainee-1",
       next_planned_menu: [],
     });
+  });
+
+  test("treats the same persisted menu as equal when JSON object keys are reordered", () => {
+    expect(
+      jsonValuesEqual(
+        [{ id: "meal-1", name: "בוקר", foods: [{ id: "food-1", quantity: 1 }] }],
+        [{ foods: [{ quantity: 1, id: "food-1" }], name: "בוקר", id: "meal-1" }],
+      ),
+    ).toBe(true);
   });
 });

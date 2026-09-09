@@ -54,3 +54,18 @@ export function clientPlannedMenuRpcPayload(userId: string, plannedMeals: Meal[]
     next_planned_menu: plannedMeals,
   };
 }
+
+function stableJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stableJsonValue);
+  if (!value || typeof value !== "object") return value;
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, nestedValue]) => [key, stableJsonValue(nestedValue)]),
+  );
+}
+
+export function jsonValuesEqual(left: unknown, right: unknown): boolean {
+  return JSON.stringify(stableJsonValue(left)) === JSON.stringify(stableJsonValue(right));
+}

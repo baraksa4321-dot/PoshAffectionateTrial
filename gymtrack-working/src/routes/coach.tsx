@@ -59,6 +59,7 @@ import {
   clientProgramDayInsertPayload,
   clientProgramDayItemsUpdatePayload,
   clientProgramInsertPayload,
+  jsonValuesEqual,
 } from "../lib/coach-plan-payloads";
 import { calculateCalorieEstimate } from "../lib/calorie-calculator";
 import {
@@ -3831,7 +3832,7 @@ export function CoachDashboardPage({
       const persistedPlannedMeals = Array.isArray(persistedProfile?.planned_menu)
         ? (persistedProfile.planned_menu as Meal[])
         : [];
-      if (JSON.stringify(persistedPlannedMeals) !== JSON.stringify(menuSnapshot)) {
+      if (!jsonValuesEqual(persistedPlannedMeals, menuSnapshot)) {
         throw new Error("התפריט שחזר מהשרת אינו זה שנשלח.");
       }
 
