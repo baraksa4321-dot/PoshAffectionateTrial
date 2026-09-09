@@ -21,6 +21,7 @@ type PageSnapshot = {
   programName: string;
   workoutName: string;
   menuName: string;
+  coachMessages: Array<Record<string, unknown>>;
   pendingOfflineEdit: string;
 };
 
@@ -144,7 +145,7 @@ async function readTraineePage(
   dayId: string,
   pendingOfflineEdit: string,
 ): Promise<PageSnapshot> {
-  const [profileResult, programResult, dayResult] = await Promise.all([
+  const [profileResult, programResult, dayResult, coachMessagesResult] = await Promise.all([
     traineeClient.from("profiles").select("planned_menu").eq("id", traineeId).single(),
     traineeClient
       .from("programs")
@@ -158,12 +159,18 @@ async function readTraineePage(
       .eq("id", dayId)
       .eq("user_id", traineeId)
       .single(),
+    traineeClient
+      .from("coach_messages")
+      .select("id, coach_id, client_id, message, created_at, is_read")
+      .eq("client_id", traineeId)
+      .order("created_at", { ascending: false }),
   ]);
 
   for (const [label, result] of [
     ["planned menu", profileResult],
     ["program", programResult],
     ["workout", dayResult],
+    ["coach messages", coachMessagesResult],
   ] as const) {
     if (result.error) {
       throw new Error(
@@ -182,6 +189,7 @@ async function readTraineePage(
     programName: String(programResult.data?.name ?? ""),
     workoutName: String(dayResult.data?.name ?? ""),
     menuName,
+    coachMessages: (coachMessagesResult.data ?? []) as Array<Record<string, unknown>>,
     pendingOfflineEdit,
   };
 }
@@ -217,6 +225,7 @@ async function cleanup(
   traineeClient: SmokeClient,
   traineeId: string,
   programId: string,
+  messageId: string | null,
   sessionId: string | null,
   originalPlannedMenu: unknown,
   traineeChannel: RealtimeChannel | null,
@@ -241,6 +250,20 @@ async function cleanup(
       .eq("user_id", traineeId);
     if (sessionError) {
       cleanupErrors.push(`workout session deletion (${errorCode(sessionError) ?? "delete"})`);
+    }
+  }
+
+  if (messageId) {
+    const { data: deletedMessages, error: messageError } = await traineeClient
+      .from("coach_messages")
+      .delete()
+      .eq("id", messageId)
+      .eq("client_id", traineeId)
+      .select("id");
+    if (messageError) {
+      cleanupErrors.push(`coach message deletion (${errorCode(messageError) ?? "delete"})`);
+    } else if (!deletedMessages?.some((message) => message.id === messageId)) {
+      cleanupErrors.push("coach message deletion did not remove the smoke row");
     }
   }
 
@@ -274,6 +297,7 @@ async function run(): Promise<void> {
   const originalMenuMarker = `${runId} original menu`;
   const updatedMenuMarker = `${runId} updated menu`;
   const pendingOfflineEdit = `${runId} trainee offline draft`;
+  const coachMessageText = `${runId} coach message`;
 
   const makeClient = () =>
     createClient(config.url.replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, ""), config.anonKey, {
@@ -288,6 +312,7 @@ async function run(): Promise<void> {
   const traineeClient = makeClient();
   let traineeChannel: RealtimeChannel | null = null;
   let coachChannel: RealtimeChannel | null = null;
+  let coachMessageId: string | null = null;
   let completedSessionId: string | null = null;
   let originalPlannedMenu: unknown = [];
   let cleanupNeeded = false;
@@ -424,6 +449,16 @@ async function run(): Promise<void> {
         { event: "*", schema: "public", table: "program_days", filter: `user_id=eq.${trainee.id}` },
         enqueuePageRefresh,
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "coach_messages",
+          filter: `client_id=eq.${trainee.id}`,
+        },
+        enqueuePageRefresh,
+      )
       .subscribe((status) => {
         if (status === "SUBSCRIBED") subscribed = true;
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
@@ -478,6 +513,39 @@ async function run(): Promise<void> {
       config.timeoutMs,
     );
     if (coachSubscriptionFailure) throw coachSubscriptionFailure;
+
+    console.log(
+      "Sending a uniquely identified coach message through the persisted message path...",
+    );
+    const { data: createdCoachMessage, error: coachMessageError } = await coachClient
+      .from("coach_messages")
+      .insert({
+        coach_id: coach.id,
+        client_id: trainee.id,
+        message: coachMessageText,
+      })
+      .select("id")
+      .single();
+    if (coachMessageError || !createdCoachMessage?.id) {
+      throw new Error(
+        `Coach could not save the isolated message (${errorCode(coachMessageError) ?? "insert"}).`,
+      );
+    }
+    coachMessageId = createdCoachMessage.id;
+
+    console.log("Refreshing the trainee session to read the persisted coach message...");
+    enqueuePageRefresh();
+    await refreshChain;
+    const refreshedCoachMessages = pageSnapshot.coachMessages.filter(
+      (message) => message.id === coachMessageId && message.message === coachMessageText,
+    );
+    assertCondition(
+      refreshedCoachMessages.length === 1 &&
+        refreshedCoachMessages[0]?.coach_id === coach.id &&
+        refreshedCoachMessages[0]?.client_id === trainee.id,
+      "The trainee did not read the exact persisted coach message after refresh.",
+    );
+    console.log("PASS: the trainee refreshed coach_messages and received the exact coach message.");
 
     const reportDate = new Date().toISOString().slice(0, 10);
     const reportSessionId = `${runId}-session`;
@@ -612,6 +680,7 @@ async function run(): Promise<void> {
           traineeClient,
           (await traineeClient.auth.getUser()).data.user?.id ?? "",
           programId,
+          coachMessageId,
           completedSessionId,
           originalPlannedMenu,
           traineeChannel,
@@ -620,6 +689,7 @@ async function run(): Promise<void> {
         console.log("Cleaned up isolated smoke records.");
       } catch (cleanupError) {
         console.error(`WARNING: smoke cleanup failed: ${errorMessage(cleanupError, config)}`);
+        process.exitCode = 1;
       }
     } else {
       if (traineeChannel) await traineeClient.removeChannel(traineeChannel);
