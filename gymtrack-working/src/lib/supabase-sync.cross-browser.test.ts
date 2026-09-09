@@ -531,6 +531,10 @@ describe("cross-browser Supabase sync boundaries", () => {
     });
 
     expect(result.success).toBe(true);
+    const profileUpsert = callsFor("profiles", "upsert")[0];
+    const profilePayload = profileUpsert?.payload as Record<string, unknown> | undefined;
+    expect(profilePayload?.["coach_id"]).toBeUndefined();
+    expect(profilePayload?.["role"]).toBeUndefined();
     const userOwnedPayloads = callsFor("programs", "upsert")
       .concat(callsFor("program_days", "upsert"))
       .concat(callsFor("workout_sessions", "upsert"))

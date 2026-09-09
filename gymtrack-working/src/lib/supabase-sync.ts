@@ -513,7 +513,8 @@ export async function syncLocalToSupabase(
             age_years: p.age,
             workouts_per_week: p.workoutsPerWeek,
             gender: p.gender,
-            coach_id: p.coachId ?? null,
+            // Role and coach assignment are server-owned. Normal profile
+            // sync must never replay stale cached assignment state.
             today_routine_enabled: p.todayRoutineEnabled ?? true,
              ...(p.loadingAnimationsEnabled === undefined
                ? {}
