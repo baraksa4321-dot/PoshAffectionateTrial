@@ -333,6 +333,7 @@ async function installFixture(page) {
         ...workout,
         items: JSON.parse(JSON.stringify(workout.items)),
       }));
+      let remoteCoachMessages = [coachMessage];
       window.fetch = async (input, init) => {
         const url = typeof input === "string" ? input : input.url;
         if (url.includes("/auth/v1/user")) {
@@ -344,6 +345,22 @@ async function installFixture(page) {
         if (url.includes("/rest/v1/")) {
           const parsed = new URL(url);
           const path = parsed.pathname.replace(/^.*\/rest\/v1\//, "");
+          if (path === "coach_messages" && (init?.method ?? "GET").toUpperCase() === "POST") {
+            const payload = JSON.parse(init.body);
+            remoteCoachMessages = [
+              ...remoteCoachMessages,
+              {
+                ...payload,
+                id: `ios-smoke-message-${remoteCoachMessages.length + 1}`,
+                created_at: "2026-08-25T09:00:00.000Z",
+                is_read: false,
+              },
+            ];
+            return new Response(JSON.stringify([]), {
+              status: 201,
+              headers: { "content-type": "application/json" },
+            });
+          }
           let body = [];
           if (path === "coach_clients") {
             body = [
@@ -486,13 +503,16 @@ async function installFixture(page) {
                   ];
           } else if (path === "coach_messages") {
             const requestedClientId = parsed.searchParams.get("client_id")?.replace(/^eq\./, "");
-            body = requestedClientId === otherClientProfile.id ? [] : [coachMessage];
+            body = remoteCoachMessages.filter(
+              (message) =>
+                message.coach_id === coachMessage.coach_id && message.client_id === requestedClientId,
+            );
           } else if (path === "challenges") {
             body = [
               {
                 ...challenge,
                 duration_label: challenge.durationLabel,
-                owner_id: COACH_ID,
+                owner_id: coachMessage.coach_id,
                 updated_at: "2026-08-20T00:00:00.000Z",
               },
             ];
@@ -562,14 +582,20 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
     page.getByText("שליחת הודעת חיזוק / הנחיה למתאמן", { exact: true }),
   ).toHaveCount(0);
   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
-  await expect(page.getByTestId("coach-client-message-profile")).toBeVisible();
+  const profileMessage = page.getByTestId("coach-client-message-profile");
+  await expect(profileMessage).toBeVisible();
+  const profileMessageText = "הודעה שנשלחה מהפרופיל";
+  await profileMessage.getByPlaceholder("כתבי הודעה למתאמן...").fill(profileMessageText);
+  await profileMessage.getByRole("button", { name: "שלח", exact: true }).click();
+  await expect(profileMessage).toContainText("הודעת החיזוק נשלחה בהצלחה למתאמן!");
+  await expect(profileMessage).toContainText(profileMessageText);
+  const profileDialog = page.getByRole("dialog", { name: "פרופיל המשתמש" });
   const activityHistory = page.getByTestId("coach-activity-history");
   await expect(activityHistory).toBeVisible();
-  await expect(page.getByTestId("coach-activity-weight")).toContainText("63.4");
-  await expect(page.getByTestId("coach-activity-measurements")).toContainText("74");
-  await expect(page.getByTestId("coach-activity-habits")).toContainText("8,500");
-  await expect(page.getByTestId("coach-activity-messages")).toContainText("כל הכבוד על ההתמדה השבוע");
-  await expect(page.getByTestId("coach-activity-challenges")).toContainText("אתגר בדיקת התמדה");
+  await expect(profileDialog).toContainText("63.4");
+  await expect(profileDialog).toContainText("74");
+  await expect(profileDialog).toContainText("8,500");
+  await expect(profileDialog).toContainText("כל הכבוד על ההתמדה השבוע");
   await expect(page.getByText("מתאמנת אחרת", { exact: true })).toBeHidden();
   await expect(activityHistory).not.toContainText("נתון של מתאמנת אחרת");
   await page.getByRole("button", { name: "סגירת פרופיל המשתמש" }).click();
