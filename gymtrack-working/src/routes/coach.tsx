@@ -229,9 +229,7 @@ function SearchPickerField({
                 </button>
               ))
             ) : (
-              <p className="px-3 py-2 text-[11px] text-muted-foreground">
-                לא נמצא ציוד מתאים.
-              </p>
+              <p className="px-3 py-2 text-[11px] text-muted-foreground">לא נמצא ציוד מתאים.</p>
             )}
           </div>
         </>
@@ -244,10 +242,7 @@ function getAppScrollContainer() {
   const appMain = document.querySelector<HTMLElement>('[data-app-scroll-container="true"]');
   if (appMain) {
     const styles = window.getComputedStyle(appMain);
-    if (
-      /(auto|scroll)/.test(styles.overflowY) &&
-      appMain.scrollHeight > appMain.clientHeight + 1
-    ) {
+    if (/(auto|scroll)/.test(styles.overflowY) && appMain.scrollHeight > appMain.clientHeight + 1) {
       return appMain;
     }
   }
@@ -308,11 +303,7 @@ type ClientFeedbackRow = {
 type ClientDetails = Awaited<ReturnType<typeof pullClientDataForCoach>>;
 
 type AttentionReason =
-  | "workout-missing"
-  | "nutrition-missing"
-  | "checkin-late"
-  | "difficulty"
-  | "unanswered-message";
+  "workout-missing" | "nutrition-missing" | "checkin-late" | "difficulty" | "unanswered-message";
 type AttentionDataStatus = "stable" | "needs-attention" | "insufficient";
 type AttentionItem = {
   clientId: string;
@@ -343,19 +334,24 @@ function attentionDateKey(value: string | undefined | null) {
 
 function attentionDaysAgo(date: string | undefined | null, now: number) {
   if (!date) return Infinity;
-  return Math.max(0, Math.floor((now - new Date(`${attentionDateKey(date)}T23:59:59`).getTime()) / ATTENTION_DAY_MS));
+  return Math.max(
+    0,
+    Math.floor((now - new Date(`${attentionDateKey(date)}T23:59:59`).getTime()) / ATTENTION_DAY_MS),
+  );
 }
 
 function attentionActivityDate(details: ClientDetails) {
-  return [
-    ...details.history.map((item) => item.date),
-    ...details.nutritionDays.map((item) => item.date),
-    ...details.habits.map((item) => item.date),
-    ...details.bodyMeasurements.map((item) => item.date),
-    ...details.coachMessages.map((item) => item.createdAt),
-  ]
-    .filter(Boolean)
-    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] ?? null;
+  return (
+    [
+      ...details.history.map((item) => item.date),
+      ...details.nutritionDays.map((item) => item.date),
+      ...details.habits.map((item) => item.date),
+      ...details.bodyMeasurements.map((item) => item.date),
+      ...details.coachMessages.map((item) => item.createdAt),
+    ]
+      .filter(Boolean)
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] ?? null
+  );
 }
 
 function attentionReasonLabel(reason: AttentionReason) {
@@ -1440,6 +1436,7 @@ export function CoachDashboardPage({
   const [ownerUserSearch, setOwnerUserSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [showClientWorkspace, setShowClientWorkspace] = useState(false);
+  const [showClientProfile, setShowClientProfile] = useState(false);
   const [openEditor, setOpenEditor] = useState<"programs" | "nutrition" | null>(null);
   const [clientDetails, setClientDetails] = useState<ClientDetails | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
@@ -1647,9 +1644,7 @@ export function CoachDashboardPage({
         : options[0] || exercise?.equipment || "";
     setSelectedExId(exerciseId);
     setSelectedEquipment(nextEquipment);
-    setSelectedCableGrip(
-      nextEquipment === "פולי / כבלים" ? cableGripOverride || "" : "",
-    );
+    setSelectedCableGrip(nextEquipment === "פולי / כבלים" ? cableGripOverride || "" : "");
   };
   const [targetWeight, setTargetWeight] = useState(20);
   const [setsCount, setSetsCount] = useState(3);
@@ -1764,6 +1759,7 @@ export function CoachDashboardPage({
   const [trackingDate, setTrackingDate] = useState(todayKey());
   const workspaceSwipeStart = useRef<{ x: number; y: number } | null>(null);
   const [plannedMeals, setPlannedMeals] = useState<Meal[]>([]);
+  const plannedMealsDraftRef = useRef<Meal[]>([]);
   const [menuFoodMealId, setMenuFoodMealId] = useState<string | null>(null);
   const [menuFoodId, setMenuFoodId] = useState("");
   const [menuFoodQuery, setMenuFoodQuery] = useState("");
@@ -1834,6 +1830,7 @@ export function CoachDashboardPage({
   useEffect(() => {
     if (draftOwnerRef.current === selectedClientId) return;
     draftOwnerRef.current = selectedClientId;
+    setShowClientProfile(false);
     measurementDraftDirtyRef.current = false;
     profileDraftDirtyRef.current = false;
     plannedMealsDraftDirtyRef.current = false;
@@ -1978,13 +1975,7 @@ export function CoachDashboardPage({
       document.removeEventListener("visibilitychange", refreshManagementData);
       window.clearInterval(interval);
     };
-  }, [
-    isCoach,
-    isOwner,
-    loadAllProfilesForOwner,
-    loadClientFeedback,
-    loadCoachClients,
-  ]);
+  }, [isCoach, isOwner, loadAllProfilesForOwner, loadClientFeedback, loadCoachClients]);
 
   useEffect(() => {
     if (!isCoach || !authUser?.id) return;
@@ -2127,7 +2118,10 @@ export function CoachDashboardPage({
           reasons.push({ key: "workout-missing", label: attentionReasonLabel("workout-missing") });
         }
         if (hasNutritionData && recentNutrition.length === 0) {
-          reasons.push({ key: "nutrition-missing", label: attentionReasonLabel("nutrition-missing") });
+          reasons.push({
+            key: "nutrition-missing",
+            label: attentionReasonLabel("nutrition-missing"),
+          });
         }
         if (
           (details.profile?.nextCheckinDate &&
@@ -2161,11 +2155,11 @@ export function CoachDashboardPage({
 
         const hasAnyData = Boolean(
           latestHistory ||
-            latestNutrition ||
-            latestHabit ||
-            latestMeasurement ||
-            details.coachMessages.length ||
-            clientFeedback.some((feedback) => feedback.client_id === clientId),
+          latestNutrition ||
+          latestHabit ||
+          latestMeasurement ||
+          details.coachMessages.length ||
+          clientFeedback.some((feedback) => feedback.client_id === clientId),
         );
         const status: AttentionDataStatus = !hasAnyData
           ? "insufficient"
@@ -2268,8 +2262,8 @@ export function CoachDashboardPage({
         cardioLogs: store.cardioLogs ?? [],
         bodyWeightLogs: store.bodyWeightLogs ?? [],
         bodyMeasurements: store.bodyMeasurements ?? [],
-         habits: store.habits ?? [],
-         coachMessages: store.coachMessages ?? [],
+        habits: store.habits ?? [],
+        coachMessages: store.coachMessages ?? [],
         profile: selfProfile,
       });
       setClientRefreshInFlight(false);
@@ -2664,6 +2658,10 @@ export function CoachDashboardPage({
   }, [clientDetails]);
 
   useEffect(() => {
+    plannedMealsDraftRef.current = plannedMeals;
+  }, [plannedMeals]);
+
+  useEffect(() => {
     if (!clientDetails) return;
     const builderRouteKey = [
       selectedClientId ?? "",
@@ -2955,10 +2953,7 @@ export function CoachDashboardPage({
     const canAssignCoach =
       profile.role === "coach" ||
       (profile.role === "client" && profile.approval_status === "approved");
-    if (
-      !isCurrentOwnerProfile &&
-      (!canAssignCoach || !newCoachId)
-    ) {
+    if (!isCurrentOwnerProfile && (!canAssignCoach || !newCoachId)) {
       setManagementError("יש לבחור מאמן למתאמן או למאמן לפני השמירה.");
       return;
     }
@@ -2973,7 +2968,9 @@ export function CoachDashboardPage({
         if (data !== true) throw new Error("בחירת המאמן לא התקבלה במסד הנתונים");
         setAllProfiles((current) =>
           current.map((candidate) =>
-            candidate.id === profile.id ? { ...candidate, coach_id: newCoachId || null } : candidate,
+            candidate.id === profile.id
+              ? { ...candidate, coach_id: newCoachId || null }
+              : candidate,
           ),
         );
         setRoleChangeNotice("בחירת המאמן לפרופיל הבעלים נשמרה בהצלחה.");
@@ -3809,13 +3806,14 @@ export function CoachDashboardPage({
 
   const savePlannedMenu = async () => {
     if (!isCoach || !selectedClientId || savingPlannedMenu) return;
+    const menuSnapshot = plannedMealsDraftRef.current;
     setSavingPlannedMenu(true);
     setMenuNotice("שומר את התפריט...");
 
     try {
       const { data: saved, error } = await supabase.rpc(
         "save_user_planned_menu",
-        clientPlannedMenuRpcPayload(selectedClientId, plannedMeals),
+        clientPlannedMenuRpcPayload(selectedClientId, menuSnapshot),
       );
       if (error) throw error;
       if (saved !== true) {
@@ -3833,7 +3831,7 @@ export function CoachDashboardPage({
       const persistedPlannedMeals = Array.isArray(persistedProfile?.planned_menu)
         ? (persistedProfile.planned_menu as Meal[])
         : [];
-      if (JSON.stringify(persistedPlannedMeals) !== JSON.stringify(plannedMeals)) {
+      if (JSON.stringify(persistedPlannedMeals) !== JSON.stringify(menuSnapshot)) {
         throw new Error("התפריט שחזר מהשרת אינו זה שנשלח.");
       }
 
@@ -3846,6 +3844,7 @@ export function CoachDashboardPage({
         );
       }
       setPlannedMeals(persistedPlannedMeals);
+      plannedMealsDraftRef.current = persistedPlannedMeals;
       setMenuNotice(
         isSelfSelected
           ? "התפריט האישי נשמר ויופיע גם באזור התזונה שלך."
@@ -3966,7 +3965,9 @@ export function CoachDashboardPage({
     ? allProfiles
         .filter(
           (profile) =>
-            profile.id !== authUser?.id && profile.profile_exists !== false && Boolean(profile.role),
+            profile.id !== authUser?.id &&
+            profile.profile_exists !== false &&
+            Boolean(profile.role),
         )
         .map((profile) => ({
           id: `owner-user-${profile.id}`,
@@ -3988,7 +3989,9 @@ export function CoachDashboardPage({
     const emailStr = (c.profiles?.email || "").toLowerCase();
     const nameStr = profileDisplayName(c.profiles).toLowerCase();
     const q = clientSearch.toLowerCase();
-    return !q ? isOwner || c.client_id === authUser?.id : emailStr.includes(q) || nameStr.includes(q);
+    return !q
+      ? isOwner || c.client_id === authUser?.id
+      : emailStr.includes(q) || nameStr.includes(q);
   });
   const clientSearchQuery = clientSearch.trim().toLocaleLowerCase();
   const clientPickerRoute = clientsOnly && workspacePage && !clientId;
@@ -4001,6 +4004,9 @@ export function CoachDashboardPage({
   const clientBodyMeasurements = clientDetails?.bodyMeasurements ?? [];
   const clientHabits = clientDetails?.habits ?? [];
   const clientCoachMessages = clientDetails?.coachMessages ?? [];
+  // Kept only for the legacy JSX branch below, which is intentionally disabled
+  // after the activity cards moved into the user profile modal.
+  const hiddenClientDetails = clientDetails as ClientDetails;
   const clientNutritionNotes = (clientDetails?.nutritionDays ?? []).flatMap((day) =>
     day.meals.flatMap((meal) =>
       meal.foods
@@ -4626,7 +4632,9 @@ export function CoachDashboardPage({
                               <span className="truncate text-[13px] font-extrabold text-ink">
                                 {item.clientName}
                               </span>
-                              <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${statusClass}`}>
+                              <span
+                                className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${statusClass}`}
+                              >
                                 {statusLabel}
                               </span>
                               {item.reviewed ? (
@@ -4668,7 +4676,9 @@ export function CoachDashboardPage({
                           <div className="mt-2 space-y-2 border-t border-border/60 pt-2">
                             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                               <div className="rounded-xl bg-surface-2 p-2 text-center">
-                                <span className="block text-[10px] text-muted-foreground">אימונים · 4 שבועות</span>
+                                <span className="block text-[10px] text-muted-foreground">
+                                  אימונים · 4 שבועות
+                                </span>
                                 <strong className="text-sm text-ink">
                                   {item.fourWeekWorkoutRate === null
                                     ? "—"
@@ -4680,7 +4690,9 @@ export function CoachDashboardPage({
                                 </span>
                               </div>
                               <div className="rounded-xl bg-surface-2 p-2 text-center">
-                                <span className="block text-[10px] text-muted-foreground">תזונה · 4 שבועות</span>
+                                <span className="block text-[10px] text-muted-foreground">
+                                  תזונה · 4 שבועות
+                                </span>
                                 <strong className="text-sm text-ink">
                                   {item.fourWeekNutritionRate === null
                                     ? "—"
@@ -4692,14 +4704,20 @@ export function CoachDashboardPage({
                                 </span>
                               </div>
                               <div className="rounded-xl bg-surface-2 p-2 text-center">
-                                <span className="block text-[10px] text-muted-foreground">הרגלים</span>
+                                <span className="block text-[10px] text-muted-foreground">
+                                  הרגלים
+                                </span>
                                 <strong className="text-sm text-ink">
                                   {item.status === "insufficient" ? "—" : "נרשמו"}
                                 </strong>
-                                <span className="block text-[10px] text-muted-foreground">לפי נתוני המתאמן</span>
+                                <span className="block text-[10px] text-muted-foreground">
+                                  לפי נתוני המתאמן
+                                </span>
                               </div>
                               <div className="rounded-xl bg-surface-2 p-2 text-center">
-                                <span className="block text-[10px] text-muted-foreground">משוב ומדידות</span>
+                                <span className="block text-[10px] text-muted-foreground">
+                                  משוב ומדידות
+                                </span>
                                 <strong className="text-sm text-ink">
                                   {item.reasons.some((reason) => reason.key === "difficulty")
                                     ? "דורש שיחה"
@@ -4707,7 +4725,9 @@ export function CoachDashboardPage({
                                       ? "חסר"
                                       : "זמין"}
                                 </strong>
-                                <span className="block text-[10px] text-muted-foreground">תמונת מצב</span>
+                                <span className="block text-[10px] text-muted-foreground">
+                                  תמונת מצב
+                                </span>
                               </div>
                             </div>
                             <div className="rounded-xl border border-primary/10 bg-primary/[0.02] p-2.5">
@@ -4963,8 +4983,7 @@ export function CoachDashboardPage({
                             />
                           </span>
                         </button>
-                        <div className="mt-2">
-                        </div>
+                        <div className="mt-2"></div>
                         <p className="mt-1 text-[10px] text-muted-foreground">
                           {profile.email || "ללא אימייל מוצג"}
                         </p>
@@ -5165,13 +5184,14 @@ export function CoachDashboardPage({
                             </strong>
                           </p>
                         ) : null}
-                         {((selectedProfile.role === "client" &&
-                           selectedProfile.approval_status === "approved") ||
-                           selectedProfile.role === "coach" ||
-                           (selectedProfile.id === authUser?.id && selectedProfile.role === "owner")) ? (
+                        {(selectedProfile.role === "client" &&
+                          selectedProfile.approval_status === "approved") ||
+                        selectedProfile.role === "coach" ||
+                        (selectedProfile.id === authUser?.id &&
+                          selectedProfile.role === "owner") ? (
                           <div className="mt-3 flex gap-2">
                             <select
-                                value={assignmentCoachByUser[selectedProfile.id] ?? ""}
+                              value={assignmentCoachByUser[selectedProfile.id] ?? ""}
                               onChange={(event) =>
                                 setAssignmentCoachByUser((current) => ({
                                   ...current,
@@ -5185,8 +5205,9 @@ export function CoachDashboardPage({
                               {allProfiles
                                 .filter(
                                   (candidate) =>
-                                    candidate.id !== selectedProfile.id &&
-                                    candidate.role === "coach" || candidate.role === "owner",
+                                    (candidate.id !== selectedProfile.id &&
+                                      candidate.role === "coach") ||
+                                    candidate.role === "owner",
                                 )
                                 .map((coach) => (
                                   <option key={coach.id} value={coach.id}>
@@ -5296,11 +5317,11 @@ export function CoachDashboardPage({
                           }
                           onChange={(event) => {
                             const nextRole = event.target.value;
-                             if (
-                               nextRole === "owner" ||
-                               nextRole === "coach" ||
-                               nextRole === "client"
-                             ) {
+                            if (
+                              nextRole === "owner" ||
+                              nextRole === "coach" ||
+                              nextRole === "client"
+                            ) {
                               void handleOwnerChangeRole(p.id, nextRole);
                             }
                           }}
@@ -5489,9 +5510,9 @@ export function CoachDashboardPage({
           >
             <div
               data-coach-workspace="true"
-                className={`w-full ${editingDayId ? "workout-builder-workspace min-h-full flex flex-col" : ""} ${
-                  clientsOnly ? "space-y-1.5" : trackingLanding ? "space-y-1" : "space-y-4"
-                } bg-background ${
+              className={`w-full ${editingDayId ? "workout-builder-workspace min-h-full flex flex-col" : ""} ${
+                clientsOnly ? "space-y-1.5" : trackingLanding ? "space-y-1" : "space-y-4"
+              } bg-background ${
                 workspacePage || openEditor
                   ? "min-w-0 max-w-full overflow-x-hidden pb-10"
                   : "max-w-2xl rounded-3xl shadow-2xl"
@@ -5499,61 +5520,80 @@ export function CoachDashboardPage({
             >
               {!editingDayId ? (
                 <div
-                    className={`flex min-w-0 items-center justify-between gap-2 overflow-x-hidden border-b border-border/60 ${
-                      clientsOnly ? "px-2 pb-1.5" : trackingLanding ? "px-3 pb-2" : "px-4 pb-3 sm:px-6"
+                  className={`flex min-w-0 items-center justify-between gap-2 overflow-x-hidden border-b border-border/60 ${
+                    clientsOnly
+                      ? "px-2 pb-1.5"
+                      : trackingLanding
+                        ? "px-3 pb-2"
+                        : "px-4 pb-3 sm:px-6"
                   }`}
                 >
                   <h3 className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden font-bold text-base text-ink">
-                      {!clientsOnly || trackingLanding ? (
-                        <Users
-                          className={
-                            trackingLanding ? "h-4 w-4 text-primary" : "h-5 w-5 text-primary"
-                          }
-                        />
-                      ) : null}
-                      {!clientsOnly || trackingLanding ? (
-                        <span className="shrink-0">
-                          {trackingLanding ? "דוח המעקב:" : "תכנית המתאמן:"}
-                        </span>
-                      ) : null}
+                    {!clientsOnly || trackingLanding ? (
+                      <Users
+                        className={
+                          trackingLanding ? "h-4 w-4 text-primary" : "h-5 w-5 text-primary"
+                        }
+                      />
+                    ) : null}
+                    {!clientsOnly || trackingLanding ? (
+                      <span className="shrink-0">
+                        {trackingLanding ? "דוח המעקב:" : "תכנית המתאמן:"}
+                      </span>
+                    ) : null}
                     <span className="truncate text-primary font-extrabold">
                       {isSelfSelected
                         ? `התוכנית של ${selfDisplayName}`
                         : profileDisplayName(selectedClientInfo?.profiles)}
                     </span>
                   </h3>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (clientId) {
-                        if (workspaceMode !== "all" && selectedClientId) {
-                          navigate({
-                            to: "/coach/clients/$clientId",
-                            params: { clientId: selectedClientId },
-                          });
-                        } else
-                          navigate({
-                            to: trackingLanding ? "/coach/tracking" : "/coach/clients",
-                          });
-                        return;
-                      }
-                      setShowClientWorkspace(false);
-                      setSelectedClientId(null);
-                      setEditingProgramId(null);
-                      setEditingDayId(null);
-                    }}
-                    aria-label="סגירת תכנית המתאמן"
-                    className={`grid place-items-center border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-ink ${
-                      clientsOnly ? "h-8 w-8" : trackingLanding ? "h-8 w-8" : "h-9 w-9"
-                    }`}
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowClientProfile(true)}
+                      aria-label="פתיחת פרופיל המשתמש"
+                      className={`flex items-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10 ${
+                        clientsOnly || trackingLanding ? "h-8" : "h-9"
+                      }`}
+                    >
+                      <UserCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                      פרופיל
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (clientId) {
+                          if (workspaceMode !== "all" && selectedClientId) {
+                            navigate({
+                              to: "/coach/clients/$clientId",
+                              params: { clientId: selectedClientId },
+                            });
+                          } else
+                            navigate({
+                              to: trackingLanding ? "/coach/tracking" : "/coach/clients",
+                            });
+                          return;
+                        }
+                        setShowClientWorkspace(false);
+                        setSelectedClientId(null);
+                        setEditingProgramId(null);
+                        setEditingDayId(null);
+                      }}
+                      aria-label="סגירת תכנית המתאמן"
+                      className={`grid place-items-center border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-ink ${
+                        clientsOnly ? "h-8 w-8" : trackingLanding ? "h-8 w-8" : "h-9 w-9"
+                      }`}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               ) : null}
               <div data-coach-workout-surface-slot="true" className="coach-workout-surface-slot" />
 
-              {!editingDayId && (trackingLanding || workspacePage || openEditor) && clientDetails ? (
+              {!editingDayId &&
+              (trackingLanding || workspacePage || openEditor) &&
+              clientDetails ? (
                 <>
                   <nav
                     aria-label="ניווט בסביבת העריכה"
@@ -5781,266 +5821,287 @@ export function CoachDashboardPage({
                             )}
                           </div>
 
-                          {/* Coach-managed monthly measurements */}
-                          <div
-                            id="coach-checkin"
-                            className="surface-card rounded-2xl p-4 space-y-3"
-                            onChange={markMeasurementDraftDirty}
-                          >
-                            <div className="flex items-center justify-between border-b pb-2">
-                              <div>
-                                <h4 className="font-bold text-sm text-ink">
-                                  צ׳ק־אין ומדידות חודשיות
-                                </h4>
-                                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                  המדידות נשמרות על ידי המאמנת או הבעלים בלבד
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setEditingMeasurements((value) => !value)}
-                                className="flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+                          {clientDetails && false ? (
+                            <>
+                              {/* Coach-managed monthly measurements */}
+                              <div
+                                id="coach-checkin"
+                                className="surface-card rounded-2xl p-4 space-y-3"
+                                onChange={markMeasurementDraftDirty}
                               >
-                                <Edit2 className="h-3 w-3" />
-                                {editingMeasurements ? "ביטול" : "עריכה"}
-                              </button>
-                            </div>
-                            {editingMeasurements ? (
-                              <>
-                                <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
-                                  תאריך מדידה
-                                  <input
-                                    type="date"
-                                    value={measurementDraft.date}
-                                    onChange={(event) =>
-                                      setMeasurementDraft((current) => ({
-                                        ...current,
-                                        date: event.target.value,
-                                      }))
-                                    }
-                                    className="h-10 rounded-xl border border-border bg-white px-3 text-xs text-ink"
-                                  />
-                                </label>
-                                <div className="grid grid-cols-2 gap-2">
-                                  {(
-                                    [
-                                      ["chestCm", "חזה (ס״מ)"],
-                                      ["waistCm", "מותניים (ס״מ)"],
-                                      ["hipsCm", "ירכיים (ס״מ)"],
-                                      ["bicepsCm", "זרוע / יד (ס״מ)"],
-                                      ["thighsCm", "ירך (ס״מ)"],
-                                      ["calvesCm", "שוק / תאומים (ס״מ)"],
-                                      ["neckCm", "צוואר (ס״מ)"],
-                                      ["bodyFatPct", "אחוז שומן (%)"],
-                                      ["muscleMassKg", "מסת שריר (ק״ג)"],
-                                    ] as const
-                                  ).map(([field, label]) => (
-                                    <label
-                                      key={field}
-                                      className="grid gap-1 text-[11px] font-bold text-muted-foreground"
-                                    >
-                                      {label}
-                                      <FreeTextInput
-                                        min="0"
-                                        step={0.1}
-                                        value={measurementDraft[field] ?? ""}
+                                <div className="flex items-center justify-between border-b pb-2">
+                                  <div>
+                                    <h4 className="font-bold text-sm text-ink">
+                                      צ׳ק־אין ומדידות חודשיות
+                                    </h4>
+                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                      המדידות נשמרות על ידי המאמנת או הבעלים בלבד
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingMeasurements((value) => !value)}
+                                    className="flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                    {editingMeasurements ? "ביטול" : "עריכה"}
+                                  </button>
+                                </div>
+                                {editingMeasurements ? (
+                                  <>
+                                    <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
+                                      תאריך מדידה
+                                      <input
+                                        type="date"
+                                        value={measurementDraft.date}
                                         onChange={(event) =>
                                           setMeasurementDraft((current) => ({
                                             ...current,
-                                            [field]: event.target.value
-                                              ? Number(event.target.value)
-                                              : undefined,
+                                            date: event.target.value,
                                           }))
                                         }
-                                        className="h-10 rounded-xl border border-border bg-white px-3 text-sm text-ink"
+                                        className="h-10 rounded-xl border border-border bg-white px-3 text-xs text-ink"
                                       />
                                     </label>
-                                  ))}
-                                </div>
-                                <textarea
-                                  value={measurementDraft.notes ?? ""}
-                                  onChange={(event) =>
-                                    setMeasurementDraft((current) => ({
-                                      ...current,
-                                      notes: event.target.value,
-                                    }))
-                                  }
-                                  placeholder="הערות המאמנת לצ׳ק־אין..."
-                                  className="min-h-16 w-full rounded-xl border border-border bg-white p-3 text-xs text-ink"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={saveClientMeasurements}
-                                  className="flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-primary text-xs font-bold text-white"
-                                >
-                                  <Save className="h-3.5 w-3.5" /> שמירת מדידות חודשיות
-                                </button>
-                              </>
-                            ) : null}
-                            {measurementNotice ? (
-                              <p className="rounded-xl bg-emerald-50 p-2 text-xs font-semibold text-emerald-800">
-                                {measurementNotice}
-                              </p>
-                            ) : null}
-                            {!editingMeasurements ? (
-                              <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
-                                {[
-                                  ["מותניים", measurementDraft.waistCm, "ס״מ"],
-                                  ["אחוז שומן", measurementDraft.bodyFatPct, "%"],
-                                  ["מסת שריר", measurementDraft.muscleMassKg, "ק״ג"],
-                                ].map(([label, value, unit]) => (
-                                  <div key={label} className="rounded-xl bg-secondary/50 p-2">
-                                    <span className="block text-muted-foreground">{label}</span>
-                                    <strong className="text-ink">
-                                      {value !== undefined ? `${value} ${unit}` : "לא נמדד"}
-                                    </strong>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      {(
+                                        [
+                                          ["chestCm", "חזה (ס״מ)"],
+                                          ["waistCm", "מותניים (ס״מ)"],
+                                          ["hipsCm", "ירכיים (ס״מ)"],
+                                          ["bicepsCm", "זרוע / יד (ס״מ)"],
+                                          ["thighsCm", "ירך (ס״מ)"],
+                                          ["calvesCm", "שוק / תאומים (ס״מ)"],
+                                          ["neckCm", "צוואר (ס״מ)"],
+                                          ["bodyFatPct", "אחוז שומן (%)"],
+                                          ["muscleMassKg", "מסת שריר (ק״ג)"],
+                                        ] as const
+                                      ).map(([field, label]) => (
+                                        <label
+                                          key={field}
+                                          className="grid gap-1 text-[11px] font-bold text-muted-foreground"
+                                        >
+                                          {label}
+                                          <FreeTextInput
+                                            min="0"
+                                            step={0.1}
+                                            value={measurementDraft[field] ?? ""}
+                                            onChange={(event) =>
+                                              setMeasurementDraft((current) => ({
+                                                ...current,
+                                                [field]: event.target.value
+                                                  ? Number(event.target.value)
+                                                  : undefined,
+                                              }))
+                                            }
+                                            className="h-10 rounded-xl border border-border bg-white px-3 text-sm text-ink"
+                                          />
+                                        </label>
+                                      ))}
+                                    </div>
+                                    <textarea
+                                      value={measurementDraft.notes ?? ""}
+                                      onChange={(event) =>
+                                        setMeasurementDraft((current) => ({
+                                          ...current,
+                                          notes: event.target.value,
+                                        }))
+                                      }
+                                      placeholder="הערות המאמנת לצ׳ק־אין..."
+                                      className="min-h-16 w-full rounded-xl border border-border bg-white p-3 text-xs text-ink"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={saveClientMeasurements}
+                                      className="flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-primary text-xs font-bold text-white"
+                                    >
+                                      <Save className="h-3.5 w-3.5" /> שמירת מדידות חודשיות
+                                    </button>
+                                  </>
+                                ) : null}
+                                {measurementNotice ? (
+                                  <p className="rounded-xl bg-emerald-50 p-2 text-xs font-semibold text-emerald-800">
+                                    {measurementNotice}
+                                  </p>
+                                ) : null}
+                                {!editingMeasurements ? (
+                                  <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+                                    {[
+                                      ["מותניים", measurementDraft.waistCm, "ס״מ"],
+                                      ["אחוז שומן", measurementDraft.bodyFatPct, "%"],
+                                      ["מסת שריר", measurementDraft.muscleMassKg, "ק״ג"],
+                                    ].map(([label, value, unit]) => (
+                                      <div key={label} className="rounded-xl bg-secondary/50 p-2">
+                                        <span className="block text-muted-foreground">{label}</span>
+                                        <strong className="text-ink">
+                                          {value !== undefined ? `${value} ${unit}` : "לא נמדד"}
+                                        </strong>
+                                      </div>
+                                    ))}
                                   </div>
-                                ))}
-                              </div>
-                            ) : null}
-                          </div>
-
-                          <section
-                            data-testid="coach-activity-history"
-                            className="surface-card space-y-3 rounded-2xl border border-primary/15 bg-primary/[0.025] p-4"
-                            aria-label="היסטוריית פעילות"
-                          >
-                            <div className="flex items-center justify-between border-b border-primary/15 pb-2">
-                              <div>
-                                <h4 className="flex items-center gap-1.5 text-sm font-bold text-ink">
-                                  <Activity className="h-4 w-4 text-primary" /> היסטוריית פעילות
-                                </h4>
-                                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                  נתונים שנמשכו עבור המתאמנת שנבחרה בלבד
-                                </p>
-                              </div>
-                              <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-                                {clientBodyWeightLogs.length +
-                                  clientBodyMeasurements.length +
-                                  clientHabits.length +
-                                  clientCoachMessages.length}{" "}
-                                רשומות
-                              </span>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-2 text-[11px]">
-                              <div
-                                data-testid="coach-activity-nutrition"
-                                className="rounded-xl bg-white/80 p-2.5"
-                              >
-                                <span className="block text-muted-foreground">תזונה אחרונה</span>
-                                <strong className="mt-1 block text-ink">
-                                  {clientDetails.nutritionDays[0]
-                                    ? `${clientDetails.nutritionDays[0].date} · יעד ${clientDetails.nutritionTargets.calories ?? "—"} קל׳`
-                                    : "אין נתונים"}
-                                </strong>
-                                {clientDetails.nutritionDays[0] ? (
-                                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                                    {clientDetails.nutritionDays[0].meals.reduce(
-                                      (total, meal) => total + meal.foods.length,
-                                      0,
-                                    )}{" "}
-                                    מאכלים בפועל
-                                  </span>
                                 ) : null}
                               </div>
-                              <div
-                                data-testid="coach-activity-cardio"
-                                className="rounded-xl bg-white/80 p-2.5"
+
+                              <section
+                                data-testid="coach-activity-history"
+                                className="surface-card space-y-3 rounded-2xl border border-primary/15 bg-primary/[0.025] p-4"
+                                aria-label="היסטוריית פעילות"
                               >
-                                <span className="block text-muted-foreground">אירובי אחרון</span>
-                                <strong className="mt-1 block text-ink">
-                                  {clientDetails.cardioLogs?.[0]
-                                    ? `${clientDetails.cardioLogs[0].type} · ${clientDetails.cardioLogs[0].durationMin} דקות`
-                                    : "אין נתונים"}
-                                </strong>
-                                {clientDetails.cardioLogs?.[0] ? (
-                                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                                    {clientDetails.cardioLogs[0].calories} קל׳
+                                <div className="flex items-center justify-between border-b border-primary/15 pb-2">
+                                  <div>
+                                    <h4 className="flex items-center gap-1.5 text-sm font-bold text-ink">
+                                      <Activity className="h-4 w-4 text-primary" /> היסטוריית פעילות
+                                    </h4>
+                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                      נתונים שנמשכו עבור המתאמנת שנבחרה בלבד
+                                    </p>
+                                  </div>
+                                  <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+                                    {clientBodyWeightLogs.length +
+                                      clientBodyMeasurements.length +
+                                      clientHabits.length +
+                                      clientCoachMessages.length}{" "}
+                                    רשומות
                                   </span>
-                                ) : null}
-                              </div>
-                              <div
-                                data-testid="coach-activity-weight"
-                                className="rounded-xl bg-white/80 p-2.5"
-                              >
-                                <span className="block text-muted-foreground">משקל אחרון</span>
-                                <strong className="mt-1 block text-ink">
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                                  <div
+                                    data-testid="coach-activity-nutrition"
+                                    className="rounded-xl bg-white/80 p-2.5"
+                                  >
+                                    <span className="block text-muted-foreground">
+                                      תזונה אחרונה
+                                    </span>
+                                    <strong className="mt-1 block text-ink">
+                                  {hiddenClientDetails.nutritionDays[0]
+                                    ? `${hiddenClientDetails.nutritionDays[0]?.date} · יעד ${hiddenClientDetails.nutritionTargets.calories ?? "—"} קל׳`
+                                        : "אין נתונים"}
+                                    </strong>
+                                {hiddenClientDetails.nutritionDays[0] ? (
+                                      <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                                    {hiddenClientDetails.nutritionDays[0]?.meals.reduce(
+                                          (total, meal) => total + meal.foods.length,
+                                          0,
+                                        )}{" "}
+                                        מאכלים בפועל
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <div
+                                    data-testid="coach-activity-cardio"
+                                    className="rounded-xl bg-white/80 p-2.5"
+                                  >
+                                    <span className="block text-muted-foreground">
+                                      אירובי אחרון
+                                    </span>
+                                    <strong className="mt-1 block text-ink">
+                                  {hiddenClientDetails.cardioLogs?.[0]
+                                    ? `${hiddenClientDetails.cardioLogs[0]?.type} · ${hiddenClientDetails.cardioLogs[0]?.durationMin} דקות`
+                                        : "אין נתונים"}
+                                    </strong>
+                                {hiddenClientDetails.cardioLogs?.[0] ? (
+                                      <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                                    {hiddenClientDetails.cardioLogs[0]?.calories} קל׳
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <div
+                                    data-testid="coach-activity-weight"
+                                    className="rounded-xl bg-white/80 p-2.5"
+                                  >
+                                    <span className="block text-muted-foreground">משקל אחרון</span>
+                                    <strong className="mt-1 block text-ink">
                                   {clientBodyWeightLogs[0]
-                                    ? `${clientBodyWeightLogs[0].weight} ק״ג`
-                                    : "לא נמדד"}
-                                </strong>
-                                {clientBodyWeightLogs[0] ? (
-                                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                                    {clientBodyWeightLogs[0].date}
-                                  </span>
-                                ) : null}
-                              </div>
-                              <div
-                                data-testid="coach-activity-measurements"
-                                className="rounded-xl bg-white/80 p-2.5"
-                              >
-                                <span className="block text-muted-foreground">מדידה אחרונה</span>
-                                <strong className="mt-1 block text-ink">
+                                    ? `${clientBodyWeightLogs[0]?.weight} ק״ג`
+                                        : "לא נמדד"}
+                                    </strong>
+                                    {clientBodyWeightLogs[0] ? (
+                                      <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                                    {clientBodyWeightLogs[0]?.date}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <div
+                                    data-testid="coach-activity-measurements"
+                                    className="rounded-xl bg-white/80 p-2.5"
+                                  >
+                                    <span className="block text-muted-foreground">
+                                      מדידה אחרונה
+                                    </span>
+                                    <strong className="mt-1 block text-ink">
                                   {clientBodyMeasurements[0]?.waistCm
-                                    ? `מותניים ${clientBodyMeasurements[0].waistCm} ס״מ`
-                                    : "לא נמדד"}
-                                </strong>
-                                {clientBodyMeasurements[0]?.bodyFatPct ? (
-                                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                                    שומן {clientBodyMeasurements[0].bodyFatPct}%
-                                  </span>
-                                ) : null}
-                              </div>
-                              <div
-                                data-testid="coach-activity-habits"
-                                className="rounded-xl bg-white/80 p-2.5"
-                              >
-                                <span className="block text-muted-foreground">הרגלים אחרונים</span>
-                                <strong className="mt-1 block text-ink">
+                                    ? `מותניים ${clientBodyMeasurements[0]?.waistCm} ס״מ`
+                                        : "לא נמדד"}
+                                    </strong>
+                                    {clientBodyMeasurements[0]?.bodyFatPct ? (
+                                      <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                                    שומן {clientBodyMeasurements[0]?.bodyFatPct}%
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <div
+                                    data-testid="coach-activity-habits"
+                                    className="rounded-xl bg-white/80 p-2.5"
+                                  >
+                                    <span className="block text-muted-foreground">
+                                      הרגלים אחרונים
+                                    </span>
+                                    <strong className="mt-1 block text-ink">
                                   {clientHabits[0]
-                                    ? `${clientHabits[0].steps.toLocaleString("he-IL")} צעדים`
-                                    : "אין נתונים"}
-                                </strong>
-                                {clientHabits[0] ? (
-                                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                                    {clientHabits[0].workoutDone
-                                      ? "אימון בוצע"
-                                      : "אימון טרם סומן"}
-                                  </span>
-                                ) : null}
-                              </div>
-                              <div
-                                data-testid="coach-activity-messages"
-                                className="rounded-xl bg-white/80 p-2.5"
-                              >
-                                <span className="block text-muted-foreground">הודעות</span>
-                                <strong className="mt-1 block text-ink">
-                                  {clientCoachMessages.length} הודעות שמורות
-                                </strong>
-                                {clientCoachMessages[0] ? (
-                                  <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
-                                    {clientCoachMessages[0].message}
-                                  </span>
-                                ) : null}
-                              </div>
-                            </div>
+                                    ? `${clientHabits[0]?.steps.toLocaleString("he-IL")} צעדים`
+                                        : "אין נתונים"}
+                                    </strong>
+                                    {clientHabits[0] ? (
+                                      <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                                    {clientHabits[0]?.workoutDone
+                                          ? "אימון בוצע"
+                                          : "אימון טרם סומן"}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <div
+                                    data-testid="coach-activity-messages"
+                                    className="rounded-xl bg-white/80 p-2.5"
+                                  >
+                                    <span className="block text-muted-foreground">הודעות</span>
+                                    <strong className="mt-1 block text-ink">
+                                      {clientCoachMessages.length} הודעות שמורות
+                                    </strong>
+                                    {clientCoachMessages[0] ? (
+                                      <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                                  {clientCoachMessages[0]?.message}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </div>
 
-                            <div
-                              data-testid="coach-activity-challenges"
-                              className="rounded-xl border border-amber-200 bg-amber-50/70 p-2.5 text-[11px]"
-                            >
-                              <span className="block font-bold text-amber-900">אתגרים זמינים</span>
-                              <p className="mt-1 text-amber-900/75">
-                                {store.challenges.length > 0
-                                  ? [...store.challenges.filter((challenge) => !challenge.isBuiltIn), ...store.challenges.filter((challenge) => challenge.isBuiltIn)]
-                                      .slice(0, 3)
-                                      .map((challenge) => challenge.title)
-                                      .join(" · ")
-                                  : "אין אתגרים זמינים"}
-                              </p>
-                            </div>
-                          </section>
+                                <div
+                                  data-testid="coach-activity-challenges"
+                                  className="rounded-xl border border-amber-200 bg-amber-50/70 p-2.5 text-[11px]"
+                                >
+                                  <span className="block font-bold text-amber-900">
+                                    אתגרים זמינים
+                                  </span>
+                                  <p className="mt-1 text-amber-900/75">
+                                    {store.challenges.length > 0
+                                      ? [
+                                          ...store.challenges.filter(
+                                            (challenge) => !challenge.isBuiltIn,
+                                          ),
+                                          ...store.challenges.filter(
+                                            (challenge) => challenge.isBuiltIn,
+                                          ),
+                                        ]
+                                          .slice(0, 3)
+                                          .map((challenge) => challenge.title)
+                                          .join(" · ")
+                                      : "אין אתגרים זמינים"}
+                                  </p>
+                                </div>
+                              </section>
+                            </>
+                          ) : null}
                         </>
                       ) : null}
                     </>
@@ -6698,14 +6759,14 @@ export function CoachDashboardPage({
                                         key={dayItem.id}
                                         active={clientsOnly && workspacePage}
                                       >
-                                          <div
-                                            className={`coach-workout-surface workout-builder-frame relative w-full ${
-                                              editingDayId
-                                                ? "workout-builder-surface rounded-none border-0 p-4 shadow-none ring-0 sm:p-6"
-                                                : "overflow-hidden min-h-[calc(100dvh-12rem)] rounded-[1.5rem] border border-primary/25 bg-background p-4 shadow-sm ring-1 ring-primary/10 sm:p-6"
-                                            }`}
-                                          >
-                                            <div className="coach-workout-header workout-builder-header flex flex-col gap-3 border-b border-border/60 pb-3 sm:flex-row sm:items-start sm:justify-between">
+                                        <div
+                                          className={`coach-workout-surface workout-builder-frame relative w-full ${
+                                            editingDayId
+                                              ? "workout-builder-surface rounded-none border-0 p-4 shadow-none ring-0 sm:p-6"
+                                              : "overflow-hidden min-h-[calc(100dvh-12rem)] rounded-[1.5rem] border border-primary/25 bg-background p-4 shadow-sm ring-1 ring-primary/10 sm:p-6"
+                                          }`}
+                                        >
+                                          <div className="coach-workout-header workout-builder-header flex flex-col gap-3 border-b border-border/60 pb-3 sm:flex-row sm:items-start sm:justify-between">
                                             <div className="min-w-0 w-full flex-1">
                                               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
                                                 בניית אימון
@@ -6783,7 +6844,9 @@ export function CoachDashboardPage({
                                                     <div className="flex items-start justify-between gap-2">
                                                       <div>
                                                         <span className="block font-display text-[15px] font-extrabold text-ink">
-                                                          {exMeta ? exerciseDisplayName(exMeta) : "תרגיל"}
+                                                          {exMeta
+                                                            ? exerciseDisplayName(exMeta)
+                                                            : "תרגיל"}
                                                         </span>
                                                         {exItem.supersetPartnerId ? (
                                                           <span className="mt-0.5 block text-[11px] font-bold text-violet-800">
@@ -6792,15 +6855,15 @@ export function CoachDashboardPage({
                                                               (exercise) =>
                                                                 exercise.id ===
                                                                 exItem.supersetPartnerId,
-                                                             )
-                                                               ? exerciseDisplayName(
-                                                                   store.exercises.find(
-                                                                     (exercise) =>
-                                                                       exercise.id ===
-                                                                       exItem.supersetPartnerId,
-                                                                   )!,
-                                                                 )
-                                                               : "תרגיל בן־זוג"}{" "}
+                                                            )
+                                                              ? exerciseDisplayName(
+                                                                  store.exercises.find(
+                                                                    (exercise) =>
+                                                                      exercise.id ===
+                                                                      exItem.supersetPartnerId,
+                                                                  )!,
+                                                                )
+                                                              : "תרגיל בן־זוג"}{" "}
                                                             · ללא מנוחה
                                                           </span>
                                                         ) : null}
@@ -6812,10 +6875,10 @@ export function CoachDashboardPage({
                                                                   : ""
                                                               } · `
                                                             : ""}
-                                                           {exItem.targetWeight || exItem.weight}{" "}
-                                                           {weightValueUnit(
-                                                             exItem.equipment || exMeta?.equipment,
-                                                           )}
+                                                          {exItem.targetWeight || exItem.weight}{" "}
+                                                          {weightValueUnit(
+                                                            exItem.equipment || exMeta?.equipment,
+                                                          )}
                                                           · {exItem.sets} סטים ×{" "}
                                                           {exItem.repMin || exItem.reps}
                                                           {exItem.repMax
@@ -7134,7 +7197,8 @@ export function CoachDashboardPage({
                                                           <div className="grid grid-cols-3 gap-2 border-b border-border/50 pb-4">
                                                             <label className="text-center text-[9px] font-bold text-muted-foreground">
                                                               {weightInputLabel(
-                                                                exItem.equipment || exMeta?.equipment,
+                                                                exItem.equipment ||
+                                                                  exMeta?.equipment,
                                                                 false,
                                                               )}
                                                               <FreeTextInput
@@ -7175,12 +7239,12 @@ export function CoachDashboardPage({
                                                                     Number(event.target.value),
                                                                   );
                                                                   if (Number.isFinite(value)) {
-                                                                       setRepMin(value);
-                                                                       setSetRepMins((current) => {
-                                                                         const next = [...current];
-                                                                         next[0] = value;
-                                                                         return next;
-                                                                       });
+                                                                    setRepMin(value);
+                                                                    setSetRepMins((current) => {
+                                                                      const next = [...current];
+                                                                      next[0] = value;
+                                                                      return next;
+                                                                    });
                                                                     void handleUpdateExerciseItem(
                                                                       dayItem.id,
                                                                       exItem.id,
@@ -7210,12 +7274,12 @@ export function CoachDashboardPage({
                                                                     Number(event.target.value),
                                                                   );
                                                                   if (Number.isFinite(value)) {
-                                                                       setRepMax(value);
-                                                                       setSetRepMaxes((current) => {
-                                                                         const next = [...current];
-                                                                         next[0] = value;
-                                                                         return next;
-                                                                       });
+                                                                    setRepMax(value);
+                                                                    setSetRepMaxes((current) => {
+                                                                      const next = [...current];
+                                                                      next[0] = value;
+                                                                      return next;
+                                                                    });
                                                                     void handleUpdateExerciseItem(
                                                                       dayItem.id,
                                                                       exItem.id,
@@ -7366,7 +7430,10 @@ export function CoachDashboardPage({
                                                                 />
                                                               </label>
                                                               <label className="text-center text-[9px] font-bold text-amber-900">
-                                                                {weightInputLabel(selectedEquipment, false)}
+                                                                {weightInputLabel(
+                                                                  selectedEquipment,
+                                                                  false,
+                                                                )}
                                                                 <FreeTextInput
                                                                   step={0.5}
                                                                   min={0}
@@ -7538,15 +7605,15 @@ export function CoachDashboardPage({
                                                                 {renderSupersetPartnerSearch()}
                                                                 <div className="mt-2 grid grid-cols-3 gap-1.5">
                                                                   <label className="text-center text-[9px] font-bold text-violet-900">
-                                                                     {weightInputLabel(
-                                                                       store.exercises.find(
-                                                                         (exercise) =>
-                                                                           exercise.id ===
-                                                                           supersetPartnerId,
-                                                                       )?.equipment,
-                                                                       false,
-                                                                     )}{" "}
-                                                                     תרגיל 2
+                                                                    {weightInputLabel(
+                                                                      store.exercises.find(
+                                                                        (exercise) =>
+                                                                          exercise.id ===
+                                                                          supersetPartnerId,
+                                                                      )?.equipment,
+                                                                      false,
+                                                                    )}{" "}
+                                                                    תרגיל 2
                                                                     <FreeTextInput
                                                                       min={0}
                                                                       step={0.5}
@@ -7693,45 +7760,46 @@ export function CoachDashboardPage({
                                                           : "text-muted-foreground"
                                                       }
                                                     >
-                                                 {selectedExId
-                                                         ? (() => {
-                                                             const exercise = canonicalExerciseOptions.find(
-                                                               (e) => e.id === selectedExId,
-                                                             );
-                                                             return exercise
-                                                               ? exerciseDisplayName(exercise)
-                                                               : "תרגיל נבחר";
-                                                           })()
+                                                      {selectedExId
+                                                        ? (() => {
+                                                            const exercise =
+                                                              canonicalExerciseOptions.find(
+                                                                (e) => e.id === selectedExId,
+                                                              );
+                                                            return exercise
+                                                              ? exerciseDisplayName(exercise)
+                                                              : "תרגיל נבחר";
+                                                          })()
                                                         : "חיפוש ובחירת תרגיל..."}
                                                     </span>
                                                     <Search className="h-4 w-4 text-muted-foreground" />
                                                   </button>
                                                 </div>
-                                                 {selectedBuilderExercise ? (
-                                                   <div className="rounded-xl border border-primary/15 bg-primary/5 p-3">
-                                                      <SearchPickerField
-                                                        label="חיפוש מכשיר / ציוד לתרגיל"
-                                                        value={selectedEquipment}
-                                                        options={selectedBuilderEquipmentOptions}
-                                                        placeholder="חיפוש מכשיר..."
-                                                        onChange={(equipment) => {
-                                                          setSelectedEquipment(equipment);
-                                                          setSelectedCableGrip("");
-                                                        }}
-                                                      />
-                                                     {selectedEquipment === "פולי / כבלים" ? (
-                                                        <div className="mt-2">
-                                                          <SearchPickerField
-                                                            label="חיפוש מאחז לכבלים"
-                                                            value={selectedCableGrip}
-                                                            options={selectedBuilderGripOptions}
-                                                            placeholder="חיפוש מאחז..."
-                                                            onChange={setSelectedCableGrip}
-                                                          />
-                                                        </div>
-                                                     ) : null}
-                                                   </div>
-                                                 ) : null}
+                                                {selectedBuilderExercise ? (
+                                                  <div className="rounded-xl border border-primary/15 bg-primary/5 p-3">
+                                                    <SearchPickerField
+                                                      label="חיפוש מכשיר / ציוד לתרגיל"
+                                                      value={selectedEquipment}
+                                                      options={selectedBuilderEquipmentOptions}
+                                                      placeholder="חיפוש מכשיר..."
+                                                      onChange={(equipment) => {
+                                                        setSelectedEquipment(equipment);
+                                                        setSelectedCableGrip("");
+                                                      }}
+                                                    />
+                                                    {selectedEquipment === "פולי / כבלים" ? (
+                                                      <div className="mt-2">
+                                                        <SearchPickerField
+                                                          label="חיפוש מאחז לכבלים"
+                                                          value={selectedCableGrip}
+                                                          options={selectedBuilderGripOptions}
+                                                          placeholder="חיפוש מאחז..."
+                                                          onChange={setSelectedCableGrip}
+                                                        />
+                                                      </div>
+                                                    ) : null}
+                                                  </div>
+                                                ) : null}
                                                 {exerciseBuilderNotice ? (
                                                   <p className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-[10px] font-semibold text-ink">
                                                     {exerciseBuilderNotice}
@@ -7744,7 +7812,7 @@ export function CoachDashboardPage({
                                                   </p>
                                                   <label className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
                                                     מספר סטים
-                                                                    <FreeTextInput
+                                                    <FreeTextInput
                                                       min={1}
                                                       max={20}
                                                       value={setsCount}
@@ -7923,7 +7991,9 @@ export function CoachDashboardPage({
                                                           mode === "warmup" ? (
                                                             <div className="grid grid-cols-2 gap-2">
                                                               <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                                {weightInputLabel(selectedEquipment)}
+                                                                {weightInputLabel(
+                                                                  selectedEquipment,
+                                                                )}
                                                                 <FreeTextInput
                                                                   min={0}
                                                                   step={0.5}
@@ -8005,7 +8075,7 @@ export function CoachDashboardPage({
                                                               </label>
                                                               <label className="col-span-2 grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                                 זמן מנוחה (שניות)
-                                                                 <FreeTextInput
+                                                                <FreeTextInput
                                                                   min={0}
                                                                   step={5}
                                                                   value={setRests[index] ?? restSec}
@@ -8036,7 +8106,7 @@ export function CoachDashboardPage({
                                                                 )?.name || "תרגיל ראשון"}
                                                               </p>
                                                               <div className="mb-3 grid grid-cols-3 gap-1.5">
-                                                                 <FreeTextInput
+                                                                <FreeTextInput
                                                                   aria-label={`תרגיל ראשון ${weightInputLabel(
                                                                     selectedEquipment,
                                                                     false,
@@ -8055,14 +8125,14 @@ export function CoachDashboardPage({
                                                                       return next;
                                                                     });
                                                                   }}
-                                                                   placeholder={weightInputLabel(
-                                                                     selectedEquipment,
-                                                                     false,
-                                                                   )}
+                                                                  placeholder={weightInputLabel(
+                                                                    selectedEquipment,
+                                                                    false,
+                                                                  )}
                                                                   className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
                                                                 />
-                                                                 <FreeTextInput
-                                                                   aria-label="תרגיל ראשון חזרות מינימום"
+                                                                <FreeTextInput
+                                                                  aria-label="תרגיל ראשון חזרות מינימום"
                                                                   min={1}
                                                                   value={minReps}
                                                                   onChange={(event) => {
@@ -8079,8 +8149,8 @@ export function CoachDashboardPage({
                                                                   placeholder="חזרות מינ׳"
                                                                   className="h-9 rounded-lg border border-violet-200 bg-white text-center text-xs text-ink"
                                                                 />
-                                                                 <FreeTextInput
-                                                                   aria-label="תרגיל ראשון חזרות מקסימום"
+                                                                <FreeTextInput
+                                                                  aria-label="תרגיל ראשון חזרות מקסימום"
                                                                   min={minReps}
                                                                   value={maxReps}
                                                                   onChange={(event) => {
@@ -8201,8 +8271,8 @@ export function CoachDashboardPage({
                                                                       {drop.label}
                                                                     </p>
                                                                     <div className="grid grid-cols-3 gap-1">
-                                                                       <FreeTextInput
-                                                                         aria-label={`${drop.label} משקל`}
+                                                                      <FreeTextInput
+                                                                        aria-label={`${drop.label} משקל`}
                                                                         min={0}
                                                                         step={0.5}
                                                                         value={drop.weight}
@@ -8214,8 +8284,8 @@ export function CoachDashboardPage({
                                                                         placeholder="ק״ג"
                                                                         className="h-8 rounded-md border border-border text-center text-[11px]"
                                                                       />
-                                                                       <FreeTextInput
-                                                                         aria-label={`${drop.label} חזרות מינימום`}
+                                                                      <FreeTextInput
+                                                                        aria-label={`${drop.label} חזרות מינימום`}
                                                                         min={1}
                                                                         value={drop.min}
                                                                         onChange={(event) =>
@@ -8230,8 +8300,8 @@ export function CoachDashboardPage({
                                                                         }
                                                                         className="h-8 rounded-md border border-border text-center text-[11px]"
                                                                       />
-                                                                       <FreeTextInput
-                                                                         aria-label={`${drop.label} חזרות מקסימום`}
+                                                                      <FreeTextInput
+                                                                        aria-label={`${drop.label} חזרות מקסימום`}
                                                                         min={drop.min}
                                                                         value={drop.max}
                                                                         onChange={(event) =>
@@ -8252,7 +8322,7 @@ export function CoachDashboardPage({
                                                               </div>
                                                               <label className="mt-2 grid gap-1 text-[9px] font-bold text-primary">
                                                                 זמן מנוחה (שניות)
-                                                                  <FreeTextInput
+                                                                <FreeTextInput
                                                                   min={0}
                                                                   step={5}
                                                                   value={setRests[index] ?? restSec}
@@ -8303,7 +8373,7 @@ export function CoachDashboardPage({
                                                       <>
                                                         <label className="grid min-w-0 gap-1 text-[10px] font-bold text-muted-foreground">
                                                           {weightInputLabel(selectedEquipment)}
-                                                                  <FreeTextInput
+                                                          <FreeTextInput
                                                             min="0"
                                                             step={0.5}
                                                             value={warmupWeight}
@@ -8320,7 +8390,7 @@ export function CoachDashboardPage({
                                                         </label>
                                                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                           מספר סטי חימום
-                                                                  <FreeTextInput
+                                                          <FreeTextInput
                                                             min="1"
                                                             max="5"
                                                             value={warmupSetsCount}
@@ -8337,7 +8407,7 @@ export function CoachDashboardPage({
                                                         </label>
                                                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                           חזרות חימום מינ'
-                                                                      <FreeTextInput
+                                                          <FreeTextInput
                                                             min="1"
                                                             value={warmupReps}
                                                             onChange={(event) =>
@@ -8353,7 +8423,7 @@ export function CoachDashboardPage({
                                                         </label>
                                                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                           חזרות חימום מקס'
-                                                                      <FreeTextInput
+                                                          <FreeTextInput
                                                             min={warmupReps}
                                                             value={warmupRepsMax}
                                                             onChange={(event) =>
@@ -8372,8 +8442,9 @@ export function CoachDashboardPage({
                                                     {dropSetEnabled ? (
                                                       <>
                                                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                           {weightInputLabel(selectedEquipment)} לפני הדרופ
-                                                                      <FreeTextInput
+                                                          {weightInputLabel(selectedEquipment)} לפני
+                                                          הדרופ
+                                                          <FreeTextInput
                                                             min="0.1"
                                                             step={0.5}
                                                             inputMode="decimal"
@@ -8389,8 +8460,9 @@ export function CoachDashboardPage({
                                                           />
                                                         </label>
                                                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                                                           {weightInputLabel(selectedEquipment)} אחרי הדרופ
-                                                                <FreeTextInput
+                                                          {weightInputLabel(selectedEquipment)} אחרי
+                                                          הדרופ
+                                                          <FreeTextInput
                                                             min="0.1"
                                                             step={0.5}
                                                             inputMode="decimal"
@@ -8408,7 +8480,7 @@ export function CoachDashboardPage({
                                                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                           חזרות דרופ סט
                                                           <div className="grid grid-cols-2 gap-1">
-                                                          <FreeTextInput
+                                                            <FreeTextInput
                                                               min="1"
                                                               value={dropRepsMin}
                                                               onChange={(event) =>
@@ -8422,7 +8494,7 @@ export function CoachDashboardPage({
                                                               className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
                                                               aria-label="חזרות דרופ סט מינימום"
                                                             />
-                                                          <FreeTextInput
+                                                            <FreeTextInput
                                                               min={dropRepsMin}
                                                               value={dropRepsMax}
                                                               onChange={(event) =>
@@ -8459,7 +8531,7 @@ export function CoachDashboardPage({
                                                         <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                                           חזרות סופר סט
                                                           <div className="grid grid-cols-2 gap-1">
-                                                          <FreeTextInput
+                                                            <FreeTextInput
                                                               min="1"
                                                               value={supersetRepsMin}
                                                               onChange={(event) =>
@@ -8473,7 +8545,7 @@ export function CoachDashboardPage({
                                                               className="h-9 rounded-lg border border-border bg-white px-1 text-center text-xs"
                                                               aria-label="חזרות סופר סט מינימום"
                                                             />
-                                                          <FreeTextInput
+                                                            <FreeTextInput
                                                               min={supersetRepsMin}
                                                               value={supersetRepsMax}
                                                               onChange={(event) =>
@@ -8841,7 +8913,7 @@ export function CoachDashboardPage({
                                   </label>
                                   <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                                     כמות
-                                                          <FreeTextInput
+                                    <FreeTextInput
                                       min="0.1"
                                       step={0.1}
                                       value={menuFoodQuantity}
@@ -9007,7 +9079,7 @@ export function CoachDashboardPage({
                           </label>
                           <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                             גיל
-                                                          <FreeTextInput
+                            <FreeTextInput
                               min="1"
                               max="120"
                               value={profileAge}
@@ -9018,7 +9090,7 @@ export function CoachDashboardPage({
                           </label>
                           <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                             גובה (ס״מ)
-                                                            <FreeTextInput
+                            <FreeTextInput
                               min="1"
                               max="300"
                               value={profileHeight}
@@ -9029,7 +9101,7 @@ export function CoachDashboardPage({
                           </label>
                           <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                             משקל (ק״ג)
-                                                            <FreeTextInput
+                            <FreeTextInput
                               min="0.1"
                               max="500"
                               step={0.1}
@@ -9041,7 +9113,7 @@ export function CoachDashboardPage({
                           </label>
                           <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                             אימונים בשבוע
-                                                          <FreeTextInput
+                            <FreeTextInput
                               min="0"
                               max="14"
                               value={profileWorkouts}
@@ -9102,7 +9174,7 @@ export function CoachDashboardPage({
                             <label className="block text-[10px] font-bold text-muted-foreground mb-1">
                               קלוריות (kcal)
                             </label>
-                                                            <FreeTextInput
+                            <FreeTextInput
                               value={calTarget || ""}
                               onChange={(e) => setCalTarget(Number(e.target.value))}
                               className="w-full rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
@@ -9112,7 +9184,7 @@ export function CoachDashboardPage({
                             <label className="block text-[10px] font-bold text-muted-foreground mb-1">
                               חלבון (g)
                             </label>
-                                                            <FreeTextInput
+                            <FreeTextInput
                               value={protTarget || ""}
                               onChange={(e) => setProtTarget(Number(e.target.value))}
                               className="w-full rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
@@ -9281,6 +9353,308 @@ export function CoachDashboardPage({
           </Overlay>
         )}
 
+        {showClientProfile && selectedClientId && clientDetails ? (
+          <Overlay
+            open={showClientProfile}
+            onClose={() => setShowClientProfile(false)}
+            ariaLabel="פרופיל המשתמש"
+          >
+            <div
+              className="max-h-[88vh] w-full max-w-2xl space-y-4 overflow-y-auto rounded-3xl border border-border bg-surface p-4 text-start shadow-2xl sm:p-5"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-3 border-b border-border/70 pb-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                    פרופיל המשתמש
+                  </p>
+                  <h2 className="mt-1 truncate font-display text-lg font-extrabold text-ink">
+                    {isSelfSelected
+                      ? selfDisplayName
+                      : profileDisplayName(selectedClientInfo?.profiles)}
+                  </h2>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    היסטוריית פעילות, צ׳ק־אין ומדידות חודשיות במקום אחד
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowClientProfile(false)}
+                  aria-label="סגירת פרופיל המשתמש"
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-ink"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <section
+                data-testid="coach-client-checkin-profile"
+                className="space-y-3 rounded-2xl border border-accent/40 bg-accent/10 p-4"
+              >
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-accent-foreground" />
+                  <div>
+                    <h3 className="text-sm font-bold text-ink">צ׳ק־אין חודשי</h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      משוב אחרון מהמתאמן והערות המאמן
+                    </p>
+                  </div>
+                </div>
+                {(() => {
+                  const latestCheckin = [
+                    ...clientDetails.history
+                      .filter(
+                        (session) =>
+                          Boolean(session.difficultyRating) ||
+                          Boolean(session.discomfortNotes?.trim()),
+                      )
+                      .map((session) => ({
+                        date: session.date,
+                        difficulty: session.difficultyRating,
+                        discomfort: session.discomfortNotes?.trim(),
+                        source: "אימון",
+                      })),
+                    ...clientFeedback
+                      .filter((feedback) => feedback.client_id === selectedClientId)
+                      .map((feedback) => ({
+                        date: feedback.created_at ?? "",
+                        difficulty: feedback.difficulty_rating,
+                        discomfort: feedback.discomfort_notes?.trim(),
+                        source: "צ׳ק־אין",
+                      })),
+                  ].sort((a, b) => b.date.localeCompare(a.date))[0];
+                  return latestCheckin ? (
+                    <div className="rounded-xl bg-white/80 p-3 text-[11px]">
+                      <div className="flex items-center justify-between gap-2">
+                        <strong className="text-ink">{latestCheckin.source}</strong>
+                        <time className="text-muted-foreground">
+                          {latestCheckin.date
+                            ? new Date(latestCheckin.date).toLocaleDateString("he-IL")
+                            : "ללא תאריך"}
+                        </time>
+                      </div>
+                      <p className="mt-1 text-muted-foreground">
+                        תחושת מאמץ:{" "}
+                        <strong className="text-ink">
+                          {latestCheckin.difficulty || "לא דווחה"}
+                        </strong>
+                      </p>
+                      {latestCheckin.discomfort ? (
+                        <p className="mt-2 rounded-lg bg-rose-50 px-2 py-1 font-semibold text-rose-800">
+                          כאב / אי־נוחות: {latestCheckin.discomfort}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="rounded-xl bg-white/70 p-3 text-center text-[11px] text-muted-foreground">
+                      עדיין לא התקבל צ׳ק־אין.
+                    </p>
+                  );
+                })()}
+              </section>
+
+              <section
+                data-testid="coach-activity-history"
+                aria-label="היסטוריית פעילות"
+                className="space-y-3 rounded-2xl border border-primary/15 bg-primary/[0.025] p-4"
+              >
+                <div className="flex items-center justify-between gap-2 border-b border-primary/15 pb-2">
+                  <div>
+                    <h3 className="flex items-center gap-1.5 text-sm font-bold text-ink">
+                      <Activity className="h-4 w-4 text-primary" /> היסטוריית פעילות
+                    </h3>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      נתונים שנמשכו עבור המשתמש שנבחר בלבד
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+                    {clientDetails.history.length} אימונים
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="rounded-xl bg-white/80 p-2.5">
+                    <span className="block text-muted-foreground">תזונה אחרונה</span>
+                    <strong className="mt-1 block text-ink">
+                      {latestNutritionDay
+                        ? `${latestNutritionDay.date} · ${latestNutritionDay.meals.reduce(
+                            (total, meal) => total + meal.foods.length,
+                            0,
+                          )} מאכלים`
+                        : "אין נתונים"}
+                    </strong>
+                  </div>
+                  <div className="rounded-xl bg-white/80 p-2.5">
+                    <span className="block text-muted-foreground">אירובי אחרון</span>
+                    <strong className="mt-1 block text-ink">
+                      {clientDetails.cardioLogs?.[0]
+                        ? `${clientDetails.cardioLogs[0].type} · ${clientDetails.cardioLogs[0].durationMin} דקות`
+                        : "אין נתונים"}
+                    </strong>
+                  </div>
+                  <div className="rounded-xl bg-white/80 p-2.5">
+                    <span className="block text-muted-foreground">משקל אחרון</span>
+                    <strong className="mt-1 block text-ink">
+                      {clientBodyWeightLogs[0]
+                        ? `${clientBodyWeightLogs[0].weight} ק״ג`
+                        : "לא נמדד"}
+                    </strong>
+                  </div>
+                  <div className="rounded-xl bg-white/80 p-2.5">
+                    <span className="block text-muted-foreground">הרגלים אחרונים</span>
+                    <strong className="mt-1 block text-ink">
+                      {clientHabits[0]
+                        ? `${clientHabits[0].steps.toLocaleString("he-IL")} צעדים`
+                        : "אין נתונים"}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {clientDetails.history.slice(0, 8).map((session) => {
+                    const doneSets = session.entries.reduce(
+                      (total, entry) => total + entry.sets.filter((set) => set.done).length,
+                      0,
+                    );
+                    return (
+                      <div key={session.id} className="rounded-xl bg-white/80 p-2.5 text-[11px]">
+                        <div className="flex items-center justify-between gap-2">
+                          <strong className="text-ink">{session.workoutName || "אימון"}</strong>
+                          <time className="text-muted-foreground">
+                            {new Date(session.date).toLocaleDateString("he-IL")}
+                          </time>
+                        </div>
+                        <p className="mt-1 text-muted-foreground">
+                          {doneSets} סטים בוצעו · {session.entries.length} תרגילים
+                          {session.difficultyRating ? ` · ${session.difficultyRating}` : ""}
+                        </p>
+                      </div>
+                    );
+                  })}
+                  {clientDetails.history.length === 0 ? (
+                    <p className="rounded-xl bg-white/70 p-3 text-center text-[11px] text-muted-foreground">
+                      עדיין לא נרשמו אימונים בפועל.
+                    </p>
+                  ) : null}
+                </div>
+              </section>
+
+              <section
+                data-testid="coach-client-measurements-profile"
+                className="space-y-3 rounded-2xl border border-border bg-background p-4"
+                onChange={markMeasurementDraftDirty}
+              >
+                <div className="flex items-center justify-between gap-2 border-b border-border/70 pb-2">
+                  <div>
+                    <h3 className="text-sm font-bold text-ink">מדידות חודשיות</h3>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      המדידות נשמרות על ידי המאמנת או הבעלים בלבד
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingMeasurements((value) => !value)}
+                    className="flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+                  >
+                    <Edit2 className="h-3 w-3" />
+                    {editingMeasurements ? "ביטול" : "עריכה"}
+                  </button>
+                </div>
+                {editingMeasurements ? (
+                  <>
+                    <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
+                      תאריך מדידה
+                      <input
+                        type="date"
+                        value={measurementDraft.date}
+                        onChange={(event) =>
+                          setMeasurementDraft((current) => ({
+                            ...current,
+                            date: event.target.value,
+                          }))
+                        }
+                        className="h-10 rounded-xl border border-border bg-white px-3 text-xs text-ink"
+                      />
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(
+                        [
+                          ["waistCm", "מותניים (ס״מ)"],
+                          ["bodyFatPct", "אחוז שומן (%)"],
+                          ["muscleMassKg", "מסת שריר (ק״ג)"],
+                          ["chestCm", "חזה (ס״מ)"],
+                          ["hipsCm", "ירכיים (ס״מ)"],
+                          ["thighsCm", "ירך (ס״מ)"],
+                        ] as const
+                      ).map(([field, label]) => (
+                        <label
+                          key={field}
+                          className="grid gap-1 text-[11px] font-bold text-muted-foreground"
+                        >
+                          {label}
+                          <FreeTextInput
+                            min="0"
+                            step={0.1}
+                            value={measurementDraft[field] ?? ""}
+                            onChange={(event) =>
+                              setMeasurementDraft((current) => ({
+                                ...current,
+                                [field]: event.target.value
+                                  ? Number(event.target.value)
+                                  : undefined,
+                              }))
+                            }
+                            className="h-10 rounded-xl border border-border bg-white px-3 text-sm text-ink"
+                          />
+                        </label>
+                      ))}
+                    </div>
+                    <textarea
+                      value={measurementDraft.notes ?? ""}
+                      onChange={(event) =>
+                        setMeasurementDraft((current) => ({
+                          ...current,
+                          notes: event.target.value,
+                        }))
+                      }
+                      placeholder="הערות המאמנת לצ׳ק־אין..."
+                      className="min-h-16 w-full rounded-xl border border-border bg-white p-3 text-xs text-ink"
+                    />
+                    <button
+                      type="button"
+                      onClick={saveClientMeasurements}
+                      className="flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-primary text-xs font-bold text-white"
+                    >
+                      <Save className="h-3.5 w-3.5" /> שמירת מדידות חודשיות
+                    </button>
+                  </>
+                ) : null}
+                {measurementNotice ? (
+                  <p className="rounded-xl bg-emerald-50 p-2 text-xs font-semibold text-emerald-800">
+                    {measurementNotice}
+                  </p>
+                ) : null}
+                {!editingMeasurements ? (
+                  <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+                    {[
+                      ["מותניים", measurementDraft.waistCm, "ס״מ"],
+                      ["אחוז שומן", measurementDraft.bodyFatPct, "%"],
+                      ["מסת שריר", measurementDraft.muscleMassKg, "ק״ג"],
+                    ].map(([label, value, unit]) => (
+                      <div key={label} className="rounded-xl bg-secondary/50 p-2">
+                        <span className="block text-muted-foreground">{label}</span>
+                        <strong className="text-ink">
+                          {value !== undefined ? `${value} ${unit}` : "לא נמדד"}
+                        </strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </section>
+            </div>
+          </Overlay>
+        ) : null}
+
         <Overlay
           open={showExercisePicker}
           onClose={() => setShowExercisePicker(false)}
@@ -9446,9 +9820,8 @@ export function CoachDashboardPage({
                     {EQUIPMENT.filter(
                       (equipment) => !store.deletedEquipmentOptions?.includes(equipment),
                     ).map((equipment) => {
-                      const selected = selectedExerciseEquipmentOptions(newExerciseDraft).includes(
-                        equipment,
-                      );
+                      const selected =
+                        selectedExerciseEquipmentOptions(newExerciseDraft).includes(equipment);
                       return (
                         <button
                           key={equipment}
@@ -9486,8 +9859,8 @@ export function CoachDashboardPage({
                 </div>
               </div>
               <p className="rounded-2xl bg-secondary/60 p-3 text-[11px] leading-relaxed text-muted-foreground">
-                זהו טופס מהיר: שם, קבוצת שרירים וציוד מספיקים כדי להתחיל. אפשר להוסיף הוראות,
-                תמונות וסרטונים בעריכת התרגיל לאחר השמירה.
+                זהו טופס מהיר: שם, קבוצת שרירים וציוד מספיקים כדי להתחיל. אפשר להוסיף הוראות, תמונות
+                וסרטונים בעריכת התרגיל לאחר השמירה.
               </p>
               {newExerciseError ? (
                 <p className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs font-semibold text-destructive">
