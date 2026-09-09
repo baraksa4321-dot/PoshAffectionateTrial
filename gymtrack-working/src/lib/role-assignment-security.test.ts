@@ -177,7 +177,7 @@ const migration27 = readFileSync(
 );
 const migration38 = readFileSync(
   fileURLToPath(
-    new URL("../../supabase/migrations/38_owner_can_promote_users.sql", import.meta.url),
+    new URL("../../supabase/migrations/38a_owner_can_promote_users.sql", import.meta.url),
   ),
   "utf8",
 );
