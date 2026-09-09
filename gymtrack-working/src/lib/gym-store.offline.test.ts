@@ -1,7 +1,7 @@
 // The standalone package is executed by Bun; its runtime matcher types are
 // supplied by Bun rather than the browser TypeScript environment.
 import { beforeEach, describe, expect, mock, test } from "bun:test";
-import type { GymData } from "./gym-types";
+import type { CoachMessage, GymData } from "./gym-types";
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -374,6 +374,82 @@ describe("offline store lifecycle", () => {
       "הודעה שנשמרה למתאמנת",
     );
     expect(reloadedStore.getGymStoreSnapshot().coachMessages).toHaveLength(1);
+  });
+
+  test("deduplicates coach messages by ID and keeps the newest duplicate during reconnect", async () => {
+    Object.assign(navigator, { onLine: true });
+    const initialMessage = {
+      id: "repeated-message",
+      coachId: "coach-a",
+      clientId: "user-a",
+      message: "נוסח ישן",
+      createdAt: "2026-08-26T09:00:00.000Z",
+      isRead: false,
+    };
+    const distinctMessage = {
+      id: "distinct-message",
+      coachId: "coach-a",
+      clientId: "user-a",
+      message: "הודעה אחרת",
+      createdAt: "2026-08-26T08:00:00.000Z",
+      isRead: false,
+    };
+    const newerMessage = {
+      ...initialMessage,
+      message: "נוסח מעודכן",
+      createdAt: "2026-08-26T10:00:00.000Z",
+      isRead: true,
+    };
+    let pullCount = 0;
+    pullImplementation = async (_userId, localState) => {
+      pullCount += 1;
+      if (pullCount === 1) {
+        return {
+          success: true,
+          data: {
+            ...localState,
+            coachMessages: [initialMessage],
+          },
+        };
+      }
+      return {
+        success: true,
+        data: {
+          ...localState,
+          coachMessages: [distinctMessage, initialMessage, newerMessage],
+        },
+      };
+    };
+
+    const store = await loadStore("dedupe-coach-messages");
+    authenticate();
+    await eventually(() => store.getGymStoreSnapshot().coachMessages?.length === 1);
+
+    Object.assign(navigator, { onLine: false });
+    store.addChecklistItem("שינוי מקומי לפני reconnect");
+    await eventually(() => store.getGymStoreSyncStatus() === "offline");
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    Object.assign(navigator, { onLine: true });
+    store.refreshCurrentUserData(true);
+    await eventually(
+      () =>
+        pullCount > 1 &&
+        store
+          .getGymStoreSnapshot()
+          .coachMessages?.some(
+            (message: CoachMessage) =>
+              message.id === "repeated-message" && message.message === "נוסח מעודכן",
+          ) === true,
+    );
+
+    const messages: CoachMessage[] = store.getGymStoreSnapshot().coachMessages;
+    expect(messages).toHaveLength(2);
+    expect(messages.filter((message) => message.id === "repeated-message")).toHaveLength(1);
+    expect(messages.find((message) => message.id === "repeated-message")?.isRead).toBe(true);
+    expect(messages.find((message) => message.id === "distinct-message")?.message).toBe(
+      "הודעה אחרת",
+    );
   });
 
   test("keeps an offline mutation after reload and uploads it on reconnect", async () => {

@@ -10,6 +10,7 @@ import {
   type BodyMeasurement,
   type BodyWeightLog,
   type CardioLog,
+  type CoachMessage,
   type Exercise,
   type FoodItem,
   type GymData,
@@ -596,6 +597,38 @@ function canManageNutritionTargets() {
   return profileAccessVerified && profileHydrationStatus === "ready" && canManageAssignedPlans();
 }
 
+function coachMessageTime(message: CoachMessage) {
+  const time = Date.parse(message.createdAt);
+  return Number.isFinite(time) ? time : Number.NEGATIVE_INFINITY;
+}
+
+function dedupeCoachMessages(messages: CoachMessage[] = []) {
+  const byId = new Map<string, { index: number; message: CoachMessage }>();
+  const deduped: CoachMessage[] = [];
+
+  for (const message of messages) {
+    const id = message.id.trim();
+    if (!id) {
+      deduped.push(message);
+      continue;
+    }
+
+    const existing = byId.get(id);
+    if (!existing) {
+      byId.set(id, { index: deduped.length, message });
+      deduped.push(message);
+      continue;
+    }
+
+    if (coachMessageTime(message) >= coachMessageTime(existing.message)) {
+      deduped[existing.index] = message;
+      existing.message = message;
+    }
+  }
+
+  return deduped.sort((a, b) => coachMessageTime(b) - coachMessageTime(a));
+}
+
 function mergeRemotePlanRefresh(localData: GymData, remoteData: GymData): GymData {
   // Trainees cannot edit these collections locally, so a pending nutrition
   // log, check-list item, or measurement must not prevent a coach's plan from
@@ -604,6 +637,10 @@ function mergeRemotePlanRefresh(localData: GymData, remoteData: GymData): GymDat
     const localProfile = localData.userProfile ?? { weight: 0 };
     return {
       ...localData,
+      coachMessages: dedupeCoachMessages([
+        ...(remoteData.coachMessages ?? []),
+        ...(localData.coachMessages ?? []),
+      ]),
       userProfile: {
         ...localProfile,
         ...(remoteData.userProfile ?? {}),
@@ -617,6 +654,10 @@ function mergeRemotePlanRefresh(localData: GymData, remoteData: GymData): GymDat
   } = localData.userProfile;
   return {
     ...localData,
+    coachMessages: dedupeCoachMessages([
+      ...(remoteData.coachMessages ?? []),
+      ...(localData.coachMessages ?? []),
+    ]),
     programs: remoteData.programs ?? localData.programs,
     workouts: [
       ...(remoteData.workouts ?? []),
@@ -994,7 +1035,7 @@ function migrate(d: Partial<GymData>): GymData {
     recipes: d.recipes ?? [],
     recentFoods: d.recentFoods ?? [],
     favoriteFoods: d.favoriteFoods ?? [],
-    coachMessages: d.coachMessages ?? [],
+    coachMessages: dedupeCoachMessages(d.coachMessages ?? []),
     bodyWeightLogs: d.bodyWeightLogs?.length ? d.bodyWeightLogs : [],
     bodyMeasurements: d.bodyMeasurements ?? [],
     cardioLogs: d.cardioLogs ?? [],
@@ -1305,6 +1346,7 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
   if (dataRevision === revisionAtPullStart && !pendingAtPullStart) {
     data = {
       ...pulled.data,
+      coachMessages: dedupeCoachMessages(pulled.data.coachMessages ?? []),
       preExitChecklist: data.preExitChecklist ?? pulled.data.preExitChecklist ?? [],
     };
     persistCacheOnly();
