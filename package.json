@@ -8,6 +8,7 @@
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck && pnpm --dir gymtrack-working run typecheck",
     "test:ios": "playwright test --config gymtrack-working/e2e/playwright.config.mjs",
+    "check:live-smoke-config": "bash scripts/check-live-smoke-config.sh",
     "release:check": "pnpm run typecheck && pnpm --dir gymtrack-working run test && pnpm --dir gymtrack-working run check:status-colors && pnpm --dir gymtrack-working run build && bash scripts/check-gymtrack-preview.sh && bash scripts/run-live-sync-check.sh"
   },
   "private": true,
