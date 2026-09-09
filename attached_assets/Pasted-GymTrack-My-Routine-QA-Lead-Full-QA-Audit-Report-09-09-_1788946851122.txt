@@ -1,0 +1,1329 @@
+GymTrack / My Routine
+
+QA Lead — Full QA Audit Report
+
+תאריך: 09/09/2026
+
+סטטוס כללי: NOT READY FOR RELEASE
+
+רמת ביטחון: MEDIUM
+
+הסיבה העיקרית:
+הקוד עבר בדיקה סטטית רחבה ונמצאו מספר בעיות משמעותיות, אך חלק מהבדיקות הקריטיות לא ניתן היה להריץ בפועל בגלל סביבת execution חסרה ו־Supabase live credentials/guard שלא היו זמינים.
+
+⸻
+
+1. EXECUTIVE SUMMARY
+
+⸻
+
+בוצע Audit מקיף לקוד של GymTrack / My Routine.
+
+נבדקו:
+
+* מבנה הפרויקט
+* package.json
+* scripts
+* routes
+* AppShell
+* gym-store
+* supabase-sync
+* Supabase migrations
+* RLS / permissions
+* Realtime
+* Offline architecture
+* Nutrition
+* Workout system
+* Coach workspace
+* Owner/Coach/Trainee architecture
+* Playwright/WebKit configuration
+* Live smoke infrastructure
+* Existing automated tests
+
+נבדקו סטטית:
+
+* כ־130 קבצי source
+* 46 Supabase migrations
+* 12 test files
+* 94 test/it cases
+* 16 test suites/describes
+* 24 routes
+
+לא ניתן היה להשלים runtime validation מלאה.
+
+לכן:
+
+RELEASE STATUS = BLOCKED
+
+⸻
+
+2. FINAL QA STATUS
+
+⸻
+
+PASS / GOOD:
+
+* Architecture של local-first קיימת
+* Realtime reconnect mechanism קיים
+* RLS architecture נראית ברובה נכונה
+* Coach → assigned clients design קיים
+* Owner permissions קיימות
+* Nutrition architecture טובה
+* Workout model תומך בפיצ’רים המרכזיים
+* Conflict handling קיים
+* Live smoke guard קיים
+* WebKit configuration קיים
+* קיימת כמות משמעותית של automated tests
+
+FAIL / HIGH RISK:
+
+1. Profile sync עלול לכתוב coach_id ישן
+2. Workout videos נמצאים ב־public storage bucket
+3. אין release:check למרות שה־documentation מתייחס אליו
+4. package-manager configuration אינו עקבי
+5. אין runtime proof ל־RLS/sync האמיתיים
+6. אין runtime proof ל־Offline/Reconnection/Fresh Device
+7. אין runtime proof ל־WebKit
+8. deletion sync אינו סימטרי לכל collections
+9. optional schema handling עלול להסתיר feature failures
+10. live 5-user isolation matrix עדיין לא בוצע
+
+BLOCKED:
+
+* TypeScript full validation
+* Unit tests
+* Production build
+* Preview
+* Playwright WebKit
+* Live Supabase smoke
+* Full bidirectional sync test
+* Full RLS test
+* Real conflict test
+
+⸻
+
+3. ENVIRONMENT / EXECUTION
+
+⸻
+
+ניסיון להריץ TypeScript:
+
+npm run typecheck
+
+תוצאה:
+
+BLOCKED / FAIL
+
+התקבלה שגיאת TypeScript:
+
+TS2688:
+Cannot find type definition file for ‘vite/client’
+
+המשמעות:
+
+סביבת ה־node_modules אינה מלאה ולכן לא ניתן לקבוע שהקוד עובר TypeScript בצורה תקינה.
+
+⸻
+
+ניסיון להריץ tests:
+
+npm test
+
+ה־package script מפנה ל:
+
+bun test
+
+אבל Bun אינו זמין בסביבת הבדיקה.
+
+תוצאה:
+
+BLOCKED
+
+⸻
+
+Dependency installation:
+
+בוצע ניסיון להריץ npm ci.
+
+ההתקנה לא הצליחה להשלים בסביבת ההרצה.
+
+לכן לא ניתן היה להפעיל בצורה אמינה:
+
+* tsc
+* vitest/bun tests
+* lint
+* build
+* Playwright
+
+אין לסמן אותם PASS.
+
+⸻
+
+4. RELEASE PIPELINE
+
+⸻
+
+נמצא mismatch בין ה־repository לבין ה־documentation.
+
+ה־documentation מציין:
+
+pnpm run release:check
+
+אבל אין script בשם:
+
+release:check
+
+ב־package.json.
+
+בנוסף:
+
+הפרויקט כולל:
+
+* package-lock.json
+* bun.lock
+
+אבל ה־documentation משתמש ב־pnpm.
+
+זו בעיית release engineering.
+
+Severity:
+
+HIGH
+
+המלצה:
+
+להחליט על package manager אחד.
+
+לדוגמה:
+
+pnpm
+
+וליצור script אמיתי:
+
+release:check
+
+שמריץ לפחות:
+
+1. typecheck
+2. unit tests
+3. lint
+4. status checks
+5. production build
+6. preview
+7. WebKit smoke
+8. guarded live smoke
+
+⸻
+
+5. AUTHENTICATION
+
+⸻
+
+הארכיטקטורה כוללת:
+
+* authentication
+* profiles
+* roles
+* coach assignment
+* Owner permissions
+
+קיימים מנגנונים להגנה על role ו־assignment.
+
+עם זאת:
+
+לא ניתן היה לבצע runtime authentication test אמיתי.
+
+לא נבדקו בפועל:
+
+* login
+* logout
+* wrong password
+* expired session
+* fresh device
+* session persistence
+* profile missing
+* role switching
+
+Status:
+
+BLOCKED
+
+לא בגלל באג מוכח, אלא בגלל environment.
+
+⸻
+
+6. ROLE / RLS SECURITY
+
+⸻
+
+ה־RLS architecture נראית טובה באופן כללי.
+
+קיימים מנגנונים עבור:
+
+* Owner
+* Coach
+* Trainee
+* coach/client relationship
+* owner-only operations
+* protected role changes
+* assignment protection
+
+הקוד כולל patterns של:
+
+is_owner()
+is_coach_of()
+
+וה־realtime pulls מבוצעים מחדש עם RLS-scoped queries.
+
+זה חיובי.
+
+אבל:
+
+הבדיקות הקיימות אינן תחליף ל־live Postgres RLS testing.
+
+צריך לבצע בפועל:
+
+Owner
+Coach A
+Coach B
+Trainee A
+Trainee B
+
+ולוודא:
+
+Coach A → Trainee A = ALLOW
+
+Coach A → Trainee B = DENY
+
+Coach B → Trainee B = ALLOW
+
+Coach B → Trainee A = DENY
+
+Trainee A → Trainee B = DENY
+
+Owner → all = ALLOW בהתאם להרשאות
+
+Status:
+
+STATIC = GOOD
+
+LIVE = BLOCKED
+
+⸻
+
+7. CRITICAL BUG — PROFILE SYNC / coach_id
+
+⸻
+
+Severity:
+
+HIGH
+
+ב־supabase-sync קיים profile upsert רגיל שכולל:
+
+coach_id: p.coachId ?? null
+
+הבעיה:
+
+coach_id הוא assignment server-owned.
+
+תרחיש אפשרי:
+
+1. Trainee משויך ל־Coach A.
+2. Owner מעביר אותו ל־Coach B.
+3. ה־Trainee עדיין מחזיק cache ישן.
+4. ה־Trainee מבצע פעולה רגילה.
+5. local sync רץ.
+6. profile sync עלול לשלוח שוב coach_id של Coach A.
+
+זה יכול לגרום ל:
+
+* stale assignment
+* rejected write
+* sync error
+* pending mutation
+* race condition
+* ניסיון לדרוס assignment חדש
+
+המלצה:
+
+normal profile sync לא צריך לכתוב:
+
+* role
+* coach_id
+
+שינויים כאלה צריכים להתבצע רק דרך RPC/operation מוגן.
+
+Priority:
+
+P1
+
+⸻
+
+8. OWNER / COACH ASSIGNMENT
+
+⸻
+
+נבדק המודל של Owner self-coaching.
+
+נמצא שהגרסה הנוכחית משתמשת ב:
+
+profiles.coach_id = owner עצמו
+
+וב־additional coach דרך:
+
+coach_clients
+
+זה מודל עקבי יותר מההתרשמות הראשונית.
+
+עם זאת חובה לבצע runtime test ולוודא:
+
+כאשר Owner בוחר Coach נוסף:
+
+* UI מציג success רק אם DB באמת עודכן
+* coach_clients עודכן
+* אין שינוי שגוי ב־profiles.coach_id
+* refresh שומר את המצב
+* Coach רואה את Owner רק אם הוא אמור לראות אותו
+
+Status:
+
+STATIC = ACCEPTABLE
+
+LIVE = BLOCKED
+
+⸻
+
+9. WORKOUT SYSTEM
+
+⸻
+
+המודל תומך ב:
+
+* programs
+* program days
+* exercises
+* sets
+* reps
+* rep ranges
+* weight
+* rest
+* warmup
+* drop sets
+* supersets
+* bodyweight
+* alternatives
+* notes
+* previous performance
+* workout history
+* PRs
+
+זו נקודה חזקה במערכת.
+
+קיימות גם בדיקות קיימות עבור:
+
+* active workout
+* notes
+* scrolling
+* set completion
+* progress
+* reopening session
+
+אבל רוב ה־E2E הקיים משתמש ב־fixture/local environment ולא מוכיח Supabase production flow.
+
+Status:
+
+STATIC = GOOD
+
+RUNTIME = BLOCKED
+
+⸻
+
+10. ACTIVE WORKOUT
+
+⸻
+
+פיצ’רים שנמצאו בארכיטקטורה:
+
+* start workout
+* complete set
+* change reps
+* change weight
+* rest
+* pause/resume
+* notes
+* exercise details
+* previous performance
+* workout completion
+* persistence
+
+צריך עדיין runtime validation עבור:
+
+* refresh באמצע workout
+* close/reopen
+* offline באמצע workout
+* reconnect באמצע workout
+* duplicate submit
+* concurrent update
+* device switch
+* completed workout persistence
+
+Status:
+
+BLOCKED
+
+⸻
+
+11. NUTRITION
+
+⸻
+
+ה־Nutrition architecture חזקה יחסית.
+
+קיימת הפרדה בין:
+
+Planned Menu
+
+לבין:
+
+Actual Nutrition
+
+קיימים:
+
+* food search
+* custom foods
+* favorites
+* meals
+* quantities
+* units
+* substitutions
+* recipes
+* planned menus
+* calorie target
+* protein
+* carbs
+* fat
+* Coach menu management
+
+קיימת גם validation למזון.
+
+נמצא מנגנון שמונע conversions לא אמינים.
+
+לדוגמה:
+
+serving → grams
+
+לא אמור להתבצע אם אין conversion אמין.
+
+זו נקודה חיובית.
+
+Status:
+
+STATIC = GOOD
+
+RUNTIME = BLOCKED
+
+⸻
+
+12. BODY TRACKING
+
+⸻
+
+קיימים:
+
+* weight
+* measurements
+* BMR
+* cardio
+* habits
+
+הקוד כולל persistence ו־sync mechanisms.
+
+אבל לא ניתן היה לאמת בפועל:
+
+* same-date updates
+* deletion
+* offline
+* reconnect
+* fresh device
+* cross-user isolation
+
+Status:
+
+BLOCKED
+
+⸻
+
+13. DELETION SYNC
+
+⸻
+
+Severity:
+
+MEDIUM
+
+קיימת מערכת deleted IDs עבור חלק מה־collections:
+
+* programs
+* workouts
+* sessions
+* foods
+* וכו’
+
+אבל deletion propagation אינו סימטרי לכל collection.
+
+בפרט יש חשש לגבי:
+
+* measurements
+* habits
+
+אם המערכת מאפשרת deletion אמיתי שלהם, צריך לוודא:
+
+Device A delete
+→ Supabase delete
+→ Device B delete
+
+ולא:
+
+Device A delete
+→ reconnect
+→ Device B מחזיר את הנתון
+
+Priority:
+
+P2
+
+⸻
+
+14. REALTIME
+
+⸻
+
+Realtime architecture טובה באופן כללי.
+
+קיימים:
+
+* user-specific channels
+* Coach-client channels
+* management channel
+* SUBSCRIBED handling
+* CHANNEL_ERROR
+* TIMED_OUT
+* CLOSED
+* reconnect
+* exponential backoff
+* offline/online listeners
+* fresh pull לאחר realtime event
+
+זה design טוב.
+
+אבל לא בוצע live validation.
+
+צריך לבדוק:
+
+Browser A:
+
+Coach
+
+Browser B:
+
+Trainee
+
+Coach changes program.
+
+Trainee צריך לראות שינוי בלי reload.
+
+ואז:
+
+Trainee changes data.
+
+Coach צריך לראות שינוי בלי reload.
+
+Status:
+
+STATIC = GOOD
+
+LIVE = BLOCKED
+
+⸻
+
+15. CONFLICT HANDLING
+
+⸻
+
+קיימת מערכת:
+
+* syncConflicts
+* revisions
+* keep-local
+* use-remote
+* pending mutations
+* remote pull
+* local-first persistence
+
+זה חיובי.
+
+אבל conflict behavior לא אומת בפועל.
+
+חייבים לבדוק:
+
+Device A:
+
+Weight = 60
+
+Device B:
+
+Weight = 61
+
+שניהם offline.
+
+שניהם reconnect.
+
+צריך לקבל deterministic conflict resolution.
+
+אסור:
+
+* silent data loss
+* duplicate records
+* endless sync loop
+* stale overwrite
+
+Status:
+
+STATIC = GOOD
+
+LIVE = BLOCKED
+
+⸻
+
+16. FRESH DEVICE TEST
+
+⸻
+
+זה אחד ה־gates החשובים ביותר.
+
+לא ניתן היה לבצע אותו בפועל.
+
+התרחיש הנדרש:
+
+Device A:
+
+create program
+
+Device B:
+
+fresh login
+
+Expected:
+
+program appears automatically.
+
+כנ”ל עבור:
+
+* nutrition
+* weight
+* measurements
+* cardio
+* habits
+* workouts
+* messages
+
+Status:
+
+BLOCKED
+
+⸻
+
+17. OFFLINE TEST
+
+⸻
+
+Offline architecture קיימת.
+
+יש local persistence.
+
+יש reconnect logic.
+
+יש pending mutations.
+
+אבל לא ניתן היה לבצע browser runtime test.
+
+חובה לבדוק:
+
+1. Load app online.
+2. Turn network OFF.
+3. Create data.
+4. Edit data.
+5. Delete data.
+6. Refresh.
+7. Close browser.
+8. Reopen.
+9. Turn network ON.
+10. Wait for sync.
+11. Open another device.
+
+Status:
+
+BLOCKED
+
+⸻
+
+18. OPTIONAL TABLE / COLUMN HANDLING
+
+⸻
+
+Severity:
+
+MEDIUM
+
+ה־sync layer יודע לזהות missing tables/columns ולהמשיך בחלק מהמקרים.
+
+זה טוב עבור backward compatibility.
+
+אבל יש downside:
+
+אם feature שהוא למעשה required חסר ב־production schema, האפליקציה עלולה:
+
+* לא לקרוס
+* להמשיך לעבוד
+* אבל silently לאבד feature
+
+זה מסוכן יותר מ־hard failure.
+
+המלצה:
+
+להגדיר במפורש:
+
+REQUIRED TABLES
+
+ו־
+
+OPTIONAL TABLES
+
+Required schema failure צריך להיות visible ולא להיראות כמו מצב תקין.
+
+⸻
+
+19. WORKOUT VIDEO STORAGE
+
+⸻
+
+Severity:
+
+HIGH
+
+ב־migration של workout performance videos:
+
+workout-videos
+
+מוגדר כ־public bucket.
+
+המשמעות:
+
+העלאה עצמה יכולה להיות מוגבלת למשתמשים מורשים,
+
+אבל object access אינו בהכרח מוגן באמצעות RLS של workout_sessions.
+
+אם מדובר בסרטוני ביצוע אישיים של מתאמנים, זה privacy risk.
+
+המלצה:
+
+להעדיף:
+
+private bucket
+
+signed URLs
+
+authorization לפני access.
+
+אם public access הוא intentional product decision, צריך לתעד זאת במפורש.
+
+Priority:
+
+P1/P2 בהתאם לדרישת הפרטיות של המוצר.
+
+⸻
+
+20. COACH WORKSPACE
+
+⸻
+
+הקוד כולל:
+
+* client list
+* client switching
+* overview
+* program editor
+* nutrition
+* activity history
+* messaging
+
+נמצאה הפרדה טובה יחסית בין Coach workspace לבין trainee app.
+
+אבל runtime לא בוצע.
+
+חובה לבדוק במיוחד:
+
+Coach A selects Trainee A.
+
+ואז:
+
+Coach A selects Trainee B.
+
+לוודא שכל הנתונים מתחלפים:
+
+* program
+* nutrition
+* history
+* weight
+* measurements
+* cardio
+* habits
+* messages
+
+ואין state leakage מ־Trainee A.
+
+Status:
+
+BLOCKED
+
+⸻
+
+21. CHALLENGES
+
+⸻
+
+נמצאו מנגנונים עבור challenges ו־enrollment.
+
+צריך runtime validation עבור:
+
+* built-in challenge
+* custom challenge
+* duplicate challenge
+* enrollment
+* duplicate enrollment
+* progress
+* challenge workout
+* reconnect
+* refresh
+
+חשוב במיוחד:
+
+Challenge enrollment לא צריך להחליף או להרוס Coach program.
+
+Status:
+
+BLOCKED
+
+⸻
+
+22. MOBILE / WEBKIT
+
+⸻
+
+Playwright configuration כולל:
+
+* iPhone/WebKit
+* Desktop Safari
+* RTL / Hebrew configuration
+
+קיימות בדיקות עבור:
+
+* active workout
+* scrolling
+* keyboard
+* notes
+* exercise details
+* progress
+
+אבל לא ניתן היה להריץ Playwright בפועל.
+
+לכן:
+
+WebKit = BLOCKED
+
+לא PASS.
+
+צריך לבצע:
+
+* iPhone viewport
+* Safari
+* keyboard
+* overlays
+* scrolling
+* fixed navigation
+* safe areas
+* RTL
+* long Hebrew text
+* network disconnect
+* route reload
+
+⸻
+
+23. ACCESSIBILITY
+
+⸻
+
+קיימים סימנים לטיפול ב:
+
+* labels
+* focus
+* dialogs
+* keyboard interaction
+
+אבל לא בוצע accessibility runtime audit מלא.
+
+צריך לבדוק:
+
+* keyboard navigation
+* focus trap
+* focus return
+* aria labels
+* button names
+* contrast
+* touch targets
+* RTL
+* screen-reader semantics
+
+Status:
+
+BLOCKED
+
+⸻
+
+24. ERROR RESILIENCE
+
+⸻
+
+לא ניתן היה לבצע injection runtime.
+
+צריך לבדוק:
+
+* timeout
+* 401
+* 403
+* 404
+* missing table
+* missing column
+* network disconnect
+* expired session
+* realtime error
+* upload failure
+
+Expected:
+
+* no crash
+* clear error
+* retry
+* draft preservation
+* correct sync state
+
+Status:
+
+BLOCKED
+
+⸻
+
+25. PERFORMANCE
+
+⸻
+
+לא ניתן היה לבצע performance profiling אמיתי.
+
+צריך למדוד:
+
+* initial load
+* hydration
+* sync
+* Coach client switching
+* nutrition load
+* active workout load
+* realtime subscriptions
+* duplicate requests
+* memory
+
+Datasets:
+
+* 0 workouts
+* 100 workouts
+* 500 workouts
+* large nutrition history
+* many messages
+* many challenges
+
+Status:
+
+BLOCKED
+
+⸻
+
+26. LIVE SMOKE
+
+⸻
+
+נמצא live smoke script.
+
+הוא מוגן באמצעות:
+
+GYMTRACK_SMOKE_ALLOW_LIVE=true
+
+ודורש credentials ייעודיים.
+
+זה design טוב.
+
+אבל בסביבת הבדיקה לא היו credentials/guard זמינים.
+
+לכן:
+
+LIVE SMOKE = BLOCKED
+
+לא בוצע שום production write.
+
+אין לעקוף את ה־guard.
+
+⸻
+
+27. EXISTING TEST COVERAGE
+
+⸻
+
+קיימות בדיקות משמעותיות עבור:
+
+* auth lifecycle
+* coach plan payload
+* food portions
+* offline lifecycle
+* week navigation
+* loading copy
+* music
+* nutrition planning
+* protein catalog
+* role assignment security
+* cross-browser sync
+* workout sessions
+
+זה בסיס טוב.
+
+הבעיה היא coverage gap בין:
+
+UNIT/CONTRACT TESTS
+
+לבין:
+
+REAL SUPABASE + REAL BROWSER + REAL USERS
+
+ה־gap הזה משמעותי במיוחד עבור:
+
+* RLS
+* realtime
+* assignment
+* offline
+* conflicts
+* fresh device
+* deletion
+
+⸻
+
+28. PRIORITY BUG LIST
+
+⸻
+
+P1 — Profile sync writes server-owned coach_id
+
+File:
+
+src/lib/supabase-sync.ts
+
+Issue:
+
+profile sync כולל coach_id.
+
+Risk:
+
+stale assignment יכול להישלח חזרה לשרת לאחר Owner reassignment.
+
+Recommendation:
+
+להוציא coach_id ו־role מ־normal profile sync.
+
+Assignment רק דרך protected RPC.
+
+⸻
+
+P1 — Public workout video bucket
+
+Migration:
+
+35_workout_performance_videos.sql
+
+Issue:
+
+workout-videos מוגדר public.
+
+Risk:
+
+privacy exposure.
+
+Recommendation:
+
+private bucket + signed URLs אם הסרטונים אמורים להיות פרטיים.
+
+⸻
+
+P1 — Release pipeline אינו אמין
+
+Issue:
+
+documentation מצפה ל־release:check אבל script אינו קיים.
+
+Risk:
+
+אין single release gate.
+
+Recommendation:
+
+להוסיף release:check אמיתי ולהגדיר package manager אחד.
+
+⸻
+
+P2 — Deletion sync אינו אחיד
+
+Issue:
+
+לא לכל collections יש deletion propagation ברור.
+
+Recommendation:
+
+להגדיר deletion contract לכל collection.
+
+⸻
+
+P2 — Optional schema errors עלולים להסתיר failures
+
+Recommendation:
+
+להפריד required schema מ־optional schema.
+
+⸻
+
+P2 — Owner/Coach assignment דורש live verification
+
+לא נמצאה כרגע הוכחה חיה שה־UI, RPC, DB וה־realtime state נשארים מסונכרנים בכל תרחיש.
+
+⸻
+
+29. RELEASE GATES
+
+⸻
+
+לפני Production Release חייבים לעבור:
+
+[ ] TypeScript
+
+[ ] Unit tests
+
+[ ] Integration tests
+
+[ ] Lint
+
+[ ] Status checks
+
+[ ] Production build
+
+[ ] Preview
+
+[ ] WebKit E2E
+
+[ ] Owner RLS
+
+[ ] Coach A isolation
+
+[ ] Coach B isolation
+
+[ ] Trainee isolation
+
+[ ] Coach reassignment
+
+[ ] Trainee → Coach sync
+
+[ ] Coach → Trainee sync
+
+[ ] Owner → Trainee sync
+
+[ ] Offline create
+
+[ ] Offline edit
+
+[ ] Offline delete
+
+[ ] Reconnect
+
+[ ] Realtime update
+
+[ ] Fresh device
+
+[ ] Conflict resolution
+
+[ ] Delete propagation
+
+[ ] Nutrition sync
+
+[ ] Workout sync
+
+[ ] Weight sync
+
+[ ] Measurements sync
+
+[ ] Cardio sync
+
+[ ] Habits sync
+
+[ ] Messages sync
+
+[ ] Challenges
+
+[ ] Mobile WebKit
+
+[ ] Error injection
+
+[ ] Performance baseline
+
+[ ] Guarded live smoke
+
+⸻
+
+30. FINAL VERDICT
+
+⸻
+
+CURRENT RELEASE STATUS:
+
+BLOCKED / NOT READY FOR PRODUCTION
+
+המערכת נראית בעלת architecture טובה יחסית, במיוחד ב:
+
+* local-first
+* realtime
+* RLS design
+* nutrition model
+* workout model
+* conflict infrastructure
+
+אבל כרגע אין מספיק runtime evidence כדי להכריז שהמערכת production-ready.
+
+הבעיות החשובות ביותר לתיקון/אימות:
+
+1. להפסיק normal profile sync של server-owned coach_id/role.
+2. להחליט וליישם privacy model עבור workout videos.
+3. לתקן את release pipeline וליצור release:check אמיתי.
+4. להגדיר package manager אחד.
+5. להריץ live 5-user RLS matrix.
+6. להריץ bidirectional sync אמיתי.
+7. להריץ offline/reconnect/fresh-device tests.
+8. לאמת deletion propagation.
+9. לאמת conflict resolution.
+10. להריץ WebKit/iPhone E2E אמיתי.
+
+רק לאחר שכל ה־P1 gates עוברים בפועל ניתן לשנות את הסטטוס ל:
+
+READY FOR RELEASE
