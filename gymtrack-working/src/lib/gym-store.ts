@@ -641,6 +641,7 @@ function mergeRemotePlanRefresh(localData: GymData, remoteData: GymData): GymDat
         ...(remoteData.coachMessages ?? []),
         ...(localData.coachMessages ?? []),
       ]),
+      broadcasts: remoteData.broadcasts ?? localData.broadcasts ?? [],
       userProfile: {
         ...localProfile,
         ...(remoteData.userProfile ?? {}),
@@ -658,6 +659,7 @@ function mergeRemotePlanRefresh(localData: GymData, remoteData: GymData): GymDat
       ...(remoteData.coachMessages ?? []),
       ...(localData.coachMessages ?? []),
     ]),
+    broadcasts: remoteData.broadcasts ?? localData.broadcasts ?? [],
     programs: remoteData.programs ?? localData.programs,
     workouts: [
       ...(remoteData.workouts ?? []),
@@ -1036,6 +1038,7 @@ function migrate(d: Partial<GymData>): GymData {
     recentFoods: d.recentFoods ?? [],
     favoriteFoods: d.favoriteFoods ?? [],
     coachMessages: dedupeCoachMessages(d.coachMessages ?? []),
+    broadcasts: d.broadcasts ?? [],
     bodyWeightLogs: d.bodyWeightLogs?.length ? d.bodyWeightLogs : [],
     bodyMeasurements: d.bodyMeasurements ?? [],
     cardioLogs: d.cardioLogs ?? [],

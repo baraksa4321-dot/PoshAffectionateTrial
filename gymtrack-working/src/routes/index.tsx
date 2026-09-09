@@ -536,6 +536,7 @@ function Dashboard() {
         {latestBroadcast && (
           <div
             {...homeCardProps("coach-message")}
+            data-testid="broadcast-message-banner"
             className="dashboard-notice surface-card space-y-1.5 border-accent/40 bg-accent/10 p-4 text-start"
           >
             <div className="flex items-center justify-between">

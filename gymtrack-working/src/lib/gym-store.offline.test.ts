@@ -452,6 +452,57 @@ describe("offline store lifecycle", () => {
     );
   });
 
+  test("keeps a cached broadcast visible through offline reload and reconnect", async () => {
+    Object.assign(navigator, { onLine: true });
+    const broadcast = {
+      id: "broadcast-remote",
+      senderId: "coach-a",
+      audience: "clients" as const,
+      message: "הודעת תפוצה חשובה",
+      createdAt: "2026-08-26T11:00:00.000Z",
+    };
+    let pullCount = 0;
+    pullImplementation = async (_userId, localState) => {
+      pullCount += 1;
+      return {
+        success: true,
+        data: {
+          ...localState,
+          broadcasts: [broadcast],
+        },
+      };
+    };
+
+    const firstStore = await loadStore("broadcast-online");
+    authenticate();
+    await eventually(
+      () => firstStore.getGymStoreSnapshot().broadcasts?.[0]?.message === "הודעת תפוצה חשובה",
+    );
+    expect(JSON.parse(storage.get("gymtrack.v1.user.user-a") ?? "{}").broadcasts).toHaveLength(1);
+
+    const pullsBeforeOfflineReload = pullCount;
+    Object.assign(navigator, { onLine: false });
+    const reloadedStore = await loadStore("broadcast-offline-reload");
+    authenticate();
+    await eventually(
+      () =>
+        reloadedStore.getGymStoreSyncStatus() === "offline" &&
+        reloadedStore.getGymStoreSnapshot().broadcasts?.[0]?.message === "הודעת תפוצה חשובה",
+    );
+    expect(pullCount).toBe(pullsBeforeOfflineReload);
+    expect(reloadedStore.getGymStoreSnapshot().broadcasts).toHaveLength(1);
+
+    reloadedStore.addChecklistItem("שינוי מקומי לפני reconnect");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    Object.assign(navigator, { onLine: true });
+    reloadedStore.refreshCurrentUserData(true);
+    await eventually(() => pullCount > pullsBeforeOfflineReload);
+    expect(reloadedStore.getGymStoreSnapshot().broadcasts).toHaveLength(1);
+    expect(reloadedStore.getGymStoreSnapshot().broadcasts?.[0]?.message).toBe(
+      "הודעת תפוצה חשובה",
+    );
+  });
+
   test("keeps an offline mutation after reload and uploads it on reconnect", async () => {
     storage.set("gymtrack.v1.user.user-a", JSON.stringify(cachedClientData));
     const firstStore = await loadStore("offline-edit");

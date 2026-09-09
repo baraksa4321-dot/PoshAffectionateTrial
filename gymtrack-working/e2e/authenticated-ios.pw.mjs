@@ -171,6 +171,14 @@ const coachMessage = {
   is_read: false,
 };
 
+const broadcastAnnouncement = {
+  id: "ios-smoke-broadcast",
+  sender_id: COACH_ID,
+  audience: "clients",
+  message: "הודעת תפוצה לבדיקה",
+  created_at: "2026-08-25T08:00:00.000Z",
+};
+
 const challenge = {
   id: "ios-smoke-challenge",
   title: "אתגר בדיקת התמדה",
@@ -239,6 +247,15 @@ const gymData = {
       message: coachMessage.message,
       createdAt: coachMessage.created_at,
       isRead: coachMessage.is_read,
+    },
+  ],
+  broadcasts: [
+    {
+      id: broadcastAnnouncement.id,
+      senderId: broadcastAnnouncement.sender_id,
+      audience: broadcastAnnouncement.audience,
+      message: broadcastAnnouncement.message,
+      createdAt: broadcastAnnouncement.created_at,
     },
   ],
   challenges: [challenge],
@@ -329,6 +346,7 @@ async function installFixture(page, { role = "coach", online = false } = {}) {
       bodyMeasurement,
       habit,
       coachMessage,
+      broadcastAnnouncement,
       challenge,
       initialOnline,
     }) => {
@@ -368,6 +386,8 @@ async function installFixture(page, { role = "coach", online = false } = {}) {
       })();
       let coachMessageReads = 0;
       window.__iosSmokeCoachMessageReads = () => coachMessageReads;
+      let broadcastReads = 0;
+      window.__iosSmokeBroadcastReads = () => broadcastReads;
       const persistRemoteCoachMessages = () => {
         window.localStorage.setItem(remoteMessagesKey, JSON.stringify(remoteCoachMessages));
       };
@@ -549,6 +569,9 @@ async function installFixture(page, { role = "coach", online = false } = {}) {
                   message.client_id === requestedClientId,
               )
               .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          } else if (path === "broadcast_announcements") {
+            if ((init?.method ?? "GET").toUpperCase() === "GET") broadcastReads += 1;
+            body = [broadcastAnnouncement];
           } else if (path === "challenges") {
             body = [
               {
@@ -586,6 +609,7 @@ async function installFixture(page, { role = "coach", online = false } = {}) {
       bodyMeasurement,
       habit,
       coachMessage,
+      broadcastAnnouncement,
       challenge,
       initialOnline: online,
     },
@@ -862,6 +886,35 @@ test("trainee reopens a received coach message offline before reconnect refresh"
         "gymtrack.v1.user.ios-smoke-client",
       );
       return cached.coachMessages?.length ?? 0;
+    })
+    .toBe(1);
+});
+
+test("trainee reopens a broadcast notice offline before reconnect refresh", async ({ page }) => {
+  await installFixture(page, { role: "trainee" });
+
+  await page.goto("/");
+  const broadcast = page.getByTestId("broadcast-message-banner");
+  await expect(broadcast).toContainText("הודעת תפוצה לבדיקה");
+  await expect.poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads())).toBe(0);
+
+  await page.reload();
+  const reopenedBroadcast = page.getByTestId("broadcast-message-banner");
+  await expect(reopenedBroadcast).toContainText("הודעת תפוצה לבדיקה");
+  await expect.poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads())).toBe(0);
+
+  await page.evaluate(() => window.__iosSmokeSetOnline(true));
+  await expect
+    .poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads()))
+    .toBeGreaterThan(0);
+  await expect(reopenedBroadcast).toContainText("הודעת תפוצה לבדיקה");
+  await expect
+    .poll(async () => {
+      const cached = await page.evaluate(
+        (key) => JSON.parse(window.localStorage.getItem(key) ?? "{}"),
+        "gymtrack.v1.user.ios-smoke-client",
+      );
+      return cached.broadcasts?.length ?? 0;
     })
     .toBe(1);
 });
