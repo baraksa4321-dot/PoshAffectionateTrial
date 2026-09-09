@@ -957,8 +957,14 @@ function loadReferenceLibraries() {
 function migrate(d: Partial<GymData>): GymData {
   const workouts = d.workouts ?? [];
   let programs = d.programs ?? [];
-  if (!programs.length && workouts.length) {
-    programs = [{ id: uid(), name: "תכנית אימונים", notes: "", dayIds: workouts.map((w) => w.id) }];
+  // Challenge workouts are personal local-first enrollments, not legacy
+  // coach-assigned days. Never synthesize a cloud program for them during
+  // reload; doing so would upload an offline challenge as a trainee program.
+  const legacyWorkouts = workouts.filter((workout) => !workout.id.startsWith("challenge-run-"));
+  if (!programs.length && legacyWorkouts.length) {
+    programs = [
+      { id: uid(), name: "תכנית אימונים", notes: "", dayIds: legacyWorkouts.map((w) => w.id) },
+    ];
   }
   const normalizedNutrition = normalizeFixedPlannedMenu(d.plannedMeals, d.nutritionDays ?? []);
   return {
