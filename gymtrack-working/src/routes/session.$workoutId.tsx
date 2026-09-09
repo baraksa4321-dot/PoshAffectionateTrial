@@ -109,19 +109,7 @@ function supersetLabels(items: WorkoutItem[]) {
 
 const ACTIVE_SESSION_KEY = (id: string) => `gymtrack.active_session.${id}`;
 const ACTIVE_SESSION_FEEDBACK_KEY = (id: string) => `gymtrack.active_session_feedback.${id}`;
-const VIDEO_UPLOAD_MIN_TIMEOUT_MS = 90_000;
-const VIDEO_UPLOAD_MAX_TIMEOUT_MS = 10 * 60_000;
-const VIDEO_UPLOAD_FINISH_TIMEOUT_MS = VIDEO_UPLOAD_MAX_TIMEOUT_MS + 60_000;
-const VIDEO_UPLOAD_BYTES_PER_SECOND = 512 * 1024;
-
-function videoUploadTimeoutMs(fileSize: number) {
-  const estimatedUploadMs =
-    30_000 + Math.ceil(Math.max(0, fileSize) / VIDEO_UPLOAD_BYTES_PER_SECOND) * 1_000;
-  return Math.min(
-    VIDEO_UPLOAD_MAX_TIMEOUT_MS,
-    Math.max(VIDEO_UPLOAD_MIN_TIMEOUT_MS, estimatedUploadMs),
-  );
-}
+const VIDEO_UPLOAD_FINISH_TIMEOUT_MS = 15 * 60_000;
 
 function videoUploadErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : "";
@@ -852,21 +840,13 @@ function Session() {
         error instanceof Error ? error.message : "לא ניתן לשמור את הסרטון במכשיר",
       );
     });
-    let timeoutId: number | undefined;
     const upload = import("@/lib/supabase-sync").then(({ uploadWorkoutPerformanceVideo }) =>
       uploadWorkoutPerformanceVideo(file, {
         workoutId: workout.id,
         exerciseId: entries[exerciseIndex]?.exerciseId ?? String(exerciseIndex),
       }),
     );
-    const uploadTimeoutMs = videoUploadTimeoutMs(file.size);
-    const timeout = new Promise<never>((_, reject) => {
-      timeoutId = window.setTimeout(
-        () => reject(new Error("העלאת הסרטון נמשכת זמן רב מדי")),
-        uploadTimeoutMs,
-      );
-    });
-    const uploadTask = Promise.race([upload, timeout])
+    const uploadTask = upload
       .then(({ signedUrl, path }) => {
         const entriesWithUploadedVideo = entriesRef.current.map((entry, index) => {
           if (index !== exerciseIndex || entry.videoUrl !== nextUrl) return entry;
@@ -884,7 +864,6 @@ function Session() {
         return false;
       })
       .finally(() => {
-        if (timeoutId !== undefined) window.clearTimeout(timeoutId);
         setVideoUploadsInFlight((count) => Math.max(0, count - 1));
       });
     videoUploadTasksRef.current.add(uploadTask);
