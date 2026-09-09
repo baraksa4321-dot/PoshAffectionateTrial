@@ -1,0 +1,134 @@
+# דוח QA — GymTrack / My Routine
+**תאריך:** 09.09.2026
+**סוג בדיקה:** בדיקת קוד סטטית בלבד (ראו סעיף 8 — חסימות סביבתיות)
+
+---
+
+## 1. Executive Summary
+
+**סטטוס: BLOCKED — לא ניתן לקבוע PASS/FAIL סופי**
+
+הסביבה שבה רצתי (container ללא גישה לרשת, ללא `node_modules`, ללא credentials של Supabase) **חוסמת פיזית** את רוב הפרוטוקול שהוגדר: אין אפשרות להריץ `pnpm install`, `release:check`, `typecheck`, `lint`, `build`, `preview`, Playwright/WebKit, או כל בדיקת live מול Supabase. אלה לא כשלי קוד — הם חוסרים סביבתיים מתועדים בסעיף 8.
+
+מה שכן בוצע: קריאה ידנית של קוד המקור — 46 מיגרציות SQL, ליבת ה-offline/sync (`gym-store.ts`, `supabase-sync.ts`), ה-RLS policies, וסקירת 12 קובצי הבדיקות הקיימים בפרויקט (ללא הרצתם).
+
+**שלושת הממצאים המרכזיים (מסקירה סטטית):**
+1. **לא ניתן לאמת בפועל** שאף בדיקה — כולל 12 קבצי unit test קיימים שנראים רלוונטיים ומקיפים — עוברת, כי לא ניתן להריץ אותם כאן.
+2. שכבת ה-RLS/הרשאות (roles, coach_id, assignment) עברה **hardening איטרטיבי משמעותי** (מיגרציות 09, 11, 27, 28, 40, 41) עם triggers שחוסמים כתיבה ישירה ל-`role`/`coach_id` ומחייבים מעבר דרך RPC מסוג `SECURITY DEFINER` עם בדיקת `is_owner()`. זהו תבנית תקינה, אך **לא אומתה בפועל** מול Supabase חי.
+3. נמצא **קונפליקט שמות מיגרציה**: שני קבצים בשם `38_*.sql` (`38_food_nutrition_provenance.sql` ו-`38_owner_can_promote_users.sql`) — לא גורם באג פונקציונלי מיידי (סדר הרצה אלפביתי דטרמיניסטי), אך מסוכן ל-merge/סדר הרצה עתידי. ראו סעיף 7.
+
+**האם המוצר מוכן ל-release:** לא ניתן לקבוע. הקוד הסטטי נראה מוקפד ובעל תבניות תקינות (upsert עם `onConflict` למניעת כפילויות, זיהוי conflict מפורש ב-sync, retry עם backoff), אבל release-readiness דורש בהכרח הרצה בפועל של ה-suite הקיים לפחות פעם אחת.
+
+---
+
+## 2. סטטיסטיקות
+
+| מדד | ערך |
+|---|---|
+| בדיקות שהורצו בפועל (PASS) | 0 |
+| בדיקות שנכשלו (FAIL) | 0 |
+| בדיקות/שלבים BLOCKED | כל שלב 2, 8 (live), 11, 13, 14 — כל דבר שדורש הרצה |
+| זמן ריצה | לא רלוונטי — לא בוצעה הרצה |
+| Browsers/devices שנבדקו | 0 (אין דפדפן/Playwright בסביבה) |
+| קבצי קוד שנסקרו ידנית | ~10 מיגרציות SQL בעומק (מתוך 46), gym-store.ts, supabase-sync.ts, AppShell.tsx (חלקית), 24 route files (רשימה בלבד), 12 test files (מבנה/כותרות בלבד) |
+
+---
+
+## 3. בדיקות אוטומטיות
+
+| פקודה | תוצאה | הערה |
+|---|---|---|
+| `pnpm run release:check` | BLOCKED | הפקודה לא קיימת ב-`package.json` שהועלה — הסקריפטים הקיימים הם `typecheck`, `test`, `lint`, `build`, `check:status-colors`, `smoke:live-plan` |
+| `npx tsc --noEmit` | BLOCKED | אין `node_modules`, אין גישת רשת להתקנה |
+| `bun test` | BLOCKED | אין bun/רשת בסביבה |
+| `eslint .` | BLOCKED | תלוי התקנה |
+| `vite build` / `vite preview` | BLOCKED | תלוי התקנה |
+| E2E WebKit (`e2e/playwright.config.mjs`) | BLOCKED | דורש דפדפן מותקן + רשת |
+| `smoke:live-plan` | BLOCKED (כמצופה) | לא הוגדרו `GYMTRACK_SMOKE_*`; guard פעל כראוי — לא בוצע ניסיון לעקוף |
+
+**הערה חשובה:** בפרויקט **קיימים** 12 קובצי unit test רלוונטיים ביותר לדרישות שלכם (למשל `role-assignment-security.test.ts`, `supabase-sync.cross-browser.test.ts`, `gym-store.offline.test.ts`, `workout-session.test.ts`). מקריאת הכותרות שלהם, הם *מכסים* תרחישים ממש כמו אלה שביקשתם: בידוד coach/client, RPC-only role writes, offline reload+reconnect, זיהוי conflict מפורש, דה-דופליקציה ב-reconnect, מניעת carry-over של completion marks לשבוע חדש. **לא הרצתי אותם** — לא ניתן לאשר שהם באמת עוברים כרגע.
+
+---
+
+## 4. בדיקות ידניות (UI/E2E)
+
+BLOCKED במלואן — אין דפדפן זמין בסביבה זו. לא בוצע אף תרחיש משלבים 3–7, 11–13.
+
+---
+
+## 5. סנכרון (סקירה סטטית של הלוגיקה, ללא הרצה)
+
+- **Trainee → Coach / Coach → Trainee:** כל הכתיבות ב-`supabase-sync.ts` משתמשות ב-`.upsert(payload, { onConflict: "id" })` או מפתח טבעי (`user_id,date` / `user_id,food_id`) ולא ב-`insert` גולמי — תבנית זו מונעת structurally כפילויות ב-retry, בהנחה שה-constraint קיים בפועל ב-DB (טבלאות `body_weight_logs`, `body_measurements` וכו' מכריזות `UNIQUE (user_id, date)` במיגרציות).
+- **Conflict detection:** קיימת לוגיקה מפורשת (`detectConcurrentWorkspaceConflict`, `gym-store.ts:1282`) שמבחינה בין "עריכה מקומית תוך כדי pull התחלתי" (המקומי מנצח, עולה ב-sync הבא) לבין "קונפליקט אמיתי בין מכשירים" (מסומן `syncStatus="conflict"`, לא נדרס אוטומטית, ומחכה לבחירת המשתמש/RPC).
+- **Retry:** `scheduleCloudRetry` משתמש ב-exponential backoff עם תקרה של 5 דקות — סביר.
+- **מה שלא אומת בפועל:** כל 17 הצעדים בשלב 8 של הפרוטוקול (יצירה online→שינוי→מחיקה→offline→reload→reconnect→fresh device→conflict) דורשים הרצה חיה מול Supabase. הלוגיקה *נראית* נכונה בקריאה, אך "נראה נכון בקוד" ≠ "אומת בהרצה" — זו בדיוק ההבחנה שביקשתם שלא לדלג עליה.
+
+---
+
+## 6. אבטחה והרשאות (הממצא המשמעותי ביותר מהסקירה)
+
+שכבת ה-RLS עברה **סבב hardening ארוך ומתועד**:
+
+- **02_rls.sql:** בסיס — כל טבלה מוגבלת ל-`auth.uid() = user_id`.
+- **04_coach_system.sql:** מרחיב לקוצ'ים גישה למתאמנים משויכים דרך פונקציית `is_coach_of()`. *בשלב הזה בלבד*, ה-policy `"Coaches can update assigned clients profiles"` לא כללה `WITH CHECK` נפרד — תיאורטית פתח לכתיבת `role`/`coach_id` ישירות מלקוח.
+- **09_security_fixes.sql:** תוקן במפורש ("Security Fix for Profile Role Self-Escalation") — trigger שחוסם כל שינוי ב-`role` אלא אם הקורא הוא Owner.
+- **11_role_and_rpc_hardening.sql:** ה-trigger מורחב גם ל-`coach_id`.
+- **27, 40, 41:** כל שינויי role/assignment רוכזו ל-RPC-ים `SECURITY DEFINER` (`change_user_role`, `assign_client_to_coach`, `link_client_to_current_coach`) שבודקים `is_owner()`/`is_current_user_coach()` ומנקים קישורים ישנים בשני הכיוונים.
+- **29_fixed_menu_calorie_visibility.sql:** אותה תבנית מיושמת גם לשדות `show_calories`/`planned_menu` — חסומים לכתיבה ישירה, נפתחים רק דרך RPC עם `app.allow_protected_profile_write` session flag.
+
+**מסקנה:** התבנית ההנדסית תקינה ועקבית — "אין כתיבת role/assignment מהלקוח" אכן **מיושמת** ברמת ה-DB (RLS + trigger + RPC-only), לא רק ברמת ה-UI. זה בדיוק מה שהפרוטוקול שלכם דורש לבדוק. **עם זאת — זו קריאת קוד, לא בדיקת חדירה בפועל.** לא ניסיתי (ולא יכולתי, ללא רשת) לשלוח בקשת REST גולמית ל-Supabase עם payload זדוני כדי לאמת שה-RLS אכן חוסם בפועל בזמן ריצה.
+
+**לא נבדק (BLOCKED — דורש live):** storage bucket permissions לוידאו, cross-user isolation בפועל, RLS על טבלאות שלא נסקרו לעומק (נבדקו כ-10 מתוך 46 מיגרציות בעומק; השאר נסרקו ברשימה בלבד).
+
+---
+
+## 7. בעיות שנמצאו
+
+### בעיה 1
+- **Severity:** Low
+- **כותרת:** שני קבצי מיגרציה עם אותו מספר סידורי (`38_food_nutrition_provenance.sql`, `38_owner_can_promote_users.sql`)
+- **שלבים לשחזור:** `ls supabase/migrations | sort`
+- **תוצאה צפויה:** מספור מיגרציות ייחודי ומונוטוני
+- **תוצאה בפועל:** שני קבצים עם prefix `38_`
+- **משתמש/role:** לא רלוונטי — ברמת repo
+- **מכשיר/דפדפן:** לא רלוונטי
+- **Online/Offline:** לא רלוונטי
+- **Reproducible:** כן, תמיד
+- **המלצה:** לתת מספר סידורי ייחודי לאחד מהם (למשל `38b_` או שינוי ל-`45_`) לפני שמתעורר קושי מיזוג עם מיגרציה עתידית שגם תיקרא `38_`. מבחינה פונקציונלית אין באג היום — סדר ההרצה האלפביתי דטרמיניסטי (`food` לפני `owner`) ואין תלות ביניהם.
+
+### בעיה 2 (לא ודאות — דורש אימות live)
+- **Severity:** Medium (פוטנציאלי — לא מאושר)
+- **כותרת:** לא ניתן לאשר בפועל ש-12 קובצי הבדיקה הקיימים עוברים
+- **שלבים לשחזור:** `bun test` בסביבה עם רשת/bun מותקן
+- **תוצאה צפויה:** ירוק מלא לפני release
+- **תוצאה בפועל:** לא נבדק — BLOCKED
+- **המלצה:** להריץ את ה-suite (ובפרט `release:check` אם קיים סקריפט כזה בפועל אצלכם — הוא לא הופיע ב-package.json שהועלה) לפני כל release. זהו לא ממצא קוד אלא פער בין הפרוטוקול לסביבת ההרצה כאן.
+
+לא נמצאו ממצאי Critical/High מתוך מה שניתן היה לסקור סטטית (כלומר: לא זיהיתי חור RLS פתוח, לא זיהיתי לוגיקת retry שיוצרת כפילויות מובנית, לא זיהיתי נתיב שמאפשר כתיבת role/coach_id ישירה שנותרה לא מטופלת). זה **לא** שקול ל"אין באגים" — משמעותו שסקירת קוד לא חשפה כאלה; רק הרצה תחשוף את מה שסקירה סטטית מפספסת (race conditions בפועל, טעויות schema-vs-code, בעיות Safari/WebKit ספציפיות, ביצועים).
+
+---
+
+## 8. חסימות סביבתיות
+
+| חסימה | פרט |
+|---|---|
+| רשת | `bash_tool` רץ עם `Enabled: false` — כל קריאת רשת נחסמת (נבדק: `curl` ל-npmjs.org החזיר 403) |
+| Package manager | אין `node_modules`; לא ניתן להתקין `pnpm`/`bun`/npm packages ללא רשת |
+| Supabase | אין חיבור, אין credentials — גם אם היו מוגדרים משתני `GYMTRACK_SMOKE_*`, אין רשת להגיע ל-Supabase |
+| Playwright/WebKit | לא מותקן, לא ניתן להתקין ללא רשת |
+| `release:check` | הפקודה המרכזית שהוזכרה בפרוטוקול לא קיימת בפועל ב-`package.json` שהועלה |
+| Live smoke guard | נבדק כמתועד — משתני הסביבה הנדרשים לא מוגדרים, לכן הבדיקה **לא הופעלה** ולא נעשה ניסיון לעקוף את ה-guard, בהתאם לכללי הבטיחות |
+
+---
+
+## 9. מה עבר בהצלחה
+
+מתוך סקירה סטטית בלבד (לא הרצה):
+- מבנה ה-RLS/RPC להרשאות role ו-coach_id עקבי ומחוזק איטרטיבית לאורך 6+ מיגרציות ייעודיות.
+- תבנית upsert+onConflict בכל נתיבי הסנכרון — מונעת structurally כפילויות retry.
+- קיימת לוגיקת conflict-detection מפורשת שמבדילה "local-wins-in-flight" מ-"קונפליקט אמיתי", ולא דורסת קונפליקט לא פתור.
+- כיסוי unit test קיים (12 קבצים) שמכוון בדיוק לתרחישים הקריטיים שביקשתם — אם הוא עובר בפועל, זה סימן חיובי מאוד.
+
+## 10. מה עדיין דורש בדיקה
+
+בפועל — **כל** מה שדורש הרצה: שלבים 2, 3–7 (UI בפועל), 8 (סנכרון live), 9 (offline/realtime live), 11 (מובייל/Safari), 12 (הזרקת שגיאות live), 13 (ביצועים), 14 (live smoke). ראו סעיף 8 לרשימת החסימות המדויקות. אני יכול להמשיך ולסקור עוד מיגרציות/routes סטטית אם מועיל, אך שום דבר מכאן לא מחליף הרצה בפועל בסביבה עם רשת, Supabase, ודפדפן.
