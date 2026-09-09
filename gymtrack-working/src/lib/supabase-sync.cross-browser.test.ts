@@ -615,6 +615,72 @@ describe("cross-browser Supabase sync boundaries", () => {
     ]);
   });
 
+  test("retries the same cross-device snapshot idempotently", async () => {
+    const session: HistorySession = {
+      id: "session-retry",
+      workoutId: "day-retry",
+      workoutName: "אימון חוזר",
+      date: "2026-08-26T08:00:00.000Z",
+      durationSec: 900,
+      entries: [],
+    };
+    const cardio: CardioLog = {
+      id: "cardio-retry",
+      date: "2026-08-26",
+      type: "אופניים",
+      durationMin: 20,
+      calories: 140,
+    };
+    const bodyWeight: BodyWeightLog = {
+      id: "weight-retry",
+      date: "2026-08-26",
+      weight: 72,
+    };
+    const snapshot = {
+      ...makeLocalData(),
+      history: [session],
+      cardioLogs: [cardio],
+      bodyWeightLogs: [bodyWeight],
+      nutritionDays: [{ id: "nutrition-retry", date: "2026-08-26", meals: [] }],
+      nutritionTargets: { calories: 1_900 },
+      plannedMeals: [{ id: "meal-retry", name: "תפריט חוזר", foods: [] }],
+      bodyMeasurements: [{ id: "measurement-retry", date: "2026-08-26", waistCm: 80 }],
+      habits: [
+        {
+          id: "habit-retry",
+          date: "2026-08-26",
+          steps: 8_000,
+          stepsTarget: 10_000,
+          weighInDone: true,
+          workoutDone: true,
+          busyDayMode: false,
+        },
+      ],
+    };
+    const { syncLocalToSupabase } = await syncModule;
+
+    expect((await syncLocalToSupabase("client-b", snapshot)).success).toBe(true);
+    expect((await syncLocalToSupabase("client-b", snapshot)).success).toBe(true);
+
+    const historyWrites = callsFor("workout_sessions", "upsert");
+    const cardioWrites = callsFor("cardio_logs", "upsert");
+    const bodyWeightWrites = callsFor("body_weight_logs", "upsert");
+    expect(historyWrites).toHaveLength(2);
+    expect(cardioWrites).toHaveLength(2);
+    expect(bodyWeightWrites).toHaveLength(2);
+    expect((historyWrites[0]?.payload as Array<{ id: string }>)[0]?.id).toBe("session-retry");
+    expect((historyWrites[1]?.payload as Array<{ id: string }>)[0]?.id).toBe("session-retry");
+    expect((cardioWrites[0]?.payload as Array<{ id: string }>)[0]?.id).toBe(
+      (cardioWrites[1]?.payload as Array<{ id: string }>)[0]?.id,
+    );
+    expect((bodyWeightWrites[0]?.payload as Array<{ user_id: string; date: string }>)[0]).toEqual(
+      expect.objectContaining({ user_id: "client-b", date: "2026-08-26" }),
+    );
+    expect((bodyWeightWrites[1]?.payload as Array<{ user_id: string; date: string }>)[0]).toEqual(
+      expect.objectContaining({ user_id: "client-b", date: "2026-08-26" }),
+    );
+  });
+
   test("keeps completed workout entries and performance video URLs through coach pulls", async () => {
     const completedSession: HistorySession = {
       id: "session-with-video",

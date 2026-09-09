@@ -204,6 +204,123 @@ describe("offline store lifecycle", () => {
     expect(otherStore.getGymStoreSnapshot().userProfile.role).not.toBe("owner");
   });
 
+  test("hydrates every coach-trainee collection on a fresh device", async () => {
+    Object.assign(navigator, { onLine: true });
+    const remoteData = makeSessionData({
+      weight: 72,
+      role: "client",
+      coachId: "coach-a",
+      approvalStatus: "approved",
+    });
+    remoteData.programs = [
+      { id: "program-remote", name: "תוכנית מרחוק", notes: "", dayIds: ["day-remote"] },
+    ];
+    remoteData.workouts = [
+      { id: "day-remote", name: "אימון מרחוק", notes: "", items: [] },
+    ];
+    remoteData.challenges = [
+      {
+        id: "challenge-remote",
+        ownerId: "coach-a",
+        title: "אתגר מרחוק",
+        description: "אתגר בדיקה",
+        category: "כוח",
+        difficulty: "מתחילים",
+        durationLabel: "שבוע",
+        accent: "sage",
+        sessions: [],
+        isPublished: true,
+        isBuiltIn: false,
+      },
+    ];
+    remoteData.history = [
+      {
+        id: "session-remote",
+        workoutId: "day-remote",
+        workoutName: "אימון מרחוק",
+        programName: "תוכנית מרחוק",
+        date: "2026-08-26T08:00:00.000Z",
+        durationSec: 1_800,
+        entries: [],
+        notes: "בוצע",
+      },
+    ];
+    remoteData.nutritionDays = [
+      {
+        id: "nutrition-remote",
+        date: "2026-08-26",
+        meals: [{ id: "meal-logged", name: "ארוחת בוקר", foods: [] }],
+      },
+    ];
+    remoteData.nutritionTargets = { calories: 1_900 };
+    remoteData.plannedMeals = [{ id: "meal-planned", name: "תפריט מאמן", foods: [] }];
+    remoteData.bodyWeightLogs = [{ id: "weight-remote", date: "2026-08-26", weight: 72 }];
+    remoteData.bodyMeasurements = [
+      { id: "measurement-remote", date: "2026-08-26", waistCm: 80 },
+    ];
+    remoteData.cardioLogs = [
+      {
+        id: "cardio-remote",
+        date: "2026-08-26",
+        type: "הליכון",
+        durationMin: 30,
+        intensity: "moderate",
+        calories: 220,
+      },
+    ];
+    remoteData.habits = [
+      {
+        id: "habit-remote",
+        date: "2026-08-26",
+        steps: 8_000,
+        stepsTarget: 10_000,
+        weighInDone: true,
+        workoutDone: true,
+        busyDayMode: false,
+      },
+    ];
+    remoteData.coachMessages = [
+      {
+        id: "message-remote",
+        coachId: "coach-a",
+        clientId: "user-a",
+        message: "כל הכבוד",
+        createdAt: "2026-08-26T09:00:00.000Z",
+        isRead: false,
+      },
+    ];
+
+    pullImplementation = async () => ({
+      success: true,
+      data: remoteData as unknown as Record<string, unknown>,
+    });
+
+    const store = await loadStore("fresh-device-all-flows");
+    authenticate();
+    await eventually(
+      () =>
+        store.getGymStoreSnapshot().userProfile.role === "client" &&
+        store.getGymStoreSnapshot().programs[0]?.id === "program-remote",
+    );
+
+    const snapshot = store.getGymStoreSnapshot();
+    expect(snapshot.userProfile.coachId).toBe("coach-a");
+    expect(snapshot.programs[0]?.name).toBe("תוכנית מרחוק");
+    expect(snapshot.workouts[0]?.name).toBe("אימון מרחוק");
+    expect(
+      snapshot.challenges.some((challenge: { id?: string }) => challenge.id === "challenge-remote"),
+    ).toBe(true);
+    expect(snapshot.history[0]?.id).toBe("session-remote");
+    expect(snapshot.nutritionDays[0]?.meals[0]?.name).toBe("ארוחת בוקר");
+    expect(snapshot.nutritionTargets).toEqual({ calories: 1_900 });
+    expect(snapshot.plannedMeals[0]?.name).toBe("תפריט מאמן");
+    expect(snapshot.bodyWeightLogs[0]?.weight).toBe(72);
+    expect(snapshot.bodyMeasurements[0]?.waistCm).toBe(80);
+    expect(snapshot.cardioLogs[0]?.durationMin).toBe(30);
+    expect(snapshot.habits[0]?.workoutDone).toBe(true);
+    expect(snapshot.coachMessages[0]?.message).toBe("כל הכבוד");
+  });
+
   test("keeps an offline mutation after reload and uploads it on reconnect", async () => {
     storage.set("gymtrack.v1.user.user-a", JSON.stringify(cachedClientData));
     const firstStore = await loadStore("offline-edit");
