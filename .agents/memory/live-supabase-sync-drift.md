@@ -15,6 +15,12 @@ Live drift can be semantic, not just a missing table: legacy activity tables may
 
 **How to apply:** Compare every selected/upserted column and every role-specific policy against the live catalog; test both trainee hydration and coach detail pulls.
 
+When live activity tables are empty or lack a valid unrelated-coach fixture, use a rollback-scoped fixture to validate assigned-versus-unrelated RLS; treat that as policy coverage, not a substitute for a real two-account smoke.
+
+**Why:** A live project can have the correct policy predicates but no activity rows or second coach account, making direct authenticated read verification inconclusive.
+
+**How to apply:** Keep the fixture transaction fully rolled back, then schedule a guarded smoke run once disposable assigned and unrelated coach accounts exist.
+
 The release gate fails closed when any disposable smoke-account setting exists without the explicit `GYMTRACK_SMOKE_ALLOW_LIVE=true` guard.
 
 **Why:** Preventing a release check from silently contacting live Supabase is safer than assuming configured credentials are disposable or intended for smoke testing.
