@@ -507,6 +507,18 @@ function youtubeEmbedUrl(source: string): string | null {
   }
 }
 
+function isSignedWorkoutPerformanceVideo(source: string): boolean {
+  try {
+    const url = new URL(source);
+    return (
+      url.pathname.includes("/storage/v1/object/sign/workout-videos/") &&
+      Boolean(url.searchParams.get("token"))
+    );
+  } catch {
+    return false;
+  }
+}
+
 function exerciseDemoVideoSources(exercise: Exercise | undefined): string[] {
   if (!exercise) return [];
   return Array.from(
@@ -703,7 +715,11 @@ function WorkoutReviewExerciseCard({
         <div className="mt-3 space-y-3">
           {records.map(({ date, sessionId, entry }, recordIndex) => {
             const videoUrl =
-              entry.videoUrl && !entry.videoUrl.startsWith("blob:") ? entry.videoUrl : undefined;
+              entry.videoUrl &&
+              !entry.videoUrl.startsWith("blob:") &&
+              isSignedWorkoutPerformanceVideo(entry.videoUrl)
+                ? entry.videoUrl
+                : undefined;
             return (
               <div
                 key={`${sessionId ?? "record"}-${date ?? "date"}-${entry.exerciseId}-${recordIndex}`}
@@ -1236,7 +1252,9 @@ function WorkoutDailyReport({
                             הערה: {entry.feedback?.notes?.trim() || entry.notes.trim()}
                           </p>
                         ) : null}
-                        {entry.videoUrl && !entry.videoUrl.startsWith("blob:") ? (
+                        {entry.videoUrl &&
+                        !entry.videoUrl.startsWith("blob:") &&
+                        isSignedWorkoutPerformanceVideo(entry.videoUrl) ? (
                           <WorkoutVideoPlayer
                             source={entry.videoUrl}
                             title={`סרטון ביצוע עבור ${entry.exerciseName || "תרגיל"}`}

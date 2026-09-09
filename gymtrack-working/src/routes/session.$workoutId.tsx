@@ -838,10 +838,10 @@ function Session() {
       );
     });
     const uploadTask = Promise.race([upload, timeout])
-      .then((uploadedUrl) => {
+      .then(({ signedUrl, path }) => {
         const entriesWithUploadedVideo = entriesRef.current.map((entry, index) => {
           if (index !== exerciseIndex || entry.videoUrl !== nextUrl) return entry;
-          return { ...entry, videoUrl: uploadedUrl };
+          return { ...entry, videoPath: path, videoUrl: signedUrl };
         });
         entriesRef.current = entriesWithUploadedVideo;
         setEntries(entriesWithUploadedVideo);
@@ -929,9 +929,10 @@ function Session() {
     finishedSessionRef.current = {
       ...sessionWithoutDiscomfort,
       entries: currentEntries.map((e, index) => {
-        const { videoUrl, ...entryWithoutVideo } = e;
+        const { videoPath, videoUrl, ...entryWithoutVideo } = e;
         return {
           ...entryWithoutVideo,
+          ...(videoPath ? { videoPath } : {}),
           ...(videoUrl && !videoUrl.startsWith("blob:") ? { videoUrl } : {}),
           sets: e.sets.filter((s) => s.done),
           ...(exerciseFeedback[index]?.rating || exerciseFeedback[index]?.notes.trim()

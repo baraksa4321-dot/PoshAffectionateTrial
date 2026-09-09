@@ -29,6 +29,12 @@ const queryCalls: QueryCall[] = [];
 const responses = new Map<string, QueryResult>();
 const actionResponses = new Map<string, QueryResult[]>();
 
+const storageCalls: Array<{
+  bucket: string;
+  action: "upload" | "createSignedUrl";
+  path: string;
+  expiresIn?: number;
+}> = [];
 const emptyResult = (): QueryResult => ({ data: [], error: null });
 
 function responseFor(table: string, action: QueryCall["action"]): QueryResult {
@@ -113,6 +119,23 @@ mock.module("./supabase", () => ({
       }),
     },
     from: (table: string) => makeQuery(table),
+    storage: {
+      from: (bucket: string) => ({
+        upload: async (path: string) => {
+          storageCalls.push({ bucket, action: "upload", path });
+          return { data: null, error: null };
+        },
+        createSignedUrl: async (path: string, expiresIn: number) => {
+          storageCalls.push({ bucket, action: "createSignedUrl", path, expiresIn });
+          return {
+            data: {
+              signedUrl: `https://project.supabase.co/storage/v1/object/sign/${bucket}/${encodeURIComponent(path)}?token=test`,
+            },
+            error: null,
+          };
+        },
+      }),
+    },
   },
 }));
 
@@ -207,6 +230,7 @@ function resetResponses() {
   responses.clear();
   actionResponses.clear();
   queryCalls.length = 0;
+  storageCalls.length = 0;
 }
 
 beforeEach(resetResponses);
@@ -686,6 +710,8 @@ describe("cross-browser Supabase sync boundaries", () => {
   });
 
   test("keeps completed workout entries and performance video URLs through coach pulls", async () => {
+    const videoPath = "client-b/day-b/ex-local/video.mp4";
+    const legacyPublicVideoUrl = `https://project.supabase.co/storage/v1/object/public/workout-videos/${videoPath}`;
     const completedSession: HistorySession = {
       id: "session-with-video",
       workoutId: "day-b",
@@ -697,7 +723,7 @@ describe("cross-browser Supabase sync boundaries", () => {
           exerciseId: "ex-local",
           exerciseName: "Local exercise",
           notes: "",
-          videoUrl: "https://project.supabase.co/storage/v1/object/public/workout-videos/video.mp4",
+          videoUrl: videoPath,
           sets: [{ reps: 10, weight: 20, done: true }],
         },
       ],
@@ -719,6 +745,12 @@ describe("cross-browser Supabase sync boundaries", () => {
         entries: completedSession.entries,
       }),
     ]);
+    const persistedEntry = (
+      (historyUpsert?.payload as Array<{ entries: Array<{ videoUrl?: string }> }> | undefined)?.[0]
+        ?.entries ?? []
+    )[0];
+    expect(persistedEntry?.videoUrl).toBe(videoPath);
+    expect(persistedEntry?.videoUrl?.includes("?token=")).toBe(false);
 
     resetResponses();
     setResponse("profiles", { id: "client-b", role: "client", weight_kg: 70 });
@@ -729,7 +761,7 @@ describe("cross-browser Supabase sync boundaries", () => {
         workout_name: completedSession.workoutName,
         date: completedSession.date,
         duration_sec: completedSession.durationSec,
-        entries: completedSession.entries,
+        entries: [{ ...completedSession.entries[0], videoUrl: legacyPublicVideoUrl }],
         notes: "Workout notes",
         difficulty_rating: "appropriate",
         discomfort_notes: "No discomfort",
@@ -739,28 +771,79 @@ describe("cross-browser Supabase sync boundaries", () => {
     const coachData = await pullClientDataForCoach("client-b");
     expect(coachData.error).toBeUndefined();
     expect(coachData.history).toHaveLength(1);
+    const coachVideo = coachData.history[0]?.entries[0];
+    expect(coachVideo?.videoUrl).toBe(
+      `https://project.supabase.co/storage/v1/object/sign/workout-videos/${encodeURIComponent(videoPath)}?token=test`,
+    );
+    expect(coachVideo?.videoPath).toBe(videoPath);
     expect(coachData.history[0]).toMatchObject({
       id: completedSession.id,
       workoutId: completedSession.workoutId,
       workoutName: completedSession.workoutName,
       date: completedSession.date,
       durationSec: completedSession.durationSec,
-      entries: completedSession.entries,
+      entries: [expect.objectContaining({ exerciseId: "ex-local" })],
       notes: "Workout notes",
       difficultyRating: "appropriate",
       discomfortNotes: "No discomfort",
     });
-    expect(coachData.history[0]?.entries[0]?.videoUrl).toBe(completedSession.entries[0]?.videoUrl);
+    expect(storageCalls).toContainEqual({
+      bucket: "workout-videos",
+      action: "createSignedUrl",
+      path: videoPath,
+      expiresIn: 600,
+    });
+  });
+
+  test("uploads trainee videos into the owner folder and returns only a short-lived signed URL", async () => {
+    const { uploadWorkoutPerformanceVideo } = await syncModule;
+    const uploaded = await uploadWorkoutPerformanceVideo(
+      new File(["video"], "performance.mp4", { type: "video/mp4" }),
+      { workoutId: "day-b", exerciseId: "ex-local" },
+    );
+
+    expect(uploaded.path).toMatch(/^client-b\/day-b\/ex-local\/.+\.mp4$/);
+    expect(uploaded.signedUrl).toContain("/storage/v1/object/sign/workout-videos/");
+    expect(storageCalls[0]).toMatchObject({
+      bucket: "workout-videos",
+      action: "upload",
+    });
+    expect(storageCalls[1]).toMatchObject({
+      bucket: "workout-videos",
+      action: "createSignedUrl",
+      expiresIn: 600,
+    });
   });
 });
 
 describe("role and assignment migration contract", () => {
+  const migration35 = readFileSync(
+    fileURLToPath(
+      new URL("../../supabase/migrations/35_workout_performance_videos.sql", import.meta.url),
+    ),
+    "utf8",
+  );
   const migration27 = readFileSync(
     fileURLToPath(
       new URL("../../supabase/migrations/27_owner_coach_sync_hardening.sql", import.meta.url),
     ),
     "utf8",
   );
+
+  test("keeps workout videos private and scopes every storage operation", () => {
+    expect(migration35).toContain("VALUES ('workout-videos', 'workout-videos', false)");
+    expect(migration35).toContain("ON CONFLICT (id) DO UPDATE SET public = false");
+    expect(migration35).toContain(
+      'CREATE POLICY "Trainees and assigned coaches can view workout videos"',
+    );
+    expect(migration35).toContain("ON storage.objects FOR SELECT TO authenticated");
+    expect(migration35).toContain("public.is_coach_of");
+    expect(migration35).toContain("owner_id = (select auth.uid()::text)");
+    expect(migration35).toContain("(storage.foldername(name))[1] = (select auth.uid()::text)");
+    expect(migration35).toContain('DROP POLICY IF EXISTS "Public Access"');
+    expect(migration35).not.toContain("public = true");
+  });
+
   const migration28 = readFileSync(
     fileURLToPath(
       new URL("../../supabase/migrations/28_role_assignment_change_cleanup.sql", import.meta.url),

@@ -215,6 +215,8 @@ export type HistoryEntry = {
   /** Cable grip used for this completed exercise, when recorded. */
   cableGrip?: string | undefined;
   videoUrl?: string;
+  /** Private workout-video object path used to refresh the signed playback URL. */
+  videoPath?: string;
   sets: LoggedSet[];
   notes: string;
   targetSets?: number;

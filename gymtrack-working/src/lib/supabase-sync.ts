@@ -445,6 +445,7 @@ function servingGramsFromLabel(servingSize: string) {
 
 const WORKOUT_VIDEO_BUCKET = "workout-videos";
 
+const WORKOUT_VIDEO_SIGNED_URL_TTL_SECONDS = 10 * 60;
 function safeVideoExtension(fileName: string, contentType: string) {
   const fromName = fileName
     .split(".")
@@ -460,15 +461,19 @@ function safeVideoExtension(fileName: string, contentType: string) {
   return fromType && fromType.length <= 8 ? fromType : "mp4";
 }
 
+type UploadedWorkoutVideo = {
+  path: string;
+  signedUrl: string;
+};
 /**
  * Upload a trainee performance video before it is written into a workout
- * session. Object URLs are browser-local and cannot be played by a coach in
- * another browser, so history entries always receive a durable shared URL.
+ * session. The database receives only the object path; the signed URL is
+ * short-lived and is used only for the current browser preview.
  */
 export async function uploadWorkoutPerformanceVideo(
   file: File,
   metadata: { workoutId: string; exerciseId: string },
-): Promise<string> {
+): Promise<UploadedWorkoutVideo> {
   const {
     data: { user },
     error: userError,
@@ -489,9 +494,13 @@ export async function uploadWorkoutPerformanceVideo(
   });
   if (error) throw new Error(`העלאת סרטון נכשלה: ${error.message}`);
 
-  const { data } = supabase.storage.from(WORKOUT_VIDEO_BUCKET).getPublicUrl(path);
-  if (!data.publicUrl) throw new Error("העלאת הסרטון הסתיימה בלי כתובת צפייה");
-  return data.publicUrl;
+  const { data, error: signedUrlError } = await supabase.storage
+    .from(WORKOUT_VIDEO_BUCKET)
+    .createSignedUrl(path, WORKOUT_VIDEO_SIGNED_URL_TTL_SECONDS);
+  if (signedUrlError || !data?.signedUrl) {
+    throw new Error(`העלאת הסרטון הסתיימה בלי כתובת צפייה: ${signedUrlError?.message ?? "missing signed URL"}`);
+  }
+  return { path, signedUrl: data.signedUrl };
 }
 
 export async function syncLocalToSupabase(
@@ -677,7 +686,7 @@ export async function syncLocalToSupabase(
         program_name: s.programName,
         date: s.date,
         duration_sec: s.durationSec,
-        entries: s.entries,
+        entries: historyEntriesForPersistence(s.entries),
         notes: s.notes,
         difficulty_rating: s.difficultyRating,
         discomfort_notes: s.discomfortNotes,
@@ -1437,20 +1446,22 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (sessionsError) throw new Error(`Workout history pull failed: ${sessionsError.message}`);
 
     if (dbSessions) {
-      const historyList: HistorySession[] = dbSessions.map((row) => ({
+       const historyList: HistorySession[] = dbSessions.map((row) => ({
         id: row.id,
         workoutId: row.workout_id || "",
         workoutName: row.workout_name,
         programName: row.program_name || "",
         date: row.date,
         durationSec: row.duration_sec,
-        entries: row.entries || [],
+         entries: row.entries || [],
         notes: row.notes || "",
         difficultyRating: row.difficulty_rating,
         discomfortNotes: row.discomfort_notes,
       }));
       const deletedSessionIds = new Set(nextData.deletedSessionIds ?? []);
-      nextData.history = historyList.filter((session) => !deletedSessionIds.has(session.id));
+       nextData.history = await signWorkoutVideosInHistory(
+         historyList.filter((session) => !deletedSessionIds.has(session.id)),
+       );
     }
 
     // 7. Body Weight Logs
@@ -1834,6 +1845,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       difficultyRating: row.difficulty_rating || undefined,
       discomfortNotes: row.discomfort_notes || undefined,
     }));
+    const signedHistoryList = await signWorkoutVideosInHistory(historyList);
     for (const session of historyList) {
       if (!workoutsMap.has(session.workoutId)) {
         const historyWorkout = workoutFromHistorySession(session);
@@ -1869,7 +1881,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       plannedMeals: profile.planned_menu || [],
       nutritionTargets:
         latestNutritionTarget === undefined ? {} : { calories: Number(latestNutritionTarget) },
-      history: historyList,
+       history: signedHistoryList,
       cardioLogs: cardioList,
       bodyWeightLogs: bodyWeightList,
       bodyMeasurements: measurementList,
@@ -1919,4 +1931,62 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       error,
     };
   }
+}
+
+async function signWorkoutVideosInHistory(history: HistorySession[]): Promise<HistorySession[]> {
+  return Promise.all(
+    history.map(async (session) => ({
+      ...session,
+      entries: await signWorkoutVideoEntries(session.entries),
+    })),
+  );
+}
+
+function workoutVideoStoragePath(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.startsWith("blob:")) return undefined;
+
+  try {
+    const url = new URL(trimmed);
+    const marker = `/storage/v1/object/`;
+    const markerIndex = url.pathname.indexOf(marker);
+    if (markerIndex < 0) return undefined;
+    const objectPath = url.pathname.slice(markerIndex + marker.length);
+    const bucketPrefix = `${url.pathname.includes("/object/sign/") ? "sign" : "public"}/${WORKOUT_VIDEO_BUCKET}/`;
+    if (!objectPath.startsWith(bucketPrefix)) return undefined;
+    const encodedPath = objectPath.slice(bucketPrefix.length);
+    return decodeURIComponent(encodedPath);
+  } catch {
+    // Newly uploaded entries use a path rather than a URL. Reject values
+    // that look like arbitrary external URLs, but accept the generated path.
+    return /^[^/\\\s]+\/[^/\\\s]+\/[^/\\\s]+\/[^/\\\s]+$/.test(trimmed)
+      ? trimmed
+      : undefined;
+  }
+}
+
+async function signWorkoutVideoEntries(entries: HistoryEntry[]): Promise<HistoryEntry[]> {
+  return Promise.all(
+    entries.map(async (entry) => {
+      const path = entry.videoPath ?? workoutVideoStoragePath(entry.videoUrl);
+      if (!path) return entry;
+      const { data, error } = await supabase.storage
+        .from(WORKOUT_VIDEO_BUCKET)
+        .createSignedUrl(path, WORKOUT_VIDEO_SIGNED_URL_TTL_SECONDS);
+      if (error || !data?.signedUrl) {
+        throw new Error(`Workout video signing failed: ${error?.message ?? "missing signed URL"}`);
+      }
+      return { ...entry, videoPath: path, videoUrl: data.signedUrl };
+    }),
+  );
+}
+
+function historyEntriesForPersistence(entries: HistoryEntry[]): HistoryEntry[] {
+  return entries.map((entry) => {
+    const path = entry.videoPath ?? workoutVideoStoragePath(entry.videoUrl);
+    if (!path) return entry;
+    const { videoPath: _videoPath, videoUrl: _videoUrl, ...entryWithoutVideoUrl } = entry;
+    return { ...entryWithoutVideoUrl, videoUrl: path };
+  });
 }
