@@ -558,6 +558,9 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await expect(page.locator('[data-coach-workspace="true"]')).toBeVisible();
 
   const workspace = page.locator('[data-coach-workspace="true"]');
+  await expect(
+    page.getByText("שליחת הודעת חיזוק / הנחיה למתאמן", { exact: true }),
+  ).toHaveCount(0);
   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
   await expect(page.getByTestId("coach-client-message-profile")).toBeVisible();
   const activityHistory = page.getByTestId("coach-activity-history");
