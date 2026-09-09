@@ -37,6 +37,7 @@ export type CoachClientData = {
   nutritionTargets: NutritionTargets;
   history: HistorySession[];
   cardioLogs: CardioLog[];
+  bodyWeightLogs: GymData["bodyWeightLogs"];
   bodyMeasurements: BodyMeasurement[];
   habits: ClientHabits[];
   coachMessages: CoachMessage[];
@@ -354,6 +355,13 @@ function isOptionalBodyWeightSchemaError(error: unknown): boolean {
   );
 }
 
+function isSchemaCompatibilityError(error: unknown, tableName: string): boolean {
+  return (
+    isMissingTableInSchemaCache(error, tableName) ||
+    isMissingColumnInSchema(error, tableName)
+  );
+}
+
 function cardioCloudId(localId: string): string {
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(localId)) {
     return localId;
@@ -364,6 +372,38 @@ function cardioCloudId(localId: string): string {
     .padEnd(32, "0")
     .slice(0, 32);
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20)}`;
+}
+
+function bodyWeightCloudId(localId: string): string {
+  return cardioCloudId(`body-weight-${localId}`);
+}
+
+function dateOnly(value: unknown): string {
+  return typeof value === "string" ? value.slice(0, 10) : "";
+}
+
+function mapCardioRow(row: Record<string, unknown>): CardioLog {
+  const intensityValue = row["intensity"];
+  const intensity =
+    intensityValue === "low" || intensityValue === "moderate" || intensityValue === "high"
+      ? intensityValue
+      : undefined;
+  return {
+    id: String(row["id"] ?? ""),
+    date: dateOnly(row["date"] ?? row["recorded_at"]),
+    type: String(row["type"] ?? row["activity_type"] ?? ""),
+    durationMin: Number(row["duration_min"] ?? row["duration_minutes"] ?? 0),
+    ...(intensity === undefined ? {} : { intensity }),
+    calories: Number(row["calories"] ?? row["estimated_calories"] ?? 0),
+  };
+}
+
+function mapBodyWeightRow(row: Record<string, unknown>) {
+  return {
+    id: String(row["id"] ?? ""),
+    date: dateOnly(row["date"] ?? row["recorded_at"]),
+    weight: Number(row["weight_kg"] ?? 0),
+  };
 }
 
 async function requireSuccessfulWrite(
@@ -668,13 +708,29 @@ export async function syncLocalToSupabase(
       intensity: log.intensity,
       updated_at: new Date().toISOString(),
     }));
-    let cardioTableAvailable = true;
     try {
       if (cardioPayload.length > 0) {
-        await requireSuccessfulWrite(
-          supabase.from("cardio_logs").upsert(cardioPayload, { onConflict: "id" }),
-          "Cardio logs sync",
-        );
+        const canonicalWrite = await supabase
+          .from("cardio_logs")
+          .upsert(cardioPayload, { onConflict: "id" });
+        if (canonicalWrite.error) {
+          if (!isMissingColumnInSchema(canonicalWrite.error, "cardio_logs")) {
+            throw new Error(`Cardio logs sync: ${canonicalWrite.error.message}`);
+          }
+          const legacyCardioPayload = (localData.cardioLogs ?? []).map((log) => ({
+            id: cardioCloudId(log.id),
+            user_id: userId,
+            activity_type: log.type,
+            duration_minutes: log.durationMin,
+            estimated_calories: log.calories,
+            intensity: log.intensity ?? null,
+            recorded_at: log.date,
+          }));
+          await requireSuccessfulWrite(
+            supabase.from("cardio_logs").upsert(legacyCardioPayload, { onConflict: "id" }),
+            "Cardio logs sync (legacy schema)",
+          );
+        }
       }
       await deleteRowsExplicitlyDeleted(
         userId,
@@ -683,9 +739,10 @@ export async function syncLocalToSupabase(
         "Cardio logs",
       );
     } catch (error: unknown) {
-      if (isMissingTableInSchemaCache(error, "cardio_logs")) {
-        cardioTableAvailable = false;
-        console.warn("[Optional cardio sync skipped]: public.cardio_logs is unavailable");
+      if (isSchemaCompatibilityError(error, "cardio_logs")) {
+        console.warn(
+          "[Optional cardio sync skipped]: public.cardio_logs is unavailable or incompatible",
+        );
       } else {
         throw error;
       }
@@ -700,21 +757,50 @@ export async function syncLocalToSupabase(
         updated_at: new Date().toISOString(),
       }));
       if (weighInPayload.length > 0) {
-        await requireSuccessfulWrite(
-          supabase.from("body_weight_logs").upsert(weighInPayload, { onConflict: "user_id,date" }),
-          "Body weight log sync",
-        );
+        const canonicalWrite = await supabase
+          .from("body_weight_logs")
+          .upsert(weighInPayload, { onConflict: "user_id,date" });
+        if (canonicalWrite.error) {
+          if (!isOptionalBodyWeightSchemaError(canonicalWrite.error)) {
+            throw new Error(`Body weight log sync: ${canonicalWrite.error.message}`);
+          }
+          const legacyWeightPayload = (localData.bodyWeightLogs ?? []).map((log) => ({
+            id: bodyWeightCloudId(log.id),
+            user_id: userId,
+            weight_kg: log.weight,
+            recorded_at: log.date,
+          }));
+          await requireSuccessfulWrite(
+            supabase.from("body_weight_logs").upsert(legacyWeightPayload, { onConflict: "id" }),
+            "Body weight log sync (legacy schema)",
+          );
+        }
       }
       const deletedWeightDates = Array.from(new Set(localData.deletedBodyWeightLogDates ?? []));
       if (deletedWeightDates.length > 0) {
-        await requireSuccessfulWrite(
-          supabase
+        for (const date of deletedWeightDates) {
+          const canonicalDelete = await supabase
             .from("body_weight_logs")
             .delete()
             .eq("user_id", userId)
-            .in("date", deletedWeightDates),
-          "Body weight log deletion",
-        );
+            .eq("date", date);
+          if (canonicalDelete.error) {
+            if (!isOptionalBodyWeightSchemaError(canonicalDelete.error)) {
+              throw new Error(`Body weight log deletion: ${canonicalDelete.error.message}`);
+            }
+            const nextDate = new Date(`${date}T00:00:00.000Z`);
+            nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+            await requireSuccessfulWrite(
+              supabase
+                .from("body_weight_logs")
+                .delete()
+                .eq("user_id", userId)
+                .gte("recorded_at", `${date}T00:00:00.000Z`)
+                .lt("recorded_at", nextDate.toISOString()),
+              "Body weight log deletion (legacy schema)",
+            );
+          }
+        }
       }
     } catch (error: unknown) {
       if (isOptionalBodyWeightSchemaError(error)) {
@@ -1091,9 +1177,8 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .order("date", { ascending: false });
     const bodyWeightPromise = supabase
       .from("body_weight_logs")
-      .select("id, date, weight_kg")
-      .eq("user_id", userId)
-      .order("date", { ascending: false });
+      .select("*")
+      .eq("user_id", userId);
     const cardioPromise = supabase.from("cardio_logs").select("*").eq("user_id", userId);
     const measurementsPromise = supabase
       .from("body_measurements")
@@ -1377,16 +1462,13 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (!bodyWeightError && dbBodyWeightLogs) {
       const deletedWeightDates = new Set(nextData.deletedBodyWeightLogDates ?? []);
       nextData.bodyWeightLogs = dbBodyWeightLogs
-        .map((row) => ({
-          id: row.id,
-          date: row.date,
-          weight: Number(row.weight_kg),
-        }))
+        .map((row) => mapBodyWeightRow(row))
         .filter((log) => !deletedWeightDates.has(log.date));
+      nextData.bodyWeightLogs.sort((a, b) => b.date.localeCompare(a.date));
     }
 
     // 7b. Cardio Logs
-    if (cardioError && isMissingTableInSchemaCache(cardioError, "cardio_logs")) {
+    if (cardioError && isSchemaCompatibilityError(cardioError, "cardio_logs")) {
       console.warn(`[Optional cardio pull skipped]: ${cardioError.message}`);
     } else if (cardioError) {
       throw new Error(`Cardio pull failed: ${cardioError.message}`);
@@ -1396,14 +1478,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (!cardioError && dbCardioLogs) {
       const deletedCardioLogIds = new Set((nextData.deletedCardioLogIds ?? []).map(cardioCloudId));
       nextData.cardioLogs = dbCardioLogs
-        .map((row): CardioLog => ({
-          id: row.id,
-          date: row.date,
-          type: row.type,
-          durationMin: Number(row.duration_min),
-          intensity: row.intensity || undefined,
-          calories: Number(row.calories ?? 0),
-        }))
+        .map((row) => mapCardioRow(row))
         .filter((log) => !deletedCardioLogIds.has(log.id));
     }
 
@@ -1565,6 +1640,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       programDaysResult,
       nutritionResult,
       measurementsResult,
+      bodyWeightResult,
       sessionsResult,
       cardioResult,
       habitsResult,
@@ -1584,6 +1660,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
         .select("*")
         .eq("user_id", clientId)
         .order("date", { ascending: false }),
+      supabase.from("body_weight_logs").select("*").eq("user_id", clientId),
       supabase
         .from("workout_sessions")
         .select("*")
@@ -1640,8 +1717,14 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     if (sessionsError) {
       throw new Error(`Client workout history pull failed: ${sessionsError.message}`);
     }
+    const { data: dbBodyWeightLogs, error: bodyWeightError } = bodyWeightResult;
+    if (bodyWeightError && isOptionalBodyWeightSchemaError(bodyWeightError)) {
+      console.warn(`[Optional client body weight pull skipped]: ${bodyWeightError.message}`);
+    } else if (bodyWeightError) {
+      throw new Error(`Client body weight pull failed: ${bodyWeightError.message}`);
+    }
     const { data: dbCardioLogs, error: cardioError } = cardioResult;
-    if (cardioError && isMissingTableInSchemaCache(cardioError, "cardio_logs")) {
+    if (cardioError && isSchemaCompatibilityError(cardioError, "cardio_logs")) {
       console.warn(`[Optional client cardio pull skipped]: ${cardioError.message}`);
     } else if (cardioError) {
       throw new Error(`Client cardio pull failed: ${cardioError.message}`);
@@ -1756,14 +1839,10 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
         if (historyWorkout) workoutsMap.set(historyWorkout.id, historyWorkout);
       }
     }
-    const cardioList: CardioLog[] = (dbCardioLogs || []).map((row) => ({
-      id: row.id,
-      date: row.date,
-      type: row.type,
-      durationMin: Number(row.duration_min),
-      intensity: row.intensity || undefined,
-      calories: Number(row.calories ?? 0),
-    }));
+    const bodyWeightList = (dbBodyWeightLogs || [])
+      .map((row) => mapBodyWeightRow(row))
+      .sort((a, b) => b.date.localeCompare(a.date));
+    const cardioList: CardioLog[] = (dbCardioLogs || []).map((row) => mapCardioRow(row));
     const habitsList: ClientHabits[] = (dbHabits || []).map((row) => ({
       id: row.id,
       date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
@@ -1791,6 +1870,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
         latestNutritionTarget === undefined ? {} : { calories: Number(latestNutritionTarget) },
       history: historyList,
       cardioLogs: cardioList,
+      bodyWeightLogs: bodyWeightList,
       bodyMeasurements: measurementList,
       habits: habitsList,
       coachMessages: coachMessagesList,
@@ -1831,6 +1911,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       nutritionTargets: {},
       history: [],
       cardioLogs: [],
+      bodyWeightLogs: [],
       bodyMeasurements: [],
       habits: [],
       coachMessages: [],

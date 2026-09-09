@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type {
   BodyMeasurement,
+  BodyWeightLog,
+  CardioLog,
   GymData,
   HistorySession,
   NutritionDay,
@@ -25,10 +27,17 @@ type QueryCall = {
 
 const queryCalls: QueryCall[] = [];
 const responses = new Map<string, QueryResult>();
+const actionResponses = new Map<string, QueryResult[]>();
 
 const emptyResult = (): QueryResult => ({ data: [], error: null });
 
 function responseFor(table: string, action: QueryCall["action"]): QueryResult {
+  const queued = actionResponses.get(`${table}:${action}`);
+  if (queued && queued.length > 0) {
+    const next = queued.shift()!;
+    if (queued.length === 0) actionResponses.delete(`${table}:${action}`);
+    return next;
+  }
   if (action !== "select") return { data: null, error: null };
   return responses.get(table) ?? emptyResult();
 }
@@ -48,6 +57,14 @@ function makeQuery(table: string) {
     },
     in: (column: string, values: unknown[]) => {
       call.filters.push([column, values]);
+      return query;
+    },
+    gte: (column: string, value: unknown) => {
+      call.filters.push([`gte:${column}`, value]);
+      return query;
+    },
+    lt: (column: string, value: unknown) => {
+      call.filters.push([`lt:${column}`, value]);
       return query;
     },
     order: () => query,
@@ -107,6 +124,14 @@ const syncModule = import("./supabase-sync?cross-browser");
 
 function setResponse(table: string, data: unknown, error: QueryResult["error"] = null) {
   responses.set(table, { data, error });
+}
+
+function setActionResponses(
+  table: string,
+  action: QueryCall["action"],
+  results: QueryResult[],
+) {
+  actionResponses.set(`${table}:${action}`, [...results]);
 }
 
 function makeLocalData(
@@ -180,6 +205,7 @@ function hasFilter(table: string, column: string, value: unknown) {
 
 function resetResponses() {
   responses.clear();
+  actionResponses.clear();
   queryCalls.length = 0;
 }
 
@@ -353,11 +379,42 @@ describe("cross-browser Supabase sync boundaries", () => {
     setResponse("nutrition_days", []);
     setResponse("body_measurements", []);
     setResponse("workout_sessions", []);
-    setResponse("cardio_logs", []);
+    setResponse("body_weight_logs", [
+      {
+        id: "weight-1",
+        user_id: "client-b",
+        weight_kg: 72,
+        recorded_at: "2026-08-26T07:00:00.000Z",
+      },
+    ]);
+    setResponse("cardio_logs", [
+      {
+        id: "cardio-1",
+        user_id: "client-b",
+        activity_type: "הליכון",
+        duration_minutes: 30,
+        estimated_calories: 220,
+        intensity: "moderate",
+        recorded_at: "2026-08-26T08:00:00.000Z",
+      },
+    ]);
 
     const { pullClientDataForCoach, pullSupabaseData } = await syncModule;
     const coachResult = await pullClientDataForCoach("client-b");
     expect(coachResult.error).toBeUndefined();
+    expect(coachResult.bodyWeightLogs).toEqual([
+      { id: "weight-1", date: "2026-08-26", weight: 72 },
+    ]);
+    expect(coachResult.cardioLogs).toEqual([
+      {
+        id: "cardio-1",
+        date: "2026-08-26",
+        type: "הליכון",
+        durationMin: 30,
+        calories: 220,
+        intensity: "moderate",
+      },
+    ]);
 
     expect(hasFilter("profiles", "id", "client-b")).toBe(true);
     expect(hasFilter("custom_exercises", "user_id", "client-b")).toBe(true);
@@ -389,8 +446,22 @@ describe("cross-browser Supabase sync boundaries", () => {
     setResponse("programs", []);
     setResponse("program_days", []);
     setResponse("workout_sessions", []);
-    setResponse("body_weight_logs", []);
-    setResponse("cardio_logs", []);
+    setResponse("body_weight_logs", [
+      {
+        id: "weight-1",
+        weight_kg: 72,
+        recorded_at: "2026-08-26T07:00:00.000Z",
+      },
+    ]);
+    setResponse("cardio_logs", [
+      {
+        id: "cardio-1",
+        activity_type: "הליכון",
+        duration_minutes: 30,
+        estimated_calories: 220,
+        recorded_at: "2026-08-26T08:00:00.000Z",
+      },
+    ]);
     setResponse("body_measurements", []);
     setResponse("client_habits", []);
     setResponse("custom_foods", []);
@@ -400,6 +471,19 @@ describe("cross-browser Supabase sync boundaries", () => {
 
     const accountResult = await pullSupabaseData("client-b", makeLocalData());
     expect(accountResult.success).toBe(true);
+    if (!accountResult.success) return;
+    expect(accountResult.data.bodyWeightLogs).toEqual([
+      { id: "weight-1", date: "2026-08-26", weight: 72 },
+    ]);
+    expect(accountResult.data.cardioLogs).toEqual([
+      {
+        id: "cardio-1",
+        date: "2026-08-26",
+        type: "הליכון",
+        durationMin: 30,
+        calories: 220,
+      },
+    ]);
     expect(hasFilter("profiles", "id", "client-b")).toBe(true);
     expect(hasFilter("coach_messages", "client_id", "client-b")).toBe(true);
     for (const table of [
@@ -459,6 +543,76 @@ describe("cross-browser Supabase sync boundaries", () => {
         expect((payload as { user_id: string }).user_id).toBe("client-b");
       }
     }
+  });
+
+  test("falls back to live legacy activity columns without aborting the sync", async () => {
+    const cardio: CardioLog = {
+      id: "cardio-local",
+      date: "2026-08-26",
+      type: "הליכון",
+      durationMin: 30,
+      calories: 220,
+    };
+    const bodyWeight: BodyWeightLog = {
+      id: "weight-local",
+      date: "2026-08-26",
+      weight: 72,
+    };
+    const missingCardioColumn = {
+      message: "Could not find the 'date' column of 'cardio_logs' in the schema cache",
+      code: "PGRST204",
+    };
+    const missingWeightColumn = {
+      message: "Could not find the 'date' column of 'body_weight_logs' in the schema cache",
+      code: "PGRST204",
+    };
+    setActionResponses("cardio_logs", "upsert", [
+      { data: null, error: missingCardioColumn },
+      { data: null, error: null },
+    ]);
+    setActionResponses("body_weight_logs", "upsert", [
+      { data: null, error: missingWeightColumn },
+      { data: null, error: null },
+    ]);
+    setActionResponses("body_weight_logs", "delete", [
+      { data: null, error: missingWeightColumn },
+      { data: null, error: null },
+    ]);
+
+    const { syncLocalToSupabase } = await syncModule;
+    const result = await syncLocalToSupabase("client-b", {
+      ...makeLocalData(),
+      cardioLogs: [cardio],
+      bodyWeightLogs: [bodyWeight],
+      deletedBodyWeightLogDates: ["2026-08-25"],
+    });
+
+    expect(result.success).toBe(true);
+    expect(callsFor("cardio_logs", "upsert")[0]?.payload).toEqual([
+      expect.objectContaining({
+        date: "2026-08-26",
+        type: "הליכון",
+        duration_min: 30,
+      }),
+    ]);
+    expect(callsFor("cardio_logs", "upsert")[1]?.payload).toEqual([
+      expect.objectContaining({
+        activity_type: "הליכון",
+        duration_minutes: 30,
+        recorded_at: "2026-08-26",
+      }),
+    ]);
+    expect(callsFor("body_weight_logs", "upsert")[1]?.payload).toEqual([
+      expect.objectContaining({
+        weight_kg: 72,
+        recorded_at: "2026-08-26",
+      }),
+    ]);
+    expect(callsFor("body_weight_logs", "delete")[1]?.filters).toEqual([
+      ["user_id", "client-b"],
+      ["gte:recorded_at", "2026-08-25T00:00:00.000Z"],
+      ["lt:recorded_at", "2026-08-26T00:00:00.000Z"],
+    ]);
   });
 
   test("keeps completed workout entries and performance video URLs through coach pulls", async () => {
