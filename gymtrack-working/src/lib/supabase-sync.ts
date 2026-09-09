@@ -1261,14 +1261,16 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (messagesError) throw new Error(`Messages pull failed: ${messagesError.message}`);
 
     if (messages) {
-      nextData.coachMessages = messages.map((m) => ({
-        id: m.id,
-        coachId: m.coach_id,
-        clientId: m.client_id,
-        message: m.message,
-        createdAt: m.created_at,
-        isRead: m.is_read,
-      }));
+      nextData.coachMessages = messages
+        .map((m) => ({
+          id: m.id,
+          coachId: m.coach_id,
+          clientId: m.client_id,
+          message: m.message,
+          createdAt: m.created_at,
+          isRead: m.is_read,
+        }))
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
 
     if (
@@ -1865,14 +1867,16 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       workoutDone: Boolean(row.workout_done),
       busyDayMode: Boolean(row.busy_day_mode),
     }));
-    const coachMessagesList: CoachMessage[] = (dbCoachMessages || []).map((row) => ({
-      id: row.id,
-      coachId: row.coach_id,
-      clientId: row.client_id,
-      message: row.message,
-      createdAt: row.created_at,
-      isRead: Boolean(row.is_read),
-    }));
+    const coachMessagesList: CoachMessage[] = (dbCoachMessages || [])
+      .map((row) => ({
+        id: row.id,
+        coachId: row.coach_id,
+        clientId: row.client_id,
+        message: row.message,
+        createdAt: row.created_at,
+        isRead: Boolean(row.is_read),
+      }))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return {
       exercises: exerciseList,
       programs: programsList,

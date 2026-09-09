@@ -994,6 +994,7 @@ function migrate(d: Partial<GymData>): GymData {
     recipes: d.recipes ?? [],
     recentFoods: d.recentFoods ?? [],
     favoriteFoods: d.favoriteFoods ?? [],
+    coachMessages: d.coachMessages ?? [],
     bodyWeightLogs: d.bodyWeightLogs?.length ? d.bodyWeightLogs : [],
     bodyMeasurements: d.bodyMeasurements ?? [],
     cardioLogs: d.cardioLogs ?? [],

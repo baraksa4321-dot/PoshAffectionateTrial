@@ -273,7 +273,8 @@ const coachProfile = {
   planned_menu: [],
 };
 
-function authSession() {
+function authSession(role = "coach") {
+  const profile = role === "trainee" ? clientProfile : coachProfile;
   return {
     access_token: "ios-smoke-access-token",
     refresh_token: "ios-smoke-refresh-token",
@@ -281,19 +282,36 @@ function authSession() {
     expires_at: Math.floor(Date.now() / 1000) + 3600,
     token_type: "bearer",
     user: {
-      id: COACH_ID,
+      id: profile.id,
       aud: "authenticated",
       role: "authenticated",
-      email: coachProfile.email,
+      email: profile.email,
       app_metadata: { provider: "email", providers: ["email"] },
-      user_metadata: { full_name: coachProfile.full_name, gender: "female" },
+      user_metadata: { full_name: profile.full_name, gender: "female" },
       created_at: "2026-01-01T00:00:00.000Z",
       confirmed_at: "2026-01-01T00:00:00.000Z",
     },
   };
 }
 
-async function installFixture(page) {
+async function installFixture(page, { role = "coach", online = false } = {}) {
+  const isTrainee = role === "trainee";
+  const userId = isTrainee ? CLIENT_ID : COACH_ID;
+  const cacheValue = isTrainee
+    ? {
+        ...gymData,
+        userProfile: {
+          ...gymData.userProfile,
+          fullName: clientProfile.full_name,
+          role: "client",
+          approvalStatus: "approved",
+          coachId: COACH_ID,
+          weight: clientProfile.weight_kg,
+          height: clientProfile.height_cm,
+          age: clientProfile.age_years,
+        },
+      }
+    : gymData;
   await page.addInitScript(
     ({
       cacheKey,
@@ -312,11 +330,17 @@ async function installFixture(page) {
       habit,
       coachMessage,
       challenge,
+      initialOnline,
     }) => {
+      let isOnline = initialOnline;
       Object.defineProperty(window.navigator, "onLine", {
         configurable: true,
-        get: () => false,
+        get: () => isOnline,
       });
+      window.__iosSmokeSetOnline = (nextOnline) => {
+        isOnline = nextOnline;
+        window.dispatchEvent(new Event(nextOnline ? "online" : "offline"));
+      };
       const originalGetItem = Storage.prototype.getItem;
       Storage.prototype.getItem = function getItem(key) {
         if (this === window.localStorage && key.endsWith("-auth-token")) {
@@ -333,7 +357,18 @@ async function installFixture(page) {
         ...workout,
         items: JSON.parse(JSON.stringify(workout.items)),
       }));
-      let remoteCoachMessages = [coachMessage];
+      const remoteMessagesKey = "ios-smoke.remote-coach-messages";
+      let remoteCoachMessages = (() => {
+        try {
+          const stored = window.localStorage.getItem(remoteMessagesKey);
+          return stored ? JSON.parse(stored) : [coachMessage];
+        } catch {
+          return [coachMessage];
+        }
+      })();
+      const persistRemoteCoachMessages = () => {
+        window.localStorage.setItem(remoteMessagesKey, JSON.stringify(remoteCoachMessages));
+      };
       window.fetch = async (input, init) => {
         const url = typeof input === "string" ? input : input.url;
         if (url.includes("/auth/v1/user")) {
@@ -356,6 +391,7 @@ async function installFixture(page) {
                 is_read: false,
               },
             ];
+            persistRemoteCoachMessages();
             return new Response(JSON.stringify([]), {
               status: 201,
               headers: { "content-type": "application/json" },
@@ -503,10 +539,13 @@ async function installFixture(page) {
                   ];
           } else if (path === "coach_messages") {
             const requestedClientId = parsed.searchParams.get("client_id")?.replace(/^eq\./, "");
-            body = remoteCoachMessages.filter(
-              (message) =>
-                message.coach_id === coachMessage.coach_id && message.client_id === requestedClientId,
-            );
+            body = remoteCoachMessages
+              .filter(
+                (message) =>
+                  message.coach_id === coachMessage.coach_id &&
+                  message.client_id === requestedClientId,
+              )
+              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
           } else if (path === "challenges") {
             body = [
               {
@@ -529,9 +568,9 @@ async function installFixture(page) {
       };
     },
     {
-      cacheKey: `gymtrack.v1.user.${COACH_ID}`,
-      cacheValue: gymData,
-      session: authSession(),
+      cacheKey: `gymtrack.v1.user.${userId}`,
+      cacheValue,
+      session: authSession(role),
       clientProfile,
       otherClientProfile,
       coachProfile,
@@ -545,6 +584,7 @@ async function installFixture(page) {
       habit,
       coachMessage,
       challenge,
+      initialOnline: online,
     },
   );
 }
@@ -759,6 +799,37 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
 
   await page.locator("article").last().scrollIntoViewIfNeeded();
   await expect(page.locator("article").last()).toBeInViewport();
+});
+
+test("trainee sees the message sent from the coach profile after reconnecting", async ({ page }) => {
+  await installFixture(page);
+
+  await page.goto("/");
+  await page.getByTestId("link-nav-coach").click();
+  await expect(page).toHaveURL(/\/coach\/clients/);
+  await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("בדיקה");
+  await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
+  await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
+
+  const profileMessage = page.getByTestId("coach-client-message-profile");
+  await expect(profileMessage).toBeVisible();
+  const profileMessageText = "הודעה שנשלחה מהפרופיל ונראית למתאמנת";
+  await profileMessage.getByPlaceholder("כתבי הודעה למתאמן...").fill(profileMessageText);
+  await profileMessage.getByRole("button", { name: "שלח", exact: true }).click();
+  await expect
+    .poll(async () =>
+      page.evaluate((key) => window.localStorage.getItem(key), "ios-smoke.remote-coach-messages"),
+    )
+    .toContain(profileMessageText);
+
+  const traineePage = await page.context().newPage();
+  await installFixture(traineePage, { role: "trainee" });
+  await traineePage.goto("/");
+  const traineeMessage = traineePage.getByTestId("coach-message-banner");
+  await expect(traineeMessage).toContainText("כל הכבוד על ההתמדה השבוע");
+
+  await traineePage.evaluate(() => window.__iosSmokeSetOnline(true));
+  await expect(traineeMessage).toContainText(profileMessageText);
 });
 
 test("active workout values survive leaving and reopening the session", async ({ page }) => {

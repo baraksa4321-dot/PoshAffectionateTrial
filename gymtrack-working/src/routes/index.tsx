@@ -445,7 +445,9 @@ function Dashboard() {
     }
   }, [authUser?.id]);
   const latestCoachMsg =
-    coachMessages?.find((message) => !dismissedMessageIds.includes(message.id)) ?? null;
+    [...(coachMessages ?? [])]
+      .filter((message) => !dismissedMessageIds.includes(message.id))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] ?? null;
   const latestBroadcast =
     broadcasts?.find((message) => !dismissedMessageIds.includes(message.id)) ?? null;
   const dismissMessage = async (id: string, isBroadcast: boolean) => {
@@ -504,6 +506,7 @@ function Dashboard() {
         {latestCoachMsg && (
           <div
             {...homeCardProps("coach-message")}
+            data-testid="coach-message-banner"
             className="dashboard-notice surface-card space-y-1.5 border-primary/20 bg-primary/5 p-4 text-start"
           >
             <div className="flex items-center justify-between">
