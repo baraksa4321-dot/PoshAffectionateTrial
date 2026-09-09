@@ -558,6 +558,8 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await expect(page.locator('[data-coach-workspace="true"]')).toBeVisible();
 
   const workspace = page.locator('[data-coach-workspace="true"]');
+  await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
+  await expect(page.getByTestId("coach-client-message-profile")).toBeVisible();
   const activityHistory = page.getByTestId("coach-activity-history");
   await expect(activityHistory).toBeVisible();
   await expect(page.getByTestId("coach-activity-weight")).toContainText("63.4");
@@ -567,6 +569,7 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await expect(page.getByTestId("coach-activity-challenges")).toContainText("אתגר בדיקת התמדה");
   await expect(page.getByText("מתאמנת אחרת", { exact: true })).toBeHidden();
   await expect(activityHistory).not.toContainText("נתון של מתאמנת אחרת");
+  await page.getByRole("button", { name: "סגירת פרופיל המשתמש" }).click();
 
   await expect(workspace).toHaveCSS("overflow-y", "auto");
   await workspace.evaluate((element) => {

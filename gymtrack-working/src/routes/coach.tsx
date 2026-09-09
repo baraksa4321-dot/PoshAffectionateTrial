@@ -5974,13 +5974,13 @@ export function CoachDashboardPage({
                                       תזונה אחרונה
                                     </span>
                                     <strong className="mt-1 block text-ink">
-                                  {hiddenClientDetails.nutritionDays[0]
-                                    ? `${hiddenClientDetails.nutritionDays[0]?.date} · יעד ${hiddenClientDetails.nutritionTargets.calories ?? "—"} קל׳`
+                                      {hiddenClientDetails.nutritionDays[0]
+                                        ? `${hiddenClientDetails.nutritionDays[0]?.date} · יעד ${hiddenClientDetails.nutritionTargets.calories ?? "—"} קל׳`
                                         : "אין נתונים"}
                                     </strong>
-                                {hiddenClientDetails.nutritionDays[0] ? (
+                                    {hiddenClientDetails.nutritionDays[0] ? (
                                       <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                                    {hiddenClientDetails.nutritionDays[0]?.meals.reduce(
+                                        {hiddenClientDetails.nutritionDays[0]?.meals.reduce(
                                           (total, meal) => total + meal.foods.length,
                                           0,
                                         )}{" "}
@@ -5996,13 +5996,13 @@ export function CoachDashboardPage({
                                       אירובי אחרון
                                     </span>
                                     <strong className="mt-1 block text-ink">
-                                  {hiddenClientDetails.cardioLogs?.[0]
-                                    ? `${hiddenClientDetails.cardioLogs[0]?.type} · ${hiddenClientDetails.cardioLogs[0]?.durationMin} דקות`
+                                      {hiddenClientDetails.cardioLogs?.[0]
+                                        ? `${hiddenClientDetails.cardioLogs[0]?.type} · ${hiddenClientDetails.cardioLogs[0]?.durationMin} דקות`
                                         : "אין נתונים"}
                                     </strong>
-                                {hiddenClientDetails.cardioLogs?.[0] ? (
+                                    {hiddenClientDetails.cardioLogs?.[0] ? (
                                       <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                                    {hiddenClientDetails.cardioLogs[0]?.calories} קל׳
+                                        {hiddenClientDetails.cardioLogs[0]?.calories} קל׳
                                       </span>
                                     ) : null}
                                   </div>
@@ -6012,13 +6012,13 @@ export function CoachDashboardPage({
                                   >
                                     <span className="block text-muted-foreground">משקל אחרון</span>
                                     <strong className="mt-1 block text-ink">
-                                  {clientBodyWeightLogs[0]
-                                    ? `${clientBodyWeightLogs[0]?.weight} ק״ג`
+                                      {clientBodyWeightLogs[0]
+                                        ? `${clientBodyWeightLogs[0]?.weight} ק״ג`
                                         : "לא נמדד"}
                                     </strong>
                                     {clientBodyWeightLogs[0] ? (
                                       <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                                    {clientBodyWeightLogs[0]?.date}
+                                        {clientBodyWeightLogs[0]?.date}
                                       </span>
                                     ) : null}
                                   </div>
@@ -6030,13 +6030,13 @@ export function CoachDashboardPage({
                                       מדידה אחרונה
                                     </span>
                                     <strong className="mt-1 block text-ink">
-                                  {clientBodyMeasurements[0]?.waistCm
-                                    ? `מותניים ${clientBodyMeasurements[0]?.waistCm} ס״מ`
+                                      {clientBodyMeasurements[0]?.waistCm
+                                        ? `מותניים ${clientBodyMeasurements[0]?.waistCm} ס״מ`
                                         : "לא נמדד"}
                                     </strong>
                                     {clientBodyMeasurements[0]?.bodyFatPct ? (
                                       <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                                    שומן {clientBodyMeasurements[0]?.bodyFatPct}%
+                                        שומן {clientBodyMeasurements[0]?.bodyFatPct}%
                                       </span>
                                     ) : null}
                                   </div>
@@ -6048,13 +6048,13 @@ export function CoachDashboardPage({
                                       הרגלים אחרונים
                                     </span>
                                     <strong className="mt-1 block text-ink">
-                                  {clientHabits[0]
-                                    ? `${clientHabits[0]?.steps.toLocaleString("he-IL")} צעדים`
+                                      {clientHabits[0]
+                                        ? `${clientHabits[0]?.steps.toLocaleString("he-IL")} צעדים`
                                         : "אין נתונים"}
                                     </strong>
                                     {clientHabits[0] ? (
                                       <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                                    {clientHabits[0]?.workoutDone
+                                        {clientHabits[0]?.workoutDone
                                           ? "אימון בוצע"
                                           : "אימון טרם סומן"}
                                       </span>
@@ -6070,7 +6070,7 @@ export function CoachDashboardPage({
                                     </strong>
                                     {clientCoachMessages[0] ? (
                                       <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
-                                  {clientCoachMessages[0]?.message}
+                                        {clientCoachMessages[0]?.message}
                                       </span>
                                     ) : null}
                                   </div>
@@ -9607,7 +9607,9 @@ export function CoachDashboardPage({
                         </div>
                         <p className="mt-1 text-muted-foreground">
                           {doneSets} סטים בוצעו · {session.entries.length} תרגילים
-                          {session.difficultyRating ? ` · ${session.difficultyRating}` : ""}
+                          {session.difficultyRating
+                            ? ` · ${ratingLabel(session.difficultyRating)}`
+                            : ""}
                         </p>
                       </div>
                     );
