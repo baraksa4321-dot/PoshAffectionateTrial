@@ -226,6 +226,7 @@ async function cleanup(
   traineeId: string,
   programId: string,
   messageId: string | null,
+  preservedMessageIds: string[],
   sessionId: string | null,
   originalPlannedMenu: unknown,
   traineeChannel: RealtimeChannel | null,
@@ -264,6 +265,29 @@ async function cleanup(
       cleanupErrors.push(`coach message deletion (${errorCode(messageError) ?? "delete"})`);
     } else if (!deletedMessages?.some((message) => message.id === messageId)) {
       cleanupErrors.push("coach message deletion did not remove the smoke row");
+    } else {
+      const { data: remainingMessages, error: remainingMessagesError } = await traineeClient
+        .from("coach_messages")
+        .select("id")
+        .eq("client_id", traineeId);
+      if (remainingMessagesError) {
+        cleanupErrors.push(
+          `coach message preservation check (${errorCode(remainingMessagesError) ?? "select"})`,
+        );
+      } else {
+        const remainingMessageIds = new Set(
+          (remainingMessages ?? []).map((message) => message.id as string),
+        );
+        if (remainingMessageIds.has(messageId)) {
+          cleanupErrors.push("coach message cleanup left the smoke row behind");
+        }
+        for (const preservedMessageId of preservedMessageIds) {
+          if (!remainingMessageIds.has(preservedMessageId)) {
+            cleanupErrors.push(`coach message cleanup removed an unrelated row`);
+            break;
+          }
+        }
+      }
     }
   }
 
@@ -313,6 +337,7 @@ async function run(): Promise<void> {
   let traineeChannel: RealtimeChannel | null = null;
   let coachChannel: RealtimeChannel | null = null;
   let coachMessageId: string | null = null;
+  let preservedCoachMessageIds: string[] = [];
   let completedSessionId: string | null = null;
   let originalPlannedMenu: unknown = [];
   let cleanupNeeded = false;
@@ -415,6 +440,9 @@ async function run(): Promise<void> {
       pageSnapshot.menuName === originalMenuMarker,
       "The trainee cannot read the isolated planned menu.",
     );
+    preservedCoachMessageIds = pageSnapshot.coachMessages
+      .map((message) => message.id)
+      .filter((id): id is string => typeof id === "string");
 
     let refreshChain = Promise.resolve();
     const enqueuePageRefresh = () => {
@@ -546,6 +574,50 @@ async function run(): Promise<void> {
       "The trainee did not read the exact persisted coach message after refresh.",
     );
     console.log("PASS: the trainee refreshed coach_messages and received the exact coach message.");
+
+    console.log("Verifying the coach cannot delete the trainee's inbox message...");
+    const { data: coachDeletedMessages, error: coachDeleteError } = await coachClient
+      .from("coach_messages")
+      .delete()
+      .eq("id", coachMessageId)
+      .eq("client_id", trainee.id)
+      .select("id");
+    const coachDeleteCode = errorCode(coachDeleteError);
+    if (
+      coachDeleteError &&
+      coachDeleteCode !== "42501" &&
+      coachDeleteCode !== "401" &&
+      coachDeleteCode !== "403"
+    ) {
+      throw new Error(
+        `Coach message deletion returned an unexpected error (${coachDeleteCode ?? "delete"}).`,
+      );
+    }
+    assertCondition(
+      !coachDeletedMessages?.some((message) => message.id === coachMessageId),
+      "The coach deleted the trainee's inbox message.",
+    );
+
+    enqueuePageRefresh();
+    await refreshChain;
+    const messageStillPresent = pageSnapshot.coachMessages.some(
+      (message) =>
+        message.id === coachMessageId &&
+        message.coach_id === coach.id &&
+        message.client_id === trainee.id &&
+        message.message === coachMessageText,
+    );
+    assertCondition(
+      messageStillPresent,
+      "The trainee's inbox message disappeared after the coach-side delete attempt.",
+    );
+    assertCondition(
+      preservedCoachMessageIds.every((messageId) =>
+        pageSnapshot.coachMessages.some((message) => message.id === messageId),
+      ),
+      "The coach-side delete attempt changed an unrelated trainee inbox message.",
+    );
+    console.log("PASS: coach-side deletion was blocked and the trainee message remained readable.");
 
     const reportDate = new Date().toISOString().slice(0, 10);
     const reportSessionId = `${runId}-session`;
@@ -681,6 +753,7 @@ async function run(): Promise<void> {
           (await traineeClient.auth.getUser()).data.user?.id ?? "",
           programId,
           coachMessageId,
+          preservedCoachMessageIds,
           completedSessionId,
           originalPlannedMenu,
           traineeChannel,

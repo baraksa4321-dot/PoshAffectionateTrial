@@ -40,6 +40,10 @@ to read all three new values without reload and checks that a pending trainee-lo
 still present. The original menu is restored and the temporary program (and its day through the
 foreign-key cascade) is deleted in `finally`, including when an assertion fails after setup.
 
+The message portion also verifies the inbox RLS boundary: the assigned coach creates one uniquely
+identified message, the trainee reads it, a coach-side delete attempt cannot remove it, and the
+trainee can delete only that smoke row during cleanup. Existing trainee messages must remain.
+
 ## Release validation
 
 The repository release check invokes a guarded wrapper after the local preview check:
