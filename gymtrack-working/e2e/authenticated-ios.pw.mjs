@@ -1079,6 +1079,7 @@ test("active workout values survive leaving and reopening the session", async ({
   const workoutNote = page.getByPlaceholder("למשל: עומס קל במרפק ימין בסט האחרון...");
   await expect(workoutNote).toBeVisible();
   await workoutNote.fill("הערת סיום בטיוטת האימון");
+  await assertKeyboardVisible(workoutNote);
   await expect(workoutNote).toHaveValue("הערת סיום בטיוטת האימון");
   await page.keyboard.press("Escape");
   await expect(workoutNote).toBeHidden();
