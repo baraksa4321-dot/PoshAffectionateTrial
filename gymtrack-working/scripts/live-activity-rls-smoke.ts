@@ -316,6 +316,10 @@ async function run(): Promise<void> {
           workout_done: true,
           busy_day_mode: false,
         },
+        {
+          user_id: trainee.id,
+          date: activityDate,
+        },
       ],
       "habits",
     );
