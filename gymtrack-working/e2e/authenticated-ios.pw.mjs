@@ -152,6 +152,30 @@ const bodyMeasurement = {
   notes: "מדידת בדיקה",
 };
 
+const otherCardioLog = {
+  id: "ios-smoke-other-cardio",
+  date: "2026-08-27",
+  type: "רכיבה אחרת",
+  durationMin: 17,
+  calories: 180,
+  intensity: "גבוהה",
+};
+
+const otherBodyWeightLog = {
+  id: "ios-smoke-other-weight",
+  date: "2026-08-26",
+  weight: 71.8,
+};
+
+const otherBodyMeasurement = {
+  id: "ios-smoke-other-measurement",
+  date: "2026-08-26",
+  waistCm: 88,
+  bodyFatPct: 31.2,
+  muscleMassKg: 39.4,
+  notes: "מדידה של מתאמנת אחרת",
+};
+
 const habit = {
   id: "ios-smoke-habit",
   date: "2026-08-25",
@@ -162,12 +186,31 @@ const habit = {
   busyDayMode: false,
 };
 
+const otherHabit = {
+  id: "ios-smoke-other-habit",
+  date: "2026-08-27",
+  steps: 1234,
+  stepsTarget: 9000,
+  weighInDone: false,
+  workoutDone: false,
+  busyDayMode: true,
+};
+
 const coachMessage = {
   id: "ios-smoke-message",
   coach_id: COACH_ID,
   client_id: CLIENT_ID,
   message: "כל הכבוד על ההתמדה השבוע",
   created_at: "2026-08-25T08:30:00.000Z",
+  is_read: false,
+};
+
+const otherCoachMessage = {
+  id: "ios-smoke-other-message",
+  coach_id: COACH_ID,
+  client_id: OTHER_CLIENT_ID,
+  message: "הודעה של מתאמנת אחרת",
+  created_at: "2026-08-27T08:30:00.000Z",
   is_read: false,
 };
 
@@ -342,10 +385,15 @@ async function installFixture(page, { role = "coach", online = false } = {}) {
       workouts,
       nutritionDay,
       cardioLog,
+      otherCardioLog,
       bodyWeightLog,
+      otherBodyWeightLog,
       bodyMeasurement,
+      otherBodyMeasurement,
       habit,
+      otherHabit,
       coachMessage,
+      otherCoachMessage,
       broadcastAnnouncement,
       challenge,
       initialOnline,
@@ -379,9 +427,9 @@ async function installFixture(page, { role = "coach", online = false } = {}) {
       let remoteCoachMessages = (() => {
         try {
           const stored = window.localStorage.getItem(remoteMessagesKey);
-          return stored ? JSON.parse(stored) : [coachMessage];
+          return stored ? JSON.parse(stored) : [coachMessage, otherCoachMessage];
         } catch {
-          return [coachMessage];
+          return [coachMessage, otherCoachMessage];
         }
       })();
       let coachMessageReads = 0;
@@ -520,19 +568,43 @@ async function installFixture(page, { role = "coach", online = false } = {}) {
             const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
             body =
               requestedUserId === otherClientProfile.id
-                ? []
+                ? [
+                    {
+                      ...otherCardioLog,
+                      user_id: otherClientProfile.id,
+                      duration_min: otherCardioLog.durationMin,
+                      estimated_calories: otherCardioLog.calories,
+                    },
+                  ]
                 : [{ ...cardioLog, user_id: clientProfile.id, duration_min: cardioLog.durationMin, estimated_calories: cardioLog.calories }];
           } else if (path === "body_weight_logs") {
             const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
             body =
               requestedUserId === otherClientProfile.id
-                ? []
+                ? [
+                    {
+                      id: otherBodyWeightLog.id,
+                      user_id: otherClientProfile.id,
+                      date: otherBodyWeightLog.date,
+                      weight_kg: otherBodyWeightLog.weight,
+                    },
+                  ]
                 : [{ id: bodyWeightLog.id, user_id: clientProfile.id, date: bodyWeightLog.date, weight_kg: bodyWeightLog.weight }];
           } else if (path === "body_measurements") {
             const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
             body =
               requestedUserId === otherClientProfile.id
-                ? []
+                ? [
+                    {
+                      id: otherBodyMeasurement.id,
+                      user_id: otherClientProfile.id,
+                      date: otherBodyMeasurement.date,
+                      waist_cm: otherBodyMeasurement.waistCm,
+                      body_fat_pct: otherBodyMeasurement.bodyFatPct,
+                      muscle_mass_kg: otherBodyMeasurement.muscleMassKg,
+                      notes: otherBodyMeasurement.notes,
+                    },
+                  ]
                 : [
                     {
                       id: bodyMeasurement.id,
@@ -548,7 +620,16 @@ async function installFixture(page, { role = "coach", online = false } = {}) {
             const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
             body =
               requestedUserId === otherClientProfile.id
-                ? []
+                ? [
+                    {
+                      ...otherHabit,
+                      user_id: otherClientProfile.id,
+                      steps_target: otherHabit.stepsTarget,
+                      weigh_in_done: otherHabit.weighInDone,
+                      workout_done: otherHabit.workoutDone,
+                      busy_day_mode: otherHabit.busyDayMode,
+                    },
+                  ]
                 : [
                     {
                       ...habit,
@@ -605,10 +686,15 @@ async function installFixture(page, { role = "coach", online = false } = {}) {
       workouts,
       nutritionDay,
       cardioLog,
+      otherCardioLog,
       bodyWeightLog,
+      otherBodyWeightLog,
       bodyMeasurement,
+      otherBodyMeasurement,
       habit,
+      otherHabit,
       coachMessage,
+      otherCoachMessage,
       broadcastAnnouncement,
       challenge,
       initialOnline: online,
@@ -831,6 +917,58 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
 
   await page.locator("article").last().scrollIntoViewIfNeeded();
   await expect(page.locator("article").last()).toBeInViewport();
+});
+
+test("coach profile resets measurements, activity, and messages when switching trainees", async ({
+  page,
+}) => {
+  await installFixture(page);
+
+  await page.goto("/");
+  await page.getByTestId("link-nav-coach").click();
+  await expect(page).toHaveURL(/\/coach\/clients/);
+  await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת");
+
+  await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
+  const workspace = page.locator('[data-coach-workspace="true"]');
+  await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
+    timeout: 20_000,
+  });
+  await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
+
+  const profile = page.locator('[data-coach-client-profile-inline="true"]');
+  await expect(profile).toBeVisible();
+  await expect(profile).toContainText("63.4");
+  await expect(profile).toContainText("74");
+  await expect(profile).toContainText("8,500");
+  await expect(profile).toContainText("הליכה מהירה");
+  await expect(profile).toContainText("כל הכבוד על ההתמדה השבוע");
+  await expect(profile).not.toContainText("71.8");
+  await expect(profile).not.toContainText("הודעה של מתאמנת אחרת");
+
+  await page.getByRole("button", { name: "סגירת פרופיל המשתמש" }).click();
+  await page.getByRole("button", { name: "סגירת תכנית המתאמן" }).click();
+  await expect(workspace).toHaveCount(0);
+
+  const clientSearch = page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" });
+  await expect(clientSearch).toBeVisible();
+  await clientSearch.fill("מתאמנת אחרת");
+  await expect(page.getByText("מתאמנת אחרת", { exact: true })).toBeVisible();
+  await page.getByText("מתאמנת אחרת", { exact: true }).click();
+  await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
+    timeout: 20_000,
+  });
+  await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
+
+  await expect(profile).toBeVisible();
+  await expect(profile).toContainText("71.8");
+  await expect(profile).toContainText("88");
+  await expect(profile).toContainText("1,234");
+  await expect(profile).toContainText("רכיבה אחרת");
+  await expect(profile).toContainText("הודעה של מתאמנת אחרת");
+  await expect(profile).not.toContainText("63.4");
+  await expect(profile).not.toContainText("כל הכבוד על ההתמדה השבוע");
+  await expect(profile).not.toContainText("מתאמנת בדיקה");
 });
 
 test("trainee sees the message sent from the coach profile after reconnecting", async ({ page }) => {
