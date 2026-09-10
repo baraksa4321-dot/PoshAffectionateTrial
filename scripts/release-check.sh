@@ -21,11 +21,11 @@ run_stage() {
   if "$@"; then
     printf "PASS: %s (%ss)\n" "$name" "$((SECONDS - started_at))"
     return 0
+  else
+    local status=$?
+    printf "FAIL: %s (exit %s after %ss)\n" "$name" "$status" "$((SECONDS - started_at))" >&2
+    return "$status"
   fi
-
-  local status=$?
-  printf "FAIL: %s (exit %s after %ss)\n" "$name" "$status" "$((SECONDS - started_at))" >&2
-  return "$status"
 }
 
 run_stage "Typecheck" pnpm run typecheck

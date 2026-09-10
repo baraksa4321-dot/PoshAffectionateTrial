@@ -852,6 +852,7 @@ async function run(): Promise<void> {
 }
 
 let loadedConfig: SmokeConfig | null = null;
+let exitCode = 0;
 try {
   loadedConfig = loadConfig();
   await run();
@@ -862,5 +863,10 @@ try {
       ? error.message
       : "Unknown smoke failure";
   console.error(`FAIL: ${message}`);
-  process.exitCode = 1;
+  exitCode = 1;
 }
+
+// Supabase Realtime can keep timers or sockets alive after the channels are
+// removed. The cleanup above must finish first, but the smoke command should
+// not wait indefinitely for those client internals after its result is known.
+process.exit(exitCode);
