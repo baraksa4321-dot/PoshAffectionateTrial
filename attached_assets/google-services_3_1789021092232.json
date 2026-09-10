@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "756319103288",
+    "project_id": "my-routine-537d4",
+    "storage_bucket": "my-routine-537d4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:756319103288:android:79836d8bd28d8abbb3b9cd",
+        "android_client_info": {
+          "package_name": "com.myroutine.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4FDBP4ULEuhXl3N1M0oZIg2ONB_275Z0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
