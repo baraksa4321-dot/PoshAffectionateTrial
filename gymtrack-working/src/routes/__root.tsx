@@ -74,6 +74,10 @@ function CompleteProfileName() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (!saving) setFullName(userProfile?.fullName ?? "");
+  }, [saving, userProfile?.fullName]);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSaving(true);

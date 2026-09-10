@@ -176,6 +176,8 @@ export type ChallengeEnrollment = {
   id: string;
   challengeId: string;
   workoutIds: string[];
+  /** Snapshot used to restore generated challenge workouts on a new device. */
+  workouts?: Workout[];
   startedAt: string;
   active: boolean;
 };

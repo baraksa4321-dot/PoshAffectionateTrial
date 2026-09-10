@@ -798,6 +798,7 @@ function startPlanRealtime(userId: string, preserveReconnectBackoff = false) {
   addTableSubscription("programs", `user_id=eq.${userId}`);
   addTableSubscription("program_days", `user_id=eq.${userId}`);
   addTableSubscription("challenges");
+  addTableSubscription("challenge_enrollments", `user_id=eq.${userId}`);
   addTableSubscription("nutrition_days", `user_id=eq.${userId}`);
   addTableSubscription("workout_sessions", `user_id=eq.${userId}`);
   addTableSubscription("body_weight_logs", `user_id=eq.${userId}`);
@@ -1388,7 +1389,10 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
       return;
     }
     if (cachedData && trustedOfflineCache) {
-      profileHydrationStatus = "ready";
+      // Cached data is safe to keep, but a schema/auth/permission failure is
+      // not an offline state. Surface it as a real retryable error so the user
+      // is not left in a partially hydrated session with stale permissions.
+      profileHydrationStatus = "error";
       profileHydrationError = pulled.error;
       syncStatus = "error";
       notifyListeners();
@@ -1965,7 +1969,14 @@ export function enrollInChallenge(challengeId: string, sessionId?: string) {
     (enrollment) => enrollment.challengeId === challengeId && enrollment.active,
   );
   if (existing) {
-    const workout = data.workouts.find((item) => item.id === existing.workoutIds[0]);
+    const restoredWorkouts = existing.workouts ?? [];
+    const existingWorkoutIds = new Set(data.workouts.map((item) => item.id));
+    const missingWorkouts = restoredWorkouts.filter((workout) => !existingWorkoutIds.has(workout.id));
+    if (missingWorkouts.length > 0) {
+      set({ ...data, workouts: [...data.workouts, ...missingWorkouts] });
+    }
+    const workout = data.workouts.find((item) => item.id === existing.workoutIds[0])
+      ?? restoredWorkouts[0];
     if (workout) return { enrollment: existing, workout, alreadyActive: true };
   }
 
@@ -1978,6 +1989,7 @@ export function enrollInChallenge(challengeId: string, sessionId?: string) {
     id: `challenge-enrollment-${uid()}`,
     challengeId,
     workoutIds: challengeWorkouts.map((workout) => workout.id),
+    workouts: challengeWorkouts,
     startedAt: new Date().toISOString(),
     active: true,
   };

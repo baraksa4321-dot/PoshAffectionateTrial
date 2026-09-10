@@ -66,6 +66,8 @@ function FoodDetail() {
   const [swapQuery, setSwapQuery] = useState("");
   const [showSwaps, setShowSwaps] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [savingFood, setSavingFood] = useState(false);
+  const [deletingFood, setDeletingFood] = useState(false);
   const [barcodeQuery, setBarcodeQuery] = useState(existing?.catalog?.barcode ?? "");
   const [barcodeState, setBarcodeState] = useState<"idle" | "loading" | "error">("idle");
   const [barcodeError, setBarcodeError] = useState("");
@@ -204,9 +206,15 @@ function FoodDetail() {
   };
 
   const onSave = () => {
-    if (!draft.name.trim()) return;
+    if (savingFood) return;
+    if (!draft.name.trim()) {
+      setSaveError("יש להזין שם מאכל לפני השמירה.");
+      return;
+    }
+    setSavingFood(true);
     if (!draft.servingSize.trim()) {
       setSaveError("יש להזין גודל מנת ייחוס ברור.");
+      setSavingFood(false);
       return;
     }
     try {
@@ -218,6 +226,7 @@ function FoodDetail() {
       setSaveError("");
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "לא ניתן לשמור את המאכל.");
+      setSavingFood(false);
       return;
     }
     if (isNew) {
@@ -229,10 +238,12 @@ function FoodDetail() {
     } else {
       navigate({ to: "/nutrition/foods" });
     }
+    setSavingFood(false);
   };
 
   const onDelete = () => {
-    if (!existing) return;
+    if (!existing || deletingFood) return;
+    setDeletingFood(true);
     deleteFood(existing.id);
     navigate({ to: "/nutrition/foods" });
   };
@@ -251,8 +262,14 @@ function FoodDetail() {
           >
             <ArrowRight className="h-5 w-5" />
           </Link>
-          <IconButton variant="primary" aria-label="שמור" onClick={onSave}>
-            <Check className="h-5 w-5" strokeWidth={2.4} />
+          <IconButton
+            variant="primary"
+            aria-label="שמור"
+            onClick={onSave}
+            disabled={savingFood}
+            aria-busy={savingFood}
+          >
+            {savingFood ? <span className="text-xs">...</span> : <Check className="h-5 w-5" strokeWidth={2.4} />}
           </IconButton>
         </div>
       }

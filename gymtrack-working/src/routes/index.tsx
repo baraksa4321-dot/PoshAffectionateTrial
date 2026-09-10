@@ -402,15 +402,19 @@ function Dashboard() {
     .map(({ workout, scheduledDate }) => `${scheduledDate}:${workout.id}:${workout.name}`)
     .join("|");
   useEffect(() => {
-    if (!authUser?.id || !reminderPreferences?.enabled) return;
-    void import("@/lib/notification-service").then(({ scheduleWorkoutReminders }) =>
-      scheduleWorkoutReminders(
-        scheduledWorkouts.map(({ workout, scheduledDate }) => ({
-          id: `${authUser.id}:${scheduledDate}:${workout.id}`,
-          date: scheduledDate,
-          workoutName: workout.name,
-        })),
-      ),
+    void import("@/lib/notification-service").then(
+      ({ scheduleWorkoutReminders, clearWorkoutReminders }) => {
+        if (!authUser?.id || !reminderPreferences?.enabled) {
+          return clearWorkoutReminders();
+        }
+        return scheduleWorkoutReminders(
+          scheduledWorkouts.map(({ workout, scheduledDate }) => ({
+            id: `${authUser.id}:${scheduledDate}:${workout.id}`,
+            date: scheduledDate,
+            workoutName: workout.name,
+          })),
+        );
+      },
     );
   }, [authUser?.id, reminderPreferences?.enabled, workoutReminderPayload]);
   const primaryWorkout = todayScheduledWorkout?.workout;
@@ -451,6 +455,8 @@ function Dashboard() {
     : null;
 
   const [dismissedMessageIds, setDismissedMessageIds] = useState<string[]>([]);
+  const [dismissingMessageId, setDismissingMessageId] = useState<string | null>(null);
+  const [dismissMessageError, setDismissMessageError] = useState("");
   useEffect(() => {
     if (!authUser?.id) return;
     const key = `myroutine-dismissed-broadcasts:${authUser.id}`;
@@ -465,13 +471,20 @@ function Dashboard() {
   const latestBroadcast =
     broadcasts?.find((message) => !dismissedMessageIds.includes(message.id)) ?? null;
   const dismissMessage = async (id: string, isBroadcast: boolean) => {
+    if (dismissingMessageId) return;
+    setDismissingMessageId(id);
+    setDismissMessageError("");
     if (!isBroadcast && authUser?.id) {
       const { error } = await supabase
         .from("coach_messages")
         .delete()
         .eq("id", id)
         .eq("client_id", authUser.id);
-      if (error) return;
+      if (error) {
+        setDismissMessageError(`לא ניתן להסתיר את ההודעה: ${error.message}`);
+        setDismissingMessageId(null);
+        return;
+      }
     }
     const next = [...dismissedMessageIds, id];
     setDismissedMessageIds(next);
@@ -481,6 +494,7 @@ function Dashboard() {
         JSON.stringify(next),
       );
     }
+    setDismissingMessageId(null);
   };
   const latestMeasurement = bodyMeasurements?.[0];
   const gender = userProfile?.gender;
@@ -523,6 +537,11 @@ function Dashboard() {
             data-testid="coach-message-banner"
             className="dashboard-notice surface-card space-y-1.5 border-primary/20 bg-primary/5 p-4 text-start"
           >
+            {dismissMessageError ? (
+              <p role="alert" className="rounded-lg bg-rose-50 p-2 text-[10px] font-bold text-rose-700">
+                {dismissMessageError}
+              </p>
+            ) : null}
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 font-bold text-xs text-primary">
                 <MessageSquare className="h-4 w-4" /> הודעה מהמאמן שלך
@@ -534,8 +553,10 @@ function Dashboard() {
                 <button
                   type="button"
                   onClick={() => void dismissMessage(latestCoachMsg.id, false)}
+                  disabled={dismissingMessageId !== null}
+                  aria-busy={dismissingMessageId === latestCoachMsg.id}
                   aria-label="מחיקת הודעת המאמן"
-                  className="grid h-6 w-6 place-items-center rounded-full text-muted-foreground hover:bg-rose-100 hover:text-rose-700"
+                  className="grid h-6 w-6 place-items-center rounded-full text-muted-foreground hover:bg-rose-100 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -553,6 +574,11 @@ function Dashboard() {
             data-testid="broadcast-message-banner"
             className="dashboard-notice surface-card space-y-1.5 border-accent/40 bg-accent/10 p-4 text-start"
           >
+            {dismissMessageError ? (
+              <p role="alert" className="rounded-lg bg-rose-50 p-2 text-[10px] font-bold text-rose-700">
+                {dismissMessageError}
+              </p>
+            ) : null}
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-xs font-bold text-ink">
                 <MessageSquare className="h-4 w-4 text-primary" /> הודעה חשובה
@@ -564,8 +590,10 @@ function Dashboard() {
                 <button
                   type="button"
                   onClick={() => void dismissMessage(latestBroadcast.id, true)}
+                  disabled={dismissingMessageId !== null}
+                  aria-busy={dismissingMessageId === latestBroadcast.id}
                   aria-label="הסתרת הודעת תפוצה"
-                  className="grid h-6 w-6 place-items-center rounded-full text-muted-foreground hover:bg-rose-100 hover:text-rose-700"
+                  className="grid h-6 w-6 place-items-center rounded-full text-muted-foreground hover:bg-rose-100 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>

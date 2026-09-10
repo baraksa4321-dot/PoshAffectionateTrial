@@ -1,4 +1,4 @@
-const CACHE_NAME = "myroutine-app-shell-v12";
+const CACHE_NAME = "myroutine-app-shell-v13";
 let firebaseMessagingReady = false;
 
 function openFirebaseConfigDb() {
@@ -161,11 +161,21 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  const deepLink =
+    event.notification?.data?.deep_link ||
+    event.notification?.data?.deepLink ||
+    event.notification?.data?.url ||
+    "";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       const existing = clients.find((client) => "focus" in client);
-      if (existing) return existing.focus();
-      return self.clients.openWindow(self.registration.scope);
+      const target = deepLink
+        ? new URL(deepLink, self.registration.scope).toString()
+        : self.registration.scope;
+      if (existing) {
+        return existing.navigate(target).catch(() => existing.focus());
+      }
+      return self.clients.openWindow(target);
     }),
   );
 });

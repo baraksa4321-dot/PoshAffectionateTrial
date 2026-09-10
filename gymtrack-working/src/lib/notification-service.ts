@@ -2,7 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { supabase } from "./supabase";
 
-const SERVICE_WORKER_URL = "/sw.js?v=12";
+const SERVICE_WORKER_URL = "/sw.js?v=13";
 const WORKOUT_NOTIFICATION_PREFIX = 82_000;
 const FIREBASE_APP_NAME = "gymtrack";
 const WORKOUT_REMINDER_HOUR = 8;
@@ -165,6 +165,10 @@ async function configureNativeNotifications(userId: string): Promise<DeliveryRes
         );
       });
       await FirebaseMessaging.addListener("notificationReceived", ({ notification }) => {
+        // FCM can already present a native notification for a notification
+        // payload. Scheduling another local notification here duplicates it.
+        // Only mirror the event while the app is not visible.
+        if (typeof document !== "undefined" && document.visibilityState === "visible") return;
         const title = notification.title ?? "הודעה חדשה";
         const body = notification.body ?? "";
         if (body) void showNativeNotification(title, body).catch(() => undefined);
@@ -301,6 +305,7 @@ export async function disableNotificationDelivery(userId: string) {
 
 export async function scheduleWorkoutReminders(reminders: WorkoutReminder[]) {
   if (!Capacitor.isNativePlatform()) return;
+  await clearWorkoutReminders();
   const notifications = reminders
     .map((reminder) => {
       const at = scheduledWorkoutDate(reminder.date);
@@ -316,24 +321,49 @@ export async function scheduleWorkoutReminders(reminders: WorkoutReminder[]) {
   if (notifications.length) await LocalNotifications.schedule({ notifications });
 }
 
+export async function clearWorkoutReminders() {
+  if (!Capacitor.isNativePlatform()) return;
+  const pending = await LocalNotifications.getPending().catch(() => ({ notifications: [] }));
+  const workoutNotifications = pending.notifications
+    .filter((notification) => notification.id >= WORKOUT_NOTIFICATION_PREFIX)
+    .map((notification) => ({ id: notification.id }));
+  if (workoutNotifications.length) {
+    await LocalNotifications.cancel({ notifications: workoutNotifications }).catch(() => undefined);
+  }
+}
+
 export async function notifyRemotePush(payload: {
   recipientUserId?: string;
   audience?: "assigned_clients" | "coaches" | "clients" | "everyone";
   title: string;
   body: string;
-}) {
-  try {
-    const { data, error } = await supabase.functions.invoke("send-fcm-notification", {
-      body: payload,
-    });
-    if (error) {
-      console.warn("[FCM remote notification]", error.message);
-      return;
+  deepLink?: string;
+}): Promise<{ success: true; sent: number; failed: number } | { success: false; error: string }> {
+  let lastError = "שליחת ההתראה נכשלה.";
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const { data, error } = await supabase.functions.invoke("send-fcm-notification", {
+        body: payload,
+      });
+      if (error) throw new Error(error.message);
+      if (data && typeof data === "object" && "error" in data) {
+        throw new Error(String(data.error));
+      }
+      const result = data as { sent?: number; failed?: number } | null;
+      const sent = Number(result?.sent ?? 0);
+      const failed = Number(result?.failed ?? 0);
+      if (failed > 0) {
+        return {
+          success: false,
+          error: `ההודעה נשמרה, אך ${failed} מכשירים לא קיבלו התראת Push.`,
+        };
+      }
+      return { success: true, sent, failed };
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : lastError;
+      if (attempt === 0) await new Promise((resolve) => window.setTimeout(resolve, 500));
     }
-    if (data && typeof data === "object" && "error" in data) {
-      console.warn("[FCM remote notification]", String(data.error));
-    }
-  } catch (error) {
-    console.warn("[FCM remote notification]", error);
   }
+  console.warn("[FCM remote notification]", lastError);
+  return { success: false, error: lastError };
 }

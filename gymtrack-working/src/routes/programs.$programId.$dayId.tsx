@@ -74,7 +74,7 @@ import {
 
 export const Route = createFileRoute("/programs/$programId/$dayId")({
   head: () => ({ meta: [{ title: "עורך יום אימון — MY routine" }] }),
-  component: DayBuilder,
+  component: DayBuilderRoute,
 });
 
 const fieldBase =
@@ -215,6 +215,11 @@ function computeSupersetLabels(items: WorkoutItem[]) {
     }
   }
   return labels;
+}
+
+function DayBuilderRoute() {
+  const { programId, dayId } = Route.useParams();
+  return <DayBuilder key={`${programId}:${dayId}`} />;
 }
 
 function DayBuilder() {

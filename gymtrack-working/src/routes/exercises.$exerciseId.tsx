@@ -48,7 +48,7 @@ export const Route = createFileRoute("/exercises/$exerciseId")({
       { property: "og:title", content: "פרטי תרגיל — MY routine" },
     ],
   }),
-  component: ExerciseDetail,
+  component: ExerciseDetailRoute,
 });
 
 const field =
@@ -313,6 +313,11 @@ function OptionImagesEditor({
   );
 }
 
+function ExerciseDetailRoute() {
+  const { exerciseId } = Route.useParams();
+  return <ExerciseDetail key={exerciseId} />;
+}
+
 function ExerciseDetail() {
   const { exerciseId } = Route.useParams();
   const navigate = useNavigate();
@@ -339,6 +344,7 @@ function ExerciseDetail() {
   const [alternativeQuery, setAlternativeQuery] = useState("");
   const [videoUploadError, setVideoUploadError] = useState("");
   const [saveError, setSaveError] = useState("");
+  const [savingExercise, setSavingExercise] = useState(false);
 
   // Scroll reset on navigation is handled centrally in __root.tsx (ScrollToTop
   // subscribes to router.subscribe('onResolved')); no per-page effect needed.
@@ -443,18 +449,21 @@ function ExerciseDetail() {
   };
 
   const onSave = async () => {
-    if (!canManageLibrary) return;
+    if (!canManageLibrary || savingExercise) return;
     setSaveError("");
+    setSavingExercise(true);
     const isOther = draft.muscleGroup === "אחר" || (draft.muscleGroups ?? []).includes("אחר");
     const customValue = isOther ? customMuscle.trim() : undefined;
     const finalMuscleGroup = isOther && customValue ? customValue : draft.muscleGroup;
 
     if (!draft.name.trim()) {
       setSaveError("יש להזין שם תרגיל לפני השמירה.");
+      setSavingExercise(false);
       return;
     }
     if (!finalMuscleGroup) {
       setSaveError("יש לבחור קבוצת שרירים לפני השמירה.");
+      setSavingExercise(false);
       return;
     }
     const equipmentOptions = selectedExerciseEquipmentOptions({
@@ -468,28 +477,34 @@ function ExerciseDetail() {
       equipmentOptions,
       ...(customValue === undefined ? {} : { customMuscleGroup: customValue }),
     };
-    saveExercise(savedExercise);
-    if (isNew) {
-      const syncResult = await flushCloudSync();
-      if (!syncResult.success) {
-        setSaveError(syncResult.error || "שמירת התרגיל בענן נכשלה. אפשר לנסות שוב.");
-        return;
+    try {
+      saveExercise(savedExercise);
+      if (isNew) {
+        const syncResult = await flushCloudSync();
+        if (!syncResult.success) {
+          setSaveError(syncResult.error || "שמירת התרגיל בענן נכשלה. אפשר לנסות שוב.");
+          return;
+        }
+        const returnUrl = window.sessionStorage.getItem("gymtrack-exercise-return-url");
+        if (returnUrl) {
+          window.sessionStorage.removeItem("gymtrack-exercise-return-url");
+          window.sessionStorage.setItem("gymtrack-created-exercise-id", savedExercise.id);
+          // The coach screen reads this together with the created id and restores
+          // the exact client/program/day context before assigning the exercise.
+          const returnPath = new URL(returnUrl, window.location.origin);
+          void navigate({
+            to: `${returnPath.pathname}${returnPath.search}${returnPath.hash}` as never,
+          });
+          return;
+        }
+        navigate({ to: "/exercises/$exerciseId", params: { exerciseId: savedExercise.id } });
+      } else {
+        setEditing(false);
       }
-      const returnUrl = window.sessionStorage.getItem("gymtrack-exercise-return-url");
-      if (returnUrl) {
-        window.sessionStorage.removeItem("gymtrack-exercise-return-url");
-        window.sessionStorage.setItem("gymtrack-created-exercise-id", savedExercise.id);
-        // The coach screen reads this together with the created id and restores
-        // the exact client/program/day context before assigning the exercise.
-        const returnPath = new URL(returnUrl, window.location.origin);
-        void navigate({
-          to: `${returnPath.pathname}${returnPath.search}${returnPath.hash}` as never,
-        });
-        return;
-      }
-      navigate({ to: "/exercises/$exerciseId", params: { exerciseId: savedExercise.id } });
-    } else {
-      setEditing(false);
+    } catch (error: unknown) {
+      setSaveError(error instanceof Error ? error.message : "שמירת התרגיל נכשלה. אפשר לנסות שוב.");
+    } finally {
+      setSavingExercise(false);
     }
   };
 
@@ -525,10 +540,12 @@ function ExerciseDetail() {
             <button
               type="button"
               onClick={onSave}
+              disabled={savingExercise}
+              aria-busy={savingExercise}
               aria-label="שמור"
-              className="press grid h-11 w-11 place-items-center rounded-2xl bg-primary text-primary-foreground"
+              className="press grid h-11 w-11 place-items-center rounded-2xl bg-primary text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Check className="h-5 w-5" strokeWidth={2.4} />
+              {savingExercise ? <span className="text-xs">...</span> : <Check className="h-5 w-5" strokeWidth={2.4} />}
             </button>
           ) : canManageLibrary ? (
             <button

@@ -76,8 +76,13 @@ export const Route = createFileRoute("/session/$workoutId")({
       { property: "og:title", content: "אימון פעיל — MY routine" },
     ],
   }),
-  component: Session,
+  component: SessionRoute,
 });
+
+function SessionRoute() {
+  const { workoutId } = Route.useParams();
+  return <Session key={workoutId} />;
+}
 
 function supersetLabels(items: WorkoutItem[]) {
   const labels: Record<number, string> = {};

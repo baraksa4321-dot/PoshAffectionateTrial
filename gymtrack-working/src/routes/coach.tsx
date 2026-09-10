@@ -1475,6 +1475,7 @@ export function CoachDashboardPage({
   const [clientFeedback, setClientFeedback] = useState<ClientFeedbackRow[]>([]);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMsg, setInviteMsg] = useState("");
+  const [addingClient, setAddingClient] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const applyClientDetails = useCallback(
     (result: ClientDetails, options?: { preserveOnError?: boolean }) => {
@@ -1526,6 +1527,7 @@ export function CoachDashboardPage({
   const [coachMsgText, setCoachMsgText] = useState("");
   const [msgSentNotice, setMsgSentNotice] = useState("");
   const [msgSendError, setMsgSendError] = useState("");
+  const [sendingCoachMessage, setSendingCoachMessage] = useState(false);
   const [sentCoachMessages, setSentCoachMessages] = useState<CoachMessage[]>([]);
   const [sentCoachMessagesError, setSentCoachMessagesError] = useState("");
   const [failedCoachMessage, setFailedCoachMessage] = useState<{
@@ -1538,6 +1540,8 @@ export function CoachDashboardPage({
   >("assigned_clients");
   const [broadcastNotice, setBroadcastNotice] = useState("");
   const [broadcastError, setBroadcastError] = useState("");
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
+  const [deletingBroadcastId, setDeletingBroadcastId] = useState<string | null>(null);
   const [sentBroadcasts, setSentBroadcasts] = useState<BroadcastAnnouncement[]>([]);
 
   const fetchSentCoachMessages = useCallback(
@@ -1759,6 +1763,7 @@ export function CoachDashboardPage({
 
   // Nutrition Prescription state
   const [editingNutrition, setEditingNutrition] = useState(false);
+  const [savingNutritionTargets, setSavingNutritionTargets] = useState(false);
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"programs" | "nutrition" | null>(
     null,
   );
@@ -3065,9 +3070,10 @@ export function CoachDashboardPage({
     e.preventDefault();
     const message = coachMsgText.trim();
     const clientIdForMessage = selectedClientId;
-    if (!clientIdForMessage || !message) return;
+    if (!clientIdForMessage || !message || sendingCoachMessage) return;
     setMsgSentNotice("");
     setMsgSendError("");
+    setSendingCoachMessage(true);
 
     try {
       await sendCoachMessage(
@@ -3080,6 +3086,11 @@ export function CoachDashboardPage({
         recipientUserId: clientIdForMessage,
         title: "הודעה חדשה מהמאמן",
         body: message,
+        deepLink: "/",
+      }).then((result) => {
+        if (!result.success && selectedClientId === clientIdForMessage) {
+          setMsgSendError(result.error);
+        }
       });
       setMsgSentNotice("הודעת החיזוק נשלחה בהצלחה למתאמן!");
       setCoachMsgText("");
@@ -3103,15 +3114,18 @@ export function CoachDashboardPage({
     } catch (err: unknown) {
       setFailedCoachMessage({ message, createdAt: new Date().toISOString() });
       setMsgSendError(`שליחת הודעת החיזוק נכשלה: ${errorMessage(err, "שגיאה בשליחת ההודעה")}`);
+    } finally {
+      setSendingCoachMessage(false);
     }
   };
 
   const handleSendBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();
     const message = broadcastText.trim();
-    if (!message) return;
+    if (!message || sendingBroadcast) return;
     setBroadcastNotice("");
     setBroadcastError("");
+    setSendingBroadcast(true);
     try {
       const {
         data: { user },
@@ -3127,6 +3141,9 @@ export function CoachDashboardPage({
         audience: broadcastAudience,
         title: "הודעה חדשה",
         body: message,
+        deepLink: "/",
+      }).then((result) => {
+        if (!result.success) setBroadcastError(result.error);
       });
       setBroadcastText("");
       setBroadcastNotice("ההודעה נשלחה בהצלחה.");
@@ -3154,29 +3171,42 @@ export function CoachDashboardPage({
       setBroadcastError(
         `שליחת ההודעה נכשלה: ${errorMessage(err, "יש לוודא שמיגרציית ההודעות הוחלה ב־Supabase.")}`,
       );
+    } finally {
+      setSendingBroadcast(false);
     }
   };
 
   const handleDeleteBroadcast = async (broadcast: BroadcastAnnouncement) => {
-    if (!authUser?.id || broadcast.senderId !== authUser.id) return;
-    setBroadcastError("");
-    const { error } = await supabase
-      .from("broadcast_announcements")
-      .delete()
-      .eq("id", broadcast.id)
-      .eq("sender_id", authUser.id);
-    if (error) {
-      setBroadcastError(`מחיקת ההודעה נכשלה: ${error.message}`);
+    if (
+      !authUser?.id ||
+      broadcast.senderId !== authUser.id ||
+      deletingBroadcastId !== null
+    )
       return;
+    setBroadcastError("");
+    setDeletingBroadcastId(broadcast.id);
+    try {
+      const { error } = await supabase
+        .from("broadcast_announcements")
+        .delete()
+        .eq("id", broadcast.id)
+        .eq("sender_id", authUser.id);
+      if (error) throw error;
+      setSentBroadcasts((current) => current.filter((item) => item.id !== broadcast.id));
+      setBroadcastNotice("ההודעה נמחקה לכולם.");
+    } catch (error: unknown) {
+      setBroadcastError(`מחיקת ההודעה נכשלה: ${errorMessage(error, "שגיאה במחיקה")}`);
+    } finally {
+      setDeletingBroadcastId(null);
     }
-    setSentBroadcasts((current) => current.filter((item) => item.id !== broadcast.id));
-    setBroadcastNotice("ההודעה נמחקה לכולם.");
   };
 
   // Add Client by Email via RPC lookup
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (addingClient) return;
     setInviteMsg("");
+    setAddingClient(true);
 
     try {
       const {
@@ -3207,6 +3237,8 @@ export function CoachDashboardPage({
       loadCoachClients();
     } catch (err: unknown) {
       setInviteMsg(errorMessage(err, "אירעה שגיאה בשיוך המתאמן"));
+    } finally {
+      setAddingClient(false);
     }
   };
 
@@ -3763,28 +3795,32 @@ export function CoachDashboardPage({
 
   // Save Nutrition Targets for Client
   const handleSaveNutritionTargets = async () => {
-    if (!isCoach || !selectedClientId) return;
+    if (!isCoach || !selectedClientId || savingNutritionTargets) return;
     setManagementError("");
+    setSavingNutritionTargets(true);
     const today = new Date().toISOString().slice(0, 10);
 
-    const { error } = await supabase
-      .from("nutrition_days")
-      .upsert(
-        clientNutritionTargetUpsertPayload(
-          `${selectedClientId}_${today}`,
-          selectedClientId,
-          today,
-          calTarget,
-        ),
-      );
+    try {
+      const { error } = await supabase
+        .from("nutrition_days")
+        .upsert(
+          clientNutritionTargetUpsertPayload(
+            `${selectedClientId}_${today}`,
+            selectedClientId,
+            today,
+            calTarget,
+          ),
+        );
 
-    if (error) {
-      setManagementError(`שמירת יעד התזונה נכשלה: ${error.message}`);
-      return;
+      if (error) throw error;
+      setEditingNutrition(false);
+      const refreshed = await pullClientDataForCoach(selectedClientId);
+      applyClientDetails(refreshed);
+    } catch (error: unknown) {
+      setManagementError(`שמירת יעד התזונה נכשלה: ${errorMessage(error, "שגיאה בשמירת היעד")}`);
+    } finally {
+      setSavingNutritionTargets(false);
     }
-    setEditingNutrition(false);
-    const refreshed = await pullClientDataForCoach(selectedClientId);
-    applyClientDetails(refreshed);
   };
 
   const addPlannedMeal = () => {
@@ -4516,9 +4552,11 @@ export function CoachDashboardPage({
                 />
                 <button
                   type="submit"
-                  className="self-end rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-xs hover:bg-primary/90"
+                  disabled={sendingBroadcast}
+                  aria-busy={sendingBroadcast}
+                  className="self-end rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-xs hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  שלח
+                  {sendingBroadcast ? "שולח..." : "שלח"}
                 </button>
               </div>
             </form>
@@ -4540,10 +4578,12 @@ export function CoachDashboardPage({
                     </div>
                     <button
                       type="button"
+                      disabled={deletingBroadcastId !== null}
+                      aria-busy={deletingBroadcastId === broadcast.id}
                       onClick={() => void handleDeleteBroadcast(broadcast)}
-                      className="shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold text-destructive hover:bg-destructive/10"
+                      className="shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      מחיקה לכולם
+                      {deletingBroadcastId === broadcast.id ? "מוחק..." : "מחיקה לכולם"}
                     </button>
                   </div>
                 ))}
@@ -9330,9 +9370,11 @@ export function CoachDashboardPage({
 
                 <button
                   type="submit"
-                  className="w-full rounded-2xl bg-primary py-2.5 text-sm font-bold text-white shadow-md hover:bg-primary/90 cursor-pointer"
+                  disabled={addingClient}
+                  aria-busy={addingClient}
+                  className="w-full rounded-2xl bg-primary py-2.5 text-sm font-bold text-white shadow-md hover:bg-primary/90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  שייך מתאמן לחשבוני
+                  {addingClient ? "משייך..." : "שייך מתאמן לחשבוני"}
                 </button>
               </form>
             </div>
@@ -9416,9 +9458,11 @@ export function CoachDashboardPage({
                   />
                   <button
                     type="submit"
-                    className="self-end rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-xs transition-colors hover:bg-primary/90"
+                    disabled={sendingCoachMessage}
+                    aria-busy={sendingCoachMessage}
+                    className="self-end rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-xs transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    שלח
+                    {sendingCoachMessage ? "שולח..." : "שלח"}
                   </button>
                 </form>
                 {failedCoachMessage ? (

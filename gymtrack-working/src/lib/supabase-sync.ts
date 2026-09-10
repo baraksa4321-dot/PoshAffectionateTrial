@@ -3,6 +3,7 @@ import {
   type ClientLink,
   type CardioLog,
   type Challenge,
+  type ChallengeEnrollment,
   type CoachMessage,
   type Exercise,
   type FoodItem,
@@ -676,9 +677,31 @@ export async function syncLocalToSupabase(
         ),
         "Challenges",
       );
+
+      const enrollmentPayload = (localData.challengeEnrollments ?? []).map((enrollment) => ({
+        id: enrollment.id,
+        user_id: userId,
+        challenge_id: enrollment.challengeId,
+        workout_ids: enrollment.workoutIds,
+        workouts: enrollment.workouts ?? [],
+        started_at: enrollment.startedAt,
+        active: enrollment.active,
+        updated_at: new Date().toISOString(),
+      }));
+      if (enrollmentPayload.length > 0) {
+        await requireSuccessfulWrite(
+          supabase
+            .from("challenge_enrollments")
+            .upsert(enrollmentPayload, { onConflict: "id" }),
+          "Challenge enrollments sync",
+        );
+      }
     } catch (error) {
-      if (isMissingTableInSchemaCache(error, "challenges")) {
-        console.warn("[Optional challenges sync skipped]: public.challenges is unavailable");
+      if (
+        isMissingTableInSchemaCache(error, "challenges") ||
+        isMissingTableInSchemaCache(error, "challenge_enrollments")
+      ) {
+        console.warn("[Optional challenge sync skipped]: challenge tables are unavailable");
       } else {
         throw error;
       }
@@ -1188,6 +1211,10 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     const programsPromise = supabase.from("programs").select("*").eq("user_id", userId);
     const programDaysPromise = supabase.from("program_days").select("*").eq("user_id", userId);
     const challengesPromise = supabase.from("challenges").select("*");
+    const challengeEnrollmentsPromise = supabase
+      .from("challenge_enrollments")
+      .select("*")
+      .eq("user_id", userId);
     const sessionsPromise = supabase
       .from("workout_sessions")
       .select("*")
@@ -1237,6 +1264,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       programsResult,
       programDaysResult,
       challengesResult,
+      challengeEnrollmentsResult,
       sessionsResult,
       bodyWeightResult,
       cardioResult,
@@ -1255,6 +1283,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       programsPromise,
       programDaysPromise,
       challengesPromise,
+      challengeEnrollmentsPromise,
       sessionsPromise,
       bodyWeightPromise,
       cardioPromise,
@@ -1447,6 +1476,41 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         ...builtIns.filter((challenge) => !deletedChallengeIds.has(challenge.id)),
         ...remoteChallenges.filter((challenge) => !challenge.isBuiltIn),
       ];
+    }
+
+    const {
+      data: dbChallengeEnrollments,
+      error: challengeEnrollmentsError,
+    } = challengeEnrollmentsResult;
+    if (
+      challengeEnrollmentsError &&
+      !isMissingTableInSchemaCache(challengeEnrollmentsError, "challenge_enrollments")
+    ) {
+      throw new Error(
+        `Challenge enrollments pull failed: ${challengeEnrollmentsError.message}`,
+      );
+    }
+    if (!challengeEnrollmentsError && dbChallengeEnrollments) {
+      const localById = new Map(
+        (nextData.challengeEnrollments ?? []).map((enrollment) => [enrollment.id, enrollment]),
+      );
+      const remoteEnrollments: ChallengeEnrollment[] = dbChallengeEnrollments.map((row) => ({
+        id: row.id,
+        challengeId: row.challenge_id,
+        workoutIds: Array.isArray(row.workout_ids) ? row.workout_ids : [],
+        workouts: Array.isArray(row.workouts) ? row.workouts : [],
+        startedAt: row.started_at,
+        active: row.active !== false,
+      }));
+      const mergedEnrollments = new Map(localById);
+      for (const enrollment of remoteEnrollments) mergedEnrollments.set(enrollment.id, enrollment);
+      nextData.challengeEnrollments = Array.from(mergedEnrollments.values());
+
+      const workoutMap = new Map(nextData.workouts.map((workout) => [workout.id, workout]));
+      for (const enrollment of nextData.challengeEnrollments) {
+        for (const workout of enrollment.workouts ?? []) workoutMap.set(workout.id, workout);
+      }
+      nextData.workouts = Array.from(workoutMap.values());
     }
 
     // 6–7c. Independent logs are part of the same parallel pull.

@@ -1,8 +1,77 @@
-# דו״ח QA מלא — MYroutine / GymTrack
+# דו״ח QA מלא וסבב תיקונים — MYroutine / GymTrack
 
 **תאריך:** 10 בספטמבר 2026  
-**היקף:** ביקורת QA סטטית ודינמית לפני production  
-**הגבלה:** לא בוצעו תיקוני קוד במסגרת הביקורת.
+**היקף:** ביקורת QA סטטית ודינמית, ולאחריה סבב תיקוני reliability בסביבת development/preview
+**הגבלה:** לא בוצע deploy או publish.
+
+## עדכון לאחר סבב התיקונים
+
+הסעיפים שמתחת לכותרת הזו מתעדים את הביקורת המקורית. הם נשמרו כדי לאפשר השוואה, אך הסטטוס העדכני נמצא כאן.
+
+### תיקונים שבוצעו
+
+1. **Realtime ו־coach messages**
+   - migration 30 הוקשחה ל־idempotent table checks.
+   - נוסף migration 46 שמגן על הוספת טבלאות קיימות ל־publication.
+   - ה־coach message flow נשאר RLS-scoped ומבצע refresh אחרי Realtime.
+   - live smoke עצמאי עבר מחדש: callback בזמן אמת, persisted refresh, חסימת מחיקה, report refresh ו־plan/menu propagation.
+
+2. **Stale drafts**
+   - workout, program, program-day, exercise ו־session routes קיבלו keyed route boundaries.
+   - שינוי route ID גורם ל־remount של ה־editor המקומי, בלי למחוק עריכה בזמן refresh של אותו route.
+   - profile completion draft מסתנכרן אחרי hydration.
+
+3. **Async feedback**
+   - הודעת coach, broadcast, מחיקת broadcast, שיוך מתאמן, dismiss הודעה, יעד תזונה ושמירת exercise/food קיבלו in-flight guard, disabled/aria-busy, טקסט busy ושגיאה גלויה.
+   - validation של שם מאכל ריק מציגה הודעה במקום return שקט.
+
+4. **Profile hydration**
+   - כשל pull שאינו network כבר לא מסומן כ־`ready` כאשר יש cache.
+   - ה־cache נשמר, אך המסך מציג Error/Retry כדי למנוע שימוש שקט ב־permissions/profile ישנים.
+
+5. **Challenges**
+   - נוסף `challenge_enrollments` עם RLS ו־Realtime.
+   - enrollment כולל snapshot של generated workouts, כך שמכשיר חדש יכול לשחזר גם את ההרשמה וגם את האימונים.
+   - sync/pull משחזרים את ה־workouts בלי להפוך אותם ל־coach program.
+
+6. **Push notifications**
+   - נוסף deep-link פנימי ל־FCM payload ול־service-worker click handling.
+   - native foreground callback לא יוצר notification כפול כשהאפליקציה גלויה.
+   - remote push מחזיר תוצאת כשל, מבצע retry חד־פעמי ומציג אזהרה ב־coach UI.
+   - reminders ישנים מבוטלים לפני תזמון מחדש וגם כאשר reminders מושבתים.
+
+### תוצאות verification עדכניות
+
+| בדיקה | תוצאה עדכנית |
+|---|---|
+| Workspace typecheck | ✅ עבר |
+| GymTrack unit tests | ✅ 109 עברו, 600 assertions |
+| Status color checks | ✅ עבר |
+| Production build | ✅ עבר |
+| WebKit iPhone/Desktop | ✅ הסתיים; 14 עברו, אך 2 תרחישים סומנו flaky לאחר retry |
+| Live smoke עצמאי | ✅ עבר במלואו |
+| Live smoke בתוך release gate | ⚠️ ריצה חוזרת נעצרה ב־`PGRST303` בשלב auth; ריצה עצמאית סמוכה עברה |
+| Lint | ⚠️ לא הסתיים בתוך 300 שניות |
+| API workflow | ❌ עדיין `EADDRINUSE` על פורט 8080 |
+| Native iOS/Android Push | ⚠️ לא אומת במכשיר פיזי |
+| Deployment | ❌ לא בוצע, בהתאם להנחיה |
+
+### החלטות קודמות שהשפיעו על התיקונים
+
+- **Offline-first:** לא הוחלפה סמכות ה־local draft בזמן עריכה; keyed remount מופעל רק כשמזהה route משתנה.
+- **Cache לפי משתמש:** cache קיים נשמר גם כש־pull נכשל, אך שגיאה שאינה network אינה מוסתרת.
+- **Coach attention privacy:** לא הועברו private notes או reviewed state לענן.
+- **RLS ו־live role safeguards:** לא הורחבו הרשאות כדי “לתקן” sync; כל pull נשאר מוגבל ל־RLS.
+- **Challenge ownership:** generated workouts נשמרים כחלק מ־personal enrollment ולא בתוך תוכנית coach.
+- **No deploy:** כל הבדיקות נשארו ב־development/preview.
+
+### חסמים שנותרו לפני production
+
+1. להריץ live smoke עם session/auth יציב עד שה־release gate עובר ללא `PGRST303`.
+2. לייצב את שני תרחישי ה־WebKit flaky ולבדוק אם הם timing-only.
+3. לפתור את workflow של API או להסיר את התנגשות פורט 8080.
+4. להשלים lint בלי timeout.
+5. לאמת Push אמיתי ב־Android וב־iOS עם Firebase/APNs, כולל click deep-link.
 
 ## סיכום מנהלים
 
@@ -576,4 +645,4 @@ loading/error/retry קיימים ב־`coach.tsx:1444-1520`, `2276-2315`, `2321-2
 6. **לאמת cross-device challenge persistence.**
 7. **לאמת authenticated responsive flows ב־375, 768 ו־1440.**
 
-לא בוצעו תיקוני קוד במסגרת ביקורת זו.
+החלקים ההיסטוריים בדוח מתארים את מצב הקוד לפני סבב התיקונים. לא בוצע deploy או publish לאחר התיקונים.

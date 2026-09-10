@@ -10,6 +10,7 @@ type PushRequest = {
   audience?: "assigned_clients" | "coaches" | "clients" | "everyone";
   title: string;
   body: string;
+  deepLink?: string;
 };
 
 class RequestError extends Error {
@@ -170,6 +171,14 @@ Deno.serve(async (request) => {
     if (requestBody.audience && !audiences.includes(requestBody.audience)) {
       throw new RequestError("The notification audience is not supported.", 400);
     }
+    if (
+      requestBody.deepLink !== undefined &&
+      (typeof requestBody.deepLink !== "string" ||
+        requestBody.deepLink.length > 500 ||
+        !requestBody.deepLink.startsWith("/"))
+    ) {
+      throw new RequestError("The notification deep link must be an internal path.", 400);
+    }
     const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: sender, error: senderError } = await admin
       .from("profiles")
@@ -219,7 +228,10 @@ Deno.serve(async (request) => {
               message: {
                 token: tokenRow.token,
                 notification: { title: requestBody.title, body: requestBody.body },
-                data: { source: "gymtrack" },
+                 data: {
+                   source: "gymtrack",
+                   ...(requestBody.deepLink ? { deep_link: requestBody.deepLink } : {}),
+                 },
               },
             }),
           },

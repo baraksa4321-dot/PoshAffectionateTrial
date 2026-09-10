@@ -49,8 +49,13 @@ import type { Program, Workout } from "@/lib/gym-types";
 
 export const Route = createFileRoute("/programs/$programId")({
   head: () => ({ meta: [{ title: "תכנית אימונים — MY routine" }] }),
-  component: ProgramDetail,
+  component: ProgramDetailRoute,
 });
+
+function ProgramDetailRoute() {
+  const { programId } = Route.useParams();
+  return <ProgramDetail key={programId} />;
+}
 
 function ProgramDetail() {
   const { programId } = Route.useParams();

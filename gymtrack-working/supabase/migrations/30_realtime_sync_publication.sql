@@ -2,20 +2,6 @@
 -- Apply this migration only after verifying the target Supabase project and
 -- receiving explicit approval for the production schema change.
 
-ALTER TABLE public.profiles REPLICA IDENTITY FULL;
-ALTER TABLE public.programs REPLICA IDENTITY FULL;
-ALTER TABLE public.program_days REPLICA IDENTITY FULL;
-ALTER TABLE public.nutrition_days REPLICA IDENTITY FULL;
-ALTER TABLE public.workout_sessions REPLICA IDENTITY FULL;
-ALTER TABLE public.body_weight_logs REPLICA IDENTITY FULL;
-ALTER TABLE public.cardio_logs REPLICA IDENTITY FULL;
-ALTER TABLE public.body_measurements REPLICA IDENTITY FULL;
-ALTER TABLE public.client_habits REPLICA IDENTITY FULL;
-ALTER TABLE public.client_feedback REPLICA IDENTITY FULL;
-ALTER TABLE public.coach_messages REPLICA IDENTITY FULL;
-ALTER TABLE public.broadcast_announcements REPLICA IDENTITY FULL;
-ALTER TABLE public.coach_clients REPLICA IDENTITY FULL;
-
 DO $$
 DECLARE
   table_name TEXT;
@@ -36,6 +22,20 @@ BEGIN
     'coach_clients'
   ]
   LOOP
+    IF to_regclass('public.' || table_name) IS NOT NULL
+       AND EXISTS (
+         SELECT 1
+         FROM pg_class relation
+         JOIN pg_namespace schema_name ON schema_name.oid = relation.relnamespace
+         WHERE schema_name.nspname = 'public'
+           AND relation.relname = table_name
+       ) THEN
+      EXECUTE format(
+        'ALTER TABLE public.%I REPLICA IDENTITY FULL',
+        table_name
+      );
+    END IF;
+
     IF to_regclass('public.' || table_name) IS NOT NULL
        AND NOT EXISTS (
          SELECT 1

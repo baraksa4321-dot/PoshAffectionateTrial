@@ -16,11 +16,16 @@ export const Route = createFileRoute("/workouts/$workoutId")({
       { property: "og:title", content: "עורך אימון — MY routine" },
     ],
   }),
-  component: Builder,
+  component: BuilderRoute,
 });
 
 const field =
   "w-full rounded-xl border border-border bg-secondary px-4 py-3 text-base outline-none focus:border-primary";
+
+function BuilderRoute() {
+  const { workoutId } = Route.useParams();
+  return <Builder key={workoutId} />;
+}
 
 function Builder() {
   const { workoutId } = Route.useParams();
