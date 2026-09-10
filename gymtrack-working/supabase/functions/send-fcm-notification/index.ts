@@ -31,24 +31,44 @@ function base64Url(value: ArrayBuffer | string) {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function privateKeyBytes(pem: string) {
-  const normalized = pem
-    .trim()
-    .replace(/^"(.*)"$/s, "$1")
-    .replace(/\\n/g, "\n")
-    .replace(/\r/g, "");
-  if (!normalized.includes("-----BEGIN PRIVATE KEY-----")) {
-    throw new Error("Firebase private key must be a PKCS#8 PEM value.");
+function privateKeyBytes(rawValue: string) {
+  let pem = rawValue.trim();
+  if (
+    (pem.startsWith('"') && pem.endsWith('"')) ||
+    (pem.startsWith("'") && pem.endsWith("'"))
+  ) {
+    pem = pem.slice(1, -1);
   }
-  const clean = normalized.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, "");
-  const binary = atob(clean);
-  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  pem = pem
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\\r/g, "\r")
+    .replace(/\r\n?/g, "\n")
+    .trim();
+
+  const match = pem.match(
+    /-----BEGIN ([A-Z0-9 ]*PRIVATE KEY)-----([\s\S]*?)-----END \1-----/,
+  );
+  if (!match || match[1] !== "PRIVATE KEY") {
+    throw new Error("Firebase private key must be a PKCS#8 PEM.");
+  }
+
+  const encoded = match[2].replace(/\s/g, "");
+  if (!encoded) throw new Error("Firebase private key is empty.");
+  try {
+    const binary = atob(encoded);
+    return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  } catch {
+    throw new Error("Firebase private key PEM is not valid base64.");
+  }
 }
 
 async function googleAccessToken() {
-  const clientEmail = Deno.env.get("FIREBASE_CLIENT_EMAIL");
-  const privateKey = Deno.env.get("FIREBASE_PRIVATE_KEY")?.replace(/\\n/g, "\n");
-  if (!clientEmail || !privateKey) throw new Error("Firebase server credentials are missing.");
+  const clientEmail = Deno.env.get("FIREBASE_CLIENT_EMAIL")?.trim();
+  const privateKey = Deno.env.get("FIREBASE_PRIVATE_KEY");
+  if (!clientEmail || !privateKey?.trim()) {
+    throw new Error("Firebase server credentials are missing.");
+  }
   const issuedAt = Math.floor(Date.now() / 1000);
   const header = base64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
   const claim = base64Url(
@@ -76,11 +96,17 @@ async function googleAccessToken() {
   const response = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${signingInput}.${base64Url(signature)}`,
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: `${signingInput}.${base64Url(signature)}`,
+    }),
   });
   if (!response.ok) throw new Error(`Firebase OAuth failed: ${await response.text()}`);
   const payload = await response.json();
-  return String(payload.access_token);
+  if (typeof payload.access_token !== "string" || !payload.access_token) {
+    throw new Error("Firebase OAuth response did not include an access token.");
+  }
+  return payload.access_token;
 }
 
 async function recipientIds(
@@ -174,44 +200,54 @@ Deno.serve(async (request) => {
       return jsonResponse({ sent: 0 });
     }
     const accessToken = await googleAccessToken();
-    const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
+    const projectId = Deno.env.get("FIREBASE_PROJECT_ID")?.trim();
     if (!projectId) throw new Error("Firebase project id is missing.");
     let sent = 0;
+    let failed = 0;
     const invalidTokens: string[] = [];
     for (const tokenRow of tokens ?? []) {
-      const response = await fetch(
-        `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
-        {
-          method: "POST",
-          headers: {
-            authorization: `Bearer ${accessToken}`,
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({
-            message: {
-              token: tokenRow.token,
-              notification: { title: requestBody.title, body: requestBody.body },
-              data: { source: "gymtrack" },
+      try {
+        const response = await fetch(
+          `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+          {
+            method: "POST",
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+              "content-type": "application/json",
             },
-          }),
-        },
-      );
-      if (response.ok) {
-        sent += 1;
-      } else {
-        const responseBody = await response.text();
-        try {
-          const parsed = JSON.parse(responseBody) as {
-            error?: { status?: string; details?: Array<{ errorCode?: string }> };
-          };
-          const isUnregistered =
-            parsed.error?.status === "NOT_FOUND" ||
-            parsed.error?.details?.some((detail) => detail.errorCode === "UNREGISTERED") ||
-            responseBody.includes("UNREGISTERED");
-          if (isUnregistered) invalidTokens.push(tokenRow.token);
-        } catch {
-          // Keep the token when FCM returns a non-JSON error; it may be transient.
+            body: JSON.stringify({
+              message: {
+                token: tokenRow.token,
+                notification: { title: requestBody.title, body: requestBody.body },
+                data: { source: "gymtrack" },
+              },
+            }),
+          },
+        );
+        if (response.ok) {
+          sent += 1;
+        } else {
+          failed += 1;
+          const responseBody = await response.text();
+          try {
+            const parsed = JSON.parse(responseBody) as {
+              error?: { status?: string; details?: Array<{ errorCode?: string }> };
+            };
+            const isUnregistered =
+              parsed.error?.status === "NOT_FOUND" ||
+              parsed.error?.details?.some((detail) => detail.errorCode === "UNREGISTERED") ||
+              responseBody.includes("UNREGISTERED");
+            if (isUnregistered) invalidTokens.push(tokenRow.token);
+          } catch {
+            // Keep the token when FCM returns a non-JSON error; it may be transient.
+          }
         }
+      } catch (error) {
+        failed += 1;
+        console.warn(
+          "[FCM delivery] Could not send to one device:",
+          error instanceof Error ? error.message : "unknown delivery error",
+        );
       }
     }
     if (invalidTokens.length) {
@@ -221,7 +257,7 @@ Deno.serve(async (request) => {
         .in("token", invalidTokens);
       if (cleanupError) console.warn("Could not remove invalid FCM tokens:", cleanupError.message);
     }
-    return jsonResponse({ sent });
+    return jsonResponse({ sent, failed });
   } catch (error) {
     if (error instanceof RequestError) return jsonResponse({ error: error.message }, error.status);
     console.error("[send-fcm-notification]", error);
