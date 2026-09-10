@@ -294,7 +294,16 @@ export async function notifyRemotePush(payload: {
   body: string;
 }) {
   try {
-    await supabase.functions.invoke("send-fcm-notification", { body: payload });
+    const { data, error } = await supabase.functions.invoke("send-fcm-notification", {
+      body: payload,
+    });
+    if (error) {
+      console.warn("[FCM remote notification]", error.message);
+      return;
+    }
+    if (data && typeof data === "object" && "error" in data) {
+      console.warn("[FCM remote notification]", String(data.error));
+    }
   } catch (error) {
     console.warn("[FCM remote notification]", error);
   }

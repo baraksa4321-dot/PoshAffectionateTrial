@@ -115,10 +115,16 @@ Deno.serve(async (request) => {
     const ids = await recipientIds(admin, authData.user.id, requestBody);
     if (!ids.length) return new Response(JSON.stringify({ sent: 0 }), { headers: { ...corsHeaders, "content-type": "application/json" } });
     const { data: tokens } = await admin.from("push_tokens").select("token").in("user_id", ids);
+    if (!tokens?.length) {
+      return new Response(JSON.stringify({ sent: 0 }), {
+        headers: { ...corsHeaders, "content-type": "application/json" },
+      });
+    }
     const accessToken = await googleAccessToken();
     const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
     if (!projectId) throw new Error("Firebase project id is missing.");
     let sent = 0;
+    const invalidTokens: string[] = [];
     for (const tokenRow of tokens ?? []) {
       const response = await fetch(
         `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
@@ -137,7 +143,29 @@ Deno.serve(async (request) => {
           }),
         },
       );
-      if (response.ok) sent += 1;
+      if (response.ok) {
+        sent += 1;
+      } else {
+        const responseBody = await response.text();
+        try {
+          const parsed = JSON.parse(responseBody) as {
+            error?: { status?: string; details?: Array<{ errorCode?: string }> };
+          };
+          const isUnregistered =
+            parsed.error?.status === "NOT_FOUND" ||
+            parsed.error?.details?.some((detail) => detail.errorCode === "UNREGISTERED");
+          if (isUnregistered) invalidTokens.push(tokenRow.token);
+        } catch {
+          // Keep the token when FCM returns a non-JSON error; it may be transient.
+        }
+      }
+    }
+    if (invalidTokens.length) {
+      const { error: cleanupError } = await admin
+        .from("push_tokens")
+        .delete()
+        .in("token", invalidTokens);
+      if (cleanupError) console.warn("Could not remove invalid FCM tokens:", cleanupError.message);
     }
     return new Response(JSON.stringify({ sent }), { headers: { ...corsHeaders, "content-type": "application/json" } });
   } catch (error) {
