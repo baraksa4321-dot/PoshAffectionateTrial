@@ -386,7 +386,7 @@ html.night-mode textarea::placeholder {
 :root[data-theme="black"] .bg-white\/70,
 :root[data-theme="black"] .bg-white\/80 {
   background-color: #ffffff !important;
-  color: #141416 !important;
+  color: #000000 !important;
 }
 
 :root[data-theme="dark-brown"] {
@@ -481,24 +481,24 @@ html.night-mode textarea::placeholder {
 
 :root[data-theme="black"] {
   --background: #ffffff;
-  --foreground: #141416;
+  --foreground: #000000;
   --surface: #ffffff;
   --surface-2: #f0f0f1;
   --cream: #f6f6f7;
   --card: #ffffff;
-  --card-foreground: #141416;
+  --card-foreground: #000000;
   --popover: #ffffff;
-  --popover-foreground: #141416;
+  --popover-foreground: #000000;
   --primary: #08080a;
   --primary-foreground: #ffffff;
   --secondary: #e8e8ea;
-  --secondary-foreground: #08080a;
+  --secondary-foreground: #000000;
   --rose: #242428;
   --rose-soft: #eeeeef;
   --accent: #d1d1d5;
-  --accent-foreground: #141416;
+  --accent-foreground: #000000;
   --muted: #f1f1f2;
-  --muted-foreground: #55555a;
+  --muted-foreground: #000000;
   --border: #d0d0d4;
   --input: #c4c4c9;
   --ring: #08080a;
