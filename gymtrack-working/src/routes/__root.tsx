@@ -1101,10 +1101,15 @@ function NavigationProgress() {
   const isNavigating = useRouterState({
     select: (state) => state.status === "pending",
   });
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   return (
     <div
-      className={`route-progress ${isNavigating ? "route-progress-active" : ""}`}
+      className={`route-progress ${hasMounted && isNavigating ? "route-progress-active" : ""}`}
       aria-hidden="true"
     />
   );

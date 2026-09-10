@@ -1437,6 +1437,7 @@ export function AppShell({
             if (!authOnly) setShowAuthModal(false);
           }}
           ariaLabel="התחברות לחשבון"
+          panelClassName="contents"
         >
           <div className="auth-panel auth-editorial-panel w-full max-w-sm space-y-6 rounded-2xl border border-border bg-surface p-6 shadow-xl">
             <div className="flex justify-center">
