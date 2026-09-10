@@ -381,6 +381,64 @@ describe("cross-browser Supabase sync boundaries", () => {
     expect(result.data.clients).toEqual([]);
   });
 
+  test("retries the optional food catalog without barcode when the column is unavailable", async () => {
+    setResponse("profiles", { id: "client-b", role: "client", weight_kg: 70 });
+    setActionResponses("foods", "select", [
+      {
+        data: null,
+        error: {
+          code: "PGRST204",
+          message: "Could not find the 'barcode' column of 'foods' in the schema cache",
+        },
+      },
+      {
+        data: [
+          {
+            id: "catalog-food-1",
+            name: "אבקת חלבון",
+            english_name: "Protein powder",
+            category: "מוצרי חלבון",
+            brand: "Test brand",
+            serving_unit: "30g",
+            serving_grams: 30,
+            calories: 120,
+            protein: 24,
+            carbs: 3,
+            fat: 2,
+            fiber: 1,
+            search_aliases: ["אבקה"],
+            catalog_source: "open-food-facts",
+            catalog_source_product_id: "source-1",
+            catalog_source_url: "https://example.com/product/source-1",
+            catalog_product_type: "powder",
+            catalog_package_size: "900g",
+            catalog_synced_at: "2026-09-10T00:00:00.000Z",
+            catalog_source_updated_at: "2026-09-09T00:00:00.000Z",
+            catalog_verification_status: "external-unverified",
+          },
+        ],
+        error: null,
+      },
+    ]);
+
+    const { pullSupabaseData } = await syncModule;
+    const result = await pullSupabaseData("client-b", makeLocalData());
+
+    expect(result.success).toBe(true);
+    expect(callsFor("foods", "select")).toHaveLength(2);
+    if (!result.success) return;
+    expect(result.data.foods).toEqual([
+      expect.objectContaining({
+        id: "catalog-food-1",
+        name: "אבקת חלבון",
+        catalog: expect.objectContaining({
+          source: "open-food-facts",
+          sourceProductId: "source-1",
+        }),
+      }),
+    ]);
+  });
+
   test("keeps coach and client data queries scoped to the requested client", async () => {
     setResponse("profiles", { id: "client-b", role: "client", weight_kg: 70 });
     setResponse("custom_exercises", [

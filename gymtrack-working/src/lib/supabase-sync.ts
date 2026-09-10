@@ -336,7 +336,11 @@ function isMissingTableInSchemaCache(error: unknown, tableName: string): boolean
   );
 }
 
-function isMissingColumnInSchema(error: unknown, tableName: string): boolean {
+function isMissingColumnInSchema(
+  error: unknown,
+  tableName: string,
+  columnName?: string,
+): boolean {
   const candidate = error as { code?: unknown; message?: unknown } | null;
   const code = typeof candidate?.code === "string" ? candidate.code : "";
   const message = error instanceof Error ? error.message : String(candidate?.message ?? error);
@@ -345,7 +349,11 @@ function isMissingColumnInSchema(error: unknown, tableName: string): boolean {
     code === "42703" ||
     /column .* does not exist/i.test(message) ||
     /could not find the .* column/i.test(message);
-  return mentionsMissingColumn && message.includes(tableName);
+  return (
+    mentionsMissingColumn &&
+    message.includes(tableName) &&
+    (!columnName || message.includes(columnName))
+  );
 }
 
 function isOptionalBodyWeightSchemaError(error: unknown): boolean {
@@ -1203,11 +1211,13 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     const customFoodsPromise = supabase.from("custom_foods").select("*").eq("user_id", userId);
     // Public catalog rows are optional. A project that has not applied the
     // additive catalog migration must still hydrate the account normally.
+    const publicFoodsSelect =
+      "id,name,english_name,category,brand,serving_unit,serving_grams,calories,protein,carbs,fat,fiber,search_aliases,barcode,catalog_source,catalog_source_product_id,catalog_source_url,catalog_product_type,catalog_package_size,catalog_synced_at,catalog_source_updated_at,catalog_verification_status";
+    const publicFoodsSelectWithoutBarcode =
+      "id,name,english_name,category,brand,serving_unit,serving_grams,calories,protein,carbs,fat,fiber,search_aliases,catalog_source,catalog_source_product_id,catalog_source_url,catalog_product_type,catalog_package_size,catalog_synced_at,catalog_source_updated_at,catalog_verification_status";
     const publicFoodsPromise = supabase
       .from("foods")
-      .select(
-        "id,name,english_name,category,brand,serving_unit,serving_grams,calories,protein,carbs,fat,fiber,search_aliases,barcode,catalog_source,catalog_source_product_id,catalog_source_url,catalog_product_type,catalog_package_size,catalog_synced_at,catalog_source_updated_at,catalog_verification_status",
-      )
+      .select(publicFoodsSelect)
       .eq("catalog_source", "open-food-facts");
     const nutritionDaysPromise = supabase.from("nutrition_days").select("*").eq("user_id", userId);
     const recipesPromise = supabase
@@ -1569,7 +1579,16 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
 
     // 8b. Public supermarket catalog. This is additive and optional: no
     // catalog response can remove seed, imported, or personal food records.
-    const { data: dbPublicFoods, error: publicFoodsError } = publicFoodsResult;
+    let dbPublicFoods: Array<Record<string, unknown>> | null = publicFoodsResult.data;
+    let publicFoodsError = publicFoodsResult.error;
+    if (publicFoodsError && isMissingColumnInSchema(publicFoodsError, "foods", "barcode")) {
+      const fallbackPublicFoodsResult = await supabase
+        .from("foods")
+        .select(publicFoodsSelectWithoutBarcode)
+        .eq("catalog_source", "open-food-facts");
+      dbPublicFoods = fallbackPublicFoodsResult.data as Array<Record<string, unknown>> | null;
+      publicFoodsError = fallbackPublicFoodsResult.error;
+    }
     if (
       publicFoodsError &&
       (isMissingTableInSchemaCache(publicFoodsError, "foods") ||

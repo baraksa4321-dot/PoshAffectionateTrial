@@ -6176,9 +6176,9 @@ export function CoachDashboardPage({
                               עדיין לא נרשם מעקב תזונה.
                             </p>
                           ) : null}
-                          {clientNutritionNotes.slice(0, 2).map((note) => (
+                          {clientNutritionNotes.slice(0, 2).map((note, noteIndex) => (
                             <p
-                              key={`${note.date}-${note.meal}-${note.note}`}
+                              key={`${note.date}-${note.meal}-${note.note}-${noteIndex}`}
                               className="rounded-lg bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-900"
                             >
                               הערת מתאמן: {note.note}
@@ -6460,9 +6460,9 @@ export function CoachDashboardPage({
                                 .filter((food) => food.notes?.trim())
                                 .map((food) => ({ meal: meal.name, note: food.notes!.trim() })),
                             )
-                            .map((note) => (
+                            .map((note, noteIndex) => (
                               <p
-                                key={`${note.meal}-${note.note}`}
+                                key={`${note.meal}-${note.note}-${noteIndex}`}
                                 className="rounded-lg bg-white/80 px-2 py-1 text-[11px] text-ink"
                               >
                                 {note.meal}: {note.note}
