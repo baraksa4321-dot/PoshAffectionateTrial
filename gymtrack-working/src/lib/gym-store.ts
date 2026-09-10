@@ -42,7 +42,10 @@ const USER_PENDING_PREFIX = "gymtrack.v1.pending.";
 // Supabase auth and the initial profile/data hydration may cross several
 // network boundaries. Four seconds caused valid logins on slower connections
 // to be reported as permission failures before the request could finish.
-const AUTH_TIMEOUT_MS = 15_000;
+// Auth reads the persisted Supabase session locally in the normal case. If a
+// refresh is blocked by an unavailable network, do not keep the whole app
+// behind a splash; the auth listener can still accept a late real session.
+const AUTH_TIMEOUT_MS = 3_000;
 const INITIAL_DATA_TIMEOUT_MS = 30_000;
 const SYNC_FLUSH_TIMEOUT_MS = 12_000;
 const DEFAULT_REMINDER_PREFERENCES: ReminderPreferences = {
@@ -577,6 +580,7 @@ let refreshInFlight: Promise<void> | null = null;
 let hydrationInFlight: { userId: string; promise: Promise<void> } | null = null;
 let lastCloudRefreshAt = 0;
 let profileAccessVerified = false;
+let authResolutionAwaitingInitialEvent = false;
 let everydayFoodDatabase: FoodItem[] = ISRAELI_PROTEIN_PRODUCTS;
 let additionalExercises: Exercise[] = [];
 let seedExerciseNameMigrations: Record<string, { from: string; to: string }> = {};
@@ -1091,9 +1095,19 @@ function load() {
   hydrated = true;
   // Keep the large food and exercise catalogs out of the entry path. They are
   // merged during the first idle turn while auth and the local snapshot start.
-  window.setTimeout(() => {
-    void loadReferenceLibraries();
-  }, 1_500);
+  const scheduleReferenceLibraries = () => {
+    const requestIdle = (
+      window as typeof window & {
+        requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      }
+    ).requestIdleCallback;
+    if (requestIdle) {
+      requestIdle(() => void loadReferenceLibraries(), { timeout: 3_000 });
+    } else {
+      window.setTimeout(() => void loadReferenceLibraries(), 1_500);
+    }
+  };
+  scheduleReferenceLibraries();
 
   // Setup Supabase Auth state listener
   if (typeof window !== "undefined") {
@@ -1135,21 +1149,22 @@ function load() {
       window.setInterval(refreshWhenVisible, 15_000);
     }
 
-    Promise.race([
+    let authTimeoutId: number | null = null;
+    const authRequest = Promise.race([
       supabase.auth.getSession(),
       new Promise<{
         data: { session: null };
         error: Error;
-      }>((resolve) =>
-        window.setTimeout(
+      }>((resolve) => {
+        authTimeoutId = window.setTimeout(
           () =>
             resolve({
               data: { session: null },
               error: new Error("פג הזמן לאימות החשבון"),
             }),
           AUTH_TIMEOUT_MS,
-        ),
-      ),
+        );
+      }),
     ])
       .then(({ data: { session }, error }) => {
         if (error) {
@@ -1157,6 +1172,7 @@ function load() {
           // Supabase can still deliver the real session through the auth
           // listener after a slow getSession request finishes.
           authResolved = true;
+          authResolutionAwaitingInitialEvent = true;
           currentUser = null;
           authStatus = "unauthenticated";
           profileHydrationStatus = "error";
@@ -1171,6 +1187,7 @@ function load() {
             }
           : null;
         authResolved = true;
+        authResolutionAwaitingInitialEvent = false;
         authStatus = session?.user ? "authenticated" : "unauthenticated";
         if (session?.user) {
           const cachedData = resetDataForUser(session.user.id);
@@ -1182,16 +1199,34 @@ function load() {
       })
       .catch(() => {
         authResolved = true;
+        authResolutionAwaitingInitialEvent = true;
         currentUser = null;
         authStatus = "unauthenticated";
         profileHydrationStatus = "error";
         profileHydrationError = "לא ניתן לאמת את חיבור Supabase";
         listeners.forEach((l) => l());
       });
+    // The timeout is only a race guard. It must not remain scheduled after a
+    // normal local-session read has already completed.
+    void authRequest.finally(() => {
+      if (authTimeoutId !== null) clearTimeout(authTimeoutId);
+    });
 
     supabase.auth.onAuthStateChange((_event, session) => {
-      if (!authResolved && _event === "INITIAL_SESSION") return;
+      if (
+        _event === "INITIAL_SESSION" &&
+        (!authResolved || !authResolutionAwaitingInitialEvent)
+      ) {
+        return;
+      }
       const prevUserId = currentUser?.id;
+      const nextUserId = session?.user?.id;
+      const sameReadyUser =
+        Boolean(nextUserId) &&
+        nextUserId === prevUserId &&
+        authStatus === "authenticated" &&
+        profileHydrationStatus !== "loading";
+      if (sameReadyUser) return;
       currentUser = session?.user
         ? {
             id: session.user.id,
@@ -1199,6 +1234,7 @@ function load() {
           }
         : null;
       authResolved = true;
+      authResolutionAwaitingInitialEvent = false;
       authStatus = session?.user ? "authenticated" : "unauthenticated";
 
       if (session?.user) {
@@ -1599,7 +1635,11 @@ export function useGym(): GymData {
 }
 
 export function useAuthUser() {
-  return currentUser;
+  return useSyncExternalStore(
+    subscribe,
+    () => currentUser,
+    () => null,
+  );
 }
 
 export function useAuthStatus() {
@@ -3082,6 +3122,7 @@ export function resetGymStoreForTests() {
   profileHydrationError = "";
   profileAccessVerified = false;
   authResolved = false;
+  authResolutionAwaitingInitialEvent = false;
   hydrationGeneration += 1;
   syncStatus = "idle";
   hasPendingCloudChanges = false;

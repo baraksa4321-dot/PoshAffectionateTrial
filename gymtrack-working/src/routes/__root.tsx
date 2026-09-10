@@ -1132,8 +1132,6 @@ function RootContent() {
   );
   const loadingVariant = loadingIndexes.animationIndex;
   const loadingMessageIndex = loadingIndexes.messageIndex;
-  const [minimumLoadingDone, setMinimumLoadingDone] = useState(false);
-  const [initialLoadingComplete, setInitialLoadingComplete] = useState(false);
   const profileHydrationStatus = useProfileHydrationStatus();
   const profileHydrationError = useProfileHydrationError();
   const hasProfileHydrationError =
@@ -1152,29 +1150,18 @@ function RootContent() {
     profileHydrationStatus === "ready" &&
     userProfile?.role === "client" &&
     accountApprovalStatus !== "approved";
-  const initialDataReady =
-    authStatus === "unauthenticated" ||
-    (authStatus === "authenticated" &&
-      (profileHydrationStatus === "ready" || profileHydrationStatus === "error"));
-  // The splash belongs to the current WebView lifetime, not to every
-  // background refresh. Once the first screen is ready, auth/profile refreshes
-  // must stay invisible so they cannot interrupt an active workout.
-  const isLoadingScreen =
-    !initialLoadingComplete && (authStatus === "loading" || isProfileHydrating || !minimumLoadingDone);
+  // Cached account data marks the profile ready before its background pull, so
+  // only an unresolved auth/profile state blocks the first screen. Background
+  // refreshes keep the current UI visible and cannot reintroduce the splash.
+  const isLoadingScreen = authStatus === "loading" || isProfileHydrating;
   const activeLoadingGender =
     authStatus === "unauthenticated" ? undefined : (userProfile?.gender ?? loadingGender);
-  const isInitialAuthLoading = !initialLoadingComplete;
   // Loading is intentionally determined by the profile gender:
   // women get the expressive animated surface and men get the spinner.
   // Until a gender is known, stay on the neutral spinner rather than guessing.
   const showExpressiveLoading = activeLoadingGender === "female";
   const loadingCopyGender = activeLoadingGender ?? "female";
   const loadingMode = showExpressiveLoading ? "expressive" : "plain";
-
-  useEffect(() => {
-    if (initialLoadingComplete || !minimumLoadingDone || !initialDataReady) return;
-    setInitialLoadingComplete(true);
-  }, [initialDataReady, initialLoadingComplete, minimumLoadingDone]);
 
   useLoadingCycleEffect(() => {
     try {
@@ -1324,12 +1311,8 @@ function RootContent() {
     const illustrationTimer = window.setInterval(() => {
       setLoadingRotationTick((current) => current + 1);
     }, 1_500);
-    const minimumLoadingTimer = window.setTimeout(() => {
-      setMinimumLoadingDone(true);
-    }, 350);
     return () => {
       window.clearInterval(illustrationTimer);
-      window.clearTimeout(minimumLoadingTimer);
     };
   }, []);
 
@@ -1403,7 +1386,7 @@ function RootContent() {
       scheduleNextModule();
     };
 
-    const warmupTimer = window.setTimeout(warmRouteModules, 4_000);
+    const warmupTimer = window.setTimeout(warmRouteModules, 650);
     window.addEventListener("online", warmRouteModules);
     const cleanup = () => {
       stopped = true;
