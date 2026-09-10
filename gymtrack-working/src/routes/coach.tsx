@@ -2299,6 +2299,16 @@ export function CoachDashboardPage({
       return;
     }
 
+    const smokeFailureKey = "ios-smoke.fail-selected-trainee-data-once";
+    if (window.localStorage.getItem(smokeFailureKey) === "true") {
+      window.localStorage.removeItem(smokeFailureKey);
+      setClientDetails(null);
+      setClientDetailsError("temporary selected trainee data failure");
+      setLoadingDetails(false);
+      setClientRefreshInFlight(false);
+      return;
+    }
+
     void pullClientDataForCoach(selectedClientId)
       .then((res) => {
         if (!active) return;
@@ -9247,9 +9257,11 @@ export function CoachDashboardPage({
                   </p>
                   <button
                     type="button"
+                    data-testid="coach-client-details-retry"
                     onClick={() => {
                       if (!selectedClientId) return;
                       setLoadingDetails(true);
+                      setClientDetailsError("");
                       void pullClientDataForCoach(selectedClientId)
                         .then((result) => {
                           applyClientDetails(result);

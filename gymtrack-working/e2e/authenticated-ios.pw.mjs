@@ -354,7 +354,10 @@ function authSession(role = "coach") {
   };
 }
 
-async function installFixture(page, { role = "coach", online = false, showCalories = true } = {}) {
+async function installFixture(
+  page,
+  { role = "coach", online = false, showCalories = true, failSelectedTraineeDataOnce = false } = {},
+) {
   const isTrainee = role === "trainee";
   const userId = isTrainee ? CLIENT_ID : COACH_ID;
   const fixtureClientProfile = { ...clientProfile, show_calories: showCalories };
@@ -399,6 +402,7 @@ async function installFixture(page, { role = "coach", online = false, showCalori
       broadcastAnnouncement,
       challenge,
       initialOnline,
+      failSelectedTraineeDataOnce,
     }) => {
       let isOnline = initialOnline;
       Object.defineProperty(window.navigator, "onLine", {
@@ -434,6 +438,15 @@ async function installFixture(page, { role = "coach", online = false, showCalori
           return [coachMessage, otherCoachMessage];
         }
       })();
+      const selectedTraineeFailureKey = "ios-smoke.fail-selected-trainee-data-once";
+      let shouldFailSelectedTraineeData =
+        failSelectedTraineeDataOnce &&
+        window.localStorage.getItem(selectedTraineeFailureKey) === "true";
+      window.__iosSmokeArmSelectedTraineeDataFailure = () => {
+        if (!failSelectedTraineeDataOnce) return;
+        window.localStorage.setItem(selectedTraineeFailureKey, "true");
+        shouldFailSelectedTraineeData = true;
+      };
       let coachMessageReads = 0;
       window.__iosSmokeCoachMessageReads = () => coachMessageReads;
       let broadcastReads = 0;
@@ -470,6 +483,27 @@ async function installFixture(page, { role = "coach", online = false, showCalori
             });
           }
           let body = [];
+          const selectedDetailsPaths = new Set([
+            "profiles",
+            "custom_exercises",
+            "programs",
+            "program_days",
+            "nutrition_days",
+            "body_measurements",
+            "body_weight_logs",
+            "workout_sessions",
+            "cardio_logs",
+            "client_habits",
+          ]);
+          if (
+            selectedDetailsPaths.has(path) &&
+            url.includes(clientProfile.id) &&
+            shouldFailSelectedTraineeData
+          ) {
+            shouldFailSelectedTraineeData = false;
+            window.localStorage.removeItem(selectedTraineeFailureKey);
+            throw new Error("temporary selected trainee data failure");
+          }
           if (path === "coach_clients") {
             body = [
               {
@@ -718,6 +752,7 @@ async function installFixture(page, { role = "coach", online = false, showCalori
       broadcastAnnouncement,
       challenge,
       initialOnline: online,
+      failSelectedTraineeDataOnce,
     },
   );
 }
@@ -1032,6 +1067,38 @@ test("coach profile resets measurements, activity, and messages when switching t
   await expect(profile).not.toContainText("63.4");
   await expect(profile).not.toContainText("כל הכבוד על ההתמדה השבוע");
   await expect(profile).not.toContainText("מתאמנת בדיקה");
+});
+
+test("coach profile retry recovers after a temporary trainee data failure", async ({ page }) => {
+  await installFixture(page, { failSelectedTraineeDataOnce: true });
+
+  await page.goto("/");
+  await page.getByTestId("link-nav-coach").click();
+  await expect(page).toHaveURL(/\/coach\/clients/);
+  await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת בדיקה");
+  await page.evaluate(() => window.__iosSmokeArmSelectedTraineeDataFailure());
+  await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
+
+  const workspace = page.locator('[data-coach-workspace="true"]');
+  const detailsError = page.getByTestId("coach-client-details-error");
+  await expect(workspace).toHaveAttribute("data-coach-details-state", "error", {
+    timeout: 20_000,
+  });
+  await expect(workspace).toHaveAttribute("aria-busy", "false");
+  await expect(detailsError).toBeVisible();
+  await expect(detailsError).toContainText("temporary selected trainee data failure");
+  await expect(workspace.getByTestId("coach-client-details-loading")).toHaveCount(0);
+
+  await page.getByTestId("coach-client-details-retry").click();
+  await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
+    timeout: 20_000,
+  });
+  await expect(workspace.getByTestId("coach-client-details-ready")).toBeVisible();
+  await expect(detailsError).toHaveCount(0);
+
+  await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
+  await expect(page.locator('[data-coach-client-profile-inline="true"]')).toBeVisible();
+  await expect(page.getByText("פרופיל המשתמש", { exact: true })).toBeVisible();
 });
 
 test("trainee sees the message sent from the coach profile after reconnecting", async ({
