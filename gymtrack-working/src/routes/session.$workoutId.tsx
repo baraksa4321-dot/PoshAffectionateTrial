@@ -109,15 +109,14 @@ function supersetLabels(items: WorkoutItem[]) {
 
 const ACTIVE_SESSION_KEY = (id: string) => `gymtrack.active_session.${id}`;
 const ACTIVE_SESSION_FEEDBACK_KEY = (id: string) => `gymtrack.active_session_feedback.${id}`;
-const VIDEO_UPLOAD_FINISH_TIMEOUT_MS = 15 * 60_000;
 
 function videoUploadErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : "";
   if (/413|too large|maximum|exceed|payload|size limit|file size/i.test(message)) {
-    return "הסרטון גדול מדי להעלאה. נסי סרטון קצר יותר או איכות צילום נמוכה יותר.";
+    return "העלאת הסרטון נכשלה. האימון נשמר, ואפשר לנסות שוב מאוחר יותר.";
   }
   if (/timeout|timed out|זמן רב מדי/i.test(message)) {
-    return "העלאת הסרטון לוקחת זמן רב. נסי להמתין עוד רגע או לבחור סרטון קצר יותר.";
+    return "העלאת הסרטון מתעכבת. האימון נשמר, ואפשר לנסות שוב מאוחר יותר.";
   }
   return message || "העלאת סרטון הביצוע נכשלה";
 }
@@ -491,8 +490,8 @@ function Session() {
   }, [initial]);
   const [startedAt] = useState(() => Date.now());
   const entriesRef = useRef(entries);
-  const videoUploadTasksRef = useRef(new Set<Promise<boolean>>());
   const videoFilesRef = useRef(new Map<number, File>());
+  const videoUploadVersionsRef = useRef(new Map<number, number>());
   const restoredVideoDraftWorkoutIdRef = useRef<string | null>(null);
   const completedSaveRef = useRef(false);
   useEffect(() => {
@@ -824,6 +823,8 @@ function Session() {
     }
     const nextUrl = URL.createObjectURL(file);
     const previousUrl = entries[exerciseIndex]?.videoUrl;
+    const uploadVersion = (videoUploadVersionsRef.current.get(exerciseIndex) ?? 0) + 1;
+    videoUploadVersionsRef.current.set(exerciseIndex, uploadVersion);
     if (previousUrl?.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
     setVideoUploadError("");
     setVideoUploadErrorExerciseIndex(null);
@@ -848,6 +849,7 @@ function Session() {
     );
     const uploadTask = upload
       .then(({ signedUrl, path }) => {
+        if (videoUploadVersionsRef.current.get(exerciseIndex) !== uploadVersion) return true;
         const entriesWithUploadedVideo = entriesRef.current.map((entry, index) => {
           if (index !== exerciseIndex || entry.videoUrl !== nextUrl) return entry;
           return { ...entry, videoPath: path, videoUrl: signedUrl };
@@ -855,10 +857,23 @@ function Session() {
         entriesRef.current = entriesWithUploadedVideo;
         setEntries(entriesWithUploadedVideo);
         void removeWorkoutVideoDraft(workout.id, exerciseIndex);
+        const finishedSession = finishedSessionRef.current;
+        if (finishedSession) {
+          const updatedSession: HistorySession = {
+            ...finishedSession,
+            entries: finishedSession.entries.map((entry, index) =>
+              index === exerciseIndex ? { ...entry, videoPath: path, videoUrl: signedUrl } : entry,
+            ),
+          };
+          finishedSessionRef.current = updatedSession;
+          saveSession(updatedSession);
+          void flushCloudSync();
+        }
         URL.revokeObjectURL(nextUrl);
         return true;
       })
       .catch((error: unknown) => {
+        if (videoUploadVersionsRef.current.get(exerciseIndex) !== uploadVersion) return false;
         setVideoUploadErrorExerciseIndex(exerciseIndex);
         setVideoUploadError(videoUploadErrorMessage(error));
         return false;
@@ -866,8 +881,7 @@ function Session() {
       .finally(() => {
         setVideoUploadsInFlight((count) => Math.max(0, count - 1));
       });
-    videoUploadTasksRef.current.add(uploadTask);
-    void uploadTask.finally(() => videoUploadTasksRef.current.delete(uploadTask));
+    void uploadTask;
   };
 
   const retryPerformanceVideo = (exerciseIndex: number) => {
@@ -892,24 +906,6 @@ function Session() {
     if (isFinishing) return;
     setIsFinishing(true);
     setFinishError("");
-    const pendingVideoUploads = [...videoUploadTasksRef.current];
-    if (pendingVideoUploads.length > 0) {
-      const uploadResults = await Promise.race([
-        Promise.all(pendingVideoUploads),
-        new Promise<boolean[] | null>((resolve) =>
-          window.setTimeout(() => resolve(null), VIDEO_UPLOAD_FINISH_TIMEOUT_MS),
-        ),
-      ]);
-      if (uploadResults === null || uploadResults.some((uploaded) => !uploaded)) {
-        setIsFinishing(false);
-        setFinishError(
-          uploadResults === null
-            ? "הסרטון עדיין עולה. המתיני רגע ונסי לסיים שוב."
-            : "הסרטון לא נשמר בענן. נסי שוב לפני סיום האימון.",
-        );
-        return;
-      }
-    }
     const currentEntries = entriesRef.current;
     const allSetsCompleted =
       currentEntries.length > 0 &&
@@ -1379,7 +1375,7 @@ function Session() {
                 ) : null}
                 {videoUploadsInFlight > 0 && entry.videoUrl?.startsWith("blob:") ? (
                   <p className="mt-2 text-[10px] font-semibold text-primary">
-                    הסרטון נשמר במכשיר ומועלה לענן…
+                    הסרטון נשמר במכשיר וממשיך לעלות לענן…
                   </p>
                 ) : null}
                 {videoUploadError && videoUploadErrorExerciseIndex === ei ? (
@@ -1617,6 +1613,11 @@ function Session() {
             {finishError ? (
               <p className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800">
                 {finishError}
+              </p>
+            ) : null}
+            {videoUploadsInFlight > 0 ? (
+              <p className="rounded-xl bg-primary/5 px-3 py-2 text-xs font-semibold text-primary">
+                האימון יישמר עכשיו. הסרטון ימשיך לעלות לענן ברקע.
               </p>
             ) : null}
             <button
