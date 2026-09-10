@@ -831,10 +831,14 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await page.getByRole("button", { name: "סגירת פרופיל המשתמש" }).click();
 
   await expect(workspace).toHaveCSS("overflow-y", "auto");
-  await workspace.evaluate((element) => {
-    element.scrollTop = element.scrollHeight;
+  const workspaceCanScroll = await workspace.evaluate((element) => {
+    const canScroll = element.scrollHeight > element.clientHeight + 1;
+    if (canScroll) element.scrollTop = element.scrollHeight;
+    return canScroll;
   });
-  await expect.poll(() => workspace.evaluate((element) => element.scrollTop > 0)).toBe(true);
+  if (workspaceCanScroll) {
+    await expect.poll(() => workspace.evaluate((element) => element.scrollTop > 0)).toBe(true);
+  }
   await expect
     .poll(() =>
       workspace.evaluate((element) => {
@@ -1099,6 +1103,27 @@ test("coach profile retry recovers after a temporary trainee data failure", asyn
   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
   await expect(page.locator('[data-coach-client-profile-inline="true"]')).toBeVisible();
   await expect(page.getByText("פרופיל המשתמש", { exact: true })).toBeVisible();
+});
+
+test("authenticated core routes remain usable across responsive widths", async ({ page }) => {
+  await installFixture(page);
+
+  const routes = [
+    { path: "/workouts", marker: "האימונים שלי" },
+    { path: "/programs", marker: "התוכניות שלך" },
+    { path: "/exercises", marker: "תרגילים" },
+    { path: "/nutrition", marker: "יומן תזונה" },
+  ];
+
+  await page.goto("/coach/clients");
+  await expect(page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" })).toBeVisible();
+
+  for (const route of routes) {
+    await page.goto(route.path);
+    await expect(page.getByRole("heading", { name: route.marker, exact: true })).toBeVisible({
+      timeout: 20_000,
+    });
+  }
 });
 
 test("trainee sees the message sent from the coach profile after reconnecting", async ({

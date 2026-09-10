@@ -129,7 +129,11 @@ for _ in $(seq 1 "$preview_start_timeout_seconds"); do
     if timeout --foreground --signal=TERM --kill-after=10s "$webkit_timeout_seconds" \
       env PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1 \
         GYMTRACK_SMOKE_PORT="$port" \
-        pnpm run test:ios -- --project=webkit-iphone --project=webkit-desktop --retries=1
+        pnpm exec playwright test \
+          --config gymtrack-working/e2e/playwright.config.mjs \
+          --project=webkit-iphone \
+          --project=webkit-desktop \
+          --retries=1
     then
       echo "PASS: WebKit iPhone and desktop smoke tests completed."
     else

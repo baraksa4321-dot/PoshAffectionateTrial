@@ -30,6 +30,38 @@ export default defineConfig({
         browserName: "webkit",
       },
     },
+    {
+      name: "chromium-375",
+      use: {
+        ...devices["Desktop Chrome"],
+        browserName: "chromium",
+        viewport: { width: 375, height: 812 },
+      },
+    },
+    {
+      name: "chromium-768",
+      use: {
+        ...devices["Desktop Chrome"],
+        browserName: "chromium",
+        viewport: { width: 768, height: 1024 },
+      },
+    },
+    {
+      name: "chromium-1440",
+      use: {
+        ...devices["Desktop Chrome"],
+        browserName: "chromium",
+        viewport: { width: 1440, height: 900 },
+      },
+    },
+    {
+      name: "firefox-1440",
+      use: {
+        ...devices["Desktop Firefox"],
+        browserName: "firefox",
+        viewport: { width: 1440, height: 900 },
+      },
+    },
   ],
   use: {
     baseURL: `http://127.0.0.1:${port}`,

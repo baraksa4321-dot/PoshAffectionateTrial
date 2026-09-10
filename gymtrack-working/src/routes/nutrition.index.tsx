@@ -989,12 +989,7 @@ function NutritionLog() {
           <MacroPill label="חלבון" value={totals.protein} target={targets.protein} unit="g" />
           <MacroPill label="פחמימה" value={totals.carbs} target={targets.carbs} unit="g" />
           <MacroPill label="שומן" value={totals.fat} target={targets.fat} unit="g" />
-          <MacroPill
-            label="קלוריות"
-            value={totals.calories}
-            target={targets.calories}
-            unit="קל׳"
-          />
+          <MacroPill label="קלוריות" value={totals.calories} target={targets.calories} unit="קל׳" />
         </div>
       </div>
       {day.plannedMeals && day.plannedMeals.length > 0 ? (
@@ -1181,10 +1176,10 @@ function NutritionLog() {
                               <p className="truncate text-[14px] font-semibold text-ink">
                                 {food.name}
                               </p>
-                            <p
-                              data-testid="nutrition-food-quantity"
-                              className="mt-0.5 text-[12px] font-semibold text-ink"
-                            >
+                              <p
+                                data-testid="nutrition-food-quantity"
+                                className="mt-0.5 text-[12px] font-semibold text-ink"
+                              >
                                 {formatMeasuredFoodAmount(food.servingSize, food.quantity)}
                               </p>
                             </div>
@@ -1913,9 +1908,7 @@ function NutritionLog() {
             <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <p className="text-[18px] font-display font-extrabold text-primary">
-                  החלפה
-                </p>
+                <p className="text-[18px] font-display font-extrabold text-primary">החלפה</p>
                 <h2 className="mt-0.5 font-display text-[20px] font-semibold text-ink">
                   {substituteFor.food.name}
                 </h2>
@@ -1985,7 +1978,6 @@ function NutritionLog() {
           </div>
         </Overlay>
       ) : null}
-
     </AppShell>
   );
 }
@@ -2071,7 +2063,8 @@ function MacroPill({
 
 function CalRing({ pct }: { pct: number }) {
   const dash = 132;
-  const offset = dash - (dash * (pct || 0)) / 100;
+  const normalizedPct = Number.isFinite(pct) ? Math.max(0, Math.min(100, pct)) : 0;
+  const offset = dash - (dash * normalizedPct) / 100;
   return (
     <div className="relative grid h-24 w-24 place-items-center">
       <svg width="96" height="96" viewBox="0 0 96 96" className="-rotate-90">
@@ -2091,7 +2084,7 @@ function CalRing({ pct }: { pct: number }) {
       </svg>
       <div className="absolute inset-0 grid place-items-center">
         <span className="font-display text-[14px] font-semibold tabular-nums text-ink">
-          {Math.round(pct)}%
+          {Math.round(normalizedPct)}%
         </span>
       </div>
     </div>

@@ -97,6 +97,9 @@ function ProgramDetail() {
   const days = program.dayIds
     .map((id) => workouts.find((workout) => workout.id === id))
     .filter((day): day is Workout => Boolean(day));
+  const missingDayIds = program.dayIds.filter(
+    (id) => !workouts.some((workout) => workout.id === id),
+  );
   const current = draft ?? program;
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return;
@@ -132,6 +135,18 @@ function ProgramDetail() {
         ) : undefined
       }
     >
+      {missingDayIds.length > 0 ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mb-4 rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+        >
+          {missingDayIds.length === 1
+            ? "יום אימון אחד בתכנית חסר או נמחק."
+            : `${missingDayIds.length} ימי אימון בתכנית חסרים או נמחקו.`}{" "}
+          ניתן לשמור את התכנית כדי להמשיך עם הימים הקיימים.
+        </div>
+      ) : null}
       {editing ? (
         <div className="surface-card p-4">
           <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
@@ -339,16 +354,16 @@ function SortableDayCard({
               : ""}
           </p>
         </Link>
-         {completed ? (
-           <span
-             className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-700"
-             title="האימון בוצע"
-             aria-label="האימון בוצע"
-           >
-             <Check className="h-3 w-3" strokeWidth={3} aria-hidden="true" />
-             בוצע
-           </span>
-         ) : null}
+        {completed ? (
+          <span
+            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-700"
+            title="האימון בוצע"
+            aria-label="האימון בוצע"
+          >
+            <Check className="h-3 w-3" strokeWidth={3} aria-hidden="true" />
+            בוצע
+          </span>
+        ) : null}
         <button
           type="button"
           onClick={goStart}

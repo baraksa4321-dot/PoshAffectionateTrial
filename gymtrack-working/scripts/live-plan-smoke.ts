@@ -163,22 +163,40 @@ async function signIn(
   return { id: data.user.id, ...(data.user.email ? { email: data.user.email } : {}) };
 }
 
+async function refreshAuthAfterJwtFailure(client: SmokeClient, roleLabel: "coach" | "trainee") {
+  const { data, error } = await client.auth.refreshSession();
+  if (error || !data.session?.access_token) {
+    throw new Error(
+      `Could not refresh the ${roleLabel} test session after an invalid JWT${
+        errorCode(error) ? ` (${errorCode(error)})` : ""
+      }.`,
+    );
+  }
+}
+
 async function readProfile(
   client: SmokeClient,
   userId: string,
   label: "coach" | "trainee",
 ): Promise<Record<string, unknown>> {
-  const { data, error } = await client
-    .from("profiles")
-    .select("id, role, coach_id, approval_status, planned_menu")
-    .eq("id", userId)
-    .single();
-  if (error)
-    throw new Error(
-      `Could not read the ${label} profile${errorCode(error) ? ` (${errorCode(error)})` : ""}.`,
-    );
-  assertCondition(data, `The ${label} account has no profile row.`);
-  return data as Record<string, unknown>;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const { data, error } = await client
+      .from("profiles")
+      .select("id, role, coach_id, approval_status, planned_menu")
+      .eq("id", userId)
+      .single();
+    if (!error) {
+      assertCondition(data, `The ${label} account has no profile row.`);
+      return data as Record<string, unknown>;
+    }
+    if (errorCode(error) !== "PGRST303" || attempt === 1) {
+      throw new Error(
+        `Could not read the ${label} profile${errorCode(error) ? ` (${errorCode(error)})` : ""}.`,
+      );
+    }
+    await refreshAuthAfterJwtFailure(client, label);
+  }
+  throw new Error(`Could not read the ${label} profile.`);
 }
 
 async function readTraineePage(
@@ -559,6 +577,10 @@ async function run(): Promise<void> {
       config.timeoutMs,
     );
     if (subscriptionFailure) throw subscriptionFailure;
+    // Supabase can acknowledge the WebSocket before the postgres_changes
+    // registration is fully active. Give the server a short settling window
+    // before inserting the row that proves delivery.
+    await new Promise((resolve) => setTimeout(resolve, 750));
 
     let coachReportSessions: Array<Record<string, unknown>> = [];
     let coachReportRefreshChain = Promise.resolve();
@@ -601,6 +623,7 @@ async function run(): Promise<void> {
       config.timeoutMs,
     );
     if (coachSubscriptionFailure) throw coachSubscriptionFailure;
+    await new Promise((resolve) => setTimeout(resolve, 750));
 
     console.log(
       "Sending a uniquely identified coach message and waiting for the trainee Realtime payload...",
