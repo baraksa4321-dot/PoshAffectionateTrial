@@ -325,5 +325,25 @@ export function mealFoodQuantityLabel(food: Pick<MealFood, "name" | "quantity" |
     : isPita(food)
       ? unitLabels.unit
       : legacyUnit;
-  return `${food.quantity} ${normalizedUnit}`;
+  const quantity = Math.max(0.1, Number(food.quantity) || 1);
+  const rounded = Math.round(quantity * 10) / 10;
+  const whole = Math.floor(rounded);
+  const remainder = Math.round((rounded - whole) * 100) / 100;
+  const fractions: Record<number, string> = {
+    0.25: "¼",
+    0.33: "⅓",
+    0.5: "½",
+    0.67: "⅔",
+    0.75: "¾",
+    0.8: "⅘",
+  };
+  const fraction = fractions[remainder];
+  const displayQuantity =
+    fraction && whole > 0
+      ? `${whole}${fraction}`
+      : fraction || new Intl.NumberFormat("he-IL", { maximumFractionDigits: 1 }).format(rounded);
+  if (normalizedUnit === unitLabels.serving) {
+    return quantity === 1 ? "מנה אחת" : `כ־${displayQuantity} מהמנה`;
+  }
+  return `${displayQuantity} ${normalizedUnit}`;
 }

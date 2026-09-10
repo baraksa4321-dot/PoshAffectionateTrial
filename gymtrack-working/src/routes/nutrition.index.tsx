@@ -113,6 +113,11 @@ function recipeAsMealFood(recipe: RecipeDefinition, servings: number): MealFood 
   };
 }
 
+function recipeCarbs(recipe: RecipeDefinition) {
+  const { calories, protein, fat } = recipe.nutrition;
+  return Math.max(0, Math.round(((calories - protein * 4 - fat * 9) / 4) * 10) / 10);
+}
+
 function quantityControlFor(food: FoodItem) {
   const serving = food.servingSize.toLocaleLowerCase();
   if (/(כף|כפות)/.test(serving)) return { label: "כמות בכפות", step: 0.1, scale: 1 };
@@ -138,6 +143,54 @@ function quantityLabelForServing(servingSize: string): string {
   if (/(כף|כפות)/.test(serving)) return "כפות";
   if (/(כוס|כוסות)/.test(serving)) return "כוסות";
   return "כמות";
+}
+
+function formatCount(value: number) {
+  const rounded = Math.round(value * 10) / 10;
+  const fraction = new Map([
+    [0.25, "¼"],
+    [0.33, "⅓"],
+    [0.5, "½"],
+    [0.67, "⅔"],
+    [0.75, "¾"],
+    [0.8, "⅘"],
+  ]);
+  const whole = Math.floor(rounded);
+  const remainder = Math.round((rounded - whole) * 100) / 100;
+  const fractionLabel = fraction.get(remainder);
+  if (fractionLabel) return whole > 0 ? `${whole}${fractionLabel}` : fractionLabel;
+  return new Intl.NumberFormat("he-IL", { maximumFractionDigits: 1 }).format(rounded);
+}
+
+function formatMeasuredFoodAmount(servingSize: string, quantity = 1) {
+  const serving = servingSize.toLocaleLowerCase();
+  const normalizedQuantity = Math.max(0.1, Number(quantity) || 1);
+  const numericMatch = serving.match(/(\d+(?:[.,]\d+)?)/);
+  const baseAmount = numericMatch ? Number(numericMatch[1]!.replace(",", ".")) : 1;
+  const scaled = baseAmount * normalizedQuantity;
+  const formatWhole = (value: number) =>
+    new Intl.NumberFormat("he-IL", { maximumFractionDigits: 0 }).format(Math.round(value));
+
+  if (/(גרם|g)\b/.test(serving)) return `${formatWhole(scaled)} גרם`;
+  if (/(מ["״]?ל|ml)\b/.test(serving)) return `${formatWhole(scaled)} מ״ל`;
+  if (/(כוס|כוסות|cup|cups)/.test(serving)) {
+    return `${formatWhole(scaled * 240)} מ״ל`;
+  }
+  if (/(כף|כפות|tbsp)/.test(serving)) {
+    return `${formatWhole(scaled * 15)} מ״ל`;
+  }
+  if (/(כפית|כפיות|tsp)/.test(serving)) {
+    return `${formatWhole(scaled * 5)} מ״ל`;
+  }
+  if (/(ביצ|egg)/i.test(serving)) return `${formatCount(scaled)} ביצים`;
+  if (/(פרוס|slice)/i.test(serving)) return `${formatCount(scaled)} פרוסות`;
+  if (/(פית|pita)/i.test(serving)) return `${formatCount(scaled)} פיתות`;
+  if (/(טורט|tortilla|wrap)/i.test(serving)) return `${formatCount(scaled)} טורטיות`;
+  if (/(יחיד|יחידות|unit|קופסה|גביע|בקבוק|אריזה|חבילה|שקית)/i.test(serving)) {
+    return `${formatCount(scaled)} יחידות`;
+  }
+  if (Math.abs(normalizedQuantity - 1) < 0.01) return servingSize;
+  return `כ־${formatCount(normalizedQuantity)} מהמנה המצוינת`;
 }
 
 const SHOPPING_PERIOD_OPTIONS: Array<{ value: ShoppingListPeriod; label: string }> = [
@@ -811,22 +864,13 @@ function NutritionLog() {
                 <X className="h-5 w-5" />
               </IconButton>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              {showCalories ? (
-                <div className="rounded-xl bg-primary/10 p-2 text-center">
-                  <span className="block text-[10px] text-muted-foreground">קלוריות</span>
-                  <strong className="text-sm text-ink">{selectedRecipe.nutrition.calories}</strong>
-                </div>
-              ) : null}
-              <div className="rounded-xl bg-primary/10 p-2 text-center">
-                <span className="block text-[10px] text-muted-foreground">חלבון</span>
-                <strong className="text-sm text-ink">{selectedRecipe.nutrition.protein} ג׳</strong>
-              </div>
-              <div className="rounded-xl bg-primary/10 p-2 text-center">
-                <span className="block text-[10px] text-muted-foreground">שומן</span>
-                <strong className="text-sm text-ink">{selectedRecipe.nutrition.fat} ג׳</strong>
-              </div>
-            </div>
+            <NutritionMacroGrid
+              showCalories={showCalories}
+              calories={selectedRecipe.nutrition.calories}
+              protein={selectedRecipe.nutrition.protein}
+              carbs={recipeCarbs(selectedRecipe)}
+              fat={selectedRecipe.nutrition.fat}
+            />
             <div>
               <h3 className="mb-1.5 text-xs font-bold text-ink">מצרכים</h3>
               <ul className="list-disc space-y-1 pe-4 text-xs text-muted-foreground">
@@ -945,7 +989,12 @@ function NutritionLog() {
           <MacroPill label="חלבון" value={totals.protein} target={targets.protein} unit="g" />
           <MacroPill label="פחמימה" value={totals.carbs} target={targets.carbs} unit="g" />
           <MacroPill label="שומן" value={totals.fat} target={targets.fat} unit="g" />
-          <MacroPill label="סיבים" value={totals.fiber} target={targets.fiber || 25} unit="g" />
+          <MacroPill
+            label="קלוריות"
+            value={totals.calories}
+            target={targets.calories}
+            unit="קל׳"
+          />
         </div>
       </div>
       {day.plannedMeals && day.plannedMeals.length > 0 ? (
@@ -953,9 +1002,7 @@ function NutritionLog() {
           <div className="mb-3 flex items-end justify-between gap-3">
             <div>
               <p className="section-kicker text-primary">תפריט מהמאמן</p>
-              <h2 className="mt-1 font-display text-xl font-extrabold text-ink">
-                התפריט המתוכנן שלך
-              </h2>
+              <h2 className="mt-1 font-display text-xl font-extrabold text-ink">התפריט שלך</h2>
             </div>
             <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
               לצפייה
@@ -1003,11 +1050,7 @@ function NutritionLog() {
                         const loggedFood = loggedMeal?.foods.find(
                           (item) => item.sourcePlanFoodId === food.id,
                         );
-                        const status = loggedFood
-                          ? loggedFood.substitutedFromFoodName
-                            ? "substituted"
-                            : "logged"
-                          : "planned";
+                        const displayFood = loggedFood ?? food;
                         return (
                           <div
                             key={food.id}
@@ -1015,60 +1058,47 @@ function NutritionLog() {
                           >
                             <div className="flex items-center justify-between gap-2">
                               <span className="min-w-0 truncate text-[13px] font-semibold text-ink">
-                                {status === "substituted"
-                                  ? loggedFood?.name
-                                  : food.name}
-                              </span>
-                              <span
-                                className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                                  status === "substituted"
-                                    ? "bg-amber-100 text-amber-800"
-                                    : status === "logged"
-                                      ? "bg-emerald-100 text-emerald-800"
-                                      : "bg-secondary text-muted-foreground"
-                                }`}
-                              >
-                                {status === "substituted"
-                                  ? "הוחלף"
-                                  : status === "logged"
-                                    ? "נרשם"
-                                    : "מתוכנן"}
+                                {displayFood.name}
                               </span>
                             </div>
-                            <div className="mt-1 flex items-center justify-between gap-2">
-                              <span className="text-[11px] text-muted-foreground">
-                                × {loggedFood?.quantity ?? food.quantity}
-                                {showCalories
-                                  ? ` · ${Math.round(
-                                      (loggedFood ?? food).calories *
-                                        (loggedFood ?? food).quantity,
-                                    )} קל׳`
-                                  : ""}
-                              </span>
-                              <div className="flex items-center gap-1.5">
-                                {status === "planned" ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => togglePlannedFoodEaten(date, meal.id, food.id)}
-                                    className="rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary"
-                                  >
-                                    סימון
-                                  </button>
-                                ) : null}
+                            <p className="mt-1 text-[12px] font-semibold text-ink">
+                              {formatMeasuredFoodAmount(
+                                displayFood.servingSize,
+                                displayFood.quantity,
+                              )}
+                            </p>
+                            <NutritionMacroGrid
+                              className="mt-2"
+                              showCalories={showCalories}
+                              calories={displayFood.calories * displayFood.quantity}
+                              protein={displayFood.protein * displayFood.quantity}
+                              carbs={displayFood.carbs * displayFood.quantity}
+                              fat={displayFood.fat * displayFood.quantity}
+                            />
+                            <div className="mt-2 flex items-center justify-end gap-2">
+                              {!loggedFood ? (
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    setSubstituteFor({
-                                      mealId: loggedMeal?.id ?? "",
-                                      food,
-                                      plannedMealId: meal.id,
-                                    })
-                                  }
-                                  className="rounded-lg bg-secondary px-2 py-1 text-[10px] font-bold text-muted-foreground"
+                                  onClick={() => togglePlannedFoodEaten(date, meal.id, food.id)}
+                                  className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary"
                                 >
-                                  החלפה
+                                  סימון
                                 </button>
-                              </div>
+                              ) : null}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSubstituteFor({
+                                    mealId: loggedMeal?.id ?? "",
+                                    food,
+                                    plannedMealId: meal.id,
+                                  })
+                                }
+                                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3.5 text-[12px] font-bold text-primary-foreground"
+                              >
+                                <Shuffle className="h-3.5 w-3.5" />
+                                החלפה
+                              </button>
                             </div>
                           </div>
                         );
@@ -1148,16 +1178,8 @@ function NutritionLog() {
                               <p className="truncate text-[14px] font-semibold text-ink">
                                 {food.name}
                               </p>
-                              <p className="mt-0.5 text-[11.5px] text-muted-foreground">
-                                {food.servingSize}
-                                {showCalories
-                                  ? ` · ${Math.round(food.calories * food.quantity)} קל׳`
-                                  : ""}
-                                {" · "}
-                                {Math.round(food.protein * food.quantity)}ח׳ ·{" "}
-                                {Math.round(food.carbs * food.quantity)}פ׳ ·{" "}
-                                {Math.round(food.fat * food.quantity)}ש׳ · סיבים{" "}
-                                {Math.round((food.fiber ?? 0) * food.quantity)}ג׳
+                              <p className="mt-0.5 text-[12px] font-semibold text-ink">
+                                {formatMeasuredFoodAmount(food.servingSize, food.quantity)}
                               </p>
                             </div>
                             <button
@@ -1179,6 +1201,14 @@ function NutritionLog() {
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
+                          <NutritionMacroGrid
+                            className="mt-2.5"
+                            showCalories={showCalories}
+                            calories={food.calories * food.quantity}
+                            protein={food.protein * food.quantity}
+                            carbs={food.carbs * food.quantity}
+                            fat={food.fat * food.quantity}
+                          />
                           <div className="mt-2.5 grid grid-cols-2 gap-2">
                             <Stepper
                               label="כמות"
@@ -1603,12 +1633,19 @@ function NutritionLog() {
                     }}
                     className="w-full p-2.5 rounded-xl border border-border/60 bg-secondary/40 flex items-center justify-between gap-2 text-start text-xs hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="font-bold text-ink">{food.name}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {food.servingSize}
-                        {showCalories ? ` · ${food.calories} קל'` : ""} · {food.protein}g חלבון
+                      <p className="mt-0.5 text-[11px] font-semibold text-ink">
+                        {formatMeasuredFoodAmount(food.servingSize)}
                       </p>
+                      <NutritionMacroGrid
+                        className="mt-1.5"
+                        showCalories={showCalories}
+                        calories={food.calories}
+                        protein={food.protein}
+                        carbs={food.carbs}
+                        fat={food.fat}
+                      />
                     </div>
                     <span className="shrink-0 rounded-lg bg-primary/10 px-2 py-1 font-bold text-primary">
                       הוספה
@@ -1675,7 +1712,7 @@ function NutritionLog() {
 
             {shoppingListItems.length === 0 ? (
               <p className="text-xs text-muted-foreground py-4 text-center">
-                עדיין אין תפריט מתוכנן. בקשי מהמאמן לבנות עבורך תפריט כדי ליצור רשימת קניות.
+                עדיין אין תפריט מהמאמן. בקשי מהמאמן לבנות עבורך תפריט כדי ליצור רשימת קניות.
               </p>
             ) : (
               <div className="space-y-2">
@@ -1829,11 +1866,17 @@ function NutritionLog() {
                   >
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[14px] font-semibold text-ink">{food.name}</p>
-                      <p className="text-[11.5px] text-muted-foreground">
-                        {food.servingSize}
-                        {showCalories ? ` · ${food.calories} קלוריות` : ""} · חלבון {food.protein}g
-                        · סיבים {food.fiber || 0}g
+                      <p className="mt-0.5 text-[12px] font-semibold text-ink">
+                        {formatMeasuredFoodAmount(food.servingSize)}
                       </p>
+                      <NutritionMacroGrid
+                        className="mt-2"
+                        showCalories={showCalories}
+                        calories={food.calories}
+                        protein={food.protein}
+                        carbs={food.carbs}
+                        fat={food.fat}
+                      />
                     </div>
                     <ArrowLeft className="h-4 w-4 shrink-0 text-muted-foreground/60" />
                   </button>
@@ -1844,7 +1887,7 @@ function NutritionLog() {
         </Overlay>
       ) : null}
 
-      {/* Calorie-based replacement */}
+      {/* Food replacement */}
       {substituteFor ? (
         <Overlay
           open={Boolean(substituteFor)}
@@ -1861,10 +1904,10 @@ function NutritionLog() {
             <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <p className="text-[11px] font-semibold tracking-[0.14em] text-primary uppercase">
-                  החלפת מזון לפי קלוריות
+                <p className="text-[18px] font-display font-extrabold text-primary">
+                  החלפה
                 </p>
-                <h2 className="mt-1 font-display text-[20px] font-semibold text-ink">
+                <h2 className="mt-0.5 font-display text-[20px] font-semibold text-ink">
                   {substituteFor.food.name}
                 </h2>
                 <p className="mt-1 text-[12px] text-muted-foreground">
@@ -1912,17 +1955,18 @@ function NutritionLog() {
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[14px] font-semibold text-ink">{item.food.name}</p>
-                    <p className="text-[11.5px] text-muted-foreground">
-                      {showCalories ? `${item.calculatedCalories} קל׳ · ` : ""}
-                      חלבון {item.calculatedProtein}ג׳ · פחמימות {item.calculatedCarbs}ג׳ · שומן{" "}
-                      {item.calculatedFat}ג׳ · סיבים {item.calculatedFiber}ג׳
+                    <p className="mt-0.5 text-[12px] font-semibold text-ink">
+                      {formatMeasuredFoodAmount(item.food.servingSize, item.calculatedQuantity)}
                     </p>
+                    <NutritionMacroGrid
+                      className="mt-2"
+                      showCalories={showCalories}
+                      calories={item.calculatedCalories}
+                      protein={item.calculatedProtein}
+                      carbs={item.calculatedCarbs}
+                      fat={item.calculatedFat}
+                    />
                   </div>
-                  <span className="num-pill shrink-0 px-2.5 py-1 text-[11px] font-bold text-ink-soft">
-                    {item.calculatedGrams !== null
-                      ? `${Math.round(item.calculatedGrams)} גרם`
-                      : `${Math.round(item.calculatedQuantity * 10) / 10}× מנה`}
-                  </span>
                 </button>
               ))}
             </div>
@@ -1931,6 +1975,48 @@ function NutritionLog() {
       ) : null}
 
     </AppShell>
+  );
+}
+
+function NutritionMacroGrid({
+  calories,
+  protein,
+  carbs,
+  fat,
+  showCalories,
+  className = "",
+}: {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  showCalories: boolean;
+  className?: string;
+}) {
+  const values = [
+    { label: "חלבון", value: protein, unit: "ג׳" },
+    { label: "פחמימות", value: carbs, unit: "ג׳" },
+    { label: "שומן", value: fat, unit: "ג׳" },
+    ...(showCalories ? [{ label: "קלוריות", value: calories, unit: "קל׳" }] : []),
+  ];
+
+  return (
+    <div className={`grid ${showCalories ? "grid-cols-4" : "grid-cols-3"} gap-1.5 ${className}`}>
+      {values.map((item) => (
+        <div
+          key={item.label}
+          className="rounded-xl border border-border/35 bg-white/60 px-1.5 py-1.5 text-center"
+        >
+          <span className="block text-[9px] font-bold text-muted-foreground">{item.label}</span>
+          <strong className="mt-0.5 block font-display text-[13px] font-bold tabular-nums text-ink">
+            {Math.round(item.value * 10) / 10}
+            <span className="ms-0.5 text-[9px] font-semibold text-muted-foreground">
+              {item.unit}
+            </span>
+          </strong>
+        </div>
+      ))}
+    </div>
   );
 }
 

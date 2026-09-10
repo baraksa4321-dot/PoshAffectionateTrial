@@ -8620,36 +8620,25 @@ export function CoachDashboardPage({
                       />
                     </div>
 
-                    <div className="sticky top-2 z-10 grid grid-cols-4 gap-1.5 rounded-xl border border-emerald-200 bg-white/80 p-2 shadow-sm backdrop-blur">
-                      <div className="rounded-lg bg-orange-50 px-1.5 py-2 text-center">
-                        <div className="text-[10px] font-bold text-orange-700">קלוריות</div>
-                        <div className="mt-0.5 text-sm font-black text-orange-950">
-                          {Math.round(menuTotals.calories)}
-                        </div>
-                        <div className="text-[9px] text-orange-700">קק״ל</div>
-                      </div>
-                      <div className="rounded-lg bg-blue-50 px-1.5 py-2 text-center">
-                        <div className="text-[10px] font-bold text-blue-700">חלבון</div>
-                        <div className="mt-0.5 text-sm font-black text-blue-950">
-                          {Math.round(menuTotals.protein * 10) / 10}
-                        </div>
-                        <div className="text-[9px] text-blue-700">גרם</div>
-                      </div>
-                      <div className="rounded-lg bg-amber-50 px-1.5 py-2 text-center">
-                        <div className="text-[10px] font-bold text-amber-700">פחמימה</div>
-                        <div className="mt-0.5 text-sm font-black text-amber-950">
-                          {Math.round(menuTotals.carbs * 10) / 10}
-                        </div>
-                        <div className="text-[9px] text-amber-700">גרם</div>
-                      </div>
-                      <div className="rounded-lg bg-rose-50 px-1.5 py-2 text-center">
-                        <div className="text-[10px] font-bold text-rose-700">שומנים</div>
-                        <div className="mt-0.5 text-sm font-black text-rose-950">
-                          {Math.round(menuTotals.fat * 10) / 10}
-                        </div>
-                        <div className="text-[9px] text-rose-700">גרם</div>
-                      </div>
-                    </div>
+                     <div className="sticky top-2 z-10 grid grid-cols-4 gap-1.5 rounded-xl border border-emerald-200 bg-white/80 p-2 shadow-sm backdrop-blur">
+                       {[
+                         ["חלבון", menuTotals.protein, "ג׳", "bg-blue-50 text-blue-950"],
+                         ["פחמימות", menuTotals.carbs, "ג׳", "bg-amber-50 text-amber-950"],
+                         ["שומן", menuTotals.fat, "ג׳", "bg-rose-50 text-rose-950"],
+                         ["קלוריות", menuTotals.calories, "קל׳", "bg-orange-50 text-orange-950"],
+                       ].map(([label, value, unit, color]) => (
+                         <div
+                           key={label}
+                           className={`rounded-lg px-1.5 py-2 text-center ${color}`}
+                         >
+                           <div className="text-[10px] font-bold">{label}</div>
+                           <div className="mt-0.5 text-sm font-black">
+                             {Math.round(Number(value) * 10) / 10}
+                           </div>
+                           <div className="text-[9px] opacity-75">{unit}</div>
+                         </div>
+                       ))}
+                     </div>
 
                     <div className="space-y-2">
                       {plannedMeals.map((meal, mealIndex) => {
@@ -8690,24 +8679,49 @@ export function CoachDashboardPage({
 
                             {meal.foods.length > 0 ? (
                               <div className="mt-2 space-y-1">
-                                {meal.foods.map((food) => (
-                                  <div
-                                    key={food.id}
-                                    className="flex items-center justify-between rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[11px]"
-                                  >
-                                    <span className="truncate font-semibold text-ink">
-                                      {food.name} · {mealFoodQuantityLabel(food)}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => removePlannedFood(meal.id, food.id)}
-                                      className="ms-2 shrink-0 text-muted-foreground hover:text-destructive"
-                                      aria-label={`הסר ${food.name}`}
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                  </div>
-                                ))}
+                                 {meal.foods.map((food) => (
+                                   <div
+                                     key={food.id}
+                                     className="rounded-lg bg-emerald-50 px-2.5 py-2 text-[11px]"
+                                   >
+                                     <div className="flex items-center justify-between gap-2">
+                                       <div className="min-w-0">
+                                         <p className="truncate font-semibold text-ink">{food.name}</p>
+                                         <p className="mt-0.5 font-semibold text-emerald-900">
+                                           {mealFoodQuantityLabel(food)}
+                                         </p>
+                                       </div>
+                                       <button
+                                         type="button"
+                                         onClick={() => removePlannedFood(meal.id, food.id)}
+                                         className="ms-2 shrink-0 text-muted-foreground hover:text-destructive"
+                                         aria-label={`הסר ${food.name}`}
+                                       >
+                                         <Trash2 className="h-3.5 w-3.5" />
+                                       </button>
+                                     </div>
+                                     <div className="mt-1.5 grid grid-cols-4 gap-1">
+                                       {[
+                                         ["חלבון", food.protein, "ג׳"],
+                                         ["פחמימות", food.carbs, "ג׳"],
+                                         ["שומן", food.fat, "ג׳"],
+                                         ["קלוריות", food.calories, "קל׳"],
+                                       ].map(([label, value, unit]) => (
+                                         <div
+                                           key={label}
+                                           className="rounded-md bg-white/70 px-1 py-1 text-center"
+                                         >
+                                           <span className="block text-[8px] font-bold text-muted-foreground">
+                                             {label}
+                                           </span>
+                                           <strong className="block text-[10px] text-ink">
+                                             {Math.round(Number(value) * 10) / 10} {unit}
+                                           </strong>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 ))}
                               </div>
                             ) : (
                               <p className="mt-2 text-[11px] text-muted-foreground">
