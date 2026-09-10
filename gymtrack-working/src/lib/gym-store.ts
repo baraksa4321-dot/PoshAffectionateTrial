@@ -851,6 +851,7 @@ function drainQueuedRealtimeRefresh() {
     currentUser?.id !== userId ||
     browserIsOffline() ||
     profileHydrationStatus === "loading" ||
+    hydrationInFlight ||
     syncInFlight ||
     refreshInFlight
   ) {
@@ -1278,6 +1279,11 @@ function startUserHydration(userId: string, cachedData = loadCachedDataForUser(u
     })
     .finally(() => {
       if (hydrationInFlight?.promise === promise) hydrationInFlight = null;
+      // Realtime can arrive while cached data has already marked hydration as
+      // ready, or while a pull is unwinding through an error/generation
+      // mismatch. Always give the queued event another chance after the
+      // actual hydration promise settles.
+      drainQueuedRealtimeRefresh();
     });
   hydrationInFlight = { userId, promise };
   return promise;
@@ -1386,7 +1392,7 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
       preExitChecklist: data.preExitChecklist ?? pulled.data.preExitChecklist ?? [],
     };
     persistCacheOnly();
-  } else if (pendingAtPullStart) {
+  } else if (pendingAtPullStart || dataRevision !== revisionAtPullStart) {
     data = mergeRemotePlanRefresh(data, pulled.data);
     persistCacheOnly();
   }

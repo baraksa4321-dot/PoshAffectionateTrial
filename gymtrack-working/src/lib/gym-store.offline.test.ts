@@ -860,6 +860,121 @@ describe("offline store lifecycle", () => {
     expect(store.getGymStoreSnapshot().preExitChecklist[0]?.label).toBe("Keep this local edit");
   });
 
+  test("drains the final plan state after a burst during an in-flight refresh", async () => {
+    Object.assign(navigator, { onLine: true });
+    const pendingSync = deferred<{ success: true }>();
+    const pendingRefresh = deferred<void>();
+    syncImplementation = async () => pendingSync.promise;
+
+    const initialData = makeSessionData({ weight: 70, role: "client" });
+    initialData.programs = [
+      { id: "program-a", name: "Initial plan", notes: "", dayIds: ["day-a"] },
+    ];
+    initialData.workouts = [{ id: "day-a", name: "Initial workout", notes: "", items: [] }];
+    initialData.plannedMeals = [{ id: "meal-a", name: "Initial menu", foods: [] }];
+
+    const intermediateData: GymData = {
+      ...initialData,
+      programs: [{ id: "program-a", name: "Intermediate plan", notes: "", dayIds: ["day-a"] }],
+      workouts: [{ id: "day-a", name: "Intermediate workout", notes: "", items: [] }],
+      plannedMeals: [{ id: "meal-a", name: "Intermediate menu", foods: [] }],
+    };
+    const finalData: GymData = {
+      ...initialData,
+      programs: [{ id: "program-a", name: "Final plan", notes: "", dayIds: ["day-a"] }],
+      workouts: [{ id: "day-a", name: "Final workout", notes: "", items: [] }],
+      plannedMeals: [{ id: "meal-a", name: "Final menu", foods: [] }],
+    };
+
+    let pullCount = 0;
+    let remoteData: GymData = initialData;
+    pullImplementation = async (_userId, _localState) => {
+      pullCount += 1;
+      const response = remoteData;
+      if (pullCount === 2) await pendingRefresh.promise;
+      return { success: true, data: response as unknown as Record<string, unknown> };
+    };
+
+    const store = await loadStore("realtime-plan-burst");
+    await eventually(() => pullCount === 1 && store.getGymStoreSnapshot().programs[0]?.name === "Initial plan");
+
+    store.addChecklistItem("Keep this local edit");
+    await eventually(() => syncCalls.length === 1);
+
+    remoteData = intermediateData;
+    emitPlanChange("user-a", "program_days");
+    pendingSync.resolve({ success: true });
+    await eventually(() => pullCount === 2);
+
+    remoteData = finalData;
+    emitPlanChange("user-a", "programs");
+    emitPlanChange("user-a", "program_days");
+    emitPlanChange("user-a", "profiles");
+    pendingRefresh.resolve();
+
+    await eventually(
+      () =>
+        pullCount >= 3 &&
+        store.getGymStoreSnapshot().programs[0]?.name === "Final plan" &&
+        store.getGymStoreSnapshot().workouts[0]?.name === "Final workout" &&
+        store.getGymStoreSnapshot().plannedMeals[0]?.name === "Final menu",
+    );
+    expect(store.getGymStoreSnapshot().preExitChecklist[0]?.label).toBe("Keep this local edit");
+  });
+
+  test("keeps a trainee edit made during refresh while applying the remote plan", async () => {
+    Object.assign(navigator, { onLine: true });
+    const pendingRefresh = deferred<void>();
+    const pendingSync = deferred<{ success: true }>();
+    syncImplementation = async () => pendingSync.promise;
+
+    const initialData = makeSessionData({ weight: 70, role: "client" });
+    initialData.programs = [
+      { id: "program-a", name: "Initial plan", notes: "", dayIds: ["day-a"] },
+    ];
+    initialData.workouts = [{ id: "day-a", name: "Initial workout", notes: "", items: [] }];
+    initialData.plannedMeals = [{ id: "meal-a", name: "Initial menu", foods: [] }];
+
+    const finalData: GymData = {
+      ...initialData,
+      programs: [{ id: "program-a", name: "Remote plan", notes: "", dayIds: ["day-a"] }],
+      workouts: [{ id: "day-a", name: "Remote workout", notes: "", items: [] }],
+      plannedMeals: [{ id: "meal-a", name: "Remote menu", foods: [] }],
+    };
+
+    let pullCount = 0;
+    let remoteData: GymData = initialData;
+    pullImplementation = async (_userId, _localState) => {
+      pullCount += 1;
+      const response = remoteData;
+      if (pullCount === 2) await pendingRefresh.promise;
+      return { success: true, data: response as unknown as Record<string, unknown> };
+    };
+
+    const store = await loadStore("local-edit-during-refresh");
+    await eventually(() => pullCount === 1 && store.getGymStoreSnapshot().programs[0]?.name === "Initial plan");
+
+    store.refreshCurrentUserData(true);
+    await eventually(() => pullCount === 2);
+
+    remoteData = finalData;
+    store.addChecklistItem("Edit made while coach update was loading");
+    await eventually(() => syncCalls.length === 1);
+    emitPlanChange("user-a", "program_days");
+    pendingSync.resolve({ success: true });
+    pendingRefresh.resolve();
+
+    await eventually(
+      () =>
+        pullCount >= 3 &&
+        store.getGymStoreSnapshot().programs[0]?.name === "Remote plan" &&
+        store.getGymStoreSnapshot().workouts[0]?.name === "Remote workout" &&
+        store.getGymStoreSnapshot().plannedMeals[0]?.name === "Remote menu" &&
+        store.getGymStoreSnapshot().preExitChecklist[0]?.label ===
+          "Edit made while coach update was loading",
+    );
+  });
+
   test("resubscribes after a realtime channel error", async () => {
     Object.assign(navigator, { onLine: true });
     pullImplementation = async (_userId, localState) => ({ success: true, data: localState });
