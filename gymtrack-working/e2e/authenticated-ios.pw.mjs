@@ -504,11 +504,15 @@ async function installFixture(page, { role = "coach", online = false, showCalori
             ];
           } else if (path === "programs") {
             const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
-            const selectedProgram = requestedUserId === otherClientProfile.id ? otherProgram : program;
+            const selectedProgram =
+              requestedUserId === otherClientProfile.id ? otherProgram : program;
             body = [
               {
                 id: selectedProgram.id,
-                user_id: requestedUserId === otherClientProfile.id ? otherClientProfile.id : clientProfile.id,
+                user_id:
+                  requestedUserId === otherClientProfile.id
+                    ? otherClientProfile.id
+                    : clientProfile.id,
                 name: selectedProgram.name,
                 description: selectedProgram.notes,
               },
@@ -578,7 +582,14 @@ async function installFixture(page, { role = "coach", online = false, showCalori
                       estimated_calories: otherCardioLog.calories,
                     },
                   ]
-                : [{ ...cardioLog, user_id: clientProfile.id, duration_min: cardioLog.durationMin, estimated_calories: cardioLog.calories }];
+                : [
+                    {
+                      ...cardioLog,
+                      user_id: clientProfile.id,
+                      duration_min: cardioLog.durationMin,
+                      estimated_calories: cardioLog.calories,
+                    },
+                  ];
           } else if (path === "body_weight_logs") {
             const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
             body =
@@ -591,7 +602,14 @@ async function installFixture(page, { role = "coach", online = false, showCalori
                       weight_kg: otherBodyWeightLog.weight,
                     },
                   ]
-                : [{ id: bodyWeightLog.id, user_id: clientProfile.id, date: bodyWeightLog.date, weight_kg: bodyWeightLog.weight }];
+                : [
+                    {
+                      id: bodyWeightLog.id,
+                      user_id: clientProfile.id,
+                      date: bodyWeightLog.date,
+                      weight_kg: bodyWeightLog.weight,
+                    },
+                  ];
           } else if (path === "body_measurements") {
             const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
             body =
@@ -705,16 +723,27 @@ async function installFixture(page, { role = "coach", online = false, showCalori
 }
 
 function assertKeyboardVisible(locator) {
-  return expect
-    .poll(async () => {
-      return locator.evaluate((element) => {
-        const rect = element.getBoundingClientRect();
-        const viewport = window.visualViewport;
-        const bottom = viewport?.height ?? window.innerHeight;
-        return document.activeElement === element && rect.top >= 0 && rect.bottom <= bottom;
-      });
-    })
-    .toBe(true);
+  return locator.scrollIntoViewIfNeeded().then(() =>
+    expect
+      .poll(
+        async () => {
+          return locator.evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            const viewport = window.visualViewport;
+            const viewportTop = viewport?.offsetTop ?? 0;
+            const viewportBottom = viewportTop + (viewport?.height ?? window.innerHeight);
+            return {
+              focused: document.activeElement === element,
+              visible: rect.top >= viewportTop - 1 && rect.bottom <= viewportBottom + 1,
+            };
+          });
+        },
+        {
+          message: "The focused feedback field did not settle inside the visible iPhone viewport.",
+        },
+      )
+      .toMatchObject({ focused: true, visible: true }),
+  );
 }
 
 test("authenticated iPhone coach workspace and active workout remain usable", async ({ page }) => {
@@ -741,9 +770,9 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
     await expect(workspace.getByTestId("coach-client-details-error")).toHaveCount(0);
   });
   await test.step("open trainee profile and send a message", async () => {
-    await expect(
-      page.getByText("שליחת הודעת חיזוק / הנחיה למתאמן", { exact: true }),
-    ).toHaveCount(0);
+    await expect(page.getByText("שליחת הודעת חיזוק / הנחיה למתאמן", { exact: true })).toHaveCount(
+      0,
+    );
     await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
     const profileMessage = page.getByTestId("coach-client-message-profile");
     await expect(profileMessage).toBeVisible();
@@ -787,9 +816,7 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await expect(dayButtons).toHaveCount(4);
   await dayButtons.nth(0).click();
   await expect(page.getByRole("button", { name: "סגירת בניית אימון", exact: true })).toBeVisible();
-  await expect(
-    page.getByRole("dialog", { name: "בניית תוכנית ותפריט למתאמן" }),
-  ).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: "בניית תוכנית ותפריט למתאמן" })).toHaveCount(0);
   await expect(page.locator("#coach-programs")).toBeHidden();
   const workoutSurface = page.locator('[data-coach-workout-surface-slot="true"]');
   await expect(workoutSurface).toBeVisible();
@@ -807,10 +834,7 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   const setCountInput = page.getByRole("textbox", { name: "מספר סטים", exact: true });
   await setCountInput.fill("4");
   await expect(page.getByText("סט 4", { exact: true })).toBeVisible();
-  const fourthSet = page
-    .getByText("סט 4", { exact: true })
-    .locator("..")
-    .locator("..");
+  const fourthSet = page.getByText("סט 4", { exact: true }).locator("..").locator("..");
   await fourthSet.getByRole("textbox", { name: "חזרות מינ׳", exact: true }).fill("8");
   await fourthSet.getByRole("textbox", { name: "חזרות מקס׳", exact: true }).fill("12");
   await page.getByRole("button", { name: "שמור שינויי תרגיל", exact: true }).click();
@@ -818,10 +842,7 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await page.getByRole("button", { name: "עריכה", exact: true }).first().click();
   await expect(page.getByText("עריכת תרגיל באימון", { exact: true })).toBeVisible();
   await expect(setCountInput).toHaveValue("4");
-  const reopenedFourthSet = page
-    .getByText("סט 4", { exact: true })
-    .locator("..")
-    .locator("..");
+  const reopenedFourthSet = page.getByText("סט 4", { exact: true }).locator("..").locator("..");
   await expect(
     reopenedFourthSet.getByRole("textbox", { name: "חזרות מינ׳", exact: true }),
   ).toHaveValue("8");
@@ -1013,7 +1034,9 @@ test("coach profile resets measurements, activity, and messages when switching t
   await expect(profile).not.toContainText("מתאמנת בדיקה");
 });
 
-test("trainee sees the message sent from the coach profile after reconnecting", async ({ page }) => {
+test("trainee sees the message sent from the coach profile after reconnecting", async ({
+  page,
+}) => {
   await installFixture(page);
 
   await page.goto("/");
@@ -1133,15 +1156,21 @@ test("active workout values survive leaving and reopening the session", async ({
   await expect(exerciseNote).toHaveValue("הערת תרגיל בטיוטה");
 
   await page.goto("/programs");
+  // TanStack can finish the document navigation before the route's client
+  // transition settles on WebKit. Wait for visible route content before
+  // starting the next navigation, otherwise WebKit reports an interrupted
+  // goto even though the app is healthy.
+  await expect(page.getByText("התוכניות שלך", { exact: true })).toBeVisible();
   await page.goto(`/session/${WORKOUT_ID}`);
+  await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
   await expect(page.locator('input[inputmode="decimal"]').first()).toHaveValue("123");
 
   const reopenedFirstExercise = page.locator("article").first();
-  await expect(
-    reopenedFirstExercise.getByRole("button", { name: "קל", exact: true }),
-  ).toHaveClass(/border-primary/);
+  await expect(reopenedFirstExercise.getByRole("button", { name: "קל", exact: true })).toHaveClass(
+    /border-primary/,
+  );
   await expect(
     reopenedFirstExercise.getByPlaceholder("כאב, אי־נוחות או הערה למאמנת..."),
   ).toHaveValue("הערת תרגיל בטיוטה");

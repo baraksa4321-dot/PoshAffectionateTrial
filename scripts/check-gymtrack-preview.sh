@@ -3,8 +3,11 @@
 set -Eeuo pipefail
 
 port="${GYMTRACK_SMOKE_PORT:-4173}"
+preview_start_timeout_seconds="${GYMTRACK_PREVIEW_START_TIMEOUT_SECONDS:-30}"
+webkit_timeout_seconds="${GYMTRACK_WEBKIT_TIMEOUT_SECONDS:-180}"
 log_file="$(mktemp)"
 preview_pid=""
+cleanup_started=false
 
 configure_webkit_runtime() {
   local webkit_dir
@@ -76,8 +79,24 @@ configure_webkit_runtime() {
 }
 
 cleanup() {
+  if [[ "$cleanup_started" == true ]]; then
+    return
+  fi
+  cleanup_started=true
+
   if [[ -n "$preview_pid" ]] && kill -0 "$preview_pid" 2>/dev/null; then
-    kill "$preview_pid" 2>/dev/null || true
+    echo "Stopping GymTrack preview process group ${preview_pid}..."
+    kill -TERM -- "-${preview_pid}" 2>/dev/null || kill "$preview_pid" 2>/dev/null || true
+    for _ in {1..50}; do
+      if ! kill -0 -- "-${preview_pid}" 2>/dev/null; then
+        break
+      fi
+      sleep 0.1
+    done
+    if kill -0 -- "-${preview_pid}" 2>/dev/null; then
+      echo "Preview process group did not stop after 5 seconds; forcing termination." >&2
+      kill -KILL -- "-${preview_pid}" 2>/dev/null || true
+    fi
     wait "$preview_pid" 2>/dev/null || true
   fi
   rm -f "$log_file"
@@ -87,22 +106,44 @@ trap cleanup EXIT
 configure_webkit_runtime
 
 echo "Starting GymTrack release preview on port ${port}..."
-(
-  cd gymtrack-working
-  npm run dev -- --host 127.0.0.1 --port "$port"
-) >"$log_file" 2>&1 &
+# Put the preview and all of its npm/vite children in one process group so
+# cleanup cannot leave a server behind or wait on an orphaned child.
+if command -v setsid >/dev/null 2>&1; then
+  setsid bash -c 'cd gymtrack-working && exec npm run dev -- --host 127.0.0.1 --port "$1"' \
+    bash "$port" >"$log_file" 2>&1 &
+else
+  (
+    cd gymtrack-working
+    exec npm run dev -- --host 127.0.0.1 --port "$port"
+  ) >"$log_file" 2>&1 &
+fi
 preview_pid="$!"
 
-for _ in {1..30}; do
+for _ in $(seq 1 "$preview_start_timeout_seconds"); do
   if curl --fail --silent --show-error "http://127.0.0.1:${port}/" >/dev/null; then
     echo "GymTrack release preview started successfully."
     # Playwright's DLOPEN preflight only consults ldconfig, which cannot see
     # Nix store libraries. The actual WPE runtime was checked above and the
     # WebKit tests remain a required, fail-closed release gate.
     echo "Running GymTrack WebKit smoke tests for iPhone and desktop projects..."
-    PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1 \
-      GYMTRACK_SMOKE_PORT="$port" \
-      pnpm run test:ios -- --project=webkit-iphone --project=webkit-desktop --retries=1
+    if timeout --foreground --signal=TERM --kill-after=10s "$webkit_timeout_seconds" \
+      env PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1 \
+        GYMTRACK_SMOKE_PORT="$port" \
+        pnpm run test:ios -- --project=webkit-iphone --project=webkit-desktop --retries=1
+    then
+      echo "PASS: WebKit iPhone and desktop smoke tests completed."
+    else
+      status=$?
+      if [[ "$status" -eq 124 || "$status" -eq 137 ]]; then
+        echo "FAIL: WebKit smoke timed out after ${webkit_timeout_seconds}s." >&2
+        echo "Action: inspect the last test step above and rerun with GYMTRACK_WEBKIT_TIMEOUT_SECONDS set higher only after investigating." >&2
+      else
+        echo "FAIL: WebKit smoke exited with status ${status}." >&2
+      fi
+      echo "Preview server log:" >&2
+      cat "$log_file" >&2
+      exit "$status"
+    fi
     exit 0
   fi
 
@@ -115,6 +156,6 @@ for _ in {1..30}; do
   sleep 1
 done
 
-echo "ERROR: GymTrack release preview did not respond on port ${port} within 30 seconds." >&2
+echo "ERROR: GymTrack release preview did not respond on port ${port} within ${preview_start_timeout_seconds} seconds." >&2
 cat "$log_file" >&2
 exit 1

@@ -6,7 +6,8 @@ stage="startup"
 
 on_signal() {
   echo "FAIL: release validation was interrupted during ${stage}." >&2
-  exit 130
+  echo "Action: if the configured release timeout was reached, inspect the last stage output and its stage-specific timeout diagnostics before rerunning." >&2
+  exit 124
 }
 
 trap on_signal INT TERM

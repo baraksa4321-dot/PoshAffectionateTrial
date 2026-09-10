@@ -124,6 +124,28 @@ async function waitFor(predicate: () => boolean, label: string, timeoutMs: numbe
   }
 }
 
+function cleanupTimeoutMs() {
+  const configured = Number(process.env.GYMTRACK_SMOKE_CLEANUP_TIMEOUT_MS ?? "15000");
+  return Number.isFinite(configured) && configured >= 1000 ? configured : 15000;
+}
+
+async function withTimeout<T>(operation: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`${label} timed out after ${timeoutMs}ms.`)),
+          timeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 async function signIn(
   client: SmokeClient,
   email: string,
@@ -824,19 +846,24 @@ async function run(): Promise<void> {
       "PASS: the open trainee session received both updates and kept its pending offline edit.",
     );
   } finally {
+    const cleanupLimit = cleanupTimeoutMs();
     if (cleanupNeeded) {
       try {
-        await cleanup(
-          coachClient,
-          traineeClient,
-          (await traineeClient.auth.getUser()).data.user?.id ?? "",
-          programId,
-          coachMessageId,
-          preservedCoachMessageIds,
-          completedSessionId,
-          originalPlannedMenu,
-          traineeChannel,
-          coachChannel,
+        await withTimeout(
+          cleanup(
+            coachClient,
+            traineeClient,
+            (await traineeClient.auth.getUser()).data.user?.id ?? "",
+            programId,
+            coachMessageId,
+            preservedCoachMessageIds,
+            completedSessionId,
+            originalPlannedMenu,
+            traineeChannel,
+            coachChannel,
+          ),
+          cleanupLimit,
+          "live plan smoke cleanup",
         );
         console.log("Cleaned up isolated smoke records.");
       } catch (cleanupError) {
@@ -844,10 +871,32 @@ async function run(): Promise<void> {
         process.exitCode = 1;
       }
     } else {
-      if (traineeChannel) await traineeClient.removeChannel(traineeChannel);
-      if (coachChannel) await coachClient.removeChannel(coachChannel);
+      try {
+        await withTimeout(
+          Promise.all([
+            traineeChannel ? traineeClient.removeChannel(traineeChannel) : Promise.resolve("ok"),
+            coachChannel ? coachClient.removeChannel(coachChannel) : Promise.resolve("ok"),
+          ]),
+          cleanupLimit,
+          "live plan realtime cleanup",
+        );
+      } catch (cleanupError) {
+        console.error(
+          `WARNING: smoke channel cleanup failed: ${errorMessage(cleanupError, config)}`,
+        );
+        process.exitCode = 1;
+      }
     }
-    await Promise.all([coachClient.auth.signOut(), traineeClient.auth.signOut()]);
+    try {
+      await withTimeout(
+        Promise.all([coachClient.auth.signOut(), traineeClient.auth.signOut()]),
+        cleanupLimit,
+        "live plan auth cleanup",
+      );
+    } catch (cleanupError) {
+      console.error(`WARNING: smoke auth cleanup failed: ${errorMessage(cleanupError, config)}`);
+      process.exitCode = 1;
+    }
   }
 }
 

@@ -9,7 +9,7 @@
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck && pnpm --dir gymtrack-working run typecheck",
     "test:ios": "playwright test --config gymtrack-working/e2e/playwright.config.mjs",
     "check:live-smoke-config": "bash scripts/check-live-smoke-config.sh",
-    "release:check": "timeout --foreground --signal=TERM --kill-after=15s \"${GYMTRACK_RELEASE_CHECK_TIMEOUT_SECONDS:-270}\" bash scripts/release-check.sh"
+    "release:check": "bash scripts/run-release-check.sh"
   },
   "private": true,
   "dependencies": {

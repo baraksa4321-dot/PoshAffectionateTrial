@@ -186,6 +186,28 @@ function rowId(row: SmokeRow, label: string): string {
   return id;
 }
 
+function cleanupTimeoutMs() {
+  const configured = Number(process.env.GYMTRACK_SMOKE_CLEANUP_TIMEOUT_MS ?? "15000");
+  return Number.isFinite(configured) && configured >= 1000 ? configured : 15000;
+}
+
+async function withTimeout<T>(operation: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`${label} timed out after ${timeoutMs}ms.`)),
+          timeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 async function deleteActivityRow(
   client: SmokeClient,
   row: InsertedRow,
@@ -382,16 +404,21 @@ async function run(): Promise<void> {
       "PASS: assigned coach reads habits, body-weight, and cardio logs; unrelated coach reads no trainee activity rows.",
     );
   } finally {
+    const cleanupLimit = cleanupTimeoutMs();
     for (const row of [...insertedRows].reverse()) {
       try {
-        await deleteActivityRow(
-          traineeClient,
-          row,
-          row.table === "client_habits"
-            ? "habits"
-            : row.table === "body_weight_logs"
-              ? "body-weight log"
-              : "cardio log",
+        await withTimeout(
+          deleteActivityRow(
+            traineeClient,
+            row,
+            row.table === "client_habits"
+              ? "habits"
+              : row.table === "body_weight_logs"
+                ? "body-weight log"
+                : "cardio log",
+          ),
+          cleanupLimit,
+          "live activity smoke cleanup",
         );
       } catch (error) {
         console.error(
@@ -404,11 +431,25 @@ async function run(): Promise<void> {
       }
     }
 
-    await Promise.all([
-      coachClient.auth.signOut(),
-      traineeClient.auth.signOut(),
-      unrelatedCoachClient.auth.signOut(),
-    ]);
+    try {
+      await withTimeout(
+        Promise.all([
+          coachClient.auth.signOut(),
+          traineeClient.auth.signOut(),
+          unrelatedCoachClient.auth.signOut(),
+        ]),
+        cleanupLimit,
+        "live activity auth cleanup",
+      );
+    } catch (error) {
+      console.error(
+        `WARNING: activity smoke auth cleanup failed: ${redact(
+          error instanceof Error ? error.message : String(error),
+          config,
+        )}`,
+      );
+      process.exitCode = 1;
+    }
   }
 }
 
@@ -426,3 +467,6 @@ try {
   console.error(`FAIL: ${message}`);
   process.exitCode = 1;
 }
+
+// Do not let Supabase client internals keep a completed smoke process alive.
+process.exit(process.exitCode ?? 0);

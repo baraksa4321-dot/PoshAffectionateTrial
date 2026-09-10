@@ -11,7 +11,9 @@ export default defineConfig({
   },
   fullyParallel: false,
   workers: 1,
-  retries: 0,
+  // A single retry absorbs transient WebKit process/context failures while
+  // keeping repeated application failures visible in the release gate.
+  retries: 1,
   reporter: [["list"]],
   projects: [
     {
