@@ -201,9 +201,9 @@ function ProgramsPage() {
                              <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" />
                              {completedDays === daysCount
                                ? "כל האימונים בוצעו"
-                               : `${completedDays} אימון${completedDays === 1 ? "" : "ים"} בוצע${
-                                   completedDays === 1 ? "" : "ו"
-                                 }`}
+                               : `${completedDays} ${
+                                   completedDays === 1 ? "אימון" : "אימונים"
+                                 } בוצע${completedDays === 1 ? "" : "ו"}`}
                            </p>
                          ) : null}
                       </Link>
