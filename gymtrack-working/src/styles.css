@@ -1636,6 +1636,37 @@ html.night-mode .auth-panel {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
 }
 
+/* Form fields that live inside a label must always occupy their own row.
+   Without this, an inline label can let a full-width input share its line with
+   the label text or the neighboring field on narrow mobile screens. */
+label:not(.flex):not(.grid):has(
+    > input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+    > select,
+    > textarea
+  ) {
+  display: block;
+  min-width: 0;
+}
+
+label > input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+label > select,
+label > textarea {
+  display: block;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+label > input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]) {
+  width: 100%;
+}
+
+.overlay-root[data-overlay-variant="top"] > [data-overlay-panel="true"] {
+  align-self: flex-start;
+  min-width: 0;
+  max-width: calc(100vw - 2rem);
+}
+
 @media (hover: hover) {
   .app-nav-link:hover {
     background: color-mix(in srgb, var(--rose-soft) 44%, transparent);
