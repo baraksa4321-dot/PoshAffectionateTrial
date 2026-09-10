@@ -47,9 +47,6 @@ const INITIAL_DATA_TIMEOUT_MS = 30_000;
 const SYNC_FLUSH_TIMEOUT_MS = 12_000;
 const DEFAULT_REMINDER_PREFERENCES: ReminderPreferences = {
   enabled: false,
-  quietHoursStart: "22:00",
-  quietHoursEnd: "07:00",
-  types: ["workout", "nutrition", "checkin"],
   deliveryState: "not-configured",
 };
 const EMPTY_SYNC_CONFLICTS: SyncConflict[] = [];
@@ -740,8 +737,34 @@ function startPlanRealtime(userId: string, preserveReconnectBackoff = false) {
 
   stopPlanRealtime(!preserveReconnectBackoff);
   planRealtimeUserId = userId;
-  const refreshFromRemoteChange = () => {
+  const refreshFromRemoteChange = (payload?: {
+    eventType?: string;
+    new?: Record<string, unknown>;
+  }) => {
     if (currentUser?.id !== userId) return;
+    if (
+      payload?.eventType === "INSERT" &&
+      data.reminderPreferences?.enabled &&
+      payload.new
+    ) {
+      const table = String(payload.new["table"] ?? "");
+      if (payload.new["message"] && payload.new["client_id"] === userId) {
+        void import("./notification-service").then(({ showForegroundNotification }) =>
+          showForegroundNotification(
+            "הודעה חדשה מהמאמן",
+            String(payload.new?.["message"] ?? ""),
+          ),
+        );
+      } else if (
+        payload.new["message"] &&
+        payload.new["sender_id"] !== userId &&
+        table === "broadcast_announcements"
+      ) {
+        void import("./notification-service").then(({ showForegroundNotification }) =>
+          showForegroundNotification("הודעה חדשה", String(payload.new?.["message"] ?? "")),
+        );
+      }
+    }
     // The refresh keeps pending offline edits authoritative. If a local sync
     // or another refresh is already running, it is drained immediately after
     // that operation instead of being left to the 15-second fallback poll.
@@ -759,7 +782,11 @@ function startPlanRealtime(userId: string, preserveReconnectBackoff = false) {
         table,
         ...(filter ? { filter } : {}),
       },
-      refreshFromRemoteChange,
+      (payload) =>
+        refreshFromRemoteChange({
+          ...(payload ?? {}),
+          new: { ...(payload?.new ?? {}), table },
+        }),
     );
   };
 
@@ -1043,7 +1070,13 @@ function migrate(d: Partial<GymData>): GymData {
     bodyMeasurements: d.bodyMeasurements ?? [],
     cardioLogs: d.cardioLogs ?? [],
     preExitChecklist: d.preExitChecklist ?? [],
-    reminderPreferences: d.reminderPreferences ?? DEFAULT_REMINDER_PREFERENCES,
+    reminderPreferences: {
+      ...DEFAULT_REMINDER_PREFERENCES,
+      ...(d.reminderPreferences ?? {}),
+      deliveryState: d.reminderPreferences?.enabled
+        ? d.reminderPreferences.deliveryState ?? "not-configured"
+        : "paused",
+    },
     syncConflicts: d.syncConflicts ?? [],
     userProfile: {
       ...(d.userProfile ?? { weight: 0 }),
@@ -1644,7 +1677,7 @@ export function saveReminderPreferences(preferences: ReminderPreferences) {
     reminderPreferences: {
       ...DEFAULT_REMINDER_PREFERENCES,
       ...preferences,
-      deliveryState: preferences.enabled ? "ready" : "paused",
+      deliveryState: preferences.enabled ? preferences.deliveryState : "paused",
     },
   });
 }

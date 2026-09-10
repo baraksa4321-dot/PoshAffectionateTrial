@@ -141,6 +141,7 @@ function Dashboard() {
     coachMessages,
     broadcasts,
     challengeEnrollments,
+    reminderPreferences,
   } = useGym();
   const authUser = useAuthUser();
 
@@ -396,6 +397,21 @@ function Dashboard() {
   const todayScheduledWorkout = scheduledWorkouts.find(
     (item) => item.scheduledDate === todayDateStr,
   );
+  const workoutReminderPayload = scheduledWorkouts
+    .map(({ workout, scheduledDate }) => `${scheduledDate}:${workout.id}:${workout.name}`)
+    .join("|");
+  useEffect(() => {
+    if (!authUser?.id || !reminderPreferences?.enabled) return;
+    void import("@/lib/notification-service").then(({ scheduleWorkoutReminders }) =>
+      scheduleWorkoutReminders(
+        scheduledWorkouts.map(({ workout, scheduledDate }) => ({
+          id: `${authUser.id}:${scheduledDate}:${workout.id}`,
+          date: scheduledDate,
+          workoutName: workout.name,
+        })),
+      ),
+    );
+  }, [authUser?.id, reminderPreferences?.enabled, workoutReminderPayload]);
   const primaryWorkout = todayScheduledWorkout?.workout;
   const primaryIsBodyweightWorkout = Boolean(primaryWorkout?.name.includes("משקל גוף"));
   const selectedProgressExercise =

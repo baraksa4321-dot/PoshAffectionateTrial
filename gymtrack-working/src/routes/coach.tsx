@@ -53,6 +53,7 @@ import {
   subscribeToCoachManagementChanges,
 } from "../lib/supabase-sync";
 import { supabase } from "../lib/supabase";
+import { notifyRemotePush } from "../lib/notification-service";
 import {
   clientNutritionTargetUpsertPayload,
   clientPlannedMenuRpcPayload,
@@ -3065,6 +3066,11 @@ export function CoachDashboardPage({
         clientIdForMessage,
         message,
       );
+      void notifyRemotePush({
+        recipientUserId: clientIdForMessage,
+        title: "הודעה חדשה מהמאמן",
+        body: message,
+      });
       setMsgSentNotice("הודעת החיזוק נשלחה בהצלחה למתאמן!");
       setCoachMsgText("");
       setFailedCoachMessage(null);
@@ -3107,6 +3113,11 @@ export function CoachDashboardPage({
         message,
       });
       if (error) throw error;
+      void notifyRemotePush({
+        audience: broadcastAudience,
+        title: "הודעה חדשה",
+        body: message,
+      });
       setBroadcastText("");
       setBroadcastNotice("ההודעה נשלחה בהצלחה.");
       const { data: created } = await supabase

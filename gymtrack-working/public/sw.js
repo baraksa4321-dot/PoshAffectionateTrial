@@ -1,4 +1,78 @@
-const CACHE_NAME = "myroutine-app-shell-v11";
+const CACHE_NAME = "myroutine-app-shell-v12";
+let firebaseMessagingReady = false;
+
+function openFirebaseConfigDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("gymtrack-notifications", 1);
+    request.onupgradeneeded = () => request.result.createObjectStore("config");
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function saveFirebaseConfig(config) {
+  const database = await openFirebaseConfigDb();
+  await new Promise((resolve, reject) => {
+    const transaction = database.transaction("config", "readwrite");
+    transaction.objectStore("config").put(config, "firebase");
+    transaction.oncomplete = resolve;
+    transaction.onerror = () => reject(transaction.error);
+  });
+  database.close();
+}
+
+async function readFirebaseConfig() {
+  const database = await openFirebaseConfigDb();
+  const config = await new Promise((resolve, reject) => {
+    const request = database.transaction("config").objectStore("config").get("firebase");
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  database.close();
+  return config;
+}
+
+async function configureFirebase(config) {
+  if (!config || firebaseMessagingReady) return;
+  try {
+    if (typeof firebase === "undefined") {
+      importScripts(
+        "https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js",
+        "https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js",
+      );
+    }
+    if (typeof firebase === "undefined") return;
+    firebase.initializeApp(config);
+    const messaging = firebase.messaging();
+    messaging.onBackgroundMessage((payload) => {
+      const title = payload.notification?.title || "הודעה חדשה";
+      const body = payload.notification?.body || "";
+      self.registration.showNotification(title, {
+        body,
+        icon: "/icons/icon-192.png",
+        dir: "rtl",
+        lang: "he",
+        data: payload.data || {},
+      });
+    });
+    firebaseMessagingReady = true;
+  } catch (error) {
+    console.warn("[FCM service worker]", error);
+  }
+}
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type !== "configure-firebase") return;
+  event.waitUntil(
+    saveFirebaseConfig(event.data.config)
+      .then(() => configureFirebase(event.data.config))
+      .then(() => event.ports?.[0]?.postMessage({ ok: true }))
+      .catch((error) => {
+        console.warn("[FCM service worker config]", error);
+        event.ports?.[0]?.postMessage({ ok: false });
+      }),
+  );
+});
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -22,6 +96,9 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     Promise.all([
       self.clients.claim(),
+      readFirebaseConfig()
+        .then((config) => configureFirebase(config))
+        .catch(() => undefined),
       caches
         .keys()
         .then((keys) =>
@@ -79,5 +156,16 @@ self.addEventListener("fetch", (event) => {
         throw new Error("Offline and no cached app asset is available");
       }
     })(),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const existing = clients.find((client) => "focus" in client);
+      if (existing) return existing.focus();
+      return self.clients.openWindow(self.registration.scope);
+    }),
   );
 });

@@ -459,11 +459,14 @@ export type UserProfile = {
 
 export type ReminderPreferences = {
   enabled: boolean;
-  quietHoursStart: string;
-  quietHoursEnd: string;
-  types: Array<"workout" | "nutrition" | "checkin">;
   deliveryState: "not-configured" | "ready" | "paused" | "error";
   lastAttemptAt?: string;
+  /** Human-readable setup detail kept locally so the profile can explain a failed permission/setup attempt. */
+  deliveryDetail?: string;
+  /** Legacy fields are accepted during migration but are no longer shown or edited. */
+  quietHoursStart?: string;
+  quietHoursEnd?: string;
+  types?: Array<"workout" | "nutrition" | "checkin">;
 };
 
 export type SyncConflict = {
@@ -519,7 +522,7 @@ export type GymData = {
   userProfile?: UserProfile;
   clients?: ClientLink[];
   preExitChecklist?: ChecklistItem[];
-  /** Local-first preferences until a delivery channel is explicitly connected. */
+  /** Local-first notification preference plus the current device delivery state. */
   reminderPreferences?: ReminderPreferences;
   /** Never resolve a concurrent edit silently; the UI presents these snapshots. */
   syncConflicts?: SyncConflict[];

@@ -29,6 +29,10 @@ import {
   useCloudSyncStatus,
   useGym,
 } from "../lib/gym-store";
+import {
+  configureNotificationDelivery,
+  disableNotificationDelivery,
+} from "../lib/notification-service";
 import { supabase } from "../lib/supabase";
 import { applyNightMode, applyTheme, DEFAULT_THEME, THEME_PALETTES } from "../lib/theme";
 import type { ThemePalette, UserProfile } from "../lib/gym-types";
@@ -553,12 +557,11 @@ export function AppShell({
   const [reminderDraft, setReminderDraft] = useState(
     store.reminderPreferences ?? {
       enabled: false,
-      quietHoursStart: "22:00",
-      quietHoursEnd: "07:00",
-      types: ["workout", "nutrition", "checkin"] as Array<"workout" | "nutrition" | "checkin">,
       deliveryState: "not-configured" as const,
     },
   );
+  const [notificationSaving, setNotificationSaving] = useState(false);
+  const notificationSetupKeyRef = useRef("");
   const headerTitle = authOnly ? genderText(gender, "ברוכה הבאה", "ברוך הבא") : title;
   const headerSubtitle = authOnly
     ? genderText(gender, "התחברי כדי להמשיך לאימונים ולתזונה", "התחבר כדי להמשיך לאימונים ולתזונה")
@@ -567,6 +570,28 @@ export function AppShell({
   useEffect(() => {
     if (profileGender) setGender(profileGender);
   }, [profileGender]);
+
+  useEffect(() => {
+    if (!user?.id || !store.reminderPreferences?.enabled) {
+      notificationSetupKeyRef.current = "";
+      return;
+    }
+    const setupKey = `${user.id}:enabled`;
+    if (notificationSetupKeyRef.current === setupKey) return;
+    notificationSetupKeyRef.current = setupKey;
+    void configureNotificationDelivery(user.id).then((result) => {
+      const current = getGymStoreSnapshot().reminderPreferences;
+      if (!current?.enabled) return;
+      const next = {
+        ...current,
+        deliveryState: result.state,
+        deliveryDetail: result.detail,
+        lastAttemptAt: new Date().toISOString(),
+      };
+      setReminderDraft(next);
+      saveReminderPreferences(next);
+    });
+  }, [store.reminderPreferences?.enabled, user?.id]);
 
   useEffect(() => {
     if (!showProfileModal || !isOwner) {
@@ -765,14 +790,45 @@ export function AppShell({
     setReminderDraft(
       store.reminderPreferences ?? {
         enabled: false,
-        quietHoursStart: "22:00",
-        quietHoursEnd: "07:00",
-        types: ["workout", "nutrition", "checkin"],
         deliveryState: "not-configured",
       },
     );
     setProfileError("");
     setShowProfileModal(true);
+  };
+
+  const handleNotificationToggle = async (enabled: boolean) => {
+    const next = {
+      ...reminderDraft,
+      enabled,
+      deliveryState: enabled ? ("not-configured" as const) : ("paused" as const),
+      lastAttemptAt: new Date().toISOString(),
+      ...(enabled ? { deliveryDetail: "מבקשת הרשאת התראות..." } : {}),
+    };
+    setReminderDraft(next);
+    saveReminderPreferences(next);
+    if (!user?.id) return;
+    setNotificationSaving(true);
+    try {
+      if (!enabled) {
+        notificationSetupKeyRef.current = "";
+        await disableNotificationDelivery(user.id);
+        setReminderDraft((current) => ({ ...current, deliveryState: "paused", deliveryDetail: "ההתראות כבויות." }));
+        saveReminderPreferences({ ...next, deliveryState: "paused", deliveryDetail: "ההתראות כבויות." });
+        return;
+      }
+      notificationSetupKeyRef.current = `${user.id}:enabled`;
+      const result = await configureNotificationDelivery(user.id);
+      const configured = {
+        ...next,
+        deliveryState: result.state,
+        deliveryDetail: result.detail,
+      };
+      setReminderDraft(configured);
+      saveReminderPreferences(configured);
+    } finally {
+      setNotificationSaving(false);
+    }
   };
 
   const exportLocalData = () => {
@@ -1301,61 +1357,26 @@ export function AppShell({
 
               <section className="space-y-3 rounded-2xl border border-border bg-background p-3">
                 <div>
-                  <h3 className="text-sm font-extrabold text-ink">תזכורות</h3>
+                  <h3 className="text-sm font-extrabold text-ink">התראות</h3>
                   <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                    opt-in בלבד. כרגע לא מחובר ערוץ push או email, לכן ההעדפה נשמרת מקומית
-                    ומוצגת כ״מוכן״ רק כהכנה לערוץ מסירה.
+                    הודעה על אימון היום והודעות חדשות מהמאמן. נדרשת הרשאת התראות במכשיר.
                   </p>
                 </div>
                 <label className="flex items-center justify-between gap-3 text-xs font-bold text-ink">
-                  <span>לאפשר תזכורות</span>
+                  <span>התראות</span>
                   <input
                     type="checkbox"
                     checked={reminderDraft.enabled}
-                    onChange={(event) =>
-                      setReminderDraft((current) => ({
-                        ...current,
-                        enabled: event.target.checked,
-                        deliveryState: event.target.checked ? "ready" : "paused",
-                      }))
-                    }
+                    disabled={notificationSaving}
+                    onChange={(event) => void handleNotificationToggle(event.target.checked)}
                     className="h-4 w-4 accent-[hsl(var(--primary))]"
                   />
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="block min-w-0 text-[11px] font-bold text-muted-foreground">
-                    התחלה שקטה
-                    <input
-                      type="time"
-                      value={reminderDraft.quietHoursStart}
-                      onChange={(event) =>
-                        setReminderDraft((current) => ({
-                          ...current,
-                          quietHoursStart: event.target.value,
-                        }))
-                      }
-                      className="mt-1 w-full rounded-xl border border-border bg-surface px-2 py-2 text-xs font-bold text-ink"
-                    />
-                  </label>
-                  <label className="block min-w-0 text-[11px] font-bold text-muted-foreground">
-                    סיום שקט
-                    <input
-                      type="time"
-                      value={reminderDraft.quietHoursEnd}
-                      onChange={(event) =>
-                        setReminderDraft((current) => ({
-                          ...current,
-                          quietHoursEnd: event.target.value,
-                        }))
-                      }
-                      className="mt-1 w-full rounded-xl border border-border bg-surface px-2 py-2 text-xs font-bold text-ink"
-                    />
-                  </label>
-                </div>
-                <p className="text-[10px] font-semibold text-muted-foreground">
-                  מצב מסירה: {reminderDraft.enabled ? "מוכן להגדרת ערוץ" : "מושהה"} · סוגים:
-                  אימון, תזונה, צ׳ק־אין
-                </p>
+                {reminderDraft.deliveryDetail ? (
+                  <p className="text-[10px] font-semibold text-muted-foreground">
+                    {reminderDraft.deliveryDetail}
+                  </p>
+                ) : null}
               </section>
 
               <section className="space-y-3 rounded-2xl border border-border bg-background p-3">
