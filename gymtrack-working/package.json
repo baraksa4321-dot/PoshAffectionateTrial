@@ -13,6 +13,7 @@
     "cap:open:ios": "cap open ios",
     "test": "bun test",
     "check:status-colors": "bun run scripts/status-color-check.ts",
+    "smoke:live-activity": "bun run scripts/live-activity-rls-smoke.ts",
     "smoke:live-plan": "bun run scripts/live-plan-smoke.ts",
     "typecheck": "npx tsc --noEmit",
     "preview": "vite preview",

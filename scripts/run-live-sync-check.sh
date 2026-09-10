@@ -9,6 +9,8 @@ account_keys=(
   GYMTRACK_SMOKE_COACH_PASSWORD
   GYMTRACK_SMOKE_TRAINEE_EMAIL
   GYMTRACK_SMOKE_TRAINEE_PASSWORD
+  GYMTRACK_SMOKE_UNRELATED_COACH_EMAIL
+  GYMTRACK_SMOKE_UNRELATED_COACH_PASSWORD
 )
 required_keys=(
   VITE_SUPABASE_URL
@@ -56,3 +58,10 @@ if ! pnpm --dir gymtrack-working run smoke:live-plan; then
   exit 1
 fi
 echo "PASS: live coach-to-trainee sync smoke completed."
+
+echo "Running the guarded live activity RLS smoke check..."
+if ! pnpm --dir gymtrack-working run smoke:live-activity; then
+  echo "FAIL: live activity RLS smoke failed; release validation is blocked."
+  exit 1
+fi
+echo "PASS: live activity RLS smoke completed."

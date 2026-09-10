@@ -48,9 +48,22 @@ The repository release check invokes a guarded wrapper after the local preview c
 pnpm run release:check
 ```
 
-When none of the four `GYMTRACK_SMOKE_*EMAIL` or `GYMTRACK_SMOKE_*PASSWORD` settings are
-provided, the wrapper prints a safe `SKIP` message and continues. When any disposable
-smoke-account setting is present, it requires all smoke settings plus
-`GYMTRACK_SMOKE_ALLOW_LIVE=true`, runs this command, and fails the release if the live
-check fails. Passwords, emails, keys, and tokens are never printed by the wrapper or the
-smoke script.
+When none of the smoke-account settings are provided, the wrapper prints a safe `SKIP` message and
+continues. When any disposable smoke-account setting is present, it requires all settings plus
+`GYMTRACK_SMOKE_ALLOW_LIVE=true`, runs the plan and activity RLS smoke checks, and fails the release
+if either live check fails. Passwords, emails, keys, and tokens are never printed by the wrapper or
+the smoke scripts.
+
+## Activity RLS smoke
+
+The release wrapper also runs `smoke:live-activity`. That check requires these additional settings:
+
+```text
+GYMTRACK_SMOKE_UNRELATED_COACH_EMAIL
+GYMTRACK_SMOKE_UNRELATED_COACH_PASSWORD
+```
+
+The unrelated account must already exist in Auth with the `coach` role, must not be assigned to the
+trainee, and must not be an `owner`. The smoke creates temporary activity rows through the trainee
+session, verifies assigned-coach reads for habits, body-weight, and cardio logs, verifies zero rows
+for the unrelated coach, and deletes all temporary rows in `finally`.

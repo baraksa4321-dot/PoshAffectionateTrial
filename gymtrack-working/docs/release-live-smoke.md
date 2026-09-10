@@ -47,6 +47,8 @@ setting exists, all of the following must be configured:
 - `GYMTRACK_SMOKE_COACH_PASSWORD`
 - `GYMTRACK_SMOKE_TRAINEE_EMAIL`
 - `GYMTRACK_SMOKE_TRAINEE_PASSWORD`
+- `GYMTRACK_SMOKE_UNRELATED_COACH_EMAIL`
+- `GYMTRACK_SMOKE_UNRELATED_COACH_PASSWORD`
 
 The accounts must be disposable and isolated from real user data.
 
@@ -63,8 +65,9 @@ The smoke test must verify:
 1. Coach-to-trainee plan changes arrive for the selected trainee.
 2. Trainee changes arrive in the coach workspace.
 3. Refresh and reconnect preserve the changes.
-4. The two test users cannot read each other's data.
-5. The test cleanup removes or resets all smoke records.
+4. The assigned coach can read the trainee's habits, body-weight logs, and cardio logs.
+5. The unrelated coach receives no rows from those three trainee activity tables.
+6. The test cleanup removes or resets all smoke records.
 
 Do not bypass the guard when the preflight reports `BLOCKED`.
 
