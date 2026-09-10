@@ -224,3 +224,17 @@ mtime_ms = 1788942731647
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:9f99d2e5-5d2e-4b5a-bf24-93a3957a7bb5/43b572e4-203b-4132-95fd-342daaf76e50/e024cf80-e946-4855-a4ea-67db0a999764"
 storage_version_token = "1788942738573005"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "4JOttsc9Fz2ca3U2cF6_u"
+uri = "file://docs/qa-production-audit-2026-09-10.md"
+type = "text"
+title = "דו״ח QA מלא — MYroutine / GymTrack"
+description = "דו״ח QA לפני production עם מיפוי פיצ׳רים, בדיקת מסכים, responsive, מצבי קצה וחסמי release."
+logical_id = "1703d197-f0ef-4afa-9e32-d8b9a50a81e7"
+content_hash = "sha256:d400443f20449f268cdc523bb8f841f8a4038e4d85d3421a2c677664df6b22a7"
+size = 19454
+mtime_ms = 1789047533823
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:9f99d2e5-5d2e-4b5a-bf24-93a3957a7bb5/1703d197-f0ef-4afa-9e32-d8b9a50a81e7/9dd3259d-c75e-4ddc-9709-ae1a6296edbe"
+storage_version_token = "1789047553000848"
+content_type = "text/markdown"
