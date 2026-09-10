@@ -48,6 +48,7 @@ import {
   personalRecords,
 } from "@/lib/gym-store";
 import { genderText } from "@/lib/gender-copy";
+import { getLatestVisibleCoachMessage } from "@/lib/message-history";
 import { supabase } from "@/lib/supabase";
 import {
   getCurrentWeekDates,
@@ -460,10 +461,7 @@ function Dashboard() {
       setDismissedMessageIds([]);
     }
   }, [authUser?.id]);
-  const latestCoachMsg =
-    [...(coachMessages ?? [])]
-      .filter((message) => !dismissedMessageIds.includes(message.id))
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] ?? null;
+  const latestCoachMsg = getLatestVisibleCoachMessage(coachMessages, dismissedMessageIds);
   const latestBroadcast =
     broadcasts?.find((message) => !dismissedMessageIds.includes(message.id)) ?? null;
   const dismissMessage = async (id: string, isBroadcast: boolean) => {
