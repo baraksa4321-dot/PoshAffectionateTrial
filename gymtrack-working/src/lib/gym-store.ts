@@ -38,6 +38,7 @@ import {
 const KEY = "gymtrack.v1";
 const CACHED_USER_KEY = "gymtrack.v1.userId";
 const USER_CACHE_PREFIX = "gymtrack.v1.user.";
+const USER_BOOT_CACHE_PREFIX = "gymtrack.v1.boot.";
 const USER_PENDING_PREFIX = "gymtrack.v1.pending.";
 // Supabase auth and the initial profile/data hydration may cross several
 // network boundaries. Four seconds caused valid logins on slower connections
@@ -630,6 +631,15 @@ function dedupeCoachMessages(messages: CoachMessage[] = []) {
   return deduped.sort((a, b) => coachMessageTime(b) - coachMessageTime(a));
 }
 
+function dedupeWorkoutsById(workouts: Workout[]) {
+  const seen = new Set<string>();
+  return workouts.filter((workout) => {
+    if (seen.has(workout.id)) return false;
+    seen.add(workout.id);
+    return true;
+  });
+}
+
 function mergeRemotePlanRefresh(localData: GymData, remoteData: GymData): GymData {
   // Trainees cannot edit these collections locally, so a pending nutrition
   // log, check-list item, or measurement must not prevent a coach's plan from
@@ -662,10 +672,10 @@ function mergeRemotePlanRefresh(localData: GymData, remoteData: GymData): GymDat
     ]),
     broadcasts: remoteData.broadcasts ?? localData.broadcasts ?? [],
     programs: remoteData.programs ?? localData.programs,
-    workouts: [
+    workouts: dedupeWorkoutsById([
       ...(remoteData.workouts ?? []),
       ...localData.workouts.filter((workout) => workout.id.startsWith("challenge-run-")),
-    ],
+    ]),
     challenges: remoteData.challenges ?? localData.challenges,
     plannedMeals: remoteData.plannedMeals ?? localData.plannedMeals ?? [],
     nutritionTargets: remoteData.nutritionTargets ?? localData.nutritionTargets,
@@ -890,17 +900,38 @@ function userCacheKey(userId: string) {
   return `${USER_CACHE_PREFIX}${userId}`;
 }
 
+function userBootCacheKey(userId: string) {
+  return `${USER_BOOT_CACHE_PREFIX}${userId}`;
+}
+
 function userPendingKey(userId: string) {
   return `${USER_PENDING_PREFIX}${userId}`;
 }
 
-function parseCachedData(raw: string | null): GymData | null {
+function parseCachedData(raw: string | null, includeReferenceLibraries = true): GymData | null {
   if (!raw) return null;
   try {
-    return migrate({ ...seed(), ...(JSON.parse(raw) as Partial<GymData>) });
+    const parsed = JSON.parse(raw) as Partial<GymData>;
+    const base = seed();
+    return migrate(
+      {
+        ...base,
+        ...parsed,
+        // The boot snapshot deliberately omits the large food catalog. Keep
+        // the small built-in exercise set available without reintroducing the
+        // full reference libraries before the first screen is interactive.
+        foods: includeReferenceLibraries ? (parsed.foods ?? base.foods) : [],
+        exercises: parsed.exercises ?? base.exercises,
+      },
+      includeReferenceLibraries,
+    );
   } catch {
     return null;
   }
+}
+
+function parseBootCachedData(raw: string | null) {
+  return parseCachedData(raw, false);
 }
 
 function loadCachedDataForUser(userId: string) {
@@ -920,6 +951,15 @@ function loadCachedDataForUser(userId: string) {
   }
 }
 
+function loadBootCachedDataForUser(userId: string) {
+  if (typeof window === "undefined") return null;
+  try {
+    return parseBootCachedData(window.localStorage.getItem(userBootCacheKey(userId)));
+  } catch {
+    return null;
+  }
+}
+
 function hasPersistedPendingChanges(userId: string) {
   if (typeof window === "undefined") return false;
   try {
@@ -929,15 +969,31 @@ function hasPersistedPendingChanges(userId: string) {
   }
 }
 
+function createBootCacheSnapshot(source: GymData): Partial<GymData> {
+  return {
+    ...source,
+    // Food entries are the largest user-local collection and are not needed
+    // to establish the account role or render the first workspace shell.
+    foods: [],
+  };
+}
+
 function hasUsableOfflineCache(cachedData: GymData | null) {
   const cachedRole = cachedData?.userProfile?.role;
   return cachedRole === "owner" || cachedRole === "coach" || cachedRole === "client";
 }
 
-function resetDataForUser(userId: string) {
-  const cachedData = loadCachedDataForUser(userId);
+function resetDataForUser(userId: string): {
+  data: GymData | null;
+  cacheKind: "boot" | "full" | "none";
+} {
+  const bootData = loadBootCachedDataForUser(userId);
+  const cachedData = bootData ?? loadCachedDataForUser(userId);
   data = cachedData ?? seed();
-  return cachedData;
+  return {
+    data: cachedData,
+    cacheKind: bootData ? "boot" : cachedData ? "full" : "none",
+  };
 }
 
 /** Keep custom foods and saved meal snapshots, while removing retired seed items. */
@@ -1030,7 +1086,7 @@ function loadReferenceLibraries() {
 }
 
 /** Ensure older saved data still works cleanly. */
-function migrate(d: Partial<GymData>): GymData {
+function migrate(d: Partial<GymData>, includeReferenceLibraries = true): GymData {
   const workouts = d.workouts ?? [];
   let programs = d.programs ?? [];
   // Challenge workouts are personal local-first enrollments, not legacy
@@ -1044,7 +1100,9 @@ function migrate(d: Partial<GymData>): GymData {
   }
   const normalizedNutrition = normalizeFixedPlannedMenu(d.plannedMeals, d.nutritionDays ?? []);
   return {
-    exercises: mergeSeedExercises(d.exercises ?? [], d.deletedExerciseIds ?? []),
+    exercises: includeReferenceLibraries
+      ? mergeSeedExercises(d.exercises ?? [], d.deletedExerciseIds ?? [])
+      : (d.exercises ?? []),
     deletedExerciseIds: d.deletedExerciseIds ?? [],
     deletedEquipmentOptions: d.deletedEquipmentOptions ?? [],
     deletedCableGripOptions: d.deletedCableGripOptions ?? [],
@@ -1062,7 +1120,9 @@ function migrate(d: Partial<GymData>): GymData {
     challenges: mergeChallenges(d.challenges ?? [], d.deletedChallengeIds ?? []),
     challengeEnrollments: d.challengeEnrollments ?? [],
     history: d.history ?? [],
-    foods: mergeSeedFoods(d.foods ?? [], d.deletedFoodIds ?? []),
+    foods: includeReferenceLibraries
+      ? mergeSeedFoods(d.foods ?? [], d.deletedFoodIds ?? [])
+      : (d.foods ?? []),
     nutritionDays: normalizedNutrition.nutritionDays,
     nutritionTargets: d.nutritionTargets ?? {},
     plannedMeals: normalizedNutrition.plannedMeals,
@@ -1191,9 +1251,9 @@ function load() {
         authResolutionAwaitingInitialEvent = false;
         authStatus = session?.user ? "authenticated" : "unauthenticated";
         if (session?.user) {
-          const cachedData = resetDataForUser(session.user.id);
+          const cached = resetDataForUser(session.user.id);
           startPlanRealtime(session.user.id);
-          void startUserHydration(session.user.id, cachedData);
+          void startUserHydration(session.user.id, cached.data, cached.cacheKind);
           return;
         }
         notifyListeners();
@@ -1244,9 +1304,9 @@ function load() {
           stopPlanRealtime();
           data = seed();
         }
-        const cachedData = resetDataForUser(session.user.id);
+        const cached = resetDataForUser(session.user.id);
         startPlanRealtime(session.user.id);
-        void startUserHydration(session.user.id, cachedData);
+        void startUserHydration(session.user.id, cached.data, cached.cacheKind);
         return;
       } else {
         // On sign-out, reset memory state to clean seed data
@@ -1300,10 +1360,14 @@ export function refreshCurrentUserData(force = false) {
   refreshInFlight = refresh;
 }
 
-function startUserHydration(userId: string, cachedData = loadCachedDataForUser(userId)) {
+function startUserHydration(
+  userId: string,
+  cachedData = loadCachedDataForUser(userId),
+  cacheKind: "boot" | "full" | "none" = "full",
+) {
   if (hydrationInFlight?.userId === userId) return hydrationInFlight.promise;
 
-  const promise = handleUserLogin(userId, cachedData)
+  const promise = handleUserLogin(userId, cachedData, cacheKind)
     .catch((error: unknown) => {
       // Keep an unexpected pull exception from leaving the root route in its
       // loading state forever. Expected pull failures already return a
@@ -1326,7 +1390,11 @@ function startUserHydration(userId: string, cachedData = loadCachedDataForUser(u
   return promise;
 }
 
-async function handleUserLogin(userId: string, cachedData = loadCachedDataForUser(userId)) {
+async function handleUserLogin(
+  userId: string,
+  cachedData = loadCachedDataForUser(userId),
+  cacheKind: "boot" | "full" | "none" = "full",
+) {
   const generation = ++hydrationGeneration;
   const trustedOfflineCache = hasUsableOfflineCache(cachedData);
   const pendingAtPullStart = trustedOfflineCache && hasPersistedPendingChanges(userId);
@@ -1338,6 +1406,24 @@ async function handleUserLogin(userId: string, cachedData = loadCachedDataForUse
     hasPendingCloudChanges = pendingAtPullStart;
     syncStatus = browserIsOffline() ? "offline" : hasPendingCloudChanges ? "pending" : "synced";
     notifyListeners();
+    if (cacheKind === "boot") {
+      // Yield once so React can paint the account shell before parsing the
+      // full local snapshot. The full snapshot is still loaded before any
+      // cloud pull, preserving offline edits and preventing stale remote data
+      // from overwriting a pending local change.
+      const bootRevision = dataRevision;
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+      if (generation !== hydrationGeneration || currentUser?.id !== userId) return;
+      const fullCachedData = loadCachedDataForUser(userId);
+      if (
+        fullCachedData &&
+        hasUsableOfflineCache(fullCachedData) &&
+        dataRevision === bootRevision
+      ) {
+        data = fullCachedData;
+        notifyListeners();
+      }
+    }
     if (browserIsOffline()) return;
   }
 
@@ -1585,6 +1671,10 @@ function persist() {
   try {
     if (currentUser?.id) {
       window.localStorage.setItem(userCacheKey(currentUser.id), JSON.stringify(data));
+      window.localStorage.setItem(
+        userBootCacheKey(currentUser.id),
+        JSON.stringify(createBootCacheSnapshot(data)),
+      );
       window.localStorage.setItem(userPendingKey(currentUser.id), "true");
     }
   } catch {
@@ -1605,6 +1695,10 @@ function persistCacheOnly() {
   if (typeof window === "undefined" || !currentUser?.id) return;
   try {
     window.localStorage.setItem(userCacheKey(currentUser.id), JSON.stringify(data));
+    window.localStorage.setItem(
+      userBootCacheKey(currentUser.id),
+      JSON.stringify(createBootCacheSnapshot(data)),
+    );
   } catch {
     /* ignore */
   }

@@ -7,6 +7,7 @@
 - [Owner coaching invariant](owner-coaching-invariant.md) — Owner links are additive and staff self-links must survive role changes; protected profile triggers can block unauthenticated backfills.
 - [Mobile keyboard and scrolling](mobile-overlay-keyboard-sizing.md) — Keep one document scroll path; use the visual viewport and nearest scroll parent to expose focused fields.
 - [Offline cache ownership](offline-cache-ownership.md) — Store offline data by immutable user key; never migrate shared caches without verifiable ownership.
+- [Offline boot cache](offline-boot-cache.md) — Paint from a per-user lightweight snapshot, then load the full cache before cloud pull; dedupe repeated remote/local plan rows.
 - [Preferred visual direction](preferred-visual-direction.md) — The user approved the selected clean, ordered premium My Routine direction as the visual baseline.
 - [Offline route chunks](offline-route-chunks.md) — Offline navigation needs route-module warmup; caching only the initial HTML shell is insufficient for code-split TanStack pages.
 - [New-user profile repair](new-user-profile-repair.md) — Auth users can exist without a profiles row; hydrate must create only their own client profile through RLS.
