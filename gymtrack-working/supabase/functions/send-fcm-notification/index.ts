@@ -12,6 +12,15 @@ type PushRequest = {
   body: string;
 };
 
+class RequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
+
 function base64Url(value: ArrayBuffer | string) {
   const bytes =
     typeof value === "string" ? new TextEncoder().encode(value) : new Uint8Array(value);
@@ -23,7 +32,15 @@ function base64Url(value: ArrayBuffer | string) {
 }
 
 function privateKeyBytes(pem: string) {
-  const clean = pem.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, "");
+  const normalized = pem
+    .trim()
+    .replace(/^"(.*)"$/s, "$1")
+    .replace(/\\n/g, "\n")
+    .replace(/\r/g, "");
+  if (!normalized.includes("-----BEGIN PRIVATE KEY-----")) {
+    throw new Error("Firebase private key must be a PKCS#8 PEM value.");
+  }
+  const clean = normalized.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, "");
   const binary = atob(clean);
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
@@ -74,35 +91,69 @@ async function recipientIds(
   if (request.recipientUserId) return [request.recipientUserId];
   if (!request.audience) return [];
   if (request.audience === "assigned_clients") {
-    const { data } = await admin.from("coach_clients").select("client_id").eq("coach_id", callerId);
+    const { data, error } = await admin
+      .from("coach_clients")
+      .select("client_id")
+      .eq("coach_id", callerId);
+    if (error) throw new Error(`Could not resolve assigned trainees: ${error.message}`);
     return (data ?? []).map((row) => row.client_id as string);
   }
   const role = request.audience === "coaches" ? "coach" : request.audience === "clients" ? "client" : null;
   const query = admin.from("profiles").select("id");
-  const { data } = role ? await query.eq("role", role) : await query;
+  const { data, error } = role ? await query.eq("role", role) : await query;
+  if (error) throw new Error(`Could not resolve notification audience: ${error.message}`);
   return (data ?? []).map((row) => row.id as string).filter((id) => id !== callerId);
+}
+
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "content-type": "application/json" },
+  });
 }
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const authorization = request.headers.get("authorization");
-    if (!authorization) throw new Error("Authentication is required.");
+    if (!authorization) throw new RequestError("Authentication is required.", 401);
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const authClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authorization } },
     });
     const { data: authData, error: authError } = await authClient.auth.getUser();
-    if (authError || !authData.user) throw new Error("Authentication is required.");
+    if (authError || !authData.user) throw new RequestError("Authentication is required.", 401);
 
     const requestBody = (await request.json()) as PushRequest;
-    if (!requestBody.title?.trim() || !requestBody.body?.trim()) {
-      throw new Error("Notification title and body are required.");
+    if (
+      !requestBody ||
+      typeof requestBody.title !== "string" ||
+      typeof requestBody.body !== "string" ||
+      !requestBody.title.trim() ||
+      !requestBody.body.trim() ||
+      requestBody.title.length > 200 ||
+      requestBody.body.length > 2_000
+    ) {
+      throw new RequestError("Notification title and body are required and must be short.", 400);
+    }
+    if (requestBody.recipientUserId && requestBody.audience) {
+      throw new RequestError("Choose one notification recipient or audience.", 400);
+    }
+    const audiences = ["assigned_clients", "coaches", "clients", "everyone"] as const;
+    if (requestBody.audience && !audiences.includes(requestBody.audience)) {
+      throw new RequestError("The notification audience is not supported.", 400);
     }
     const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: sender } = await admin.from("profiles").select("role").eq("id", authData.user.id).maybeSingle();
-    if (sender?.role !== "coach" && sender?.role !== "owner") throw new Error("Only staff can send notifications.");
+    const { data: sender, error: senderError } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", authData.user.id)
+      .maybeSingle();
+    if (senderError) throw new Error(`Could not verify sender role: ${senderError.message}`);
+    if (sender?.role !== "coach" && sender?.role !== "owner") {
+      throw new RequestError("Only staff can send notifications.", 403);
+    }
     if (requestBody.recipientUserId && sender.role === "coach") {
       const { data: assignment } = await admin
         .from("coach_clients")
@@ -110,15 +161,17 @@ Deno.serve(async (request) => {
         .eq("coach_id", authData.user.id)
         .eq("client_id", requestBody.recipientUserId)
         .maybeSingle();
-      if (!assignment) throw new Error("The coach is not assigned to this trainee.");
+      if (!assignment) throw new RequestError("The coach is not assigned to this trainee.", 403);
     }
     const ids = await recipientIds(admin, authData.user.id, requestBody);
-    if (!ids.length) return new Response(JSON.stringify({ sent: 0 }), { headers: { ...corsHeaders, "content-type": "application/json" } });
-    const { data: tokens } = await admin.from("push_tokens").select("token").in("user_id", ids);
+    if (!ids.length) return jsonResponse({ sent: 0 });
+    const { data: tokens, error: tokenError } = await admin
+      .from("push_tokens")
+      .select("token")
+      .in("user_id", ids);
+    if (tokenError) throw new Error(`Could not load notification devices: ${tokenError.message}`);
     if (!tokens?.length) {
-      return new Response(JSON.stringify({ sent: 0 }), {
-        headers: { ...corsHeaders, "content-type": "application/json" },
-      });
+      return jsonResponse({ sent: 0 });
     }
     const accessToken = await googleAccessToken();
     const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
@@ -153,7 +206,8 @@ Deno.serve(async (request) => {
           };
           const isUnregistered =
             parsed.error?.status === "NOT_FOUND" ||
-            parsed.error?.details?.some((detail) => detail.errorCode === "UNREGISTERED");
+            parsed.error?.details?.some((detail) => detail.errorCode === "UNREGISTERED") ||
+            responseBody.includes("UNREGISTERED");
           if (isUnregistered) invalidTokens.push(tokenRow.token);
         } catch {
           // Keep the token when FCM returns a non-JSON error; it may be transient.
@@ -167,11 +221,10 @@ Deno.serve(async (request) => {
         .in("token", invalidTokens);
       if (cleanupError) console.warn("Could not remove invalid FCM tokens:", cleanupError.message);
     }
-    return new Response(JSON.stringify({ sent }), { headers: { ...corsHeaders, "content-type": "application/json" } });
+    return jsonResponse({ sent });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Push failed" }), {
-      status: 400,
-      headers: { ...corsHeaders, "content-type": "application/json" },
-    });
+    if (error instanceof RequestError) return jsonResponse({ error: error.message }, error.status);
+    console.error("[send-fcm-notification]", error);
+    return jsonResponse({ error: "Push delivery failed." }, 502);
   }
 });

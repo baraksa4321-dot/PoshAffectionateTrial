@@ -57,6 +57,10 @@ function notificationId(value: string): number {
   return WORKOUT_NOTIFICATION_PREFIX + Math.abs(hash % 10_000);
 }
 
+function tokenStorageKey(userId: string, currentPlatform: string) {
+  return `gymtrack.push-token:${userId}:${currentPlatform}`;
+}
+
 function scheduledWorkoutDate(date: string): Date | null {
   const scheduled = new Date(
     `${date}T${String(WORKOUT_REMINDER_HOUR).padStart(2, "0")}:${String(
@@ -67,6 +71,14 @@ function scheduledWorkoutDate(date: string): Date | null {
 }
 
 async function savePushToken(userId: string, token: string, currentPlatform = platform()) {
+  const storageKey = tokenStorageKey(userId, currentPlatform);
+  let previousToken: string | null = null;
+  try {
+    previousToken = window.localStorage.getItem(storageKey);
+  } catch {
+    // The database remains the source of truth when local storage is unavailable.
+  }
+
   const { error } = await supabase.from("push_tokens").upsert(
     {
       user_id: userId,
@@ -78,6 +90,23 @@ async function savePushToken(userId: string, token: string, currentPlatform = pl
     { onConflict: "token" },
   );
   if (error) throw new Error(`שמירת מכשיר להתראות נכשלה: ${error.message}`);
+
+  if (previousToken && previousToken !== token) {
+    const { error: cleanupError } = await supabase
+      .from("push_tokens")
+      .delete()
+      .eq("user_id", userId)
+      .eq("token", previousToken);
+    if (cleanupError) {
+      console.warn("[FCM token] Could not remove replaced token:", cleanupError.message);
+    }
+  }
+
+  try {
+    window.localStorage.setItem(storageKey, token);
+  } catch {
+    // The next successful refresh will still upsert the current token.
+  }
 }
 
 async function showWebNotification(title: string, body: string) {
