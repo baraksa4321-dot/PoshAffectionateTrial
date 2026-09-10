@@ -46,3 +46,4 @@
 - [Remote persistence smoke fixtures](remote-persistence-smoke-fixtures.md) — Reopening tests must make mocked mutation responses visible to later reads, not return only the initial fixture.
 - [Offline hydration reconnect timing](offline-hydration-reconnect-timing.md) — Let offline hydration settle before dispatching online in lifecycle tests, or the event can reuse the in-flight promise and skip refresh.
 - [Nested app dependency isolation](nested-app-dependency-isolation.md) — Installing dependencies from a nested app can rewrite the root workspace lock; restore the root lock and keep the nested lock authoritative.
+- [Firebase Push configuration](firebase-push-configuration.md) — Web Firebase config can be complete while remote Edge Function delivery remains blocked by an invalid service-account PEM.
