@@ -8620,7 +8620,10 @@ export function CoachDashboardPage({
                       />
                     </div>
 
-                     <div className="sticky top-2 z-10 grid grid-cols-4 gap-1.5 rounded-xl border border-emerald-200 bg-white/80 p-2 shadow-sm backdrop-blur">
+                     <div
+                       data-testid="nutrition-macro-grid"
+                       className="sticky top-2 z-10 grid grid-cols-4 gap-1.5 rounded-xl border border-emerald-200 bg-white/80 p-2 shadow-sm backdrop-blur"
+                     >
                        {[
                          ["חלבון", menuTotals.protein, "ג׳", "bg-blue-50 text-blue-950"],
                          ["פחמימות", menuTotals.carbs, "ג׳", "bg-amber-50 text-amber-950"],
@@ -8629,10 +8632,11 @@ export function CoachDashboardPage({
                        ].map(([label, value, unit, color]) => (
                          <div
                            key={label}
+                           data-nutrition-macro={label}
                            className={`rounded-lg px-1.5 py-2 text-center ${color}`}
                          >
                            <div className="text-[10px] font-bold">{label}</div>
-                           <div className="mt-0.5 text-sm font-black">
+                           <div data-nutrition-macro-value className="mt-0.5 text-sm font-black">
                              {Math.round(Number(value) * 10) / 10}
                            </div>
                            <div className="text-[9px] opacity-75">{unit}</div>
@@ -8687,7 +8691,10 @@ export function CoachDashboardPage({
                                      <div className="flex items-center justify-between gap-2">
                                        <div className="min-w-0">
                                          <p className="truncate font-semibold text-ink">{food.name}</p>
-                                         <p className="mt-0.5 font-semibold text-emerald-900">
+                                         <p
+                                           data-testid="nutrition-food-quantity"
+                                           className="mt-0.5 font-semibold text-emerald-900"
+                                         >
                                            {mealFoodQuantityLabel(food)}
                                          </p>
                                        </div>
@@ -8700,7 +8707,10 @@ export function CoachDashboardPage({
                                          <Trash2 className="h-3.5 w-3.5" />
                                        </button>
                                      </div>
-                                     <div className="mt-1.5 grid grid-cols-4 gap-1">
+                                     <div
+                                       data-testid="nutrition-macro-grid"
+                                       className="mt-1.5 grid grid-cols-4 gap-1"
+                                     >
                                        {[
                                          ["חלבון", food.protein, "ג׳"],
                                          ["פחמימות", food.carbs, "ג׳"],
@@ -8709,12 +8719,16 @@ export function CoachDashboardPage({
                                        ].map(([label, value, unit]) => (
                                          <div
                                            key={label}
+                                           data-nutrition-macro={label}
                                            className="rounded-md bg-white/70 px-1 py-1 text-center"
                                          >
                                            <span className="block text-[8px] font-bold text-muted-foreground">
                                              {label}
                                            </span>
-                                           <strong className="block text-[10px] text-ink">
+                                           <strong
+                                             data-nutrition-macro-value
+                                             className="block text-[10px] text-ink"
+                                           >
                                              {Math.round(Number(value) * 10) / 10} {unit}
                                            </strong>
                                          </div>

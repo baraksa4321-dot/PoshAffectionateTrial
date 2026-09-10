@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { defaultFoodQuantity, foodQuantityOptions, mealFoodFromPortion } from "./food-portions";
+import {
+  defaultFoodQuantity,
+  foodQuantityOptions,
+  mealFoodFromPortion,
+  mealFoodQuantityLabel,
+} from "./food-portions";
 import type { FoodItem } from "./gym-types";
 
 const peanutButter: FoodItem = {
@@ -30,6 +35,23 @@ const mediumEgg: FoodItem = {
 };
 
 describe("food portion conversions", () => {
+  test("keeps meal quantities measurable instead of using fractional serving labels", () => {
+    expect(
+      mealFoodQuantityLabel({
+        name: "אורז",
+        servingSize: "גרם למנה",
+        quantity: 100,
+      }),
+    ).toBe("100 גרם");
+    expect(
+      mealFoodQuantityLabel({
+        name: "מאכל",
+        servingSize: "מנה למנה",
+        quantity: 0.5,
+      }),
+    ).toBe("כ־½ מהמנה");
+  });
+
   test("keeps an egg serving as units even when its reference weight is present", () => {
     expect(defaultFoodQuantity(mediumEgg)).toEqual({ quantity: 1, unit: "unit" });
     expect(foodQuantityOptions(mediumEgg).map(({ value }) => value)).toEqual(["unit", "g"]);

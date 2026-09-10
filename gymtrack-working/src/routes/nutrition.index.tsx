@@ -171,8 +171,8 @@ function formatMeasuredFoodAmount(servingSize: string, quantity = 1) {
   const formatWhole = (value: number) =>
     new Intl.NumberFormat("he-IL", { maximumFractionDigits: 0 }).format(Math.round(value));
 
-  if (/(גרם|g)\b/.test(serving)) return `${formatWhole(scaled)} גרם`;
-  if (/(מ["״]?ל|ml)\b/.test(serving)) return `${formatWhole(scaled)} מ״ל`;
+  if (/(גרם|g)(?=\s|$|[),.])/i.test(serving)) return `${formatWhole(scaled)} גרם`;
+  if (/(מ["״]?ל|ml)(?=\s|$|[),.])/i.test(serving)) return `${formatWhole(scaled)} מ״ל`;
   if (/(כוס|כוסות|cup|cups)/.test(serving)) {
     return `${formatWhole(scaled * 240)} מ״ל`;
   }
@@ -1061,7 +1061,10 @@ function NutritionLog() {
                                 {displayFood.name}
                               </span>
                             </div>
-                            <p className="mt-1 text-[12px] font-semibold text-ink">
+                            <p
+                              data-testid="nutrition-food-quantity"
+                              className="mt-1 text-[12px] font-semibold text-ink"
+                            >
                               {formatMeasuredFoodAmount(
                                 displayFood.servingSize,
                                 displayFood.quantity,
@@ -1178,7 +1181,10 @@ function NutritionLog() {
                               <p className="truncate text-[14px] font-semibold text-ink">
                                 {food.name}
                               </p>
-                              <p className="mt-0.5 text-[12px] font-semibold text-ink">
+                            <p
+                              data-testid="nutrition-food-quantity"
+                              className="mt-0.5 text-[12px] font-semibold text-ink"
+                            >
                                 {formatMeasuredFoodAmount(food.servingSize, food.quantity)}
                               </p>
                             </div>
@@ -1866,7 +1872,10 @@ function NutritionLog() {
                   >
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[14px] font-semibold text-ink">{food.name}</p>
-                      <p className="mt-0.5 text-[12px] font-semibold text-ink">
+                      <p
+                        data-testid="nutrition-food-quantity"
+                        className="mt-0.5 text-[12px] font-semibold text-ink"
+                      >
                         {formatMeasuredFoodAmount(food.servingSize)}
                       </p>
                       <NutritionMacroGrid
@@ -1955,7 +1964,10 @@ function NutritionLog() {
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[14px] font-semibold text-ink">{item.food.name}</p>
-                    <p className="mt-0.5 text-[12px] font-semibold text-ink">
+                    <p
+                      data-testid="nutrition-food-quantity"
+                      className="mt-0.5 text-[12px] font-semibold text-ink"
+                    >
                       {formatMeasuredFoodAmount(item.food.servingSize, item.calculatedQuantity)}
                     </p>
                     <NutritionMacroGrid
@@ -2001,14 +2013,21 @@ function NutritionMacroGrid({
   ];
 
   return (
-    <div className={`grid ${showCalories ? "grid-cols-4" : "grid-cols-3"} gap-1.5 ${className}`}>
+    <div
+      data-testid="nutrition-macro-grid"
+      className={`grid ${showCalories ? "grid-cols-4" : "grid-cols-3"} gap-1.5 ${className}`}
+    >
       {values.map((item) => (
         <div
           key={item.label}
+          data-nutrition-macro={item.label}
           className="rounded-xl border border-border/35 bg-white/60 px-1.5 py-1.5 text-center"
         >
           <span className="block text-[9px] font-bold text-muted-foreground">{item.label}</span>
-          <strong className="mt-0.5 block font-display text-[13px] font-bold tabular-nums text-ink">
+          <strong
+            data-nutrition-macro-value
+            className="mt-0.5 block font-display text-[13px] font-bold tabular-nums text-ink"
+          >
             {Math.round(item.value * 10) / 10}
             <span className="ms-0.5 text-[9px] font-semibold text-muted-foreground">
               {item.unit}

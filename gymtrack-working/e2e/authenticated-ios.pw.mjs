@@ -79,7 +79,7 @@ const clientProfile = {
           id: "ios-smoke-meal-food",
           foodId: "f-rice",
           name: "אורז",
-          servingSize: "1 מנה",
+          servingSize: "100 גרם",
           quantity: 1,
           calories: 200,
           protein: 4,
@@ -104,7 +104,7 @@ const nutritionDay = {
           id: "ios-smoke-meal-food",
           foodId: "f-rice",
           name: "אורז",
-          servingSize: "1 מנה",
+          servingSize: "100 גרם",
           quantity: 1,
           calories: 200,
           protein: 4,
@@ -354,9 +354,10 @@ function authSession(role = "coach") {
   };
 }
 
-async function installFixture(page, { role = "coach", online = false } = {}) {
+async function installFixture(page, { role = "coach", online = false, showCalories = true } = {}) {
   const isTrainee = role === "trainee";
   const userId = isTrainee ? CLIENT_ID : COACH_ID;
+  const fixtureClientProfile = { ...clientProfile, show_calories: showCalories };
   const cacheValue = isTrainee
     ? {
         ...gymData,
@@ -369,6 +370,7 @@ async function installFixture(page, { role = "coach", online = false } = {}) {
           weight: clientProfile.weight_kg,
           height: clientProfile.height_cm,
           age: clientProfile.age_years,
+          showCalories,
         },
       }
     : gymData;
@@ -678,7 +680,7 @@ async function installFixture(page, { role = "coach", online = false } = {}) {
       cacheKey: `gymtrack.v1.user.${userId}`,
       cacheValue,
       session: authSession(role),
-      clientProfile,
+      clientProfile: fixtureClientProfile,
       otherClientProfile,
       coachProfile,
       program,
@@ -861,9 +863,17 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   const addFoodButton = page.getByRole("button", { name: "הוסיפי לארוחה", exact: true }).first();
   await expect(addFoodButton).toBeEnabled();
   await addFoodButton.click();
-  await expect(
-    page.locator('[id^="coach-menu-meal-"]').first().getByText(/אורז ·/).last(),
-  ).toBeVisible();
+  const nutritionMeal = page.locator('[id^="coach-menu-meal-"]').first();
+  const nutritionFoodQuantity = nutritionMeal.getByTestId("nutrition-food-quantity").first();
+  await expect(nutritionFoodQuantity).toBeVisible();
+  await expect(nutritionFoodQuantity).toHaveText(/\d/);
+  const coachMacroGrid = nutritionMeal.getByTestId("nutrition-macro-grid").first();
+  const coachMacroLabels = ["חלבון", "פחמימות", "שומן", "קלוריות"];
+  for (const [index, label] of coachMacroLabels.entries()) {
+    const macro = coachMacroGrid.locator("[data-nutrition-macro]").nth(index);
+    await expect(macro).toHaveAttribute("data-nutrition-macro", label);
+    await expect(macro.locator("[data-nutrition-macro-value]")).toHaveText(/\d/);
+  }
   const menuDraft = page.getByRole("textbox", { name: "שם הארוחה" }).first();
   await menuDraft.fill("טיוטת תפריט לפני פתיחת הדוח");
   await expect(menuDraft).toHaveValue("טיוטת תפריט לפני פתיחת הדוח");
@@ -917,6 +927,38 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
 
   await page.locator("article").last().scrollIntoViewIfNeeded();
   await expect(page.locator("article").last()).toBeInViewport();
+});
+
+test("trainee nutrition quantities and macro visibility stay consistent", async ({ page }) => {
+  await installFixture(page, { role: "trainee", showCalories: false });
+
+  await page.goto("/nutrition");
+  const plannedFoodQuantity = page.getByTestId("nutrition-food-quantity").first();
+  await expect(plannedFoodQuantity).toBeVisible();
+  await expect(plannedFoodQuantity).toHaveText(/\d/);
+
+  const plannedMacroGrid = page.getByTestId("nutrition-macro-grid").first();
+  const visibleMacroLabels = ["חלבון", "פחמימות", "שומן"];
+  for (const [index, label] of visibleMacroLabels.entries()) {
+    const macro = plannedMacroGrid.locator("[data-nutrition-macro]").nth(index);
+    await expect(macro).toHaveAttribute("data-nutrition-macro", label);
+    await expect(macro.locator("[data-nutrition-macro-value]")).toHaveText(/\d/);
+  }
+  await expect(plannedMacroGrid.locator('[data-nutrition-macro="קלוריות"]')).toHaveCount(0);
+
+  await page.getByRole("button", { name: "החלפה", exact: true }).first().click();
+  const replacementDialog = page.getByRole("dialog", { name: "החלפת מאכל" });
+  await expect(replacementDialog).toBeVisible();
+  const replacementQuantity = replacementDialog.getByTestId("nutrition-food-quantity").first();
+  await expect(replacementQuantity).toBeVisible();
+  await expect(replacementQuantity).toHaveText(/\d/);
+  const replacementMacroGrid = replacementDialog.getByTestId("nutrition-macro-grid").first();
+  for (const [index, label] of visibleMacroLabels.entries()) {
+    const macro = replacementMacroGrid.locator("[data-nutrition-macro]").nth(index);
+    await expect(macro).toHaveAttribute("data-nutrition-macro", label);
+    await expect(macro.locator("[data-nutrition-macro-value]")).toHaveText(/\d/);
+  }
+  await expect(replacementMacroGrid.locator('[data-nutrition-macro="קלוריות"]')).toHaveCount(0);
 });
 
 test("coach profile resets measurements, activity, and messages when switching trainees", async ({
