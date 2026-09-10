@@ -561,6 +561,26 @@ describe("offline store lifecycle", () => {
     expect(enrolled?.workout.id).toMatch(/^challenge-run-/);
     expect(firstStore.getGymStoreSnapshot().challengeEnrollments).toHaveLength(1);
     expect(firstStore.getGymStoreSnapshot().workouts[0]?.id).toMatch(/^challenge-run-/);
+
+    const repeatedEnrollment = firstStore.enrollInChallenge("challenge-offline");
+    expect(repeatedEnrollment?.alreadyActive).toBe(true);
+    expect(repeatedEnrollment?.enrollment.id).toBe(enrolled?.enrollment.id);
+    expect(repeatedEnrollment?.workout.id).toBe(enrolled?.workout.id);
+    expect(firstStore.getGymStoreSnapshot().challengeEnrollments).toHaveLength(1);
+    expect(firstStore.getGymStoreSnapshot().workouts).toHaveLength(1);
+
+    firstStore.saveSession({
+      id: "challenge-offline-completion",
+      workoutId: enrolled!.workout.id,
+      workoutName: enrolled!.workout.name,
+      programName: "",
+      date: "2026-08-26T10:00:00.000Z",
+      durationSec: 900,
+      entries: [],
+      notes: "הושלם offline",
+    });
+    expect(firstStore.getGymStoreSnapshot().history).toHaveLength(1);
+    expect(firstStore.getGymStoreSnapshot().history[0]?.workoutId).toBe(enrolled?.workout.id);
     expect(syncCalls).toHaveLength(0);
 
     // The original tab is gone when the next device/tab opens. Reset its
@@ -576,17 +596,23 @@ describe("offline store lifecycle", () => {
     expect(reloadedSnapshot.workouts[0]?.id).toBe(
       reloadedSnapshot.challengeEnrollments[0]?.workoutIds[0],
     );
+    expect(reloadedSnapshot.history).toHaveLength(1);
+    expect(reloadedSnapshot.history[0]?.id).toBe("challenge-offline-completion");
+    expect(reloadedSnapshot.history[0]?.workoutId).toBe(reloadedSnapshot.workouts[0]?.id);
     expect(reloadedStore.getGymStoreSyncStatus()).toBe("offline");
 
     emit("online");
     await eventually(() => syncCalls.length > 0);
     await eventually(() => reloadedStore.getGymStoreSyncStatus() === "synced");
+    reloadedStore.refreshCurrentUserData(true);
+    await eventually(() => pullCalls.length > 0);
 
     const uploaded = syncCalls[syncCalls.length - 1]?.localData as
       | {
           programs?: unknown[];
           challengeEnrollments?: Array<{ challengeId?: string }>;
           workouts?: Array<{ id?: string }>;
+          history?: Array<{ id?: string; workoutId?: string }>;
         }
       | undefined;
     expect(uploaded?.["programs"]).toEqual([]);
@@ -594,6 +620,18 @@ describe("offline store lifecycle", () => {
       true,
     );
     expect(uploaded?.["workouts"]?.some((item) => item.id?.startsWith("challenge-run-"))).toBe(true);
+    expect(uploaded?.["history"]).toEqual([
+      expect.objectContaining({
+        id: "challenge-offline-completion",
+        workoutId: reloadedSnapshot.workouts[0]?.id,
+      }),
+    ]);
+
+    const afterReconnect = reloadedStore.getGymStoreSnapshot();
+    expect(afterReconnect.challengeEnrollments).toHaveLength(1);
+    expect(afterReconnect.workouts).toHaveLength(1);
+    expect(afterReconnect.history).toHaveLength(1);
+    expect(afterReconnect.history[0]?.id).toBe("challenge-offline-completion");
   });
 
   test("does not let a pull overwrite a newer local edit", async () => {
