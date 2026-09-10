@@ -238,3 +238,17 @@ mtime_ms = 1789047533823
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:9f99d2e5-5d2e-4b5a-bf24-93a3957a7bb5/1703d197-f0ef-4afa-9e32-d8b9a50a81e7/64bb5fe7-7365-4c94-bd3c-729aff3a937e"
 storage_version_token = "1789047598994088"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "8SBG8v-czv8-3MoRconzE"
+uri = "file://docs/qa-production-audit-2026-09-10.zip"
+type = "unspecified"
+title = "הורדת ZIP — דוח QA מלא"
+description = "ZIP הכולל את קובץ דוח ה־QA בפורמט Markdown."
+logical_id = "df05c260-8607-458f-b81a-4b603e88b8cd"
+content_hash = "sha256:ed70581398eb4f0785adc75aea05281b98417fff560e15803ffce3cd33a3e1be"
+size = 7102
+mtime_ms = 1789047640757
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:9f99d2e5-5d2e-4b5a-bf24-93a3957a7bb5/df05c260-8607-458f-b81a-4b603e88b8cd/147df169-0957-4ca0-a426-72aac678d2af"
+storage_version_token = "1789047647703256"
+content_type = "application/octet-stream"
