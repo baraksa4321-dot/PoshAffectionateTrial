@@ -665,13 +665,15 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
     await expect(profileMessage).toContainText("הודעת החיזוק נשלחה בהצלחה למתאמן!");
     await expect(profileMessage).toContainText(profileMessageText);
   });
-  const profileDialog = page.getByRole("dialog", { name: "פרופיל המשתמש" });
+  const profileInline = page.locator('[data-coach-client-profile-inline="true"]');
+  await expect(profileInline).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "פרופיל המשתמש" })).toHaveCount(0);
   const activityHistory = page.getByTestId("coach-activity-history");
   await expect(activityHistory).toBeVisible();
-  await expect(profileDialog).toContainText("63.4");
-  await expect(profileDialog).toContainText("74");
-  await expect(profileDialog).toContainText("8,500");
-  await expect(profileDialog).toContainText("כל הכבוד על ההתמדה השבוע");
+  await expect(profileInline).toContainText("63.4");
+  await expect(profileInline).toContainText("74");
+  await expect(profileInline).toContainText("8,500");
+  await expect(profileInline).toContainText("כל הכבוד על ההתמדה השבוע");
   await expect(page.getByText("מתאמנת אחרת", { exact: true })).toBeHidden();
   await expect(activityHistory).not.toContainText("נתון של מתאמנת אחרת");
   await page.getByRole("button", { name: "סגירת פרופיל המשתמש" }).click();
@@ -697,6 +699,9 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await expect(dayButtons).toHaveCount(4);
   await dayButtons.nth(0).click();
   await expect(page.getByRole("button", { name: "סגירת בניית אימון", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("dialog", { name: "בניית תוכנית ותפריט למתאמן" }),
+  ).toHaveCount(0);
   await expect(page.locator("#coach-programs")).toBeHidden();
   const workoutSurface = page.locator('[data-coach-workout-surface-slot="true"]');
   await expect(workoutSurface).toBeVisible();

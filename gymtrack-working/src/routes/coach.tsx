@@ -1443,6 +1443,17 @@ export function CoachDashboardPage({
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [clientDetailsError, setClientDetailsError] = useState("");
   const [managementError, setManagementError] = useState("");
+
+  useEffect(() => {
+    if (!clientsOnly || !showClientProfile) return;
+    const frame = window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>('[data-coach-client-profile-inline="true"]')
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [clientsOnly, showClientProfile]);
+
   const [roleChangeUserId, setRoleChangeUserId] = useState<string | null>(null);
   const [roleChangeNotice, setRoleChangeNotice] = useState("");
   const [ownerCalorieUserId, setOwnerCalorieUserId] = useState<string | null>(null);
@@ -5515,7 +5526,7 @@ export function CoachDashboardPage({
               setEditingDayId(null);
             }}
             ariaLabel="בניית תוכנית ותפריט למתאמן"
-            inline={clientsOnly && !editingDayId}
+            inline={clientsOnly}
             variant={editingDayId || workspacePage || openEditor ? "full" : "center"}
             className={
               editingDayId
@@ -9282,9 +9293,15 @@ export function CoachDashboardPage({
             open={showClientProfile}
             onClose={() => setShowClientProfile(false)}
             ariaLabel="פרופיל המשתמש"
+            inline={clientsOnly}
           >
             <div
-              className="max-h-[88vh] w-full max-w-2xl space-y-4 overflow-y-auto rounded-3xl border border-border bg-surface p-4 text-start shadow-2xl sm:p-5"
+              data-coach-client-profile-inline={clientsOnly ? "true" : undefined}
+              className={
+                clientsOnly
+                  ? "w-full space-y-4 bg-background px-4 pb-10 pt-2 text-start sm:px-6"
+                  : "max-h-[88vh] w-full max-w-2xl space-y-4 overflow-y-auto rounded-3xl border border-border bg-surface p-4 text-start shadow-2xl sm:p-5"
+              }
               onClick={(event) => event.stopPropagation()}
             >
               <div className="flex items-start justify-between gap-3 border-b border-border/70 pb-3">
