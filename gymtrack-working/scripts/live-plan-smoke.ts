@@ -95,6 +95,27 @@ function assertCondition(condition: unknown, message: string): asserts condition
   if (!condition) throw new Error(message);
 }
 
+function isMatchingCoachMessageRealtimePayload(
+  payload: unknown,
+  expected: { id: string; coachId: string; clientId: string; message: string },
+): boolean {
+  if (!payload || typeof payload !== "object") return false;
+  const candidate = payload as {
+    eventType?: unknown;
+    new?: unknown;
+  };
+  if (candidate.eventType !== "INSERT" || !candidate.new || typeof candidate.new !== "object") {
+    return false;
+  }
+  const row = candidate.new as Record<string, unknown>;
+  return (
+    row.id === expected.id &&
+    row.coach_id === expected.coachId &&
+    row.client_id === expected.clientId &&
+    row.message === expected.message
+  );
+}
+
 async function waitFor(predicate: () => boolean, label: string, timeoutMs: number): Promise<void> {
   const startedAt = Date.now();
   while (!predicate()) {
@@ -460,6 +481,7 @@ async function run(): Promise<void> {
 
     let subscribed = false;
     let subscriptionFailure: Error | null = null;
+    let traineeCoachMessageRealtimePayloadReceived = false;
     traineeChannel = traineeClient
       .channel(`gymtrack-live-plan-smoke-${runId}`)
       .on(
@@ -480,17 +502,33 @@ async function run(): Promise<void> {
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "coach_messages",
           filter: `client_id=eq.${trainee.id}`,
         },
-        enqueuePageRefresh,
+        (payload) => {
+          if (
+            isMatchingCoachMessageRealtimePayload(payload, {
+              id: coachMessageId ?? "",
+              coachId: coach.id,
+              clientId: trainee.id,
+              message: coachMessageText,
+            })
+          ) {
+            traineeCoachMessageRealtimePayloadReceived = true;
+          }
+          enqueuePageRefresh();
+        },
       )
       .subscribe((status) => {
         if (status === "SUBSCRIBED") subscribed = true;
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          subscriptionFailure = new Error(`Trainee real-time subscription failed (${status}).`);
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          subscriptionFailure = new Error(
+            `Trainee real-time subscription failed (${status}) before coach-message delivery. ` +
+              "No client refresh diagnosis is possible; inspect Realtime channel authorization " +
+              "and coach_messages publication membership first.",
+          );
         }
       });
     await waitFor(
@@ -543,7 +581,7 @@ async function run(): Promise<void> {
     if (coachSubscriptionFailure) throw coachSubscriptionFailure;
 
     console.log(
-      "Sending a uniquely identified coach message through the persisted message path...",
+      "Sending a uniquely identified coach message and waiting for the trainee Realtime payload...",
     );
     const { data: createdCoachMessage, error: coachMessageError } = await coachClient
       .from("coach_messages")
@@ -561,19 +599,60 @@ async function run(): Promise<void> {
     }
     coachMessageId = createdCoachMessage.id;
 
-    console.log("Refreshing the trainee session to read the persisted coach message...");
-    enqueuePageRefresh();
-    await refreshChain;
+    let realtimeMessageFailure: Error | null = null;
+    try {
+      await waitFor(
+        () => traineeCoachMessageRealtimePayloadReceived,
+        "the trainee Realtime callback for the inserted coach message",
+        config.timeoutMs,
+      );
+    } catch {
+      realtimeMessageFailure = new Error(
+        "The trainee channel reached SUBSCRIBED but did not deliver the inserted coach message " +
+          `within ${config.timeoutMs}ms. Check coach_messages publication membership, trainee ` +
+          "Realtime SELECT/RLS visibility, and the client_id subscription filter.",
+      );
+    }
+    if (!realtimeMessageFailure) {
+      console.log(
+        "PASS: the trainee Realtime callback delivered the exact inserted coach message.",
+      );
+    }
+
+    console.log(
+      "Refreshing the trainee session to separately verify persisted coach-message delivery...",
+    );
+    let refreshFailure: Error | null = null;
+    try {
+      enqueuePageRefresh();
+      await refreshChain;
+    } catch (error) {
+      refreshFailure =
+        error instanceof Error ? error : new Error("Unknown trainee refresh failure");
+    }
     const refreshedCoachMessages = pageSnapshot.coachMessages.filter(
       (message) => message.id === coachMessageId && message.message === coachMessageText,
     );
-    assertCondition(
+    const persistedMessageVisible =
+      refreshFailure === null &&
       refreshedCoachMessages.length === 1 &&
-        refreshedCoachMessages[0]?.coach_id === coach.id &&
-        refreshedCoachMessages[0]?.client_id === trainee.id,
-      "The trainee did not read the exact persisted coach message after refresh.",
+      refreshedCoachMessages[0]?.coach_id === coach.id &&
+      refreshedCoachMessages[0]?.client_id === trainee.id;
+    assertCondition(
+      persistedMessageVisible,
+      refreshFailure
+        ? `The trainee's persisted coach-message refresh failed (${errorCode(refreshFailure) ?? "query"}). ` +
+            "Investigate the trainee RLS/query path before diagnosing Realtime."
+        : "The trainee did not read the exact persisted coach message after refresh.",
     );
     console.log("PASS: the trainee refreshed coach_messages and received the exact coach message.");
+    if (realtimeMessageFailure) {
+      throw new Error(
+        `${realtimeMessageFailure.message} The persisted refresh assertion passed, so client ` +
+          "refresh behavior is working; the failure is isolated to Realtime publication, RLS " +
+          "visibility, or subscription filtering.",
+      );
+    }
 
     console.log("Verifying the coach cannot delete the trainee's inbox message...");
     const { data: coachDeletedMessages, error: coachDeleteError } = await coachClient

@@ -40,9 +40,14 @@ to read all three new values without reload and checks that a pending trainee-lo
 still present. The original menu is restored and the temporary program (and its day through the
 foreign-key cascade) is deleted in `finally`, including when an assertion fails after setup.
 
-The message portion also verifies the inbox RLS boundary: the assigned coach creates one uniquely
-identified message, the trainee reads it, a coach-side delete attempt cannot remove it, and the
-trainee can delete only that smoke row during cleanup. Existing trainee messages must remain.
+The message portion first waits for the trainee's filtered Realtime `INSERT` callback and validates
+the exact row payload. It then performs a separate fresh trainee read so a Realtime failure cannot
+hide a persisted-delivery result. The smoke also verifies the inbox RLS boundary: the assigned coach
+creates one uniquely identified message, a coach-side delete attempt cannot remove it, and the
+trainee can delete only that smoke row during cleanup. Existing trainee messages must remain. If the
+subscription is connected but the callback is absent, the failure names publication, Realtime RLS
+visibility, or subscription filtering as the next investigation area while preserving the refresh
+assertion as a distinct proof.
 
 ## Release validation
 
