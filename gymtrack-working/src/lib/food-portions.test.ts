@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   defaultFoodQuantity,
+  foodPortionFromServingQuantity,
   foodQuantityOptions,
   mealFoodFromPortion,
   mealFoodQuantityLabel,
@@ -90,7 +91,13 @@ describe("food portion conversions", () => {
     };
 
     expect(defaultFoodQuantity(yogurt)).toEqual({ quantity: 1, unit: "unit" });
-    expect(foodQuantityOptions(yogurt).map(({ value }) => value)).toEqual(["unit", "g"]);
+    expect(foodQuantityOptions(yogurt).map(({ value }) => value)).toEqual([
+      "unit",
+      "g",
+      "tbsp",
+      "tsp",
+      "serving",
+    ]);
   });
 
   test("does not offer grams when a spoon serving has no reliable weight", () => {
@@ -162,5 +169,48 @@ describe("food portion conversions", () => {
     expect(Math.abs(mealFoodFromPortion(peanutButter, 1, "tsp").calories - 94 / 3) < 1e-9).toBe(
       true,
     );
+  });
+
+  test("offers practical household units for cottage and converts them", () => {
+    const cottage: FoodItem = {
+      id: "cottage-5",
+      name: "קוטג׳ 5%",
+      category: "מוצרי חלב",
+      servingSize: "100 גרם",
+      calories: 95,
+      protein: 11,
+      carbs: 1.5,
+      fat: 5,
+    };
+
+    expect(foodQuantityOptions(cottage).map(({ value }) => value)).toEqual([
+      "g",
+      "tbsp",
+      "tsp",
+      "serving",
+    ]);
+    const twoSpoons = mealFoodFromPortion(cottage, 2, "tbsp");
+    expect(twoSpoons.servingSize).toBe("כף למנה");
+    expect(twoSpoons.calories).toBe(14.25);
+    expect(twoSpoons.protein).toBe(1.65);
+    expect(twoSpoons.quantity).toBe(2);
+  });
+
+  test("uses household units in replacement presentation instead of always grams", () => {
+    const cottage: FoodItem = {
+      id: "cottage-replacement",
+      name: "קוטג׳ 5%",
+      servingSize: "100 גרם",
+      calories: 95,
+      protein: 11,
+      carbs: 1.5,
+      fat: 5,
+    };
+
+    expect(foodPortionFromServingQuantity(cottage, 0.5)).toEqual({
+      quantity: 3.3,
+      unit: "tbsp",
+      unitLabel: "כף",
+    });
   });
 });

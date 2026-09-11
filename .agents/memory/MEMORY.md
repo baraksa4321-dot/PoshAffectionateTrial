@@ -23,6 +23,7 @@
 - [Editor refresh freeze](editor-refresh-freeze.md) — Pause coach workspace refresh replacement while an editor is open; perform one silent refresh after it closes.
 - [Nutrition target permission verification](nutrition-target-permission-verification.md) — Verify target-edit access separately from cached workspace role so offline coach editing remains intact while trainee access is blocked.
 - [Food library ownership](food-library-ownership.md) — User edits to seeded foods must become owned overrides so sync does not restore the original values.
+- [Household food portions](household-food-portions.md) — Use food-specific household units with weight-backed conversions; do not force every menu or replacement choice into grams.
 - [Supabase MCP fallback](supabase-mcp-fallback.md) — If generated Supabase MCP callbacks are unavailable, the installed custom MCP connection may still expose the streamable `/mcp` endpoint.
 - [Live Supabase sync drift](live-supabase-sync-drift.md) — Local realtime mocks can pass while the live schema or publication is behind; verify both before declaring cross-user sync ready.
 - [Supabase backup verification](supabase-backup-verification.md) — Project health and migration history do not prove recoverability; verify a live backup before production DDL.

@@ -65,6 +65,7 @@ import {
   readLoadingGender,
   type LoadingGender,
 } from "@/lib/loading-copy";
+import { foodPortionFromServingQuantity, mealFoodFromPortion } from "@/lib/food-portions";
 
 export const Route = createFileRoute("/nutrition/")({
   head: () => ({
@@ -560,17 +561,10 @@ function NutritionLog() {
     },
   ) => {
     const lib = replacement.food;
+    const portion = foodPortionFromServingQuantity(lib, replacement.calculatedQuantity);
     const replacementFood: MealFood = {
+      ...mealFoodFromPortion(lib, portion.quantity, portion.unit),
       id: current.id,
-      foodId: lib.id,
-      name: lib.name,
-      servingSize: lib.servingSize,
-      quantity: replacement.calculatedQuantity,
-      calories: lib.calories,
-      protein: lib.protein,
-      carbs: lib.carbs,
-      fat: lib.fat,
-      ...(lib.fiber === undefined ? {} : { fiber: lib.fiber }),
       ...(current.notes === undefined ? {} : { notes: current.notes }),
     };
     if (substituteFor?.plannedMealId) {
@@ -1954,34 +1948,42 @@ function NutritionLog() {
               />
             </div>
             <div className="space-y-2">
-              {replacements.map((item) => (
-                <button
-                  key={item.food.id}
-                  type="button"
-                  onClick={() =>
-                    applyCalorieReplacement(substituteFor.mealId, substituteFor.food, item)
-                  }
-                  className="press flex w-full items-center justify-between gap-3 rounded-2xl border border-border/30 bg-secondary px-3.5 py-3 text-start cursor-pointer"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] font-semibold text-ink">{item.food.name}</p>
-                    <p
-                      data-testid="nutrition-food-quantity"
-                      className="mt-0.5 text-[12px] font-semibold text-ink"
-                    >
-                      {formatMeasuredFoodAmount(item.food.servingSize, item.calculatedQuantity)}
-                    </p>
-                    <NutritionMacroGrid
-                      className="mt-2"
-                      showCalories={showCalories}
-                      calories={item.calculatedCalories}
-                      protein={item.calculatedProtein}
-                      carbs={item.calculatedCarbs}
-                      fat={item.calculatedFat}
-                    />
-                  </div>
-                </button>
-              ))}
+              {replacements.map((item) => {
+                const portion = foodPortionFromServingQuantity(
+                  item.food,
+                  item.calculatedQuantity,
+                );
+                return (
+                  <button
+                    key={item.food.id}
+                    type="button"
+                    onClick={() =>
+                      applyCalorieReplacement(substituteFor.mealId, substituteFor.food, item)
+                    }
+                    className="press flex w-full items-center justify-between gap-3 rounded-2xl border border-border/30 bg-secondary px-3.5 py-3 text-start cursor-pointer"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-semibold text-ink">
+                        {item.food.name}
+                      </p>
+                      <p
+                        data-testid="nutrition-food-quantity"
+                        className="mt-0.5 text-[12px] font-semibold text-ink"
+                      >
+                        {formatCount(portion.quantity)} {portion.unitLabel}
+                      </p>
+                      <NutritionMacroGrid
+                        className="mt-2"
+                        showCalories={showCalories}
+                        calories={item.calculatedCalories}
+                        protein={item.calculatedProtein}
+                        carbs={item.calculatedCarbs}
+                        fat={item.calculatedFat}
+                      />
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </Overlay>
