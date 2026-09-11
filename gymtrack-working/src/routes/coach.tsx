@@ -1536,7 +1536,6 @@ export function CoachDashboardPage({
 
   // Coach Message sender state
   const [coachMsgText, setCoachMsgText] = useState("");
-  const [msgSentNotice, setMsgSentNotice] = useState("");
   const [msgSendError, setMsgSendError] = useState("");
   const [sendingCoachMessage, setSendingCoachMessage] = useState(false);
   const [sentCoachMessages, setSentCoachMessages] = useState<CoachMessage[]>([]);
@@ -3082,7 +3081,6 @@ export function CoachDashboardPage({
     const message = coachMsgText.trim();
     const clientIdForMessage = selectedClientId;
     if (!clientIdForMessage || !message || sendingCoachMessage) return;
-    setMsgSentNotice("");
     setMsgSendError("");
     setSendingCoachMessage(true);
 
@@ -3093,23 +3091,13 @@ export function CoachDashboardPage({
         clientIdForMessage,
         message,
       );
-      setMsgSentNotice("ההודעה נשמרה. בודקת את שליחת התראת ה־Push...");
-      const pushResult = await notifyRemotePush({
+      await notifyRemotePush({
         recipientUserId: clientIdForMessage,
         title: "הודעה חדשה מהמאמן",
         body: message,
         data: { type: "coach_message", recipient_id: clientIdForMessage },
         deepLink: "/",
       });
-      if (!pushResult.success) {
-        setMsgSendError(`ההודעה נשמרה, אך ${pushResult.error}`);
-      } else if (pushResult.sent === 0) {
-        setMsgSentNotice("ההודעה נשמרה. למתאמן אין כרגע מכשיר עם התראות Push פעילות.");
-      } else if (pushResult.failed > 0) {
-        setMsgSendError(`ההודעה נשמרה, אך ${pushResult.failed} מכשירים לא קיבלו Push.`);
-      } else {
-        setMsgSentNotice(`ההודעה נשמרה ונשלחה כהתראת Push ל־${pushResult.sent} מכשיר${pushResult.sent === 1 ? "" : "ים"}.`);
-      }
       setCoachMsgText("");
       setFailedCoachMessage(null);
       void fetchSentCoachMessages(clientIdForMessage)
@@ -3127,7 +3115,6 @@ export function CoachDashboardPage({
             );
           }
         });
-      setTimeout(() => setMsgSentNotice(""), 3000);
     } catch (err: unknown) {
       setFailedCoachMessage({ message, createdAt: new Date().toISOString() });
       setMsgSendError(`שליחת הודעת החיזוק נכשלה: ${errorMessage(err, "שגיאה בשליחת ההודעה")}`);
@@ -3140,7 +3127,6 @@ export function CoachDashboardPage({
     e.preventDefault();
     const message = broadcastText.trim();
     if (!message || sendingBroadcast) return;
-    setBroadcastNotice("");
     setBroadcastError("");
     setSendingBroadcast(true);
     try {
@@ -3154,23 +3140,13 @@ export function CoachDashboardPage({
         message,
       });
       if (error) throw error;
-      setBroadcastNotice("ההודעה נשמרה. בודקת את שליחת התראת ה־Push...");
-      const pushResult = await notifyRemotePush({
+      await notifyRemotePush({
         audience: broadcastAudience,
         title: "הודעה חדשה",
         body: message,
         data: { type: "broadcast_announcement", audience: broadcastAudience },
         deepLink: "/",
       });
-      if (!pushResult.success) {
-        setBroadcastError(`ההודעה נשמרה, אך ${pushResult.error}`);
-      } else if (pushResult.sent === 0) {
-        setBroadcastNotice("ההודעה נשמרה. אין כרגע מכשירים רשומים לקבלת התראת Push.");
-      } else if (pushResult.failed > 0) {
-        setBroadcastError(`ההודעה נשמרה, אך ${pushResult.failed} מכשירים לא קיבלו Push.`);
-      } else {
-        setBroadcastNotice(`ההודעה נשמרה ונשלחה כהתראת Push ל־${pushResult.sent} מכשירים.`);
-      }
       setBroadcastText("");
       const { data: created } = await supabase
         .from("broadcast_announcements")
@@ -9459,11 +9435,6 @@ export function CoachDashboardPage({
                     </p>
                   </div>
                 </div>
-                {msgSentNotice ? (
-                  <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs font-bold text-emerald-700">
-                    {msgSentNotice}
-                  </p>
-                ) : null}
                 {msgSendError ? (
                   <p
                     role="alert"

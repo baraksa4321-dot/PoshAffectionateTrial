@@ -1398,9 +1398,6 @@ export function AppShell({
               <section className="space-y-3 rounded-2xl border border-border bg-background p-3">
                 <div>
                   <h3 className="text-sm font-extrabold text-ink">התראות</h3>
-                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                    הודעה על אימון היום והודעות חדשות מהמאמן. נדרשת הרשאת התראות במכשיר.
-                  </p>
                 </div>
                 <label className="flex items-center justify-between gap-3 text-xs font-bold text-ink">
                   <span>התראות</span>
@@ -1412,11 +1409,6 @@ export function AppShell({
                     className="h-4 w-4 accent-[hsl(var(--primary))]"
                   />
                 </label>
-                {reminderDraft.deliveryDetail ? (
-                  <p className="text-[10px] font-semibold text-muted-foreground">
-                    {reminderDraft.deliveryDetail}
-                  </p>
-                ) : null}
               </section>
 
               <section className="space-y-3 rounded-2xl border border-border bg-background p-3">
