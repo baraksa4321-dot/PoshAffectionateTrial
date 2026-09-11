@@ -1,0 +1,158 @@
+אני רוצה שתסיים ותממש באתר שלי מערכת Push Notifications אמיתית עבור Web, באמצעות Firebase Cloud Messaging (FCM) + Supabase.
+
+המטרה:
+כאשר משתמש שולח הודעה למשתמש אחר דרך האתר (למשל Owner → Coach, Coach → Trainee וכו’), המשתמש המקבל יקבל Push Notification אמיתי במכשיר שלו, גם כאשר האתר אינו פתוח.
+
+חשוב מאוד:
+
+* להשתמש ב-Firebase Cloud Messaging (FCM) עבור Web Push.
+* להשתמש ב-Supabase עבור שמירת ה-FCM tokens והלוגיקה של המשתמשים.
+* להשתמש ב-Supabase Edge Function לשליחת ההתראה בצורה מאובטחת.
+* לא לשמור Firebase Server Key / credentials בתוך הקוד של האתר.
+* לא להשתמש בשירות Push חיצוני בתשלום.
+* לא לשנות או לשבור את המערכת הקיימת.
+* קודם לבדוק מה כבר קיים בפרויקט ולבנות על הקוד הקיים במקום ליצור מערכת כפולה.
+
+מה צריך לממש
+
+1. הרשאת Notifications
+
+* כאשר המשתמש מחובר, לאפשר לו לתת הרשאה לקבלת Notifications.
+* אם כבר קיימת הרשאה, לא לבקש שוב.
+* אם המשתמש דחה, להציג מצב מתאים ולא ליצור לולאת בקשות.
+* לשמור את סטטוס ההרשאה בצורה נכונה.
+
+2. Firebase Web Push
+
+* להגדיר Firebase Messaging עבור Web.
+* ליצור/להשתמש ב-Service Worker הנדרש עבור Firebase Messaging.
+* לקבל FCM registration token מהמכשיר/דפדפן.
+* לטפל ב-token refresh.
+* לשמור את ה-token ב-Supabase כשהמשתמש מחובר.
+
+3. Database
+    בדוק את הסכמה הקיימת לפני יצירת טבלאות חדשות.
+
+אם אין מערכת מתאימה, צור טבלה למשל:
+push_tokens
+
+עם קשר למשתמש:
+
+* user_id
+* token
+* platform/browser information אם צריך
+* created_at
+* updated_at
+
+צריך לאפשר למשתמש אחד להיות מחובר ממספר מכשירים/דפדפנים, ולכן לא להגביל משתמש ל-token אחד בלבד.
+
+צריך למנוע duplicate tokens.
+
+4. Supabase Edge Function
+    צור Edge Function מאובטחת לשליחת Push Notification.
+
+ה-Edge Function צריכה:
+
+* לקבל recipient/user ID
+* לקבל title
+* לקבל body
+* לקבל data אופציונלי
+* למצוא את כל ה-FCM tokens הפעילים של המשתמש המקבל
+* לשלוח את ההתראה דרך Firebase FCM
+* לטפל ב-tokens לא תקינים ולהסיר אותם במידת הצורך.
+
+כל credentials/secrets הנדרשים לשליחה צריכים להיות Supabase secrets בלבד.
+
+5. Chat → Push
+    חבר את מערכת ה-Push למערכת הצ’אט הקיימת.
+
+כאשר משתמש שולח הודעה:
+
+* לשמור את ההודעה כרגיל במערכת הקיימת.
+* לזהות את המשתמש המקבל.
+* להפעיל את מנגנון ה-Push.
+* המקבל יקבל Notification עם שם השולח ותוכן קצר של ההודעה.
+* לחיצה על ההתראה צריכה לפתוח את האתר ולעבור למסך/שיחה הרלוונטית אם הדבר אפשרי במבנה הקיים.
+
+דוגמה:
+Owner שולח הודעה ל-Coach
+→ ההודעה נשמרת ב-Supabase
+→ נשלח Push ל-Coach
+→ ה-Coach מקבל Notification בטלפון גם אם האתר אינו פתוח.
+
+6. Foreground / Background
+    צריך לתמוך בשני המצבים:
+
+* האתר פתוח והמשתמש נמצא בו.
+* האתר סגור / נמצא ברקע.
+
+כאשר האתר פתוח, לא ליצור התראה כפולה אם כבר מוצגת הודעת צ’אט בתוך האתר.
+
+כאשר האתר אינו פתוח, ה-Service Worker צריך לטפל ב-Push ולהציג Notification.
+
+7. Security
+    חשוב במיוחד:
+
+* לעולם לא לחשוף Firebase private credentials/client secrets של שליחה בצד הלקוח.
+* השליחה ל-FCM חייבת להתבצע מהשרת/Edge Function.
+* לא לאפשר למשתמש לשלוח Push arbitrary למשתמש אחר ללא הרשאה.
+* להשתמש בהרשאות הקיימות של Owner / Coach / Trainee.
+* לא לשנות RLS קיים אלא אם באמת הכרחי, ואם צריך שינוי להסביר לי בדיוק למה.
+
+8. iPhone / Safari
+    אני רוצה שהמערכת תעבוד גם ב-iPhone ככל שה-Web Push של הדפדפן תומך בכך.
+
+בדוק במיוחד:
+
+* Safari / iOS Web Push
+* Add to Home Screen / PWA במידת הצורך
+* Service Worker
+* Notification permission
+* FCM Web compatibility
+
+אל תניח ש-FCM Web עובד בדיוק אותו דבר ב-iPhone כמו Chrome Android. אם יש מגבלה ספציפית של iOS/Safari, תסביר לי אותה ותממש את הדרך הנתמכת הטובה ביותר.
+
+9. Configuration
+    בדוק מה כבר קיים בפרויקט עבור:
+
+* Firebase config
+* VAPID key
+* Firebase Messaging
+* Service Worker
+* Supabase
+* Edge Functions
+* environment variables
+
+אל תיצור credentials פיקטיביים.
+
+אם חסר משהו שאי אפשר ליצור מתוך הקוד, עצור את החלק הזה וסכם לי בדיוק מה אני צריכה לעשות ידנית ב-Firebase/Supabase, במילים פשוטות.
+
+10. בדיקות
+    בסיום:
+
+* בדוק שה-token נוצר ונשמר.
+* בדוק שה-Edge Function נפרסת ועובדת.
+* בדוק שליחת Push למשתמש ספציפי.
+* בדוק foreground.
+* בדוק background.
+* בדוק logout/login.
+* בדוק מספר מכשירים לאותו משתמש.
+* בדוק invalid/expired token.
+* בדוק שאין duplicate notifications.
+* בדוק שהודעות הצ’אט הקיימות עדיין עובדות.
+
+חשוב:
+אל תבנה מחדש את מערכת הצ’אט.
+אל תשנה UI שלא צריך לשנות.
+אל תוסיף שירותים בתשלום.
+אל תמציא API keys או credentials.
+
+בסוף העבודה תן לי סיכום קצר מאוד ובשפה פשוטה:
+
+1. מה כבר עבד.
+2. מה הוספת.
+3. מה עדיין חסר.
+4. בדיוק אילו פעולות ידניות אני צריכה לבצע ב-Firebase/Supabase, אם יש.
+5. האם כרגע Push יכול להגיע לטלפון כשהאתר סגור.
+6. האם זה עובד ב-iPhone ומה התנאים לכך.
+7. איך אני יכולה לבדוק את זה בפועל עם Owner ו-Coach.

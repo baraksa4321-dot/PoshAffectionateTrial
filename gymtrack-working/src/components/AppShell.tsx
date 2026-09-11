@@ -34,7 +34,14 @@ import {
   disableNotificationDelivery,
 } from "../lib/notification-service";
 import { supabase } from "../lib/supabase";
-import { applyNightMode, applyTheme, DEFAULT_THEME, THEME_PALETTES } from "../lib/theme";
+import {
+  applyNightMode,
+  applyTheme,
+  defaultThemeForGender,
+  persistTheme,
+  readStoredTheme,
+  THEME_PALETTES,
+} from "../lib/theme";
 import type { ThemePalette, UserProfile } from "../lib/gym-types";
 import { Overlay } from "./ui-app/Overlay";
 import { BrandLogo } from "./BrandLogo";
@@ -169,7 +176,12 @@ export function AppShell({
   });
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [themeError, setThemeError] = useState("");
-  const theme = store.userProfile?.theme ?? DEFAULT_THEME;
+  const [guestTheme, setGuestTheme] = useState<ThemePalette>(
+    () => readStoredTheme() ?? defaultThemeForGender(profileGender),
+  );
+  const guestThemeWasChosenRef = useRef(readStoredTheme() !== undefined);
+  const profileTheme = store.userProfile?.theme;
+  const theme = profileTheme ?? guestTheme;
   const [isNightMode, setIsNightMode] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("gymtrack.night-mode") === "true";
@@ -216,6 +228,13 @@ export function AppShell({
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (profileTheme || guestThemeWasChosenRef.current) return;
+    const genderTheme = defaultThemeForGender(profileGender);
+    setGuestTheme(genderTheme);
+    applyTheme(genderTheme);
+  }, [profileGender, profileTheme]);
 
   useEffect(() => {
     applyNightMode(isNightMode);
@@ -431,6 +450,23 @@ export function AppShell({
     const nextNightMode = !isNightMode;
     applyNightMode(nextNightMode);
     setIsNightMode(nextNightMode);
+  };
+
+  const handleThemeChange = async (nextTheme: ThemePalette) => {
+    const previousTheme = theme;
+    setThemeError("");
+    guestThemeWasChosenRef.current = true;
+    setGuestTheme(nextTheme);
+    persistTheme(nextTheme);
+    applyTheme(nextTheme);
+
+    const result = await saveTheme(nextTheme);
+    if (!result.success) {
+      setGuestTheme(previousTheme);
+      persistTheme(previousTheme);
+      applyTheme(previousTheme);
+      setThemeError(result.error ?? "שמירת הפלטה נכשלה");
+    }
   };
 
   const NAV = managementView
@@ -1503,11 +1539,7 @@ export function AppShell({
 
             <LoginThemeSelector
               value={theme}
-              onChange={async (nextTheme) => {
-                setThemeError("");
-                const result = await saveTheme(nextTheme);
-                if (!result.success) setThemeError(result.error ?? "שמירת הפלטה נכשלה");
-              }}
+              onChange={handleThemeChange}
             />
             {themeError ? (
               <p className="text-[12px] font-semibold text-destructive">{themeError}</p>
@@ -1655,7 +1687,14 @@ export function AppShell({
                             name="gender"
                             value={value}
                             checked={gender === value}
-                            onChange={() => setGender(value)}
+                            onChange={() => {
+                              setGender(value);
+                              if (!guestThemeWasChosenRef.current && !profileTheme) {
+                                const genderTheme = defaultThemeForGender(value);
+                                setGuestTheme(genderTheme);
+                                applyTheme(genderTheme);
+                              }
+                            }}
                             className="sr-only"
                           />
                           {label}
@@ -1731,11 +1770,7 @@ export function AppShell({
             <ThemeChooser
               value={theme}
               onClose={() => setShowThemeModal(false)}
-              onChange={async (nextTheme) => {
-                setThemeError("");
-                const result = await saveTheme(nextTheme);
-                if (!result.success) setThemeError(result.error ?? "שמירת הפלטה נכשלה");
-              }}
+              onChange={handleThemeChange}
             />
             {themeError ? (
               <p className="mt-3 rounded-sm bg-destructive/10 px-4 py-3 text-[13px] font-semibold text-destructive border border-destructive/20">

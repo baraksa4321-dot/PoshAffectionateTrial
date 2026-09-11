@@ -90,18 +90,39 @@ export const THEME_PALETTES: Array<{
   },
 ];
 
-export const DEFAULT_THEME: ThemePalette = "light-brown";
+export const THEME_STORAGE_KEY = "gymtrack.theme";
+export const DEFAULT_THEME: ThemePalette = "rose-gold";
+
+export function defaultThemeForGender(gender: "female" | "male" | undefined): ThemePalette {
+  return gender === "male" ? "black" : "rose-gold";
+}
+
+export function isThemePalette(value: unknown): value is ThemePalette {
+  return THEME_PALETTES.some((palette) => palette.id === value);
+}
+
+export function readStoredTheme(): ThemePalette | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+    return isThemePalette(stored) ? stored : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function persistTheme(theme: ThemePalette) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch {
+    // The profile/auth metadata remains the source of truth when storage is unavailable.
+  }
+}
 
 export function applyTheme(theme: ThemePalette | undefined) {
   if (typeof document === "undefined") return;
-  // Removed palettes and legacy values fall back safely without overwriting
-  // an existing valid palette selected by the user.
-  const safeTheme =
-    theme === ("mint" as ThemePalette) ||
-    theme === ("beige" as ThemePalette) ||
-    theme === ("yellow" as ThemePalette)
-      ? DEFAULT_THEME
-      : theme || DEFAULT_THEME;
+  const safeTheme = isThemePalette(theme) ? theme : DEFAULT_THEME;
   document.documentElement.dataset["theme"] = safeTheme;
 }
 
