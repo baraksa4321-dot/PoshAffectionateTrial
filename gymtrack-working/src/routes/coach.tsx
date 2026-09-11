@@ -413,6 +413,16 @@ function WorkoutSurfacePlacement({
   return anchor ? createPortal(children, anchor) : null;
 }
 
+function AttentionQueuePlacement({ children }: { children: React.ReactNode }) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setAnchor(document.querySelector<HTMLElement>('[data-coach-attention-queue-anchor="true"]'));
+  }, []);
+
+  return anchor ? createPortal(children, anchor) : null;
+}
+
 type WorkoutReportDay = {
   date: string;
   sessions: HistorySession[];
@@ -1975,7 +1985,7 @@ export function CoachDashboardPage({
   }, [isCoach]);
 
   const loadOverviewRows = useCallback(async () => {
-    if (clientsOnly || clients.length === 0) {
+    if ((!trackingLanding && clientsOnly) || clients.length === 0) {
       setOverviewRows([]);
       return;
     }
@@ -1986,7 +1996,7 @@ export function CoachDashboardPage({
       })),
     );
     setOverviewRows(rows.filter((row) => !row.details.error));
-  }, [clients, clientsOnly]);
+  }, [clients, clientsOnly, trackingLanding]);
   const loadOverviewRowsRef = useRef(loadOverviewRows);
   loadOverviewRowsRef.current = loadOverviewRows;
 
@@ -4708,6 +4718,11 @@ export function CoachDashboardPage({
             </div>
           ) : null}
 
+        </section>
+      ) : null}
+
+      {trackingLanding ? (
+        <AttentionQueuePlacement>
           {overviewRows.length === 0 ? (
             <div className="surface-card p-4 text-sm text-muted-foreground">
               {clients.length === 0
@@ -4963,6 +4978,11 @@ export function CoachDashboardPage({
               )}
             </section>
           )}
+        </AttentionQueuePlacement>
+      ) : null}
+
+      {!clientsOnly ? (
+        <section className="space-y-2 text-start">
 
           {isOwner ? (
             <section className="surface-card space-y-3 border-purple-200 bg-purple-50/50 p-4">
