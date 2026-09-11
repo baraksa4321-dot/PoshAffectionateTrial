@@ -11,6 +11,7 @@ const makeFood = (
   fat: number,
   fiber = 0,
   searchTerms: string[] = [],
+  nutritionReview?: FoodItem["nutritionReview"],
 ): FoodItem => ({
   id,
   name,
@@ -23,6 +24,7 @@ const makeFood = (
   fiber,
   searchTerms,
   notes: "ערך ממוצע למזון נפוץ; מומלץ לבדוק את תווית המוצר כשיש מותג ספציפי.",
+  ...(nutritionReview ? { nutritionReview } : {}),
 });
 
 /**
@@ -82,11 +84,29 @@ export const COMMON_FOODS: FoodItem[] = [
     "תפוח אדמה מבושל",
     "דגנים ופחמימות",
     "100 גרם",
-    87,
-    1.9,
-    20.1,
+    86,
+    1.7,
+    20,
     0.1,
     1.8,
+    [],
+    {
+      status: "reviewed",
+      origin: "verified",
+      checkedAt: "2026-09-11",
+      confidence: "high",
+      sources: [
+        {
+          name: "FoodsDictionary — תפוח אדמה מבושל ללא קליפה",
+          url: "https://www.foodsdictionary.co.il/Products/1/%D7%AA%D7%A4%D7%95%D7%97%20%D7%90%D7%93%D7%9E%D7%94%20%D7%9E%D7%91%D7%95%D7%A9%D7%9C%20%D7%9C%D7%9C%D7%90%20%D7%A7%D7%9C%D7%99%D7%A4%D7%94",
+          kind: "food-dictionary",
+          match: "same-food",
+          valuesPer: "100g",
+        },
+      ],
+      method: "official",
+      notes: "הערכים תואמים לדף תפוח אדמה מבושל ללא קליפה.",
+    },
   ),
   makeFood("f-common-sweet-potato", "בטטה", "דגנים ופחמימות", "100 גרם", 86, 1.6, 20.1, 0.1, 3),
   makeFood("f-common-oats", "שיבולת שועל", "דגנים ופחמימות", "50 גרם", 190, 6.5, 33, 3.5, 5),
