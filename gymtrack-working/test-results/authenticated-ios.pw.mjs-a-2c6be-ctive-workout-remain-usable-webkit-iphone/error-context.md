@@ -12,56 +12,36 @@
 # Error details
 
 ```
-Error: expect(locator).toBeVisible() failed
+Error: expect(locator).toContainText(expected) failed
 
-Locator: getByTestId('link-nav-coach')
-Expected: visible
-Timeout: 20000ms
-Error: element(s) not found
+Locator: getByTestId('coach-client-message-profile')
+Expected substring: "הודעת החיזוק נשלחה בהצלחה למתאמן!"
+Received string:    "שליחת הודעהההודעה תופיע במסך הבית של המתאמןשלחהודעות שנשלחוהודעה שנשלחה מהפרופיל25.8, 12:00כל הכבוד על ההתמדה השבוע25.8, 11:30"
+Timeout: 8000ms
 
 Call log:
-  - Expect "toBeVisible" with timeout 20000ms
-  - waiting for getByTestId('link-nav-coach')
+  - Expect "toContainText" with timeout 8000ms
+  - waiting for getByTestId('coach-client-message-profile')
+    20 × locator resolved to <section data-testid="coach-client-message-profile" data-tsd-source="/src/routes/coach.tsx:9730:15" class="space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.035] p-4">…</section>
+       - unexpected value "שליחת הודעהההודעה תופיע במסך הבית של המתאמןשלחהודעות שנשלחוהודעה שנשלחה מהפרופיל25.8, 12:00כל הכבוד על ההתמדה השבוע25.8, 11:30"
 
 ```
 
 ```yaml
-- status "MY routine נטען":
-  - status "טוען"
-- img "MY routine"
+- heading "שליחת הודעה" [level=3]
+- paragraph: ההודעה תופיע במסך הבית של המתאמן
+- textbox "כתבי הודעה למתאמן..."
+- button "שלח"
+- paragraph: הודעות שנשלחו
+- paragraph: הודעה שנשלחה מהפרופיל
+- time: 25.8, 12:00
+- paragraph: כל הכבוד על ההתמדה השבוע
+- time: 25.8, 11:30
 ```
 
 # Test source
 
 ```ts
-  914  |               )
-  915  |               .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  916  |           } else if (path === "broadcast_announcements") {
-  917  |             if ((init?.method ?? "GET").toUpperCase() === "GET") broadcastReads += 1;
-  918  |             body = [broadcastAnnouncement];
-  919  |           } else if (path === "challenges") {
-  920  |             body = [
-  921  |               {
-  922  |                 ...challenge,
-  923  |                 duration_label: challenge.durationLabel,
-  924  |                 owner_id: coachMessage.coach_id,
-  925  |                 updated_at: "2026-08-20T00:00:00.000Z",
-  926  |               },
-  927  |             ];
-  928  |           }
-  929  |           if ((init?.method ?? "GET").toUpperCase() === "GET") {
-  930  |             window.__iosSmokeRemoteGetCount += 1;
-  931  |             if (expectedInitialPullPaths.has(path)) {
-  932  |               initialPullPaths.add(path);
-  933  |               if (
-  934  |                 initialPullPaths.size === expectedInitialPullPaths.size &&
-  935  |                 window.__iosSmokeInitialPullCompleteAt === null
-  936  |               ) {
-  937  |                 window.__iosSmokeInitialPullCompleteAt = performance.now();
-  938  |               }
-  939  |             }
-  940  |           }
-  941  |           return new Response(JSON.stringify(body), {
   942  |             status: 200,
   943  |             headers: {
   944  |               "content-range": `0-${Math.max(0, body.length - 1)}/*`,
@@ -134,8 +114,7 @@ Call log:
   1011 | 
   1012 |   await page.goto("/");
   1013 |   const coachNav = page.getByTestId("link-nav-coach");
-> 1014 |   await expect(coachNav).toBeVisible({ timeout: 20_000 });
-       |                          ^ Error: expect(locator).toBeVisible() failed
+  1014 |   await expect(coachNav).toBeVisible({ timeout: 20_000 });
   1015 |   await coachNav.click();
   1016 |   await expect(page).toHaveURL(/\/coach\/clients/);
   1017 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("בדיקה");
@@ -163,7 +142,8 @@ Call log:
   1039 |     const profileMessageText = "הודעה שנשלחה מהפרופיל";
   1040 |     await profileMessage.getByPlaceholder("כתבי הודעה למתאמן...").fill(profileMessageText);
   1041 |     await profileMessage.getByRole("button", { name: "שלח", exact: true }).click();
-  1042 |     await expect(profileMessage).toContainText("הודעת החיזוק נשלחה בהצלחה למתאמן!");
+> 1042 |     await expect(profileMessage).toContainText("הודעת החיזוק נשלחה בהצלחה למתאמן!");
+       |                                  ^ Error: expect(locator).toContainText(expected) failed
   1043 |     await expect(profileMessage).toContainText(profileMessageText);
   1044 |   });
   1045 |   const profileInline = page.locator('[data-coach-client-profile-inline="true"]');
@@ -236,4 +216,32 @@ Call log:
   1112 |   ).toHaveValue("8");
   1113 |   await expect(
   1114 |     reopenedFourthSet.getByRole("textbox", { name: "חזרות מקס׳", exact: true }),
+  1115 |   ).toHaveValue("12");
+  1116 | 
+  1117 |   const thirdSetMode = page.getByRole("combobox", { name: "סוג סט 3" });
+  1118 |   await thirdSetMode.selectOption("drop");
+  1119 |   const dropRestInput = page.getByRole("textbox", { name: "דרופ סט זמן מנוחה" });
+  1120 |   await dropRestInput.fill("45");
+  1121 |   await expect(dropRestInput).toHaveValue("45");
+  1122 | 
+  1123 |   await thirdSetMode.selectOption("superset");
+  1124 |   const supersetSearch = page.getByRole("searchbox", {
+  1125 |     name: "חיפוש תרגיל בן־זוג לסופר סט",
+  1126 |   });
+  1127 |   await supersetSearch.fill("תרגיל בדיקה 2");
+  1128 |   const supersetOption = page
+  1129 |     .getByRole("listbox", { name: "תוצאות חיפוש לתרגיל בן־זוג" })
+  1130 |     .getByRole("option", { name: /תרגיל בדיקה 2/ });
+  1131 |   await expect(supersetOption).toBeVisible();
+  1132 |   await supersetOption.click({ force: true });
+  1133 |   await expect(supersetSearch).toHaveValue("");
+  1134 |   await expect(page.getByText(/^נבחר: תרגיל בדיקה 2/)).toBeVisible({
+  1135 |     timeout: 20_000,
+  1136 |   });
+  1137 | 
+  1138 |   await page.getByRole("button", { name: "סגירת בניית אימון", exact: true }).click();
+  1139 |   await expect(dayButtons).toHaveCount(4);
+  1140 | 
+  1141 |   await page.getByRole("tab", { name: "תפריט תזונה" }).click();
+  1142 |   await page.getByRole("button", { name: "+ מאכל" }).first().click();
 ```

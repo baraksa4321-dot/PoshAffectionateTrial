@@ -6,36 +6,136 @@
 
 # Test info
 
-- Name: authenticated-ios.pw.mjs >> trainee sees the message sent from the coach profile after reconnecting
-- Location: gymtrack-working/e2e/authenticated-ios.pw.mjs:1447:1
+- Name: authenticated-ios.pw.mjs >> coach profile retry recovers after a temporary trainee data failure
+- Location: gymtrack-working/e2e/authenticated-ios.pw.mjs:1394:1
 
 # Error details
 
 ```
-Error: expect(locator).toContainText(expected) failed
+Error: expect(locator).toBeVisible() failed
 
-Locator: getByTestId('coach-message-banner')
-Expected substring: "הודעה שנשלחה מהפרופיל ונראית למתאמנת"
-Received string:    " הודעה מהמאמן שלך25.8.2026\"כל הכבוד על ההתמדה השבוע\""
+Locator: getByTestId('coach-client-details-error')
+Expected: visible
 Timeout: 8000ms
+Error: element(s) not found
 
 Call log:
-  - Expect "toContainText" with timeout 8000ms
-  - waiting for getByTestId('coach-message-banner')
-    20 × locator resolved to <div data-home-card-id="coach-message" data-testid="coach-message-banner" data-tsd-source="/src/routes/index.tsx:535:11" class="dashboard-notice surface-card space-y-1.5 border-primary/20 bg-primary/5 p-4 text-start">…</div>
-       - unexpected value " הודעה מהמאמן שלך25.8.2026"כל הכבוד על ההתמדה השבוע""
+  - Expect "toBeVisible" with timeout 8000ms
+  - waiting for getByTestId('coach-client-details-error')
 
 ```
 
 ```yaml
-- text: הודעה מהמאמן שלך 25.8.2026
-- button "מחיקת הודעת המאמן"
-- paragraph: "\"כל הכבוד על ההתמדה השבוע\""
+- banner:
+  - link "MY routine — דף הבית":
+    - /url: /
+    - img "MY routine"
+  - button "מעבר לתצוגת לילה"
+  - paragraph: בניית תוכניות ותפריטים
+  - heading "עריכה" [level=1]
+  - button "אין חיבור לאינטרנט — השינויים נשמרים במכשיר"
+- main:
+  - text: אין חיבור לאינטרנט — השינויים נשמרים במכשיר
+  - heading "מתאמנת בדיקה" [level=3]
+  - button "פתיחת פרופיל המשתמש": פרופיל
+  - button "סגירת תכנית המתאמן"
+  - navigation "ניווט בסביבת העריכה":
+    - tab "תוכנית אימונים" [selected]
+    - tab "תפריט תזונה"
+  - textbox "שם תוכנית חדשה"
+  - button "צור"
+  - textbox "שם תוכנית האימון": תוכנית בדיקה לאייפון
+  - text: 4 ימי אימון · 8 תרגילים
+  - button "סגירה"
+  - button "מחק את התוכנית תוכנית בדיקה לאייפון": מחק
+  - button "פתיחת אתגרים": אתגרים
+  - 'textbox "שם יום אימון (למשל: A - פלג גוף עליון)..."'
+  - button "+ יום"
+  - button "בניית אימון אימון בדיקה ארוך": אימון בדיקה ארוך 8 תרגילים בניית אימון
+  - button "בניית אימון אימון בדיקה 2": אימון בדיקה 2 0 תרגילים בניית אימון
+  - button "בניית אימון אימון בדיקה 3": אימון בדיקה 3 0 תרגילים בניית אימון
+  - button "בניית אימון אימון בדיקה 4": אימון בדיקה 4 0 תרגילים בניית אימון
+- navigation "ניווט ראשי":
+  - link:
+    - /url: /coach
+  - link "מתאמנים":
+    - /url: /coach/clients
+  - link "מעקב":
+    - /url: /coach/tracking
+  - link "תרגילים":
+    - /url: /exercises
 ```
 
 # Test source
 
 ```ts
+  1310 | test("trainee nutrition quantities and macro visibility stay consistent", async ({ page }) => {
+  1311 |   await installFixture(page, { role: "trainee", showCalories: false });
+  1312 | 
+  1313 |   await page.goto("/nutrition");
+  1314 |   const plannedFoodQuantity = page.getByTestId("nutrition-food-quantity").first();
+  1315 |   await expect(plannedFoodQuantity).toBeVisible();
+  1316 |   await expect(plannedFoodQuantity).toHaveText(/\d/);
+  1317 | 
+  1318 |   const plannedMacroGrid = page.getByTestId("nutrition-macro-grid").first();
+  1319 |   const visibleMacroLabels = ["חלבון", "פחמימות", "שומן"];
+  1320 |   for (const [index, label] of visibleMacroLabels.entries()) {
+  1321 |     const macro = plannedMacroGrid.locator("[data-nutrition-macro]").nth(index);
+  1322 |     await expect(macro).toHaveAttribute("data-nutrition-macro", label);
+  1323 |     await expect(macro.locator("[data-nutrition-macro-value]")).toHaveText(/\d/);
+  1324 |   }
+  1325 |   await expect(plannedMacroGrid.locator('[data-nutrition-macro="קלוריות"]')).toHaveCount(0);
+  1326 | 
+  1327 |   await page.getByRole("button", { name: "החלפה", exact: true }).first().click();
+  1328 |   const replacementDialog = page.getByRole("dialog", { name: "החלפת מאכל" });
+  1329 |   await expect(replacementDialog).toBeVisible();
+  1330 |   const replacementQuantity = replacementDialog.getByTestId("nutrition-food-quantity").first();
+  1331 |   await expect(replacementQuantity).toBeVisible();
+  1332 |   await expect(replacementQuantity).toHaveText(/\d/);
+  1333 |   const replacementMacroGrid = replacementDialog.getByTestId("nutrition-macro-grid").first();
+  1334 |   for (const [index, label] of visibleMacroLabels.entries()) {
+  1335 |     const macro = replacementMacroGrid.locator("[data-nutrition-macro]").nth(index);
+  1336 |     await expect(macro).toHaveAttribute("data-nutrition-macro", label);
+  1337 |     await expect(macro.locator("[data-nutrition-macro-value]")).toHaveText(/\d/);
+  1338 |   }
+  1339 |   await expect(replacementMacroGrid.locator('[data-nutrition-macro="קלוריות"]')).toHaveCount(0);
+  1340 | });
+  1341 | 
+  1342 | test("coach profile resets measurements, activity, and messages when switching trainees", async ({
+  1343 |   page,
+  1344 | }) => {
+  1345 |   await installFixture(page);
+  1346 | 
+  1347 |   await page.goto("/");
+  1348 |   await page.getByTestId("link-nav-coach").click();
+  1349 |   await expect(page).toHaveURL(/\/coach\/clients/);
+  1350 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת");
+  1351 | 
+  1352 |   await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
+  1353 |   const workspace = page.locator('[data-coach-workspace="true"]');
+  1354 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
+  1355 |     timeout: 20_000,
+  1356 |   });
+  1357 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
+  1358 | 
+  1359 |   const profile = page.locator('[data-coach-client-profile-inline="true"]');
+  1360 |   await expect(profile).toBeVisible();
+  1361 |   await expect(profile).toContainText("63.4");
+  1362 |   await expect(profile).toContainText("74");
+  1363 |   await expect(profile).toContainText("8,500");
+  1364 |   await expect(profile).toContainText("הליכה מהירה");
+  1365 |   await expect(profile).toContainText("כל הכבוד על ההתמדה השבוע");
+  1366 |   await expect(profile).not.toContainText("71.8");
+  1367 |   await expect(profile).not.toContainText("הודעה של מתאמנת אחרת");
+  1368 | 
+  1369 |   await page.getByRole("button", { name: "סגירת פרופיל המשתמש" }).click();
+  1370 |   await page.getByRole("button", { name: "סגירת תכנית המתאמן" }).click();
+  1371 |   await expect(workspace).toHaveCount(0);
+  1372 | 
+  1373 |   const clientSearch = page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" });
+  1374 |   await expect(clientSearch).toBeVisible();
+  1375 |   await clientSearch.fill("מתאמנת אחרת");
+  1376 |   await expect(page.getByText("מתאמנת אחרת", { exact: true })).toBeVisible();
   1377 |   await page.getByText("מתאמנת אחרת", { exact: true }).click();
   1378 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
   1379 |     timeout: 20_000,
@@ -69,7 +169,8 @@ Call log:
   1407 |     timeout: 20_000,
   1408 |   });
   1409 |   await expect(workspace).toHaveAttribute("aria-busy", "false");
-  1410 |   await expect(detailsError).toBeVisible();
+> 1410 |   await expect(detailsError).toBeVisible();
+       |                              ^ Error: expect(locator).toBeVisible() failed
   1411 |   await expect(detailsError).toContainText("temporary selected trainee data failure");
   1412 |   await expect(workspace.getByTestId("coach-client-details-loading")).toHaveCount(0);
   1413 | 
@@ -136,8 +237,7 @@ Call log:
   1474 |   await expect(traineeMessage).toContainText("כל הכבוד על ההתמדה השבוע");
   1475 | 
   1476 |   await traineePage.evaluate(() => window.__iosSmokeSetOnline(true));
-> 1477 |   await expect(traineeMessage).toContainText(profileMessageText);
-       |                                ^ Error: expect(locator).toContainText(expected) failed
+  1477 |   await expect(traineeMessage).toContainText(profileMessageText);
   1478 | });
   1479 | 
   1480 | test("trainee reopens a received coach message offline before reconnect refresh", async ({
@@ -171,71 +271,4 @@ Call log:
   1508 |     .toBe(1);
   1509 | });
   1510 | 
-  1511 | test("trainee reopens a broadcast notice offline before reconnect refresh", async ({ page }) => {
-  1512 |   await installFixture(page, { role: "trainee" });
-  1513 | 
-  1514 |   await page.goto("/");
-  1515 |   const broadcast = page.getByTestId("broadcast-message-banner");
-  1516 |   await expect(broadcast).toContainText("הודעת תפוצה לבדיקה");
-  1517 |   await expect.poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads())).toBe(0);
-  1518 | 
-  1519 |   await page.reload();
-  1520 |   const reopenedBroadcast = page.getByTestId("broadcast-message-banner");
-  1521 |   await expect(reopenedBroadcast).toContainText("הודעת תפוצה לבדיקה");
-  1522 |   await expect.poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads())).toBe(0);
-  1523 | 
-  1524 |   await page.evaluate(() => window.__iosSmokeSetOnline(true));
-  1525 |   await expect
-  1526 |     .poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads()))
-  1527 |     .toBeGreaterThan(0);
-  1528 |   await expect(reopenedBroadcast).toContainText("הודעת תפוצה לבדיקה");
-  1529 |   await expect
-  1530 |     .poll(async () => {
-  1531 |       const cached = await page.evaluate(
-  1532 |         (key) => JSON.parse(window.localStorage.getItem(key) ?? "{}"),
-  1533 |         "gymtrack.v1.user.ios-smoke-client",
-  1534 |       );
-  1535 |       return cached.broadcasts?.length ?? 0;
-  1536 |     })
-  1537 |     .toBe(1);
-  1538 | });
-  1539 | 
-  1540 | test("authenticated workspace paints from the boot cache before full refresh", async ({ page }) => {
-  1541 |   await installFixture(page, {
-  1542 |     online: true,
-  1543 |     fullCacheValue: reopenFullCacheValue,
-  1544 |     bootCacheValue: reopenBootCacheValue,
-  1545 |     pendingChanges: true,
-  1546 |     trackBootCacheTiming: true,
-  1547 |   });
-  1548 | 
-  1549 |   await page.goto("/");
-  1550 |   const coachNav = page.getByTestId("link-nav-coach");
-  1551 |   await expect(coachNav).toBeVisible({ timeout: 20_000 });
-  1552 | 
-  1553 |   await expect
-  1554 |     .poll(() =>
-  1555 |       page.evaluate(() => ({
-  1556 |         workspaceMountedAt: window.__iosSmokeWorkspaceMountedAt,
-  1557 |         fullCacheReadAt: window.__iosSmokeFullCacheReadAt,
-  1558 |       })),
-  1559 |     )
-  1560 |     .toMatchObject({
-  1561 |       workspaceMountedAt: expect.any(Number),
-  1562 |       fullCacheReadAt: expect.any(Number),
-  1563 |     });
-  1564 | 
-  1565 |   const bootTiming = await page.evaluate(() => ({
-  1566 |     workspaceMountedAt: window.__iosSmokeWorkspaceMountedAt,
-  1567 |     fullCacheReadAt: window.__iosSmokeFullCacheReadAt,
-  1568 |   }));
-  1569 |   expect(bootTiming.workspaceMountedAt).toBeLessThan(bootTiming.fullCacheReadAt);
-  1570 | 
-  1571 |   await expect
-  1572 |     .poll(() => page.evaluate(() => window.__iosSmokeInitialPullCompleteAt))
-  1573 |     .not.toBeNull();
-  1574 |   await expect
-  1575 |     .poll(() => page.evaluate(() => window.__iosSmokeFullCacheWriteCount))
-  1576 |     .toBeGreaterThan(0);
-  1577 | 
 ```
