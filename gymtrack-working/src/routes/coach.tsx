@@ -4497,7 +4497,7 @@ export function CoachDashboardPage({
       compactHeader
     >
       {!clientsOnly ? (
-        <section className="space-y-2 text-start">
+        <section className="mb-3 space-y-3 text-start">
           <section className="surface-card border-rose-200 bg-rose-50/60 p-2">
             <div className="flex items-center justify-between gap-2">
               <div>
@@ -4550,7 +4550,7 @@ export function CoachDashboardPage({
           </section>
 
           {isOwner ? (
-            <div className="grid grid-cols-2 gap-0.5 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div className="surface-card flex items-center justify-between gap-1 border-primary/25 bg-primary/5 px-2 py-1.5 text-start">
                 <p className="truncate text-[10px] font-bold text-muted-foreground">מתאמנים</p>
                 <p className="font-display text-base font-extrabold leading-none text-ink">
@@ -4982,7 +4982,7 @@ export function CoachDashboardPage({
       ) : null}
 
       {!clientsOnly ? (
-        <section className="space-y-2 text-start">
+        <section className="space-y-3 text-start">
 
           {isOwner ? (
             <section className="surface-card space-y-3 border-purple-200 bg-purple-50/50 p-4">
@@ -5651,6 +5651,13 @@ export function CoachDashboardPage({
                 </div>
               ) : null}
             </section>
+            {trackingLanding ? (
+              <div
+                data-coach-attention-queue-anchor="true"
+                className="space-y-3"
+                aria-live="polite"
+              />
+            ) : null}
           </>
         ) : null}
 
