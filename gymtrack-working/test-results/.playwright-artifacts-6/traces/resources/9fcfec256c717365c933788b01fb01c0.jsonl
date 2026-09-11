@@ -1,5 +1,0 @@
-{"type":"receive","time":1789104651558.852,"opcode":1,"data":"{\"type\":\"connected\"}"}
-{"type":"send","time":1789104652595.017,"opcode":1,"data":"{\"type\":\"custom\",\"event\":\"vite:forward-console\",\"data\":{\"type\":\"log\",\"data\":{\"level\":\"warn\",\"message\":\"[Realtime channel_error]: scheduling an automatic resubscription\"}}}"}
-{"type":"send","time":1789104653638.112,"opcode":1,"data":"{\"type\":\"custom\",\"event\":\"vite:forward-console\",\"data\":{\"type\":\"log\",\"data\":{\"level\":\"warn\",\"message\":\"[Coach client realtime channel_error]: scheduling an automatic resubscription\"}}}"}
-{"type":"send","time":1789104655781.7542,"opcode":1,"data":"{\"type\":\"custom\",\"event\":\"vite:forward-console\",\"data\":{\"type\":\"log\",\"data\":{\"level\":\"warn\",\"message\":\"[Coach client realtime channel_error]: scheduling an automatic resubscription\"}}}"}
-{"type":"send","time":1789104655784.9941,"opcode":1,"data":"{\"type\":\"custom\",\"event\":\"vite:forward-console\",\"data\":{\"type\":\"log\",\"data\":{\"level\":\"warn\",\"message\":\"[Coach client realtime channel_error]: scheduling an automatic resubscription\"}}}"}
