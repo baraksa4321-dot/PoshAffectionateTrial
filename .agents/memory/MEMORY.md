@@ -26,6 +26,7 @@
 - [Live Supabase sync drift](live-supabase-sync-drift.md) — Local realtime mocks can pass while the live schema or publication is behind; verify both before declaring cross-user sync ready.
 - [Live coach-message smoke](live-coach-message-smoke.md) — Verify coach message delivery through a fresh trainee read; do not rely only on a Realtime callback.
 - [Playwright WebKit runtime](playwright-webkit-nix.md) — The bundled Linux WebKit may require Debian ABI libraries unavailable in stable Nix; keep the release gate explicit rather than silently skipping it.
+- [Playwright init document timing](playwright-init-document-timing.md) — Browser init scripts may run before documentElement exists; observe document for early render telemetry.
 - [Release preview project selection](release-preview-project-selection.md) — Forward Playwright project filters directly to the runner; an extra package-script separator can run every browser project.
 - [iPhone WebKit keyboard smoke](ios-webkit-keyboard-smoke.md) — The feedback-field visibility assertion can be timing-sensitive; validate with the configured Nix runtime before treating it as an app regression.
 - [Supabase RLS policy additivity](supabase-rls-policy-additivity.md) — Live legacy policies can widen writes; inspect and remove old variants when tightening RLS.

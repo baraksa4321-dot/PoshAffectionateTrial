@@ -317,6 +317,35 @@ const gymData = {
   },
 };
 
+const reopenFullCacheValue = {
+  ...gymData,
+  foods: Array.from({ length: 2_000 }, (_, index) => ({
+    id: `ios-smoke-cached-food-${index + 1}`,
+    name: `מזון מטמון ${index + 1}`,
+    nameEn: `Cached Food ${index + 1}`,
+    category: "בדיקה",
+    servingSize: "100 גרם",
+    servingUnit: "g",
+    servingGrams: 100,
+    calories: 100 + (index % 9),
+    protein: 5 + (index % 7),
+    carbs: 12 + (index % 11),
+    fat: 2 + (index % 5),
+  })),
+  workouts: workouts.map((day, dayIndex) => ({
+    ...day,
+    items: day.items.map((item, itemIndex) =>
+      dayIndex === 0 && itemIndex === 0 ? { ...item, reps: 123 } : { ...item },
+    ),
+  })),
+  preExitChecklist: [{ id: "ios-smoke-local-edit", label: "עריכה מקומית שנשמרת" }],
+};
+
+const reopenBootCacheValue = {
+  ...reopenFullCacheValue,
+  foods: [],
+};
+
 const coachProfile = {
   id: COACH_ID,
   email: "ios-smoke-coach@example.test",
@@ -356,12 +385,21 @@ function authSession(role = "coach") {
 
 async function installFixture(
   page,
-  { role = "coach", online = false, showCalories = true, failSelectedTraineeDataOnce = false } = {},
+  {
+    role = "coach",
+    online = false,
+    showCalories = true,
+    failSelectedTraineeDataOnce = false,
+    fullCacheValue = null,
+    bootCacheValue = null,
+    pendingChanges = false,
+    trackBootCacheTiming = false,
+  } = {},
 ) {
   const isTrainee = role === "trainee";
   const userId = isTrainee ? CLIENT_ID : COACH_ID;
   const fixtureClientProfile = { ...clientProfile, show_calories: showCalories };
-  const cacheValue = isTrainee
+  const defaultCacheValue = isTrainee
     ? {
         ...gymData,
         userProfile: {
@@ -377,10 +415,12 @@ async function installFixture(
         },
       }
     : gymData;
+  const resolvedCacheValue = fullCacheValue ?? defaultCacheValue;
   await page.addInitScript(
     ({
       cacheKey,
       cacheValue,
+      bootCacheValue,
       session,
       clientProfile,
       otherClientProfile,
@@ -403,6 +443,8 @@ async function installFixture(
       challenge,
       initialOnline,
       failSelectedTraineeDataOnce,
+      pendingChanges,
+      trackBootCacheTiming,
     }) => {
       let isOnline = initialOnline;
       Object.defineProperty(window.navigator, "onLine", {
@@ -413,15 +455,85 @@ async function installFixture(
         isOnline = nextOnline;
         window.dispatchEvent(new Event(nextOnline ? "online" : "offline"));
       };
+      const expectedInitialPullPaths = new Set([
+        "profiles",
+        "coach_messages",
+        "broadcast_announcements",
+        "coach_clients",
+        "custom_exercises",
+        "programs",
+        "program_days",
+        "challenges",
+        "challenge_enrollments",
+        "workout_sessions",
+        "body_weight_logs",
+        "cardio_logs",
+        "body_measurements",
+        "client_habits",
+        "custom_foods",
+        "foods",
+        "nutrition_days",
+        "coach_recipes",
+        "food_favorites",
+      ]);
+      const initialPullPaths = new Set();
+      window.__iosSmokeInitialPullCompleteAt = null;
+      window.__iosSmokeRemoteGetCount = 0;
+      window.__iosSmokeFullCacheReadAt = null;
+      window.__iosSmokeWorkspaceMountedAt = null;
+      if (trackBootCacheTiming) {
+        const markWorkspaceMounted = () => {
+          if (
+            window.__iosSmokeWorkspaceMountedAt === null &&
+            document.querySelector('[data-testid="link-nav-coach"]')
+          ) {
+            window.__iosSmokeWorkspaceMountedAt = performance.now();
+          }
+        };
+        new MutationObserver(markWorkspaceMounted).observe(document, {
+          childList: true,
+          subtree: true,
+        });
+      }
       const originalGetItem = Storage.prototype.getItem;
       Storage.prototype.getItem = function getItem(key) {
+        if (
+          trackBootCacheTiming &&
+          this === window.localStorage &&
+          key === cacheKey &&
+          window.__iosSmokeFullCacheReadAt === null
+        ) {
+          window.__iosSmokeFullCacheReadAt = performance.now();
+        }
         if (this === window.localStorage && key.endsWith("-auth-token")) {
           return JSON.stringify(session);
         }
         return originalGetItem.call(this, key);
       };
       window.localStorage.setItem(cacheKey, JSON.stringify(cacheValue));
-      window.localStorage.setItem(`${cacheKey.replace("user.", "pending.")}`, "false");
+      if (bootCacheValue) {
+        window.localStorage.setItem(
+          `${cacheKey.replace("user.", "boot.")}`,
+          JSON.stringify(bootCacheValue),
+        );
+      }
+      window.localStorage.setItem(
+        `${cacheKey.replace("user.", "pending.")}`,
+        pendingChanges ? "true" : "false",
+      );
+      const originalSetItem = Storage.prototype.setItem;
+      window.__iosSmokeFullCacheWriteCount = 0;
+      Storage.prototype.setItem = function setItem(key, value) {
+        if (
+          trackBootCacheTiming &&
+          this === window.localStorage &&
+          key === cacheKey &&
+          window.__iosSmokeFullCacheReadAt !== null
+        ) {
+          window.__iosSmokeFullCacheWriteCount += 1;
+        }
+        return originalSetItem.call(this, key, value);
+      };
       window.sessionStorage.setItem("gymtrack.workspace", "management");
 
       const originalFetch = window.fetch.bind(window);
@@ -717,6 +829,18 @@ async function installFixture(
               },
             ];
           }
+          if ((init?.method ?? "GET").toUpperCase() === "GET") {
+            window.__iosSmokeRemoteGetCount += 1;
+            if (expectedInitialPullPaths.has(path)) {
+              initialPullPaths.add(path);
+              if (
+                initialPullPaths.size === expectedInitialPullPaths.size &&
+                window.__iosSmokeInitialPullCompleteAt === null
+              ) {
+                window.__iosSmokeInitialPullCompleteAt = performance.now();
+              }
+            }
+          }
           return new Response(JSON.stringify(body), {
             status: 200,
             headers: {
@@ -730,7 +854,8 @@ async function installFixture(
     },
     {
       cacheKey: `gymtrack.v1.user.${userId}`,
-      cacheValue,
+      cacheValue: resolvedCacheValue,
+      bootCacheValue,
       session: authSession(role),
       clientProfile: fixtureClientProfile,
       otherClientProfile,
@@ -753,6 +878,8 @@ async function installFixture(
       challenge,
       initialOnline: online,
       failSelectedTraineeDataOnce,
+      pendingChanges,
+      trackBootCacheTiming,
     },
   );
 }
@@ -1217,6 +1344,53 @@ test("trainee reopens a broadcast notice offline before reconnect refresh", asyn
       return cached.broadcasts?.length ?? 0;
     })
     .toBe(1);
+});
+
+test("authenticated workspace paints from the boot cache before full refresh", async ({ page }) => {
+  await installFixture(page, {
+    online: true,
+    fullCacheValue: reopenFullCacheValue,
+    bootCacheValue: reopenBootCacheValue,
+    pendingChanges: true,
+    trackBootCacheTiming: true,
+  });
+
+  await page.goto("/");
+  const coachNav = page.getByTestId("link-nav-coach");
+  await expect(coachNav).toBeVisible({ timeout: 20_000 });
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        workspaceMountedAt: window.__iosSmokeWorkspaceMountedAt,
+        fullCacheReadAt: window.__iosSmokeFullCacheReadAt,
+      })),
+    )
+    .toMatchObject({
+      workspaceMountedAt: expect.any(Number),
+      fullCacheReadAt: expect.any(Number),
+    });
+
+  const bootTiming = await page.evaluate(() => ({
+    workspaceMountedAt: window.__iosSmokeWorkspaceMountedAt,
+    fullCacheReadAt: window.__iosSmokeFullCacheReadAt,
+  }));
+  expect(bootTiming.workspaceMountedAt).toBeLessThan(bootTiming.fullCacheReadAt);
+
+  await expect
+    .poll(() => page.evaluate(() => window.__iosSmokeInitialPullCompleteAt))
+    .not.toBeNull();
+  await expect
+    .poll(() => page.evaluate(() => window.__iosSmokeFullCacheWriteCount))
+    .toBeGreaterThan(0);
+
+  const refreshedCache = await page.evaluate(
+    (key) => JSON.parse(localStorage.getItem(key) ?? "{}"),
+    `gymtrack.v1.user.${COACH_ID}`,
+  );
+  expect(refreshedCache.foods.length).toBeGreaterThanOrEqual(reopenFullCacheValue.foods.length);
+  expect(refreshedCache.workouts[0].items[0].reps).toBe(123);
+  expect(refreshedCache.preExitChecklist[0].label).toBe("עריכה מקומית שנשמרת");
 });
 
 test("active workout values survive leaving and reopening the session", async ({ page }) => {

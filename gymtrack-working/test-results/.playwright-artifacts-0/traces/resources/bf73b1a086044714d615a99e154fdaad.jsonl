@@ -1,5 +1,0 @@
-{"type":"receive","time":1789085990466.741,"opcode":1,"data":"{\"type\":\"connected\"}"}
-{"type":"send","time":1789085995271.035,"opcode":1,"data":"{\"type\":\"custom\",\"event\":\"vite:forward-console\",\"data\":{\"type\":\"log\",\"data\":{\"level\":\"warn\",\"message\":\"[Realtime channel_error]: scheduling an automatic resubscription\"}}}"}
-{"type":"send","time":1789085998379.629,"opcode":1,"data":"{\"type\":\"custom\",\"event\":\"vite:forward-console\",\"data\":{\"type\":\"log\",\"data\":{\"level\":\"warn\",\"message\":\"[Coach client realtime channel_error]: scheduling an automatic resubscription\"}}}"}
-{"type":"send","time":1789085998379.998,"opcode":1,"data":"{\"type\":\"custom\",\"event\":\"vite:forward-console\",\"data\":{\"type\":\"log\",\"data\":{\"level\":\"warn\",\"message\":\"[Coach client realtime channel_error]: scheduling an automatic resubscription\"}}}"}
-{"type":"send","time":1789085999607.115,"opcode":1,"data":"{\"type\":\"custom\",\"event\":\"vite:forward-console\",\"data\":{\"type\":\"log\",\"data\":{\"level\":\"warn\",\"message\":\"[FCM remote notification] Failed to send a request to the Edge Function\"}}}"}
