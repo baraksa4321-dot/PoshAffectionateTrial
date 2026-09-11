@@ -1682,7 +1682,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         id: row.id,
         date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
         meals: row.meals || [],
-        plannedMeals: [],
+        plannedMeals: Array.isArray(row.planned_meals) ? row.planned_meals : [],
         ...(row.water_ml === null ? {} : { waterMl: Number(row.water_ml ?? 0) }),
         ...(row.water_target_ml === null
           ? {}
@@ -1878,7 +1878,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
           ? (row.date ?? row.recorded_at).slice(0, 10)
           : (row.date ?? row.recorded_at),
       meals: row.meals || [],
-      plannedMeals: [],
+      plannedMeals: Array.isArray(row.planned_meals) ? row.planned_meals : [],
       ...(row.water_ml === null ? {} : { waterMl: Number(row.water_ml ?? 0) }),
       ...(row.water_target_ml === null
         ? {}

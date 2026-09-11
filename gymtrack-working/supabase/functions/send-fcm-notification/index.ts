@@ -189,6 +189,16 @@ Deno.serve(async (request) => {
     if (sender?.role !== "coach" && sender?.role !== "owner") {
       throw new RequestError("Only staff can send notifications.", 403);
     }
+    if (
+      sender.role === "coach" &&
+      requestBody.audience !== undefined &&
+      requestBody.audience !== "assigned_clients"
+    ) {
+      throw new RequestError(
+        "Coaches can only send notifications to their assigned trainees.",
+        403,
+      );
+    }
     if (requestBody.recipientUserId && sender.role === "coach") {
       const { data: assignment } = await admin
         .from("coach_clients")
