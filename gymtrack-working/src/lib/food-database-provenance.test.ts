@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { COMMON_FOODS } from "./common-foods";
 import { ISRAELI_FOOD_DATABASE, EVERYDAY_FOOD_DATABASE } from "./israeli-food-db";
 import { nutritionSourceFor } from "./nutrition-integrity";
 import { ISRAELI_PROTEIN_PRODUCTS } from "./protein-product-catalog";
@@ -57,5 +58,46 @@ describe("food library expansion provenance", () => {
         (food) => !food.nutritionReview?.sources.some((source) => source.match === "exact-product"),
       ).every((food) => nutritionSourceFor(food).verified === false),
     ).toBe(true);
+  });
+
+  test("keeps cooked-food reviews tied to the matching preparation state", () => {
+    const foodById = new Map(
+      [...EVERYDAY_FOOD_DATABASE, ...COMMON_FOODS].map((food) => [food.id, food]),
+    );
+    const reviewedFoods = [
+      ["f-israel-120", 23.2],
+      ["f-israel-122", 18.6],
+      ["f-israel-123", 21.3],
+      ["f-israel-124", 19.9],
+      ["f-israel-211", 7.2],
+      ["f-israel-221", 10],
+      ["f-common-quinoa", 21.3],
+    ] as const;
+
+    for (const [id, carbs] of reviewedFoods) {
+      const food = foodById.get(id);
+      expect(food).not.toBeUndefined();
+      expect(food?.carbs).toBe(carbs);
+      expect(food?.nutritionReview).toMatchObject({
+        status: "reviewed",
+        origin: "verified",
+      });
+      expect(food?.nutritionReview?.sources[0]).toMatchObject({
+        kind: "food-dictionary",
+        match: "same-food",
+        valuesPer: "100g",
+      });
+      expect(food?.nutritionReview?.sources[0]?.url).toContain("foodsdictionary.co.il/Products/1/");
+      expect(food?.nutritionReview?.sources[0]?.name).toContain("מבושל");
+      expect(nutritionSourceFor(food!)).toMatchObject({
+        label: "נבדק מול FoodsDictionary",
+        verified: true,
+        status: "verified",
+        needsReview: false,
+      });
+    }
+
+    expect(foodById.get("f-israel-212")?.nutritionReview).toBeUndefined();
+    expect(foodById.get("f-israel-225")?.nutritionReview).toBeUndefined();
   });
 });

@@ -3,6 +3,30 @@ import { COMMON_FOODS } from "./common-foods";
 import { ISRAELI_PROTEIN_PRODUCTS } from "./protein-product-catalog";
 import { USDA_FOOD_EXPANSION } from "./usda-food-expansion";
 
+type NutritionReview = NonNullable<FoodItem["nutritionReview"]>;
+
+const foodDictionaryReview = (
+  name: string,
+  url: string,
+  notes: string,
+): NutritionReview => ({
+  status: "reviewed",
+  origin: "verified",
+  checkedAt: "2026-09-11",
+  confidence: "high",
+  sources: [
+    {
+      name,
+      url,
+      kind: "food-dictionary",
+      match: "same-food",
+      valuesPer: "100g",
+    },
+  ],
+  method: "official",
+  notes,
+});
+
 /** Catalog of 489 realistic Israeli supermarket food entries. */
 const ISRAELI_SUPERMARKET_FOODS: FoodItem[] = [
   {
@@ -1440,10 +1464,15 @@ const ISRAELI_SUPERMARKET_FOODS: FoodItem[] = [
     servingSize: "100 גרם",
     calories: 112.0,
     protein: 3.8,
-    carbs: 23.0,
+    carbs: 23.2,
     fat: 0.2,
     fiber: 1.4,
     notes: "מוצר מזון מרשתות השיווק בישראל (דגנים ופחמימות)",
+    nutritionReview: foodDictionaryReview(
+      "FoodsDictionary — קוסקוס מבושל",
+      "https://www.foodsdictionary.co.il/Products/1/%D7%A7%D7%95%D7%A1%D7%A7%D7%95%D7%A1%20%D7%9E%D7%91%D7%95%D7%A9%D7%9C",
+      "הערכים תואמים לדף קוסקוס מבושל; הפחמימות עודכנו ל-23.2 גרם ל-100 גרם.",
+    ),
   },
   {
     id: "f-israel-121",
@@ -1464,10 +1493,15 @@ const ISRAELI_SUPERMARKET_FOODS: FoodItem[] = [
     servingSize: "100 גרם",
     calories: 83.0,
     protein: 3.1,
-    carbs: 18.5,
+    carbs: 18.6,
     fat: 0.2,
     fiber: 4.5,
     notes: "מוצר מזון מרשתות השיווק בישראל (דגנים ופחמימות)",
+    nutritionReview: foodDictionaryReview(
+      "FoodsDictionary — בורגול מבושל",
+      "https://www.foodsdictionary.co.il/Products/1/%D7%91%D7%95%D7%A8%D7%92%D7%95%D7%9C%20%D7%9E%D7%91%D7%95%D7%A9%D7%9C",
+      "הערכים תואמים לדף בורגול מבושל לאחר עיגול למאקרו המוצג.",
+    ),
   },
   {
     id: "f-israel-123",
@@ -1476,10 +1510,15 @@ const ISRAELI_SUPERMARKET_FOODS: FoodItem[] = [
     servingSize: "100 גרם",
     calories: 120.0,
     protein: 4.4,
-    carbs: 21.0,
+    carbs: 21.3,
     fat: 1.9,
     fiber: 2.8,
     notes: "מוצר מזון מרשתות השיווק בישראל (דגנים ופחמימות)",
+    nutritionReview: foodDictionaryReview(
+      "FoodsDictionary — קינואה מבושלת",
+      "https://www.foodsdictionary.co.il/Products/1/%D7%A7%D7%99%D7%A0%D7%95%D7%90%D7%94%20%D7%9E%D7%91%D7%95%D7%A9%D7%9C%D7%AA",
+      "הערכים תואמים לדף קינואה מבושלת; הפחמימות עודכנו ל-21.3 גרם ל-100 גרם.",
+    ),
   },
   {
     id: "f-israel-124",
@@ -1488,10 +1527,15 @@ const ISRAELI_SUPERMARKET_FOODS: FoodItem[] = [
     servingSize: "100 גרם",
     calories: 92.0,
     protein: 3.4,
-    carbs: 19.8,
+    carbs: 19.9,
     fat: 0.6,
     fiber: 2.7,
     notes: "מוצר מזון מרשתות השיווק בישראל (דגנים ופחמימות)",
+    nutritionReview: foodDictionaryReview(
+      "FoodsDictionary — כוסמת מבושלת-קלויה",
+      "https://www.foodsdictionary.co.il/Products/1/%D7%9B%D7%95%D7%A1%D7%9E%D7%AA%20%D7%9E%D7%91%D7%95%D7%A9%D7%9C%D7%AA-%D7%A7%D7%9C%D7%95%D7%99%D7%94",
+      "הערכים תואמים לדף כוסמת מבושלת-קלויה לאחר עיגול למאקרו המוצג.",
+    ),
   },
   {
     id: "f-israel-125",
@@ -2561,10 +2605,15 @@ const ISRAELI_SUPERMARKET_FOODS: FoodItem[] = [
     servingSize: "100 גרם",
     calories: 35.0,
     protein: 2.4,
-    carbs: 7.0,
+    carbs: 7.2,
     fat: 0.4,
     fiber: 3.3,
     notes: "מוצר מזון מרשתות השיווק בישראל (ירקות)",
+    nutritionReview: foodDictionaryReview(
+      "FoodsDictionary — ברוקולי מבושל",
+      "https://www.foodsdictionary.co.il/Products/1/%D7%91%D7%A8%D7%95%D7%A7%D7%95%D7%9C%D7%99%20%D7%9E%D7%91%D7%95%D7%A9%D7%9C",
+      "הערכים תואמים לדף ברוקולי מבושל; הפחמימות עודכנו ל-7.2 גרם ל-100 גרם.",
+    ),
   },
   {
     id: "f-israel-212",
@@ -2685,6 +2734,11 @@ const ISRAELI_SUPERMARKET_FOODS: FoodItem[] = [
     fat: 0.2,
     fiber: 2.0,
     notes: "מוצר מזון מרשתות השיווק בישראל (ירקות)",
+    nutritionReview: foodDictionaryReview(
+      "FoodsDictionary — סלק מבושל",
+      "https://www.foodsdictionary.co.il/Products/1/%D7%A1%D7%9C%D7%A7%20%D7%9E%D7%91%D7%95%D7%A9%D7%9C",
+      "הערכים תואמים לדף סלק מבושל לאחר עיגול למאקרו המוצג.",
+    ),
   },
   {
     id: "f-israel-222",

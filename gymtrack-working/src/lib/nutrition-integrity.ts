@@ -29,6 +29,18 @@ function hasExactProductReview(food: Pick<FoodItem, "nutritionReview">): boolean
   );
 }
 
+function hasFoodDictionaryReview(food: Pick<FoodItem, "nutritionReview">): boolean {
+  return (
+    food.nutritionReview?.status === "reviewed" &&
+    food.nutritionReview.sources.some(
+      (source) =>
+        source.kind === "food-dictionary" &&
+        source.match === "same-food" &&
+        Boolean(source.url?.trim()),
+    )
+  );
+}
+
 function confidenceLabel(confidence?: "low" | "medium" | "high") {
   if (confidence === "high") return "גבוהה";
   if (confidence === "medium") return "בינונית";
@@ -59,6 +71,22 @@ export function nutritionSourceFor(
         ? "נבדק מול מקור יצרן"
         : "נבדק מול דף מוצר מתועד",
       detail: `${sourceNames || "מקורות מתועדים"}${confidence ? ` ${confidence}` : ""}`,
+      verified: true,
+      status: "verified",
+      checkedAt: review.checkedAt,
+      confidence: review.confidence,
+      needsReview: false,
+    };
+  }
+
+  if (hasFoodDictionaryReview(food) && review) {
+    const sourceNames = review.sources
+      .filter((source) => source.kind === "food-dictionary")
+      .map((source) => source.name)
+      .join(" · ");
+    return {
+      label: "נבדק מול FoodsDictionary",
+      detail: `${sourceNames || "FoodsDictionary"} — התאמה למזון ולשיטת ההכנה`,
       verified: true,
       status: "verified",
       checkedAt: review.checkedAt,
