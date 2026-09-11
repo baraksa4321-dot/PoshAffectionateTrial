@@ -1803,6 +1803,12 @@ export function CoachDashboardPage({
   const [menuFoodQuery, setMenuFoodQuery] = useState("");
   const [menuFoodQuantity, setMenuFoodQuantity] = useState(1);
   const [menuFoodUnit, setMenuFoodUnit] = useState<FoodQuantityUnit>("serving");
+  const [menuAlternativeFor, setMenuAlternativeFor] = useState<{
+    mealId: string;
+    foodId: string;
+  } | null>(null);
+  const [menuAlternativeFoodId, setMenuAlternativeFoodId] = useState("");
+  const [menuAlternativeQuery, setMenuAlternativeQuery] = useState("");
   const [menuNotice, setMenuNotice] = useState("");
   const [savingPlannedMenu, setSavingPlannedMenu] = useState(false);
   const [focusedNutritionFoodId, setFocusedNutritionFoodId] = useState<string | null>(null);
@@ -3962,6 +3968,76 @@ export function CoachDashboardPage({
     );
   };
 
+  const removePlannedMeal = (mealId: string) => {
+    if (!isCoach) return;
+    markPlannedMealsDraftDirty();
+    setPlannedMeals((current) => current.filter((meal) => meal.id !== mealId));
+    if (menuAlternativeFor?.mealId === mealId) {
+      setMenuAlternativeFor(null);
+      setMenuAlternativeFoodId("");
+      setMenuAlternativeQuery("");
+    }
+  };
+
+  const addPlannedFoodAlternative = (
+    mealId: string,
+    foodId: string,
+    alternativeFoodId: string,
+  ) => {
+    if (!isCoach || !alternativeFoodId || alternativeFoodId === foodId) return;
+    markPlannedMealsDraftDirty();
+    setPlannedMeals((current) =>
+      current.map((meal) =>
+        meal.id !== mealId
+          ? meal
+          : {
+              ...meal,
+              foods: meal.foods.map((food) =>
+                food.id !== foodId
+                  ? food
+                  : {
+                      ...food,
+                      approvedSubstitutes: Array.from(
+                        new Set([...(food.approvedSubstitutes ?? []), alternativeFoodId]),
+                      ),
+                    },
+              ),
+            },
+      ),
+    );
+    setMenuAlternativeFoodId("");
+    setMenuAlternativeQuery("");
+    setMenuAlternativeFor(null);
+  };
+
+  const removePlannedFoodAlternative = (
+    mealId: string,
+    foodId: string,
+    alternativeFoodId: string,
+  ) => {
+    if (!isCoach) return;
+    markPlannedMealsDraftDirty();
+    setPlannedMeals((current) =>
+      current.map((meal) =>
+        meal.id !== mealId
+          ? meal
+          : {
+              ...meal,
+              foods: meal.foods.map((food) =>
+                food.id !== foodId
+                  ? food
+                  : {
+                      ...food,
+                      approvedSubstitutes: (food.approvedSubstitutes ?? []).filter(
+                        (id) => id !== alternativeFoodId,
+                      ),
+                    },
+              ),
+            },
+      ),
+    );
+  };
+
   const savePlannedMenu = async () => {
     if (!isCoach || !selectedClientId || savingPlannedMenu) return;
     const menuSnapshot = plannedMealsDraftRef.current;
@@ -4439,6 +4515,21 @@ export function CoachDashboardPage({
     : allProfiles;
   const menuFoodResults = searchFoods(store.foods, menuFoodQuery).slice(0, 24);
   const selectedMenuFood = store.foods.find((food) => food.id === menuFoodId);
+  const menuAlternativeTarget = menuAlternativeFor
+    ? plannedMeals
+        .find((meal) => meal.id === menuAlternativeFor.mealId)
+        ?.foods.find((food) => food.id === menuAlternativeFor.foodId)
+    : undefined;
+  const menuAlternativeResults = menuAlternativeTarget
+    ? searchFoods(store.foods, menuAlternativeQuery)
+        .filter(
+          (food) =>
+            food.id !== menuAlternativeTarget.foodId &&
+            food.id !== menuAlternativeTarget.id &&
+            !menuAlternativeTarget.approvedSubstitutes?.includes(food.id),
+        )
+        .slice(0, 16)
+    : [];
   const menuTotals = foodTotals(plannedMeals.flatMap((meal) => meal.foods));
   const needsPlan = overviewRows.filter((row) => row.details.programs.length === 0);
   const needsExercises = overviewRows.filter(
@@ -8812,6 +8903,15 @@ export function CoachDashboardPage({
                               />
                               <button
                                 type="button"
+                                onClick={() => removePlannedMeal(meal.id)}
+                                className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-red-50 hover:text-destructive"
+                                aria-label={`מחק ${meal.name || "ארוחה"}`}
+                                title="מחק ארוחה"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
                                 onClick={() =>
                                   setMenuFoodMealId(menuFoodMealId === meal.id ? null : meal.id)
                                 }
@@ -8821,9 +8921,17 @@ export function CoachDashboardPage({
                               </button>
                             </div>
 
-                            {meal.foods.length > 0 ? (
+                             {meal.foods.length > 0 ? (
                               <div className="mt-2 space-y-1">
-                                  {meal.foods.map((food, foodIndex) => (
+                                   {meal.foods.map((food, foodIndex) => {
+                                    const foodQuantity =
+                                      Number.isFinite(food.quantity) && food.quantity > 0
+                                        ? food.quantity
+                                        : 1;
+                                    const alternativeFoods = (food.approvedSubstitutes ?? [])
+                                      .map((foodId) => store.foods.find((item) => item.id === foodId))
+                                      .filter((item): item is NonNullable<typeof item> => Boolean(item));
+                                    return (
                                    <div
                                       key={`${food.id}-${foodIndex}`}
                                      className="rounded-lg bg-emerald-50 px-2.5 py-2 text-[11px]"
@@ -8847,15 +8955,50 @@ export function CoachDashboardPage({
                                          <Trash2 className="h-3.5 w-3.5" />
                                        </button>
                                      </div>
+                                      <div className="mt-1 flex items-center justify-end gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setMenuAlternativeFor({ mealId: meal.id, foodId: food.id });
+                                            setMenuAlternativeFoodId("");
+                                            setMenuAlternativeQuery("");
+                                          }}
+                                          className="rounded-md bg-white/80 px-2 py-1 text-[10px] font-bold text-emerald-800 hover:bg-white"
+                                        >
+                                          + או מאכל אחר
+                                        </button>
+                                      </div>
+                                      {alternativeFoods.length > 0 ? (
+                                        <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px] text-emerald-900">
+                                          <span className="font-bold">או:</span>
+                                          {alternativeFoods.map((alternativeFood) => (
+                                            <button
+                                              key={alternativeFood.id}
+                                              type="button"
+                                              onClick={() =>
+                                                removePlannedFoodAlternative(
+                                                  meal.id,
+                                                  food.id,
+                                                  alternativeFood.id,
+                                                )
+                                              }
+                                              className="rounded-full bg-white/80 px-2 py-0.5 underline decoration-dotted underline-offset-2"
+                                              title="הסר חלופה"
+                                            >
+                                              {alternativeFood.name} ×
+                                            </button>
+                                          ))}
+                                        </div>
+                                      ) : null}
                                      <div
                                        data-testid="nutrition-macro-grid"
                                        className="mt-1.5 grid grid-cols-4 gap-1"
                                      >
                                        {[
-                                         ["חלבון", food.protein, "ג׳"],
-                                         ["פחמימות", food.carbs, "ג׳"],
-                                         ["שומן", food.fat, "ג׳"],
-                                         ["קלוריות", food.calories, "קל׳"],
+                                          ["חלבון", food.protein * foodQuantity, "ג׳"],
+                                          ["פחמימות", food.carbs * foodQuantity, "ג׳"],
+                                          ["שומן", food.fat * foodQuantity, "ג׳"],
+                                          ["קלוריות", food.calories * foodQuantity, "קל׳"],
                                        ].map(([label, value, unit]) => (
                                          <div
                                            key={label}
@@ -8874,8 +9017,81 @@ export function CoachDashboardPage({
                                          </div>
                                        ))}
                                      </div>
+                                      {menuAlternativeFor?.mealId === meal.id &&
+                                      menuAlternativeFor.foodId === food.id ? (
+                                        <div className="mt-2 space-y-1.5 rounded-lg border border-emerald-200 bg-white/70 p-2">
+                                          <p className="text-[10px] font-bold text-emerald-900">
+                                            בחרי מאכל חלופי
+                                          </p>
+                                          <input
+                                            type="search"
+                                            value={menuAlternativeQuery}
+                                            onChange={(event) => {
+                                              setMenuAlternativeQuery(event.target.value);
+                                              setMenuAlternativeFoodId("");
+                                            }}
+                                            placeholder="למשל: טונה, גבינה, יוגורט..."
+                                            className="w-full rounded-md border border-emerald-200 bg-white px-2 py-1.5 text-[11px] text-ink outline-none focus:border-emerald-500"
+                                            aria-label={`חיפוש חלופה עבור ${food.name}`}
+                                            autoComplete="off"
+                                          />
+                                          <div
+                                            role="listbox"
+                                            aria-label={`מאכלים חלופיים עבור ${food.name}`}
+                                            className="max-h-32 space-y-1 overflow-y-auto"
+                                          >
+                                            {menuAlternativeResults.map((alternativeFood) => (
+                                              <button
+                                                key={alternativeFood.id}
+                                                type="button"
+                                                role="option"
+                                                aria-selected={
+                                                  menuAlternativeFoodId === alternativeFood.id
+                                                }
+                                                onClick={() =>
+                                                  setMenuAlternativeFoodId(alternativeFood.id)
+                                                }
+                                                className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-start text-[11px] ${
+                                                  menuAlternativeFoodId === alternativeFood.id
+                                                    ? "bg-emerald-700 font-bold text-white"
+                                                    : "bg-emerald-50 font-semibold text-ink"
+                                                }`}
+                                              >
+                                                <span className="truncate">{alternativeFood.name}</span>
+                                                <span className="ms-2 shrink-0 text-[10px] opacity-70">
+                                                  {alternativeFood.calories} קל׳
+                                                </span>
+                                              </button>
+                                            ))}
+                                          </div>
+                                          <div className="flex gap-1.5">
+                                            <button
+                                              type="button"
+                                              disabled={!menuAlternativeFoodId}
+                                              onClick={() =>
+                                                addPlannedFoodAlternative(
+                                                  meal.id,
+                                                  food.id,
+                                                  menuAlternativeFoodId,
+                                                )
+                                              }
+                                              className="flex-1 rounded-md bg-emerald-700 px-2 py-1.5 text-[10px] font-bold text-white disabled:opacity-40"
+                                            >
+                                              הוסיפי חלופה
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => setMenuAlternativeFor(null)}
+                                              className="rounded-md border border-border px-2 py-1.5 text-[10px] font-bold text-muted-foreground"
+                                            >
+                                              ביטול
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ) : null}
                                    </div>
-                                 ))}
+                                    );
+                                  })}
                               </div>
                             ) : (
                               <p className="mt-2 text-[11px] text-muted-foreground">
@@ -9053,7 +9269,7 @@ export function CoachDashboardPage({
                       })}
                     </div>
 
-                    <div className="flex gap-2">
+                             <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={addPlannedMeal}

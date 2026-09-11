@@ -1046,6 +1046,9 @@ function NutritionLog() {
                           (item) => item.sourcePlanFoodId === food.id,
                         );
                         const displayFood = loggedFood ?? food;
+                         const alternativeNames = (food.approvedSubstitutes ?? [])
+                           .map((foodId) => gym.foods.find((item) => item.id === foodId)?.name)
+                           .filter((name): name is string => Boolean(name));
                         return (
                           <div
                             key={food.id}
@@ -1065,6 +1068,11 @@ function NutritionLog() {
                                 displayFood.quantity,
                               )}
                             </p>
+                             {alternativeNames.length > 0 ? (
+                               <p className="mt-1 text-[11px] font-semibold text-primary">
+                                 או: {alternativeNames.join(" או ")}
+                               </p>
+                             ) : null}
                             <NutritionMacroGrid
                               className="mt-2"
                               showCalories={showCalories}
