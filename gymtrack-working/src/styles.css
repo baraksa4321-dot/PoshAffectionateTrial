@@ -7904,6 +7904,23 @@ html.night-mode
   opacity: 0.82;
 }
 
+html.night-mode .nutrition-macro-pill,
+html.night-mode .nutrition-macro-cell {
+  background-color: var(--surface-2) !important;
+  border-color: var(--border) !important;
+  color: var(--ink) !important;
+}
+
+html.night-mode .nutrition-macro-pill :is(p, span, strong),
+html.night-mode .nutrition-macro-cell :is(span, strong) {
+  color: inherit;
+}
+
+html.night-mode .nutrition-macro-pill .text-muted-foreground,
+html.night-mode .nutrition-macro-cell .text-muted-foreground {
+  color: var(--muted-foreground) !important;
+}
+
 /* -------------------------------------------------------------------------
  * MY routine shared finish
  *

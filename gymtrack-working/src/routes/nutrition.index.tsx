@@ -2013,7 +2013,7 @@ function NutritionMacroGrid({
         <div
           key={item.label}
           data-nutrition-macro={item.label}
-          className="rounded-xl border border-border/35 bg-white/60 px-1.5 py-1.5 text-center"
+          className="nutrition-macro-cell rounded-xl border border-border/35 bg-white/60 px-1.5 py-1.5 text-center"
         >
           <span className="block text-[9px] font-bold text-muted-foreground">{item.label}</span>
           <strong
@@ -2043,7 +2043,7 @@ function MacroPill({
   unit: string;
 }) {
   return (
-    <div className="rounded-2xl bg-white/60 px-2.5 py-2 text-start">
+    <div className="nutrition-macro-pill rounded-2xl bg-white/60 px-2.5 py-2 text-start">
       <p className="text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
         {label}
       </p>
