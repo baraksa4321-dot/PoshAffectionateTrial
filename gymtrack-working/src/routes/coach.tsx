@@ -1812,6 +1812,9 @@ export function CoachDashboardPage({
   const measurementDraftDirtyRef = useRef(false);
   const profileDraftDirtyRef = useRef(false);
   const plannedMealsDraftDirtyRef = useRef(false);
+  const editorRefreshLockRef = useRef(false);
+  const refreshQueuedWhileEditingRef = useRef(false);
+  const wasRefreshBlockedRef = useRef(false);
   const [editingMeasurements, setEditingMeasurements] = useState(false);
   const [measurementDraft, setMeasurementDraft] = useState<BodyMeasurement>({
     id: "",
@@ -1837,6 +1840,13 @@ export function CoachDashboardPage({
     (workspaceMode === "nutrition" ||
       openEditor === "nutrition" ||
       (workspaceMode === "all" && activeWorkspaceTab === "nutrition"));
+  const editorRefreshBlocked =
+    Boolean(openEditor || editingDayId || editingNutrition || editingMeasurements) ||
+    savingPlannedMenu ||
+    plannedMealsDraftDirtyRef.current ||
+    measurementDraftDirtyRef.current ||
+    profileDraftDirtyRef.current;
+  editorRefreshLockRef.current = editorRefreshBlocked;
   const applySelectedClientRefreshResult = useCallback(
     (result: ClientDetails) => {
       applyClientDetails(result, { preserveOnError: true });
@@ -1985,6 +1995,10 @@ export function CoachDashboardPage({
 
     const refreshManagementData = () => {
       if (document.visibilityState === "hidden") return;
+      if (editorRefreshLockRef.current) {
+        refreshQueuedWhileEditingRef.current = true;
+        return;
+      }
       void loadCoachClients();
       if (isOwner) void loadAllProfilesForOwner();
       void loadClientFeedback();
@@ -2011,6 +2025,10 @@ export function CoachDashboardPage({
     const refreshManagementRealtime = (table?: string, status?: RealtimeConnectionStatus) => {
       if (status && status !== "connected") return;
       if (document.visibilityState === "hidden") return;
+      if (editorRefreshLockRef.current) {
+        refreshQueuedWhileEditingRef.current = true;
+        return;
+      }
       void loadCoachClients();
       if (isOwner) void loadAllProfilesForOwner();
       if (table === "client_feedback") void loadClientFeedback();
@@ -2352,9 +2370,17 @@ export function CoachDashboardPage({
         if (status !== "connected") return;
       }
       if (!active || document.visibilityState === "hidden" || refreshTimer !== null) return;
+      if (editorRefreshLockRef.current) {
+        refreshQueuedWhileEditingRef.current = true;
+        return;
+      }
       refreshTimer = window.setTimeout(() => {
         refreshTimer = null;
         if (!active || document.visibilityState === "hidden") return;
+        if (editorRefreshLockRef.current) {
+          refreshQueuedWhileEditingRef.current = true;
+          return;
+        }
         setClientRefreshInFlight(true);
 
         if (table === "coach_clients") {
@@ -2438,6 +2464,41 @@ export function CoachDashboardPage({
     store.userProfile,
     store.workouts,
     store.bodyMeasurements,
+  ]);
+
+  useEffect(() => {
+    if (editorRefreshLockRef.current) {
+      wasRefreshBlockedRef.current = true;
+      return;
+    }
+    if (!wasRefreshBlockedRef.current || !refreshQueuedWhileEditingRef.current) return;
+
+    wasRefreshBlockedRef.current = false;
+    refreshQueuedWhileEditingRef.current = false;
+    void loadCoachClients();
+    if (isOwner) void loadAllProfilesForOwner();
+    if (!selectedClientId || isSelfSelected) return;
+
+    setClientRefreshInFlight(true);
+    void pullClientDataForCoach(selectedClientId)
+      .then((result) => applySelectedClientRefreshResult(result))
+      .catch((error: unknown) => {
+        setClientRefreshInFlight(false);
+        setClientDetailsError(errorMessage(error, "רענון נתוני המתאמן נכשל"));
+      });
+  }, [
+    applySelectedClientRefreshResult,
+    editingDayId,
+    editingMeasurements,
+    editingNutrition,
+    isOwner,
+    isSelfSelected,
+    loadAllProfilesForOwner,
+    loadCoachClients,
+    openEditor,
+    plannedMeals,
+    savingPlannedMenu,
+    selectedClientId,
   ]);
 
   useEffect(() => {
@@ -8709,15 +8770,16 @@ export function CoachDashboardPage({
                             <div className="flex items-center gap-2">
                               <input
                                 value={meal.name}
-                                onChange={(event) =>
-                                  setPlannedMeals((current) =>
-                                    current.map((item) =>
-                                      item.id === meal.id
-                                        ? { ...item, name: event.target.value }
-                                        : item,
-                                    ),
-                                  )
-                                }
+                                 onChange={(event) => {
+                                   markPlannedMealsDraftDirty();
+                                   setPlannedMeals((current) =>
+                                     current.map((item) =>
+                                       item.id === meal.id
+                                         ? { ...item, name: event.target.value }
+                                         : item,
+                                     ),
+                                   );
+                                 }}
                                 className="min-w-0 flex-1 bg-transparent text-xs font-bold text-ink outline-none"
                                 aria-label="שם הארוחה"
                               />
@@ -8734,9 +8796,9 @@ export function CoachDashboardPage({
 
                             {meal.foods.length > 0 ? (
                               <div className="mt-2 space-y-1">
-                                 {meal.foods.map((food) => (
+                                  {meal.foods.map((food, foodIndex) => (
                                    <div
-                                     key={food.id}
+                                      key={`${food.id}-${foodIndex}`}
                                      className="rounded-lg bg-emerald-50 px-2.5 py-2 text-[11px]"
                                    >
                                      <div className="flex items-center justify-between gap-2">

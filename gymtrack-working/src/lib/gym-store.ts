@@ -47,9 +47,10 @@ const USER_REMINDER_PREFERENCES_PREFIX = "gymtrack.v1.reminders.";
 // Auth reads the persisted Supabase session locally in the normal case. If a
 // refresh is blocked by an unavailable network, do not keep the whole app
 // behind a splash; the auth listener can still accept a late real session.
-const AUTH_TIMEOUT_MS = 3_000;
+const AUTH_TIMEOUT_MS = 1_500;
 const INITIAL_DATA_TIMEOUT_MS = 30_000;
 const SYNC_FLUSH_TIMEOUT_MS = 12_000;
+const BACKGROUND_REFRESH_INTERVAL_MS = 60_000;
 const DEFAULT_REMINDER_PREFERENCES: ReminderPreferences = {
   enabled: true,
   deliveryState: "not-configured",
@@ -1243,19 +1244,12 @@ function load() {
       }
       if (!planRealtimeUserId) startPlanRealtime(currentUser.id);
     });
-    const refreshWhenVisible = () => {
-      if (typeof document === "undefined" || document.visibilityState === "visible") {
+    if (typeof window.setInterval === "function") {
+      window.setInterval(() => {
+        if (document.visibilityState !== "visible") return;
         if (currentUser && !planRealtimeUserId) startPlanRealtime(currentUser.id);
         refreshCurrentUserData();
-      }
-    };
-    window.addEventListener("focus", refreshWhenVisible);
-    window.addEventListener("pageshow", refreshWhenVisible);
-    if (typeof document !== "undefined") {
-      document.addEventListener("visibilitychange", refreshWhenVisible);
-    }
-    if (typeof window.setInterval === "function") {
-      window.setInterval(refreshWhenVisible, 15_000);
+      }, BACKGROUND_REFRESH_INTERVAL_MS);
     }
 
     let authTimeoutId: number | null = null;
