@@ -7707,3 +7707,223 @@ html.night-mode
   color: var(--muted-foreground);
   opacity: 0.82;
 }
+
+/* -------------------------------------------------------------------------
+ * MY routine shared finish
+ *
+ * This is intentionally the last visual layer. Several legacy screens still
+ * use local Tailwind combinations, so these semantic hooks keep their chrome
+ * aligned without changing their DOM, state, or business behavior.
+ * ------------------------------------------------------------------------- */
+:root {
+  --ui-content-max: 68rem;
+  --ui-page-gutter: clamp(1rem, 3.5vw, 1.5rem);
+  --ui-card-radius: 1rem;
+  --ui-control-radius: 0.78rem;
+  --ui-border-subtle: color-mix(in srgb, var(--border) 78%, transparent);
+  --ui-shadow-card: 0 1px 0 rgb(255 255 255 / 68%), 0 8px 20px rgb(var(--shadow-color) / 6%);
+  --ui-shadow-card-hover:
+    0 1px 0 rgb(255 255 255 / 72%), 0 12px 26px rgb(var(--shadow-color) / 9%);
+}
+
+.app-shell {
+  isolation: isolate;
+}
+
+.app-topbar > div,
+.app-main,
+.nav-shell {
+  max-width: var(--ui-content-max);
+}
+
+.app-topbar > div {
+  padding-inline: var(--ui-page-gutter);
+  padding-top: 0.42rem;
+  padding-bottom: 0.56rem;
+}
+
+.app-topbar > div > div:first-child {
+  min-height: 2.1rem;
+  margin-bottom: 0.26rem !important;
+  padding-bottom: 0.28rem;
+}
+
+.app-topbar h1 {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  line-height: 1.2;
+}
+
+.app-main {
+  padding-inline: var(--ui-page-gutter);
+}
+
+[data-management-view="true"] .app-main {
+  max-width: var(--ui-content-max) !important;
+}
+
+.ui-card,
+.surface-card {
+  border-radius: var(--ui-card-radius);
+  border-color: var(--ui-border-subtle);
+  box-shadow: var(--ui-shadow-card);
+}
+
+.ui-card:hover,
+.surface-card:hover {
+  box-shadow: var(--ui-shadow-card-hover);
+}
+
+.ui-pill {
+  min-height: 1.9rem;
+}
+
+.ui-button {
+  min-height: 3rem;
+  border-radius: var(--ui-control-radius);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.ui-button:focus-visible,
+.ui-icon-button:focus-visible,
+.app-nav-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.app-shell
+  :is(input:not([type="hidden"]):not([type="file"]), textarea, select, [contenteditable="true"]) {
+  border-radius: var(--ui-control-radius);
+  border-color: var(--ui-border-subtle);
+}
+
+.app-shell
+  :is(input:not([type="hidden"]):not([type="file"]), select, [contenteditable="true"]) {
+  min-height: 2.8rem;
+}
+
+.app-shell :is(input, textarea, select, [contenteditable="true"]):focus {
+  border-color: var(--ring);
+  outline: 2px solid color-mix(in srgb, var(--ring) 20%, transparent);
+  outline-offset: 0;
+}
+
+.nav-shell.app-bottom-nav,
+.nav-shell {
+  padding-inline: 0.45rem;
+  padding-top: 0.32rem;
+  padding-bottom: max(0.32rem, env(safe-area-inset-bottom));
+  border-color: var(--ui-border-subtle);
+  border-radius: 1.15rem 1.15rem 0.85rem 0.85rem;
+  background: color-mix(in srgb, var(--surface) 96%, transparent) !important;
+  box-shadow: 0 -6px 20px rgb(var(--shadow-color) / 9%);
+}
+
+.app-nav-link {
+  min-height: 3.15rem;
+  border-radius: 0.78rem;
+}
+
+.app-nav-link[data-status="active"] {
+  background: color-mix(in srgb, var(--primary) 11%, var(--surface));
+}
+
+.app-nav-link[data-status="active"] > svg {
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+/* Use the full viewport for management workspaces on larger screens while
+ * keeping the personal dashboard intentionally narrow and glanceable. */
+@media (min-width: 900px) {
+  [data-management-view="true"] .app-main {
+    padding-top: 1.2rem;
+  }
+
+  [data-management-view="true"] .app-main > section,
+  [data-management-view="true"] .app-main > article {
+    max-width: var(--ui-content-max);
+  }
+
+  .app-main:not(.session-compact) {
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* The dashboard's feature cards use active-palette tokens rather than a
+ * fixed coral treatment. This keeps every selected palette and night mode
+ * readable and visually coherent. */
+html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card {
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--primary) 86%, var(--ink)) 0%,
+      var(--primary) 58%,
+      color-mix(in srgb, var(--primary) 58%, var(--surface)) 100%
+    ) !important;
+  border-color: color-mix(in srgb, var(--primary-foreground) 28%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--primary-foreground) 24%, transparent),
+    0 14px 28px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card::before,
+html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card::after,
+html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card::before,
+html:not(.night-mode) .dashboard-editorial-shell .dashboard-support-card::after {
+  display: none;
+}
+
+html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card button {
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  border-color: color-mix(in srgb, var(--primary) 24%, var(--border));
+}
+
+html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card {
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--surface) 94%, var(--primary)),
+      var(--surface)
+    ) !important;
+  border-color: color-mix(in srgb, var(--primary) 18%, var(--border));
+}
+
+html.night-mode .ui-card,
+html.night-mode .surface-card {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 5%),
+    0 8px 20px rgb(0 0 0 / 16%);
+}
+
+html.night-mode .nav-shell {
+  background: var(--surface) !important;
+  border-color: var(--border);
+}
+
+@media (max-width: 639px) {
+  .app-topbar > div {
+    padding-inline: 0.9rem;
+  }
+
+  .app-main {
+    padding-inline: 0.9rem;
+  }
+
+  .ui-card,
+  .surface-card {
+    box-shadow: 0 1px 0 rgb(255 255 255 / 58%), 0 6px 16px rgb(var(--shadow-color) / 6%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-card,
+  .surface-card,
+  .app-nav-link,
+  .ui-button {
+    transition: none !important;
+  }
+}

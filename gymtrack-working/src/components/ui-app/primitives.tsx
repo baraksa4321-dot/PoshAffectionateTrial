@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 /** Primary content surface with a quiet lift and generous touch target. */
 export function Card({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("surface-card px-4 py-4 text-foreground sm:px-5", className)} {...props}>
+    <div className={cn("ui-card surface-card px-4 py-4 text-foreground sm:px-5", className)} {...props}>
       {children}
     </div>
   );
@@ -59,7 +59,7 @@ export function ListRow({
       <a
         href={href}
         className={cn(
-          "surface-card press block px-4 py-3.5 sm:px-5 border-r-2 border-r-transparent hover:border-r-primary transition-all",
+          "ui-card surface-card press block px-4 py-3.5 sm:px-5 border-r-2 border-r-transparent hover:border-r-primary transition-all",
           className,
         )}
       >
@@ -73,7 +73,7 @@ export function ListRow({
         type="button"
         onClick={onClick}
         className={cn(
-          "surface-card press block w-full px-4 py-3.5 text-start sm:px-5 border-r-2 border-r-transparent hover:border-r-primary transition-all",
+          "ui-card surface-card press block w-full px-4 py-3.5 text-start sm:px-5 border-r-2 border-r-transparent hover:border-r-primary transition-all",
           className,
         )}
       >
@@ -81,7 +81,7 @@ export function ListRow({
       </button>
     );
   }
-  return <div className={cn("surface-card px-4 py-3.5 sm:px-5", className)}>{inner}</div>;
+  return <div className={cn("ui-card surface-card px-4 py-3.5 sm:px-5", className)}>{inner}</div>;
 }
 
 /** Pill / chip — used for tags, filters, status. */
@@ -112,7 +112,7 @@ export function Pill({
       onClick={onClick}
       data-active={active ? "true" : undefined}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-bold transition-all",
+        "ui-pill inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-bold transition-all",
         active ? "bg-primary text-primary-foreground border border-primary" : styles[variant],
         interactive &&
           "hover:bg-primary/10 hover:text-primary press active:scale-95 cursor-pointer",
@@ -275,7 +275,7 @@ export function PrimaryButton({
     <button
       type="button"
       className={cn(
-        "primary-shadow press inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-[14px] font-bold tracking-wide text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors cursor-pointer",
+        "ui-button ui-button-primary primary-shadow press inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-[14px] font-bold tracking-wide text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors cursor-pointer",
         className,
       )}
       {...props}
@@ -302,7 +302,7 @@ export function SecondaryButton({
     <button
       type="button"
       className={cn(
-        "press inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-secondary px-6 text-[14px] font-bold tracking-wide text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50 transition-colors border border-border/50 cursor-pointer",
+        "ui-button ui-button-secondary press inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-secondary px-6 text-[14px] font-bold tracking-wide text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50 transition-colors border border-border/50 cursor-pointer",
         className,
       )}
       {...props}

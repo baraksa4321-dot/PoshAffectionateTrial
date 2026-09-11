@@ -950,6 +950,8 @@ export function AppShell({
             ? `app-shell fixed inset-0 z-[100] min-h-[100lvh] w-full overflow-auto bg-background text-foreground ${pageClassName}`
             : `app-shell flex h-[100lvh] min-h-0 w-full flex-col overflow-hidden bg-background text-foreground ${pageClassName}`
       }
+      data-management-view={managementView ? "true" : undefined}
+      data-compact-header={compactHeader ? "true" : undefined}
       dir="rtl"
     >
       <header
@@ -1136,6 +1138,7 @@ export function AppShell({
       <main
         ref={mainRef}
         data-app-scroll-container="true"
+        data-management-view={managementView ? "true" : undefined}
         className={`app-main page-enter page-scroll-container mx-auto w-full max-w-3xl px-4 pb-8 sm:px-6 ${
           compactHeader ? "flex flex-col pt-1.5" : "pt-5 sm:pt-7"
         }`}
