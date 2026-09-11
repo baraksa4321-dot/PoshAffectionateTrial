@@ -58,6 +58,7 @@ import type { FoodItem, MealFood } from "@/lib/gym-types";
 import {
   buildShoppingList,
   groupPlannedMeals,
+  type PlannedMealOptionGroup,
   type ShoppingListPeriod,
 } from "@/lib/nutrition-planning";
 import { RECIPE_LIBRARY, type RecipeDefinition } from "@/lib/recipe-library";
@@ -286,6 +287,7 @@ function NutritionLog() {
     plannedMealId?: string;
   } | null>(null);
   const [substituteQuery, setSubstituteQuery] = useState("");
+  const [mealOptionsFor, setMealOptionsFor] = useState<PlannedMealOptionGroup | null>(null);
   const [balanceMode, setBalanceMode] = useState<"daily" | "weekly">("daily");
 
   // New smart nutrition features state
@@ -1008,160 +1010,162 @@ function NutritionLog() {
               const selectedMeal = group.meals.find((meal) =>
                 day.meals.some((logged) => logged.sourcePlanId === meal.id),
               );
+              const displayedMeal = selectedMeal ?? primaryMeal;
+              const loggedMeal = day.meals.find(
+                (logged) => logged.sourcePlanId === displayedMeal.id,
+              );
+              const plannedTotals = foodTotals(displayedMeal.foods);
+              const isSelected = selectedMeal?.id === displayedMeal.id;
               return (
                 <article
                   key={group.id}
                   className="nutrition-planned-meal surface-card overflow-hidden border-primary/15 bg-primary/[0.035] p-4"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <div>
+                    <div className="min-w-0">
                       <h3 className="font-display text-[15px] font-bold text-ink">
-                        {primaryMeal.name}
+                        {displayedMeal.name}
                       </h3>
                       {group.meals.length > 1 ? (
                         <p className="mt-1 text-[11px] font-semibold text-primary">
-                          בחרי אפשרות אחת לארוחה
+                          {isSelected ? "הארוחה שנבחרה" : "אפשרות מומלצת"}
                         </p>
                       ) : null}
                     </div>
+                    {group.meals.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => setMealOptionsFor(group)}
+                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-primary/25 bg-white px-3 text-[11px] font-bold text-primary"
+                      >
+                        <Shuffle className="h-3.5 w-3.5" />
+                        החלפת ארוחה
+                      </button>
+                    ) : null}
                   </div>
                   <div className="mt-3 space-y-3">
-                    {group.meals.map((meal, optionIndex) => {
-                      const loggedMeal = day.meals.find(
-                        (logged) => logged.sourcePlanId === meal.id,
-                      );
-                      const plannedTotals = foodTotals(meal.foods);
-                      const isSelected = selectedMeal?.id === meal.id;
-                      return (
-                        <div
-                          key={meal.id}
-                          className={`rounded-xl border p-3 ${
-                            isSelected
-                              ? "border-primary/40 bg-primary/10"
-                              : "border-primary/10 bg-white/60"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="text-[11px] font-bold text-primary">
-                                {group.meals.length > 1
-                                  ? optionIndex === 0
-                                    ? "ארוחה"
-                                    : "ארוחה אחרת"
-                                  : "ארוחה"}
-                              </p>
-                              <h4 className="truncate text-[13px] font-bold text-ink">
-                                {meal.name}
-                              </h4>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                              {showCalories ? (
-                                <span className="text-[11px] font-semibold text-primary">
-                                  {Math.round(plannedTotals.calories)} קלוריות
-                                </span>
-                              ) : null}
-                              <button
-                                type="button"
-                                aria-pressed={isSelected}
-                                onClick={() => selectPlannedMealOption(date, meal.id)}
-                                className={`inline-flex h-8 items-center gap-1 rounded-xl px-2.5 text-[11px] font-bold ${
-                                  isSelected
-                                    ? "bg-emerald-600 text-white"
-                                    : "bg-primary text-primary-foreground"
-                                }`}
-                              >
-                                {isSelected ? (
-                                  <CheckSquare className="h-3.5 w-3.5" />
-                                ) : (
-                                  <Square className="h-3.5 w-3.5" />
-                                )}
-                                {isSelected ? "נבחרה ונאכלה" : "בחרי ואכלי"}
-                              </button>
-                            </div>
-                          </div>
-                          {meal.foods.length > 0 ? (
-                            <div className="mt-3 space-y-1.5">
-                              {meal.foods.map((food) => {
-                                const loggedFood = loggedMeal?.foods.find(
-                                  (item) => item.sourcePlanFoodId === food.id,
-                                );
-                                const displayFood = loggedFood ?? food;
-                                const alternativeNames = (food.approvedSubstitutes ?? [])
-                                  .map((foodId) => gym.foods.find((item) => item.id === foodId)?.name)
-                                  .filter((name): name is string => Boolean(name));
-                                return (
-                                  <div
-                                    key={food.id}
-                                    className="nutrition-plan-food rounded-xl bg-white/80 px-3 py-2 text-start"
-                                  >
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className="min-w-0 truncate text-[13px] font-semibold text-ink">
-                                        {displayFood.name}
-                                      </span>
-                                    </div>
-                                    <p
-                                      data-testid="nutrition-food-quantity"
-                                      className="mt-1 text-[12px] font-semibold text-ink"
-                                    >
-                                      {formatMeasuredFoodAmount(
-                                        displayFood.servingSize,
-                                        displayFood.quantity,
-                                      )}
-                                    </p>
-                                    {alternativeNames.length > 0 ? (
-                                      <p className="mt-1 text-[11px] font-semibold text-primary">
-                                        או: {alternativeNames.join(" או ")}
-                                      </p>
-                                    ) : null}
-                                    <NutritionMacroGrid
-                                      className="mt-2"
-                                      showCalories={showCalories}
-                                      calories={displayFood.calories * displayFood.quantity}
-                                      protein={displayFood.protein * displayFood.quantity}
-                                      carbs={displayFood.carbs * displayFood.quantity}
-                                      fat={displayFood.fat * displayFood.quantity}
-                                    />
-                                    <div className="mt-2 flex items-center justify-end gap-2">
-                                      {!loggedFood && group.meals.length === 1 ? (
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            togglePlannedFoodEaten(date, meal.id, food.id)
-                                          }
-                                          className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary"
-                                        >
-                                          סימון
-                                        </button>
-                                      ) : null}
-                                      {isSelected || group.meals.length === 1 ? (
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            setSubstituteFor({
-                                              mealId: loggedMeal?.id ?? "",
-                                              food,
-                                              plannedMealId: meal.id,
-                                            })
-                                          }
-                                          className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3.5 text-[12px] font-bold text-primary-foreground"
-                                        >
-                                          <Shuffle className="h-3.5 w-3.5" />
-                                          החלפת מאכל
-                                        </button>
-                                      ) : null}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <p className="mt-2 text-[12px] text-muted-foreground">
-                              המאמן טרם הוסיף מאכלים.
-                            </p>
-                          )}
+                    <div
+                      className={`rounded-xl border p-3 ${
+                        isSelected
+                          ? "border-primary/40 bg-primary/10"
+                          : "border-primary/10 bg-white/60"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-bold text-primary">ארוחה</p>
+                          <h4 className="truncate text-[13px] font-bold text-ink">
+                            {displayedMeal.name}
+                          </h4>
                         </div>
-                      );
-                    })}
+                        <div className="flex shrink-0 items-center gap-2">
+                          {showCalories ? (
+                            <span className="text-[11px] font-semibold text-primary">
+                              {Math.round(plannedTotals.calories)} קלוריות
+                            </span>
+                          ) : null}
+                          <button
+                            type="button"
+                            aria-pressed={isSelected}
+                            onClick={() => selectPlannedMealOption(date, displayedMeal.id)}
+                            className={`inline-flex h-8 items-center gap-1 rounded-xl px-2.5 text-[11px] font-bold ${
+                              isSelected
+                                ? "bg-emerald-600 text-white"
+                                : "bg-primary text-primary-foreground"
+                            }`}
+                          >
+                            {isSelected ? (
+                              <CheckSquare className="h-3.5 w-3.5" />
+                            ) : (
+                              <Square className="h-3.5 w-3.5" />
+                            )}
+                            {isSelected ? "נבחרה ונאכלה" : "בחרי ואכלי"}
+                          </button>
+                        </div>
+                      </div>
+                      {displayedMeal.foods.length > 0 ? (
+                        <div className="mt-3 space-y-1.5">
+                          {displayedMeal.foods.map((food) => {
+                            const loggedFood = loggedMeal?.foods.find(
+                              (item) => item.sourcePlanFoodId === food.id,
+                            );
+                            const displayFood = loggedFood ?? food;
+                            const alternativeNames = (food.approvedSubstitutes ?? [])
+                              .map((foodId) => gym.foods.find((item) => item.id === foodId)?.name)
+                              .filter((name): name is string => Boolean(name));
+                            return (
+                              <div
+                                key={food.id}
+                                className="nutrition-plan-food rounded-xl bg-white/80 px-3 py-2 text-start"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="min-w-0 truncate text-[13px] font-semibold text-ink">
+                                    {displayFood.name}
+                                  </span>
+                                </div>
+                                <p
+                                  data-testid="nutrition-food-quantity"
+                                  className="mt-1 text-[12px] font-semibold text-ink"
+                                >
+                                  {formatMeasuredFoodAmount(
+                                    displayFood.servingSize,
+                                    displayFood.quantity,
+                                  )}
+                                </p>
+                                {alternativeNames.length > 0 ? (
+                                  <p className="mt-1 text-[11px] font-semibold text-primary">
+                                    או: {alternativeNames.join(" או ")}
+                                  </p>
+                                ) : null}
+                                <NutritionMacroGrid
+                                  className="mt-2"
+                                  showCalories={showCalories}
+                                  calories={displayFood.calories * displayFood.quantity}
+                                  protein={displayFood.protein * displayFood.quantity}
+                                  carbs={displayFood.carbs * displayFood.quantity}
+                                  fat={displayFood.fat * displayFood.quantity}
+                                />
+                                <div className="mt-2 flex items-center justify-end gap-2">
+                                  {!loggedFood && (isSelected || group.meals.length === 1) ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        togglePlannedFoodEaten(
+                                          date,
+                                          displayedMeal.id,
+                                          food.id,
+                                        )
+                                      }
+                                      className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary"
+                                    >
+                                      סימון
+                                    </button>
+                                  ) : null}
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setSubstituteFor({
+                                        mealId: loggedMeal?.id ?? "",
+                                        food,
+                                        plannedMealId: displayedMeal.id,
+                                      })
+                                    }
+                                    className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3.5 text-[12px] font-bold text-primary-foreground"
+                                  >
+                                    <Shuffle className="h-3.5 w-3.5" />
+                                    החלפת מאכל
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-[12px] text-muted-foreground">
+                          המאמן טרם הוסיף מאכלים.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </article>
               );
@@ -1943,6 +1947,84 @@ function NutritionLog() {
                 ))}
               </div>
             )}
+          </div>
+        </Overlay>
+      ) : null}
+
+      {/* Meal option replacement */}
+      {mealOptionsFor ? (
+        <Overlay
+          open={Boolean(mealOptionsFor)}
+          onClose={() => setMealOptionsFor(null)}
+          ariaLabel="החלפת ארוחה"
+          variant="bottom"
+          panelClassName="contents"
+          className="fade-in"
+        >
+          <div
+            className="scale-in max-h-[88dvh] overflow-y-auto rounded-t-[2rem] border-t border-border/40 bg-card p-5 text-start shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[18px] font-display font-extrabold text-primary">
+                  החלפת ארוחה
+                </p>
+                <h2 className="mt-0.5 font-display text-[20px] font-semibold text-ink">
+                  בחרי את האפשרות שמתאימה לך
+                </h2>
+                <p className="mt-1 text-[12px] text-muted-foreground">
+                  רק הארוחה שתבחרי תופיע בתפריט שלך.
+                </p>
+              </div>
+              <IconButton aria-label="סגור" onClick={() => setMealOptionsFor(null)}>
+                <X className="h-5 w-5" />
+              </IconButton>
+            </div>
+            <div className="space-y-2">
+              {mealOptionsFor.meals.map((meal) => {
+                const selected = day.meals.some((logged) => logged.sourcePlanId === meal.id);
+                const totals = foodTotals(meal.foods);
+                return (
+                  <button
+                    key={meal.id}
+                    type="button"
+                    onClick={() => {
+                      if (!selected) selectPlannedMealOption(date, meal.id);
+                      setMealOptionsFor(null);
+                    }}
+                    className={`press flex w-full items-center justify-between gap-3 rounded-2xl border px-3.5 py-3 text-start ${
+                      selected
+                        ? "border-emerald-500/40 bg-emerald-500/10"
+                        : "border-border/30 bg-secondary"
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-semibold text-ink">{meal.name}</p>
+                      <p className="mt-1 text-[12px] font-semibold text-muted-foreground">
+                        {meal.foods.length} מאכלים
+                        {showCalories ? ` · ${Math.round(totals.calories)} קלוריות` : ""}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex h-8 shrink-0 items-center gap-1 rounded-xl px-2.5 text-[11px] font-bold ${
+                        selected ? "bg-emerald-600 text-white" : "bg-primary text-primary-foreground"
+                      }`}
+                    >
+                      {selected ? (
+                        <>
+                          <CheckSquare className="h-3.5 w-3.5" />
+                          נבחרה
+                        </>
+                      ) : (
+                        "בחירה"
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </Overlay>
       ) : null}
