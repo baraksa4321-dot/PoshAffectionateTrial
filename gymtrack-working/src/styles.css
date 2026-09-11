@@ -6651,15 +6651,15 @@ body {
 }
 
 .app-shell > nav > .nav-shell .app-nav-link[data-status="active"] {
-  background: #fae8e4;
-  color: #c9575f;
+  background: color-mix(in srgb, var(--primary) 13%, var(--surface));
+  color: var(--primary);
 }
 
 .app-shell > nav > .nav-shell .app-nav-link[data-status="active"] > svg {
-  border-color: rgb(217 100 107 / 22%);
-  background: var(--rose);
+  border-color: color-mix(in srgb, var(--primary) 28%, transparent);
+  background: var(--primary);
   color: var(--primary-foreground);
-  box-shadow: 0 4px 11px rgb(217 100 107 / 22%);
+  box-shadow: 0 4px 11px color-mix(in srgb, var(--primary) 22%, transparent);
   transform: translateY(-1px);
 }
 
@@ -7071,13 +7071,13 @@ html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-lin
 
 html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-link[data-status="active"] {
   background: color-mix(in srgb, var(--primary) 12%, var(--surface));
-  color: var(--ink);
+  color: var(--primary);
   font-weight: 700;
 }
 
 html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-link[data-status="active"] > svg {
-  background: var(--ink);
-  color: var(--surface);
+  background: var(--primary);
+  color: var(--primary-foreground);
   box-shadow: none;
 }
 
@@ -7230,10 +7230,12 @@ html.night-mode[data-theme="rose-gold"] {
   --sage: #91c2a6;
 }
 html.night-mode[data-theme="dark-brown"] {
-  --primary: #d3a28a;
-  --primary-foreground: #2d1e18;
-  --rose: #c5927b;
-  --accent: #d0b293;
+  /* Keep Dark Brown distinct from Light Brown in night mode. The accent is
+     lifted just enough for contrast, without turning into a pale tan theme. */
+  --primary: #9a6b56;
+  --primary-foreground: #fffaf7;
+  --rose: #ad7b65;
+  --accent: #c0a184;
   --sage: #91b99c;
 }
 html.night-mode[data-theme="light-brown"] {
@@ -7363,13 +7365,13 @@ html.night-mode .dashboard-editorial-shell .consistency-ring-track {
 
 html.night-mode .app-shell > nav > .nav-shell .app-nav-link[data-status="active"] {
   background: color-mix(in srgb, var(--primary) 18%, var(--surface));
-  color: color-mix(in srgb, var(--primary) 72%, white 28%);
+  color: var(--primary);
 }
 
 html.night-mode .app-shell > nav > .nav-shell .app-nav-link[data-status="active"] > svg {
-  border-color: transparent;
-  background: color-mix(in srgb, var(--primary) 82%, white 18%);
-  color: #241d23;
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
+  background: var(--primary);
+  color: var(--primary-foreground);
   box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 28%, transparent);
 }
 
