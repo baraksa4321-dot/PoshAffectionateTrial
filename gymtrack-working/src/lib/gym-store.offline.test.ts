@@ -1025,4 +1025,33 @@ describe("offline store lifecycle", () => {
 
     expect(realtimeStatusCallbacks.length).toBeGreaterThan(1);
   });
+
+  test("restores the device notification preference after a store reload", async () => {
+    Object.assign(navigator, { onLine: true });
+    pullImplementation = async (_userId, localState) => ({
+      success: true,
+      data: {
+        ...localState,
+        userProfile: {
+          ...(localState["userProfile"] as Record<string, unknown>),
+          role: "client",
+        },
+      },
+    });
+    const store = await loadStore("notification-preference-reload");
+    await eventually(() => store.getGymStoreSyncStatus() === "synced");
+
+    store.saveReminderPreferences({
+      enabled: true,
+      deliveryState: "ready",
+      deliveryDetail: "ready on this device",
+    });
+    expect(store.getGymStoreSnapshot().reminderPreferences?.enabled).toBe(true);
+    expect(storage.get("gymtrack.v1.reminders.user-a")).toContain('"enabled":true');
+
+    store.resetGymStoreForTests();
+    store.subscribeGymStore(() => undefined);
+    authenticate();
+    await eventually(() => store.getGymStoreSnapshot().reminderPreferences?.enabled === true);
+  });
 });

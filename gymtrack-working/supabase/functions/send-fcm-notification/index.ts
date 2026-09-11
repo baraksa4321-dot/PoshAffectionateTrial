@@ -259,12 +259,17 @@ Deno.serve(async (request) => {
             body: JSON.stringify({
               message: {
                 token: tokenRow.token,
-                notification: { title: requestBody.title, body: requestBody.body },
-                  data: {
-                    ...(requestBody.data ?? {}),
-                    source: "gymtrack",
-                    ...(requestBody.deepLink ? { deep_link: requestBody.deepLink } : {}),
-                  },
+                // Use a data-only message. The registered GymTrack service
+                // worker owns notification display and click routing; mixing
+                // FCM's automatic notification UI with it can silently
+                // diverge across browsers and installed PWAs.
+                data: {
+                  ...(requestBody.data ?? {}),
+                  title: requestBody.title,
+                  body: requestBody.body,
+                  source: "gymtrack",
+                  ...(requestBody.deepLink ? { deep_link: requestBody.deepLink } : {}),
+                },
               },
             }),
           },

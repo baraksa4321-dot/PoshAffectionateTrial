@@ -48,14 +48,17 @@ async function configureFirebase(config) {
       // FCM automatically displays notification payloads while the page is
       // backgrounded. Manually showing those again would create duplicates.
       if (payload.notification) return;
-      const title = payload.notification?.title || "הודעה חדשה";
-      const body = payload.notification?.body || "";
+      // GymTrack sends data-only messages so this worker owns the display
+      // path consistently across Chrome, Safari, and installed PWAs.
+      const data = payload.data || {};
+      const title = data.title || "הודעה חדשה";
+      const body = data.body || "";
       self.registration.showNotification(title, {
         body,
         icon: "/icons/icon-192.png",
         dir: "rtl",
         lang: "he",
-        data: payload.data || {},
+        data,
       });
     });
     firebaseMessagingReady = true;

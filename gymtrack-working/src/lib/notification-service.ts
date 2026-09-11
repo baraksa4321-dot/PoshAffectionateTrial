@@ -2,7 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { supabase } from "./supabase";
 
-const SERVICE_WORKER_URL = "/sw.js?v=15";
+const SERVICE_WORKER_URL = "/sw.js?v=16";
 const WORKOUT_NOTIFICATION_PREFIX = 82_000;
 const FIREBASE_APP_NAME = "gymtrack";
 const WORKOUT_REMINDER_HOUR = 8;
@@ -272,8 +272,9 @@ async function configureWebNotifications(userId: string): Promise<DeliveryResult
     await savePushToken(userId, token, "web");
     webForegroundUnsubscribe?.();
     webForegroundUnsubscribe = messagingModule.onMessage(messaging, (payload) => {
-      const title = payload.notification?.title ?? "הודעה חדשה מהמאמן";
-      const body = payload.notification?.body ?? "";
+      const title =
+        payload.notification?.title ?? payload.data?.["title"] ?? "הודעה חדשה מהמאמן";
+      const body = payload.notification?.body ?? payload.data?.["body"] ?? "";
       if (body) void showWebNotification(title, body);
     });
     webTokenRefreshCleanup?.();

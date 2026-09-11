@@ -40,6 +40,7 @@ const CACHED_USER_KEY = "gymtrack.v1.userId";
 const USER_CACHE_PREFIX = "gymtrack.v1.user.";
 const USER_BOOT_CACHE_PREFIX = "gymtrack.v1.boot.";
 const USER_PENDING_PREFIX = "gymtrack.v1.pending.";
+const USER_REMINDER_PREFERENCES_PREFIX = "gymtrack.v1.reminders.";
 // Supabase auth and the initial profile/data hydration may cross several
 // network boundaries. Four seconds caused valid logins on slower connections
 // to be reported as permission failures before the request could finish.
@@ -908,6 +909,41 @@ function userPendingKey(userId: string) {
   return `${USER_PENDING_PREFIX}${userId}`;
 }
 
+function userReminderPreferencesKey(userId: string) {
+  return `${USER_REMINDER_PREFERENCES_PREFIX}${userId}`;
+}
+
+function readStoredReminderPreferences(userId: string, fallback: ReminderPreferences) {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(userReminderPreferencesKey(userId));
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw) as Partial<ReminderPreferences>;
+    if (typeof parsed.enabled !== "boolean") return fallback;
+    return {
+      ...fallback,
+      ...parsed,
+      deliveryState: parsed.enabled
+        ? parsed.deliveryState ?? "not-configured"
+        : "paused",
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function persistStoredReminderPreferences(userId: string, preferences: ReminderPreferences) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      userReminderPreferencesKey(userId),
+      JSON.stringify(preferences),
+    );
+  } catch {
+    /* ignore storage failures */
+  }
+}
+
 function parseCachedData(raw: string | null, includeReferenceLibraries = true): GymData | null {
   if (!raw) return null;
   try {
@@ -990,8 +1026,18 @@ function resetDataForUser(userId: string): {
   const bootData = loadBootCachedDataForUser(userId);
   const cachedData = bootData ?? loadCachedDataForUser(userId);
   data = cachedData ?? seed();
+  data = {
+    ...data,
+    // Notification enablement is device-local. Keep it in a dedicated key so
+    // a remote workspace refresh cannot reset the profile checkbox while the
+    // device token is being registered.
+    reminderPreferences: readStoredReminderPreferences(
+      userId,
+      data.reminderPreferences ?? DEFAULT_REMINDER_PREFERENCES,
+    ),
+  };
   return {
-    data: cachedData,
+    data,
     cacheKind: bootData ? "boot" : cachedData ? "full" : "none",
   };
 }
@@ -1816,6 +1862,7 @@ export function resolveSyncConflict(conflictId: string, choice: "keep-local" | "
 }
 
 export function saveReminderPreferences(preferences: ReminderPreferences) {
+  if (currentUser?.id) persistStoredReminderPreferences(currentUser.id, preferences);
   set({
     ...data,
     reminderPreferences: {
