@@ -54,4 +54,5 @@
 - [Firebase Push configuration](firebase-push-configuration.md) — Web Firebase config can be complete while remote Edge Function delivery remains blocked by an invalid service-account PEM.
 - [FCM web display path](firebase-push-display-path.md) — Send data-only FCM payloads when the GymTrack Service Worker owns display and deep-link routing.
 - [Native push foreground handling](native-push-foreground.md) — Capacitor FCM callbacks can duplicate OS-presented notifications; gate local mirroring by app visibility.
+- [Persistent Push browser smoke](persistent-push-browser-smoke.md) — Chromium incognito-style contexts reject Web Push; use separate persistent profiles and a headed device for OS display.
 - [Release fixture navigation state](release-fixture-navigation.md) — Persist one-shot browser fixture failures across client-route navigation before selected-data loading.
