@@ -415,6 +415,64 @@ describe("offline store lifecycle", () => {
     expect(reloadedStore.getGymStoreSnapshot().coachMessages).toHaveLength(1);
   });
 
+  test("refreshes after reconnecting while cached hydration is still in flight", async () => {
+    Object.assign(navigator, { onLine: true });
+    storage.set(
+      "gymtrack.v1.user.user-a",
+      JSON.stringify({
+        ...cachedClientData,
+        coachMessages: [],
+      }),
+    );
+
+    const initialHydration = deferred<{ success: true; data: Record<string, unknown> }>();
+    const remoteData = makeSessionData({
+      weight: 80,
+      role: "client",
+      coachId: "coach-a",
+      approvalStatus: "approved",
+    });
+    remoteData.coachMessages = [
+      {
+        id: "message-after-reconnect",
+        coachId: "coach-a",
+        clientId: "user-a",
+        message: "הודעה חדשה אחרי reconnect",
+        createdAt: "2026-09-11T09:00:00.000Z",
+        isRead: false,
+      },
+    ];
+    let pullCount = 0;
+    pullImplementation = async (_userId, localState) => {
+      pullCount += 1;
+      if (pullCount === 1) return initialHydration.promise;
+      return { success: true, data: remoteData as unknown as Record<string, unknown> };
+    };
+
+    const store = await loadStore("reconnect-during-hydration");
+    authenticate();
+    await eventually(
+      () =>
+        pullCount === 1 &&
+        store.getGymStoreSnapshot().userProfile.role === "client" &&
+        store.getGymStoreSnapshot().coachMessages.length === 0,
+    );
+
+    emit("online");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(pullCount).toBe(1);
+
+    initialHydration.resolve({
+      success: true,
+      data: store.getGymStoreSnapshot() as unknown as Record<string, unknown>,
+    });
+    await eventually(
+      () =>
+        pullCount === 2 &&
+        store.getGymStoreSnapshot().coachMessages[0]?.message === "הודעה חדשה אחרי reconnect",
+    );
+  });
+
   test("deduplicates coach messages by ID and keeps the newest duplicate during reconnect", async () => {
     Object.assign(navigator, { onLine: true });
     const initialMessage = {
