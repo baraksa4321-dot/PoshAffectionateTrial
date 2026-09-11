@@ -51,7 +51,7 @@ const AUTH_TIMEOUT_MS = 3_000;
 const INITIAL_DATA_TIMEOUT_MS = 30_000;
 const SYNC_FLUSH_TIMEOUT_MS = 12_000;
 const DEFAULT_REMINDER_PREFERENCES: ReminderPreferences = {
-  enabled: false,
+  enabled: true,
   deliveryState: "not-configured",
 };
 const EMPTY_SYNC_CONFLICTS: SyncConflict[] = [];
@@ -913,22 +913,24 @@ function userReminderPreferencesKey(userId: string) {
   return `${USER_REMINDER_PREFERENCES_PREFIX}${userId}`;
 }
 
-function readStoredReminderPreferences(userId: string, fallback: ReminderPreferences) {
-  if (typeof window === "undefined") return fallback;
+function readStoredReminderPreferences(userId: string, _fallback: ReminderPreferences) {
+  if (typeof window === "undefined") return DEFAULT_REMINDER_PREFERENCES;
   try {
     const raw = window.localStorage.getItem(userReminderPreferencesKey(userId));
-    if (!raw) return fallback;
+    // The dedicated device key is the source of truth. If it does not exist,
+    // this is a first visit (or a legacy device), so use the new opt-in default.
+    if (!raw) return DEFAULT_REMINDER_PREFERENCES;
     const parsed = JSON.parse(raw) as Partial<ReminderPreferences>;
-    if (typeof parsed.enabled !== "boolean") return fallback;
+    if (typeof parsed.enabled !== "boolean") return DEFAULT_REMINDER_PREFERENCES;
     return {
-      ...fallback,
+      ...DEFAULT_REMINDER_PREFERENCES,
       ...parsed,
       deliveryState: parsed.enabled
         ? parsed.deliveryState ?? "not-configured"
         : "paused",
     };
   } catch {
-    return fallback;
+    return DEFAULT_REMINDER_PREFERENCES;
   }
 }
 

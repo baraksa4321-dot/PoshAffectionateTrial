@@ -1054,4 +1054,29 @@ describe("offline store lifecycle", () => {
     authenticate();
     await eventually(() => store.getGymStoreSnapshot().reminderPreferences?.enabled === true);
   });
+
+  test("enables notifications by default while preserving an explicit opt-out", async () => {
+    Object.assign(navigator, { onLine: true });
+    pullImplementation = async (_userId, localState) => ({
+      success: true,
+      data: {
+        ...localState,
+        userProfile: {
+          ...(localState["userProfile"] as Record<string, unknown>),
+          role: "client",
+        },
+      },
+    });
+
+    const store = await loadStore("notification-preference-default");
+    await eventually(() => store.getGymStoreSyncStatus() === "synced");
+    expect(store.getGymStoreSnapshot().reminderPreferences?.enabled).toBe(true);
+
+    store.saveReminderPreferences({
+      enabled: false,
+      deliveryState: "paused",
+    });
+    expect(store.getGymStoreSnapshot().reminderPreferences?.enabled).toBe(false);
+    expect(storage.get("gymtrack.v1.reminders.user-a")).toContain('"enabled":false');
+  });
 });
