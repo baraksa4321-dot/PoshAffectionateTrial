@@ -55,6 +55,7 @@ import type {
   WorkoutItem,
 } from "@/lib/gym-types";
 import { genderText } from "@/lib/gender-copy";
+import { isSafeVideoSource } from "@/lib/url-security";
 import {
   completedSetForReopenedWorkout,
   getCurrentWeekWorkoutSession,
@@ -1530,7 +1531,8 @@ function Session() {
                   cardExercise.videoUrl,
                   ...(cardExercise.videoUrls ?? []),
                 ].filter(
-                  (url, index, all): url is string => Boolean(url) && all.indexOf(url) === index,
+                  (url, index, all): url is string =>
+                    isSafeVideoSource(url) && all.indexOf(url) === index,
                 );
                 return videos.length ? (
                   <div className="space-y-2">

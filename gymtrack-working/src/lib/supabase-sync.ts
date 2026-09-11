@@ -24,6 +24,7 @@ import {
   type FoodCatalogMetadata,
 } from "./gym-types";
 import { BUILT_IN_CHALLENGES, cloneChallenge } from "./challenge-library";
+import { isSafeHttpUrl } from "./url-security";
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "pending" | "conflict" | "error" | "offline";
 export type PullResult =
@@ -117,7 +118,9 @@ function catalogMetadataFromRow(row: Record<string, unknown>): FoodCatalogMetada
     source,
     sourceProductId: String(row["catalog_source_product_id"]),
     ...(row["barcode"] ? { barcode: String(row["barcode"]) } : {}),
-    ...(row["catalog_source_url"] ? { sourceUrl: String(row["catalog_source_url"]) } : {}),
+    ...(isSafeHttpUrl(row["catalog_source_url"])
+      ? { sourceUrl: row["catalog_source_url"].trim() }
+      : {}),
     productType,
     market: "IL",
     ...(row["catalog_package_size"] ? { packageSize: String(row["catalog_package_size"]) } : {}),

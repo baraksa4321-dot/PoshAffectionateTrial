@@ -10,6 +10,7 @@ import { IconButton, PrimaryButton, SecondaryButton } from "@/components/ui-app/
 import { deleteFood, emptyFood, findFoodReplacements, saveFood, useGym } from "@/lib/gym-store";
 import type { FoodItem } from "@/lib/gym-types";
 import { supabase } from "@/lib/supabase";
+import { isSafeHttpUrl } from "@/lib/url-security";
 
 type FoodSearch = {
   mealDate?: string | undefined;
@@ -334,7 +335,7 @@ function FoodDetail() {
               </span>
             </p>
           </div>
-          {draft.catalog.sourceUrl ? (
+          {isSafeHttpUrl(draft.catalog.sourceUrl) ? (
             <a
               href={draft.catalog.sourceUrl}
               target="_blank"

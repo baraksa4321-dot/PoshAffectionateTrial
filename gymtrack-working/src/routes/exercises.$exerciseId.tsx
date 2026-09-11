@@ -36,6 +36,7 @@ import {
   selectedExerciseEquipmentOptions,
 } from "@/lib/exercise-library";
 import { genderText } from "@/lib/gender-copy";
+import { isSafeHttpUrl, isSafeVideoSource } from "@/lib/url-security";
 
 export const Route = createFileRoute("/exercises/$exerciseId")({
   head: () => ({
@@ -466,6 +467,22 @@ function ExerciseDetail() {
       setSavingExercise(false);
       return;
     }
+    if (draft.videoUrl.trim() && !isSafeHttpUrl(draft.videoUrl)) {
+      setSaveError("קישור הסרטון חייב להתחיל ב־http:// או https://.");
+      setSavingExercise(false);
+      return;
+    }
+    const additionalVideoUrls = (draft.videoUrls ?? []).map((url) => url.trim()).filter(Boolean);
+    const genderVideoUrls = [draft.videoMaleUrl, draft.videoFemaleUrl]
+      .map((url) => url?.trim() ?? "")
+      .filter(Boolean);
+    if (
+      [...additionalVideoUrls, ...genderVideoUrls].some((url) => !isSafeVideoSource(url))
+    ) {
+      setSaveError("אחד מקישורי הסרטונים אינו בטוח או אינו נתמך.");
+      setSavingExercise(false);
+      return;
+    }
     const equipmentOptions = selectedExerciseEquipmentOptions({
       ...draft,
       equipment: draft.equipment,
@@ -475,6 +492,14 @@ function ExerciseDetail() {
       muscleGroup: finalMuscleGroup,
       equipment: equipmentOptions[0] ?? draft.equipment,
       equipmentOptions,
+      videoUrl: draft.videoUrl.trim(),
+      ...(additionalVideoUrls.length ? { videoUrls: additionalVideoUrls } : {}),
+      ...(draft.videoMaleUrl?.trim()
+        ? { videoMaleUrl: draft.videoMaleUrl.trim() }
+        : {}),
+      ...(draft.videoFemaleUrl?.trim()
+        ? { videoFemaleUrl: draft.videoFemaleUrl.trim() }
+        : {}),
       ...(customValue === undefined ? {} : { customMuscleGroup: customValue }),
     };
     try {
@@ -738,7 +763,7 @@ function ExerciseDetail() {
                       }}
                       className="w-full text-[11px] file:me-2 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-primary-foreground"
                     />
-                    {source ? (
+                    {source && isSafeVideoSource(source) ? (
                       <div className="relative mt-2">
                         <video
                           src={source}
@@ -906,7 +931,7 @@ function ExerciseDetail() {
             </div>
           ) : null}
 
-          {ex.videoUrl ? (
+          {isSafeVideoSource(ex.videoUrl) ? (
             <a
               href={ex.videoUrl}
               target="_blank"
@@ -918,7 +943,7 @@ function ExerciseDetail() {
             </a>
           ) : null}
           {ex.videoUrls
-            ?.filter((url) => url && url !== ex.videoUrl)
+            ?.filter((url) => isSafeVideoSource(url) && url !== ex.videoUrl)
             .map((url, index) => (
               <a
                 key={`${url.slice(0, 24)}-${index}`}

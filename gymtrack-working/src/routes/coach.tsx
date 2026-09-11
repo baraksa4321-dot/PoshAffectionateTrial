@@ -71,6 +71,7 @@ import {
   uniqueCanonicalExercises,
 } from "../lib/exercise-library";
 import { loadCoachMessages, sendCoachMessage } from "../lib/coach-messages";
+import { isSafeHttpUrl, isSafeVideoSource } from "../lib/url-security";
 import {
   getNextWorkoutReportWeekOffset,
   getWorkoutReportSessionForDate,
@@ -476,6 +477,7 @@ function reportWeekRangeLabel(start: string, end: string): string {
 }
 
 function youtubeEmbedUrl(source: string): string | null {
+  if (!isSafeHttpUrl(source)) return null;
   try {
     const url = new URL(source);
     const hostname = url.hostname.replace(/^www\./, "").toLowerCase();
@@ -506,6 +508,7 @@ function youtubeEmbedUrl(source: string): string | null {
 }
 
 function isSignedWorkoutPerformanceVideo(source: string): boolean {
+  if (!isSafeHttpUrl(source)) return false;
   try {
     const url = new URL(source);
     return (
@@ -528,7 +531,7 @@ function exerciseDemoVideoSources(exercise: Exercise | undefined): string[] {
         exercise.videoFemaleUrl,
       ]
         .map((source) => source?.trim())
-        .filter((source): source is string => Boolean(source)),
+         .filter((source): source is string => isSafeVideoSource(source)),
     ),
   );
 }
@@ -548,6 +551,14 @@ function WorkoutVideoPlayer({
   useEffect(() => {
     setHasError(false);
   }, [source]);
+
+  if (!isSafeVideoSource(source)) {
+    return (
+      <div className={className ?? "rounded-lg bg-black p-3 text-center text-[11px] text-white"}>
+        הסרטון אינו זמין להצגה.
+      </div>
+    );
+  }
 
   if (hasError) {
     return (
