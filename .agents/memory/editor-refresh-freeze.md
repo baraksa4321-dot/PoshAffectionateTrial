@@ -7,4 +7,4 @@ While a coach is editing a program or nutrition menu, background, focus, realtim
 
 **Why:** Replacing the selected client snapshot during typing or item selection makes the editor jump, loses focus, and can overwrite unsaved values even when the remote data is valid.
 
-**How to apply:** Keep the refresh lock local to the coach workspace, preserve draft ownership until the save succeeds, and refresh once after the lock is released rather than refreshing on every lifecycle event.
+**How to apply:** Keep the refresh lock local to the coach workspace, preserve draft ownership until the save succeeds, refresh once after the lock is released rather than refreshing on every lifecycle event, and gate deep-link scrolling so refreshed arrays cannot scroll the editor again.

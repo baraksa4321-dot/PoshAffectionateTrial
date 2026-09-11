@@ -1826,6 +1826,7 @@ export function CoachDashboardPage({
   const [attentionView, setAttentionView] = useState<"open" | "all">("open");
   const [expandedAttentionClientId, setExpandedAttentionClientId] = useState<string | null>(null);
   const [clientRefreshInFlight, setClientRefreshInFlight] = useState(false);
+  const focusedNutritionScrollTargetRef = useRef<string | null>(null);
   const draftOwnerRef = useRef<string | null>(null);
   const measurementDraftDirtyRef = useRef(false);
   const profileDraftDirtyRef = useRef(false);
@@ -1858,6 +1859,7 @@ export function CoachDashboardPage({
     (workspaceMode === "nutrition" ||
       openEditor === "nutrition" ||
       (workspaceMode === "all" && activeWorkspaceTab === "nutrition"));
+  const showBlockingClientDetailsLoading = loadingDetails && !clientDetails;
   const editorRefreshBlocked =
     Boolean(openEditor || editingDayId || editingNutrition || editingMeasurements) ||
     savingPlannedMenu ||
@@ -2942,14 +2944,20 @@ export function CoachDashboardPage({
   }, [focusedExerciseId, editingDayId]);
 
   useEffect(() => {
-    if (!focusedNutritionFoodId) return;
+    if (!focusedNutritionFoodId) {
+      focusedNutritionScrollTargetRef.current = null;
+      return;
+    }
+    const scrollTargetKey = `${menuDate}:${focusedNutritionFoodId}`;
+    if (focusedNutritionScrollTargetRef.current === scrollTargetKey) return;
     const frame = window.requestAnimationFrame(() => {
-      document
-        .getElementById(`coach-menu-food-${focusedNutritionFoodId}`)
-        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+      const target = document.getElementById(`coach-menu-food-${focusedNutritionFoodId}`);
+      if (!target) return;
+      focusedNutritionScrollTargetRef.current = scrollTargetKey;
+      target.scrollIntoView({ block: "center", behavior: "auto" });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [focusedNutritionFoodId, menuDate, plannedMeals]);
+  }, [clientDetails?.plannedMeals, focusedNutritionFoodId, menuDate]);
 
   // OWNER RPC: change a target user's role. The database function remains the
   // only authority for role changes; this UI never writes profiles.role.
@@ -6008,7 +6016,7 @@ export function CoachDashboardPage({
                 </>
               ) : null}
 
-              {loadingDetails ? (
+              {showBlockingClientDetailsLoading ? (
                 <div
                   data-testid="coach-client-details-loading"
                   className="surface-card p-6 text-center text-xs text-muted-foreground animate-pulse"
