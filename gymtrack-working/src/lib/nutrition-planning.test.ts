@@ -3,6 +3,7 @@ import {
   buildShoppingList,
   caloriesVisible,
   calendarWeekDates,
+  groupPlannedMeals,
   normalizeFixedPlannedMenu,
 } from "./nutrition-planning";
 import type { Meal, MealFood, NutritionDay } from "./gym-types";
@@ -27,6 +28,17 @@ const food = (name: string, servingSize: string, quantity: number, foodId = name
 const planned = (...foods: MealFood[]): Meal => ({ id: "meal", name: "ארוחה", foods });
 
 describe("fixed nutrition menu and calorie visibility", () => {
+  test("groups only explicitly configured meal options and keeps legacy meals standalone", () => {
+    const main = { ...meal("breakfast"), mealOptionGroupId: "breakfast-options" };
+    const alternate = { ...meal("breakfast-alt"), mealOptionGroupId: "breakfast-options" };
+    const legacy = meal("legacy");
+
+    expect(groupPlannedMeals([main, alternate, legacy])).toEqual([
+      { id: "breakfast-options", meals: [main, alternate] },
+      { id: "legacy-2-legacy", meals: [legacy] },
+    ]);
+  });
+
   test("prefers the explicit fixed menu and removes dated menu copies", () => {
     const result = normalizeFixedPlannedMenu(
       [meal("fixed")],

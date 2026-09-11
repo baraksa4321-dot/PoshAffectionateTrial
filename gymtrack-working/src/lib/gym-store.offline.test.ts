@@ -187,6 +187,45 @@ beforeEach(() => {
 });
 
 describe("offline store lifecycle", () => {
+  test("selects one planned meal option and replaces an earlier choice in the same group", async () => {
+    Object.assign(navigator, { onLine: true });
+    const main = {
+      id: "meal-main",
+      name: "ארוחה",
+      foods: [],
+      mealOptionGroupId: "meal-options",
+    };
+    const alternate = {
+      id: "meal-alternate",
+      name: "ארוחה אחרת",
+      foods: [],
+      mealOptionGroupId: "meal-options",
+    };
+    pullImplementation = async (_userId, localState) => ({
+      success: true,
+      data: {
+        ...localState,
+        plannedMeals: [main, alternate],
+        nutritionDays: [{ date: "2026-08-26", meals: [] }],
+        userProfile: {
+          ...(localState["userProfile"] as Record<string, unknown>),
+          role: "client",
+        },
+      },
+    });
+    const store = await loadStore("planned-meal-option-selection");
+    authenticate();
+    await eventually(() => store.getGymStoreSnapshot().plannedMeals.length === 2);
+
+    store.selectPlannedMealOption("2026-08-26", main.id);
+    expect(store.getGymStoreSnapshot().nutritionDays[0]?.meals[0]?.sourcePlanId).toBe(main.id);
+
+    store.selectPlannedMealOption("2026-08-26", alternate.id);
+    const loggedMeals = store.getGymStoreSnapshot().nutritionDays[0]?.meals ?? [];
+    expect(loggedMeals).toHaveLength(1);
+    expect(loggedMeals[0]?.sourcePlanId).toBe(alternate.id);
+  });
+
   test("loads only a trusted per-user cache while offline", async () => {
     storage.set("gymtrack.v1.user.user-a", JSON.stringify(cachedClientData));
     storage.set("gymtrack.v1.pending.user-a", "true");

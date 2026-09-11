@@ -1,5 +1,40 @@
 import type { Meal, MealFood, NutritionDay, UserProfile } from "./gym-types";
 
+export type PlannedMealOptionGroup = {
+  id: string;
+  meals: Meal[];
+};
+
+/**
+ * Older plans do not have an option group. Treat each such meal as its own
+ * group so the new choice UI and shopping list remain backward compatible.
+ */
+export function plannedMealOptionGroupId(meal: Meal): string {
+  return meal.mealOptionGroupId ?? meal.id;
+}
+
+export function groupPlannedMeals(plannedMeals: Meal[] | undefined): PlannedMealOptionGroup[] {
+  const groups = new Map<string, PlannedMealOptionGroup>();
+  const meals = plannedMeals ?? [];
+  const explicitGroupIds = new Set(
+    meals.flatMap((meal) => (meal.mealOptionGroupId ? [meal.mealOptionGroupId] : [])),
+  );
+  for (const [index, meal] of meals.entries()) {
+    // A legacy meal has no explicit option group. Include its position in the
+    // grouping key so repeated legacy fixtures/records remain standalone.
+    const id =
+      meal.mealOptionGroupId ??
+      (explicitGroupIds.has(meal.id) ? meal.id : `legacy-${index}-${meal.id}`);
+    const group = groups.get(id);
+    if (group) {
+      group.meals.push(meal);
+    } else {
+      groups.set(id, { id, meals: [meal] });
+    }
+  }
+  return Array.from(groups.values());
+}
+
 export function caloriesVisible(profile?: Pick<UserProfile, "showCalories"> | null): boolean {
   return profile?.showCalories !== false;
 }
@@ -419,7 +454,9 @@ export function buildShoppingList(
     }
   >();
 
-  for (const meal of plannedMeals ?? []) {
+  for (const group of groupPlannedMeals(plannedMeals)) {
+    const meal = group.meals[0];
+    if (!meal) continue;
     for (const food of meal.foods) {
       const amount = amountForPlannedFood(food);
       if (amount.value <= 0) continue;

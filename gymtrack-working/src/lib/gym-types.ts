@@ -322,6 +322,8 @@ export type Meal = {
   foods: MealFood[];
   /** The prescribed meal this actual-log meal came from, when applicable. */
   sourcePlanId?: string;
+  /** Optional grouping for coach-prescribed meal choices. Legacy meals are standalone options. */
+  mealOptionGroupId?: string;
 };
 
 export type NutritionDay = {

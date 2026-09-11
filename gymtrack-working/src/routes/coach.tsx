@@ -63,6 +63,7 @@ import {
   jsonValuesEqual,
 } from "../lib/coach-plan-payloads";
 import { calculateCalorieEstimate } from "../lib/calorie-calculator";
+import { groupPlannedMeals, plannedMealOptionGroupId } from "../lib/nutrition-planning";
 import {
   exerciseDisplayName,
   exerciseEquipmentOptions,
@@ -3909,8 +3910,40 @@ export function CoachDashboardPage({
     markPlannedMealsDraftDirty();
     setPlannedMeals((current) => [
       ...current,
-      { id: uid(), name: `ארוחה ${current.length + 1}`, foods: [] },
+      {
+        id: uid(),
+        name: `ארוחה ${current.length + 1}`,
+        foods: [],
+        mealOptionGroupId: uid(),
+      },
     ]);
+  };
+
+  const addPlannedMealAlternative = (mealId: string) => {
+    if (!isCoach) return;
+    markPlannedMealsDraftDirty();
+    setPlannedMeals((current) => {
+      const source = current.find((meal) => meal.id === mealId);
+      if (!source) return current;
+      const optionGroupId = plannedMealOptionGroupId(source);
+      const alternative: Meal = {
+        id: uid(),
+        name: `${source.name || "ארוחה"} אחרת`,
+        foods: [],
+        mealOptionGroupId: optionGroupId,
+      };
+      const sourceIndex = current.findIndex((meal) => meal.id === mealId);
+      const groupedCurrent = current.map((meal) =>
+        meal.id === source.id || meal.mealOptionGroupId === optionGroupId
+          ? { ...meal, mealOptionGroupId: optionGroupId }
+          : meal,
+      );
+      return [
+        ...groupedCurrent.slice(0, sourceIndex + 1),
+        alternative,
+        ...groupedCurrent.slice(sourceIndex + 1),
+      ];
+    });
   };
 
   const addPlannedFood = (mealId: string) => {
@@ -4533,7 +4566,9 @@ export function CoachDashboardPage({
         )
         .slice(0, 16)
     : [];
-  const menuTotals = foodTotals(plannedMeals.flatMap((meal) => meal.foods));
+  const menuTotals = foodTotals(
+    groupPlannedMeals(plannedMeals).flatMap((group) => group.meals[0]?.foods ?? []),
+  );
   const needsPlan = overviewRows.filter((row) => row.details.programs.length === 0);
   const needsExercises = overviewRows.filter(
     (row) =>
@@ -8878,10 +8913,14 @@ export function CoachDashboardPage({
                      </div>
 
                     <div className="space-y-2">
-                      {plannedMeals.map((meal, mealIndex) => {
+                      {plannedMeals.map((meal) => {
                         const actualMeal = clientDetails.nutritionDays
                           .find((day) => day.date === menuDate)
-                          ?.meals.at(mealIndex);
+                          ?.meals.find((logged) => logged.sourcePlanId === meal.id);
+                        const optionGroup = groupPlannedMeals(plannedMeals).find((group) =>
+                          group.meals.some((option) => option.id === meal.id),
+                        );
+                        const hasMealAlternatives = (optionGroup?.meals.length ?? 0) > 1;
                         return (
                           <div
                             key={meal.id}
@@ -8904,6 +8943,20 @@ export function CoachDashboardPage({
                                 className="min-w-0 flex-1 bg-transparent text-xs font-bold text-ink outline-none"
                                 aria-label="שם הארוחה"
                               />
+                              {hasMealAlternatives ? (
+                                <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-800">
+                                  {optionGroup?.meals[0]?.id === meal.id
+                                    ? "ארוחה"
+                                    : "ארוחה אחרת"}
+                                </span>
+                              ) : null}
+                              <button
+                                type="button"
+                                onClick={() => addPlannedMealAlternative(meal.id)}
+                                className="shrink-0 rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100"
+                              >
+                                + ארוחה אחרת
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => removePlannedMeal(meal.id)}

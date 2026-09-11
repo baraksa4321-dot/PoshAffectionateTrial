@@ -3,7 +3,7 @@ import { assertValidFoodNutrition, assertValidMealFood } from "./nutrition-integ
 import { ISRAELI_PROTEIN_PRODUCTS } from "./protein-product-catalog";
 import { supabase } from "./supabase";
 import { pullSupabaseData, syncLocalToSupabase, type SyncStatus } from "./supabase-sync";
-import { normalizeFixedPlannedMenu } from "./nutrition-planning";
+import { normalizeFixedPlannedMenu, plannedMealOptionGroupId } from "./nutrition-planning";
 import {
   type Challenge,
   type ChallengeEnrollment,
@@ -2694,7 +2694,13 @@ export function savePlannedMeals(plannedMeals: Meal[]) {
 export function logPlannedMeal(date: string, plannedMealId: string) {
   withDay(date, (day) => {
     const plannedMeal = data.plannedMeals?.find((meal) => meal.id === plannedMealId);
-    if (!plannedMeal || day.meals.some((meal) => meal.sourcePlanId === plannedMealId)) return day;
+    if (!plannedMeal) return day;
+    const optionGroupId = plannedMealOptionGroupId(plannedMeal);
+    const groupAlreadyLogged = day.meals.some((meal) => {
+      const loggedPlan = data.plannedMeals?.find((planned) => planned.id === meal.sourcePlanId);
+      return loggedPlan ? plannedMealOptionGroupId(loggedPlan) === optionGroupId : false;
+    });
+    if (groupAlreadyLogged) return day;
     return {
       ...day,
       meals: [
@@ -2712,6 +2718,41 @@ export function logPlannedMeal(date: string, plannedMealId: string) {
               hour: "2-digit",
               minute: "2-digit",
             }),
+          })),
+        },
+      ],
+    };
+  });
+}
+
+/** Select one meal option and replace an earlier choice from the same group. */
+export function selectPlannedMealOption(date: string, plannedMealId: string) {
+  withDay(date, (day) => {
+    const plannedMeal = data.plannedMeals?.find((meal) => meal.id === plannedMealId);
+    if (!plannedMeal) return day;
+    const optionGroupId = plannedMealOptionGroupId(plannedMeal);
+    const mealsWithoutGroupChoice = day.meals.filter((meal) => {
+      const loggedPlan = data.plannedMeals?.find((planned) => planned.id === meal.sourcePlanId);
+      return !loggedPlan || plannedMealOptionGroupId(loggedPlan) !== optionGroupId;
+    });
+    const timeLogged = new Date().toLocaleTimeString("he-IL", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return {
+      ...day,
+      meals: [
+        ...mealsWithoutGroupChoice,
+        {
+          id: uid(),
+          name: plannedMeal.name,
+          sourcePlanId: plannedMeal.id,
+          foods: plannedMeal.foods.map((food) => ({
+            ...food,
+            id: uid(),
+            sourcePlanMealId: plannedMeal.id,
+            sourcePlanFoodId: food.id,
+            timeLogged,
           })),
         },
       ],
@@ -2787,6 +2828,7 @@ export function logPlannedFoodSubstitution(
   withDay(date, (day) => {
     const plannedMeal = data.plannedMeals?.find((meal) => meal.id === plannedMealId);
     if (!plannedMeal) return day;
+    const optionGroupId = plannedMealOptionGroupId(plannedMeal);
     const loggedFood: MealFood = {
       ...replacement,
       id: uid(),
@@ -2801,10 +2843,15 @@ export function logPlannedFoodSubstitution(
       }),
     };
     const existingMeal = day.meals.find((meal) => meal.sourcePlanId === plannedMealId);
+    const mealsWithoutOtherOptions = day.meals.filter((meal) => {
+      if (meal.sourcePlanId === plannedMealId) return true;
+      const loggedPlan = data.plannedMeals?.find((planned) => planned.id === meal.sourcePlanId);
+      return loggedPlan ? plannedMealOptionGroupId(loggedPlan) !== optionGroupId : true;
+    });
     if (existingMeal) {
       return {
         ...day,
-        meals: day.meals.map((meal) =>
+        meals: mealsWithoutOtherOptions.map((meal) =>
           meal.id !== existingMeal.id
             ? meal
             : {
@@ -2820,7 +2867,7 @@ export function logPlannedFoodSubstitution(
     return {
       ...day,
       meals: [
-        ...day.meals,
+        ...mealsWithoutOtherOptions,
         {
           id: uid(),
           name: plannedMeal.name,
