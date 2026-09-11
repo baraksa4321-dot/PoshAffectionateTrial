@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ChevronLeft,
   Dumbbell,
+  Check,
+  Pencil,
   Plus,
   Search,
   Shield,
@@ -15,6 +17,8 @@ import {
   exerciseEquipmentOptions,
   exerciseFamilyKey,
   exerciseGripOptions,
+  renameExerciseLibraryOption,
+  type ExerciseLibraryOptionKind,
   uniqueCanonicalExercises,
 } from "@/lib/exercise-library";
 import { EmptyState, Pill, SectionHeader } from "@/components/ui-app/primitives";
@@ -22,10 +26,13 @@ import {
   deleteCableGripOption,
   deleteEquipmentOption,
   deleteExercise,
+  flushCloudSync,
+  saveExercise,
   useGym,
 } from "@/lib/gym-store";
 import { CABLE_GRIPS, EQUIPMENT, MUSCLE_GROUPS } from "@/lib/gym-types";
 import { genderText } from "@/lib/gender-copy";
+import { uploadExerciseLibraryImage } from "@/lib/supabase-sync";
 
 export const Route = createFileRoute("/exercises/")({
   head: () => ({
@@ -40,6 +47,11 @@ export const Route = createFileRoute("/exercises/")({
   }),
   component: Library,
 });
+
+const field =
+  "w-full rounded-2xl border border-border/60 bg-secondary px-4 py-3.5 text-[14px] outline-none focus:border-primary";
+const labelCls =
+  "mb-1.5 block text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase";
 
 function Library() {
   const {
@@ -65,6 +77,16 @@ function Library() {
   const [equipment, setEquipment] = useState("הכל");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"exercises" | "equipment" | "grips">("exercises");
+  const [optionEditor, setOptionEditor] = useState<{
+    kind: ExerciseLibraryOptionKind;
+    name: string;
+    image: string;
+  } | null>(null);
+  const [optionNameDraft, setOptionNameDraft] = useState("");
+  const [optionImageDraft, setOptionImageDraft] = useState("");
+  const [optionSaveError, setOptionSaveError] = useState("");
+  const [savingOption, setSavingOption] = useState(false);
+  const [uploadingOptionImage, setUploadingOptionImage] = useState(false);
 
   if (role === undefined) {
     return (
@@ -151,6 +173,72 @@ function Library() {
 
   const confirmDelete = (message: string) =>
     typeof window === "undefined" || window.confirm(message);
+  const openOptionEditor = (
+    kind: ExerciseLibraryOptionKind,
+    name: string,
+    image: string | undefined,
+  ) => {
+    setOptionEditor({ kind, name, image: image ?? "" });
+    setOptionNameDraft(name);
+    setOptionImageDraft(image ?? "");
+    setOptionSaveError("");
+  };
+  const closeOptionEditor = () => {
+    if (savingOption || uploadingOptionImage) return;
+    setOptionEditor(null);
+    setOptionSaveError("");
+  };
+  const handleOptionImageUpload = async (file: File | undefined) => {
+    if (!file || !optionEditor || uploadingOptionImage) return;
+    setOptionSaveError("");
+    setUploadingOptionImage(true);
+    try {
+      const url = await uploadExerciseLibraryImage(file, { kind: optionEditor.kind });
+      setOptionImageDraft(url);
+    } catch (error) {
+      setOptionSaveError(error instanceof Error ? error.message : "העלאת התמונה נכשלה.");
+    } finally {
+      setUploadingOptionImage(false);
+    }
+  };
+  const handleSaveOption = async () => {
+    if (!optionEditor || savingOption || uploadingOptionImage) return;
+    const nextName = optionNameDraft.trim();
+    if (!nextName) {
+      setOptionSaveError("יש להזין שם לפני השמירה.");
+      return;
+    }
+    setOptionSaveError("");
+    setSavingOption(true);
+    try {
+      const updatedExercises = exercises.map((exercise) =>
+        renameExerciseLibraryOption(
+          exercise,
+          optionEditor.kind,
+          optionEditor.name,
+          nextName,
+          optionImageDraft,
+        ),
+      );
+      updatedExercises.forEach((exercise, index) => {
+        if (exercise !== exercises[index]) saveExercise(exercise);
+      });
+      if (optionEditor.name !== nextName) {
+        if (optionEditor.kind === "equipment") deleteEquipmentOption(optionEditor.name);
+        else deleteCableGripOption(optionEditor.name);
+      }
+      const syncResult = await flushCloudSync();
+      if (!syncResult.success) {
+        setOptionSaveError(syncResult.error || "השמירה בענן נכשלה. אפשר לנסות שוב.");
+        return;
+      }
+      setOptionEditor(null);
+    } catch (error) {
+      setOptionSaveError(error instanceof Error ? error.message : "שמירת האפשרות נכשלה.");
+    } finally {
+      setSavingOption(false);
+    }
+  };
   const handleDeleteExercise = (exercise: (typeof catalogExercises)[number]) => {
     if (
       !confirmDelete(
@@ -380,7 +468,25 @@ function Library() {
             {(activeTab === "equipment" ? equipmentRows : gripRows).map((row) => (
               <div
                 key={row.name}
-                className="surface-card flex items-center gap-3 p-3.5 text-start"
+                role="button"
+                tabIndex={0}
+                onClick={() =>
+                  openOptionEditor(
+                    activeTab === "equipment" ? "equipment" : "grip",
+                    row.name,
+                    row.image,
+                  )
+                }
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter" && event.key !== " ") return;
+                  event.preventDefault();
+                  openOptionEditor(
+                    activeTab === "equipment" ? "equipment" : "grip",
+                    row.name,
+                    row.image,
+                  );
+                }}
+                className="surface-card flex cursor-pointer items-center gap-3 p-3.5 text-start transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
                 {row.image ? (
                   <img
@@ -407,7 +513,8 @@ function Library() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.stopPropagation();
                     if (
                       confirmDelete(
                         `למחוק את "${row.name}" ממאגר ${
@@ -424,11 +531,123 @@ function Library() {
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
+                <Pencil className="h-4 w-4 shrink-0 text-muted-foreground/60" aria-hidden="true" />
               </div>
             ))}
           </div>
         </>
       )}
+      {optionEditor ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-3 sm:items-center"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeOptionEditor();
+          }}
+        >
+          <div
+            className="surface-card max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl p-5 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="exercise-library-option-dialog-title"
+            dir="rtl"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  {optionEditor.kind === "equipment" ? "עריכת מכשיר / ציוד" : "עריכת מאחז"}
+                </p>
+                <h2
+                  id="exercise-library-option-dialog-title"
+                  className="mt-1 font-display text-xl font-bold text-ink"
+                >
+                  {optionEditor.name}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={closeOptionEditor}
+                className="press grid h-9 w-9 place-items-center rounded-xl bg-secondary text-muted-foreground"
+                aria-label="סגירה"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              <div>
+                <label className={labelCls}>שם</label>
+                <input
+                  className={field}
+                  value={optionNameDraft}
+                  onChange={(event) => setOptionNameDraft(event.target.value)}
+                  placeholder="למשל: מוט אולימפי"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className={labelCls}>תמונה</label>
+                <p className="mb-2 text-[11.5px] text-muted-foreground">
+                  הדביקי קישור ישיר לתמונה. היא תופיע בכל התרגילים שמשתמשים באפשרות הזו.
+                </p>
+                <input
+                  className={field}
+                  value={optionImageDraft}
+                  onChange={(event) => setOptionImageDraft(event.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                  inputMode="url"
+                  dir="ltr"
+                />
+                <label className="mt-2 flex cursor-pointer items-center justify-center rounded-2xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-xs font-semibold text-primary">
+                  {uploadingOptionImage ? "מעלה תמונה..." : "או לבחור תמונה מהמכשיר"}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="sr-only"
+                    disabled={uploadingOptionImage}
+                    onChange={(event) => {
+                      void handleOptionImageUpload(event.target.files?.[0]);
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+                {optionImageDraft.trim() ? (
+                  <img
+                    src={optionImageDraft.trim()}
+                    alt={`תצוגה מקדימה עבור ${optionNameDraft || optionEditor.name}`}
+                    className="mt-3 h-40 w-full rounded-2xl border border-border/50 bg-secondary object-cover"
+                  />
+                ) : null}
+              </div>
+              {optionSaveError ? (
+                <p className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs font-semibold text-destructive">
+                  {optionSaveError}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={handleSaveOption}
+                disabled={savingOption || uploadingOptionImage}
+                className="press flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-bold text-primary-foreground disabled:opacity-60"
+              >
+                <Check className="h-4 w-4" />
+                {savingOption ? "שומר..." : "שמור שינויים"}
+              </button>
+              <button
+                type="button"
+                onClick={closeOptionEditor}
+                disabled={savingOption || uploadingOptionImage}
+                className="press h-12 rounded-2xl bg-secondary px-5 text-sm font-semibold text-ink disabled:opacity-60"
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AppShell>
   );
 }

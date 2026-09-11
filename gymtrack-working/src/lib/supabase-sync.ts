@@ -456,6 +456,7 @@ function servingGramsFromLabel(servingSize: string) {
 }
 
 const WORKOUT_VIDEO_BUCKET = "workout-videos";
+const EXERCISE_IMAGE_BUCKET = "exercise-images";
 
 const WORKOUT_VIDEO_SIGNED_URL_TTL_SECONDS = 10 * 60;
 function safeVideoExtension(fileName: string, contentType: string) {
@@ -471,6 +472,56 @@ function safeVideoExtension(fileName: string, contentType: string) {
     ?.toLowerCase()
     .replace(/[^a-z0-9]/g, "");
   return fromType && fromType.length <= 8 ? fromType : "mp4";
+}
+
+function safeImageExtension(fileName: string, contentType: string) {
+  const fromName = fileName
+    .split(".")
+    .pop()
+    ?.toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  if (fromName && ["jpg", "jpeg", "png", "webp", "gif"].includes(fromName)) return fromName;
+  const fromType = contentType
+    .split("/")
+    .pop()
+    ?.toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  return fromType && ["jpeg", "png", "webp", "gif"].includes(fromType) ? fromType : "jpg";
+}
+
+export async function uploadExerciseLibraryImage(
+  file: File,
+  metadata: { kind: "exercise" | "equipment" | "grip" },
+): Promise<string> {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("אפשר להעלות קובץ תמונה בלבד.");
+  }
+  if (file.size > 8 * 1024 * 1024) {
+    throw new Error("התמונה גדולה מדי. הגודל המרבי הוא 8MB.");
+  }
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    throw new Error("לא ניתן להעלות תמונה בלי חשבון מחובר.");
+  }
+
+  const objectId =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const extension = safeImageExtension(file.name, file.type);
+  const path = `${user.id}/exercise-library/${metadata.kind}/${objectId}.${extension}`;
+  const { error } = await supabase.storage.from(EXERCISE_IMAGE_BUCKET).upload(path, file, {
+    contentType: file.type || "image/jpeg",
+    upsert: false,
+  });
+  if (error) throw new Error(`העלאת התמונה נכשלה: ${error.message}`);
+
+  const { data } = supabase.storage.from(EXERCISE_IMAGE_BUCKET).getPublicUrl(path);
+  if (!data?.publicUrl) throw new Error("העלאת התמונה הסתיימה בלי כתובת צפייה.");
+  return data.publicUrl;
 }
 
 type UploadedWorkoutVideo = {
@@ -567,8 +618,17 @@ export async function syncLocalToSupabase(
           id: e.id,
           user_id: userId,
           name: e.name,
+          english_name: e.nameEn || null,
           muscle_group: e.muscleGroup,
+          muscle_groups: e.muscleGroups ?? null,
+          custom_muscle_group: e.customMuscleGroup ?? null,
+          secondary_muscles: e.secondaryMuscles ?? null,
+          approved_substitutes: e.approvedSubstitutes ?? null,
           equipment: e.equipment,
+          equipment_options: e.equipmentOptions ?? null,
+          equipment_images: e.equipmentImages ?? {},
+          cable_grip_options: e.cableGripOptions ?? null,
+          cable_grip_images: e.cableGripImages ?? {},
           category: e.category,
           description: e.description,
           instructions: e.instructions,
@@ -576,12 +636,39 @@ export async function syncLocalToSupabase(
           video_urls: e.videoUrls ?? null,
           video_male_url: e.videoMaleUrl || null,
           video_female_url: e.videoFemaleUrl || null,
+          images: e.images ?? [],
+          notes: e.notes ?? "",
+          tips: e.tips ?? null,
           updated_at: new Date().toISOString(),
         }));
-        await requireSuccessfulWrite(
-          supabase.from("custom_exercises").upsert(payload, { onConflict: "id" }),
-          "Custom exercises sync",
-        );
+        const richWrite = await supabase
+          .from("custom_exercises")
+          .upsert(payload, { onConflict: "id" });
+        if (richWrite.error && isMissingColumnInSchema(richWrite.error, "custom_exercises")) {
+          // Older connected projects can still sync the legacy exercise shape
+          // until migration 49 is applied; do not block the rest of the sync.
+          const legacyPayload = customExercises.map((e) => ({
+            id: e.id,
+            user_id: userId,
+            name: e.name,
+            muscle_group: e.muscleGroup,
+            equipment: e.equipment,
+            category: e.category,
+            description: e.description,
+            instructions: e.instructions,
+            video_url: e.videoUrl || null,
+            video_urls: e.videoUrls ?? null,
+            video_male_url: e.videoMaleUrl || null,
+            video_female_url: e.videoFemaleUrl || null,
+            updated_at: new Date().toISOString(),
+          }));
+          await requireSuccessfulWrite(
+            supabase.from("custom_exercises").upsert(legacyPayload, { onConflict: "id" }),
+            "Custom exercises sync (legacy schema)",
+          );
+        } else {
+          await requireSuccessfulWrite(Promise.resolve(richWrite), "Custom exercises sync");
+        }
       }
       await deleteRowsExplicitlyDeleted(
         userId,
@@ -1374,8 +1461,19 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         const exItem: Exercise = {
           id: row.id,
           name: row.name,
+          ...(row.english_name ? { nameEn: row.english_name } : {}),
           muscleGroup: row.muscle_group,
-          muscleGroups: [row.muscle_group],
+          muscleGroups:
+            Array.isArray(row.muscle_groups) && row.muscle_groups.length > 0
+              ? row.muscle_groups
+              : [row.muscle_group],
+          ...(row.custom_muscle_group ? { customMuscleGroup: row.custom_muscle_group } : {}),
+          ...(Array.isArray(row.secondary_muscles)
+            ? { secondaryMuscles: row.secondary_muscles }
+            : {}),
+          ...(Array.isArray(row.approved_substitutes)
+            ? { approvedSubstitutes: row.approved_substitutes }
+            : {}),
           category: row.category || "מורכב",
           equipment: row.equipment || "מוט",
           description: row.description || "",
@@ -1384,20 +1482,29 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
           videoUrls: Array.isArray(row.video_urls) ? row.video_urls : undefined,
           videoMaleUrl: row.video_male_url || undefined,
           videoFemaleUrl: row.video_female_url || undefined,
-          images: cachedExercise?.images ?? [],
-          notes: cachedExercise?.notes ?? "",
-          ...(cachedExercise?.equipmentOptions
-            ? { equipmentOptions: cachedExercise.equipmentOptions }
+          images: Array.isArray(row.images) ? row.images : (cachedExercise?.images ?? []),
+          notes: typeof row.notes === "string" ? row.notes : (cachedExercise?.notes ?? ""),
+          ...(Array.isArray(row.equipment_options)
+            ? { equipmentOptions: row.equipment_options }
+            : cachedExercise?.equipmentOptions
+              ? { equipmentOptions: cachedExercise.equipmentOptions }
             : {}),
-          ...(cachedExercise?.equipmentImages
-            ? { equipmentImages: cachedExercise.equipmentImages }
+          ...(row.equipment_images && typeof row.equipment_images === "object"
+            ? { equipmentImages: row.equipment_images as Record<string, string> }
+            : cachedExercise?.equipmentImages
+              ? { equipmentImages: cachedExercise.equipmentImages }
             : {}),
-          ...(cachedExercise?.cableGripOptions
-            ? { cableGripOptions: cachedExercise.cableGripOptions }
+          ...(Array.isArray(row.cable_grip_options)
+            ? { cableGripOptions: row.cable_grip_options }
+            : cachedExercise?.cableGripOptions
+              ? { cableGripOptions: cachedExercise.cableGripOptions }
             : {}),
-          ...(cachedExercise?.cableGripImages
-            ? { cableGripImages: cachedExercise.cableGripImages }
+          ...(row.cable_grip_images && typeof row.cable_grip_images === "object"
+            ? { cableGripImages: row.cable_grip_images as Record<string, string> }
+            : cachedExercise?.cableGripImages
+              ? { cableGripImages: cachedExercise.cableGripImages }
             : {}),
+          ...(row.tips ? { tips: row.tips } : cachedExercise?.tips ? { tips: cachedExercise.tips } : {}),
         };
         customMap.set(row.id, exItem);
       }
@@ -1907,18 +2014,44 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     const exerciseList: Exercise[] = (dbCustomExercises || []).map((row) => ({
       id: row.id,
       name: row.name,
+      ...(row.english_name ? { nameEn: row.english_name } : {}),
       muscleGroup: row.muscle_group || "אחר",
-      muscleGroups: row.muscle_group ? [row.muscle_group] : ["אחר"],
+      muscleGroups:
+        Array.isArray(row.muscle_groups) && row.muscle_groups.length > 0
+          ? row.muscle_groups
+          : row.muscle_group
+            ? [row.muscle_group]
+            : ["אחר"],
+      ...(row.custom_muscle_group ? { customMuscleGroup: row.custom_muscle_group } : {}),
+      ...(Array.isArray(row.secondary_muscles)
+        ? { secondaryMuscles: row.secondary_muscles }
+        : {}),
+      ...(Array.isArray(row.approved_substitutes)
+        ? { approvedSubstitutes: row.approved_substitutes }
+        : {}),
       category: row.category || "מותאם אישית",
       equipment: row.equipment || "ללא ציוד",
+      ...(Array.isArray(row.equipment_options)
+        ? { equipmentOptions: row.equipment_options }
+        : {}),
+      ...(row.equipment_images && typeof row.equipment_images === "object"
+        ? { equipmentImages: row.equipment_images as Record<string, string> }
+        : {}),
+      ...(Array.isArray(row.cable_grip_options)
+        ? { cableGripOptions: row.cable_grip_options }
+        : {}),
+      ...(row.cable_grip_images && typeof row.cable_grip_images === "object"
+        ? { cableGripImages: row.cable_grip_images as Record<string, string> }
+        : {}),
       description: row.description || "",
       instructions: row.instructions || "",
       videoUrl: row.video_url || "",
       videoUrls: Array.isArray(row.video_urls) ? row.video_urls : undefined,
       videoMaleUrl: row.video_male_url || undefined,
       videoFemaleUrl: row.video_female_url || undefined,
-      images: [],
-      notes: "",
+      images: Array.isArray(row.images) ? row.images : [],
+      notes: typeof row.notes === "string" ? row.notes : "",
+      ...(row.tips ? { tips: row.tips } : {}),
     }));
 
     const historyList: HistorySession[] = (dbSessions || []).map((row) => ({

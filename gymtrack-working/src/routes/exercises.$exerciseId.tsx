@@ -37,6 +37,7 @@ import {
 } from "@/lib/exercise-library";
 import { genderText } from "@/lib/gender-copy";
 import { isSafeHttpUrl, isSafeVideoSource } from "@/lib/url-security";
+import { uploadExerciseLibraryImage } from "@/lib/supabase-sync";
 
 export const Route = createFileRoute("/exercises/$exerciseId")({
   head: () => ({
@@ -1095,6 +1096,23 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 
 function ImagesEditor({ images, onChange }: { images: string[]; onChange: (v: string[]) => void }) {
   const [url, setUrl] = useState("");
+  const [uploadError, setUploadError] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  const uploadImage = async (file: File | undefined) => {
+    if (!file || uploading) return;
+    setUploadError("");
+    setUploading(true);
+    try {
+      const uploadedUrl = await uploadExerciseLibraryImage(file, { kind: "exercise" });
+      onChange([...images, uploadedUrl]);
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "העלאת התמונה נכשלה.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="surface-card p-4 text-start">
       <label className={labelCls}>תמונות תרגיל</label>
@@ -1118,6 +1136,20 @@ function ImagesEditor({ images, onChange }: { images: string[]; onChange: (v: st
           <ImagePlus className="h-5 w-5" />
         </button>
       </div>
+      <label className="mt-2 flex cursor-pointer items-center justify-center rounded-2xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-xs font-semibold text-primary">
+        {uploading ? "מעלה תמונה..." : "או לבחור תמונה מהמכשיר"}
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="sr-only"
+          disabled={uploading}
+          onChange={(event) => {
+            void uploadImage(event.target.files?.[0]);
+            event.currentTarget.value = "";
+          }}
+        />
+      </label>
+      {uploadError ? <p className="mt-2 text-xs font-semibold text-destructive">{uploadError}</p> : null}
       {images.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {images.map((src, i) => (

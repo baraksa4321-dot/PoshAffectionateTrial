@@ -200,6 +200,82 @@ export function selectedExerciseEquipmentOptions(
   );
 }
 
+export type ExerciseLibraryOptionKind = "equipment" | "grip";
+
+/**
+ * Rename a library option across the exercise records that reference it.
+ * Images live on the exercise record today, so the option editor uses this
+ * helper to keep every linked record consistent.
+ */
+export function renameExerciseLibraryOption(
+  exercise: Exercise,
+  kind: ExerciseLibraryOptionKind,
+  currentName: string,
+  nextName: string,
+  imageUrl: string,
+): Exercise {
+  const current = currentName.trim();
+  const next = nextName.trim();
+  const image = imageUrl.trim();
+  if (!current || !next) return exercise;
+
+  if (kind === "equipment") {
+    const images = { ...(exercise.equipmentImages ?? {}) };
+    const selected = selectedExerciseEquipmentOptions(exercise);
+    const linked =
+      exercise.equipment === current ||
+      selected.includes(current) ||
+      Boolean(images[current]);
+    if (!linked) return exercise;
+
+    if (current !== next && images[current] && !images[next]) images[next] = images[current];
+    if (image) images[next] = image;
+    if (current !== next) delete images[current];
+
+    const equipmentOptions = Array.from(
+      new Set(selected.map((option) => (option === current ? next : option))),
+    );
+    const { equipmentImages: _equipmentImages, ...withoutImages } = exercise;
+    return {
+      ...withoutImages,
+      equipment: exercise.equipment === current ? next : exercise.equipment,
+      equipmentOptions,
+      ...(Object.keys(images).length ? { equipmentImages: images } : {}),
+    };
+  }
+
+  const images = { ...(exercise.cableGripImages ?? {}) };
+  const isCableExercise =
+    exercise.equipment === "פולי / כבלים" ||
+    exercise.equipmentOptions?.includes("פולי / כבלים") === true;
+  const linked =
+    exercise.cableGripOptions?.includes(current) === true ||
+    Boolean(images[current]) ||
+    (isCableExercise && CABLE_GRIPS.includes(current));
+  if (!linked) return exercise;
+
+  if (current !== next && images[current] && !images[next]) images[next] = images[current];
+  if (image) images[next] = image;
+  if (current !== next) delete images[current];
+
+  const cableGripOptions = Array.from(
+    new Set(
+      [
+        ...(exercise.cableGripOptions ?? []),
+        ...(isCableExercise ? [current] : []),
+      ]
+        .map((option) => (option === current ? next : option))
+        .filter(Boolean),
+    ),
+  );
+  const { cableGripImages: _cableGripImages, ...withoutImages } = exercise;
+  return {
+    ...withoutImages,
+    ...(cableGripOptions.length ? { cableGripOptions } : {}),
+    ...(Object.keys(images).length ? { cableGripImages: images } : {}),
+  };
+}
+
 export function exerciseGripOptions(
   exercise: Pick<Exercise, "cableGripOptions">,
 ): string[] {
