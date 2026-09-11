@@ -50,7 +50,12 @@ import { LockKeyhole, RefreshCw } from "lucide-react";
 
 const useLoadingCycleEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 const LOADING_RECOVERY_TIMEOUT_MS = 45_000;
-const INTERACTIVE_SESSION_STORAGE_KEY = "my-routine-interactive-session-v1";
+const INTERACTIVE_SESSION_FLAG = "__MY_ROUTINE_INTERACTIVE__";
+
+type GymTrackWindow = Window & {
+  [INTERACTIVE_SESSION_FLAG]?: boolean;
+  __MY_ROUTINE_BOOTED__?: boolean;
+};
 
 function loadingGenderStorageKey(userId?: string) {
   return userId ? `${LOADING_GENDER_STORAGE_KEY}.${userId}` : LOADING_GENDER_STORAGE_KEY;
@@ -79,17 +84,11 @@ function persistLoadingGender(gender: LoadingGender, userId?: string) {
 
 function canResumeInteractiveSession() {
   if (typeof window === "undefined") return false;
-  try {
-    const navigation = performance.getEntriesByType("navigation")[0] as
-      | PerformanceNavigationTiming
-      | undefined;
-    return (
-      navigation?.type !== "reload" &&
-      window.sessionStorage.getItem(INTERACTIVE_SESSION_STORAGE_KEY) === "true"
-    );
-  } catch {
-    return false;
-  }
+  // sessionStorage survives an iOS PWA process restart, so it cannot tell us
+  // whether this is the same live WebView. A window flag does: it survives
+  // route/root remounts and bfcache restores, but disappears when the app is
+  // killed or a real reload creates a new JavaScript context.
+  return (window as GymTrackWindow)[INTERACTIVE_SESSION_FLAG] === true;
 }
 
 async function resetAuthSessionAndReload() {
@@ -1212,7 +1211,12 @@ function RootContent() {
   // case; a real reload starts with hasBeenInteractiveRef=false and still gets
   // the normal splash.
   const isLoadingScreen = requiresInitialLoading && !suppressTransientLoading;
-  const activeLoadingGender = userProfile?.gender ?? loadingGender;
+  const authMetadataGender = readLoadingGender(
+    typeof authUser?.user_metadata?.gender === "string"
+      ? authUser.user_metadata.gender
+      : null,
+  );
+  const activeLoadingGender = userProfile?.gender ?? loadingGender ?? authMetadataGender;
   // Loading is intentionally determined by the profile gender:
   // women get the expressive animated surface and men get the spinner.
   // Until a gender is known, stay on the neutral spinner rather than guessing.
@@ -1225,7 +1229,7 @@ function RootContent() {
     if (storedTheme) applyTheme(storedTheme);
 
     setLoadingGender(readPersistedLoadingGender(authUser?.id));
-    (window as Window & { __MY_ROUTINE_BOOTED__?: boolean }).__MY_ROUTINE_BOOTED__ = true;
+    (window as GymTrackWindow).__MY_ROUTINE_BOOTED__ = true;
     const bootUrl = new URL(window.location.href);
     if (bootUrl.searchParams.has("__myroutine_boot")) {
       bootUrl.searchParams.delete("__myroutine_boot");
@@ -1303,11 +1307,7 @@ function RootContent() {
       hasBeenInteractiveRef.current = true;
       setSuppressTransientLoading(false);
       setLoadingRecoveryTimedOut(false);
-      try {
-        window.sessionStorage.setItem(INTERACTIVE_SESSION_STORAGE_KEY, "true");
-      } catch {
-        // The in-memory ref still prevents a same-document resume from flashing.
-      }
+      (window as GymTrackWindow)[INTERACTIVE_SESSION_FLAG] = true;
       return;
     }
     if (suppressTransientLoading) return;
