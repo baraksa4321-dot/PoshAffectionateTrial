@@ -1211,12 +1211,7 @@ function RootContent() {
   // case; a real reload starts with hasBeenInteractiveRef=false and still gets
   // the normal splash.
   const isLoadingScreen = requiresInitialLoading && !suppressTransientLoading;
-  const authMetadataGender = readLoadingGender(
-    typeof authUser?.user_metadata?.gender === "string"
-      ? authUser.user_metadata.gender
-      : null,
-  );
-  const activeLoadingGender = userProfile?.gender ?? loadingGender ?? authMetadataGender;
+  const activeLoadingGender = userProfile?.gender ?? loadingGender;
   // Loading is intentionally determined by the profile gender:
   // women get the expressive animated surface and men get the spinner.
   // Until a gender is known, stay on the neutral spinner rather than guessing.
