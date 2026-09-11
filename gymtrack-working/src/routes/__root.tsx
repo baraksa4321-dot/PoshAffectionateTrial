@@ -1133,6 +1133,9 @@ function RootContent() {
   const [loadingGender, setLoadingGender] = useState<LoadingGender | undefined>(undefined);
   const loadingWasVisibleRef = useRef(false);
   const [loadingRecoveryTimedOut, setLoadingRecoveryTimedOut] = useState(false);
+  const [suppressTransientLoading, setSuppressTransientLoading] = useState(false);
+  const hasBeenInteractiveRef = useRef(false);
+  const wasHiddenRef = useRef(false);
   const loadingIndexes = loadingCycleIndexes(
     openingCycleIndex + loadingRotationTick,
     SIMPLE_LOADING_ILLUSTRATIONS.length,
@@ -1160,7 +1163,12 @@ function RootContent() {
   // Cached account data marks the profile ready before its background pull, so
   // only an unresolved auth/profile state blocks the first screen. Background
   // refreshes keep the current UI visible and cannot reintroduce the splash.
-  const isLoadingScreen = authStatus === "loading" || isProfileHydrating;
+  const requiresInitialLoading = authStatus === "loading" || isProfileHydrating;
+  // A background resume can briefly make Supabase report a loading state while
+  // the cached app is still usable. Keep the current route visible in that
+  // case; a real reload starts with hasBeenInteractiveRef=false and still gets
+  // the normal splash.
+  const isLoadingScreen = requiresInitialLoading && !suppressTransientLoading;
   const activeLoadingGender = userProfile?.gender ?? loadingGender;
   // Loading is intentionally determined by the profile gender:
   // women get the expressive animated surface and men get the spinner.
@@ -1264,17 +1272,49 @@ function RootContent() {
   }, [authStatus, userProfile?.gender]);
 
   useEffect(() => {
-    if (!isLoadingScreen) {
+    if (!requiresInitialLoading) {
+      hasBeenInteractiveRef.current = true;
+      setSuppressTransientLoading(false);
       setLoadingRecoveryTimedOut(false);
       return;
     }
+    if (suppressTransientLoading) return;
 
     const timeoutId = window.setTimeout(
       () => setLoadingRecoveryTimedOut(true),
       LOADING_RECOVERY_TIMEOUT_MS,
     );
     return () => window.clearTimeout(timeoutId);
-  }, [isLoadingScreen]);
+  }, [requiresInitialLoading, suppressTransientLoading]);
+
+  useEffect(() => {
+    const resumeWithoutSplash = () => {
+      if (wasHiddenRef.current && hasBeenInteractiveRef.current) {
+        setSuppressTransientLoading(true);
+      }
+      wasHiddenRef.current = false;
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        wasHiddenRef.current = true;
+      } else {
+        resumeWithoutSplash();
+      }
+    };
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if ((event.persisted || wasHiddenRef.current) && hasBeenInteractiveRef.current) {
+        setSuppressTransientLoading(true);
+      }
+      wasHiddenRef.current = false;
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pageshow", handlePageShow);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pageshow", handlePageShow);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isLoadingScreen) return;
@@ -1328,7 +1368,7 @@ function RootContent() {
         // Keep the offline app shell in production, where compiled asset URLs
         // remain stable for the lifetime of a deployed build.
         void navigator.serviceWorker
-          .register("/sw.js?v=17", { updateViaCache: "none" })
+          .register("/sw.js?v=18", { updateViaCache: "none" })
           .then((registration) => registration.update())
           .catch((error) => {
             console.warn("[App shell cache unavailable]:", error);

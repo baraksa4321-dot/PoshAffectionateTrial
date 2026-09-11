@@ -1,5 +1,6 @@
-const CACHE_NAME = "myroutine-app-shell-v13";
-let firebaseMessagingReady = false;
+const CACHE_NAME = "myroutine-app-shell-v14";
+const MAX_SEEN_PUSH_IDS = 100;
+const seenPushIds = new Set();
 
 function openFirebaseConfigDb() {
   return new Promise((resolve, reject) => {
@@ -32,46 +33,10 @@ async function readFirebaseConfig() {
   return config;
 }
 
-async function configureFirebase(config) {
-  if (!config || firebaseMessagingReady) return;
-  try {
-    if (typeof firebase === "undefined") {
-      importScripts(
-        "https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js",
-        "https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js",
-      );
-    }
-    if (typeof firebase === "undefined") return;
-    firebase.initializeApp(config);
-    const messaging = firebase.messaging();
-    messaging.onBackgroundMessage((payload) => {
-      // FCM automatically displays notification payloads while the page is
-      // backgrounded. Manually showing those again would create duplicates.
-      if (payload.notification) return;
-      // GymTrack sends data-only messages so this worker owns the display
-      // path consistently across Chrome, Safari, and installed PWAs.
-      const data = payload.data || {};
-      const title = data.title || "הודעה חדשה";
-      const body = data.body || "";
-      self.registration.showNotification(title, {
-        body,
-        icon: "/icons/icon-192.png",
-        dir: "rtl",
-        lang: "he",
-        data,
-      });
-    });
-    firebaseMessagingReady = true;
-  } catch (error) {
-    console.warn("[FCM service worker]", error);
-  }
-}
-
 self.addEventListener("message", (event) => {
   if (event.data?.type !== "configure-firebase") return;
   event.waitUntil(
     saveFirebaseConfig(event.data.config)
-      .then(() => configureFirebase(event.data.config))
       .then(() => event.ports?.[0]?.postMessage({ ok: true }))
       .catch((error) => {
         console.warn("[FCM service worker config]", error);
@@ -102,9 +67,6 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     Promise.all([
       self.clients.claim(),
-      readFirebaseConfig()
-        .then((config) => configureFirebase(config))
-        .catch(() => undefined),
       caches
         .keys()
         .then((keys) =>
@@ -115,6 +77,64 @@ self.addEventListener("activate", (event) => {
           ),
         ),
     ]),
+  );
+});
+
+function parsePushPayload(event) {
+  if (!event.data) return null;
+
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch {
+    try {
+      payload = JSON.parse(event.data.text());
+    } catch {
+      return null;
+    }
+  }
+
+  // Web tokens receive data-only FCM messages. Native tokens receive a
+  // notification payload and must remain OS-owned, otherwise this handler
+  // would show a second copy of the same notification.
+  if (payload?.notification) return null;
+
+  const data =
+    payload?.data && typeof payload.data === "object" ? payload.data : payload;
+  if (!data || typeof data !== "object") return null;
+
+  const title = typeof data.title === "string" ? data.title : "הודעה חדשה";
+  const body = typeof data.body === "string" ? data.body : "";
+  if (!body) return null;
+
+  const messageId =
+    (typeof payload.messageId === "string" && payload.messageId) ||
+    (typeof payload.message_id === "string" && payload.message_id) ||
+    `${title}:${body}:${String(data.deep_link || data.deepLink || data.url || "")}`;
+
+  return { title, body, data, messageId };
+}
+
+self.addEventListener("push", (event) => {
+  event.waitUntil(
+    (async () => {
+      const payload = parsePushPayload(event);
+      if (!payload || seenPushIds.has(payload.messageId)) return;
+
+      seenPushIds.add(payload.messageId);
+      if (seenPushIds.size > MAX_SEEN_PUSH_IDS) {
+        seenPushIds.delete(seenPushIds.values().next().value);
+      }
+
+      await self.registration.showNotification(payload.title, {
+        body: payload.body,
+        icon: "/icons/icon-192.png",
+        dir: "rtl",
+        lang: "he",
+        tag: `gymtrack-${payload.messageId}`,
+        data: payload.data,
+      });
+    })(),
   );
 });
 
