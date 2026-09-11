@@ -22,7 +22,7 @@ Timeout: 8000ms
 Call log:
   - Expect "toContainText" with timeout 8000ms
   - waiting for getByTestId('coach-client-message-profile')
-    20 × locator resolved to <section data-testid="coach-client-message-profile" data-tsd-source="/src/routes/coach.tsx:9514:15" class="space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.035] p-4">…</section>
+    20 × locator resolved to <section data-testid="coach-client-message-profile" data-tsd-source="/src/routes/coach.tsx:9730:15" class="space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.035] p-4">…</section>
        - unexpected value "שליחת הודעהההודעה תופיע במסך הבית של המתאמןשלחהודעות שנשלחוהודעה שנשלחה מהפרופיל25.8, 12:00כל הכבוד על ההתמדה השבוע25.8, 11:30"
 
 ```
