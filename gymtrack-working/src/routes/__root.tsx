@@ -26,6 +26,7 @@ import { LoadingSpinner } from "../components/ui-app/LoadingSpinner";
 import {
   completeUserProfileName,
   retryProfileHydration,
+  useAuthUser,
   useAuthStatus,
   useGym,
   useProfileHydrationError,
@@ -49,6 +50,47 @@ import { LockKeyhole, RefreshCw } from "lucide-react";
 
 const useLoadingCycleEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 const LOADING_RECOVERY_TIMEOUT_MS = 45_000;
+const INTERACTIVE_SESSION_STORAGE_KEY = "my-routine-interactive-session-v1";
+
+function loadingGenderStorageKey(userId?: string) {
+  return userId ? `${LOADING_GENDER_STORAGE_KEY}.${userId}` : LOADING_GENDER_STORAGE_KEY;
+}
+
+function readPersistedLoadingGender(userId?: string): LoadingGender | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const scoped = userId
+      ? readLoadingGender(window.localStorage.getItem(loadingGenderStorageKey(userId)))
+      : undefined;
+    return scoped ?? readLoadingGender(window.localStorage.getItem(LOADING_GENDER_STORAGE_KEY));
+  } catch {
+    return undefined;
+  }
+}
+
+function persistLoadingGender(gender: LoadingGender, userId?: string) {
+  try {
+    window.localStorage.setItem(LOADING_GENDER_STORAGE_KEY, gender);
+    if (userId) window.localStorage.setItem(loadingGenderStorageKey(userId), gender);
+  } catch {
+    // In-memory state still controls the current opening when storage is unavailable.
+  }
+}
+
+function canResumeInteractiveSession() {
+  if (typeof window === "undefined") return false;
+  try {
+    const navigation = performance.getEntriesByType("navigation")[0] as
+      | PerformanceNavigationTiming
+      | undefined;
+    return (
+      navigation?.type !== "reload" &&
+      window.sessionStorage.getItem(INTERACTIVE_SESSION_STORAGE_KEY) === "true"
+    );
+  } catch {
+    return false;
+  }
+}
 
 async function resetAuthSessionAndReload() {
   try {
@@ -1125,6 +1167,7 @@ function NavigationProgress() {
 function RootContent() {
   const { queryClient } = Route.useRouteContext();
   const authStatus = useAuthStatus();
+  const authUser = useAuthUser();
   const { userProfile } = useGym();
   // Keep the first SSR and browser render identical. The persisted cycle is
   // applied after mount so loading media cannot trigger a hydration mismatch.
@@ -1181,17 +1224,19 @@ function RootContent() {
     const storedTheme = readStoredTheme();
     if (storedTheme) applyTheme(storedTheme);
 
-    try {
-      setLoadingGender(readLoadingGender(window.localStorage.getItem(LOADING_GENDER_STORAGE_KEY)));
-    } catch {
-      setLoadingGender(undefined);
-    }
+    setLoadingGender(readPersistedLoadingGender(authUser?.id));
     (window as Window & { __MY_ROUTINE_BOOTED__?: boolean }).__MY_ROUTINE_BOOTED__ = true;
     const bootUrl = new URL(window.location.href);
     if (bootUrl.searchParams.has("__myroutine_boot")) {
       bootUrl.searchParams.delete("__myroutine_boot");
       window.history.replaceState(null, "", `${bootUrl.pathname}${bootUrl.search}${bootUrl.hash}`);
     }
+  }, [authUser?.id]);
+
+  useLoadingCycleEffect(() => {
+    if (!canResumeInteractiveSession()) return;
+    hasBeenInteractiveRef.current = true;
+    setSuppressTransientLoading(true);
   }, []);
 
   useEffect(() => {
@@ -1201,16 +1246,12 @@ function RootContent() {
       );
       if (!nextGender) return;
       setLoadingGender(nextGender);
-      try {
-        window.localStorage.setItem(LOADING_GENDER_STORAGE_KEY, nextGender);
-      } catch {
-        // The in-memory loading state still controls the current opening.
-      }
+      persistLoadingGender(nextGender, authUser?.id);
     };
 
     window.addEventListener(LOADING_GENDER_EVENT, handleLoadingGender);
     return () => window.removeEventListener(LOADING_GENDER_EVENT, handleLoadingGender);
-  }, []);
+  }, [authUser?.id]);
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -1220,11 +1261,7 @@ function RootContent() {
       );
       if (nextGender) {
         setLoadingGender(nextGender);
-        try {
-          window.localStorage.setItem(LOADING_GENDER_STORAGE_KEY, nextGender);
-        } catch {
-          // The current in-memory session still controls this opening.
-        }
+        persistLoadingGender(nextGender, session?.user?.id);
         return;
       }
       if (!session?.user) {
@@ -1252,30 +1289,25 @@ function RootContent() {
     }
     if (authStatus !== "authenticated") return;
     if (!userProfile?.gender) {
-      try {
-        const storedGender = readLoadingGender(
-          window.localStorage.getItem(LOADING_GENDER_STORAGE_KEY),
-        );
-        if (storedGender) setLoadingGender(storedGender);
-      } catch {
-        // The auth/profile state can still provide the gender later.
-      }
+      const storedGender = readPersistedLoadingGender(authUser?.id);
+      if (storedGender) setLoadingGender(storedGender);
       return;
     }
 
     setLoadingGender(userProfile.gender);
-    try {
-      window.localStorage.setItem(LOADING_GENDER_STORAGE_KEY, userProfile.gender);
-    } catch {
-      // The current in-memory account state still controls this opening.
-    }
-  }, [authStatus, userProfile?.gender]);
+    persistLoadingGender(userProfile.gender, authUser?.id);
+  }, [authStatus, authUser?.id, userProfile?.gender]);
 
   useEffect(() => {
     if (!requiresInitialLoading) {
       hasBeenInteractiveRef.current = true;
       setSuppressTransientLoading(false);
       setLoadingRecoveryTimedOut(false);
+      try {
+        window.sessionStorage.setItem(INTERACTIVE_SESSION_STORAGE_KEY, "true");
+      } catch {
+        // The in-memory ref still prevents a same-document resume from flashing.
+      }
       return;
     }
     if (suppressTransientLoading) return;

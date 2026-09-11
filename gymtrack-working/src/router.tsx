@@ -19,10 +19,10 @@ export const getRouter = () => {
     defaultPreload: "intent",
     defaultPreloadStaleTime: 60_000,
     defaultPendingMs: 120,
-    // Use the browser View Transitions API when available so route changes
-    // animate as a continuous slide instead of replacing the whole page.
-    // TanStack Router falls back to its normal navigation automatically.
-    defaultViewTransition: true,
+    // Keep native view transitions off. Safari can reject a transition while
+    // the document is hidden (for example when returning from the app switcher),
+    // which surfaces as an unhandled InvalidStateError.
+    defaultViewTransition: false,
   });
 
   return router;
