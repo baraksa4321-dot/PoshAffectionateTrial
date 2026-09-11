@@ -38,6 +38,7 @@ import {
   LOADING_GENDER_STORAGE_KEY,
   loadingCycleIndexes,
   loadingMessageForGender,
+  loadingPresentationForGender,
   readLoadingGender,
   readLoadingCycle,
   type LoadingGender,
@@ -1163,9 +1164,9 @@ function RootContent() {
   // Loading is intentionally determined by the profile gender:
   // women get the expressive animated surface and men get the spinner.
   // Until a gender is known, stay on the neutral spinner rather than guessing.
-  const showExpressiveLoading = activeLoadingGender === "female";
+  const loadingMode = loadingPresentationForGender(activeLoadingGender);
+  const showExpressiveLoading = loadingMode === "expressive";
   const loadingCopyGender = activeLoadingGender ?? "female";
-  const loadingMode = showExpressiveLoading ? "expressive" : "plain";
 
   useLoadingCycleEffect(() => {
     try {
@@ -1465,6 +1466,7 @@ function RootContent() {
         <div
           key={loadingMode}
           data-loading-mode={loadingMode}
+          data-loading-gender={activeLoadingGender ?? "unknown"}
           className={`loading-screen flex min-h-[100dvh] items-center justify-center bg-background px-4 ${
             loadingMode === "plain" ? "loading-screen-plain" : ""
           }`}

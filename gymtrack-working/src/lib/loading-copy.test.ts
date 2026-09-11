@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   LOADING_MESSAGES,
   loadingCycleIndexes,
+  loadingPresentationForGender,
   readLoadingCycle,
   readLoadingGender,
 } from "./loading-copy";
@@ -45,5 +46,11 @@ describe("loading cycle", () => {
     expect(readLoadingGender(null)).toBeUndefined();
     expect(readLoadingGender("")).toBeUndefined();
     expect(readLoadingGender("unknown")).toBeUndefined();
+  });
+
+  test("selects the expressive animation only for female profiles", () => {
+    expect(loadingPresentationForGender("female")).toBe("expressive");
+    expect(loadingPresentationForGender("male")).toBe("plain");
+    expect(loadingPresentationForGender(undefined)).toBe("plain");
   });
 });

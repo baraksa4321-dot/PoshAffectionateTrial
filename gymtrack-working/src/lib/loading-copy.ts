@@ -42,9 +42,16 @@ export const LOADING_CYCLE_STORAGE_KEY = "my-routine-loading-cycle-v6";
 export const LOADING_GENDER_STORAGE_KEY = "my-routine-loading-gender-v1";
 
 export type LoadingGender = "female" | "male";
+export type LoadingPresentation = "expressive" | "plain";
 
 export function readLoadingGender(value: string | null): LoadingGender | undefined {
   return value === "female" || value === "male" ? value : undefined;
+}
+
+export function loadingPresentationForGender(
+  gender: LoadingGender | undefined,
+): LoadingPresentation {
+  return gender === "female" ? "expressive" : "plain";
 }
 
 export function readLoadingCycle(value: string | null) {
