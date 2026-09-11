@@ -9,6 +9,12 @@ The live Supabase schema and Realtime publication must be checked separately fro
 
 **How to apply:** For sync releases, read-only verify applied migrations, required RPCs/columns, publication membership, and delete behavior before any live two-account smoke test; never apply schema changes without explicit approval.
 
+A recorded migration name does not prove the live object still matches that migration; later migrations or manual changes can replace functions and policies.
+
+**Why:** The live history can show a migration as applied while the current RPC definition has drifted away from its safeguard.
+
+**How to apply:** Compare current function and policy definitions with the repository source even when the corresponding migration appears in history.
+
 Live drift can be semantic, not just a missing table: legacy activity tables may exist with different column names, and missing coach RLS can silently return empty reports while client pulls fail loudly.
 
 **Why:** A present table can still reject the client's mapper or filter rows from a permitted coach, so existence checks and local mocks do not prove compatibility.
