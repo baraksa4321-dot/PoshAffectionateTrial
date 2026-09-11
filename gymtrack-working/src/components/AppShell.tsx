@@ -47,7 +47,7 @@ import { Overlay } from "./ui-app/Overlay";
 import { BrandLogo } from "./BrandLogo";
 import { FreeTextInput } from "./FreeTextInput";
 import { genderText } from "../lib/gender-copy";
-import { LOADING_GENDER_STORAGE_KEY } from "../lib/loading-copy";
+import { LOADING_GENDER_EVENT, LOADING_GENDER_STORAGE_KEY } from "../lib/loading-copy";
 import {
   getKeyboardViewportMetrics,
   isKeyboardEditableElement,
@@ -1693,6 +1693,16 @@ export function AppShell({
                             checked={gender === value}
                             onChange={() => {
                               setGender(value);
+                              try {
+                                window.localStorage.setItem(LOADING_GENDER_STORAGE_KEY, value);
+                                window.dispatchEvent(
+                                  new CustomEvent(LOADING_GENDER_EVENT, {
+                                    detail: { gender: value },
+                                  }),
+                                );
+                              } catch {
+                                // The selected form value still controls the signup flow.
+                              }
                               if (!guestThemeWasChosenRef.current && !profileTheme) {
                                 const genderTheme = defaultThemeForGender(value);
                                 setGuestTheme(genderTheme);

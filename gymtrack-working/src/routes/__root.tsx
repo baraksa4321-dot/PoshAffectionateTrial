@@ -35,6 +35,7 @@ import { supabase } from "../lib/supabase";
 import { genderText } from "../lib/gender-copy";
 import {
   LOADING_CYCLE_STORAGE_KEY,
+  LOADING_GENDER_EVENT,
   LOADING_GENDER_STORAGE_KEY,
   loadingCycleIndexes,
   loadingMessageForGender,
@@ -43,6 +44,7 @@ import {
   readLoadingCycle,
   type LoadingGender,
 } from "../lib/loading-copy";
+import { applyTheme, readStoredTheme } from "../lib/theme";
 import { LockKeyhole, RefreshCw } from "lucide-react";
 
 const useLoadingCycleEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -1159,8 +1161,7 @@ function RootContent() {
   // only an unresolved auth/profile state blocks the first screen. Background
   // refreshes keep the current UI visible and cannot reintroduce the splash.
   const isLoadingScreen = authStatus === "loading" || isProfileHydrating;
-  const activeLoadingGender =
-    authStatus === "unauthenticated" ? undefined : (userProfile?.gender ?? loadingGender);
+  const activeLoadingGender = userProfile?.gender ?? loadingGender;
   // Loading is intentionally determined by the profile gender:
   // women get the expressive animated surface and men get the spinner.
   // Until a gender is known, stay on the neutral spinner rather than guessing.
@@ -1169,6 +1170,9 @@ function RootContent() {
   const loadingCopyGender = activeLoadingGender ?? "female";
 
   useLoadingCycleEffect(() => {
+    const storedTheme = readStoredTheme();
+    if (storedTheme) applyTheme(storedTheme);
+
     try {
       setLoadingGender(readLoadingGender(window.localStorage.getItem(LOADING_GENDER_STORAGE_KEY)));
     } catch {
@@ -1180,6 +1184,24 @@ function RootContent() {
       bootUrl.searchParams.delete("__myroutine_boot");
       window.history.replaceState(null, "", `${bootUrl.pathname}${bootUrl.search}${bootUrl.hash}`);
     }
+  }, []);
+
+  useEffect(() => {
+    const handleLoadingGender = (event: Event) => {
+      const nextGender = readLoadingGender(
+        (event as CustomEvent<{ gender?: string }>).detail?.gender ?? null,
+      );
+      if (!nextGender) return;
+      setLoadingGender(nextGender);
+      try {
+        window.localStorage.setItem(LOADING_GENDER_STORAGE_KEY, nextGender);
+      } catch {
+        // The in-memory loading state still controls the current opening.
+      }
+    };
+
+    window.addEventListener(LOADING_GENDER_EVENT, handleLoadingGender);
+    return () => window.removeEventListener(LOADING_GENDER_EVENT, handleLoadingGender);
   }, []);
 
   useEffect(() => {
@@ -1306,7 +1328,7 @@ function RootContent() {
         // Keep the offline app shell in production, where compiled asset URLs
         // remain stable for the lifetime of a deployed build.
         void navigator.serviceWorker
-          .register("/sw.js?v=12", { updateViaCache: "none" })
+          .register("/sw.js?v=17", { updateViaCache: "none" })
           .then((registration) => registration.update())
           .catch((error) => {
             console.warn("[App shell cache unavailable]:", error);

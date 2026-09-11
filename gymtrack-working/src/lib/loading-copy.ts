@@ -40,6 +40,7 @@ export const LOADING_MESSAGES = [
 
 export const LOADING_CYCLE_STORAGE_KEY = "my-routine-loading-cycle-v6";
 export const LOADING_GENDER_STORAGE_KEY = "my-routine-loading-gender-v1";
+export const LOADING_GENDER_EVENT = "myroutine:loading-gender";
 
 export type LoadingGender = "female" | "male";
 export type LoadingPresentation = "expressive" | "plain";

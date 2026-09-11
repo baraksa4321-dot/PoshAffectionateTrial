@@ -234,7 +234,7 @@ Deno.serve(async (request) => {
     if (!ids.length) return jsonResponse({ sent: 0, failed: 0 });
     const { data: tokens, error: tokenError } = await admin
       .from("push_tokens")
-      .select("token")
+      .select("token, platform")
       .in("user_id", ids);
     if (tokenError) throw new Error(`Could not load notification devices: ${tokenError.message}`);
     if (!tokens?.length) {
@@ -248,6 +248,7 @@ Deno.serve(async (request) => {
     const invalidTokens: string[] = [];
     for (const tokenRow of tokens ?? []) {
       try {
+        const nativePlatform = tokenRow.platform === "android" || tokenRow.platform === "ios";
         const response = await fetch(
           `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
           {
@@ -259,10 +260,42 @@ Deno.serve(async (request) => {
             body: JSON.stringify({
               message: {
                 token: tokenRow.token,
-                // Use a data-only message. The registered GymTrack service
-                // worker owns notification display and click routing; mixing
-                // FCM's automatic notification UI with it can silently
-                // diverge across browsers and installed PWAs.
+                  // Web uses a data-only message so the registered GymTrack
+                  // service worker owns display and click routing. Native FCM
+                  // needs an OS-visible notification payload when the app is
+                  // backgrounded or terminated; the data remains available
+                  // for deep-link handling in the native app.
+                  ...(nativePlatform
+                    ? {
+                        notification: {
+                          title: requestBody.title,
+                          body: requestBody.body,
+                        },
+                        ...(tokenRow.platform === "android"
+                          ? {
+                              android: {
+                                priority: "high",
+                                notification: {
+                                  channel_id: "gymtrack",
+                                  sound: "default",
+                                },
+                              },
+                            }
+                          : {
+                              apns: {
+                                headers: {
+                                  "apns-push-type": "alert",
+                                  "apns-priority": "10",
+                                },
+                                payload: {
+                                  aps: {
+                                    sound: "default",
+                                  },
+                                },
+                              },
+                            }),
+                      }
+                    : {}),
                 data: {
                   ...(requestBody.data ?? {}),
                   title: requestBody.title,

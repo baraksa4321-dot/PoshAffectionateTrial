@@ -389,6 +389,11 @@ html.night-mode textarea::placeholder {
   color: #000000 !important;
 }
 
+:root[data-theme="black"]:not(.night-mode) .app-topbar a[aria-current="page"][class~="bg-ink"] {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
 :root[data-theme="dark-brown"] {
   --background: #ffffff;
   --foreground: #30231f;
@@ -2489,42 +2494,16 @@ label > input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]) {
   }
 }
 
+/* The expressive female loading surface is an intentional product animation.
+ * Keep it moving even when the device advertises reduced motion; the rest of
+ * the app continues to honor the global reduced-motion preference below. */
 @media (prefers-reduced-motion: reduce) {
-  .loading-cup-fill,
-  .loading-bubble,
-  .loading-dumbbell,
-  .loading-apple,
-  .loading-bowl-fill,
-  .loading-spoon,
-  .loading-food {
-    animation: none;
-  }
-
-  .loading-micro-icon,
-  .loading-drawing,
-  .loading-object-motion,
-  .loading-object-fill,
-  .loading-food-motion,
-  .loading-food-generic-fill,
-  .loading-dumbbell-motion,
-  .loading-dumbbell-fill,
-  .loading-dumbbell-shadow,
-  .loading-micro-dot,
-  .loading-clean-dots span,
-  .loading-witty-message,
-  .loading-realistic-image,
-  .loading-reference-image,
-  .loading-reference-layer,
-  .loading-simple-image,
-  .loading-character,
-  .loading-character *,
-  .loading-doodle-streak,
-  .loading-doodle-spark {
-    animation: none;
-  }
-
-  .loading-cup-fill {
-    height: 52%;
+  .loading-screen[data-loading-mode="expressive"] .loading-micro-stage,
+  .loading-screen[data-loading-mode="expressive"] .loading-micro-stage *,
+  .loading-screen[data-loading-mode="expressive"] .loading-micro-stage::before,
+  .loading-screen[data-loading-mode="expressive"] .loading-micro-stage::after {
+    animation-duration: 1.8s !important;
+    animation-iteration-count: infinite !important;
   }
 }
 
