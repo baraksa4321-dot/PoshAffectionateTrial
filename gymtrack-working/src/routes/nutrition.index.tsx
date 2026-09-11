@@ -993,7 +993,7 @@ function NutritionLog() {
         </div>
       </div>
       {day.plannedMeals && day.plannedMeals.length > 0 ? (
-        <section className="order-1 mt-4">
+        <section className="nutrition-plan-section order-1 mt-4">
           <div className="mb-3 flex items-end justify-between gap-3">
             <div>
               <p className="section-kicker text-primary">תפריט מהמאמן</p>
@@ -1010,7 +1010,7 @@ function NutritionLog() {
               return (
                 <article
                   key={meal.id}
-                  className="surface-card overflow-hidden border-primary/15 bg-primary/[0.035] p-4"
+                  className="nutrition-planned-meal surface-card overflow-hidden border-primary/15 bg-primary/[0.035] p-4"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="font-display text-[15px] font-bold text-ink">{meal.name}</h3>
@@ -1049,7 +1049,7 @@ function NutritionLog() {
                         return (
                           <div
                             key={food.id}
-                            className="rounded-xl bg-white/80 px-3 py-2 text-start"
+                            className="nutrition-plan-food rounded-xl bg-white/80 px-3 py-2 text-start"
                           >
                             <div className="flex items-center justify-between gap-2">
                               <span className="min-w-0 truncate text-[13px] font-semibold text-ink">
@@ -1134,11 +1134,11 @@ function NutritionLog() {
             }
           />
 
-          <div className="space-y-3">
+           <div className="nutrition-log-meals space-y-3">
             {day.meals.map((meal) => {
               const mealTotals = foodTotals(meal.foods);
               return (
-                <section key={meal.id} className="surface-card p-4">
+                 <section key={meal.id} className="nutrition-log-meal surface-card p-4">
                   <div className="flex items-start gap-3">
                     <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-cream text-ink-soft">
                       <Utensils className="h-4 w-4" strokeWidth={1.8} />

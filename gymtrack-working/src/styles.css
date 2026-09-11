@@ -7566,6 +7566,281 @@ html.night-mode .dashboard-editorial-shell .dashboard-notice {
   background: color-mix(in srgb, var(--night-rose) 13%, var(--surface-2)) !important;
 }
 
+/* -------------------------------------------------------------------------
+ * Compact mobile density
+ *
+ * The mobile shell is a utility app, not a marketing page. Keep the existing
+ * DOM and interactions, but remove repeated vertical breathing room so the
+ * first useful content and the next action stay visible above the tab bar.
+ * ------------------------------------------------------------------------- */
+@media (max-width: 639px) {
+  .app-topbar__inner {
+    padding-top: 0.3rem !important;
+    padding-bottom: 0.38rem !important;
+  }
+
+  .app-topbar__brand-row {
+    min-height: 2.05rem !important;
+    margin-bottom: 0.18rem !important;
+    padding-bottom: 0.22rem !important;
+  }
+
+  .app-topbar__utility-row {
+    margin-bottom: 0.28rem !important;
+    padding-bottom: 0.28rem !important;
+  }
+
+  .app-topbar__heading {
+    gap: 0.55rem !important;
+  }
+
+  .app-topbar h1 {
+    font-size: clamp(1rem, 4.2vw, 1.18rem) !important;
+    line-height: 1.15 !important;
+  }
+
+  .app-shell-kicker {
+    margin-bottom: 0.12rem !important;
+    font-size: 0.59rem !important;
+  }
+
+  .app-main {
+    padding-inline: 0.82rem !important;
+    padding-bottom: calc(4.8rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  .dashboard-editorial-shell .app-main {
+    padding-top: 0.72rem !important;
+  }
+
+  .dashboard-editorial-shell main > .home-card-stack {
+    gap: 0.56rem !important;
+  }
+
+  .dashboard-editorial-shell .home-card-stack > [data-home-card-id] {
+    margin-top: 0 !important;
+  }
+
+  .dashboard-editorial-shell .dashboard-support-card {
+    min-height: 0 !important;
+    padding: 0.72rem 0.78rem !important;
+  }
+
+  .dashboard-editorial-shell .home-feature-grid {
+    gap: 0.48rem !important;
+  }
+
+  .dashboard-editorial-shell .home-feature-item > .ink-card,
+  .dashboard-editorial-shell .home-secondary-card {
+    padding: 0.68rem !important;
+    border-radius: 0.95rem !important;
+  }
+
+  .dashboard-editorial-shell .home-primary-card > .ink-card h2 {
+    margin-top: 0.3rem !important;
+    font-size: 1.02rem !important;
+    line-height: 1.08 !important;
+  }
+
+  .dashboard-editorial-shell .home-primary-card > .ink-card button {
+    min-height: 1.95rem !important;
+    margin-top: 0.32rem !important;
+    font-size: 0.66rem !important;
+  }
+
+  .dashboard-editorial-shell .home-secondary-card > p.font-display {
+    margin-top: 0.3rem !important;
+    font-size: 1.38rem !important;
+  }
+
+  .dashboard-editorial-shell .home-secondary-card > div:last-child {
+    min-height: 1.85rem !important;
+    margin-top: 0.3rem !important;
+    padding: 0.36rem 0.48rem !important;
+    font-size: 0.62rem !important;
+  }
+
+  .dashboard-editorial-shell .dashboard-module {
+    padding-top: 0 !important;
+  }
+
+  .dashboard-editorial-shell .dashboard-module .grid {
+    gap: 0.45rem !important;
+  }
+
+  .dashboard-editorial-shell .dashboard-module .surface-card {
+    padding: 0.68rem !important;
+  }
+
+  .dashboard-editorial-shell .dashboard-module--activity,
+  .dashboard-editorial-shell .dashboard-module--check-in,
+  .dashboard-editorial-shell .dashboard-module--measurements {
+    padding: 0 !important;
+  }
+
+  .nav-shell.app-bottom-nav {
+    width: calc(100% - 0.7rem) !important;
+    margin-bottom: 0.2rem !important;
+    padding: 0.2rem 0.25rem !important;
+    border-radius: 1.05rem !important;
+  }
+
+  .app-bottom-nav .app-nav-link {
+    min-height: 2.62rem !important;
+    padding: 0.18rem 0.15rem 0.22rem !important;
+    border-radius: 0.82rem !important;
+  }
+
+  .app-bottom-nav .app-nav-link > svg {
+    width: 0.98rem !important;
+    height: 0.98rem !important;
+    padding: 0.3rem !important;
+  }
+
+  .app-bottom-nav .app-nav-link > span:last-child {
+    font-size: 0.56rem !important;
+    line-height: 1 !important;
+  }
+
+  .nutrition-balance-card {
+    margin-top: 0.72rem !important;
+    padding: 0.72rem !important;
+    border-radius: 1rem !important;
+  }
+
+  .nutrition-balance-card .relative.grid.h-24.w-24 {
+    width: 4.35rem !important;
+    height: 4.35rem !important;
+  }
+
+  .nutrition-balance-card .relative.grid.h-24.w-24 svg {
+    width: 4.35rem !important;
+    height: 4.35rem !important;
+  }
+
+  .nutrition-balance-card .relative.grid.h-24.w-24 span {
+    font-size: 0.72rem !important;
+  }
+
+  .nutrition-balance-card > div:first-child {
+    margin-bottom: 0.42rem !important;
+  }
+
+  .nutrition-balance-card .mb-3.grid {
+    margin-bottom: 0.42rem !important;
+  }
+
+  .nutrition-balance-card .mt-4.grid {
+    margin-top: 0.5rem !important;
+    gap: 0.35rem !important;
+  }
+
+  .nutrition-balance-card .mt-4.grid > div {
+    padding: 0.42rem 0.3rem !important;
+    border-radius: 0.72rem !important;
+  }
+
+  .nutrition-balance-card .mt-4.grid > div p:first-child {
+    font-size: 0.52rem !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  .nutrition-balance-card .mt-4.grid > div p:nth-child(2) {
+    margin-top: 0.1rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  .nutrition-plan-section {
+    margin-top: 0.72rem !important;
+  }
+
+  .nutrition-plan-section > .mb-3 {
+    margin-bottom: 0.42rem !important;
+  }
+
+  .nutrition-plan-section > .mb-3 h2 {
+    margin-top: 0.18rem !important;
+    font-size: 1.08rem !important;
+  }
+
+  .nutrition-planned-meal {
+    padding: 0.72rem !important;
+    border-radius: 1rem !important;
+  }
+
+  .nutrition-planned-meal + .nutrition-planned-meal {
+    margin-top: 0.48rem !important;
+  }
+
+  .nutrition-planned-meal > .flex.items-center.justify-between {
+    gap: 0.45rem !important;
+  }
+
+  .nutrition-planned-meal > .flex.items-center.justify-between h3 {
+    font-size: 0.82rem !important;
+  }
+
+  .nutrition-planned-meal > .flex.items-center.justify-between button {
+    height: 1.82rem !important;
+    padding-inline: 0.5rem !important;
+    font-size: 0.62rem !important;
+  }
+
+  .nutrition-planned-meal .mt-3.space-y-1\.5 {
+    margin-top: 0.48rem !important;
+  }
+
+  .nutrition-plan-food {
+    padding: 0.48rem 0.58rem !important;
+    border-radius: 0.72rem !important;
+  }
+
+  .nutrition-plan-food + .nutrition-plan-food {
+    margin-top: 0.3rem !important;
+  }
+
+  .nutrition-plan-food .mt-2.grid {
+    margin-top: 0.35rem !important;
+  }
+
+  .nutrition-plan-food .mt-2.flex {
+    margin-top: 0.35rem !important;
+  }
+
+  .nutrition-plan-food .mt-2.flex button {
+    height: 1.8rem !important;
+    padding-inline: 0.55rem !important;
+    font-size: 0.62rem !important;
+  }
+
+  [data-testid="nutrition-macro-grid"] {
+    gap: 0.3rem !important;
+  }
+
+  [data-testid="nutrition-macro-grid"] > div {
+    padding: 0.32rem 0.2rem !important;
+    border-radius: 0.62rem !important;
+  }
+
+  [data-testid="nutrition-macro-grid"] span {
+    font-size: 0.48rem !important;
+  }
+
+  [data-testid="nutrition-macro-grid"] strong {
+    margin-top: 0.08rem !important;
+    font-size: 0.68rem !important;
+  }
+
+  .nutrition-log-meals {
+    gap: 0.58rem !important;
+  }
+
+  .nutrition-log-meal {
+    padding: 0.72rem !important;
+    border-radius: 1rem !important;
+  }
+}
+
 html.night-mode .dashboard-editorial-shell .consistency-linear-track {
   background: #2b2e37 !important;
 }
