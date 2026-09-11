@@ -1228,6 +1228,13 @@ function load() {
     });
     window.addEventListener("online", () => {
       if (!currentUser) return;
+      // Cached data can be rendered before the initial offline hydration
+      // promise has settled. If reconnect happens in that window,
+      // startUserHydration deduplicates against the existing promise, so mark
+      // the refresh explicitly and drain it after that promise completes.
+      if (hydrationInFlight?.userId === currentUser.id) {
+        queuedRealtimeRefreshUserId = currentUser.id;
+      }
       if (syncRetryTimer) {
         clearTimeout(syncRetryTimer);
         syncRetryTimer = null;

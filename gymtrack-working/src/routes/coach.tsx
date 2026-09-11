@@ -1547,6 +1547,7 @@ export function CoachDashboardPage({
   // Coach Message sender state
   const [coachMsgText, setCoachMsgText] = useState("");
   const [msgSendError, setMsgSendError] = useState("");
+  const [msgSendNotice, setMsgSendNotice] = useState("");
   const [sendingCoachMessage, setSendingCoachMessage] = useState(false);
   const [sentCoachMessages, setSentCoachMessages] = useState<CoachMessage[]>([]);
   const [sentCoachMessagesError, setSentCoachMessagesError] = useState("");
@@ -3159,6 +3160,7 @@ export function CoachDashboardPage({
     const clientIdForMessage = selectedClientId;
     if (!clientIdForMessage || !message || sendingCoachMessage) return;
     setMsgSendError("");
+    setMsgSendNotice("");
     setSendingCoachMessage(true);
 
     try {
@@ -3177,6 +3179,7 @@ export function CoachDashboardPage({
       });
       setCoachMsgText("");
       setFailedCoachMessage(null);
+      setMsgSendNotice("הודעת החיזוק נשלחה בהצלחה למתאמן!");
       void fetchSentCoachMessages(clientIdForMessage)
         .then((messages) => {
           setSentCoachMessagesError("");
@@ -9746,6 +9749,14 @@ export function CoachDashboardPage({
                     className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs font-bold text-rose-700"
                   >
                     {msgSendError}
+                  </p>
+                ) : null}
+                {msgSendNotice ? (
+                  <p
+                    role="status"
+                    className="rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs font-bold text-emerald-700"
+                  >
+                    {msgSendNotice}
                   </p>
                 ) : null}
                 <form onSubmit={handleSendCoachMessage} className="flex gap-2">
