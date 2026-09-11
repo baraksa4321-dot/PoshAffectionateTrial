@@ -16,23 +16,20 @@ Error: expect(locator).toContainText(expected) failed
 
 Locator: getByTestId('coach-client-message-profile')
 Expected substring: "הודעת החיזוק נשלחה בהצלחה למתאמן!"
-Received string:    "שליחת הודעהההודעה תופיע במסך הבית של המתאמןההודעה נשמרה, אך Failed to send a request to the Edge Functionשלחהודעות שנשלחוהודעה שנשלחה מהפרופיל25.8, 12:00כל הכבוד על ההתמדה השבוע25.8, 11:30"
+Received string:    "שליחת הודעהההודעה תופיע במסך הבית של המתאמןשלחהודעות שנשלחוהודעה שנשלחה מהפרופיל25.8, 12:00כל הכבוד על ההתמדה השבוע25.8, 11:30"
 Timeout: 8000ms
 
 Call log:
   - Expect "toContainText" with timeout 8000ms
   - waiting for getByTestId('coach-client-message-profile')
-    10 × locator resolved to <section data-testid="coach-client-message-profile" data-tsd-source="/src/routes/coach.tsx:9449:15" class="space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.035] p-4">…</section>
-       - unexpected value "שליחת הודעהההודעה תופיע במסך הבית של המתאמןההודעה נשמרה. בודקת את שליחת התראת ה־Push...ההודעה נשמרה, אך Failed to send a request to the Edge Functionשלחהודעות שנשלחוהודעה שנשלחה מהפרופיל25.8, 12:00כל הכבוד על ההתמדה השבוע25.8, 11:30"
-    10 × locator resolved to <section data-testid="coach-client-message-profile" data-tsd-source="/src/routes/coach.tsx:9449:15" class="space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.035] p-4">…</section>
-       - unexpected value "שליחת הודעהההודעה תופיע במסך הבית של המתאמןההודעה נשמרה, אך Failed to send a request to the Edge Functionשלחהודעות שנשלחוהודעה שנשלחה מהפרופיל25.8, 12:00כל הכבוד על ההתמדה השבוע25.8, 11:30"
+    20 × locator resolved to <section data-testid="coach-client-message-profile" data-tsd-source="/src/routes/coach.tsx:9487:15" class="space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.035] p-4">…</section>
+       - unexpected value "שליחת הודעהההודעה תופיע במסך הבית של המתאמןשלחהודעות שנשלחוהודעה שנשלחה מהפרופיל25.8, 12:00כל הכבוד על ההתמדה השבוע25.8, 11:30"
 
 ```
 
 ```yaml
 - heading "שליחת הודעה" [level=3]
 - paragraph: ההודעה תופיע במסך הבית של המתאמן
-- alert: ההודעה נשמרה, אך Failed to send a request to the Edge Function
 - textbox "כתבי הודעה למתאמן..."
 - button "שלח"
 - paragraph: הודעות שנשלחו
