@@ -231,14 +231,14 @@ Deno.serve(async (request) => {
       if (!assignment) throw new RequestError("The coach is not assigned to this trainee.", 403);
     }
     const ids = await recipientIds(admin, authData.user.id, requestBody);
-    if (!ids.length) return jsonResponse({ sent: 0 });
+    if (!ids.length) return jsonResponse({ sent: 0, failed: 0 });
     const { data: tokens, error: tokenError } = await admin
       .from("push_tokens")
       .select("token")
       .in("user_id", ids);
     if (tokenError) throw new Error(`Could not load notification devices: ${tokenError.message}`);
     if (!tokens?.length) {
-      return jsonResponse({ sent: 0 });
+      return jsonResponse({ sent: 0, failed: 0 });
     }
     const accessToken = await googleAccessToken();
     const projectId = Deno.env.get("FIREBASE_PROJECT_ID")?.trim();
