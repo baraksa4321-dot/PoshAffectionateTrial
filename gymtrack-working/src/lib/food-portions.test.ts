@@ -196,6 +196,45 @@ describe("food portion conversions", () => {
     expect(twoSpoons.quantity).toBe(2);
   });
 
+  test("uses FoodsDictionary weights for large and medium vegetables", () => {
+    const pepper: FoodItem = {
+      id: "red-pepper",
+      name: "פלפל אדום (גמבה)",
+      category: "ירקות",
+      servingSize: "יחידה בינונית (185g)",
+      calories: 57.4,
+      protein: 1.8,
+      carbs: 11.2,
+      fat: 0.6,
+      fiber: 3.9,
+    };
+    const largePepper = mealFoodFromPortion(pepper, 1, "large");
+
+    expect(foodQuantityOptions(pepper).map(({ value }) => value)).toEqual([
+      "medium",
+      "small",
+      "large",
+      "g",
+    ]);
+    expect(largePepper.servingSize).toBe("יחידה גדולה למנה");
+    expect(Math.abs(largePepper.calories - 57.4 * (289 / 185)) < 1e-9).toBe(true);
+
+    const cookedBroccoli: FoodItem = {
+      id: "cooked-broccoli",
+      name: "ברוקולי מבושל",
+      category: "ירקות",
+      servingSize: "100 גרם",
+      calories: 35,
+      protein: 2.4,
+      carbs: 7.2,
+      fat: 0.4,
+      fiber: 3.3,
+    };
+    expect(foodQuantityOptions(cookedBroccoli).map(({ value }) => value)).not.toContain("small");
+    expect(foodQuantityOptions(cookedBroccoli).map(({ value }) => value)).not.toContain("medium");
+    expect(foodQuantityOptions(cookedBroccoli).map(({ value }) => value)).not.toContain("large");
+  });
+
   test("uses household units in replacement presentation instead of always grams", () => {
     const cottage: FoodItem = {
       id: "cottage-replacement",

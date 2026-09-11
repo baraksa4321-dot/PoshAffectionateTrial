@@ -136,6 +136,52 @@ function isBellPepper(food: FoodItem) {
   );
 }
 
+function isTomato(food: FoodItem) {
+  return /עגבני|tomato/i.test(`${food.name} ${food.englishName ?? ""}`);
+}
+
+function isCarrot(food: FoodItem) {
+  return /גזר|carrot/i.test(`${food.name} ${food.englishName ?? ""}`);
+}
+
+function isZucchini(food: FoodItem) {
+  return /קישוא|zucchini|courgette/i.test(`${food.name} ${food.englishName ?? ""}`);
+}
+
+function isRadish(food: FoodItem) {
+  return /צנונית|צנון|radish/i.test(`${food.name} ${food.englishName ?? ""}`);
+}
+
+function isBeet(food: FoodItem) {
+  return /סלק|beet/i.test(`${food.name} ${food.englishName ?? ""}`);
+}
+
+function vegetableUnitWeights(food: FoodItem) {
+  const text = `${food.name} ${food.englishName ?? ""}`;
+  if (
+    !(food.category ?? "").includes("ירקות") ||
+    /מבושל|אפוי|קלוי|מוקפץ|מאודה|בגריל|מרוסק|רוטב|חמוץ|קפוא|green pepper.*yellow|yellow pepper.*green/i.test(
+      text,
+    )
+  ) {
+    return null;
+  }
+  if (/פלפל צהוב|yellow pepper/i.test(text)) {
+    return { small: 86, medium: 122, large: 188 };
+  }
+  if (/פלפל ירוק|green pepper/i.test(text)) {
+    return { small: 110, medium: 166, large: 218 };
+  }
+  if (isBellPepper(food)) return { small: 110, medium: 185, large: 289 };
+  if (isCucumber(food)) return { small: 52, medium: 96, large: 154 };
+  if (isTomato(food)) return { small: 114, medium: 172, large: 230 };
+  if (isCarrot(food)) return { small: 68, medium: 136, large: 261 };
+  if (isZucchini(food)) return { small: 108, medium: 218, large: 290 };
+  if (isRadish(food)) return { small: 18, medium: 32, large: 49 };
+  if (isBeet(food)) return { small: 120, medium: 120, large: 120 };
+  return null;
+}
+
 function isAvocado(food: FoodItem) {
   return /אבוקדו|avocado/i.test(`${food.name} ${food.englishName ?? ""}`);
 }
@@ -198,16 +244,11 @@ export function foodQuantityOptions(food: FoodItem): FoodQuantityOption[] {
       { value: "tsp", label: unitLabels.tsp },
       { value: "serving", label: unitLabels.serving },
     ];
-  } else if (isBellPepper(food)) {
+  } else if (vegetableUnitWeights(food)) {
     options = [
       { value: "medium", label: unitLabels.medium },
       { value: "small", label: unitLabels.small },
       { value: "large", label: unitLabels.large },
-      ...(canConvertToGrams(food) ? [{ value: "g" as const, label: unitLabels.g }] : []),
-    ];
-  } else if (isCucumber(food)) {
-    options = [
-      { value: "unit", label: "מלפפון" },
       ...(canConvertToGrams(food) ? [{ value: "g" as const, label: unitLabels.g }] : []),
     ];
   } else if (servingIsSlice(food.servingSize)) {
@@ -277,8 +318,7 @@ export function defaultFoodQuantity(food: FoodItem): {
   else if (isBread(food)) preferred = { quantity: 1, unit: "slice" };
   else if (isPita(food)) preferred = { quantity: 1, unit: "unit" };
   else if (isMilkOrDrink(food)) preferred = { quantity: 100, unit: "ml" };
-  else if (isBellPepper(food)) preferred = { quantity: 1, unit: "medium" };
-  else if (isCucumber(food)) preferred = { quantity: 1, unit: "unit" };
+  else if (vegetableUnitWeights(food)) preferred = { quantity: 1, unit: "medium" };
   else if (servingIsUnit(food.servingSize)) preferred = { quantity: 1, unit: "unit" };
   else if (servingIsSlice(food.servingSize)) preferred = { quantity: 1, unit: "slice" };
   else if (isAvocado(food) || isProteinOrStaple(food)) {
@@ -314,10 +354,10 @@ function gramsForUnit(food: FoodItem, unit: FoodQuantityUnit) {
   if (unit === "slice" && isBread(food)) return gramsPerBreadSlice(food);
   if (unit === "unit" && isPita(food)) return referenceServingGrams(food);
   if (unit === "unit" && isCherryTomato(food)) return 15;
-  if (unit === "unit" && isCucumber(food)) return 200;
-  if (unit === "small" && isBellPepper(food)) return 75;
-  if (unit === "medium" && isBellPepper(food)) return 120;
-  if (unit === "large" && isBellPepper(food)) return 160;
+  const vegetableWeights = vegetableUnitWeights(food);
+  if (vegetableWeights && (unit === "small" || unit === "medium" || unit === "large")) {
+    return vegetableWeights[unit];
+  }
   return referenceServingGrams(food);
 }
 
