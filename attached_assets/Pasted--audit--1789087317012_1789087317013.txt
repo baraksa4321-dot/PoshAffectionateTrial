@@ -1,0 +1,78 @@
+בצע את כל התיקונים מדוח ה-audit, לפי הסדר הבא. עבוד שלב אחרי שלב 
+ולא בבת אחת - אחרי כל שלב עצור, הראה לי מה שונה ובקש אישור לפני 
+שתמשיך לשלב הבא. אל תמחק או תשנה נתונים קיימים בלי אישור מפורש.
+
+## שלב 1: אבטחה קריטית
+
+1. workout-videos bucket:
+   - שנה ל-public = false
+   - הסר policies ישנות מסוג Public Access
+   - ודא שהקוד הקיים שמייצר signed URLs (supabase-sync.ts) עדיין עובד
+   - בדוק גישה אנונימית לאובייקט קיים - ודא שהיא נחסמת
+
+2. planned_meals:
+   - מפה את row.planned_meals ל-plannedMeals בכל שלושת מקומות ה-pull 
+     (supabase-sync.ts: 1681-1686, 1874-1882, 2005-2011)
+   - ודא שאין מקום נוסף שדורס את השדה ב-array ריק
+   - תן לי לבדוק ידנית: לשמור planned meal במכשיר אחד, למשוך במכשיר שני
+
+3. Coach Push permissions:
+   - ב-send-fcm-notification/index.ts: הגבל Coach לשליחה רק ל-assigned_clients שלו
+   - השאר ל-Owner בלבד את האפשרות לשלוח ל-coaches/clients/everyone
+   - אכוף את זה בתוך ה-Edge Function עצמה, לא רק ב-UI
+
+עצור כאן ותן לי סיכום של השלושה לפני שממשיכים.
+
+## שלב 2: Schema ו-migrations
+
+4. בצע השוואה בין migration history בקוד לבין מה שרץ בפועל ב-Supabase החי
+5. תן לי רשימה: אילו migrations (36, 38, 43, 46, 47) צריכות לרוץ ב-production
+6. אל תריץ migrations בעצמך - רק תציג לי מה חסר ואני אאשר לפני הרצה
+
+## שלב 3: Input validation
+
+7. בכל שלושת המקומות (exercises.$exerciseId.tsx, coach.tsx, 
+   nutrition.foods.$foodId.tsx): הוסף validation שמאפשר רק https:
+8. בנה allowlist: YouTube, Supabase Storage, ספקי CDN שבשימוש בפועל
+9. אמת YouTube video ID באמצעות regex
+10. הוסף את אותה validation גם בצד שרת, לא רק בצד לקוח
+
+## שלב 4: RLS ו-RPC hardening
+
+11. תקן את search_path החסר ב-handle_new_user
+12. עבור על 13 הפונקציות הזמינות ל-anon - לכל אחת, קבע אם היא צריכה 
+    להיות זמינה ל-anon או לא, והסר הרשאות מיותרות
+13. מפה policies כפולות (למשל ב-body_weight_logs) ומחק את הישנות - 
+    הראה לי את הרשימה המלאה לפני מחיקה, כי permissive policies 
+    מתחברות ב-OR ומחיקה שגויה עלולה לצמצם הרשאות בטעות
+14. הפעל Leaked Password Protection
+
+עצור כאן ותן לי סיכום לפני המשך.
+
+## שלב 5: Dependencies
+
+15. עדכן חבילות ללא breaking change: brace-expansion, js-yaml, 
+    nanoid, fast-uri, qs, esbuild
+16. עבור uuid (7.0.3 → 11.1.1, major update): בדוק תאימות לפני עדכון, 
+    ותן לי לאשר לפני שדוחפים אותו
+
+## שלב 6: ביצועים ותפעול
+
+17. hydration: החלף select("*") בעמודות ספציפיות, הוסף pagination 
+    להיסטוריית משתמש, הוסף AbortSignal לביטול requests ישנים
+18. הפחת תדירות polling (15 שניות + focus/visibility/pageshow) - 
+    השתמש ב-Realtime כ-cache invalidation ובפולינג רק כ-fallback
+19. הסר טעינה כפולה של אותה תמונה במסך הטעינה (__root.tsx:479-492)
+20. הוסף rate limiting מבוזר (לא Map מקומי) ל-meal scan ול-barcode lookup
+
+## שלב 7: תיעוד
+
+21. עדכן README.md, replit.md ו-PROJECT_HANDOFF.md כך שישקפו את 
+    המערכת האמיתית (לא Lovable/Express template ישנים)
+22. תעד את מבנה ה-DB הנוכחי בפועל
+
+## חשוב:
+- backup/recovery runbook לא קיים כלל - אל תבצע שינויי DB משמעותיים 
+  (מחיקת policies, migrations) לפני שיש גיבוי מאומת
+- בכל שלב, אם משהו לא ברור או מסוכן לביצוע אוטומטי - עצור ושאל אותי, 
+  אל תנחש
