@@ -24,6 +24,7 @@
 - [Food library ownership](food-library-ownership.md) — User edits to seeded foods must become owned overrides so sync does not restore the original values.
 - [Supabase MCP fallback](supabase-mcp-fallback.md) — If generated Supabase MCP callbacks are unavailable, the installed custom MCP connection may still expose the streamable `/mcp` endpoint.
 - [Live Supabase sync drift](live-supabase-sync-drift.md) — Local realtime mocks can pass while the live schema or publication is behind; verify both before declaring cross-user sync ready.
+- [Supabase backup verification](supabase-backup-verification.md) — Project health and migration history do not prove recoverability; verify a live backup before production DDL.
 - [Live coach-message smoke](live-coach-message-smoke.md) — Verify coach message delivery through a fresh trainee read; do not rely only on a Realtime callback.
 - [Playwright WebKit runtime](playwright-webkit-nix.md) — The bundled Linux WebKit may require Debian ABI libraries unavailable in stable Nix; keep the release gate explicit rather than silently skipping it.
 - [Playwright init document timing](playwright-init-document-timing.md) — Browser init scripts may run before documentElement exists; observe document for early render telemetry.
