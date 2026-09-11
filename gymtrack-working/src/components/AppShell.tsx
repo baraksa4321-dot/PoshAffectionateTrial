@@ -960,12 +960,12 @@ export function AppShell({
         style={{ paddingTop: "max(0.35rem, env(safe-area-inset-top))" }}
       >
         <div
-          className={`mx-auto w-full max-w-3xl px-4 sm:px-6 ${
+          className={`app-topbar__inner mx-auto w-full max-w-3xl px-4 sm:px-6 ${
             compactHeader ? "pb-1.5 pt-0" : "pb-2 pt-0"
           }`}
         >
           <div
-            className={`flex items-center justify-between gap-3 border-b border-border/50 ${
+            className={`app-topbar__brand-row flex items-center justify-between gap-3 border-b border-border/50 ${
               compactHeader ? "mb-1 pb-0.5" : "mb-2 pb-1"
             }`}
           >
@@ -987,7 +987,7 @@ export function AppShell({
           </div>
           {headerAccessory || (isCoach && showHomeOnlyHeaderControls) ? (
             <div
-              className={`flex items-center justify-between gap-2 border-b border-border/50 ${
+              className={`app-topbar__utility-row flex items-center justify-between gap-2 border-b border-border/50 ${
                 compactHeader ? "mb-1 pb-0.5" : "mb-2 pb-1"
               }`}
             >
@@ -1039,7 +1039,7 @@ export function AppShell({
             </div>
           ) : null}
           {title || action || (user && showHomeOnlyHeaderControls) || !user ? (
-            <div className="flex items-start gap-3">
+            <div className="app-topbar__heading flex items-start gap-3">
               <div className="min-w-0 flex-1 text-start">
                 {kicker ? <p className="app-shell-kicker">{kicker}</p> : null}
                 {title ? (
@@ -1791,7 +1791,7 @@ export function AppShell({
           className="pointer-events-none fixed inset-x-0 bottom-0 z-40"
         >
           <div
-            className="nav-shell pointer-events-auto mx-auto flex w-full max-w-3xl items-center justify-between border-t bg-background/95 backdrop-blur-xl"
+            className="nav-shell app-bottom-nav pointer-events-auto mx-auto flex w-full max-w-3xl items-center justify-between border-t bg-background/95 backdrop-blur-xl"
             style={{ paddingBottom: "0.25rem" }}
           >
             {NAV.map(({ to, label, id, icon: Icon, onClick }) => (

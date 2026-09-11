@@ -805,17 +805,6 @@ html.night-mode .text-gray-900 {
   color: var(--ink) !important;
 }
 
-/* Keep the app chrome as one continuous night-mode surface on mobile. */
-html.night-mode .app-topbar,
-html.night-mode .nav-shell {
-  background: var(--background) !important;
-  background-color: var(--background) !important;
-  border-color: var(--surface) !important;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
 /* The wordmark is dark by default; invert it only for the night canvas. */
 html.night-mode img[src*="myroutine-logo"] {
   filter: brightness(0) invert(1);
@@ -1005,7 +994,7 @@ html:not(.night-mode) .nav-shell {
   box-shadow: 0 8px 22px rgb(var(--shadow-color) / 4%);
 }
 
-.dashboard-editorial-shell .app-topbar > div > div:last-child {
+.dashboard-editorial-shell .app-topbar__inner > div:last-child {
   border-bottom-color: color-mix(in srgb, var(--border) 72%, transparent);
 }
 
@@ -1185,7 +1174,7 @@ html:not(.night-mode) .nav-shell {
   box-shadow: none;
 }
 
-.auth-editorial-shell .app-topbar > div > div:first-child {
+.auth-editorial-shell .app-topbar__brand-row {
   border-bottom: 0;
 }
 
@@ -5117,12 +5106,12 @@ body {
     0 10px 26px rgb(var(--shadow-color) / 4%);
 }
 
-.app-topbar > div {
+.app-topbar__inner {
   padding-top: 0.55rem;
   padding-bottom: 0.75rem;
 }
 
-.app-topbar > div > div:first-child {
+.app-topbar__brand-row {
   border-bottom-color: color-mix(in srgb, var(--border) 42%, transparent);
   padding-bottom: 0.35rem;
 }
@@ -5321,7 +5310,7 @@ body {
   border-radius: 0 0 1.55rem 1.55rem;
 }
 
-.app-topbar > div,
+.app-topbar__inner,
 .app-main {
   max-width: 60rem;
 }
@@ -5422,7 +5411,7 @@ body {
 }
 
 @media (max-width: 420px) {
-  .app-topbar > div {
+  .app-topbar__inner {
     padding-inline: 1rem;
   }
 
@@ -6152,12 +6141,12 @@ body {
     0 5px 18px rgb(var(--shadow-color) / 6%) !important;
 }
 
-.app-topbar > div {
+.app-topbar__inner {
   max-width: 42rem;
   padding-inline: 1rem;
 }
 
-.app-topbar > div > div {
+.app-topbar__inner > div {
   border-bottom-color: transparent !important;
 }
 
@@ -6174,7 +6163,7 @@ body {
   display: none;
 }
 
-.app-shell > nav > .nav-shell {
+.app-shell > nav > .app-bottom-nav {
   width: min(calc(100% - 1rem), 36rem);
   margin-inline: auto;
   margin-bottom: 0.55rem;
@@ -6187,7 +6176,7 @@ body {
     0 12px 28px rgb(var(--shadow-color) / 14%) !important;
 }
 
-.app-shell > nav > .nav-shell .app-nav-link {
+.app-shell > nav > .app-bottom-nav .app-nav-link {
   min-height: 3.4rem;
   border-radius: 1.05rem;
   color: var(--muted-foreground);
@@ -6197,7 +6186,7 @@ body {
     transform 180ms ease;
 }
 
-.app-shell > nav > .nav-shell .app-nav-link > svg {
+.app-shell > nav > .app-bottom-nav .app-nav-link > svg {
   width: 1.15rem;
   height: 1.15rem;
   padding: 0.4rem;
@@ -6206,24 +6195,24 @@ body {
   background: transparent;
 }
 
-.app-shell > nav > .nav-shell .app-nav-link[data-status="active"] {
+.app-shell > nav > .app-bottom-nav .app-nav-link[data-status="active"] {
   background: color-mix(in srgb, var(--primary) 13%, var(--surface));
   color: var(--rose);
 }
 
-.app-shell > nav > .nav-shell .app-nav-link[data-status="active"] > svg {
+.app-shell > nav > .app-bottom-nav .app-nav-link[data-status="active"] > svg {
   border-color: color-mix(in srgb, var(--primary) 24%, transparent);
   background: var(--primary);
   color: var(--primary-foreground);
   box-shadow: 0 4px 10px color-mix(in srgb, var(--primary) 24%, transparent);
 }
 
-.app-shell > nav > .nav-shell .app-nav-link:active {
+.app-shell > nav > .app-bottom-nav .app-nav-link:active {
   transform: scale(0.97);
 }
 
 @media (max-width: 639px) {
-  .app-topbar > div {
+  .app-topbar__inner {
     padding-inline: 0.9rem;
   }
 
@@ -6233,7 +6222,7 @@ body {
 }
 
 @media (min-width: 640px) {
-  .app-shell > nav > .nav-shell {
+  .app-shell > nav > .app-bottom-nav {
     margin-bottom: 0.8rem;
   }
 }
@@ -6265,18 +6254,18 @@ body {
   -webkit-backdrop-filter: blur(22px);
 }
 
-.app-topbar > div {
+.app-topbar__inner {
   max-width: 44rem;
   padding-inline: 1.1rem;
   padding-top: 0.65rem;
   padding-bottom: 0.8rem;
 }
 
-.app-topbar > div > div {
+.app-topbar__inner > div {
   border-bottom-color: color-mix(in srgb, var(--border) 55%, transparent) !important;
 }
 
-.app-topbar > div > div:first-child {
+.app-topbar__brand-row {
   min-height: 2.45rem;
   padding-bottom: 0.55rem;
 }
@@ -6612,7 +6601,7 @@ body {
 }
 
 /* Floating mobile tab bar. It keeps the original nav links and behavior. */
-.app-shell > nav > .nav-shell {
+.app-shell > nav > .app-bottom-nav {
   width: min(calc(100% - 1.15rem), 34rem);
   margin-inline: auto;
   margin-bottom: 0;
@@ -6627,7 +6616,7 @@ body {
   -webkit-backdrop-filter: blur(20px);
 }
 
-.app-shell > nav > .nav-shell .app-nav-link {
+.app-shell > nav > .app-bottom-nav .app-nav-link {
   min-height: 3.35rem;
   border-radius: 1.05rem;
   color: var(--muted-foreground);
@@ -6637,11 +6626,11 @@ body {
     transform 160ms ease;
 }
 
-.app-shell > nav > .nav-shell .app-nav-link > span:first-child {
+.app-shell > nav > .app-bottom-nav .app-nav-link > span:first-child {
   display: none;
 }
 
-.app-shell > nav > .nav-shell .app-nav-link > svg {
+.app-shell > nav > .app-bottom-nav .app-nav-link > svg {
   width: 1.1rem;
   height: 1.1rem;
   padding: 0.43rem;
@@ -6650,12 +6639,12 @@ body {
   background: transparent;
 }
 
-.app-shell > nav > .nav-shell .app-nav-link[data-status="active"] {
+.app-shell > nav > .app-bottom-nav .app-nav-link[data-status="active"] {
   background: color-mix(in srgb, var(--primary) 13%, var(--surface));
   color: var(--primary);
 }
 
-.app-shell > nav > .nav-shell .app-nav-link[data-status="active"] > svg {
+.app-shell > nav > .app-bottom-nav .app-nav-link[data-status="active"] > svg {
   border-color: color-mix(in srgb, var(--primary) 28%, transparent);
   background: var(--primary);
   color: var(--primary-foreground);
@@ -6663,12 +6652,12 @@ body {
   transform: translateY(-1px);
 }
 
-.app-shell > nav > .nav-shell .app-nav-link:active {
+.app-shell > nav > .app-bottom-nav .app-nav-link:active {
   transform: scale(0.97);
 }
 
 @media (max-width: 639px) {
-  .app-topbar > div,
+  .app-topbar__inner,
   .dashboard-editorial-shell main,
   .dashboard-editorial-shell .app-main {
     padding-inline: 0.9rem;
@@ -6681,7 +6670,7 @@ body {
 }
 
 @media (min-width: 640px) {
-  .app-shell > nav > .nav-shell {
+  .app-shell > nav > .app-bottom-nav {
     margin-bottom: 0;
   }
 }
@@ -6707,16 +6696,16 @@ html:not(.night-mode) .dashboard-editorial-shell .app-topbar {
   -webkit-backdrop-filter: none;
 }
 
-html:not(.night-mode) .dashboard-editorial-shell .app-topbar > div {
+html:not(.night-mode) .dashboard-editorial-shell .app-topbar__inner {
   max-width: 42rem;
   padding: 0.45rem 1rem 0.55rem;
 }
 
-html:not(.night-mode) .dashboard-editorial-shell .app-topbar > div > div {
+html:not(.night-mode) .dashboard-editorial-shell .app-topbar__inner > div {
   border-bottom-color: color-mix(in srgb, var(--border) 55%, transparent) !important;
 }
 
-html:not(.night-mode) .dashboard-editorial-shell .app-topbar > div > div:first-child {
+html:not(.night-mode) .dashboard-editorial-shell .app-topbar__brand-row {
   min-height: 2.45rem;
   padding-bottom: 0.4rem;
 }
@@ -7097,7 +7086,7 @@ html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-lin
 }
 
 @media (max-width: 639px) {
-  html:not(.night-mode) .dashboard-editorial-shell .app-topbar > div,
+  html:not(.night-mode) .dashboard-editorial-shell .app-topbar__inner,
   html:not(.night-mode) .dashboard-editorial-shell .app-main {
     padding-inline: 0.9rem;
   }
@@ -7108,12 +7097,12 @@ html:not(.night-mode) .dashboard-editorial-shell > nav > .nav-shell .app-nav-lin
 }
 
 /* Keep the brand row compact on program, workout, and dashboard screens. */
-html:not(.night-mode) .app-topbar > div {
+html:not(.night-mode) .app-topbar__inner {
   padding-top: 0.22rem;
   padding-bottom: 0.38rem;
 }
 
-html:not(.night-mode) .app-topbar > div > div:first-child {
+html:not(.night-mode) .app-topbar__brand-row {
   min-height: 2rem;
   margin-bottom: 0.28rem !important;
   padding-bottom: 0.22rem;
@@ -7314,61 +7303,12 @@ html.night-mode .dashboard-editorial-shell .home-primary-card > .ink-card {
     0 10px 24px rgb(0 0 0 / 24%);
 }
 
-html.night-mode .dashboard-editorial-shell .home-primary-card > .ink-card button {
-  border-color: rgb(255 255 255 / 12%);
-  background: var(--surface) !important;
-  color: var(--ink) !important;
-  box-shadow: 0 5px 12px rgb(0 0 0 / 20%);
-}
-
-html.night-mode .dashboard-editorial-shell .home-secondary-card {
-  border-color: var(--border);
-  background: var(--surface) !important;
-}
-
-html.night-mode .dashboard-editorial-shell .dashboard-notice {
-  border-inline-start-color: color-mix(in srgb, var(--rose) 80%, white 20%);
-  background: color-mix(in srgb, var(--rose) 18%, var(--surface)) !important;
-}
-
-html.night-mode .dashboard-editorial-shell .dashboard-module .surface-card {
-  background: var(--surface-2) !important;
-}
-
-html.night-mode .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(1),
-html.night-mode .dashboard-editorial-shell .dashboard-module--check-in .surface-card:first-of-type {
-  background: color-mix(in srgb, var(--rose) 17%, var(--surface)) !important;
-}
-
-html.night-mode .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(2),
-html.night-mode .dashboard-editorial-shell .dashboard-module--check-in .surface-card:last-child {
-  background: color-mix(in srgb, var(--accent) 13%, var(--surface)) !important;
-}
-
-html.night-mode .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(3) {
-  background: color-mix(in srgb, var(--sage) 16%, var(--surface)) !important;
-}
-
-html.night-mode .dashboard-editorial-shell .consistency-linear-track {
-  background: #3a343d;
-}
-
-html.night-mode .dashboard-editorial-shell .consistency-linear-track .progress-fill,
-html.night-mode .dashboard-editorial-shell .consistency-ring-value {
-  background: color-mix(in srgb, var(--rose) 82%, white 18%);
-  stroke: color-mix(in srgb, var(--rose) 82%, white 18%);
-}
-
-html.night-mode .dashboard-editorial-shell .consistency-ring-track {
-  stroke: #423b45;
-}
-
-html.night-mode .app-shell > nav > .nav-shell .app-nav-link[data-status="active"] {
+html.night-mode .app-shell > nav > .app-bottom-nav .app-nav-link[data-status="active"] {
   background: color-mix(in srgb, var(--primary) 18%, var(--surface));
   color: var(--primary);
 }
 
-html.night-mode .app-shell > nav > .nav-shell .app-nav-link[data-status="active"] > svg {
+html.night-mode .app-shell > nav > .app-bottom-nav .app-nav-link[data-status="active"] > svg {
   border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
   background: var(--primary);
   color: var(--primary-foreground);
@@ -7732,19 +7672,19 @@ html.night-mode
   isolation: isolate;
 }
 
-.app-topbar > div,
+.app-topbar__inner,
 .app-main,
 .nav-shell {
   max-width: var(--ui-content-max);
 }
 
-.app-topbar > div {
+.app-topbar__inner {
   padding-inline: var(--ui-page-gutter);
   padding-top: 0.42rem;
   padding-bottom: 0.56rem;
 }
 
-.app-topbar > div > div:first-child {
+.app-topbar__brand-row {
   min-height: 2.1rem;
   margin-bottom: 0.26rem !important;
   padding-bottom: 0.28rem;
@@ -7854,60 +7794,8 @@ html.night-mode
   }
 }
 
-/* The dashboard's feature cards use active-palette tokens rather than a
- * fixed coral treatment. This keeps every selected palette and night mode
- * readable and visually coherent. */
-html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card {
-  background:
-    linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--primary) 86%, var(--ink)) 0%,
-      var(--primary) 58%,
-      color-mix(in srgb, var(--primary) 58%, var(--surface)) 100%
-    ) !important;
-  border-color: color-mix(in srgb, var(--primary-foreground) 28%, transparent);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--primary-foreground) 24%, transparent),
-    0 14px 28px color-mix(in srgb, var(--primary) 22%, transparent);
-}
-
-html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card::before,
-html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card::after,
-html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card::before,
-html:not(.night-mode) .dashboard-editorial-shell .dashboard-support-card::after {
-  display: none;
-}
-
-html:not(.night-mode) .dashboard-editorial-shell .home-primary-card > .ink-card button {
-  background: var(--surface) !important;
-  color: var(--ink) !important;
-  border-color: color-mix(in srgb, var(--primary) 24%, var(--border));
-}
-
-html:not(.night-mode) .dashboard-editorial-shell .home-secondary-card {
-  background:
-    linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--surface) 94%, var(--primary)),
-      var(--surface)
-    ) !important;
-  border-color: color-mix(in srgb, var(--primary) 18%, var(--border));
-}
-
-html.night-mode .ui-card,
-html.night-mode .surface-card {
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 5%),
-    0 8px 20px rgb(0 0 0 / 16%);
-}
-
-html.night-mode .nav-shell {
-  background: var(--surface) !important;
-  border-color: var(--border);
-}
-
 @media (max-width: 639px) {
-  .app-topbar > div {
+  .app-topbar__inner {
     padding-inline: 0.9rem;
   }
 
