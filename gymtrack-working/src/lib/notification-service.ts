@@ -2,7 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { supabase } from "./supabase";
 
-const SERVICE_WORKER_URL = "/sw.js?v=14";
+const SERVICE_WORKER_URL = "/sw.js?v=15";
 const WORKOUT_NOTIFICATION_PREFIX = 82_000;
 const FIREBASE_APP_NAME = "gymtrack";
 const WORKOUT_REMINDER_HOUR = 8;

@@ -164,11 +164,9 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const deepLink =
-    event.notification?.data?.deep_link ||
-    event.notification?.data?.deepLink ||
-    event.notification?.data?.url ||
-    "";
+  const notificationData = event.notification?.data ?? {};
+  const fcmData = notificationData.FCM_MSG?.data ?? notificationData;
+  const deepLink = fcmData.deep_link || fcmData.deepLink || fcmData.url || "";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       const existing = clients.find((client) => "focus" in client);
