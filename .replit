@@ -56,15 +56,3 @@ VITE_FIREBASE_VAPID_KEY = "BCk00ib0EkvZCRjpHB1NlJ1AS7DApwEgeps10juRAu9yxvorR4kbK
 [nix]
 channel = "stable-25_05"
 packages = ["gtk4", "glib", "pango", "harfbuzz", "gdk-pixbuf", "cairo", "vulkan-loader", "graphene", "icu", "libxml2", "sqlite", "libxslt", "lcms2", "libevent", "flite", "libwebp", "libavif", "libepoxy", "libjpeg", "libsecret", "wayland", "libmanette", "enchant", "libgbm", "libdrm", "atk", "at-spi2-atk", "libxkbcommon", "x264", "libopus", "libglvnd", "icu74", "gst_all_1.gstreamer", "gst_all_1.gst-plugins-base", "gst_all_1.gst-plugins-good", "gst_all_1.gst-plugins-bad", "gst_all_1.gst-plugins-ugly", "gst_all_1.gst-libav", "hyphen", "gcc", "libbacktrace", "libjxl", "libsoup_3", "harfbuzzFull", "libjpeg8", "libjpeg_turbo", "mesa", "xorg.libX11", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXext", "xorg.libXfixes", "xorg.libXrandr", "xorg.libxcb", "xorg.libxkbfile", "xorg.libxshmfence", "xorg.libXi", "xorg.libXrender", "xorg.libXtst", "nss", "xorg.libXcursor"]
-
-[[ports]]
-localPort = 8080
-externalPort = 8080
-
-[[ports]]
-localPort = 8081
-externalPort = 8081
-
-[[ports]]
-localPort = 24878
-externalPort = 3000
