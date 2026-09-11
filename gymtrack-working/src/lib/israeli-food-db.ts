@@ -3,7 +3,7 @@ import { COMMON_FOODS } from "./common-foods";
 import { ISRAELI_PROTEIN_PRODUCTS } from "./protein-product-catalog";
 import { USDA_FOOD_EXPANSION } from "./usda-food-expansion";
 
-/** Catalog of 488 realistic Israeli supermarket food entries. */
+/** Catalog of 489 realistic Israeli supermarket food entries. */
 const ISRAELI_SUPERMARKET_FOODS: FoodItem[] = [
   {
     id: "f-israel-1",

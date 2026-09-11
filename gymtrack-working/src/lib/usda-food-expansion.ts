@@ -1,11 +1,12 @@
 /**
- * USDA & international food expansion — ~450 items.
+ * USDA FoodData Central reference expansion — 303 items.
  * IDs are prefixed "f-usda-" so the sync layer treats them as seeds.
- * All nutrition values are per-serving estimates based on USDA FoodData Central.
+ * Values are per-serving seed estimates; every row carries an unreviewed
+ * FoodData Central reference rather than claiming exact-product verification.
  */
 import type { FoodItem } from "./gym-types";
 
-export const USDA_FOOD_EXPANSION: FoodItem[] = [
+const USDA_FOOD_EXPANSION_SEED: FoodItem[] = [
   // ── דגני בוקר ─────────────────────────────────────────────────────────────
   {
     id: "f-usda-cereal-001",
@@ -3681,3 +3682,32 @@ export const USDA_FOOD_EXPANSION: FoodItem[] = [
     fiber: 3,
   },
 ];
+
+const USDA_FOOD_SEARCH_URL = "https://fdc.nal.usda.gov/food-search?query=";
+
+function addUsdaProvenance(food: FoodItem): FoodItem {
+  const referenceName = food.englishName?.trim() || food.name.trim();
+
+  return {
+    ...food,
+    nutritionReview: {
+      status: "unreviewed",
+      origin: "estimated",
+      confidence: "medium",
+      method: "existing-value",
+      sources: [
+        {
+          name: `USDA FoodData Central — ${referenceName}`,
+          url: `${USDA_FOOD_SEARCH_URL}${encodeURIComponent(referenceName)}`,
+          kind: "usda",
+          match: "same-food",
+          valuesPer: "serving",
+        },
+      ],
+      notes:
+        "ערך seed המבוסס על נתוני ייחוס כלליים של USDA ומותאם למנה הרשומה כאן. זהו מקור השוואה בלבד, לא אימות של מוצר או תווית ספציפיים.",
+    },
+  };
+}
+
+export const USDA_FOOD_EXPANSION: FoodItem[] = USDA_FOOD_EXPANSION_SEED.map(addUsdaProvenance);

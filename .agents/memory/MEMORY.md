@@ -38,6 +38,7 @@
 - [Catalog source URL normalization](catalog-source-normalization.md) — Canonicalize mixed Hebrew and percent-encoded product URLs before exposing them to catalog consumers.
 - [Library deletion tombstones](library-deletion-tombstones.md) — Built-in exercise catalog merges on hydration, so user deletions need persisted per-user tombstones and a post-pull filter.
 - [Exact product label verification](exact-product-label-verification.md) — A real source is insufficient when the flavor, serving, or package does not match exactly.
+- [USDA expansion provenance](usda-expansion-provenance.md) — USDA seed rows use unreviewed FoodData Central references; only exact product sources may promote values to verified.
 - [Workout history deduplication](history-dedupe.md) — Merge retries only with an exact timestamp or repeated ID; same-day workouts may be legitimate separate executions.
 - [Workout exercise identity drift](workout-exercise-identity-drift.md) — Completed sessions can retain older exercise IDs; coach reports must also match the normalized exercise name.
 - [Coach workspace fixtures](coach-workspace-fixtures.md) — The authenticated coach fixture can hydrate with the first workout day already open; tests should accept that valid initial state.

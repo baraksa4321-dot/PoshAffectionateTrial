@@ -100,6 +100,19 @@ export function nutritionSourceFor(
     };
   }
 
+  const usdaSource = review?.sources.find((source) => source.kind === "usda");
+  if (usdaSource) {
+    return {
+      label: "USDA — מקור השוואה, טרם אומת",
+      detail: `${usdaSource.name}. הערכים אינם אימות של מוצר או תווית ספציפיים.`,
+      verified: false,
+      status: "estimated",
+      checkedAt: review?.checkedAt,
+      confidence: review?.confidence,
+      needsReview: true,
+    };
+  }
+
   if (food.id.startsWith("f-israel-")) {
     return {
       label: "טרם אומת מול מקור חיצוני",
