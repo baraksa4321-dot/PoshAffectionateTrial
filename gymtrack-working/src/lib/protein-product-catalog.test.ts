@@ -47,6 +47,11 @@ describe("Israeli protein product catalog", () => {
       expect(nutritionSourceFor(food).verified).toBe(false);
       expect(food.catalog?.barcode).toBeUndefined();
       expect(food.nutritionReview?.status ?? "unreviewed").toBe("unreviewed");
+      expect(typeof food.nutritionReview?.checkedAt).toBe("string");
+      expect(food.nutritionReview?.sources.length).toBeGreaterThan(0);
+      expect(
+        food.nutritionReview?.sources.every((source) => Boolean(source.url?.trim())),
+      ).toBe(true);
       expect(
         food.nutritionReview?.sources.every((source) => source.match !== "exact-product") ?? true,
       ).toBe(true);
@@ -131,7 +136,7 @@ describe("Israeli protein product catalog", () => {
   test("counts reviewed products in the library audit", () => {
     const audit = foodLibraryAudit(ISRAELI_PROTEIN_PRODUCTS);
     expect(audit.verified).toBe(4);
-    expect(audit.requiresLabelVerification).toBe(ISRAELI_PROTEIN_PRODUCTS.length - 4);
+    expect(audit.requiresLabelVerification).toBe(10);
     expect(audit.invalid).toBe(0);
   });
 });

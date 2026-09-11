@@ -273,6 +273,13 @@ export const ISRAELI_PROTEIN_PRODUCTS: FoodItem[] = [
     2,
     "https://www.terra.co.il/",
     ["משקה", "טרה"],
+    comparisonReview(
+      "טרה — אתר היצרן",
+      "https://www.terra.co.il/",
+      "manufacturer",
+      "serving",
+      "לא נמצא בדף היצרן מוצר PRO עם טעם, נפח 330 מ״ל ו־25g חלבון שתואם לרשומה; הערכים נשארים seed לא מאומתים.",
+    ),
   ),
   curatedProduct(
     "f-protein-il-tnuva-cottage-pro",
@@ -418,5 +425,12 @@ export const ISRAELI_PROTEIN_PRODUCTS: FoodItem[] = [
     1.5,
     "https://www.supherb.co.il/",
     ["אבקה", "מי גבינה", "סופרב"],
+    comparisonReview(
+      "סופהרב — אתר היצרן",
+      "https://www.supherb.co.il/",
+      "manufacturer",
+      "serving",
+      "אתר היצרן מציג תוספי תזונה כלליים, אך לא נמצא בו מוצר אבקת חלבון תואם למנה של 30 גרם ולאריזה של 750 גרם; הערכים נשארים seed לא מאומתים.",
+    ),
   ),
 ];
