@@ -252,3 +252,45 @@ mtime_ms = 1789049784498
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:9f99d2e5-5d2e-4b5a-bf24-93a3957a7bb5/df05c260-8607-458f-b81a-4b603e88b8cd/4d320458-423e-476d-bd0d-ab435e9d0eca"
 storage_version_token = "1789049806024774"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "t1jjJKYYl8mWg9SVcI1y6"
+uri = "file://exports/gymtrack-transfer-2026-09-11-core.zip"
+type = "unspecified"
+title = "GymTrack 1/3 – קוד הפרויקט"
+description = "קוד Web, בדיקות, Supabase migrations וקוד המקור של Android/iOS. חלצי יחד עם שני קובצי הנכסים לאותה תיקייה."
+logical_id = "a4081027-3c02-404f-ac56-19835c07e598"
+content_hash = "sha256:054c9a9395e80e09a2f540ad06f18d32a2943407092ef10fd6aa619ca73c6d5d"
+size = 1555979
+mtime_ms = 1789134445812
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:9f99d2e5-5d2e-4b5a-bf24-93a3957a7bb5/a4081027-3c02-404f-ac56-19835c07e598/f09e427b-51d9-4b8a-aacf-e45ea6b90ebb"
+storage_version_token = "1789134464373937"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "7tBVOM8ijsKY2n0z5jlCb"
+uri = "file://exports/gymtrack-transfer-2026-09-11-loading-flat.zip"
+type = "unspecified"
+title = "GymTrack 2/3 – נכסי טעינה Flat"
+description = "החלק הראשון של אנימציות ונכסי הטעינה. חלצי מעל אותה תיקיית יעד."
+logical_id = "d9e41340-348d-4149-8a32-96042896630c"
+content_hash = "sha256:aac3c21ea17b40e9a93bba089c01aa08dcb3cec138446ee642dc03ec66547b36"
+size = 24616453
+mtime_ms = 1789134446792
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:9f99d2e5-5d2e-4b5a-bf24-93a3957a7bb5/d9e41340-348d-4149-8a32-96042896630c/649e14a3-4c82-4c20-98a7-56c65b2c8115"
+storage_version_token = "1789134466256968"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "zOAK2nuFJrro9qSf3569M"
+uri = "file://exports/gymtrack-transfer-2026-09-11-loading-extra.zip"
+type = "unspecified"
+title = "GymTrack 3/3 – יתר נכסי הטעינה"
+description = "החלק השני של אנימציות ונכסי הטעינה. חלצי מעל אותה תיקיית יעד."
+logical_id = "2b40e002-c45d-44d5-902b-e47b0c2b76d1"
+content_hash = "sha256:c1d7413f0440c6da2b97b21fee26666553bbe72d51613048aa621b47b50cedfd"
+size = 84398301
+mtime_ms = 1789134450744
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:9f99d2e5-5d2e-4b5a-bf24-93a3957a7bb5/2b40e002-c45d-44d5-902b-e47b0c2b76d1/93c9e730-8837-4911-b5e6-0666d17accb4"
+storage_version_token = "1789134468874507"
+content_type = "application/octet-stream"
