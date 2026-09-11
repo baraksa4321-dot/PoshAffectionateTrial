@@ -2,7 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { supabase } from "./supabase";
 
-const SERVICE_WORKER_URL = "/sw.js?v=13";
+const SERVICE_WORKER_URL = "/sw.js?v=14";
 const WORKOUT_NOTIFICATION_PREFIX = 82_000;
 const FIREBASE_APP_NAME = "gymtrack";
 const WORKOUT_REMINDER_HOUR = 8;
@@ -31,6 +31,8 @@ type FirebaseClientConfig = {
 let nativeListenersReady = false;
 let nativeUserId: string | null = null;
 let webForegroundUnsubscribe: (() => void) | null = null;
+let webTokenRefreshCleanup: (() => void) | null = null;
+let webUserId: string | null = null;
 
 function firebaseConfig(): FirebaseClientConfig | null {
   const values = {
@@ -112,6 +114,7 @@ async function savePushToken(userId: string, token: string, currentPlatform = pl
 async function showWebNotification(title: string, body: string) {
   if (typeof window === "undefined" || !("Notification" in window)) return;
   if (Notification.permission !== "granted") return;
+  if (document.visibilityState === "visible") return;
   try {
     new Notification(title, { body, icon: "/icons/icon-192.png", dir: "rtl", lang: "he" });
   } catch {
@@ -225,9 +228,10 @@ async function configureWebNotifications(userId: string): Promise<DeliveryResult
     return { state: "ready", detail: "התראות הדפדפן הופעלו עבור שימוש כשהאתר פתוח." };
   }
 
-  const registration = await navigator.serviceWorker.register(SERVICE_WORKER_URL, {
+    const registration = await navigator.serviceWorker.register(SERVICE_WORKER_URL, {
     updateViaCache: "none",
   });
+    const readyRegistration = await navigator.serviceWorker.ready;
   const config = firebaseConfig();
   if (!config) {
     return {
@@ -248,16 +252,22 @@ async function configureWebNotifications(userId: string): Promise<DeliveryResult
     if (!supported) {
       return { state: "ready", detail: "התראות הדפדפן הופעלו, אך Push אינו נתמך בדפדפן הזה." };
     }
-    await sendFirebaseConfigToServiceWorker(registration, config);
+    await sendFirebaseConfigToServiceWorker(readyRegistration, config);
     const messaging = messagingModule.getMessaging(app);
     const vapidKey = import.meta.env["VITE_FIREBASE_VAPID_KEY"];
     if (typeof vapidKey !== "string" || !vapidKey.trim()) {
       return { state: "error", detail: "חסר מפתח VAPID של Firebase עבור התראות Web." };
     }
-    const token = await messagingModule.getToken(messaging, {
+    const tokenOptions = {
       vapidKey,
-      serviceWorkerRegistration: registration,
-    });
+      serviceWorkerRegistration: readyRegistration,
+    };
+    const refreshToken = async () => {
+      if (webUserId !== userId) return;
+      const refreshedToken = await messagingModule.getToken(messaging, tokenOptions);
+      if (refreshedToken) await savePushToken(userId, refreshedToken, "web");
+    };
+    const token = await messagingModule.getToken(messaging, tokenOptions);
     if (!token) return { state: "error", detail: "Firebase לא החזיר token למכשיר." };
     await savePushToken(userId, token, "web");
     webForegroundUnsubscribe?.();
@@ -266,6 +276,21 @@ async function configureWebNotifications(userId: string): Promise<DeliveryResult
       const body = payload.notification?.body ?? "";
       if (body) void showWebNotification(title, body);
     });
+    webTokenRefreshCleanup?.();
+    webUserId = userId;
+    const refreshFromBrowserLifecycle = () => {
+      void refreshToken().catch((error) => console.warn("[FCM token refresh]", error));
+    };
+    window.addEventListener("focus", refreshFromBrowserLifecycle);
+    window.addEventListener("online", refreshFromBrowserLifecycle);
+    document.addEventListener("visibilitychange", refreshFromBrowserLifecycle);
+    const refreshInterval = window.setInterval(refreshFromBrowserLifecycle, 5 * 60 * 1_000);
+    webTokenRefreshCleanup = () => {
+      window.removeEventListener("focus", refreshFromBrowserLifecycle);
+      window.removeEventListener("online", refreshFromBrowserLifecycle);
+      document.removeEventListener("visibilitychange", refreshFromBrowserLifecycle);
+      window.clearInterval(refreshInterval);
+    };
     return { state: "ready", detail: "התראות Firebase הופעלו במכשיר הזה." };
   } catch (error) {
     console.warn("[FCM web setup]", error);
@@ -285,14 +310,35 @@ export async function configureNotificationDelivery(userId: string): Promise<Del
 export async function disableNotificationDelivery(userId: string) {
   webForegroundUnsubscribe?.();
   webForegroundUnsubscribe = null;
+  webTokenRefreshCleanup?.();
+  webTokenRefreshCleanup = null;
+  webUserId = null;
   nativeUserId = null;
+  const currentPlatform = platform();
+  let currentToken: string | null = null;
+  try {
+    currentToken = window.localStorage.getItem(tokenStorageKey(userId, currentPlatform));
+  } catch {
+    // Without the local token we cannot safely identify which device to remove.
+  }
   if (Capacitor.isNativePlatform()) {
     await import("@capacitor-firebase/messaging")
       .then(({ FirebaseMessaging }) => FirebaseMessaging.deleteToken())
       .catch(() => undefined);
   }
-  const { error } = await supabase.from("push_tokens").delete().eq("user_id", userId);
-  if (error) console.warn("[FCM token] Could not remove device token:", error.message);
+  if (currentToken) {
+    const { error } = await supabase
+      .from("push_tokens")
+      .delete()
+      .eq("user_id", userId)
+      .eq("token", currentToken);
+    if (error) console.warn("[FCM token] Could not remove device token:", error.message);
+  }
+  try {
+    window.localStorage.removeItem(tokenStorageKey(userId, currentPlatform));
+  } catch {
+    // The remote delete above remains the best-effort cleanup.
+  }
   if (Capacitor.isNativePlatform()) {
     const pending = await LocalNotifications.getPending().catch(() => ({ notifications: [] }));
     await LocalNotifications.cancel({
@@ -337,33 +383,35 @@ export async function notifyRemotePush(payload: {
   audience?: "assigned_clients" | "coaches" | "clients" | "everyone";
   title: string;
   body: string;
+  data?: Record<string, string>;
   deepLink?: string;
-}): Promise<{ success: true; sent: number; failed: number } | { success: false; error: string }> {
-  let lastError = "שליחת ההתראה נכשלה.";
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      const { data, error } = await supabase.functions.invoke("send-fcm-notification", {
-        body: payload,
-      });
-      if (error) throw new Error(error.message);
-      if (data && typeof data === "object" && "error" in data) {
-        throw new Error(String(data.error));
-      }
-      const result = data as { sent?: number; failed?: number } | null;
-      const sent = Number(result?.sent ?? 0);
-      const failed = Number(result?.failed ?? 0);
-      if (failed > 0) {
-        return {
-          success: false,
-          error: `ההודעה נשמרה, אך ${failed} מכשירים לא קיבלו התראת Push.`,
-        };
-      }
-      return { success: true, sent, failed };
-    } catch (error) {
-      lastError = error instanceof Error ? error.message : lastError;
-      if (attempt === 0) await new Promise((resolve) => window.setTimeout(resolve, 500));
+}): Promise<
+  | { success: true; sent: number; failed: number }
+  | { success: false; error: string; sent: number; failed: number }
+> {
+  try {
+    const { data, error } = await supabase.functions.invoke("send-fcm-notification", {
+      body: payload,
+    });
+    if (error) throw new Error(error.message);
+    if (data && typeof data === "object" && "error" in data) {
+      throw new Error(String(data.error));
     }
+    const result = data as { sent?: number; failed?: number } | null;
+    const sent = Number(result?.sent ?? 0);
+    const failed = Number(result?.failed ?? 0);
+    if (failed > 0) {
+      return {
+        success: false,
+        error: `ההודעה נשמרה, אך ${failed} מכשירים לא קיבלו התראת Push.`,
+        sent,
+        failed,
+      };
+    }
+    return { success: true, sent, failed };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "שליחת ההתראה נכשלה.";
+    console.warn("[FCM remote notification]", detail);
+    return { success: false, error: detail, sent: 0, failed: 0 };
   }
-  console.warn("[FCM remote notification]", lastError);
-  return { success: false, error: lastError };
 }

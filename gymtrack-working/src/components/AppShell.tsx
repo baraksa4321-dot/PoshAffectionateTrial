@@ -818,6 +818,7 @@ export function AppShell({
     } catch {
       // The auth event still clears the in-memory loading mode.
     }
+    if (user?.id) await disableNotificationDelivery(user.id);
     await supabase.auth.signOut();
   };
 

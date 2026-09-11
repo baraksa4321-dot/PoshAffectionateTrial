@@ -10,6 +10,7 @@ type PushRequest = {
   audience?: "assigned_clients" | "coaches" | "clients" | "everyone";
   title: string;
   body: string;
+  data?: Record<string, string>;
   deepLink?: string;
 };
 
@@ -167,6 +168,27 @@ Deno.serve(async (request) => {
     if (requestBody.recipientUserId && requestBody.audience) {
       throw new RequestError("Choose one notification recipient or audience.", 400);
     }
+    if (requestBody.data !== undefined) {
+      if (
+        !requestBody.data ||
+        typeof requestBody.data !== "object" ||
+        Array.isArray(requestBody.data)
+      ) {
+        throw new RequestError("Notification data must contain short string values.", 400);
+      }
+      const entries = Object.entries(requestBody.data);
+      if (
+        entries.length > 32 ||
+        entries.some(
+          ([key, value]) =>
+            !/^[a-zA-Z0-9_.-]{1,100}$/.test(key) ||
+            typeof value !== "string" ||
+            value.length > 1_000,
+        )
+      ) {
+        throw new RequestError("Notification data must contain short string values.", 400);
+      }
+    }
     const audiences = ["assigned_clients", "coaches", "clients", "everyone"] as const;
     if (requestBody.audience && !audiences.includes(requestBody.audience)) {
       throw new RequestError("The notification audience is not supported.", 400);
@@ -238,10 +260,11 @@ Deno.serve(async (request) => {
               message: {
                 token: tokenRow.token,
                 notification: { title: requestBody.title, body: requestBody.body },
-                 data: {
-                   source: "gymtrack",
-                   ...(requestBody.deepLink ? { deep_link: requestBody.deepLink } : {}),
-                 },
+                  data: {
+                    ...(requestBody.data ?? {}),
+                    source: "gymtrack",
+                    ...(requestBody.deepLink ? { deep_link: requestBody.deepLink } : {}),
+                  },
               },
             }),
           },

@@ -45,6 +45,9 @@ async function configureFirebase(config) {
     firebase.initializeApp(config);
     const messaging = firebase.messaging();
     messaging.onBackgroundMessage((payload) => {
+      // FCM automatically displays notification payloads while the page is
+      // backgrounded. Manually showing those again would create duplicates.
+      if (payload.notification) return;
       const title = payload.notification?.title || "הודעה חדשה";
       const body = payload.notification?.body || "";
       self.registration.showNotification(title, {
