@@ -14,3 +14,13 @@ When the browser fixture replaces `window.fetch`, Playwright request events do n
 **Why:** A request waiter can time out even though the intercepted POST ran successfully, making a valid persisted edit look broken.
 
 **How to apply:** Persist remote fixture rows in shared origin storage and poll that state before opening the recipient session.
+
+When a smoke fixture answers a PostgREST `.single()` verification query, return the object shape
+expected by the client; array-shaped responses can parse as an empty/invalid single row even when
+the JSON contents look correct.
+
+**Why:** The planned-menu save check uses a narrow `select("planned_menu").single()` read, so a
+fixture that always returns list-shaped rows can falsely report that the server saved an empty menu.
+
+**How to apply:** Keep list responses as arrays, but return an object for narrow single-row
+verification requests and serialize the client snapshot before comparing it with server JSON.

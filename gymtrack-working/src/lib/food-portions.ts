@@ -384,6 +384,8 @@ function servingMultiplier(food: FoodItem, unit: FoodQuantityUnit) {
     if (cupGrams && servingGrams) return cupGrams / servingGrams;
     return null;
   }
+  if (unit === "tbsp" && servingMl) return 15 / servingMl;
+  if (unit === "tsp" && servingMl) return 5 / servingMl;
   if (unit === "tbsp" && spoonUnit === "tbsp") return 1;
   if (unit === "tsp" && spoonUnit === "tsp") return 1;
   if (unit === "tbsp" && spoonUnit === "tsp") return 3;

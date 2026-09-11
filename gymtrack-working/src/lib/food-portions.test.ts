@@ -35,6 +35,51 @@ const mediumEgg: FoodItem = {
   fat: 5,
 };
 
+const slicedCheese: FoodItem = {
+  id: "sliced-cheese-household",
+  name: "גבינה צהובה",
+  category: "גבינות",
+  servingSize: "פרוסה (20g)",
+  servingGrams: 20,
+  calories: 60,
+  protein: 5,
+  carbs: 0.5,
+  fat: 4,
+};
+
+const cookedRice: FoodItem = {
+  id: "cooked-rice-household",
+  name: "אורז מבושל",
+  category: "דגנים",
+  servingSize: "100 גרם",
+  calories: 200,
+  protein: 4,
+  carbs: 44,
+  fat: 0,
+};
+
+const oil: FoodItem = {
+  id: "olive-oil",
+  name: "שמן זית",
+  category: "שמנים",
+  servingSize: "10 מ״ל",
+  calories: 88.4,
+  protein: 0,
+  carbs: 0,
+  fat: 10,
+};
+
+const drink: FoodItem = {
+  id: "milk-drink",
+  name: "משקה חלב",
+  category: "משקאות",
+  servingSize: "200 מ״ל",
+  calories: 100,
+  protein: 7,
+  carbs: 10,
+  fat: 2,
+};
+
 describe("food portion conversions", () => {
   test("keeps meal quantities measurable instead of using fractional serving labels", () => {
     expect(
@@ -57,9 +102,9 @@ describe("food portion conversions", () => {
     expect(defaultFoodQuantity(mediumEgg)).toEqual({ quantity: 1, unit: "unit" });
     expect(foodQuantityOptions(mediumEgg).map(({ value }) => value)).toEqual(["unit", "g"]);
 
-    const mealFood = mealFoodFromPortion(mediumEgg, 2, "unit");
+    const mealFood = mealFoodFromPortion(mediumEgg, 1, "unit");
     expect(mealFood.calories).toBe(72);
-    expect(mealFood.quantity).toBe(2);
+    expect(mealFood.quantity).toBe(1);
     expect(mealFood.servingSize).toBe("יחידה למנה");
   });
 
@@ -70,13 +115,6 @@ describe("food portion conversions", () => {
       name: "קוואקר",
       servingSize: "כף גדושה (15g)",
     };
-    const slicedCheese: FoodItem = {
-      ...peanutButter,
-      id: "sliced-cheese",
-      name: "גבינה צהובה",
-      servingSize: "פרוסה (28g)",
-    };
-
     expect(defaultFoodQuantity(measuredOats)).toEqual({ quantity: 1, unit: "tbsp" });
     expect(defaultFoodQuantity(slicedCheese)).toEqual({ quantity: 1, unit: "slice" });
   });
@@ -155,14 +193,11 @@ describe("food portion conversions", () => {
   });
 
   test("falls back to cups when a drink has no milliliter reference", () => {
-    const cupDrink: FoodItem = {
-      ...peanutButter,
-      id: "cup-drink",
-      name: "משקה",
-      servingSize: "כוס",
-    };
+    const cupDrink = mealFoodFromPortion(drink, 1, "cup");
 
     expect(defaultFoodQuantity(cupDrink)).toEqual({ quantity: 1, unit: "cup" });
+    expect(cupDrink.servingSize).toBe("כוס למנה");
+    expect(cupDrink.calories).toBe(120);
   });
 
   test("keeps teaspoon and tablespoon ratios explicit", () => {
@@ -173,9 +208,8 @@ describe("food portion conversions", () => {
 
   test("offers practical household units for cottage and converts them", () => {
     const cottage: FoodItem = {
-      id: "cottage-5",
+      id: "cottage-replacement",
       name: "קוטג׳ 5%",
-      category: "מוצרי חלב",
       servingSize: "100 גרם",
       calories: 95,
       protein: 11,
@@ -190,10 +224,25 @@ describe("food portion conversions", () => {
       "serving",
     ]);
     const twoSpoons = mealFoodFromPortion(cottage, 2, "tbsp");
+
     expect(twoSpoons.servingSize).toBe("כף למנה");
     expect(twoSpoons.calories).toBe(14.25);
     expect(twoSpoons.protein).toBe(1.65);
     expect(twoSpoons.quantity).toBe(2);
+  });
+
+  test("converts sliced cheese, oil, and cooked staples with household quantities", () => {
+    const twoSlices = mealFoodFromPortion(slicedCheese, 2, "slice");
+    const tablespoonOil = mealFoodFromPortion(oil, 1, "tbsp");
+    const cupRice = mealFoodFromPortion(cookedRice, 1, "cup");
+
+    expect(twoSlices.servingSize).toBe("פרוסה למנה");
+    expect(twoSlices.calories).toBe(60);
+    expect(twoSlices.quantity).toBe(2);
+    expect(tablespoonOil.servingSize).toBe("כף למנה");
+    expect(Math.abs(tablespoonOil.calories - 132.6) < 1e-9).toBe(true);
+    expect(cupRice.servingSize).toBe("כוס למנה");
+    expect(cupRice.calories).toBe(390);
   });
 
   test("uses FoodsDictionary weights for large and medium vegetables", () => {

@@ -175,20 +175,20 @@ function formatMeasuredFoodAmount(servingSize: string, quantity = 1) {
   if (/(גרם|g)(?=\s|$|[),.])/i.test(serving)) return `${formatWhole(scaled)} גרם`;
   if (/(מ["״]?ל|ml)(?=\s|$|[),.])/i.test(serving)) return `${formatWhole(scaled)} מ״ל`;
   if (/(כוס|כוסות|cup|cups)/.test(serving)) {
-    return `${formatWhole(scaled * 240)} מ״ל`;
+    return `${formatCount(scaled)} כוס`;
   }
   if (/(כף|כפות|tbsp)/.test(serving)) {
-    return `${formatWhole(scaled * 15)} מ״ל`;
+    return `${formatCount(scaled)} כף`;
   }
   if (/(כפית|כפיות|tsp)/.test(serving)) {
-    return `${formatWhole(scaled * 5)} מ״ל`;
+    return `${formatCount(scaled)} כפית`;
   }
   if (/(ביצ|egg)/i.test(serving)) return `${formatCount(scaled)} ביצים`;
   if (/(פרוס|slice)/i.test(serving)) return `${formatCount(scaled)} פרוסות`;
   if (/(פית|pita)/i.test(serving)) return `${formatCount(scaled)} פיתות`;
   if (/(טורט|tortilla|wrap)/i.test(serving)) return `${formatCount(scaled)} טורטיות`;
   if (/(יחיד|יחידות|unit|קופסה|גביע|בקבוק|אריזה|חבילה|שקית)/i.test(serving)) {
-    return `${formatCount(scaled)} יחידות`;
+    return `${formatCount(scaled)} יחידה`;
   }
   if (Math.abs(normalizedQuantity - 1) < 0.01) return servingSize;
   return `כ־${formatCount(normalizedQuantity)} מהמנה המצוינת`;

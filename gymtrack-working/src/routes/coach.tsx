@@ -4040,7 +4040,7 @@ export function CoachDashboardPage({
 
   const savePlannedMenu = async () => {
     if (!isCoach || !selectedClientId || savingPlannedMenu) return;
-    const menuSnapshot = plannedMealsDraftRef.current;
+    const menuSnapshot = JSON.parse(JSON.stringify(plannedMealsDraftRef.current)) as Meal[];
     setSavingPlannedMenu(true);
     setMenuNotice("שומר את התפריט...");
 

@@ -42,6 +42,71 @@ const workout = {
   items: workoutItems,
 };
 
+const householdFoods = [
+  {
+    id: "ios-smoke-cottage",
+    name: "קוטג׳ 5%",
+    category: "מוצרי חלב",
+    servingSize: "100 גרם",
+    calories: 95,
+    protein: 11,
+    carbs: 1.5,
+    fat: 5,
+  },
+  {
+    id: "ios-smoke-yogurt",
+    name: "יוגורט טבעי",
+    category: "יוגורט",
+    servingSize: "גביע (200g)",
+    servingGrams: 200,
+    calories: 140,
+    protein: 10,
+    carbs: 12,
+    fat: 6,
+  },
+  {
+    id: "ios-smoke-olive-oil",
+    name: "שמן זית",
+    category: "שמנים",
+    servingSize: "10 מ״ל",
+    calories: 88.4,
+    protein: 0,
+    carbs: 0,
+    fat: 10,
+  },
+  {
+    id: "ios-smoke-drink",
+    name: "משקה חלב",
+    category: "משקאות",
+    servingSize: "200 מ״ל",
+    calories: 100,
+    protein: 7,
+    carbs: 10,
+    fat: 2,
+  },
+  {
+    id: "ios-smoke-sliced-cheese",
+    name: "גבינה צהובה",
+    category: "גבינות",
+    servingSize: "פרוסה (20g)",
+    servingGrams: 20,
+    calories: 60,
+    protein: 5,
+    carbs: 0.5,
+    fat: 4,
+  },
+  {
+    id: "ios-smoke-rice",
+    name: "אורז מבושל",
+    category: "דגנים",
+    servingSize: "100 גרם",
+    calories: 200,
+    protein: 4,
+    carbs: 44,
+    fat: 0,
+  },
+];
+
 const workouts = Array.from({ length: 4 }, (_, index) => ({
   id: index === 0 ? WORKOUT_ID : `${WORKOUT_ID}-${index + 1}`,
   name: index === 0 ? workout.name : `אימון בדיקה ${index + 1}`,
@@ -76,15 +141,15 @@ const clientProfile = {
       name: "ארוחת בדיקה",
       foods: [
         {
-          id: "ios-smoke-meal-food",
-          foodId: "f-rice",
-          name: "אורז",
-          servingSize: "100 גרם",
-          quantity: 1,
-          calories: 200,
-          protein: 4,
-          carbs: 44,
-          fat: 0,
+          id: "ios-smoke-planned-cottage",
+          foodId: "ios-smoke-cottage",
+          name: "קוטג׳ 5%",
+          servingSize: "כף למנה",
+          quantity: 2,
+          calories: 14.25,
+          protein: 1.65,
+          carbs: 0.225,
+          fat: 0.75,
         },
       ],
     },
@@ -270,7 +335,7 @@ const gymData = {
   workouts,
   programs: [program],
   history: [],
-  foods: [],
+  foods: householdFoods,
   nutritionDays: [clientNutritionDay],
   nutritionTargets: { calories: nutritionDay.target_calories },
   plannedMeals: clientProfile.planned_menu,
@@ -392,16 +457,22 @@ async function installFixture(
     failSelectedTraineeDataOnce = false,
     fullCacheValue = null,
     bootCacheValue = null,
+    plannedMenu = null,
     pendingChanges = false,
     trackBootCacheTiming = false,
   } = {},
 ) {
   const isTrainee = role === "trainee";
   const userId = isTrainee ? CLIENT_ID : COACH_ID;
-  const fixtureClientProfile = { ...clientProfile, show_calories: showCalories };
+  const fixtureClientProfile = {
+    ...clientProfile,
+    show_calories: showCalories,
+    planned_menu: plannedMenu ?? clientProfile.planned_menu,
+  };
   const defaultCacheValue = isTrainee
     ? {
         ...gymData,
+        plannedMeals: plannedMenu ?? gymData.plannedMeals,
         userProfile: {
           ...gymData.userProfile,
           fullName: clientProfile.full_name,
@@ -441,12 +512,19 @@ async function installFixture(
       otherCoachMessage,
       broadcastAnnouncement,
       challenge,
+      householdFoods,
       initialOnline,
       failSelectedTraineeDataOnce,
       pendingChanges,
       trackBootCacheTiming,
     }) => {
       let isOnline = initialOnline;
+      let persistedClientProfile = {
+        ...clientProfile,
+        planned_menu: clientProfile.planned_menu,
+      };
+      let hasSavedPlannedMenu = false;
+      window.__iosSmokeGetPlannedMenu = () => persistedClientProfile.planned_menu;
       Object.defineProperty(window.navigator, "onLine", {
         configurable: true,
         get: () => isOnline,
@@ -577,6 +655,21 @@ async function installFixture(
         if (url.includes("/rest/v1/")) {
           const parsed = new URL(url);
           const path = parsed.pathname.replace(/^.*\/rest\/v1\//, "");
+          if (
+            path === "rpc/save_user_planned_menu" &&
+            (init?.method ?? "GET").toUpperCase() === "POST"
+          ) {
+            const payload = JSON.parse(init.body);
+            persistedClientProfile = {
+              ...persistedClientProfile,
+              planned_menu: payload.next_planned_menu,
+            };
+            hasSavedPlannedMenu = true;
+            return new Response(JSON.stringify(true), {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            });
+          }
           if (path === "coach_messages" && (init?.method ?? "GET").toUpperCase() === "POST") {
             const payload = JSON.parse(init.body);
             remoteCoachMessages = [
@@ -641,13 +734,15 @@ async function installFixture(
             ];
           } else if (path === "profiles") {
             const requestedId = parsed.searchParams.get("id")?.replace(/^eq\./, "");
-            body = [
-              requestedId === clientProfile.id
-                ? clientProfile
-                : requestedId === otherClientProfile.id
+            const profile =
+              hasSavedPlannedMenu ||
+              requestedId === clientProfile.id ||
+              url.includes(clientProfile.id)
+                ? persistedClientProfile
+                : requestedId === otherClientProfile.id || url.includes(otherClientProfile.id)
                   ? otherClientProfile
-                  : coachProfile,
-            ];
+                  : coachProfile;
+            body = parsed.searchParams.get("select") === "planned_menu" ? profile : [profile];
           } else if (path === "programs") {
             const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
             const selectedProgram =
@@ -663,6 +758,8 @@ async function installFixture(
                 description: selectedProgram.notes,
               },
             ];
+          } else if (path === "foods") {
+            body = householdFoods;
           } else if (path === "program_days") {
             const method = (init?.method ?? "GET").toUpperCase();
             if (method === "PATCH" || method === "PUT") {
@@ -876,6 +973,7 @@ async function installFixture(
       otherCoachMessage,
       broadcastAnnouncement,
       challenge,
+      householdFoods,
       initialOnline: online,
       failSelectedTraineeDataOnce,
       pendingChanges,
@@ -1114,6 +1212,99 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
 
   await page.locator("article").last().scrollIntoViewIfNeeded();
   await expect(page.locator("article").last()).toBeInViewport();
+});
+
+test("household portions stay correct across coach save and trainee replacement", async ({ page }) => {
+  await installFixture(page, { online: true });
+
+  await page.goto("/");
+  await page.getByTestId("link-nav-coach").click();
+  await expect(page).toHaveURL(/\/coach\/clients/);
+  await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת");
+  await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
+
+  const workspace = page.locator('[data-coach-workspace="true"]');
+  await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
+    timeout: 20_000,
+  });
+  await page.getByRole("tab", { name: "תפריט תזונה" }).click();
+  const menu = page.locator("#coach-menu");
+  await expect(menu).toBeVisible();
+  await expect(menu.getByText("2 כף", { exact: true })).toBeVisible();
+
+  const addFood = async (searchTerm, unit, quantity) => {
+    await menu.getByRole("button", { name: "+ מאכל", exact: true }).first().click();
+    const foodSearch = menu.locator('input[type="search"][id^="menu-food-search-"]').first();
+    await foodSearch.fill(searchTerm);
+    await menu.getByRole("option", { name: new RegExp(searchTerm) }).first().click();
+    const unitSelect = menu.getByRole("combobox", { name: "יחידת מידה למאכל" });
+    await expect(unitSelect).toBeVisible();
+    await unitSelect.selectOption(unit);
+    await menu.getByRole("textbox", { name: "כמות המאכל" }).fill(String(quantity));
+    await menu.getByRole("button", { name: "הוסיפי לארוחה", exact: true }).first().click();
+  };
+
+  await addFood("יוגורט", "unit", 1);
+  await addFood("שמן זית", "tbsp", 1);
+  await addFood("משקה חלב", "cup", 1);
+  await addFood("גבינה צהובה", "slice", 2);
+  await addFood("אורז מבושל", "cup", 1);
+
+  const macroGrid = menu.getByTestId("nutrition-macro-grid").first();
+  const expectedMacros = [
+    ["חלבון", "39.5"],
+    ["פחמימות", "111.3"],
+    ["שומן", "32.9"],
+    ["קלוריות", "931.1"],
+  ];
+  for (const [label, value] of expectedMacros) {
+    await expect(
+      macroGrid.locator(`[data-nutrition-macro="${label}"] [data-nutrition-macro-value]`),
+    ).toHaveText(value);
+  }
+
+  const saveMenuButton = menu.getByRole("button", { name: "שמרי תפריט", exact: true });
+  await saveMenuButton.click();
+  await expect(saveMenuButton).toHaveText("שמרי תפריט");
+  await expect(menu).toContainText("יוגורט טבעי");
+
+  await page.getByRole("button", { name: "סגירת תכנית המתאמן" }).click();
+  await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת");
+  await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
+  await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
+    timeout: 20_000,
+  });
+  await page.getByRole("tab", { name: "תפריט תזונה" }).click();
+  await expect(page.locator("#coach-menu")).toContainText("יוגורט טבעי");
+  await expect(page.locator("#coach-menu")).toContainText("1 יחידה");
+  await expect(page.locator("#coach-menu")).toContainText("1 כף");
+  await expect(page.locator("#coach-menu")).toContainText("1 כוס");
+  await expect(page.locator("#coach-menu")).toContainText("2 פרוסה");
+  await expect(page.locator("#coach-menu")).toContainText("1 כוס");
+
+  const savedPlannedMenu = await page.evaluate(() => window.__iosSmokeGetPlannedMenu?.());
+  const traineePage = await page.context().newPage();
+  await installFixture(traineePage, { role: "trainee", plannedMenu: savedPlannedMenu });
+  await traineePage.goto("/nutrition");
+  await expect(traineePage).toHaveURL(/\/nutrition/);
+  await expect(traineePage.getByTestId("nutrition-food-quantity").first()).toHaveText("2 כף");
+
+  await traineePage.getByRole("button", { name: "החלפה", exact: true }).first().click();
+  const replacementDialog = traineePage.getByRole("dialog", { name: "החלפת מאכל" });
+  await expect(replacementDialog).toBeVisible();
+  await replacementDialog.locator('input[placeholder*="חפשי מאכל חלופי"]').fill("יוגורט");
+  const yogurtReplacement = replacementDialog.getByRole("button", { name: /יוגורט/ }).first();
+  await expect(yogurtReplacement).toContainText("כף");
+  const replacementName = (await yogurtReplacement.locator("p").first().textContent())?.trim();
+  expect(replacementName).toBeTruthy();
+  await yogurtReplacement.click();
+  await expect(replacementDialog).toBeHidden();
+
+  await traineePage.getByRole("link", { name: "היום שלי", exact: true }).click();
+  await traineePage.getByRole("link", { name: "התזונה שלי", exact: true }).click();
+  await expect(traineePage).toHaveURL(/\/nutrition/);
+  await expect(traineePage.getByText(replacementName, { exact: true })).toBeVisible();
+  await expect(traineePage.getByTestId("nutrition-food-quantity").first()).toHaveText("2.7 כף");
 });
 
 test("trainee nutrition quantities and macro visibility stay consistent", async ({ page }) => {
