@@ -1,4 +1,4 @@
-const CACHE_NAME = "myroutine-app-shell-v17";
+const CACHE_NAME = "myroutine-app-shell-v18";
 const MAX_SEEN_PUSH_IDS = 100;
 const seenPushIds = new Set();
 const OFFLINE_BOOT_ASSETS = [

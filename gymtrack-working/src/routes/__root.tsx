@@ -487,69 +487,14 @@ const REFERENCE_LOADING_IMAGES = [
   { file: "avocado-rope.png", label: "אבוקדו בקפיצה בחבל" },
 ] as const;
 
-const SIMPLE_LOADING_ILLUSTRATIONS = [
-  { file: "user-strawberry.png", label: "תות מצויר" },
-  { file: "user-tomato.png", label: "עגבנייה מצוירת" },
-  { file: "user-character-01.png", label: "דמות מצוירת" },
-  { file: "user-character-02.png", label: "דמות מצוירת" },
-  { file: "user-lemon.png", label: "לימון מצויר" },
-  { file: "user-character-03.png", label: "דמות מצוירת" },
-  { file: "user-character-04.png", label: "דמות מצוירת" },
-  { file: "user-character-05.png", label: "דמות מצוירת" },
-  { file: "user-character-06.png", label: "דמות מצוירת" },
-  { file: "user-character-07.png", label: "דמות מצוירת" },
-  { file: "user-character-08.png", label: "דמות מצוירת" },
-  { file: "user-character-09.png", label: "דמות מצוירת" },
-  { file: "user-character-10.png", label: "דמות מצוירת" },
-] as const;
-
 function SimpleLoadingIllustration({
   variant,
-  cycle,
+  cycle: _cycle,
 }: {
   variant: number;
   cycle: number;
 }) {
-  const [videoFailed, setVideoFailed] = useState(false);
-  const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length]!;
-  const animationFile = illustration.file.replace(".png", ".mp4");
-  const posterFile = illustration.file.replace(".png", ".gif");
-  return (
-    <div
-      className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4} ${
-        videoFailed ? "loading-video-failed" : ""
-      }`}
-    >
-      <img
-        className="loading-simple-image loading-simple-fallback"
-        src={`/loading/${illustration.file}`}
-        alt=""
-        aria-hidden="true"
-        suppressHydrationWarning
-      />
-      <video
-        key={`loading-video-${cycle}`}
-        className="loading-simple-image loading-simple-video"
-        src={`/loading/tinted/${animationFile}?v=video-safe-1&cycle=${cycle}`}
-        poster={`/loading/tinted/${posterFile}?v=poster-safe-1`}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        onCanPlay={() => setVideoFailed(false)}
-        onError={() => setVideoFailed(true)}
-        onLoadedData={(event) => {
-          setVideoFailed(false);
-          void event.currentTarget.play().catch(() => {
-            // Safari can defer muted autoplay until the first media event.
-          });
-        }}
-        suppressHydrationWarning
-        aria-label={`איור טעינה: ${illustration.label}`}
-      />
-    </div>
-  );
+  return <LoadingIllustration variant={variant} />;
 }
 
 function ReferenceLoadingIllustration({ variant }: { variant: number }) {
@@ -1108,7 +1053,7 @@ function LegacyLoadingIllustration({ variant }: { variant: number }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    scripts: [{ async: true, src: "/boot-watchdog.js?v=11" }],
+    scripts: [{ async: true, src: "/boot-watchdog.js?v=12" }],
     meta: [
       { charSet: "utf-8" },
       {
@@ -1218,7 +1163,7 @@ function RootContent() {
   const wasHiddenRef = useRef(false);
   const loadingIndexes = loadingCycleIndexes(
     openingCycleIndex + loadingRotationTick,
-    SIMPLE_LOADING_ILLUSTRATIONS.length,
+    LOADING_CHARACTER_POSES.length,
   );
   const loadingVariant = loadingIndexes.animationIndex;
   const loadingMessageIndex = loadingIndexes.messageIndex;
@@ -1449,7 +1394,7 @@ function RootContent() {
         // Keep the offline app shell in production, where compiled asset URLs
         // remain stable for the lifetime of a deployed build.
         void navigator.serviceWorker
-           .register("/sw.js?v=21", { updateViaCache: "none" })
+           .register("/sw.js?v=22", { updateViaCache: "none" })
           .then((registration) => registration.update())
           .catch((error) => {
             console.warn("[App shell cache unavailable]:", error);

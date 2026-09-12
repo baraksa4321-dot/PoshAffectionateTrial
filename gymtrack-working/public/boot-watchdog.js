@@ -127,29 +127,27 @@
 
     const loadingScreen = document.querySelector(".loading-screen");
     const media = loadingScreen?.querySelector(".loading-simple-video");
-    const fallback = loadingScreen?.querySelector(".loading-simple-fallback");
-    const stage = media?.closest(".loading-micro-stage");
     const message = loadingScreen?.querySelector(".loading-witty-message");
-    if (!(media instanceof HTMLVideoElement) || !(message instanceof HTMLElement)) return false;
+    if (!(message instanceof HTMLElement)) return false;
 
     const animationIndex = (openingCycleIndex + rotationTick) % loadingIllustrations.length;
     const messageIndex = (openingCycleIndex + rotationTick) % loadingMessages.length;
     const illustration = loadingIllustrations[animationIndex];
     const cycle = openingCycleIndex + rotationTick;
-    const animationFile = illustration.replace(".gif", ".mp4");
-    const nextSource = `/loading/tinted/${animationFile}?v=video-safe-1&cycle=${cycle}`;
-    media.poster = `/loading/tinted/${illustration}?v=poster-safe-1`;
-    if (media.getAttribute("src") !== nextSource) {
-      stage?.classList.remove("loading-video-failed");
-      media.src = nextSource;
-      media.load();
+    // Keep old cached video shells moving until the new inline SVG shell
+    // hydrates, but do not make the current loading UI depend on media decode.
+    if (media instanceof HTMLVideoElement) {
+      const animationFile = illustration.replace(".gif", ".mp4");
+      const nextSource = `/loading/tinted/${animationFile}?v=video-safe-2&cycle=${cycle}`;
+      media.poster = `/loading/tinted/${illustration}?v=poster-safe-2`;
+      if (media.getAttribute("src") !== nextSource) {
+        media.src = nextSource;
+        media.load();
+      }
+      void media.play().catch(() => {
+        // Muted inline video can need one more attempt after the first paint.
+      });
     }
-    if (fallback instanceof HTMLImageElement) {
-      fallback.src = `/loading/${illustration}`;
-    }
-    void media.play().catch(() => {
-      // Muted inline video can need one more attempt after the first paint.
-    });
     message.textContent = loadingMessageForGender(
       loadingMessages[messageIndex],
       document.documentElement.dataset.loadingGender,

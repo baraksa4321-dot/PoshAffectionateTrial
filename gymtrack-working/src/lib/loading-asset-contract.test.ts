@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 const projectRoot = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 
 describe("offline loading assets", () => {
-  test("ships a local image fallback for every animated loading illustration", () => {
+  test("uses the trail-safe inline animation for the loading illustration", () => {
     const rootRoute = readFileSync(resolve(projectRoot, "src/routes/__root.tsx"), "utf8");
     const serviceWorker = readFileSync(resolve(projectRoot, "public/sw.js"), "utf8");
     const illustrations = [
@@ -25,7 +25,9 @@ describe("offline loading assets", () => {
       "user-lemon.png",
     ];
 
-    expect(rootRoute).toContain("loading-simple-fallback");
+    expect(rootRoute).toContain("return <LoadingIllustration variant={variant} />;");
+    expect(rootRoute).toContain("LOADING_CHARACTER_POSES.length");
+    expect(rootRoute).not.toContain('className="loading-simple-video"');
     expect(serviceWorker).toContain("./loading/user-strawberry.png");
     expect(illustrations.every((file) => existsSync(resolve(projectRoot, "public/loading", file)))).toBe(
       true,
