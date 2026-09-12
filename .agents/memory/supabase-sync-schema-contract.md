@@ -9,6 +9,12 @@ The persistence layer must use the actual Supabase column names for every table;
 
 **How to apply:** When adding or repairing a sync path, verify every push and pull column against the live schema as well as migrations, and treat optional-table failures separately from required-table failures.
 
+Nutrition-day targets are row-level history, not only global settings: preserve each row's stored calorie/protein targets and use a current-date anchor row when there are no local days.
+
+**Why:** Sending the current global target on every nutrition row rewrites historical targets, while skipping an empty nutrition list silently drops a new target.
+
+**How to apply:** Map `target_calories` and `target_protein` into per-day state, only write them for that day or the current anchor row, and apply additive migrations before enabling new sync columns.
+
 Post-save verification should query the exact persisted row and field being saved rather than depending on a broad hydration pass.
 
 **Why:** A broad pull can fail on an unrelated optional or drifted table and falsely report that the target write failed.

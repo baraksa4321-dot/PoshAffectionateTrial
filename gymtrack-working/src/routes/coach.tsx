@@ -3988,7 +3988,7 @@ export function CoachDashboardPage({
     if (!isCoach || !selectedClientId || savingNutritionTargets) return;
     setManagementError("");
     setSavingNutritionTargets(true);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayKey();
     const calories = Number(calTarget);
     const protein = Number(protTarget);
     if (
@@ -9849,9 +9849,15 @@ export function CoachDashboardPage({
                              <FreeTextInput
                                value={calTarget || ""}
                                inputMode="decimal"
-                               onChange={(e) =>
-                                 setCalTarget(e.target.value === "" ? 0 : Number(e.target.value))
-                               }
+                               onChange={(e) => {
+                                 const value = e.target.value;
+                                 if (value === "") {
+                                   setCalTarget(0);
+                                   return;
+                                 }
+                                 const parsed = Number(value);
+                                 if (Number.isFinite(parsed)) setCalTarget(parsed);
+                               }}
                               className="w-full rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
                             />
                           </div>
@@ -9862,9 +9868,15 @@ export function CoachDashboardPage({
                              <FreeTextInput
                                value={protTarget || ""}
                                inputMode="decimal"
-                               onChange={(e) =>
-                                 setProtTarget(e.target.value === "" ? 0 : Number(e.target.value))
-                               }
+                               onChange={(e) => {
+                                 const value = e.target.value;
+                                 if (value === "") {
+                                   setProtTarget(0);
+                                   return;
+                                 }
+                                 const parsed = Number(value);
+                                 if (Number.isFinite(parsed)) setProtTarget(parsed);
+                               }}
                               className="w-full rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
                             />
                           </div>

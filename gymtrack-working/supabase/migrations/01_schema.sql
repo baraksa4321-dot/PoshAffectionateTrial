@@ -129,6 +129,7 @@ CREATE TABLE IF NOT EXISTS public.nutrition_days (
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   date DATE NOT NULL,
   water_ml INTEGER DEFAULT 0,
+  water_target_ml INTEGER DEFAULT 2500,
   target_calories INTEGER DEFAULT 2000,
   target_protein NUMERIC(7,2),
   meals JSONB NOT NULL DEFAULT '[]'::jsonb,

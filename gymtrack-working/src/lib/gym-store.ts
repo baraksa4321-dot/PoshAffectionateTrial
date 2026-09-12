@@ -3070,6 +3070,12 @@ export function nutritionDay(d: GymData, date: string): NutritionDay {
     date,
     meals: d.mealTemplate.map((name, i) => ({ id: `tmpl-${date}-${i}`, name, foods: [] })),
     plannedMeals: d.plannedMeals ?? [],
+    ...(d.nutritionTargets.calories === undefined
+      ? {}
+      : { targetCalories: d.nutritionTargets.calories }),
+    ...(d.nutritionTargets.protein === undefined
+      ? {}
+      : { targetProtein: d.nutritionTargets.protein }),
   };
 }
 
@@ -3080,6 +3086,12 @@ function withDay(date: string, updater: (day: NutritionDay) => NutritionDay) {
     date,
     meals: data.mealTemplate.map((name) => ({ id: uid(), name, foods: [] })),
     plannedMeals: data.plannedMeals ?? [],
+    ...(data.nutritionTargets.calories === undefined
+      ? {}
+      : { targetCalories: data.nutritionTargets.calories }),
+    ...(data.nutritionTargets.protein === undefined
+      ? {}
+      : { targetProtein: data.nutritionTargets.protein }),
   };
   const next = updater(base);
   const days = existing

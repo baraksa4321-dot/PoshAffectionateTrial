@@ -115,6 +115,7 @@ function supersetLabels(items: WorkoutItem[]) {
 }
 
 const ACTIVE_SESSION_KEY = (id: string) => `gymtrack.active_session.${id}`;
+const ACTIVE_SESSION_STARTED_AT_KEY = (id: string) => `gymtrack.active_session_started_at.${id}`;
 const ACTIVE_SESSION_FEEDBACK_KEY = (id: string) => `gymtrack.active_session_feedback.${id}`;
 const ACTIVE_REST_TIMER_KEY = (id: string) => `gymtrack.active_rest_timer.${id}`;
 const MAX_PERFORMANCE_VIDEO_DURATION_SECONDS = 5 * 60;
@@ -153,6 +154,16 @@ function readPersistedRestTimer(workoutId: string): PersistedRestTimer | null {
       smartTimerStarted: parsed.smartTimerStarted === true,
       restExpanded: parsed.restExpanded === true,
     };
+  } catch {
+    return null;
+  }
+}
+
+function readPersistedSessionStartedAt(workoutId: string): number | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const value = Number(window.localStorage.getItem(ACTIVE_SESSION_STARTED_AT_KEY(workoutId)));
+    return Number.isFinite(value) && value > 0 ? value : null;
   } catch {
     return null;
   }
@@ -392,9 +403,10 @@ function Session() {
 
   const initial = useMemo<HistoryEntry[]>(() => {
     if (!workout) return [];
+    if (typeof window === "undefined") return [];
 
     try {
-      const saved = localStorage.getItem(ACTIVE_SESSION_KEY(workoutId));
+      const saved = window.localStorage.getItem(ACTIVE_SESSION_KEY(workoutId));
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length === workout.items.length) {
@@ -564,7 +576,7 @@ function Session() {
       }),
     );
   }, [initial]);
-  const [startedAt] = useState(() => Date.now());
+  const [startedAt] = useState(() => readPersistedSessionStartedAt(workoutId) ?? Date.now());
   const entriesRef = useRef(entries);
   const videoFilesRef = useRef(new Map<number, File>());
   const videoUploadVersionsRef = useRef(new Map<number, number>());
@@ -780,11 +792,23 @@ function Session() {
   useEffect(() => {
     if (!workoutId || entries.length === 0) return;
     try {
-      localStorage.setItem(ACTIVE_SESSION_KEY(workoutId), JSON.stringify(entries));
+      window.localStorage.setItem(ACTIVE_SESSION_KEY(workoutId), JSON.stringify(entries));
     } catch {
       /* ignore */
     }
   }, [entries, workoutId]);
+
+  useEffect(() => {
+    if (!workoutId) return;
+    try {
+      window.localStorage.setItem(
+        ACTIVE_SESSION_STARTED_AT_KEY(workoutId),
+        String(startedAt),
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [startedAt, workoutId]);
 
   useEffect(() => {
     if (
@@ -847,7 +871,7 @@ function Session() {
       notifyRestCompletion();
     }
     previousRestRef.current = rest;
-  }, [entries, nextSmartTimerPosition, notifyRestCompletion, rest]);
+  }, [nextSmartTimerPosition, notifyRestCompletion, rest]);
 
   const labels = useMemo(() => supersetLabels(workout?.items ?? []), [workout?.items]);
   const exerciseCatalog = useMemo(
@@ -980,9 +1004,10 @@ function Session() {
 
   const clearSavedSession = () => {
     try {
-      localStorage.removeItem(ACTIVE_SESSION_KEY(workout.id));
-      localStorage.removeItem(ACTIVE_SESSION_FEEDBACK_KEY(workout.id));
-      localStorage.removeItem(ACTIVE_REST_TIMER_KEY(workout.id));
+      window.localStorage.removeItem(ACTIVE_SESSION_KEY(workout.id));
+      window.localStorage.removeItem(ACTIVE_SESSION_STARTED_AT_KEY(workout.id));
+      window.localStorage.removeItem(ACTIVE_SESSION_FEEDBACK_KEY(workout.id));
+      window.localStorage.removeItem(ACTIVE_REST_TIMER_KEY(workout.id));
     } catch {
       /* ignore */
     }

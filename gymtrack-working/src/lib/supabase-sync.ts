@@ -30,6 +30,13 @@ export type SyncStatus = "idle" | "syncing" | "synced" | "pending" | "conflict" 
 export type PullResult =
   { success: true; data: GymData } | { success: false; data: GymData; error: string };
 
+function localDateKey(date: Date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export type CoachClientData = {
   exercises: Exercise[];
   programs: Program[];
@@ -1066,19 +1073,48 @@ export async function syncLocalToSupabase(
     }
 
     // 6. Nutrition Days
-    if (localData.nutritionDays.length > 0) {
-      const nutritionPayload = localData.nutritionDays.map((nd) => ({
+    const localToday = localDateKey();
+    const nutritionPayload = localData.nutritionDays.map((nd) => ({
         id: nd.id ?? `${userId}_${nd.date}`,
         user_id: userId,
         date: nd.date,
-        target_calories: localData.nutritionTargets.calories,
-        target_protein: localData.nutritionTargets.protein,
         meals: nd.meals,
         planned_meals: nd.plannedMeals ?? [],
         updated_at: new Date().toISOString(),
         ...(nd.waterMl === undefined ? {} : { water_ml: nd.waterMl }),
         ...(nd.waterTargetMl === undefined ? {} : { water_target_ml: nd.waterTargetMl }),
+        ...(nd.targetCalories === undefined
+          ? nd.date === localToday && localData.nutritionTargets.calories !== undefined
+            ? { target_calories: localData.nutritionTargets.calories }
+            : {}
+          : { target_calories: nd.targetCalories }),
+        ...(nd.targetProtein === undefined
+          ? nd.date === localToday && localData.nutritionTargets.protein !== undefined
+            ? { target_protein: localData.nutritionTargets.protein }
+            : {}
+          : { target_protein: nd.targetProtein }),
       }));
+    if (
+      !localData.nutritionDays.some((day) => day.date === localToday) &&
+      (localData.nutritionTargets.calories !== undefined ||
+        localData.nutritionTargets.protein !== undefined)
+    ) {
+      nutritionPayload.push({
+        id: `${userId}_${localToday}`,
+        user_id: userId,
+        date: localToday,
+        meals: [],
+        planned_meals: [],
+        updated_at: new Date().toISOString(),
+        ...(localData.nutritionTargets.calories === undefined
+          ? {}
+          : { target_calories: localData.nutritionTargets.calories }),
+        ...(localData.nutritionTargets.protein === undefined
+          ? {}
+          : { target_protein: localData.nutritionTargets.protein }),
+      });
+    }
+    if (nutritionPayload.length > 0) {
       await requireSuccessfulWrite(
         supabase.from("nutrition_days").upsert(nutritionPayload, { onConflict: "id" }),
         "Nutrition log sync",
@@ -1824,6 +1860,12 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         ...(row.water_target_ml === null
           ? {}
           : { waterTargetMl: Number(row.water_target_ml ?? 2500) }),
+        ...(row.target_calories === null || row.target_calories === undefined
+          ? {}
+          : { targetCalories: Number(row.target_calories) }),
+        ...(row.target_protein === null || row.target_protein === undefined
+          ? {}
+          : { targetProtein: Number(row.target_protein) }),
       }));
       nextData.nutritionDays = daysList.filter(
         (day) => !deletedNutritionDayIds.has(day.id ?? "") && !deletedNutritionDayIds.has(day.date),
@@ -2024,6 +2066,12 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       ...(row.water_target_ml === null
         ? {}
         : { waterTargetMl: Number(row.water_target_ml ?? 2500) }),
+      ...(row.target_calories === null || row.target_calories === undefined
+        ? {}
+        : { targetCalories: Number(row.target_calories) }),
+      ...(row.target_protein === null || row.target_protein === undefined
+        ? {}
+        : { targetProtein: Number(row.target_protein) }),
     }));
     const latestNutritionTarget = (dbNutritionDays || []).find(
       (row) => row.target_calories !== null && row.target_calories !== undefined,

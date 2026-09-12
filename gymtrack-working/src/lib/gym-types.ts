@@ -339,6 +339,9 @@ export type NutritionDay = {
   plannedMeals?: Meal[];
   waterMl?: number;
   waterTargetMl?: number;
+  /** Daily targets captured with the row so later global target changes do not rewrite history. */
+  targetCalories?: number;
+  targetProtein?: number;
 };
 
 export type NutritionTargets = {
