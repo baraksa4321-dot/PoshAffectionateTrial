@@ -56,6 +56,7 @@ const INTERACTIVE_SESSION_FLAG = "__MY_ROUTINE_INTERACTIVE__";
 type GymTrackWindow = Window & {
   [INTERACTIVE_SESSION_FLAG]?: boolean;
   __MY_ROUTINE_BOOTED__?: boolean;
+  __MY_ROUTINE_LOADING_CYCLE_INDEX__?: number;
 };
 
 function loadingGenderStorageKey(userId?: string) {
@@ -1071,7 +1072,7 @@ function LegacyLoadingIllustration({ variant }: { variant: number }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    scripts: [{ async: true, src: "/boot-watchdog.js?v=5" }],
+    scripts: [{ async: true, src: "/boot-watchdog.js?v=6" }],
     meta: [
       { charSet: "utf-8" },
       {
@@ -1436,6 +1437,16 @@ function RootContent() {
 
     loadingWasVisibleRef.current = true;
     try {
+      const bootCycleIndex = (window as GymTrackWindow).__MY_ROUTINE_LOADING_CYCLE_INDEX__;
+      if (
+        typeof bootCycleIndex === "number" &&
+        Number.isSafeInteger(bootCycleIndex) &&
+        bootCycleIndex >= 0
+      ) {
+        setOpeningCycleIndex(bootCycleIndex);
+        return;
+      }
+
       const cycleIndex = readLoadingCycle(
         window.localStorage.getItem(LOADING_CYCLE_STORAGE_KEY),
       );

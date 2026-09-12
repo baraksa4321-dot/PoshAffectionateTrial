@@ -10,8 +10,8 @@ import {
 } from "./loading-copy";
 
 describe("loading cycle", () => {
-  test("rotates to the next animation and message every two seconds", () => {
-    expect(LOADING_ROTATION_INTERVAL_MS).toBe(2_000);
+  test("rotates to the next animation and message every 1.3 seconds", () => {
+    expect(LOADING_ROTATION_INTERVAL_MS).toBe(1_300);
   });
 
   test("starts at zero and rejects invalid persisted values", () => {
