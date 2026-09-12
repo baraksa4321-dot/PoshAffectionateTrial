@@ -4028,19 +4028,20 @@ export function CoachDashboardPage({
 
   const addPlannedMealAlternative = (mealId: string) => {
     if (!isCoach) return;
+    const alternativeId = uid();
     markPlannedMealsDraftDirty();
+    setExpandedMenuMealIds((expanded) => new Set(expanded).add(alternativeId));
     setPlannedMeals((current) => {
       const source = current.find((meal) => meal.id === mealId);
       if (!source) return current;
       const optionGroupId = plannedMealOptionGroupId(source);
       const alternative: Meal = {
-        id: uid(),
+        id: alternativeId,
         name: `${source.name || "ארוחה"} אחרת`,
         foods: [],
         mealOptionGroupId: optionGroupId,
       };
       const sourceIndex = current.findIndex((meal) => meal.id === mealId);
-      setExpandedMenuMealIds((expanded) => new Set(expanded).add(alternative.id));
       const groupedCurrent = current.map((meal) =>
         meal.id === source.id || meal.mealOptionGroupId === optionGroupId
           ? { ...meal, mealOptionGroupId: optionGroupId }
@@ -9160,12 +9161,17 @@ export function CoachDashboardPage({
                                <button
                                  type="button"
                                  onClick={() =>
-                                   setExpandedMenuMealIds((current) => {
-                                     const next = new Set(current);
-                                     if (next.has(meal.id)) next.delete(meal.id);
-                                     else next.add(meal.id);
-                                     return next;
-                                   })
+                                   {
+                                     setExpandedMenuMealIds((current) => {
+                                       const next = new Set(current);
+                                       if (next.has(meal.id)) next.delete(meal.id);
+                                       else next.add(meal.id);
+                                       return next;
+                                     });
+                                     if (isMealExpanded && menuFoodMealId === meal.id) {
+                                       setMenuFoodMealId(null);
+                                     }
+                                   }
                                  }
                                  className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
                                  aria-expanded={isMealExpanded}
@@ -9419,8 +9425,6 @@ export function CoachDashboardPage({
                                           </div>
                                         </div>
                                       ) : null}
-                               </>
-                             )}
                                    </div>
                                     );
                                   })}
@@ -9596,6 +9600,8 @@ export function CoachDashboardPage({
                                 </div>
                               </div>
                             ) : null}
+                               </>
+                             )}
                           </div>
                         );
                       })}
