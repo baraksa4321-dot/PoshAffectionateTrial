@@ -1501,6 +1501,8 @@ export function CoachDashboardPage({
   const [inviteMsg, setInviteMsg] = useState("");
   const [addingClient, setAddingClient] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const storeExercisesRef = useRef(store.exercises);
+  storeExercisesRef.current = store.exercises;
   const applyClientDetails = useCallback(
     (result: ClientDetails, options?: { preserveOnError?: boolean }) => {
       if (result.error) {
@@ -1520,7 +1522,7 @@ export function CoachDashboardPage({
             !name ||
             name === "תרגיל" ||
             name === "תרגיל שהוסר" ||
-            store.exercises.some((exercise) => exercise.id === item.exerciseId) ||
+            storeExercisesRef.current.some((exercise) => exercise.id === item.exerciseId) ||
             result.exercises.some((exercise) => exercise.id === item.exerciseId)
           ) {
             continue;
@@ -1544,7 +1546,7 @@ export function CoachDashboardPage({
       setClientDetailsError("");
       setClientDetails(result);
     },
-    [store.exercises],
+    [],
   );
 
   // Coach Message sender state
@@ -2326,33 +2328,55 @@ export function CoachDashboardPage({
       setClientRefreshInFlight(false);
       return;
     }
+  }, [selectedClientId]);
 
+  useEffect(() => {
+    if (!selectedClientId || !isSelfSelected) return;
+    setLoadingDetails(true);
+    setClientDetailsError("");
+    setManagementError("");
+    const selfProfile = store.userProfile ?? { weight: 0, role: "owner" as const };
+    setClientDetails({
+      exercises: store.exercises,
+      programs: store.programs,
+      workouts: store.workouts,
+      nutritionDays: store.nutritionDays,
+      plannedMeals: store.plannedMeals ?? [],
+      nutritionTargets: store.nutritionTargets,
+      history: store.history,
+      cardioLogs: store.cardioLogs ?? [],
+      bodyWeightLogs: store.bodyWeightLogs ?? [],
+      bodyMeasurements: store.bodyMeasurements ?? [],
+      habits: store.habits ?? [],
+      coachMessages: store.coachMessages ?? [],
+      profile: selfProfile,
+    });
+    setClientRefreshInFlight(false);
+    setLoadingDetails(false);
+  }, [
+    isSelfSelected,
+    selectedClientId,
+    store.bodyMeasurements,
+    store.cardioLogs,
+    store.coachMessages,
+    store.exercises,
+    store.history,
+    store.habits,
+    store.nutritionDays,
+    store.nutritionTargets,
+    store.plannedMeals,
+    store.programs,
+    store.userProfile,
+    store.workouts,
+  ]);
+
+  useEffect(() => {
+    if (!selectedClientId || isSelfSelected) return;
     let active = true;
     setLoadingDetails(true);
     setClientDetailsError("");
     setManagementError("");
-    setClientRefreshInFlight(!isSelfSelected);
-    if (isSelfSelected) {
-      const selfProfile = store.userProfile ?? { weight: 0, role: "owner" as const };
-      setClientDetails({
-        exercises: store.exercises,
-        programs: store.programs,
-        workouts: store.workouts,
-        nutritionDays: store.nutritionDays,
-        plannedMeals: store.plannedMeals ?? [],
-        nutritionTargets: store.nutritionTargets,
-        history: store.history,
-        cardioLogs: store.cardioLogs ?? [],
-        bodyWeightLogs: store.bodyWeightLogs ?? [],
-        bodyMeasurements: store.bodyMeasurements ?? [],
-        habits: store.habits ?? [],
-        coachMessages: store.coachMessages ?? [],
-        profile: selfProfile,
-      });
-      setClientRefreshInFlight(false);
-      setLoadingDetails(false);
-      return;
-    }
+    setClientRefreshInFlight(true);
 
     const smokeFailureKey = "ios-smoke.fail-selected-trainee-data-once";
     if (window.localStorage.getItem(smokeFailureKey) === "true") {
@@ -2361,7 +2385,9 @@ export function CoachDashboardPage({
       setClientDetailsError("temporary selected trainee data failure");
       setLoadingDetails(false);
       setClientRefreshInFlight(false);
-      return;
+      return () => {
+        active = false;
+      };
     }
 
     void pullClientDataForCoach(selectedClientId)
@@ -2380,7 +2406,11 @@ export function CoachDashboardPage({
     return () => {
       active = false;
     };
-  }, [applyClientDetails, isSelfSelected, selectedClientId, store]);
+  }, [
+    applyClientDetails,
+    isSelfSelected,
+    selectedClientId,
+  ]);
 
   useEffect(() => {
     if (!isCoach || isSelfSelected || !selectedClientId) return;
@@ -2453,39 +2483,6 @@ export function CoachDashboardPage({
     loadClientFeedback,
     loadCoachClients,
     selectedClientId,
-  ]);
-
-  useEffect(() => {
-    if (!isSelfSelected || !selectedClientId) return;
-    setClientDetails({
-      exercises: store.exercises,
-      programs: store.programs,
-      workouts: store.workouts,
-      nutritionDays: store.nutritionDays,
-      plannedMeals: store.plannedMeals ?? [],
-      nutritionTargets: store.nutritionTargets,
-      history: store.history,
-      cardioLogs: store.cardioLogs ?? [],
-      bodyWeightLogs: store.bodyWeightLogs ?? [],
-      bodyMeasurements: store.bodyMeasurements ?? [],
-      habits: store.habits ?? [],
-      coachMessages: store.coachMessages ?? [],
-      ...(store.userProfile ? { profile: store.userProfile } : {}),
-    });
-    setLoadingDetails(false);
-  }, [
-    isSelfSelected,
-    selectedClientId,
-    store.cardioLogs,
-    store.exercises,
-    store.history,
-    store.nutritionDays,
-    store.nutritionTargets,
-    store.plannedMeals,
-    store.programs,
-    store.userProfile,
-    store.workouts,
-    store.bodyMeasurements,
   ]);
 
   useEffect(() => {

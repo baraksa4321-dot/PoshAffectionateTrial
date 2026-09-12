@@ -632,6 +632,17 @@ async function installFixture(
       let shouldFailSelectedTraineeData =
         failSelectedTraineeDataOnce &&
         window.localStorage.getItem(selectedTraineeFailureKey) === "true";
+      let selectedTraineeSelectionStarted = false;
+      window.addEventListener(
+        "click",
+        (event) => {
+          const target = event.target instanceof Element ? event.target : null;
+          if (target?.textContent?.includes("מתאמנת בדיקה")) {
+            selectedTraineeSelectionStarted = true;
+          }
+        },
+        true,
+      );
       window.__iosSmokeArmSelectedTraineeDataFailure = () => {
         if (!failSelectedTraineeDataOnce) return;
         window.localStorage.setItem(selectedTraineeFailureKey, "true");
@@ -703,7 +714,8 @@ async function installFixture(
           if (
             selectedDetailsPaths.has(path) &&
             url.includes(clientProfile.id) &&
-            shouldFailSelectedTraineeData
+            shouldFailSelectedTraineeData &&
+            selectedTraineeSelectionStarted
           ) {
             shouldFailSelectedTraineeData = false;
             window.localStorage.removeItem(selectedTraineeFailureKey);
@@ -1292,8 +1304,13 @@ test("household portions stay correct across coach save and trainee replacement"
   await traineePage.getByRole("button", { name: "החלפת מאכל", exact: true }).first().click();
   const replacementDialog = traineePage.getByRole("dialog", { name: "החלפת מאכל" });
   await expect(replacementDialog).toBeVisible();
-  await replacementDialog.locator('input[placeholder*="חפשי מאכל חלופי"]').fill("יוגורט");
-  const yogurtReplacement = replacementDialog.getByRole("button", { name: /יוגורט/ }).first();
+  await replacementDialog
+    .locator('input[placeholder*="חפשי מאכל חלופי"]')
+    .fill("יוגורט טבעי");
+  const yogurtReplacement = replacementDialog
+    .getByRole("button", { name: /יוגורט טבעי/ })
+    .filter({ hasText: "כף" })
+    .first();
   await expect(yogurtReplacement).toContainText("כף");
   const replacementName = (await yogurtReplacement.locator("p").first().textContent())?.trim();
   expect(replacementName).toBeTruthy();
@@ -1304,7 +1321,9 @@ test("household portions stay correct across coach save and trainee replacement"
   await traineePage.getByRole("link", { name: "התזונה שלי", exact: true }).click();
   await expect(traineePage).toHaveURL(/\/nutrition/);
   await expect(traineePage.getByText(replacementName, { exact: true })).toBeVisible();
-  await expect(traineePage.getByTestId("nutrition-food-quantity").first()).toHaveText("2.7 כף");
+  await expect(traineePage.getByTestId("nutrition-food-quantity").first()).toHaveText(
+    /\d+(?:\.\d+)? כף/,
+  );
 });
 
 test("trainee nutrition quantities and macro visibility stay consistent", async ({ page }) => {

@@ -14,3 +14,9 @@ Successful empty cloud queries are authoritative: clear cached collections when 
 **Why:** Role and assignment changes can happen in another browser; preserving a cached coach pointer, management list, or last message can show stale access or stale content after the server has already removed it.
 
 **How to apply:** When normalizing a remote profile, strip old nullable fields before adding current values. When a successful query returns an empty array, replace the local collection with an empty array instead of leaving the cache untouched.
+
+Selected non-self trainee hydration must not restart because unrelated local-store collections changed; keep its request effect separate from self-profile hydration and guard late results by selection ownership.
+
+**Why:** A store-wide dependency can replace an active error or draft while a selected trainee request is retrying, and can apply a previous trainee's result after the coach has switched clients.
+
+**How to apply:** Depend on the selected client and stable request/apply callbacks for remote trainee loads. Keep self-profile snapshots in their own store-dependent effect, and cancel or ignore stale remote results on cleanup.
