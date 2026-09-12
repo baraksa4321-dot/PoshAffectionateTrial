@@ -119,6 +119,7 @@ type CoachClientRow = {
 };
 
 type DashboardClientFilter = "clients" | "needsPlan" | "quiet";
+type OwnerHomeTab = "overview" | "checkins" | "profiles";
 
 type ExerciseBuilderReturnContext = {
   returnUrl: string;
@@ -1464,6 +1465,7 @@ export function CoachDashboardPage({
   const [allProfiles, setAllProfiles] = useState<ProfileRow[]>([]);
   const [clientSearch, setClientSearch] = useState("");
   const [ownerUserSearch, setOwnerUserSearch] = useState("");
+  const [ownerHomeTab, setOwnerHomeTab] = useState<OwnerHomeTab>("overview");
   const [dashboardClientFilter, setDashboardClientFilter] = useState<DashboardClientFilter | null>(
     null,
   );
@@ -3072,6 +3074,7 @@ export function CoachDashboardPage({
   };
 
   const openOwnerProfile = async (profile: ProfileRow) => {
+    setOwnerHomeTab("profiles");
     setSelectedOwnerProfileId(profile.id);
     setSelectedOwnerProfileDetails(null);
     const additionalCoachId =
@@ -4700,6 +4703,12 @@ export function CoachDashboardPage({
           .some((value) => value!.toLocaleLowerCase().includes(ownerUserSearchLower)),
       )
     : [];
+  const visibleOwnerProfiles =
+    ownerHomeTab === "profiles"
+      ? ownerUserSearchLower
+        ? filteredOwnerProfiles
+        : allProfiles
+      : filteredOwnerProfiles;
   const menuFoodResults = searchFoods(store.foods, menuFoodQuery).slice(0, 24);
   const selectedMenuFood = store.foods.find((food) => food.id === menuFoodId);
   const menuAlternativeTarget = menuAlternativeFor
@@ -5342,6 +5351,145 @@ export function CoachDashboardPage({
               </div>
             </section>
           ) : null}
+          {isOwner ? (
+            <nav
+              aria-label="ניווט במסך הבית של הבעלים"
+              className="grid grid-cols-2 gap-2 rounded-2xl border border-border/70 bg-background p-1.5 shadow-sm"
+            >
+              <button
+                type="button"
+                onClick={() => setOwnerHomeTab("checkins")}
+                aria-current={ownerHomeTab === "checkins" ? "page" : undefined}
+                className={`flex min-h-9 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-extrabold transition-colors ${
+                  ownerHomeTab === "checkins"
+                    ? "bg-amber-100 text-amber-900"
+                    : "text-muted-foreground hover:bg-secondary hover:text-ink"
+                }`}
+              >
+                <Activity className="h-3.5 w-3.5" aria-hidden="true" />
+                צ׳ק־אין
+                {attentionOpenCount > 0 ? (
+                  <span className="rounded-full bg-amber-200 px-1.5 py-0.5 text-[9px] text-amber-900">
+                    {attentionOpenCount}
+                  </span>
+                ) : null}
+              </button>
+              <button
+                type="button"
+                onClick={() => setOwnerHomeTab("profiles")}
+                aria-current={ownerHomeTab === "profiles" ? "page" : undefined}
+                className={`flex min-h-9 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-extrabold transition-colors ${
+                  ownerHomeTab === "profiles"
+                    ? "bg-purple-100 text-purple-900"
+                    : "text-muted-foreground hover:bg-secondary hover:text-ink"
+                }`}
+              >
+                <Users className="h-3.5 w-3.5" aria-hidden="true" />
+                פרופילים
+                <span className="rounded-full bg-purple-100 px-1.5 py-0.5 text-[9px] text-purple-900">
+                  {allProfiles.length}
+                </span>
+              </button>
+            </nav>
+          ) : null}
+          {isOwner && ownerHomeTab === "checkins" ? (
+            <section className="surface-card space-y-3 border-amber-200 bg-amber-50/45 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">
+                    מעקב קצר
+                  </p>
+                  <h3 className="mt-1 flex items-center gap-2 text-sm font-extrabold text-amber-950">
+                    <Activity className="h-4 w-4 text-amber-700" />
+                    צ׳ק־אין למתאמנים
+                  </h3>
+                  <p className="mt-1 text-[11px] leading-relaxed text-amber-900/75">
+                    מי דורש תשומת לב, מי יציב, ומי עדיין לא צבר מספיק נתונים.
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-extrabold text-amber-900">
+                  {attentionOpenCount} פתוחים
+                </span>
+              </div>
+              {attentionItems.length === 0 ? (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center text-xs font-semibold text-emerald-800">
+                  עדיין אין מספיק נתוני פעילות להצגת צ׳ק־אין.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {attentionItems.map((item) => {
+                    const itemProfile = allProfiles.find((profile) => profile.id === item.clientId);
+                    const statusLabel =
+                      item.status === "needs-attention"
+                        ? "דורש תשומת לב"
+                        : item.status === "stable"
+                          ? "יציב"
+                          : "אין מספיק נתונים";
+                    const statusClass =
+                      item.status === "needs-attention"
+                        ? "bg-amber-100 text-amber-800"
+                        : item.status === "stable"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : "bg-slate-100 text-slate-700";
+                    return (
+                      <div
+                        key={item.clientId}
+                        className={`rounded-2xl border bg-background p-3 ${
+                          item.reviewed ? "border-border/60 opacity-75" : "border-amber-200"
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <h4 className="text-sm font-extrabold text-ink">{item.clientName}</h4>
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${statusClass}`}
+                              >
+                                {statusLabel}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              {item.reasons.length > 0
+                                ? item.reasons.map((reason) => reason.label).join(" · ")
+                                : "אין סיבה חריגה כרגע"}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={!itemProfile}
+                            onClick={() => {
+                              if (itemProfile) void openOwnerProfile(itemProfile);
+                            }}
+                            className="shrink-0 rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-[10px] font-extrabold text-purple-800 hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            פתיחת פרופיל
+                          </button>
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-[10px]">
+                          <div className="rounded-xl bg-surface-2 p-2">
+                            <span className="block text-muted-foreground">אימוני 4 שבועות</span>
+                            <strong className="mt-0.5 block text-ink">
+                              {item.fourWeekWorkoutRate == null
+                                ? "—"
+                                : `${item.fourWeekWorkoutRate}%`}
+                            </strong>
+                          </div>
+                          <div className="rounded-xl bg-surface-2 p-2">
+                            <span className="block text-muted-foreground">תזונה השבוע</span>
+                            <strong className="mt-0.5 block text-ink">
+                              {item.fourWeekNutritionRate == null
+                                ? "—"
+                                : `${item.fourWeekNutritionRate}%`}
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          ) : null}
         </section>
       ) : null}
 
@@ -5355,7 +5503,7 @@ export function CoachDashboardPage({
           </div>
         ) : null}
         {/* Owner Management Section */}
-        {isOwner && !clientsOnly && (
+        {isOwner && !clientsOnly && ownerHomeTab !== "checkins" && (
           <div className="surface-card p-5 rounded-3xl space-y-3 bg-purple-50/60 border border-purple-200">
             <div className="flex items-center justify-between border-b border-purple-200/60 pb-2">
               <div className="flex items-center gap-2">
@@ -5767,9 +5915,13 @@ export function CoachDashboardPage({
                     );
                   })()
                 : null}
-               {ownerUserSearchLower ? (
-                 <div className="max-h-48 space-y-1.5 overflow-y-auto">
-                   {filteredOwnerProfiles.map((p) => {
+               {ownerUserSearchLower || ownerHomeTab === "profiles" ? (
+                 <div
+                   className={`space-y-1.5 overflow-y-auto ${
+                     ownerHomeTab === "profiles" ? "max-h-[32rem]" : "max-h-48"
+                   }`}
+                 >
+                   {visibleOwnerProfiles.map((p) => {
                   const isCurrentUser = p.id === authUser?.id;
                   const canChangeRole =
                     p.role === "owner" || p.role === "coach" || p.role === "client";
@@ -6015,7 +6167,7 @@ export function CoachDashboardPage({
               } bg-background ${
                 workspacePage || openEditor
                   ? "min-w-0 max-w-full overflow-x-hidden pb-10"
-                  : "max-w-2xl rounded-3xl shadow-2xl"
+                  : `${isOwner ? "max-w-5xl" : "max-w-2xl"} rounded-3xl shadow-2xl`
               } ${workspacePage || openEditor ? "" : "p-4 sm:p-6"}`}
             >
               {!editingDayId ? (
