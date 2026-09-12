@@ -137,7 +137,6 @@ function Dashboard() {
     nutritionDays,
     nutritionTargets,
     userProfile,
-    bodyMeasurements,
     preExitChecklist,
     coachMessages,
     broadcasts,
@@ -506,7 +505,6 @@ function Dashboard() {
     }
     setDismissingMessageId(null);
   };
-  const latestMeasurement = bodyMeasurements?.[0];
   const gender = userProfile?.gender;
   const greetingName = userProfile?.fullName?.trim().split(/\s+/)[0] || "";
 
@@ -881,35 +879,6 @@ function Dashboard() {
             </div>
           </div>
         </section>
-
-        {latestMeasurement ? (
-          <section {...homeCardProps("measurements")} className="dashboard-module dashboard-module--measurements mt-5 text-start">
-            <SectionHeader
-              title="המדידות החודשיות שלי"
-              subtitle={genderText(
-                gender,
-                "תצוגה בלבד — מתעדכנות על ידי המאמנת או הבעלים",
-                "תצוגה בלבד — מתעדכנים על ידי המאמן או הבעלים",
-              )}
-            />
-            <div className="grid grid-cols-3 gap-2.5">
-              {[
-                ["מותניים", latestMeasurement.waistCm, "ס״מ"],
-                ["אחוז שומן", latestMeasurement.bodyFatPct, "%"],
-                ["מסת שריר", latestMeasurement.muscleMassKg, "ק״ג"],
-              ].map(([label, value, unit]) => (
-                <div key={label} className="surface-card p-3 text-center">
-                  <span className="block text-[10px] font-semibold text-muted-foreground">
-                    {label}
-                  </span>
-                  <strong className="mt-1 block text-sm text-ink">
-                    {value !== undefined ? `${value} ${unit}` : "לא נמדד"}
-                  </strong>
-                </div>
-              ))}
-            </div>
-          </section>
-        ) : null}
 
       </div>
       {showChecklistModal ? (
