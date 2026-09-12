@@ -1289,7 +1289,7 @@ test("household portions stay correct across coach save and trainee replacement"
   await expect(traineePage).toHaveURL(/\/nutrition/);
   await expect(traineePage.getByTestId("nutrition-food-quantity").first()).toHaveText("2 כף");
 
-  await traineePage.getByRole("button", { name: "החלפה", exact: true }).first().click();
+  await traineePage.getByRole("button", { name: "החלפת מאכל", exact: true }).first().click();
   const replacementDialog = traineePage.getByRole("dialog", { name: "החלפת מאכל" });
   await expect(replacementDialog).toBeVisible();
   await replacementDialog.locator('input[placeholder*="חפשי מאכל חלופי"]').fill("יוגורט");
@@ -1324,7 +1324,7 @@ test("trainee nutrition quantities and macro visibility stay consistent", async 
   }
   await expect(plannedMacroGrid.locator('[data-nutrition-macro="קלוריות"]')).toHaveCount(0);
 
-  await page.getByRole("button", { name: "החלפה", exact: true }).first().click();
+  await page.getByRole("button", { name: "החלפת מאכל", exact: true }).first().click();
   const replacementDialog = page.getByRole("dialog", { name: "החלפת מאכל" });
   await expect(replacementDialog).toBeVisible();
   const replacementQuantity = replacementDialog.getByTestId("nutrition-food-quantity").first();

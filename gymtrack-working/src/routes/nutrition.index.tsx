@@ -573,13 +573,14 @@ function NutritionLog() {
       id: current.id,
       ...(current.notes === undefined ? {} : { notes: current.notes }),
     };
-    if (substituteFor?.plannedMealId) {
-      logPlannedFoodSubstitution(date, substituteFor.plannedMealId, current, replacementFood);
+    const plannedMealId = substituteFor?.plannedMealId;
+    setSubstituteFor(null);
+    setSubstituteQuery("");
+    if (plannedMealId) {
+      logPlannedFoodSubstitution(date, plannedMealId, current, replacementFood);
     } else {
       updateMealFood(date, mealId, replacementFood);
     }
-    setSubstituteFor(null);
-    setSubstituteQuery("");
   };
 
   const calPct =

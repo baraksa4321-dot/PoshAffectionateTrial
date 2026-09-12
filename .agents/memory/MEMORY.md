@@ -59,5 +59,6 @@
 - [Native push foreground handling](native-push-foreground.md) — Capacitor FCM callbacks can duplicate OS-presented notifications; gate local mirroring by app visibility.
 - [Persistent Push browser smoke](persistent-push-browser-smoke.md) — Chromium incognito-style contexts reject Web Push; use separate persistent profiles and a headed device for OS display.
 - [Release fixture navigation state](release-fixture-navigation.md) — Persist one-shot browser fixture failures across client-route navigation before selected-data loading.
+- [WebKit release-gate isolation](webkit-release-gate-isolation.md) — Nutrition smoke flows can pass while later coach/realtime tests time out; isolate failures by test before changing feature code.
 - [Meal option groups](meal-option-groups.md) — Represent alternate prescribed meals as grouped Meal records; keep food substitutions at the MealFood level.
 - [Secure runtime secrets](secure-runtime-secrets.md) — ShellExec may not expose managed secret values; load them through the secure flow and restart the consuming workflow.
