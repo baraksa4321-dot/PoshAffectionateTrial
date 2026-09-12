@@ -5358,7 +5358,9 @@ export function CoachDashboardPage({
             >
               <button
                 type="button"
-                onClick={() => setOwnerHomeTab("checkins")}
+                onClick={() =>
+                  setOwnerHomeTab((current) => (current === "checkins" ? "overview" : "checkins"))
+                }
                 aria-current={ownerHomeTab === "checkins" ? "page" : undefined}
                 className={`flex min-h-9 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-extrabold transition-colors ${
                   ownerHomeTab === "checkins"
@@ -5376,7 +5378,9 @@ export function CoachDashboardPage({
               </button>
               <button
                 type="button"
-                onClick={() => setOwnerHomeTab("profiles")}
+                onClick={() =>
+                  setOwnerHomeTab((current) => (current === "profiles" ? "overview" : "profiles"))
+                }
                 aria-current={ownerHomeTab === "profiles" ? "page" : undefined}
                 className={`flex min-h-9 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-extrabold transition-colors ${
                   ownerHomeTab === "profiles"
@@ -5504,11 +5508,13 @@ export function CoachDashboardPage({
         ) : null}
         {/* Owner Management Section */}
         {isOwner && !clientsOnly && ownerHomeTab !== "checkins" && (
-          <div className="surface-card p-5 rounded-3xl space-y-3 bg-purple-50/60 border border-purple-200">
+          <div className="surface-card space-y-3 rounded-3xl border border-purple-200 bg-purple-50/60 p-3 sm:p-5">
             <div className="flex items-center justify-between border-b border-purple-200/60 pb-2">
               <div className="flex items-center gap-2">
                 <Crown className="h-5 w-5 text-purple-700" />
-                <h3 className="font-bold text-sm text-purple-950">ניהול משתמשים והרשאות בעלים</h3>
+                <h3 className="text-sm font-bold text-purple-950">
+                  {ownerHomeTab === "profiles" ? "פרופילים" : "ניהול משתמשים והרשאות בעלים"}
+                </h3>
               </div>
               <span className="text-[11px] font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-full">
                 {allProfiles.length} משתמשים במערכת
@@ -5673,16 +5679,16 @@ export function CoachDashboardPage({
                       .map((coachId) => allProfiles.find((profile) => profile.id === coachId))
                       .filter((profile): profile is ProfileRow => Boolean(profile));
                     return (
-                      <div className="rounded-2xl border border-purple-200 bg-white p-3 shadow-sm">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
+                      <div className="w-full min-w-0 rounded-2xl border border-purple-200 bg-white p-3 shadow-sm sm:p-5">
+                        <div className="flex min-w-0 items-start justify-between gap-3">
+                          <div className="min-w-0">
                             <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-purple-600">
                               כרטיס משתמש
                             </p>
                             <h4 className="mt-1 text-base font-extrabold text-purple-950">
                               {profileDisplayName(selectedProfile)}
                             </h4>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="break-all text-xs text-muted-foreground">
                               {selectedProfile.email || "ללא אימייל"}
                             </p>
                           </div>
@@ -5694,7 +5700,7 @@ export function CoachDashboardPage({
                             סגירה
                           </button>
                         </div>
-                        <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+                        <div className="mt-3 grid grid-cols-1 gap-2 text-[11px] sm:grid-cols-2">
                           <div className="rounded-xl bg-purple-50 p-2">
                             <span className="block text-muted-foreground">תפקיד</span>
                             <strong className="text-purple-950">
@@ -5750,7 +5756,7 @@ export function CoachDashboardPage({
                           </div>
                         </div>
                         {selectedProfile.profile_exists !== false ? (
-                          <div className="mt-3 flex items-center gap-2 rounded-xl border border-purple-100 bg-purple-50 p-2">
+                          <div className="mt-3 flex flex-col gap-2 rounded-xl border border-purple-100 bg-purple-50 p-2 sm:flex-row sm:items-center">
                             <div className="min-w-0 flex-1">
                               <span className="block text-[10px] font-bold text-muted-foreground">
                                 שינוי תפקיד
@@ -5778,7 +5784,7 @@ export function CoachDashboardPage({
                                   void handleOwnerChangeRole(selectedProfile.id, nextRole);
                                 }
                               }}
-                              className="max-w-28 rounded-lg border border-purple-200 bg-white px-2 py-2 text-[11px] font-bold text-purple-900 outline-none focus:border-purple-500 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="w-full rounded-lg border border-purple-200 bg-white px-2 py-2 text-[11px] font-bold text-purple-900 outline-none focus:border-purple-500 disabled:cursor-not-allowed disabled:opacity-60 sm:max-w-28"
                             >
                               <option value="" disabled>
                                 לא ידוע
@@ -5835,7 +5841,7 @@ export function CoachDashboardPage({
                         selectedProfile.role === "coach" ||
                         (selectedProfile.id === authUser?.id &&
                           selectedProfile.role === "owner") ? (
-                          <div className="mt-3 flex gap-2">
+                          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                             <select
                               value={assignmentCoachByUser[selectedProfile.id] ?? ""}
                               onChange={(event) =>
@@ -5844,7 +5850,7 @@ export function CoachDashboardPage({
                                   [selectedProfile.id]: event.target.value,
                                 }))
                               }
-                              className="min-w-0 flex-1 rounded-xl border border-purple-200 bg-white px-2 py-2 text-xs font-semibold text-purple-950 outline-none focus:border-purple-500"
+                              className="w-full min-w-0 flex-1 rounded-xl border border-purple-200 bg-white px-2 py-2 text-xs font-semibold text-purple-950 outline-none focus:border-purple-500"
                               aria-label={`בחירת מאמן עבור ${profileDisplayName(selectedProfile)}`}
                             >
                               <option value="">בחירת מאמן...</option>
@@ -5867,7 +5873,7 @@ export function CoachDashboardPage({
                               type="button"
                               disabled={assignmentUserId === selectedProfile.id}
                               onClick={() => void handleOwnerAssignClient(selectedProfile)}
-                              className="shrink-0 rounded-xl bg-purple-700 px-3 py-2 text-[11px] font-bold text-white disabled:opacity-50"
+                              className="w-full shrink-0 rounded-xl bg-purple-700 px-3 py-2 text-[11px] font-bold text-white disabled:opacity-50 sm:w-auto"
                             >
                               {assignmentUserId === selectedProfile.id
                                 ? "שומר..."
@@ -5930,7 +5936,7 @@ export function CoachDashboardPage({
                   return (
                     <div
                       key={p.id}
-                      className="flex items-center justify-between gap-2 rounded-xl border border-purple-100 bg-white p-2.5 text-xs"
+                      className="flex flex-col gap-2 rounded-xl border border-purple-100 bg-white p-2.5 text-xs sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div className="min-w-0 flex-1">
                         <button
@@ -5955,7 +5961,7 @@ export function CoachDashboardPage({
                         </span>
                       </div>
 
-                      <div className="flex shrink-0 items-center gap-1.5">
+                      <div className="flex w-full shrink-0 items-center gap-1.5 sm:w-auto">
                         {renderOwnerCalorieToggle(p, true)}
                         <select
                           aria-label={`שינוי תפקיד עבור ${profileDisplayName(p)}`}
@@ -5976,7 +5982,7 @@ export function CoachDashboardPage({
                               void handleOwnerChangeRole(p.id, nextRole);
                             }
                           }}
-                          className="max-w-28 rounded-lg border border-purple-200 bg-white px-2 py-1 text-[11px] font-bold text-purple-900 outline-none focus:border-purple-500 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="min-w-0 flex-1 rounded-lg border border-purple-200 bg-white px-2 py-1 text-[11px] font-bold text-purple-900 outline-none focus:border-purple-500 disabled:cursor-not-allowed disabled:opacity-60 sm:max-w-28"
                         >
                           <option value="" disabled>
                             לא ידוע
