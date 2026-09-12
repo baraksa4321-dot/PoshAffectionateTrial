@@ -50,12 +50,19 @@ describe("coach plan payload boundaries", () => {
     ];
     expect(clientProgramDayItemsUpdatePayload(items)).toMatchObject({ items });
     expect(
-      clientNutritionTargetUpsertPayload("trainee-1_2026-08-26", "trainee-1", "2026-08-26", 2100),
+      clientNutritionTargetUpsertPayload(
+        "trainee-1_2026-08-26",
+        "trainee-1",
+        "2026-08-26",
+        2100,
+        140,
+      ),
     ).toMatchObject({
       id: "trainee-1_2026-08-26",
       user_id: "trainee-1",
       date: "2026-08-26",
       target_calories: 2100,
+      target_protein: 140,
     });
   });
 

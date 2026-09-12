@@ -1072,6 +1072,7 @@ export async function syncLocalToSupabase(
         user_id: userId,
         date: nd.date,
         target_calories: localData.nutritionTargets.calories,
+        target_protein: localData.nutritionTargets.protein,
         meals: nd.meals,
         planned_meals: nd.plannedMeals ?? [],
         updated_at: new Date().toISOString(),
@@ -2027,6 +2028,9 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     const latestNutritionTarget = (dbNutritionDays || []).find(
       (row) => row.target_calories !== null && row.target_calories !== undefined,
     )?.target_calories;
+    const latestNutritionProteinTarget = (dbNutritionDays || []).find(
+      (row) => row.target_protein !== null && row.target_protein !== undefined,
+    )?.target_protein;
     const measurementList: BodyMeasurement[] = (dbMeasurements || []).map((row) => ({
       id: row.id,
       date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
@@ -2133,7 +2137,16 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       nutritionDays: nutritionList,
       plannedMeals: profile.planned_menu || [],
       nutritionTargets:
-        latestNutritionTarget === undefined ? {} : { calories: Number(latestNutritionTarget) },
+        latestNutritionTarget === undefined && latestNutritionProteinTarget === undefined
+          ? {}
+          : {
+              ...(latestNutritionTarget === undefined
+                ? {}
+                : { calories: Number(latestNutritionTarget) }),
+              ...(latestNutritionProteinTarget === undefined
+                ? {}
+                : { protein: Number(latestNutritionProteinTarget) }),
+            },
        history: signedHistoryList,
       cardioLogs: cardioList,
       bodyWeightLogs: bodyWeightList,

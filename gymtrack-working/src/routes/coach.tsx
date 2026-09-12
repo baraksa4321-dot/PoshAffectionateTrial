@@ -1860,6 +1860,7 @@ export function CoachDashboardPage({
   const [profileWeight, setProfileWeight] = useState("");
   const [profileWorkouts, setProfileWorkouts] = useState("");
   const [profileGender, setProfileGender] = useState<"female" | "male" | "">("");
+  const [bmrGender, setBmrGender] = useState<"female" | "male" | "">("");
   const [profileNotice, setProfileNotice] = useState("");
   const [showBmrCalculator, setShowBmrCalculator] = useState(false);
   const showClientOverview = !trackingLanding && !workspacePage && !openEditor;
@@ -2573,6 +2574,7 @@ export function CoachDashboardPage({
   useEffect(() => {
     if (profileDraftDirtyRef.current) return;
     setCalTarget(clientDetails?.nutritionTargets?.calories ?? 0);
+    setProtTarget(clientDetails?.nutritionTargets?.protein ?? 0);
     const profile = clientDetails?.profile;
     setProfileAge(profile?.age === undefined ? "" : String(profile.age));
     setProfileHeight(profile?.height === undefined ? "" : String(profile.height));
@@ -2581,6 +2583,7 @@ export function CoachDashboardPage({
       profile?.workoutsPerWeek === undefined ? "" : String(profile.workoutsPerWeek),
     );
     setProfileGender(profile?.gender ?? "");
+    setBmrGender(profile?.gender ?? "");
     setProfileNotice("");
   }, [clientDetails]);
 
@@ -2591,7 +2594,7 @@ export function CoachDashboardPage({
         height: profileHeight === "" ? undefined : Number(profileHeight),
         weight: profileWeight === "" ? 0 : Number(profileWeight),
         workoutsPerWeek: profileWorkouts === "" ? undefined : Number(profileWorkouts),
-        gender: profileGender === "" ? undefined : profileGender,
+        gender: bmrGender === "" ? undefined : bmrGender,
       }
     : null;
   const calorieEstimate =
@@ -2600,14 +2603,14 @@ export function CoachDashboardPage({
     profileHeight !== "" &&
     profileWeight !== "" &&
     profileWorkouts !== "" &&
-    profileGender !== ""
+    bmrGender !== ""
       ? calculateCalorieEstimate({
           ...calorieProfile,
           age: Number(profileAge),
           height: Number(profileHeight),
           weight: Number(profileWeight),
           workoutsPerWeek: Number(profileWorkouts),
-          gender: profileGender as "male" | "female",
+          gender: bmrGender as "male" | "female",
         })
       : null;
 
@@ -2617,7 +2620,7 @@ export function CoachDashboardPage({
     const height = profileHeight === "" ? undefined : Number(profileHeight);
     const weight = profileWeight === "" ? undefined : Number(profileWeight);
     const workouts = profileWorkouts === "" ? undefined : Number(profileWorkouts);
-    const gender = profileGender === "" ? undefined : profileGender;
+    const gender = bmrGender === "" ? undefined : bmrGender;
     const valid =
       [age, height, weight, workouts].every(
         (value) => value !== undefined && Number.isFinite(value),
@@ -3986,6 +3989,18 @@ export function CoachDashboardPage({
     setManagementError("");
     setSavingNutritionTargets(true);
     const today = new Date().toISOString().slice(0, 10);
+    const calories = Number(calTarget);
+    const protein = Number(protTarget);
+    if (
+      !Number.isFinite(calories) ||
+      calories <= 0 ||
+      !Number.isFinite(protein) ||
+      protein <= 0
+    ) {
+      setManagementError("יש להזין יעד קלוריות ויעד חלבון חיוביים.");
+      setSavingNutritionTargets(false);
+      return;
+    }
 
     try {
       const { error } = await supabase
@@ -3995,7 +4010,8 @@ export function CoachDashboardPage({
             `${selectedClientId}_${today}`,
             selectedClientId,
             today,
-            calTarget,
+            calories,
+            protein,
           ),
         );
 
@@ -9099,7 +9115,7 @@ export function CoachDashboardPage({
                         <h4 className="flex items-center gap-1.5 text-sm font-bold text-ink">
                           <Apple className="h-4 w-4 text-emerald-700" /> בניית תפריט למתאמן
                         </h4>
-                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                           התפריט נשמר כתבנית קבועה ונפרד מהיומן בפועל. תאריך הבדיקה מציג רק את מה
                           שנרשם בפועל.
                         </p>
@@ -9718,11 +9734,13 @@ export function CoachDashboardPage({
                         <div className="grid grid-cols-2 gap-2">
                           <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                             מין
-                            <select
-                              value={profileGender}
-                              onChange={(event) =>
-                                setProfileGender(event.target.value as "female" | "male" | "")
-                              }
+                             <select
+                               value={bmrGender}
+                               onChange={(event) => {
+                                 const value = event.target.value as "female" | "male" | "";
+                                 setBmrGender(value);
+                                 setProfileGender(value);
+                               }}
                               className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
                             >
                               <option value="">נדרש</option>
@@ -9776,9 +9794,10 @@ export function CoachDashboardPage({
                             />
                           </label>
                         </div>
-                        {!clientDetails?.profile?.gender ? (
+                         {!bmrGender ? (
                           <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-2 text-[10px] font-semibold text-ink">
-                            חסר מין בפרופיל המתאמן. יש להשלים אותו בפרופיל לפני שאפשר לחשב.
+                             בחרי מין במחשבון כדי לחשב BMR. הבחירה זמינה למאמן גם אם היא עדיין לא
+                             נשמרה בפרופיל.
                           </p>
                         ) : null}
                         {calorieEstimate ? (
@@ -9827,9 +9846,12 @@ export function CoachDashboardPage({
                             <label className="block text-[10px] font-bold text-muted-foreground mb-1">
                               קלוריות (kcal)
                             </label>
-                            <FreeTextInput
-                              value={calTarget || ""}
-                              onChange={(e) => setCalTarget(Number(e.target.value))}
+                             <FreeTextInput
+                               value={calTarget || ""}
+                               inputMode="decimal"
+                               onChange={(e) =>
+                                 setCalTarget(e.target.value === "" ? 0 : Number(e.target.value))
+                               }
                               className="w-full rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
                             />
                           </div>
@@ -9837,9 +9859,12 @@ export function CoachDashboardPage({
                             <label className="block text-[10px] font-bold text-muted-foreground mb-1">
                               חלבון (g)
                             </label>
-                            <FreeTextInput
-                              value={protTarget || ""}
-                              onChange={(e) => setProtTarget(Number(e.target.value))}
+                             <FreeTextInput
+                               value={protTarget || ""}
+                               inputMode="decimal"
+                               onChange={(e) =>
+                                 setProtTarget(e.target.value === "" ? 0 : Number(e.target.value))
+                               }
                               className="w-full rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
                             />
                           </div>

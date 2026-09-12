@@ -41,12 +41,14 @@ export function clientNutritionTargetUpsertPayload(
   userId: string,
   date: string,
   calories: number,
+  protein: number,
 ) {
   return {
     id,
     user_id: userId,
     date,
     target_calories: calories,
+    target_protein: protein,
     updated_at: new Date().toISOString(),
   };
 }
