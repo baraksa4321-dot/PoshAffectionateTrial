@@ -14,3 +14,9 @@ On iOS/PWA, the pre-hydration boot shell may remain visible until React takes ov
 **Why:** A React-only interval can appear completely stuck when hydration is delayed or fails, even though the server-rendered loading shell is still visible to the user.
 
 **How to apply:** Keep the boot watchdog's rotation interval and message/image lists aligned with the React implementation, version its script URL when behavior changes, and stop its observer/timer as soon as `__MY_ROUTINE_BOOTED__` is set.
+
+When the pre-hydration watchdog mutates an image source or loading copy, the matching React nodes must tolerate that intentional DOM difference during hydration. React's post-hydration image URL should also include the full transient cycle so a keyed GIF is recreated instead of reusing the first decoded frame.
+
+**Why:** WebKit can observe the watchdog's later image/message pair while React still hydrates against the SSR pair; an unsuppressed mismatch causes React to discard hydration and restore the first image, making copy rotation appear to work while the illustration stays frozen.
+
+**How to apply:** Use `suppressHydrationWarning` only on the watchdog-owned image and message nodes, and include the opening-plus-rotation cycle in the React image key and cache-busting query.

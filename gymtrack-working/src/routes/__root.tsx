@@ -502,13 +502,20 @@ const SIMPLE_LOADING_ILLUSTRATIONS = [
   { file: "user-character-10.png", label: "דמות מצוירת" },
 ] as const;
 
-function SimpleLoadingIllustration({ variant }: { variant: number }) {
+function SimpleLoadingIllustration({
+  variant,
+  cycle,
+}: {
+  variant: number;
+  cycle: number;
+}) {
   const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length]!;
   return (
     <div className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4}`}>
       <img
         className="loading-simple-image loading-simple-video"
-        src={`/loading/tinted/${illustration.file.replace(".png", ".gif")}?v=frame-safe-1`}
+        src={`/loading/tinted/${illustration.file.replace(".png", ".gif")}?v=frame-safe-1&cycle=${cycle}`}
+        suppressHydrationWarning
         aria-label={`איור טעינה: ${illustration.label}`}
         alt={`איור טעינה: ${illustration.label}`}
       />
@@ -1599,10 +1606,15 @@ function RootContent() {
             <div className="loading-expressive-content">
               <>
                 <SimpleLoadingIllustration
-                  key={`illustration-${loadingVariant}`}
+                  key={`illustration-${loadingVariant}-${openingCycleIndex + loadingRotationTick}`}
                   variant={loadingVariant}
+                  cycle={openingCycleIndex + loadingRotationTick}
                 />
-                <p key={`message-${loadingMessageIndex}`} className="loading-witty-message">
+                <p
+                  key={`message-${loadingMessageIndex}`}
+                  className="loading-witty-message"
+                  suppressHydrationWarning
+                >
                   {loadingMessageForGender(loadingMessageIndex, loadingCopyGender)}
                 </p>
               </>
