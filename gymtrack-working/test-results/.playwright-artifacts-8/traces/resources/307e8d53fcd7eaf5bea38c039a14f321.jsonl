@@ -1,0 +1,2 @@
+{"type":"receive","time":1789186347575.1682,"opcode":1,"data":"{\"type\":\"connected\"}"}
+{"type":"send","time":1789186348666.3171,"opcode":1,"data":"{\"type\":\"custom\",\"event\":\"vite:forward-console\",\"data\":{\"type\":\"log\",\"data\":{\"level\":\"warn\",\"message\":\"[Realtime channel_error]: scheduling an automatic resubscription\"}}}"}

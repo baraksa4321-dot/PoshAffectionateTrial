@@ -316,7 +316,6 @@ function NutritionLog() {
   const [substituteQuery, setSubstituteQuery] = useState("");
   const [mealOptionsFor, setMealOptionsFor] = useState<string | null>(null);
   const [selectedPlannedMealIds, setSelectedPlannedMealIds] = useState<Record<string, string>>({});
-  const [balanceMode, setBalanceMode] = useState<"daily" | "weekly">("daily");
 
   // New smart nutrition features state
   const [showWhatToEat, setShowWhatToEat] = useState(false);
@@ -349,29 +348,6 @@ function NutritionLog() {
   const day = nutritionDay(gym, date);
   const totals = dayTotals(day);
   const { nutritionTargets: targets } = gym;
-  const weekStart = new Date(`${todayKey()}T00:00:00`);
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-  const weekDates = Array.from({ length: 7 }, (_, index) => shiftDate(todayKey(weekStart), index));
-  const weeklyTotals = gym.nutritionDays
-    .filter((nutritionEntry) => weekDates.includes(nutritionEntry.date))
-    .reduce(
-      (sum, nutritionEntry) => {
-        const entryTotals = dayTotals(nutritionEntry);
-        return {
-          calories: sum.calories + entryTotals.calories,
-          protein: sum.protein + entryTotals.protein,
-          carbs: sum.carbs + entryTotals.carbs,
-          fat: sum.fat + entryTotals.fat,
-          fiber: sum.fiber + entryTotals.fiber,
-        };
-      },
-      { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
-    );
-  const balanceTotals = balanceMode === "daily" ? totals : weeklyTotals;
-  const balanceTarget =
-    typeof targets.calories === "number" && targets.calories > 0
-      ? targets.calories * (balanceMode === "daily" ? 1 : 7)
-      : undefined;
 
   const openMealScanner = () => {
     setShowMealScanner(true);
@@ -657,11 +633,6 @@ function NutritionLog() {
       updateMealFood(date, mealId, replacementFood);
     }
   };
-
-  const calPct =
-    balanceTarget && balanceTarget > 0
-      ? Math.min(100, (balanceTotals.calories / balanceTarget) * 100)
-      : null;
 
   return (
     <AppShell
@@ -1009,66 +980,6 @@ function NutritionLog() {
         </Overlay>
       ) : null}
 
-      {/* Daily/weekly balance. This is presentation-only and never changes logs. */}
-      <div className="nutrition-balance-card order-3 mt-4 shrink-0 surface-card overflow-hidden border border-border/60 bg-secondary/25 p-4">
-        {showCalories ? (
-          <>
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="text-start">
-                <p className="text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-                  מאזן {balanceMode === "daily" ? "יומי" : "שבועי"}
-                </p>
-                <p className="mt-1 font-display text-[30px] font-semibold leading-none text-ink tabular-nums">
-                  {Math.round(balanceTotals.calories)}
-                </p>
-                <p className="mt-1 text-[12.5px] text-muted-foreground">
-                  {balanceTarget
-                    ? `מתוך ${balanceTarget} קלוריות`
-                    : balanceMode === "daily"
-                      ? "ללא יעד יומי"
-                      : "ללא יעד שבועי"}
-                </p>
-              </div>
-              <CalRing pct={calPct ?? 0} />
-            </div>
-            <div className="mb-3 grid grid-cols-2 gap-1 rounded-xl bg-background/70 p-1">
-              {(["daily", "weekly"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setBalanceMode(mode)}
-                  aria-pressed={balanceMode === mode}
-                  className={`rounded-lg px-2 py-1.5 text-[11px] font-bold ${
-                    balanceMode === mode
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {mode === "daily" ? "יומי" : "שבועי"}
-                </button>
-              ))}
-            </div>
-            {calPct != null ? (
-              <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/60">
-                <div
-                  className="h-full rounded-full bg-primary transition-all duration-500"
-                  style={{ width: `${calPct}%` }}
-                />
-              </div>
-            ) : null}
-          </>
-        ) : (
-          <p className="mb-3 text-center text-[11px] font-semibold text-muted-foreground">
-            ערכי הקלוריות מוסתרים לפי הגדרת הפרופיל.
-          </p>
-        )}
-        <div className="mt-4 grid grid-cols-4 gap-1.5">
-          <MacroPill label="חלבון" value={totals.protein} target={targets.protein} unit="g" />
-          <MacroPill label="פחמימה" value={totals.carbs} target={targets.carbs} unit="g" />
-          <MacroPill label="שומן" value={totals.fat} target={targets.fat} unit="g" />
-          <MacroPill label="קלוריות" value={totals.calories} target={targets.calories} unit="קל׳" />
-        </div>
-      </div>
       {day.plannedMeals && day.plannedMeals.length > 0 ? (
         <section className="nutrition-plan-section order-1 mt-4">
           <div className="mb-3 flex items-end justify-between gap-3">
@@ -1238,9 +1149,6 @@ function NutritionLog() {
               );
             })}
           </div>
-          <p className="mt-2 border-s border-primary/35 px-3 text-[11px] leading-relaxed text-muted-foreground">
-            זהו המתווה שהמאמן הכין עבורך. אפשר לתעד את מה שאכלת בפועל באזור היומן למטה.
-          </p>
         </section>
       ) : null}
       {/* The manual log remains available only when no coach plan is assigned. */}
@@ -2317,62 +2225,4 @@ function NutritionMacroGrid({
   );
 }
 
-function MacroPill({
-  label,
-  value,
-  target,
-  unit,
-}: {
-  label: string;
-  value: number;
-  target?: number | undefined;
-  unit: string;
-}) {
-  return (
-    <div className="nutrition-macro-pill rounded-2xl bg-white/60 px-2.5 py-2 text-start">
-      <p className="text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-        {label}
-      </p>
-      <p className="mt-0.5 font-display text-[14px] font-semibold tabular-nums text-ink">
-        {Math.round(value)}
-        <span className="ms-0.5 text-[10px] font-normal text-muted-foreground">{unit}</span>
-      </p>
-      {target ? (
-        <p className="text-[9.5px] text-muted-foreground">
-          יעד {target}
-          {unit}
-        </p>
-      ) : null}
-    </div>
-  );
-}
 
-function CalRing({ pct }: { pct: number }) {
-  const dash = 132;
-  const normalizedPct = Number.isFinite(pct) ? Math.max(0, Math.min(100, pct)) : 0;
-  const offset = dash - (dash * normalizedPct) / 100;
-  return (
-    <div className="relative grid h-24 w-24 place-items-center">
-      <svg width="96" height="96" viewBox="0 0 96 96" className="-rotate-90">
-        <circle cx="48" cy="48" r="42" fill="none" stroke="oklch(0.93 0.04 25)" strokeWidth="8" />
-        <circle
-          cx="48"
-          cy="48"
-          r="42"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={dash}
-          strokeDashoffset={offset}
-          className="text-primary transition-all duration-500"
-        />
-      </svg>
-      <div className="absolute inset-0 grid place-items-center">
-        <span className="font-display text-[14px] font-semibold tabular-nums text-ink">
-          {Math.round(normalizedPct)}%
-        </span>
-      </div>
-    </div>
-  );
-}

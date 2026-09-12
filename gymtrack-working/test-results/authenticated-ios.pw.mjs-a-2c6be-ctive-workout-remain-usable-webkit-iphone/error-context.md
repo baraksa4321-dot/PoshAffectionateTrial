@@ -789,7 +789,7 @@ Call Log:
           - button "קשה מדי" [ref=f1e1109] [cursor=pointer]
       - generic [ref=f1e1114]:
         - generic [ref=f1e1115]: דיווח על אי-נוחות / הערה למאמן (אופציונלי)
-        - 'textbox "למשל: עומס קל במרפק ימין בסט האחרון..." [ref=f1e1116]': הערת בדיקה 123
+        - 'textbox "למשל: עומס קל במרפק ימין בסט האחרון..." [ref=f1e1116]'
       - button "אישור ושמירת אימון" [ref=f1e1117] [cursor=pointer]
 ```
 
