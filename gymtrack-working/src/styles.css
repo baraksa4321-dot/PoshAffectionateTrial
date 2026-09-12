@@ -7728,7 +7728,12 @@ html.night-mode .dashboard-editorial-shell .dashboard-notice {
 
   .app-main {
     padding-inline: 0.82rem !important;
+    padding-top: 0.25rem !important;
     padding-bottom: calc(4.8rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  .app-main > :first-child {
+    margin-top: 0 !important;
   }
 
   .dashboard-editorial-shell .app-main {
