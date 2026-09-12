@@ -25,16 +25,38 @@ Call log:
 # Page snapshot
 
 ```yaml
-- generic [ref=e3]:
-  - link "MY routine — דף הבית" [ref=e5]:
-    - /url: /
-    - img "MY routine" [ref=e6]
-  - heading "העמוד לא נטען" [level=1] [ref=e7]
-  - paragraph [ref=e8]: משהו השתבש בטעינת המסך. אפשר לנסות לטעון מחדש בלי לאבד את הנתונים ששמורים במכשיר.
-  - generic [ref=e9]:
-    - button "טעני מחדש" [ref=e10]
-    - link "חזרה לדף הבית" [ref=e11]:
-      - /url: /
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - link "MY routine — דף הבית" [ref=e6]:
+          - /url: /
+          - img "MY routine" [ref=e7]
+        - button "מעבר לתצוגת לילה" [ref=e8]
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - paragraph [ref=e13]: בניית תוכניות ותפריטים
+          - heading "עריכה" [level=1] [ref=e14]
+        - button "נמצאה התנגשות — נדרשת בחירה לפני סנכרון" [ref=e16]
+  - main [ref=e19]:
+    - generic [ref=e20]: נמצאה התנגשות — נדרשת בחירה לפני סנכרון
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - heading "שם לא הוגדר" [level=3] [ref=e26]
+        - generic [ref=e28]:
+          - button "פתיחת פרופיל המשתמש" [disabled] [ref=e29]: פרופיל
+          - button "סגירת תכנית המתאמן" [ref=e34]
+      - generic [ref=e38]: טוענת נתוני מתאמן מ-Supabase...
+  - navigation "ניווט ראשי":
+    - generic [ref=e39]:
+      - link [ref=e40]:
+        - /url: /coach
+      - link "מתאמנים" [ref=e44]:
+        - /url: /coach/clients
+      - link "מעקב" [ref=e51]:
+        - /url: /coach/tracking
+      - link "תרגילים" [ref=e55]:
+        - /url: /exercises
 ```
 
 # Test source
@@ -140,7 +162,7 @@ Call log:
   1289 |   await expect(traineePage).toHaveURL(/\/nutrition/);
   1290 |   await expect(traineePage.getByTestId("nutrition-food-quantity").first()).toHaveText("2 כף");
   1291 | 
-> 1292 |   await traineePage.getByRole("button", { name: "החלפה", exact: true }).first().click();
+> 1292 |   await traineePage.getByRole("button", { name: "החלפת מאכל", exact: true }).first().click();
        |                                                                                 ^ Error: locator.click: Test timeout of 45000ms exceeded.
   1293 |   const replacementDialog = traineePage.getByRole("dialog", { name: "החלפת מאכל" });
   1294 |   await expect(replacementDialog).toBeVisible();
@@ -176,7 +198,7 @@ Call log:
   1324 |   }
   1325 |   await expect(plannedMacroGrid.locator('[data-nutrition-macro="קלוריות"]')).toHaveCount(0);
   1326 | 
-  1327 |   await page.getByRole("button", { name: "החלפה", exact: true }).first().click();
+  1327 |   await page.getByRole("button", { name: "החלפת מאכל", exact: true }).first().click();
   1328 |   const replacementDialog = page.getByRole("dialog", { name: "החלפת מאכל" });
   1329 |   await expect(replacementDialog).toBeVisible();
   1330 |   const replacementQuantity = replacementDialog.getByTestId("nutrition-food-quantity").first();

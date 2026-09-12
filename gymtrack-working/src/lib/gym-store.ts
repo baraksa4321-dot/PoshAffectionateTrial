@@ -4,6 +4,7 @@ import { ISRAELI_PROTEIN_PRODUCTS } from "./protein-product-catalog";
 import { supabase } from "./supabase";
 import { pullSupabaseData, syncLocalToSupabase, type SyncStatus } from "./supabase-sync";
 import { normalizeFixedPlannedMenu, plannedMealOptionGroupId } from "./nutrition-planning";
+import { mealFoodNutritionMultiplier } from "./food-portions";
 import {
   type Challenge,
   type ChallengeEnrollment,
@@ -3210,13 +3211,20 @@ export function findFoodReplacements(
   foods: FoodItem[],
   current: Pick<
     MealFood,
-    "foodId" | "name" | "calories" | "protein" | "quantity" | "approvedSubstitutes"
+    | "foodId"
+    | "name"
+    | "servingSize"
+    | "calories"
+    | "protein"
+    | "quantity"
+    | "approvedSubstitutes"
   >,
   query = "",
   mode: FoodReplacementMode = "calories",
 ) {
-  const targetCal = (current.calories ?? 0) * (current.quantity ?? 1);
-  const targetProtein = (current.protein ?? 0) * (current.quantity ?? 1);
+  const targetMultiplier = mealFoodNutritionMultiplier(current);
+  const targetCal = (current.calories ?? 0) * targetMultiplier;
+  const targetProtein = (current.protein ?? 0) * targetMultiplier;
   const searchResults = searchFoods(foods, query);
 
   return searchResults
@@ -3291,13 +3299,16 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 
 export function foodTotals(foods: MealFood[]): MacroTotals {
   return foods.reduce<MacroTotals>(
-    (t, f) => ({
-      calories: t.calories + f.calories * f.quantity,
-      protein: t.protein + f.protein * f.quantity,
-      carbs: t.carbs + f.carbs * f.quantity,
-      fat: t.fat + f.fat * f.quantity,
-      fiber: t.fiber + (f.fiber ?? 0) * f.quantity,
-    }),
+    (t, f) => {
+      const multiplier = mealFoodNutritionMultiplier(f);
+      return {
+        calories: t.calories + f.calories * multiplier,
+        protein: t.protein + f.protein * multiplier,
+        carbs: t.carbs + f.carbs * multiplier,
+        fat: t.fat + f.fat * multiplier,
+        fiber: t.fiber + (f.fiber ?? 0) * multiplier,
+      };
+    },
     { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
   );
 }

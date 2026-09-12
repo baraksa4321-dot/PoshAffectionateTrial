@@ -1,3 +1,4 @@
+import { normalizeLegacyGramMealFood } from "./food-portions";
 import type { Meal, WorkoutItem } from "./gym-types";
 
 export function clientProgramInsertPayload(id: string, userId: string, name: string) {
@@ -51,7 +52,10 @@ export function clientNutritionTargetUpsertPayload(
 export function clientPlannedMenuRpcPayload(userId: string, plannedMeals: Meal[]) {
   return {
     target_user_id: userId,
-    next_planned_menu: plannedMeals,
+    next_planned_menu: plannedMeals.map((meal) => ({
+      ...meal,
+      foods: meal.foods.map(normalizeLegacyGramMealFood),
+    })),
   };
 }
 

@@ -4,7 +4,9 @@ import {
   foodPortionFromServingQuantity,
   foodQuantityOptions,
   mealFoodFromPortion,
+  mealFoodNutritionMultiplier,
   mealFoodQuantityLabel,
+  normalizeLegacyGramMealFood,
 } from "./food-portions";
 import type { FoodItem } from "./gym-types";
 
@@ -149,6 +151,31 @@ describe("food portion conversions", () => {
     expect(Math.abs(mealFood.protein - 4 / 16) < 1e-9).toBe(true);
     expect(Math.abs(mealFood.carbs - 3 / 16) < 1e-9).toBe(true);
     expect(Math.abs(mealFood.fat - 8 / 16) < 1e-9).toBe(true);
+  });
+
+  test("keeps 100 g and 150 g legacy rows at one serving total", () => {
+    const fixture = {
+      id: "legacy-rice",
+      foodId: cookedRice.id,
+      name: cookedRice.name,
+      servingSize: cookedRice.servingSize,
+      quantity: 100,
+      calories: cookedRice.calories,
+      protein: cookedRice.protein,
+      carbs: cookedRice.carbs,
+      fat: cookedRice.fat,
+    };
+    const oneHundredGrams = normalizeLegacyGramMealFood(fixture);
+    const oneHundredFiftyGrams = normalizeLegacyGramMealFood({
+      ...fixture,
+      quantity: 150,
+    });
+
+    expect(oneHundredGrams.servingSize).toBe("גרם למנה");
+    expect(oneHundredGrams.calories * mealFoodNutritionMultiplier(oneHundredGrams)).toBe(200);
+    expect(oneHundredFiftyGrams.calories * mealFoodNutritionMultiplier(oneHundredFiftyGrams)).toBe(
+      300,
+    );
   });
 
   test("does not choose grams by default without a reference weight", () => {

@@ -28,6 +28,10 @@ function gramsFromServing(servingSize: string) {
   return Number.isFinite(value) && value > 0 ? value : null;
 }
 
+function numericGramServing(servingSize: string) {
+  return gramsFromServing(servingSize);
+}
+
 function referenceServingGrams(food: FoodItem) {
   if (
     food.servingGrams !== undefined &&
@@ -476,6 +480,40 @@ export function mealFoodFromPortion(
     fat: food.fat * multiplier,
     ...(food.fiber === undefined ? {} : { fiber: food.fiber * multiplier }),
   };
+}
+
+/**
+ * Older saved rows could contain whole-serving nutrition with the quantity
+ * entered as grams (for example, 200 calories × 100 grams). New gram-based
+ * rows use "גרם למנה" and per-gram nutrition. Convert only the unambiguous
+ * legacy shape where the entered quantity is at least the source serving
+ * weight, preserving the total while making the stored convention explicit.
+ */
+export function normalizeLegacyGramMealFood(food: MealFood): MealFood {
+  const servingGrams = numericGramServing(food.servingSize);
+  const quantity = Number(food.quantity);
+  if (!servingGrams || !Number.isFinite(quantity) || quantity < servingGrams) return food;
+
+  return {
+    ...food,
+    servingSize: "גרם למנה",
+    calories: food.calories / servingGrams,
+    protein: food.protein / servingGrams,
+    carbs: food.carbs / servingGrams,
+    fat: food.fat / servingGrams,
+    ...(food.fiber === undefined ? {} : { fiber: food.fiber / servingGrams }),
+  };
+}
+
+/**
+ * Returns the multiplier to apply to a MealFood's stored nutrition values.
+ * This keeps summaries compatible with legacy gram rows until they are saved
+ * again in the canonical per-gram format.
+ */
+export function mealFoodNutritionMultiplier(food: Pick<MealFood, "servingSize" | "quantity">) {
+  const quantity = Math.max(0.1, Number(food.quantity) || 1);
+  const servingGrams = numericGramServing(food.servingSize);
+  return servingGrams && quantity >= servingGrams ? quantity / servingGrams : quantity;
 }
 
 export function mealFoodQuantityLabel(food: Pick<MealFood, "name" | "quantity" | "servingSize">) {

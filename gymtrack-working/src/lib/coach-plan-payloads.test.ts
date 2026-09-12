@@ -65,6 +65,34 @@ describe("coach plan payload boundaries", () => {
     });
   });
 
+  test("normalizes gram quantities before saving a legacy menu", () => {
+    const payload = clientPlannedMenuRpcPayload("trainee-1", [
+      {
+        id: "meal-1",
+        name: "ארוחה",
+        foods: [
+          {
+            id: "food-1",
+            name: "אורז",
+            servingSize: "100 גרם",
+            quantity: 150,
+            calories: 200,
+            protein: 4,
+            carbs: 44,
+            fat: 0,
+          },
+        ],
+      },
+    ]);
+
+    expect(payload.next_planned_menu[0]?.foods[0]).toMatchObject({
+      servingSize: "גרם למנה",
+      quantity: 150,
+      calories: 2,
+      protein: 0.04,
+    });
+  });
+
   test("treats the same persisted menu as equal when JSON object keys are reordered", () => {
     expect(
       jsonValuesEqual(

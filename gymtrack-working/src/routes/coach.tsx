@@ -103,7 +103,9 @@ import {
   defaultFoodQuantity,
   foodQuantityOptions,
   mealFoodFromPortion,
+  mealFoodNutritionMultiplier,
   mealFoodQuantityLabel,
+  normalizeLegacyGramMealFood,
   type FoodQuantityUnit,
 } from "../lib/food-portions";
 
@@ -4084,7 +4086,12 @@ export function CoachDashboardPage({
 
   const savePlannedMenu = async () => {
     if (!isCoach || !selectedClientId || savingPlannedMenu) return;
-    const menuSnapshot = JSON.parse(JSON.stringify(plannedMealsDraftRef.current)) as Meal[];
+    const menuSnapshot = (JSON.parse(JSON.stringify(plannedMealsDraftRef.current)) as Meal[]).map(
+      (meal) => ({
+        ...meal,
+        foods: meal.foods.map(normalizeLegacyGramMealFood),
+      }),
+    );
     setSavingPlannedMenu(true);
     setMenuNotice("שומר את התפריט...");
 
@@ -6424,7 +6431,8 @@ export function CoachDashboardPage({
                           {(clientDetails.nutritionDays ?? []).slice(0, 4).map((day) => {
                             const actualFoods = day.meals.flatMap((meal) => meal.foods);
                             const calories = actualFoods.reduce(
-                              (total, food) => total + food.calories * food.quantity,
+                              (total, food) =>
+                                total + food.calories * mealFoodNutritionMultiplier(food),
                               0,
                             );
                             return (
@@ -8988,10 +8996,7 @@ export function CoachDashboardPage({
                              {meal.foods.length > 0 ? (
                               <div className="mt-2 space-y-1">
                                    {meal.foods.map((food, foodIndex) => {
-                                    const foodQuantity =
-                                      Number.isFinite(food.quantity) && food.quantity > 0
-                                        ? food.quantity
-                                        : 1;
+                                    const foodQuantity = mealFoodNutritionMultiplier(food);
                                     const alternativeFoods = (food.approvedSubstitutes ?? [])
                                       .map((foodId) => store.foods.find((item) => item.id === foodId))
                                       .filter((item): item is NonNullable<typeof item> => Boolean(item));
