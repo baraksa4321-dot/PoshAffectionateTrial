@@ -1909,12 +1909,12 @@ function LoginThemeSelector({
   const activePalette = THEME_PALETTES.find((palette) => palette.id === value);
 
   return (
-    <div className="flex items-center justify-between gap-3 border-y border-border/50 py-3 text-start">
+    <div className="login-theme-selector flex items-center justify-between gap-3 border-y border-border/50 py-3 text-start">
       <div className="min-w-0">
         <p className="text-[11px] font-semibold text-muted-foreground">צבע ממשק</p>
         <p className="mt-0.5 text-[10px] text-muted-foreground/80">אפשר לשנות גם אחרי ההתחברות</p>
       </div>
-      <label className="flex shrink-0 items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-1.5 text-[11px] font-semibold text-ink transition-colors focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
+      <label className="login-theme-selector__control flex shrink-0 items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-1.5 text-[11px] font-semibold text-ink transition-colors focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
         <span
           className="h-3 w-3 rounded-full border border-border/60"
           style={{ backgroundColor: activePalette?.swatch ?? "currentColor" }}

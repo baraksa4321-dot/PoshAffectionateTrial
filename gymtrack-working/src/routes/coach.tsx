@@ -4865,54 +4865,6 @@ export function CoachDashboardPage({
                 </p>
               </button>
               </div>
-              {dashboardClientFilter ? (
-                <section className="surface-card space-y-2 border-primary/20 bg-background p-3">
-                <p className="text-[11px] font-bold text-primary">
-                  {dashboardClientFilter === "needsPlan"
-                    ? "מתאמנים שדורשים תוכנית"
-                    : dashboardClientFilter === "quiet"
-                      ? "מתאמנים שקטים למשך שבוע"
-                      : "כל המתאמנים"}
-                </p>
-                <div className="num-pill flex h-10 items-center gap-2 px-3">
-                  <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  <input
-                    type="search"
-                    value={dashboardClientSearch}
-                    onChange={(event) => setDashboardClientSearch(event.target.value)}
-                    placeholder="חיפוש לפי שם או אימייל..."
-                    className="w-full bg-transparent text-xs text-ink outline-none placeholder:text-muted-foreground"
-                    aria-label="חיפוש מתאמנים בכרטיסייה"
-                    autoFocus
-                  />
-                </div>
-                {dashboardSearchLower ? (
-                  filteredDashboardRows.length > 0 ? (
-                    <div className="space-y-1.5">
-                      {filteredDashboardRows.map((row) => (
-                        <button
-                          key={row.client.client_id}
-                          type="button"
-                          onClick={() => openClientFromOverview(row.client.client_id)}
-                          className="flex w-full items-center justify-between gap-2 rounded-xl border border-border/60 bg-white px-3 py-2 text-start text-xs transition-colors hover:border-primary/40 hover:bg-primary/[0.03]"
-                        >
-                          <span className="truncate font-bold text-ink">
-                            {profileDisplayName(row.client.profiles)}
-                          </span>
-                          <span className="shrink-0 text-[10px] text-muted-foreground">
-                            פתיחת סביבת עבודה
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="rounded-xl bg-secondary p-3 text-center text-[11px] text-muted-foreground">
-                      לא נמצאו מתאמנים מתאימים.
-                    </p>
-                  )
-                ) : null}
-                </section>
-              ) : null}
             </>
           ) : null}
 
@@ -5357,7 +5309,7 @@ export function CoachDashboardPage({
         </section>
       ) : null}
 
-      <div className="space-y-5 text-start">
+      <div className="mt-5 space-y-5 text-start">
         {managementError ? (
           <div
             role="alert"
@@ -5508,7 +5460,7 @@ export function CoachDashboardPage({
                 </div>
               ) : null}
               <p className="text-xs text-purple-900 font-semibold">משתמשים והרשאות תפקיד:</p>
-              <div className="num-pill flex h-10 items-center gap-2 px-3">
+              <div className="num-pill flex min-h-10 w-full items-center gap-2 px-3 py-1">
                 <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <input
                   type="search"
@@ -5902,7 +5854,7 @@ export function CoachDashboardPage({
                   value={clientSearch}
                   onChange={(e) => setClientSearch(e.target.value)}
                   placeholder="חיפוש לפי שם או אימייל..."
-                  className="w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+                  className="min-w-0 flex-1 bg-transparent text-xs leading-5 outline-none placeholder:text-muted-foreground"
                   aria-label="חיפוש לפי שם או אימייל"
                 />
               </div>
@@ -10601,6 +10553,95 @@ export function CoachDashboardPage({
           </div>
         </Overlay>
       </div>
+
+      {dashboardClientFilter ? (
+        <Overlay
+          open
+          onClose={() => {
+            setDashboardClientFilter(null);
+            setDashboardClientSearch("");
+          }}
+          ariaLabel={
+            dashboardClientFilter === "needsPlan"
+              ? "מתאמנים שדורשים תוכנית"
+              : dashboardClientFilter === "quiet"
+                ? "מתאמנים שקטים למשך שבוע"
+                : "כל המתאמנים"
+          }
+        >
+          <div
+            className="w-full max-w-sm space-y-3 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                  מתאמנים
+                </p>
+                <h2 className="mt-1 text-lg font-extrabold text-ink">
+                  {dashboardClientFilter === "needsPlan"
+                    ? "מתאמנים שדורשים תוכנית"
+                    : dashboardClientFilter === "quiet"
+                      ? "מתאמנים שקטים למשך שבוע"
+                      : "כל המתאמנים"}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setDashboardClientFilter(null);
+                  setDashboardClientSearch("");
+                }}
+                className="grid h-8 w-8 place-items-center rounded-xl text-muted-foreground hover:bg-secondary hover:text-ink"
+                aria-label="סגירת כרטיסיית המתאמנים"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="num-pill flex min-h-10 w-full items-center gap-2 px-3 py-1">
+              <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <input
+                type="search"
+                value={dashboardClientSearch}
+                onChange={(event) => setDashboardClientSearch(event.target.value)}
+                placeholder="חיפוש לפי שם או אימייל..."
+                className="min-w-0 flex-1 bg-transparent text-xs leading-5 text-ink outline-none placeholder:text-muted-foreground"
+                aria-label="חיפוש מתאמנים בכרטיסייה"
+                autoFocus
+              />
+            </div>
+            {dashboardSearchLower ? (
+              filteredDashboardRows.length > 0 ? (
+                <div className="max-h-[45vh] space-y-1.5 overflow-y-auto pe-0.5">
+                  {filteredDashboardRows.map((row) => (
+                    <button
+                      key={row.client.client_id}
+                      type="button"
+                      onClick={() => openClientFromOverview(row.client.client_id)}
+                      className="flex w-full items-center justify-between gap-2 rounded-xl border border-border/60 bg-background px-3 py-2 text-start text-xs transition-colors hover:border-primary/40 hover:bg-primary/[0.03]"
+                    >
+                      <span className="truncate font-bold text-ink">
+                        {profileDisplayName(row.client.profiles)}
+                      </span>
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                        פתיחת סביבת עבודה
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-xl bg-secondary p-3 text-center text-[11px] text-muted-foreground">
+                  לא נמצאו מתאמנים מתאימים.
+                </p>
+              )
+            ) : (
+              <p className="rounded-xl bg-secondary p-3 text-center text-[11px] text-muted-foreground">
+                התחילי להקליד כדי לחפש מתאמן.
+              </p>
+            )}
+          </div>
+        </Overlay>
+      ) : null}
     </AppShell>
   );
 }

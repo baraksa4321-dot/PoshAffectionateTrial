@@ -7493,6 +7493,17 @@ html.night-mode .nav-shell {
     0 6px 18px rgb(0 0 0 / 18%) !important;
 }
 
+/* A light foreground used as a generic backdrop makes night-mode overlays
+   look brighter than the page behind them. Keep the login background muted. */
+html.night-mode .overlay-root:not([data-overlay-variant="full"]) {
+  background-color: rgb(0 0 0 / 58%) !important;
+}
+
+html.night-mode .auth-editorial-shell .login-theme-selector__control {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
 html.night-mode .app-main,
 html.night-mode .page-scroll-container {
   background: var(--background) !important;
