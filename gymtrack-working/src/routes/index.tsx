@@ -525,16 +525,28 @@ function Dashboard() {
       kicker={formatNumericDate(now)}
       pageClassName="dashboard-editorial-shell"
       headerAccessory={
-        <button
-          type="button"
-          onClick={() => setShowChecklistModal(true)}
-          aria-label="פתיחת צ׳קליסט לאימון"
-          title="צ׳קליסט לאימון"
-          className="bodyweight-header-toggle press inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-1 text-[9px] font-medium text-primary transition-colors hover:bg-primary/10"
-        >
-          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-          צ׳קליסט
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setShowChecklistModal(true)}
+            aria-label="פתיחת צ׳קליסט לאימון"
+            title="צ׳קליסט לאימון"
+            className="bodyweight-header-toggle press inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-1 text-[9px] font-medium text-primary transition-colors hover:bg-primary/10"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+            צ׳קליסט
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowWeighInModal(true)}
+            aria-label="פתיחת שקילה שבועית"
+            title="שקילה שבועית"
+            className="bodyweight-header-toggle press inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-1 text-[9px] font-medium text-primary transition-colors hover:bg-primary/10"
+          >
+            <Scale className="h-3.5 w-3.5" aria-hidden="true" />
+            שקילה
+          </button>
+        </div>
       }
     >
       <div className="home-card-stack">
@@ -839,44 +851,6 @@ function Dashboard() {
               icon={Dumbbell}
               tone="cream"
             />
-          </div>
-        </section>
-
-        {/* Weekly Weigh-In & Monthly Check-In Cards */}
-        <section {...homeCardProps("check-in")} className="dashboard-module dashboard-module--check-in mt-5 text-start space-y-2.5">
-          <SectionHeader title="מעקב משקל וצ'ק-אין חודשי" subtitle="דיווח למאמן" />
-          <div className="grid grid-cols-2 gap-2.5">
-            <div
-              onClick={() => setShowWeighInModal(true)}
-              className="surface-card cursor-pointer space-y-1 border-primary/20 bg-primary/5 p-3.5 transition-colors hover:bg-primary/10"
-            >
-              <div className="flex items-center gap-1.5 font-bold text-xs text-primary">
-                <Scale className="h-4 w-4" />
-                <span>שקילה שבועית</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground pt-0.5">
-                {genderText(gender, "עדכון משקל בוקר", "עדכון משקל בוקר")}:{" "}
-                <strong className="text-ink">
-                  {userProfile?.weight && userProfile.weight > 0
-                    ? `${userProfile.weight} ק"ג`
-                    : "לא הוזן"}
-                </strong>
-              </p>
-            </div>
-
-            <div className="surface-card space-y-1 border-accent/60 bg-accent/25 p-3.5">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-accent-foreground">
-                <Award className="h-4 w-4 text-accent-foreground" />
-                <span>צ'ק-אין חודשי</span>
-              </div>
-              <p className="pt-0.5 text-[11px] text-accent-foreground">
-                {genderText(
-                  gender,
-                  "היקפים, אחוז שומן ומסת שריר מתעדכנים על ידי המאמנת או הבעלים",
-                  "היקפים, אחוז שומן ומסת שריר מתעדכנים על ידי המאמן או הבעלים",
-                )}
-              </p>
-            </div>
           </div>
         </section>
 
