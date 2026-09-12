@@ -1,0 +1,3 @@
+{"type":"receive","time":1789207805417.9456,"opcode":1,"data":"{\"type\":\"connected\"}"}
+{"type":"send","time":1789207806109.4585,"opcode":1,"data":"{\"type\":\"custom\",\"event\":\"vite:forward-console\",\"data\":{\"type\":\"log\",\"data\":{\"level\":\"warn\",\"message\":\"[Realtime channel_error]: scheduling an automatic resubscription\"}}}"}
+{"type":"send","time":1789207807255.8875,"opcode":1,"data":"{\"type\":\"custom\",\"event\":\"vite:forward-console\",\"data\":{\"type\":\"log\",\"data\":{\"level\":\"warn\",\"message\":\"[Realtime channel_error]: scheduling an automatic resubscription\"}}}"}
