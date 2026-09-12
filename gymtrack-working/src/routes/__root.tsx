@@ -1092,7 +1092,7 @@ function LegacyLoadingIllustration({ variant }: { variant: number }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    scripts: [{ async: true, src: "/boot-watchdog.js?v=8" }],
+    scripts: [{ async: true, src: "/boot-watchdog.js?v=9" }],
     meta: [
       { charSet: "utf-8" },
       {

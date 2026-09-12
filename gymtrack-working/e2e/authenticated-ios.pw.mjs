@@ -1018,6 +1018,59 @@ function assertKeyboardVisible(locator) {
   );
 }
 
+test("iPhone loading video is ready and advances before and after hydration", async ({ page }) => {
+  test.skip(
+    test.info().project.name !== "webkit-iphone",
+    "The loading-media regression is specific to the iPhone WebKit profile.",
+  );
+
+  let releaseHydration;
+  const hydrationGate = new Promise((resolve) => {
+    releaseHydration = resolve;
+  });
+  await page.route("**/@id/virtual:tanstack-start-dev-client-entry", (route) =>
+    hydrationGate.then(() => route.continue()),
+  );
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const loadingVideo = page.locator(".loading-simple-video");
+  await expect(loadingVideo).toHaveCount(1);
+  expect(await page.evaluate(() => Boolean(window.__MY_ROUTINE_BOOTED__))).toBe(false);
+
+  const readVideoState = () =>
+    loadingVideo.evaluate((video) => ({
+      currentTime: video.currentTime,
+      duration: video.duration,
+      readyState: video.readyState,
+    }));
+  const assertVideoAdvances = async () => {
+    await expect.poll(async () => (await readVideoState()).readyState).toBeGreaterThanOrEqual(2);
+    const first = await readVideoState();
+    await page.waitForTimeout(250);
+    const second = await readVideoState();
+    expect(second.readyState).toBeGreaterThanOrEqual(2);
+
+    const elapsed =
+      Number.isFinite(second.duration) && second.currentTime < first.currentTime
+        ? second.duration - first.currentTime + second.currentTime
+        : second.currentTime - first.currentTime;
+    expect(elapsed).toBeGreaterThan(0.05);
+  };
+
+  // The watchdog owns this server-rendered shell while the app module is
+  // intentionally held back. This catches a loaded-but-frozen first frame.
+  await assertVideoAdvances();
+
+  releaseHydration();
+  await expect.poll(() => page.evaluate(() => Boolean(window.__MY_ROUTINE_BOOTED__))).toBe(true);
+
+  // A fast unauthenticated hydration may remove the splash immediately. When
+  // WebKit keeps it visible long enough, verify the React-owned node too.
+  if (await loadingVideo.count()) {
+    await assertVideoAdvances();
+  }
+});
+
 test("authenticated iPhone coach workspace and active workout remain usable", async ({ page }) => {
   await installFixture(page);
 
