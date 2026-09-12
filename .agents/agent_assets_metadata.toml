@@ -294,3 +294,17 @@ mtime_ms = 1789134450744
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:9f99d2e5-5d2e-4b5a-bf24-93a3957a7bb5/2b40e002-c45d-44d5-902b-e47b0c2b76d1/93c9e730-8837-4911-b5e6-0666d17accb4"
 storage_version_token = "1789134468874507"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "rVWkGJRWwtQMuHxactMN3"
+uri = "file://exports/gymtrack-site-source.zip"
+type = "unspecified"
+title = "GymTrack site source code"
+description = "Web source code, public assets, tests, scripts, project configuration, and Supabase migrations. Dependencies, build outputs, native copies, cache files, secrets, and the heaviest loading GIF set were excluded."
+logical_id = "2c300414-a1fd-4ef3-b6e7-8ad6d67a13d8"
+content_hash = "sha256:db9a289bced6385f9ded3bce71e64856b70cc3e51ebde6e0e4b60c3b3fb28f18"
+size = 85513666
+mtime_ms = 1789222828027
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:629484c3-bab3-4ee2-b0c1-889a1ae62755/2c300414-a1fd-4ef3-b6e7-8ad6d67a13d8/b72c2595-f3dc-48e2-9236-dbea9f099db6"
+storage_version_token = "1789222836215932"
+content_type = "application/octet-stream"
