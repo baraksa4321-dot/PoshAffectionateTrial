@@ -12,61 +12,39 @@
 # Error details
 
 ```
-Test timeout of 45000ms exceeded.
-```
+Error: expect(locator).toContainText(expected) failed
 
-```
-Error: locator.click: Test timeout of 45000ms exceeded.
+Locator: getByRole('dialog', { name: 'החלפת מאכל' }).getByRole('button', { name: /יוגורט/ }).first()
+Expected substring: "כף"
+Received string:    "יוגורט עם תפוח ודבשמנה אחת · מתוק מאוזןחלבון21ג׳פחמימות28.5ג׳שומן8ג׳קלוריות270קל׳בחירה"
+Timeout: 8000ms
+
 Call log:
-  - waiting for getByRole('button', { name: 'החלפה', exact: true }).first()
+  - Expect "toContainText" with timeout 8000ms
+  - waiting for getByRole('dialog', { name: 'החלפת מאכל' }).getByRole('button', { name: /יוגורט/ }).first()
+    19 × locator resolved to <button type="button" data-tsd-source="/src/routes/nutrition.index.tsx:2191:21" class="press flex w-full items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-3.5 py-3 text-start cursor-pointer">…</button>
+       - unexpected value "יוגורט עם תפוח ודבשמנה אחת · מתוק מאוזןחלבון21ג׳פחמימות28.5ג׳שומן8ג׳קלוריות270קל׳בחירה"
 
 ```
-
-# Page snapshot
 
 ```yaml
-- generic [ref=e2]:
-  - banner [ref=e3]:
-    - generic [ref=e4]:
-      - generic [ref=e5]:
-        - link "MY routine — דף הבית" [ref=e6]:
-          - /url: /
-          - img "MY routine" [ref=e7]
-        - button "מעבר לתצוגת לילה" [ref=e8]
-      - generic [ref=e11]:
-        - generic [ref=e12]:
-          - paragraph [ref=e13]: בניית תוכניות ותפריטים
-          - heading "עריכה" [level=1] [ref=e14]
-        - button "נמצאה התנגשות — נדרשת בחירה לפני סנכרון" [ref=e16]
-  - main [ref=e19]:
-    - generic [ref=e20]: נמצאה התנגשות — נדרשת בחירה לפני סנכרון
-    - generic [ref=e24]:
-      - generic [ref=e25]:
-        - heading "שם לא הוגדר" [level=3] [ref=e26]
-        - generic [ref=e28]:
-          - button "פתיחת פרופיל המשתמש" [disabled] [ref=e29]: פרופיל
-          - button "סגירת תכנית המתאמן" [ref=e34]
-      - generic [ref=e38]: טוענת נתוני מתאמן מ-Supabase...
-  - navigation "ניווט ראשי":
-    - generic [ref=e39]:
-      - link [ref=e40]:
-        - /url: /coach
-      - link "מתאמנים" [ref=e44]:
-        - /url: /coach/clients
-      - link "מעקב" [ref=e51]:
-        - /url: /coach/tracking
-      - link "תרגילים" [ref=e55]:
-        - /url: /exercises
+- button "יוגורט עם תפוח ודבש מנה אחת · מתוק מאוזן חלבון 21ג׳ פחמימות 28.5ג׳ שומן 8ג׳ קלוריות 270קל׳ בחירה":
+  - paragraph: יוגורט עם תפוח ודבש
+  - paragraph: מנה אחת · מתוק מאוזן
+  - text: חלבון
+  - strong: 21ג׳
+  - text: פחמימות
+  - strong: 28.5ג׳
+  - text: שומן
+  - strong: 8ג׳
+  - text: קלוריות
+  - strong: 270קל׳
+  - text: בחירה
 ```
 
 # Test source
 
 ```ts
-  1192 |   await expect(workoutNote).toHaveValue("הערת בדיקה 123");
-  1193 |   await page.keyboard.press("Escape");
-  1194 |   await expect(workoutNote).toBeHidden();
-  1195 | 
-  1196 |   await page.getByRole("button", { name: "סמן סט כבוצע" }).first().click();
   1197 |   await expect(page.getByText("4%", { exact: true })).toBeVisible();
   1198 |   await page.getByRole("button", { name: "בטל סיום סט" }).first().click();
   1199 |   await expect(page.getByText("0%", { exact: true })).toBeVisible();
@@ -162,13 +140,13 @@ Call log:
   1289 |   await expect(traineePage).toHaveURL(/\/nutrition/);
   1290 |   await expect(traineePage.getByTestId("nutrition-food-quantity").first()).toHaveText("2 כף");
   1291 | 
-> 1292 |   await traineePage.getByRole("button", { name: "החלפת מאכל", exact: true }).first().click();
-       |                                                                                 ^ Error: locator.click: Test timeout of 45000ms exceeded.
+  1292 |   await traineePage.getByRole("button", { name: "החלפת מאכל", exact: true }).first().click();
   1293 |   const replacementDialog = traineePage.getByRole("dialog", { name: "החלפת מאכל" });
   1294 |   await expect(replacementDialog).toBeVisible();
   1295 |   await replacementDialog.locator('input[placeholder*="חפשי מאכל חלופי"]').fill("יוגורט");
   1296 |   const yogurtReplacement = replacementDialog.getByRole("button", { name: /יוגורט/ }).first();
-  1297 |   await expect(yogurtReplacement).toContainText("כף");
+> 1297 |   await expect(yogurtReplacement).toContainText("כף");
+       |                                   ^ Error: expect(locator).toContainText(expected) failed
   1298 |   const replacementName = (await yogurtReplacement.locator("p").first().textContent())?.trim();
   1299 |   expect(replacementName).toBeTruthy();
   1300 |   await yogurtReplacement.click();
@@ -264,4 +242,9 @@ Call log:
   1390 |   await expect(profile).not.toContainText("כל הכבוד על ההתמדה השבוע");
   1391 |   await expect(profile).not.toContainText("מתאמנת בדיקה");
   1392 | });
+  1393 | 
+  1394 | test("coach profile retry recovers after a temporary trainee data failure", async ({ page }) => {
+  1395 |   await installFixture(page, { failSelectedTraineeDataOnce: true });
+  1396 | 
+  1397 |   await page.goto("/");
 ```
