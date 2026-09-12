@@ -132,7 +132,7 @@
 
     const animationIndex = (openingCycleIndex + rotationTick) % loadingIllustrations.length;
     const messageIndex = (openingCycleIndex + rotationTick) % loadingMessages.length;
-    image.src = `/loading/tinted/${loadingIllustrations[animationIndex]}?v=frame-safe-1&cycle=${openingCycleIndex + rotationTick}`;
+    image.src = `/loading/flat/${loadingIllustrations[animationIndex]}?v=frame-safe-2&cycle=${openingCycleIndex + rotationTick}`;
     message.textContent = loadingMessageForGender(
       loadingMessages[messageIndex],
       document.documentElement.dataset.loadingGender,

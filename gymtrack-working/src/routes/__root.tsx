@@ -514,7 +514,7 @@ function SimpleLoadingIllustration({
     <div className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4}`}>
       <img
         className="loading-simple-image loading-simple-video"
-        src={`/loading/tinted/${illustration.file.replace(".png", ".gif")}?v=frame-safe-1&cycle=${cycle}`}
+        src={`/loading/flat/${illustration.file.replace(".png", ".gif")}?v=frame-safe-2&cycle=${cycle}`}
         suppressHydrationWarning
         aria-label={`איור טעינה: ${illustration.label}`}
         alt={`איור טעינה: ${illustration.label}`}
