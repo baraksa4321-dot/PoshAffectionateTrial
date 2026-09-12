@@ -35,13 +35,17 @@ Call log:
       - <div class="flex items-center gap-2" data-tsd-source="/src/routes/session.$workoutId.tsx:1812:19">…</div> from <div class="fixed z-[60]" data-tsd-source="/src/routes/session.$workoutId.tsx:1757:13">…</div> subtree intercepts pointer events
     - retrying click action
       - waiting 100ms
-    49 × waiting for element to be visible, enabled and stable
+    40 × waiting for element to be visible, enabled and stable
        - element is visible, enabled and stable
        - scrolling into view if needed
        - done scrolling
        - <div class="flex items-center gap-2" data-tsd-source="/src/routes/session.$workoutId.tsx:1812:19">…</div> from <div class="fixed z-[60]" data-tsd-source="/src/routes/session.$workoutId.tsx:1757:13">…</div> subtree intercepts pointer events
      - retrying click action
        - waiting 500ms
+    - waiting for element to be visible, enabled and stable
+    - element is visible, enabled and stable
+    - scrolling into view if needed
+    - done scrolling
 
 ```
 
@@ -53,7 +57,7 @@ Call log:
     - generic [ref=f1e4]:
       - generic [ref=f1e9]:
         - paragraph [ref=f1e10]: זמן מנוחה
-        - paragraph [ref=f1e11]: 0:34
+        - paragraph [ref=f1e11]: 0:38
         - paragraph [ref=f1e12]: תרגיל בדיקה 1 (Smoke Exercise 1) · סט 1
       - generic [ref=f1e13]: פעיל
   - generic [ref=f1e14]:
