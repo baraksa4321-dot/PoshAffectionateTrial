@@ -510,14 +510,27 @@ function SimpleLoadingIllustration({
   cycle: number;
 }) {
   const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length]!;
+  const animationFile = illustration.file.replace(".png", ".mp4");
+  const posterFile = illustration.file.replace(".png", ".gif");
   return (
     <div className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4}`}>
-      <img
+      <video
+        key={`loading-video-${cycle}`}
         className="loading-simple-image loading-simple-video"
-        src={`/loading/flat/${illustration.file.replace(".png", ".gif")}?v=frame-safe-2&cycle=${cycle}`}
+        src={`/loading/tinted/${animationFile}?v=video-safe-1&cycle=${cycle}`}
+        poster={`/loading/tinted/${posterFile}?v=poster-safe-1`}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        onLoadedData={(event) => {
+          void event.currentTarget.play().catch(() => {
+            // Safari can defer muted autoplay until the first media event.
+          });
+        }}
         suppressHydrationWarning
         aria-label={`איור טעינה: ${illustration.label}`}
-        alt={`איור טעינה: ${illustration.label}`}
       />
     </div>
   );

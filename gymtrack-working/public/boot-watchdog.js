@@ -126,13 +126,24 @@
     }
 
     const loadingScreen = document.querySelector(".loading-screen");
-    const image = loadingScreen?.querySelector(".loading-simple-image");
+    const media = loadingScreen?.querySelector(".loading-simple-video");
     const message = loadingScreen?.querySelector(".loading-witty-message");
-    if (!(image instanceof HTMLImageElement) || !(message instanceof HTMLElement)) return false;
+    if (!(media instanceof HTMLVideoElement) || !(message instanceof HTMLElement)) return false;
 
     const animationIndex = (openingCycleIndex + rotationTick) % loadingIllustrations.length;
     const messageIndex = (openingCycleIndex + rotationTick) % loadingMessages.length;
-    image.src = `/loading/flat/${loadingIllustrations[animationIndex]}?v=frame-safe-2&cycle=${openingCycleIndex + rotationTick}`;
+    const illustration = loadingIllustrations[animationIndex];
+    const cycle = openingCycleIndex + rotationTick;
+    const animationFile = illustration.replace(".gif", ".mp4");
+    const nextSource = `/loading/tinted/${animationFile}?v=video-safe-1&cycle=${cycle}`;
+    media.poster = `/loading/tinted/${illustration}?v=poster-safe-1`;
+    if (media.getAttribute("src") !== nextSource) {
+      media.src = nextSource;
+      media.load();
+    }
+    void media.play().catch(() => {
+      // Muted inline video can need one more attempt after the first paint.
+    });
     message.textContent = loadingMessageForGender(
       loadingMessages[messageIndex],
       document.documentElement.dataset.loadingGender,
