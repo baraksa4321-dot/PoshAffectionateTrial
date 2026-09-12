@@ -100,6 +100,23 @@ function formatDayLabel(key: string) {
   return date.toLocaleDateString("he-IL", { weekday: "short", month: "short", day: "numeric" });
 }
 
+function plannedMealDisplayName(name: string) {
+  return name
+    .replace(/\s*\(\s*\d{1,2}:\d{2}\s*[–—-]\s*\d{1,2}:\d{2}\s*\)/g, "")
+    .replace(/\s*[·•|]\s*אפשרות\s+\d+\s*$/g, "")
+    .trim();
+}
+
+function plannedMealFoodSummary(meal: { foods: MealFood[] }) {
+  const names = meal.foods
+    .map((food) => food.name.trim())
+    .filter(Boolean);
+  if (names.length === 0) return "טרם נוספו מאכלים";
+  const visibleNames = names.slice(0, 3);
+  const remaining = names.length - visibleNames.length;
+  return `${visibleNames.join(" · ")}${remaining > 0 ? ` ועוד ${remaining}` : ""}`;
+}
+
 function recipeAsMealFood(recipe: RecipeDefinition, servings: number): MealFood {
   const multiplier = Math.max(0.5, servings);
   const calories = Math.round(recipe.nutrition.calories * multiplier);
@@ -1022,6 +1039,7 @@ function NutritionLog() {
               const selectedMeal = group.meals.find((meal) =>
                 day.meals.some((logged) => logged.sourcePlanId === meal.id),
               );
+              const summaryMeal = selectedMeal ?? primaryMeal;
               return (
                 <article
                   key={group.id}
@@ -1030,13 +1048,11 @@ function NutritionLog() {
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <h3 className="font-display text-[15px] font-bold text-ink">
-                        {primaryMeal.name}
+                        {plannedMealDisplayName(primaryMeal.name) || "ארוחה"}
                       </h3>
-                      {group.meals.length > 1 ? (
-                        <p className="mt-1 text-[11px] font-semibold text-primary">
-                          בחרי אפשרות אחת לארוחה
-                        </p>
-                      ) : null}
+                      <p className="mt-1 max-w-[18rem] text-[11px] font-semibold leading-relaxed text-primary">
+                        {plannedMealFoodSummary(summaryMeal)}
+                      </p>
                     </div>
                   </div>
                   <div className="mt-3 space-y-3">
@@ -1059,13 +1075,11 @@ function NutritionLog() {
                             <div className="min-w-0">
                               <p className="text-[11px] font-bold text-primary">
                                 {group.meals.length > 1
-                                  ? optionIndex === 0
-                                    ? "ארוחה"
-                                    : "ארוחה אחרת"
-                                  : "ארוחה"}
+                                  ? `אפשרות ${optionIndex + 1}`
+                                  : "הארוחה"}
                               </p>
                               <h4 className="truncate text-[13px] font-bold text-ink">
-                                {meal.name}
+                                {plannedMealFoodSummary(meal)}
                               </h4>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
