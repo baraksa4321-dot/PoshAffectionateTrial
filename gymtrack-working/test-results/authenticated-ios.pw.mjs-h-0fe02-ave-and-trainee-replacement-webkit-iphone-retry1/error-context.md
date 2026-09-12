@@ -22,7 +22,7 @@ Timeout: 8000ms
 Call log:
   - Expect "toContainText" with timeout 8000ms
   - waiting for getByRole('dialog', { name: 'החלפת מאכל' }).getByRole('button', { name: /יוגורט/ }).first()
-    20 × locator resolved to <button type="button" data-tsd-source="/src/routes/nutrition.index.tsx:2191:21" class="press flex w-full items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-3.5 py-3 text-start cursor-pointer">…</button>
+    19 × locator resolved to <button type="button" data-tsd-source="/src/routes/nutrition.index.tsx:2096:21" class="press flex w-full items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-3.5 py-3 text-start cursor-pointer">…</button>
        - unexpected value "יוגורט עם תפוח ודבשמנה אחת · מתוק מאוזןחלבון21ג׳פחמימות28.5ג׳שומן8ג׳קלוריות270קל׳בחירה"
 
 ```
