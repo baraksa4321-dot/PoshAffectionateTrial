@@ -2761,6 +2761,50 @@ export function selectPlannedMealOption(date: string, plannedMealId: string) {
   });
 }
 
+export function togglePlannedMealEaten(date: string, plannedMealId: string) {
+  withDay(date, (day) => {
+    const plannedMeal = data.plannedMeals?.find((meal) => meal.id === plannedMealId);
+    if (!plannedMeal) return day;
+
+    const existingMeal = day.meals.find((meal) => meal.sourcePlanId === plannedMealId);
+    if (existingMeal) {
+      return {
+        ...day,
+        meals: day.meals.filter((meal) => meal.id !== existingMeal.id),
+      };
+    }
+
+    const optionGroupId = plannedMealOptionGroupId(plannedMeal);
+    const mealsWithoutOtherOptions = day.meals.filter((meal) => {
+      const loggedPlan = data.plannedMeals?.find((planned) => planned.id === meal.sourcePlanId);
+      return loggedPlan ? plannedMealOptionGroupId(loggedPlan) !== optionGroupId : true;
+    });
+    const timeLogged = new Date().toLocaleTimeString("he-IL", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    return {
+      ...day,
+      meals: [
+        ...mealsWithoutOtherOptions,
+        {
+          id: uid(),
+          name: plannedMeal.name,
+          sourcePlanId: plannedMeal.id,
+          foods: plannedMeal.foods.map((food) => ({
+            ...food,
+            id: uid(),
+            sourcePlanMealId: plannedMeal.id,
+            sourcePlanFoodId: food.id,
+            timeLogged,
+          })),
+        },
+      ],
+    };
+  });
+}
+
 export function togglePlannedFoodEaten(date: string, plannedMealId: string, plannedFoodId: string) {
   withDay(date, (day) => {
     const plannedMeal = data.plannedMeals?.find((meal) => meal.id === plannedMealId);

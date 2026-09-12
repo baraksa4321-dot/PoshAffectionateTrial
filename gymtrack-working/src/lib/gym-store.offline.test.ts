@@ -226,6 +226,50 @@ describe("offline store lifecycle", () => {
     expect(loggedMeals[0]?.sourcePlanId).toBe(alternate.id);
   });
 
+  test("toggles planned meals and individual planned foods between eaten and not eaten", async () => {
+    Object.assign(navigator, { onLine: true });
+    const food = {
+      id: "planned-food",
+      name: "קוטג׳",
+      servingSize: "מנה",
+      quantity: 1,
+      calories: 100,
+      protein: 12,
+      carbs: 4,
+      fat: 3,
+    };
+    const meal = {
+      id: "meal-toggle",
+      name: "ארוחת בוקר",
+      foods: [food],
+    };
+    pullImplementation = async (_userId, localState) => ({
+      success: true,
+      data: {
+        ...localState,
+        plannedMeals: [meal],
+        nutritionDays: [{ date: "2026-08-26", meals: [] }],
+        userProfile: {
+          ...(localState["userProfile"] as Record<string, unknown>),
+          role: "client",
+        },
+      },
+    });
+    const store = await loadStore("planned-meal-and-food-toggles");
+    authenticate();
+    await eventually(() => store.getGymStoreSnapshot().plannedMeals.length === 1);
+
+    store.togglePlannedMealEaten("2026-08-26", meal.id);
+    expect(store.getGymStoreSnapshot().nutritionDays[0]?.meals[0]?.foods).toHaveLength(1);
+    store.togglePlannedMealEaten("2026-08-26", meal.id);
+    expect(store.getGymStoreSnapshot().nutritionDays[0]?.meals).toHaveLength(0);
+
+    store.togglePlannedFoodEaten("2026-08-26", meal.id, food.id);
+    expect(store.getGymStoreSnapshot().nutritionDays[0]?.meals[0]?.foods).toHaveLength(1);
+    store.togglePlannedFoodEaten("2026-08-26", meal.id, food.id);
+    expect(store.getGymStoreSnapshot().nutritionDays[0]?.meals).toHaveLength(0);
+  });
+
   test("loads only a trusted per-user cache while offline", async () => {
     storage.set("gymtrack.v1.user.user-a", JSON.stringify(cachedClientData));
     storage.set("gymtrack.v1.pending.user-a", "true");

@@ -46,9 +46,9 @@ import {
   renameMeal,
   renameRecipe,
   saveRecipe,
-  selectPlannedMealOption,
   searchFoods,
   todayKey,
+  togglePlannedMealEaten,
   togglePlannedFoodEaten,
   uid,
   updateMealFood,
@@ -563,6 +563,25 @@ function NutritionLog() {
     return findFoodReplacements(gym.foods, substituteFor.food, substituteQuery).slice(0, 15);
   }, [gym.foods, substituteFor, substituteQuery]);
 
+  const recipeReplacements = useMemo(() => {
+    if (!substituteFor) return [];
+    const targetCalories =
+      substituteFor.food.calories * mealFoodNutritionMultiplier(substituteFor.food);
+    const query = substituteQuery.trim().toLocaleLowerCase();
+    return RECIPE_LIBRARY.filter((recipe) => {
+      if (!query) return true;
+      return [recipe.name, recipe.category, ...recipe.ingredients].some((value) =>
+        value.toLocaleLowerCase().includes(query),
+      );
+    })
+      .map((recipe) => ({
+        recipe,
+        calorieDistance: Math.abs(recipe.nutrition.calories - targetCalories),
+      }))
+      .sort((a, b) => a.calorieDistance - b.calorieDistance)
+      .slice(0, 5);
+  }, [substituteFor, substituteQuery]);
+
   const closeFoodPicker = () => {
     setPickerMealId(null);
     setPickerFoodId(null);
@@ -598,6 +617,26 @@ function NutritionLog() {
     const portion = foodPortionFromServingQuantity(lib, replacement.calculatedQuantity);
     const replacementFood: MealFood = {
       ...mealFoodFromPortion(lib, portion.quantity, portion.unit),
+      id: current.id,
+      ...(current.notes === undefined ? {} : { notes: current.notes }),
+    };
+    const plannedMealId = substituteFor?.plannedMealId;
+    setSubstituteFor(null);
+    setSubstituteQuery("");
+    if (plannedMealId) {
+      logPlannedFoodSubstitution(date, plannedMealId, current, replacementFood);
+    } else {
+      updateMealFood(date, mealId, replacementFood);
+    }
+  };
+
+  const applyRecipeReplacement = (
+    mealId: string,
+    current: MealFood,
+    recipe: RecipeDefinition,
+  ) => {
+    const replacementFood: MealFood = {
+      ...recipeAsMealFood(recipe, 1),
       id: current.id,
       ...(current.notes === undefined ? {} : { notes: current.notes }),
     };
@@ -1086,7 +1125,7 @@ function NutritionLog() {
                               <button
                                 type="button"
                                 aria-pressed={isSelected}
-                                onClick={() => selectPlannedMealOption(date, meal.id)}
+                                onClick={() => togglePlannedMealEaten(date, meal.id)}
                                 className={`inline-flex h-8 items-center gap-1 rounded-xl px-2.5 text-[11px] font-bold ${
                                   isSelected
                                     ? "bg-emerald-600 text-white"
@@ -1098,7 +1137,7 @@ function NutritionLog() {
                                 ) : (
                                   <Square className="h-3.5 w-3.5" />
                                 )}
-                                {isSelected ? "נבחרה ונאכלה" : "בחרי ואכלי"}
+                                {isSelected ? "סימון כלא נאכל" : "סימון כארוחה נאכלת"}
                               </button>
                             </div>
                           </div>
@@ -1155,7 +1194,7 @@ function NutritionLog() {
                                       }
                                     />
                                     <div className="mt-2 flex items-center justify-end gap-2">
-                                      {!loggedFood && group.meals.length === 1 ? (
+                                      {isSelected || group.meals.length === 1 ? (
                                         <button
                                           type="button"
                                           onClick={() =>
@@ -1163,7 +1202,7 @@ function NutritionLog() {
                                           }
                                           className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary"
                                         >
-                                          סימון
+                                          {loggedFood ? "סימון כלא נאכל" : "סימון כנאכל"}
                                         </button>
                                       ) : null}
                                       {isSelected || group.meals.length === 1 ? (
@@ -2035,6 +2074,37 @@ function NutritionLog() {
                 className="w-full bg-transparent text-[13px] outline-none"
               />
             </div>
+            {recipeReplacements.length > 0 ? (
+              <div className="mb-4">
+                <p className="mb-2 text-[12px] font-bold text-primary">
+                  מתכונים קרובים לתקציב הקלוריות
+                </p>
+                <div className="space-y-2">
+                  {recipeReplacements.map(({ recipe }) => (
+                    <button
+                      key={recipe.id}
+                      type="button"
+                      onClick={() =>
+                        applyRecipeReplacement(substituteFor.mealId, substituteFor.food, recipe)
+                      }
+                      className="press flex w-full items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-3.5 py-3 text-start cursor-pointer"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[14px] font-semibold text-ink">
+                          {recipe.name}
+                        </p>
+                        <p className="mt-0.5 text-[12px] font-semibold text-muted-foreground">
+                          {recipe.nutrition.calories} קלוריות · {recipe.category}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-xl bg-primary px-2.5 py-1.5 text-[11px] font-bold text-primary-foreground">
+                        בחירה
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <div className="space-y-2">
               {replacements.map((item) => {
                 const portion = foodPortionFromServingQuantity(
