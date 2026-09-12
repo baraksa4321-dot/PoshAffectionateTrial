@@ -63,6 +63,7 @@ import {
   uniqueCanonicalExercises,
 } from "@/lib/exercise-library";
 import { genderText } from "@/lib/gender-copy";
+import { WEEKDAY_LABELS, normalizeWeekday } from "@/lib/workout-session";
 import {
   EQUIPMENT,
   MUSCLE_GROUPS,
@@ -233,7 +234,10 @@ function DayBuilder() {
   const program = programs.find((item) => item.id === programId);
   const existing = workouts.find((workout) => workout.id === dayId);
   const isNew = dayId === "new" || !dayId;
-  const [draft, setDraft] = useState<Workout>(() => existing ?? makeBlankWorkout());
+  const [draft, setDraft] = useState<Workout>(() => {
+    if (existing) return existing;
+    return { ...makeBlankWorkout(), weekday: Math.min(program?.dayIds.length ?? 0, 6) };
+  });
   const [picker, setPicker] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
   const [pickerGroup, setPickerGroup] = useState("הכל");
@@ -324,7 +328,7 @@ function DayBuilder() {
   };
 
   const save = () => {
-    if (!canManageProgram || !draft.name.trim()) return;
+    if (!canManageProgram || !draft.name.trim() || draft.weekday === undefined) return;
     saveWorkoutInProgram(program.id, { ...draft, name: draft.name.trim() });
     navigate({ to: "/programs/$programId", params: { programId: program.id } });
   };
@@ -402,6 +406,32 @@ function DayBuilder() {
           className="mt-2 w-full rounded-2xl border border-border/60 bg-secondary px-4 py-3.5 text-[14px] outline-none focus:border-primary"
           placeholder="דגשים ליום האימון..."
         />
+        <p className="mt-3.5 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+          יום קבוע בשבוע
+        </p>
+        <select
+          data-testid="select-workout-weekday"
+          value={draft.weekday ?? ""}
+          onChange={(event) => {
+            const weekday = normalizeWeekday(event.target.value);
+            if (weekday === undefined) return;
+            setDraft((current) => ({ ...current, weekday }));
+          }}
+          className={fieldBase + " mt-2"}
+          required
+        >
+          <option value="" disabled>
+            בחרי יום בשבוע
+          </option>
+          {WEEKDAY_LABELS.map((label, weekday) => (
+            <option key={label} value={weekday}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1.5 text-[11px] text-muted-foreground">
+          האימון יופיע במסך הבית ביום הזה. הביצוע והסימון מתאפסים אוטומטית בתחילת שבוע חדש.
+        </p>
       </div>
 
       <SectionHeader

@@ -16,12 +16,13 @@ describe("coach plan payload boundaries", () => {
       name: "Strength",
     });
     expect(
-      clientProgramDayInsertPayload("day-1", "program-1", "trainee-1", "Day 1", 0),
+      clientProgramDayInsertPayload("day-1", "program-1", "trainee-1", "Day 1", 0, 2),
     ).toMatchObject({
       id: "day-1",
       program_id: "program-1",
       user_id: "trainee-1",
       name: "Day 1",
+      weekday: 2,
     });
   });
 

@@ -713,12 +713,34 @@ export async function syncLocalToSupabase(
             name: d.name,
             items: d.items,
             sort_order: index,
+            weekday: d.weekday ?? null,
             updated_at: new Date().toISOString(),
           }));
-          await requireSuccessfulWrite(
-            supabase.from("program_days").upsert(dayPayload, { onConflict: "id" }),
-            "Program days sync",
-          );
+          const programDaysWrite = await supabase
+            .from("program_days")
+            .upsert(dayPayload, { onConflict: "id" });
+          if (
+            programDaysWrite.error &&
+            isMissingColumnInSchema(programDaysWrite.error, "program_days", "weekday")
+          ) {
+            // Keep older linked projects usable until the additive migration is
+            // applied. The weekday will be persisted on the next sync after
+            // the column becomes available.
+            console.warn(
+              `[Program days sync] weekday column is missing; syncing without weekly scheduling`,
+            );
+            await requireSuccessfulWrite(
+              supabase
+                .from("program_days")
+                .upsert(
+                  dayPayload.map(({ weekday: _weekday, ...legacyDay }) => legacyDay),
+                  { onConflict: "id" },
+                ),
+              "Program days sync (legacy schema)",
+            );
+          } else if (programDaysWrite.error) {
+            throw new Error(`Program days sync: ${programDaysWrite.error.message}`);
+          }
         }
       }
     }
@@ -1540,6 +1562,10 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
             name: dRow.name,
             notes: "",
             items: dRow.items || [],
+            weekday:
+              typeof dRow.weekday === "number" && dRow.weekday >= 0 && dRow.weekday <= 6
+                ? dRow.weekday
+                : undefined,
           };
           workoutsMap.set(dRow.id, workoutItem);
         }
@@ -1969,6 +1995,10 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
             name: dRow.name,
             notes: "",
             items: dRow.items || [],
+            weekday:
+              typeof dRow.weekday === "number" && dRow.weekday >= 0 && dRow.weekday <= 6
+                ? dRow.weekday
+                : undefined,
           });
         }
 

@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test";
 import type { HistorySession } from "./gym-types";
 import {
   completedSetForReopenedWorkout,
+  getCurrentWeekDates,
   getCurrentWeekWorkoutSession,
   getWorkoutCompletion,
+  normalizeWeekday,
   restForWorkoutSet,
 } from "./workout-session";
 
@@ -48,6 +50,31 @@ describe("reopening a completed workout", () => {
     );
 
     expect(completed).toBeUndefined();
+  });
+});
+
+describe("weekly scheduling", () => {
+  test("maps Sunday-first weekday slots to the current calendar week", () => {
+    const week = getCurrentWeekDates(new Date(2026, 7, 30, 12));
+
+    expect(week.map((day) => day.weekday)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(week.map((day) => day.date)).toEqual([
+      "2026-08-30",
+      "2026-08-31",
+      "2026-09-01",
+      "2026-09-02",
+      "2026-09-03",
+      "2026-09-04",
+      "2026-09-05",
+    ]);
+    expect(week[0]?.isToday).toBe(true);
+  });
+
+  test("rejects weekday values outside the Sunday-first range", () => {
+    expect(normalizeWeekday("0")).toBe(0);
+    expect(normalizeWeekday("6")).toBe(6);
+    expect(normalizeWeekday("7")).toBeUndefined();
+    expect(normalizeWeekday("not-a-day")).toBeUndefined();
   });
 });
 

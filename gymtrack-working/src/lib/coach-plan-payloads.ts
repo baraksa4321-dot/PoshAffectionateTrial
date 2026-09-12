@@ -16,6 +16,7 @@ export function clientProgramDayInsertPayload(
   userId: string,
   name: string,
   sortOrder: number,
+  weekday?: number,
 ) {
   return {
     id,
@@ -24,6 +25,7 @@ export function clientProgramDayInsertPayload(
     name,
     items: [],
     sort_order: sortOrder,
+    ...(weekday === undefined ? {} : { weekday }),
   };
 }
 

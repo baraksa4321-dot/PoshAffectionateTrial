@@ -99,6 +99,7 @@ import type {
 } from "../lib/gym-types";
 import { EQUIPMENT } from "../lib/gym-types";
 import { genderText } from "../lib/gender-copy";
+import { WEEKDAY_LABELS, normalizeWeekday } from "../lib/workout-session";
 import {
   defaultFoodQuantity,
   foodQuantityOptions,
@@ -1650,6 +1651,7 @@ export function CoachDashboardPage({
   const [openWorkoutReportId, setOpenWorkoutReportId] = useState<string | null>(null);
   const [focusedExerciseId, setFocusedExerciseId] = useState<string | null>(null);
   const [newDayName, setNewDayName] = useState("");
+  const [newDayWeekday, setNewDayWeekday] = useState(0);
 
   // Exercise Assignment Editor state
   const [selectedExId, setSelectedExId] = useState("");
@@ -3431,7 +3433,13 @@ export function CoachDashboardPage({
 
     const dayId = uid();
     if (isSelfSelected) {
-      const day: Workout = { id: dayId, name: newDayName.trim(), notes: "", items: [] };
+      const day: Workout = {
+        id: dayId,
+        name: newDayName.trim(),
+        notes: "",
+        items: [],
+        weekday: newDayWeekday,
+      };
       saveWorkoutInProgram(editingProgramId, day);
       setNewDayName("");
       setEditingDayId(dayId);
@@ -3447,6 +3455,7 @@ export function CoachDashboardPage({
           selectedClientId,
           newDayName.trim(),
           (clientDetails?.workouts?.length || 0) + 1,
+          newDayWeekday,
         ),
       );
 
@@ -3455,6 +3464,26 @@ export function CoachDashboardPage({
       return;
     }
     setNewDayName("");
+    pullClientDataForCoach(selectedClientId).then(applyClientDetails);
+  };
+
+  const handleChangeWorkoutDayWeekday = async (day: Workout, value: string) => {
+    const weekday = normalizeWeekday(value);
+    if (weekday === undefined || !selectedClientId || weekday === day.weekday) return;
+    setManagementError("");
+    if (isSelfSelected) {
+      saveWorkout({ ...day, weekday });
+      return;
+    }
+    const { error } = await supabase
+      .from("program_days")
+      .update({ weekday, updated_at: new Date().toISOString() })
+      .eq("id", day.id)
+      .eq("user_id", selectedClientId);
+    if (error) {
+      setManagementError(`עדכון יום האימון נכשל: ${error.message}`);
+      return;
+    }
     pullClientDataForCoach(selectedClientId).then(applyClientDetails);
   };
 
@@ -6932,6 +6961,22 @@ export function CoachDashboardPage({
                                       placeholder="שם יום אימון (למשל: A - פלג גוף עליון)..."
                                       className="flex-1 rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
                                     />
+                                    <select
+                                      required
+                                      aria-label="יום קבוע ליום אימון חדש"
+                                      value={newDayWeekday}
+                                      onChange={(event) => {
+                                        const weekday = normalizeWeekday(event.target.value);
+                                        if (weekday !== undefined) setNewDayWeekday(weekday);
+                                      }}
+                                      className="w-28 rounded-xl border border-border bg-background px-2 py-1.5 text-xs font-semibold outline-none focus:border-primary"
+                                    >
+                                      {WEEKDAY_LABELS.map((label, weekday) => (
+                                        <option key={label} value={weekday}>
+                                          {label}
+                                        </option>
+                                      ))}
+                                    </select>
                                     <button
                                       type="submit"
                                       className="rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 cursor-pointer"
@@ -6965,7 +7010,10 @@ export function CoachDashboardPage({
                                               {dayItem.name}
                                             </span>
                                             <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                                              {dayItem.items?.length || 0} תרגילים
+                                               {dayItem.items?.length || 0} תרגילים ·{" "}
+                                               {dayItem.weekday === undefined
+                                                 ? "ללא יום קבוע"
+                                                 : `יום ${WEEKDAY_LABELS[dayItem.weekday]}`}
                                             </span>
                                           </span>
                                           <span className="shrink-0 rounded-xl bg-primary/10 px-3 py-2 text-[11px] font-extrabold text-primary">
@@ -7008,6 +7056,33 @@ export function CoachDashboardPage({
                                                 }}
                                                 className="workout-builder-name mt-1 w-full max-w-xl rounded-xl border border-primary/30 bg-background px-3 py-2 text-base font-extrabold text-ink outline-none focus:border-primary"
                                               />
+                                              <label className="mt-2 block max-w-xl text-[11px] font-semibold text-muted-foreground">
+                                                יום קבוע בשבוע
+                                                <select
+                                                  aria-label="יום קבוע בשבוע"
+                                                  value={dayItem.weekday ?? ""}
+                                                  onChange={(event) => {
+                                                    const nextWeekday = normalizeWeekday(
+                                                      event.target.value,
+                                                    );
+                                                    if (nextWeekday === undefined) return;
+                                                    void handleChangeWorkoutDayWeekday(
+                                                      dayItem,
+                                                      String(nextWeekday),
+                                                    );
+                                                  }}
+                                                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-semibold text-ink outline-none focus:border-primary"
+                                                >
+                                                  <option value="" disabled>
+                                                    בחרי יום בשבוע
+                                                  </option>
+                                                  {WEEKDAY_LABELS.map((label, weekday) => (
+                                                    <option key={label} value={weekday}>
+                                                      {label}
+                                                    </option>
+                                                  ))}
+                                                </select>
+                                              </label>
                                               <p className="mt-1 text-[11px] text-muted-foreground">
                                                 {dayItem.items?.length || 0} תרגילים בתוכנית
                                               </p>

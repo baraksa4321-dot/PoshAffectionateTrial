@@ -35,6 +35,7 @@ function Workouts() {
     if (b.weekday === undefined) return -1;
     return a.weekday - b.weekday;
   });
+  const isLegacyWeekdaySchedule = weeklyWorkouts.every((workout) => workout.weekday === undefined);
 
   return (
     <AppShell kicker="אימונים" title="האימונים שלי" subtitle="רשימה פשוטה של כל האימונים שלך">
@@ -53,7 +54,11 @@ function Workouts() {
         {weeklyWorkouts.length > 0 ? (
           <div className="mt-3 space-y-2.5">
             {weeklyWorkouts.map((workout, index) => {
-              const day = weekDays[workout.weekday ?? index];
+              const day = workout.weekday === undefined
+                ? isLegacyWeekdaySchedule
+                  ? weekDays[index]
+                  : undefined
+                : weekDays[workout.weekday];
               return (
                 <Link
                   key={workout.id}
@@ -67,7 +72,7 @@ function Workouts() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-[10px] font-bold text-primary">
-                        {day?.label ?? `אימון ${index + 1}`}
+                        {day?.label ?? "ללא יום קבוע"}
                       </span>
                       {day?.isToday ? (
                         <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">

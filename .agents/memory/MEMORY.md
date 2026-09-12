@@ -65,3 +65,4 @@
 - [WebKit release-gate isolation](webkit-release-gate-isolation.md) — Nutrition smoke flows can pass while later coach/realtime tests time out; isolate failures by test before changing feature code.
 - [Meal option groups](meal-option-groups.md) — Represent alternate prescribed meals as grouped Meal records; keep food substitutions at the MealFood level.
 - [Secure runtime secrets](secure-runtime-secrets.md) — ShellExec may not expose managed secret values; load them through the secure flow and restart the consuming workflow.
+- [Weekly workout scheduling](weekly-workout-scheduling.md) — Explicit Sunday-first weekdays drive the dashboard; fully legacy plans retain deterministic order fallback.

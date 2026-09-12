@@ -12,10 +12,27 @@ export type WeeklyWorkoutStatus = "scheduled" | "completed" | "partial" | "skipp
 
 export type WeekDay = {
   date: string;
+  weekday: number;
   label: string;
   shortLabel: string;
   isToday: boolean;
 };
+
+export const WEEKDAY_LABELS = [
+  "ראשון",
+  "שני",
+  "שלישי",
+  "רביעי",
+  "חמישי",
+  "שישי",
+  "שבת",
+] as const;
+
+export function normalizeWeekday(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const weekday = Number(value);
+  return Number.isInteger(weekday) && weekday >= 0 && weekday <= 6 ? weekday : undefined;
+}
 
 export function getWeekStart(referenceDate = new Date()) {
   const start = new Date(referenceDate);
@@ -32,6 +49,7 @@ export function getCurrentWeekDates(referenceDate = new Date()): WeekDay[] {
     const dateKey = localDateKey(date);
     return {
       date: dateKey,
+      weekday: index,
       label: date.toLocaleDateString("he-IL", { weekday: "long" }),
       shortLabel: date.toLocaleDateString("he-IL", { weekday: "short" }),
       isToday: dateKey === localDateKey(referenceDate),

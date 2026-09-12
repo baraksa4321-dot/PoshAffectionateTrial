@@ -387,13 +387,17 @@ function Dashboard() {
     ...workouts.filter((workout) => !activeChallengeWorkoutIds.has(workout.id)),
     ...workouts.filter((workout) => activeChallengeWorkoutIds.has(workout.id)),
   ];
+  // Older plans were ordered by day index before weekday scheduling existed.
+  // Keep that deterministic migration path only when the whole plan is legacy;
+  // once a plan has explicit weekdays, an unassigned workout must not appear
+  // on a random day.
+  const isLegacyWeekdaySchedule =
+    weeklyWorkouts.length > 0 && weeklyWorkouts.every((workout) => workout.weekday === undefined);
   const scheduledWorkouts = weeklyWorkouts
     .map((workout, index) => ({ workout, index }))
+    .filter(({ workout }) => isLegacyWeekdaySchedule || workout.weekday !== undefined)
     .sort((a, b) => {
-      if (a.workout.weekday === undefined && b.workout.weekday === undefined) return a.index - b.index;
-      if (a.workout.weekday === undefined) return 1;
-      if (b.workout.weekday === undefined) return -1;
-      return a.workout.weekday - b.workout.weekday;
+      return (a.workout.weekday ?? a.index) - (b.workout.weekday ?? b.index);
     })
     .slice(0, Math.min(weeklyWorkouts.length, 7))
     .map(({ workout, index }) => {
@@ -410,6 +414,9 @@ function Dashboard() {
   });
 
   const todayScheduledWorkout = scheduledWorkouts.find(
+    (item) => item.scheduledDate === todayDateStr,
+  );
+  const todayScheduledWorkouts = scheduledWorkouts.filter(
     (item) => item.scheduledDate === todayDateStr,
   );
   const workoutReminderPayload = scheduledWorkouts
@@ -728,6 +735,9 @@ function Dashboard() {
                   <p className="mt-1 text-[10px] text-primary-foreground/75">
                     {weekDays.find((day) => day.date === todayDateStr)?.label ?? "היום"} ·{" "}
                     {primaryWorkout.items.length} תרגילים · כ־{primaryWorkout.items.length * 12 + 15} דק׳
+                    {todayScheduledWorkouts.length > 1
+                      ? ` · ${todayScheduledWorkouts.length} אימונים היום`
+                      : ""}
                   </p>
                   <button
                     type="button"

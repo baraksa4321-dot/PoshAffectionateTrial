@@ -38,6 +38,7 @@ import {
 } from "@/components/ui-app/primitives";
 import { genderText } from "@/lib/gender-copy";
 import { visibleProgramNote } from "@/lib/gym-types";
+import { getCurrentWeekWorkoutSession, WEEKDAY_LABELS } from "@/lib/workout-session";
 import {
   deleteWorkout,
   duplicateWorkoutDay,
@@ -235,7 +236,7 @@ function ProgramDetail() {
                     day={day}
                     index={index}
                     programId={program.id}
-                    completed={history.some((session) => session.workoutId === day.id)}
+                    completed={Boolean(getCurrentWeekWorkoutSession(history, day.id))}
                     onRequestDelete={(id, name) => setPendingDelete({ id, name })}
                   />
                 ))}
@@ -342,6 +343,9 @@ function SortableDayCard({
             {day.name || "יום ללא שם"}
           </p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
+            {day.weekday === undefined
+              ? "ללא יום קבוע"
+              : `יום ${WEEKDAY_LABELS[day.weekday]} · `}
             {day.items.length} תרגילים
             {day.items.length > 0
               ? ` · ${day.items
