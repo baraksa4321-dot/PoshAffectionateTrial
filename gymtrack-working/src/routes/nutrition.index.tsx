@@ -669,6 +669,7 @@ function NutritionLog() {
       title="יומן תזונה"
       subtitle={formatDayLabel(date)}
       compactHeader
+      pageClassName="nutrition-page"
       action={
         <div className="flex gap-1.5">
           <Link
@@ -682,7 +683,7 @@ function NutritionLog() {
       }
     >
       {/* Date selector */}
-      <div className="surface-card flex items-center justify-between gap-1.5 p-1.5">
+      <div className="nutrition-date-selector surface-card flex items-center justify-between gap-1.5 p-1.5">
         <button
           type="button"
           aria-label="יום קודם"
