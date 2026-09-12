@@ -114,7 +114,7 @@ function plannedMealFoodSummary(meal: { foods: MealFood[] }) {
   if (names.length === 0) return "טרם נוספו מאכלים";
   const visibleNames = names.slice(0, 3);
   const remaining = names.length - visibleNames.length;
-  return `${visibleNames.join(" · ")}${remaining > 0 ? ` ועוד ${remaining}` : ""}`;
+  return `• ${visibleNames.join(" • ")}${remaining > 0 ? ` • ועוד ${remaining}` : ""}`;
 }
 
 function recipeAsMealFood(recipe: RecipeDefinition, servings: number): MealFood {
@@ -1073,11 +1073,6 @@ function NutritionLog() {
                         >
                           <div className="flex items-center justify-between gap-2">
                             <div className="min-w-0">
-                              <p className="text-[11px] font-bold text-primary">
-                                {group.meals.length > 1
-                                  ? `אפשרות ${optionIndex + 1}`
-                                  : "הארוחה"}
-                              </p>
                               <h4 className="truncate text-[13px] font-bold text-ink">
                                 {plannedMealFoodSummary(meal)}
                               </h4>
