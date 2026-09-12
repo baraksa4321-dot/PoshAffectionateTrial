@@ -677,68 +677,57 @@ function NutritionLog() {
         </button>
       </div>
 
-      {/* Quick Action Tools: "What should I eat now?" & "Shopping List" */}
-      <div className="order-4 mt-2 grid grid-cols-2 gap-2">
+      {/* Compact shortcuts stay immediately above the planned menu. */}
+      <div className="order-0 mt-2 grid grid-cols-3 gap-1.5">
         <button
           type="button"
           onClick={openMealScanner}
-          className="surface-card col-span-2 flex items-center gap-2 rounded-2xl border border-primary/25 bg-primary/10 p-3 text-start text-xs font-bold text-primary transition-colors hover:bg-primary/15"
+          className="surface-card flex min-w-0 items-center justify-center gap-1 rounded-xl border border-primary/25 bg-primary/10 px-1.5 py-2 text-center text-[10px] font-bold leading-tight text-primary transition-colors hover:bg-primary/15"
         >
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
-            <Camera className="h-4 w-4" />
-          </span>
-          <span className="min-w-0">
-            <span className="block">צילום ארוחה והערכה חכמה</span>
-            <span className="mt-0.5 block text-[10px] font-medium text-muted-foreground">
-              זיהוי מאכלים וערכים — תמיד באישור שלך
-            </span>
-          </span>
+          <Camera className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">זיהוי בתמונה</span>
         </button>
-        {showCalories ? (
-          <button
-            onClick={() => {
-              setSuggestionMealId(day.meals[0]?.id ?? "");
-              setShowWhatToEat(true);
-            }}
-            className="surface-card p-3 rounded-2xl border border-primary/20 bg-primary/5 flex items-center gap-2 text-primary font-bold text-xs cursor-pointer hover:bg-primary/10 transition-colors"
-          >
-            <Sparkles className="h-4 w-4 shrink-0" />
-            <span>מה לאכול עכשיו?</span>
-          </button>
-        ) : null}
-
         <button
+          type="button"
           onClick={() => setShowShoppingList(true)}
-          className="surface-card p-3 rounded-2xl border border-border/60 flex items-center gap-2 text-ink font-bold text-xs cursor-pointer hover:bg-secondary/60 transition-colors"
+          className="surface-card flex min-w-0 items-center justify-center gap-1 rounded-xl border border-border/60 px-1.5 py-2 text-center text-[10px] font-bold leading-tight text-ink transition-colors hover:bg-secondary/60"
         >
-          <ShoppingBag className="h-4 w-4 shrink-0 text-emerald-600" />
-          <span>רשימת קניות</span>
+          <ShoppingBag className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+          <span className="truncate">רשימת קניות</span>
         </button>
-      </div>
-
-      {/* Secondary recipe library */}
-      <section className="order-5 mt-2 rounded-2xl border border-border/40 bg-secondary/20">
         <button
           type="button"
           onClick={() => setShowRecipes((open) => !open)}
           aria-expanded={showRecipes}
-          className="flex w-full items-center justify-between gap-3 p-3 text-start"
+          className="surface-card flex min-w-0 items-center justify-center gap-1 rounded-xl border border-border/60 bg-secondary/20 px-1.5 py-2 text-center text-[10px] font-bold leading-tight text-ink transition-colors hover:bg-secondary/60"
         >
-          <span className="flex min-w-0 items-center gap-2">
-            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-secondary text-muted-foreground">
-              <BookOpen className="h-3.5 w-3.5" />
-            </span>
-            <span>
-              <span className="block text-[11px] font-bold text-muted-foreground">מתכונים</span>
-              <span className="block text-[10px] text-muted-foreground/80">
-                רעיונות קלים — לפתיחה לפי הצורך
-              </span>
-            </span>
-          </span>
-          <span className="text-[10px] font-semibold text-muted-foreground">
-            {showRecipes ? "סגירה" : "פתיחה"}
+          <BookOpen className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="truncate">מתכונים</span>
+        </button>
+      </div>
+
+      {showCalories ? (
+        <button
+          type="button"
+          onClick={() => {
+            setSuggestionMealId(day.meals[0]?.id ?? "");
+            setShowWhatToEat(true);
+          }}
+          className="order-0 mt-1 w-full rounded-xl border border-primary/15 bg-primary/[0.04] px-2 py-1.5 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10"
+        >
+          <span className="inline-flex items-center justify-center gap-1">
+            <Sparkles className="h-3.5 w-3.5 shrink-0" />
+            מה לאכול עכשיו?
           </span>
         </button>
+      ) : null}
+
+      {/* Recipe library content stays below the compact shortcut row. */}
+      <section
+        className={`order-0 mt-1.5 rounded-xl border border-border/40 bg-secondary/20 ${
+          showRecipes ? "" : "hidden"
+        }`}
+      >
         {showRecipes ? (
           <div className="border-t border-border/50 px-3 pb-3 pt-2">
             <div className="num-pill mb-2 flex h-9 items-center gap-2 px-2.5">
@@ -1005,14 +994,14 @@ function NutritionLog() {
               return (
                 <article
                   key={group.id}
-                  className="nutrition-planned-meal surface-card overflow-hidden border-primary/15 bg-primary/[0.035] p-4"
+                  className="nutrition-planned-meal surface-card overflow-hidden border-primary/15 bg-primary/[0.035] p-2.5"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <h3 className="font-display text-[15px] font-bold text-ink">
+                      <h3 className="font-display text-[14px] font-bold text-ink">
                         {plannedMealDisplayName(primaryMeal.name) || "ארוחה"}
                       </h3>
-                      <p className="mt-1 max-w-[18rem] text-[11px] font-semibold leading-relaxed text-primary">
+                      <p className="mt-0.5 max-w-[18rem] text-[10px] font-semibold leading-relaxed text-primary">
                         {plannedMealFoodSummary(displayedMeal)}
                       </p>
                     </div>
@@ -1020,20 +1009,20 @@ function NutritionLog() {
                       <button
                         type="button"
                         onClick={() => setMealOptionsFor(group.id)}
-                        className="inline-flex shrink-0 items-center rounded-xl border border-primary/35 bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground shadow-sm"
+                        className="inline-flex shrink-0 items-center rounded-lg border border-primary/35 bg-primary px-2.5 py-1.5 text-[10px] font-bold text-primary-foreground shadow-sm"
                       >
                         החלפת ארוחה
                       </button>
                     ) : null}
                   </div>
-                  <div className="mt-3">
+                  <div className="mt-2">
                         <div
                           key={displayedMeal.id}
-                          className="rounded-2xl border border-primary/35 bg-white/90 p-3 shadow-sm"
+                          className="rounded-xl border border-primary/35 bg-white/90 p-2 shadow-sm"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <div className="min-w-0">
-                              <h4 className="truncate text-[13px] font-bold text-ink">
+                              <h4 className="truncate text-[12px] font-bold text-ink">
                                 {plannedMealFoodSummary(displayedMeal)}
                               </h4>
                             </div>
@@ -1058,16 +1047,16 @@ function NutritionLog() {
                                 return (
                                   <div
                                     key={food.id}
-                                    className="nutrition-plan-food rounded-2xl border border-border/80 bg-white px-3 py-2.5 text-start shadow-sm"
+                                   className="nutrition-plan-food rounded-xl border border-border/80 bg-white px-2 py-1.5 text-start shadow-sm"
                                   >
                                     <div className="flex items-center justify-between gap-2">
-                                      <span className="min-w-0 truncate text-[13px] font-semibold text-ink">
+                                       <span className="min-w-0 truncate text-[12px] font-semibold text-ink">
                                         {displayFood.name}
                                       </span>
                                     </div>
                                     <p
                                       data-testid="nutrition-food-quantity"
-                                      className="mt-1 text-[12px] font-semibold text-ink"
+                                       className="mt-0.5 text-[11px] font-semibold text-ink"
                                     >
                                       {formatMeasuredFoodAmount(
                                         displayFood.servingSize,
@@ -1075,12 +1064,12 @@ function NutritionLog() {
                                       )}
                                     </p>
                                     {alternativeNames.length > 0 ? (
-                                      <p className="mt-1 text-[11px] font-semibold text-primary">
+                                       <p className="mt-0.5 text-[10px] font-semibold text-primary">
                                         או: {alternativeNames.join(" או ")}
                                       </p>
                                     ) : null}
                                     <NutritionMacroGrid
-                                      className="mt-2"
+                                       className="mt-1"
                                       showCalories={showCalories}
                                       calories={
                                         displayFood.calories *
@@ -1097,14 +1086,14 @@ function NutritionLog() {
                                         displayFood.fat * mealFoodNutritionMultiplier(displayFood)
                                       }
                                     />
-                                    <div className="mt-2 flex items-center justify-end gap-2">
+                                    <div className="mt-1 flex items-center justify-end gap-1.5">
                                       {
                                         <button
                                           type="button"
                                           onClick={() =>
                                             togglePlannedFoodEaten(date, displayedMeal.id, food.id)
                                           }
-                                          className={`rounded-xl border px-3 py-1.5 text-[11px] font-bold ${
+                                           className={`rounded-lg border px-2.5 py-1 text-[10px] font-bold ${
                                             loggedFood
                                               ? "border-primary/35 bg-primary/10 text-primary"
                                               : "border-primary bg-primary text-primary-foreground"
@@ -1123,7 +1112,7 @@ function NutritionLog() {
                                                plannedMealId: displayedMeal.id,
                                             })
                                           }
-                                          className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3.5 text-[12px] font-bold text-primary-foreground"
+                                           className="inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-2.5 text-[10px] font-bold text-primary-foreground"
                                         >
                                           <Shuffle className="h-3.5 w-3.5" />
                                           החלפת מאכל

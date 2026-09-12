@@ -38,7 +38,12 @@ function Workouts() {
   const isLegacyWeekdaySchedule = weeklyWorkouts.every((workout) => workout.weekday === undefined);
 
   return (
-    <AppShell kicker="אימונים" title="האימונים שלי" subtitle="רשימה פשוטה של כל האימונים שלך">
+    <AppShell
+      kicker="אימונים"
+      title="האימונים שלי"
+      subtitle="רשימה פשוטה של כל האימונים שלך"
+      pageClassName="workouts-page"
+    >
       <section className="mt-5 text-start">
         <div className="flex justify-end">
           <ChallengeLibrary compact />

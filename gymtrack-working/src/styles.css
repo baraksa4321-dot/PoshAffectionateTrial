@@ -719,26 +719,71 @@ body.loading-lock {
  */
 :root.night-mode,
 :root.night-mode[data-theme] {
-  --background: #303035;
-  --foreground: #ecebed;
-  --surface: #3a3a40;
-  --surface-2: #44444b;
-  --cream: #303035;
-  --card: #3a3a40;
-  --card-foreground: #ecebed;
-  --popover: #3a3a40;
-  --popover-foreground: #ecebed;
-  --ink: #ecebed;
-  --ink-soft: #d0cdd2;
-  --muted: #35353b;
-  --muted-foreground: #c0bcc3;
-  --secondary: #34343a;
-  --secondary-foreground: #ecebed;
-  --accent-foreground: #ecebed;
-  --border: #51515a;
-  --input: #55555f;
+  --background: #2b2b30;
+  --foreground: #e6e1e5;
+  --surface: #35353b;
+  --surface-2: #414148;
+  --cream: #2b2b30;
+  --card: #35353b;
+  --card-foreground: #e6e1e5;
+  --popover: #35353b;
+  --popover-foreground: #e6e1e5;
+  --ink: #e6e1e5;
+  --ink-soft: #c5bec6;
+  --muted: #303036;
+  --muted-foreground: #b6afb8;
+  --secondary: #36363d;
+  --secondary-foreground: #e6e1e5;
+  --accent-foreground: #e6e1e5;
+  --primary-foreground: #f0e8ec;
+  --border: #50505a;
+  --input: #555560;
   --ring: var(--primary);
   --shadow-color: 0 0 0;
+}
+
+/* Keep palette accents recognizable without allowing dark daytime values
+ * to become low-contrast controls on the night canvas. */
+:root.night-mode[data-theme="black"] {
+  --primary: #a9a8b1;
+  --primary-foreground: #1d1d22;
+  --secondary: #3b3b43;
+  --secondary-foreground: #e5e1e6;
+  --accent: #b7b0bb;
+  --accent-foreground: #222127;
+  --ink: #e8e5ea;
+  --ink-soft: #c8c3cc;
+}
+
+:root.night-mode[data-theme="pink"] {
+  --primary: #c78396;
+  --primary-foreground: #29181f;
+  --secondary: #49343d;
+  --secondary-foreground: #f0e5e9;
+  --accent: #d59aa9;
+  --accent-foreground: #2b1b21;
+  --ink: #eee4e8;
+  --ink-soft: #d0bdc5;
+}
+
+:root.night-mode[data-theme="cream"] {
+  --background: #2d2924;
+  --surface: #39332d;
+  --surface-2: #464038;
+  --cream: #302b25;
+  --card: #39332d;
+  --popover: #39332d;
+  --primary: #c0a47d;
+  --primary-foreground: #282119;
+  --secondary: #4a433a;
+  --secondary-foreground: #eee6dc;
+  --accent: #ceb28b;
+  --accent-foreground: #2b231a;
+  --ink: #eee7df;
+  --ink-soft: #d1c3b2;
+  --muted-foreground: #c1b5a6;
+  --border: #5a5148;
+  --input: #60564c;
 }
 
 html.night-mode,
@@ -752,9 +797,13 @@ html.night-mode #root {
 html.night-mode .bg-white,
 html.night-mode .bg-white\/60,
 html.night-mode .bg-white\/70,
-html.night-mode .bg-white\/80 {
+html.night-mode .bg-white\/80,
+html.night-mode .bg-white\/90 {
   background-color: var(--surface) !important;
   color: var(--ink) !important;
+}
+html.night-mode .text-white {
+  color: var(--primary-foreground) !important;
 }
 
 html.night-mode .bg-background {
@@ -4649,6 +4698,12 @@ html[data-loading-gender="female"] .loading-screen[data-loading-mode="plain"] .l
   scroll-padding-bottom: 6.5rem;
 }
 
+/* Personal workout pages need enough scroll tail to expose the cardio card
+ * above the floating navigation, including the iOS home-indicator inset. */
+.workouts-page .app-main {
+  padding-bottom: calc(9rem + env(safe-area-inset-bottom)) !important;
+}
+
 /* iOS may otherwise move the scroll anchor when keyboard clearance changes
    during typing. The focused-field handler performs the one intentional move. */
 html[data-keyboard-open] .page-scroll-container,
@@ -7961,8 +8016,8 @@ html.night-mode .dashboard-editorial-shell .dashboard-notice {
   }
 
   .nutrition-planned-meal {
-    padding: 0.72rem !important;
-    border-radius: 1rem !important;
+    padding: 0.52rem !important;
+    border-radius: 0.86rem !important;
   }
 
   .nutrition-planned-meal + .nutrition-planned-meal {
@@ -7978,9 +8033,9 @@ html.night-mode .dashboard-editorial-shell .dashboard-notice {
   }
 
   .nutrition-planned-meal > .flex.items-center.justify-between button {
-    height: 1.82rem !important;
-    padding-inline: 0.5rem !important;
-    font-size: 0.62rem !important;
+    height: 1.62rem !important;
+    padding-inline: 0.42rem !important;
+    font-size: 0.57rem !important;
   }
 
   .nutrition-planned-meal .mt-3.space-y-1\.5 {
@@ -7988,8 +8043,8 @@ html.night-mode .dashboard-editorial-shell .dashboard-notice {
   }
 
   .nutrition-plan-food {
-    padding: 0.48rem 0.58rem !important;
-    border-radius: 0.72rem !important;
+    padding: 0.34rem 0.46rem !important;
+    border-radius: 0.66rem !important;
   }
 
   .nutrition-plan-food + .nutrition-plan-food {
@@ -7997,17 +8052,17 @@ html.night-mode .dashboard-editorial-shell .dashboard-notice {
   }
 
   .nutrition-plan-food .mt-2.grid {
-    margin-top: 0.35rem !important;
+    margin-top: 0.22rem !important;
   }
 
   .nutrition-plan-food .mt-2.flex {
-    margin-top: 0.35rem !important;
+    margin-top: 0.22rem !important;
   }
 
   .nutrition-plan-food .mt-2.flex button {
-    height: 1.8rem !important;
-    padding-inline: 0.55rem !important;
-    font-size: 0.62rem !important;
+    height: 1.58rem !important;
+    padding-inline: 0.46rem !important;
+    font-size: 0.57rem !important;
   }
 
   [data-testid="nutrition-macro-grid"] {
