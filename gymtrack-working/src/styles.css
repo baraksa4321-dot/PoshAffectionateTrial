@@ -7733,6 +7733,7 @@ html.night-mode .dashboard-editorial-shell .dashboard-notice {
 
   .dashboard-editorial-shell .app-main {
     padding-top: 0.72rem !important;
+    padding-bottom: calc(8rem + env(safe-area-inset-bottom)) !important;
   }
 
   .dashboard-editorial-shell main > .home-card-stack {

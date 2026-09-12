@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Dumbbell } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { CardioTracker } from "@/components/CardioTracker";
 import { ChallengeLibrary } from "@/components/ChallengeLibrary";
 import { EmptyState, SectionHeader } from "@/components/ui-app/primitives";
 import { useGym } from "@/lib/gym-store";
@@ -98,6 +99,7 @@ function Workouts() {
           />
         )}
       </section>
+      <CardioTracker />
     </AppShell>
   );
 }
