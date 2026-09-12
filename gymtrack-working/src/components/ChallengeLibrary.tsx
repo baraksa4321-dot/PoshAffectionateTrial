@@ -170,7 +170,7 @@ export function ChallengeLibrary({ compact = false }: { compact?: boolean }) {
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-extrabold text-ink">{challenge.title}</span>
                       <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                        {challenge.category} · {challenge.difficulty} · {challenge.durationLabel}
+                        {challenge.category} · {challenge.durationLabel}
                       </span>
                     </span>
                     <ChevronLeft className="h-4 w-4 shrink-0 text-primary" />
@@ -230,7 +230,7 @@ function ChallengeDetail({
           </span>
           <div className="min-w-0">
             <h3 className="font-display text-lg font-extrabold text-ink">{challenge.title}</h3>
-            <p className="mt-1 text-[11px] font-bold text-primary">{challenge.category} · {challenge.difficulty} · {challenge.durationLabel}</p>
+            <p className="mt-1 text-[11px] font-bold text-primary">{challenge.category} · {challenge.durationLabel}</p>
           </div>
         </div>
       </div>
@@ -363,12 +363,7 @@ function ChallengeEditor({
       </div>
       <div className="space-y-2">
         <input value={challenge.title} onChange={(event) => onChange({ ...challenge, title: event.target.value })} placeholder="שם האתגר" className="w-full rounded-2xl border border-border/60 bg-background px-3 py-2.5 text-sm font-bold outline-none focus:border-primary" />
-        <div className="grid grid-cols-2 gap-2">
-          <select value={challenge.difficulty} onChange={(event) => onChange({ ...challenge, difficulty: event.target.value as Challenge["difficulty"] })} className="rounded-2xl border border-border/60 bg-background px-3 py-2.5 text-xs font-bold outline-none">
-            <option>מתחילים</option><option>ביניים</option><option>מתקדמים</option>
-          </select>
-          <input value={challenge.durationLabel} onChange={(event) => onChange({ ...challenge, durationLabel: event.target.value })} placeholder="משך" className="rounded-2xl border border-border/60 bg-background px-3 py-2.5 text-xs font-bold outline-none focus:border-primary" />
-        </div>
+        <input value={challenge.durationLabel} onChange={(event) => onChange({ ...challenge, durationLabel: event.target.value })} placeholder="משך" className="w-full rounded-2xl border border-border/60 bg-background px-3 py-2.5 text-xs font-bold outline-none focus:border-primary" />
         <input value={session.name} onChange={(event) => onUpdateSession({ name: event.target.value })} placeholder="שם האימון" className="w-full rounded-2xl border border-border/60 bg-background px-3 py-2.5 text-xs font-bold outline-none focus:border-primary" />
         {session.items.map((item) => (
           <div key={item.id} className="rounded-2xl border border-border/60 bg-background p-3">
