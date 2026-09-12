@@ -3,8 +3,8 @@ name: Secure runtime secrets
 description: Replit-managed secret behavior when authenticated one-off operations need to run in a project workflow.
 ---
 
-Managed secrets can appear in the workspace inventory while remaining unavailable to ShellExec and to a newly configured workflow. A secure secret request followed by a workflow restart is the reliable path for an authenticated one-off operation.
+Managed secrets can appear in the workspace inventory while remaining unavailable to Code Execution or ShellExec until the user confirms the secure request; after confirmation, the consuming shell/workflow may receive the value without exposing it to the agent.
 
-**Why:** Direct shell execution and copying values from another process are not reliable or appropriate for protected credentials; they produced missing values even though the secret keys existed.
+**Why:** `requestSecrets` never returns secret values to Code Execution, and direct shell execution can initially see an empty variable even though the key exists. Retrying after the confirmation status made the secret available to the authenticated shell operation.
 
-**How to apply:** Request missing or corrected credentials through the secure secrets flow, restart the workflow that consumes them, run the smallest scoped authenticated operation, verify the result with a fresh read, and remove any temporary workflow or script afterward.
+**How to apply:** Request missing or corrected credentials through the secure secrets flow, wait for the user confirmation status, then run the smallest scoped authenticated operation in the consuming workflow/shell. Verify with a fresh read and never print the value.
