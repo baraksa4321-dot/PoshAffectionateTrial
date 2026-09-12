@@ -125,9 +125,7 @@
       return false;
     }
 
-    const loadingScreen = document.querySelector(
-      '.loading-screen[data-loading-mode="expressive"]',
-    );
+    const loadingScreen = document.querySelector(".loading-screen");
     const image = loadingScreen?.querySelector(".loading-simple-image");
     const message = loadingScreen?.querySelector(".loading-witty-message");
     if (!(image instanceof HTMLImageElement) || !(message instanceof HTMLElement)) return false;

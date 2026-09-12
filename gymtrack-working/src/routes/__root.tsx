@@ -1072,7 +1072,7 @@ function LegacyLoadingIllustration({ variant }: { variant: number }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    scripts: [{ async: true, src: "/boot-watchdog.js?v=7" }],
+    scripts: [{ async: true, src: "/boot-watchdog.js?v=8" }],
     meta: [
       { charSet: "utf-8" },
       {
@@ -1413,7 +1413,7 @@ function RootContent() {
         // Keep the offline app shell in production, where compiled asset URLs
         // remain stable for the lifetime of a deployed build.
         void navigator.serviceWorker
-           .register("/sw.js?v=19", { updateViaCache: "none" })
+           .register("/sw.js?v=20", { updateViaCache: "none" })
           .then((registration) => registration.update())
           .catch((error) => {
             console.warn("[App shell cache unavailable]:", error);

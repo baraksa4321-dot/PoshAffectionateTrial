@@ -1,4 +1,4 @@
-const CACHE_NAME = "myroutine-app-shell-v15";
+const CACHE_NAME = "myroutine-app-shell-v16";
 const MAX_SEEN_PUSH_IDS = 100;
 const seenPushIds = new Set();
 
