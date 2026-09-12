@@ -1070,7 +1070,7 @@ function LegacyLoadingIllustration({ variant }: { variant: number }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    scripts: [{ async: true, src: "/boot-watchdog.js?v=4" }],
+    scripts: [{ async: true, src: "/boot-watchdog.js?v=5" }],
     meta: [
       { charSet: "utf-8" },
       {
@@ -1223,7 +1223,11 @@ function RootContent() {
     const storedTheme = readStoredTheme();
     if (storedTheme) applyTheme(storedTheme);
 
-    setLoadingGender(readPersistedLoadingGender(authUser?.id));
+    const persistedGender = readPersistedLoadingGender(authUser?.id);
+    setLoadingGender(persistedGender);
+    if (persistedGender) {
+      document.documentElement.dataset.loadingGender = persistedGender;
+    }
     (window as GymTrackWindow).__MY_ROUTINE_BOOTED__ = true;
     const bootUrl = new URL(window.location.href);
     if (bootUrl.searchParams.has("__myroutine_boot")) {
@@ -1231,6 +1235,14 @@ function RootContent() {
       window.history.replaceState(null, "", `${bootUrl.pathname}${bootUrl.search}${bootUrl.hash}`);
     }
   }, [authUser?.id]);
+
+  useLoadingCycleEffect(() => {
+    if (activeLoadingGender) {
+      document.documentElement.dataset.loadingGender = activeLoadingGender;
+    } else {
+      delete document.documentElement.dataset.loadingGender;
+    }
+  }, [activeLoadingGender]);
 
   useLoadingCycleEffect(() => {
     if (!canResumeInteractiveSession()) return;
@@ -1568,7 +1580,7 @@ function RootContent() {
             aria-live="polite"
             aria-label="MY routine נטען"
           >
-            {showExpressiveLoading ? (
+            <div className="loading-expressive-content">
               <>
                 <SimpleLoadingIllustration
                   key={`illustration-${loadingVariant}`}
@@ -1578,9 +1590,10 @@ function RootContent() {
                   {loadingMessageForGender(loadingMessageIndex, loadingCopyGender)}
                 </p>
               </>
-            ) : (
+            </div>
+            <div className="loading-plain-content">
               <LoadingSpinner label="טוען" />
-            )}
+            </div>
           </div>
           <img
             src="/myroutine-logo.png"

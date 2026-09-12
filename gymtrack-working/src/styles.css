@@ -1749,6 +1749,33 @@ label > input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]) {
   animation: loading-spinner-rotate 800ms linear infinite;
 }
 
+.loading-expressive-content {
+  display: none;
+}
+
+.loading-plain-content {
+  display: grid;
+  place-items: center;
+}
+
+.loading-screen[data-loading-mode="expressive"] .loading-expressive-content {
+  display: block;
+}
+
+.loading-screen[data-loading-mode="expressive"] .loading-plain-content {
+  display: none;
+}
+
+/* The boot watchdog sets this before React hydration, so returning users do
+   not see a neutral spinner while their profile is still being hydrated. */
+html[data-loading-gender="female"] .loading-screen[data-loading-mode="plain"] .loading-expressive-content {
+  display: block;
+}
+
+html[data-loading-gender="female"] .loading-screen[data-loading-mode="plain"] .loading-plain-content {
+  display: none;
+}
+
 .loading-screen::before,
 .loading-screen::after {
   position: absolute;

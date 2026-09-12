@@ -1,4 +1,32 @@
 (() => {
+  // Apply the last selected palette and loading presentation before React
+  // hydrates. This keeps the first iOS/PWA paint from flashing the defaults.
+  try {
+    const storedTheme = window.localStorage.getItem("gymtrack.theme");
+    const themes = new Set([
+      "pink",
+      "blue",
+      "green",
+      "black",
+      "lavender",
+      "peach",
+      "rose-gold",
+      "dark-brown",
+      "light-brown",
+      "cream",
+    ]);
+    if (storedTheme && themes.has(storedTheme)) {
+      document.documentElement.dataset.theme = storedTheme;
+    }
+
+    const storedGender = window.localStorage.getItem("my-routine-loading-gender-v1");
+    if (storedGender === "female" || storedGender === "male") {
+      document.documentElement.dataset.loadingGender = storedGender;
+    }
+  } catch {
+    // The app applies the same values again after hydration when storage works.
+  }
+
   const recoveryKey = "__myroutine_boot_recovery_v4";
   const isPreviewHost =
     window.location.hostname === "localhost" ||
