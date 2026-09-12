@@ -219,6 +219,51 @@ function Builder() {
                   />
                 </div>
 
+                <div className="mt-3 rounded-2xl border border-border/40 bg-secondary/50 p-3">
+                  <p className="mb-2 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+                    מנוחה לכל סט
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {Array.from({ length: Math.max(1, item.sets) }, (_, setIndex) => {
+                      const configuredSet = item.workingSets?.[setIndex];
+                      return (
+                        <Stepper
+                          key={`${item.id}-rest-${setIndex}`}
+                          label={`סט ${setIndex + 1}`}
+                          value={configuredSet?.rest ?? item.rest}
+                          min={0}
+                          step={5}
+                          suffix="ש׳"
+                          onChange={(rest) => {
+                            const workingSets = Array.from(
+                              { length: Math.max(1, item.sets) },
+                              (_, index) => {
+                                const current = item.workingSets?.[index];
+                                return {
+                                  id: current?.id ?? `${item.id}-set-${index}`,
+                                  setNumber: index + 1,
+                                  weight: current?.weight ?? item.weight,
+                                  reps: current?.reps ?? item.reps,
+                                  ...(current?.repMax !== undefined
+                                    ? { repMax: current.repMax }
+                                    : {}),
+                                  rest: current?.rest ?? item.rest,
+                                  ...(current?.notes ? { notes: current.notes } : {}),
+                                };
+                              },
+                            );
+                            workingSets[setIndex] = {
+                              ...workingSets[setIndex]!,
+                              rest: Math.max(0, rest),
+                            };
+                            patchItem(item.id, { workingSets });
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {mode === "drop" && item.dropSetConfig?.levels?.length ? (
                   <div className="mt-3 space-y-2 rounded-2xl border border-primary/20 bg-background/70 p-3">
                     {item.dropSetConfig.levels.map((level, levelIndex) => (

@@ -1,4 +1,4 @@
-import type { HistoryEntry, HistorySession } from "./gym-types";
+import type { HistoryEntry, HistorySession, WorkoutItem } from "./gym-types";
 
 function localDateKey(value: string | Date) {
   const date = value instanceof Date ? new Date(value) : new Date(value);
@@ -96,4 +96,13 @@ export function completedSetForReopenedWorkout(
   if (!completedEntry) return false;
   const completedWorkingSets = completedEntry.sets.filter((set) => !set.warmup);
   return Boolean(completedWorkingSets[workingSetIndex]);
+}
+
+export function restForWorkoutSet(
+  item: WorkoutItem | undefined,
+  workingSetIndex: number,
+  fallback = 60,
+) {
+  const configured = item?.workingSets?.[workingSetIndex]?.rest ?? item?.rest ?? fallback;
+  return Number.isFinite(configured) ? Math.max(0, configured) : fallback;
 }

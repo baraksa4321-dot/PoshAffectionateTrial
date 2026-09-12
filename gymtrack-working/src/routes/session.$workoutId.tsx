@@ -59,6 +59,7 @@ import { isSafeVideoSource } from "@/lib/url-security";
 import {
   completedSetForReopenedWorkout,
   getCurrentWeekWorkoutSession,
+  restForWorkoutSet,
 } from "@/lib/workout-session";
 import {
   loadWorkoutVideoDrafts,
@@ -769,10 +770,11 @@ function Session() {
       const setNumber = entries[ei]?.sets.slice(0, si + 1).filter((set) => !set.warmup).length ?? 1;
       setSmartTimerPosition({ exerciseIndex: ei, setNumber });
       setSmartTimerStarted(true);
-      const restSec = workout.items[ei]?.rest ?? 60;
+      const restSec = restForWorkoutSet(workout.items[ei], setNumber - 1);
       setRest(restSec);
       setRestFinished(false);
       setRestPaused(false);
+      setRestExpanded(true);
     }
   };
 
@@ -780,7 +782,10 @@ function Session() {
     if (smartTimerStarted && !smartTimerPosition) return;
     prepareRestAudio();
     const position = smartTimerPosition ?? { exerciseIndex: 0, setNumber: 1 };
-    const restSeconds = workout?.items[position.exerciseIndex]?.rest ?? 60;
+    const restSeconds = restForWorkoutSet(
+      workout?.items[position.exerciseIndex],
+      position.setNumber - 1,
+    );
     setSmartTimerPosition(position);
     setSmartTimerStarted(true);
     setRest(restSeconds);
@@ -1313,8 +1318,11 @@ function Session() {
                             <p className="break-words text-[12px] leading-snug font-semibold text-ink">
                               {s.dropSet ? `דרופ סט ${s.dropLevel ?? ""}` : setLabel}
                               <span className="ms-1 text-[11px] font-normal text-muted-foreground">
-                                · {s.weight} ק״ג · {s.targetReps}
+                                 · {s.weight} ק״ג · {s.targetReps}
                                 {s.targetRepMax ? `–${s.targetRepMax}` : ""} חזרות
+                                 {!s.warmup && item?.workingSets?.[workingIndex - 1]?.rest !== undefined
+                                   ? ` · מנוחה ${item.workingSets[workingIndex - 1]?.rest} שנ׳`
+                                   : ""}
                               </span>
                             </p>
                           </div>

@@ -978,7 +978,7 @@ function SortableItem({
                   }
                 />
               </div>
-              <div className="mt-2 grid grid-cols-2 gap-2">
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 <Stepper
                   label="חזרות מינ׳"
                   value={set.reps}
@@ -1007,6 +1007,20 @@ function SortableItem({
                         i === index
                           ? { ...current, repMax: Math.max(current.reps, repMax) }
                           : current,
+                      ),
+                    })
+                  }
+                />
+                <Stepper
+                  label="מנוחה"
+                  value={set.rest ?? item.rest}
+                  min={0}
+                  step={5}
+                  suffix="ש׳"
+                  onChange={(rest) =>
+                    onPatch(item.id, {
+                      workingSets: workingSets.map((current, i) =>
+                        i === index ? { ...current, rest: Math.max(0, rest) } : current,
                       ),
                     })
                   }

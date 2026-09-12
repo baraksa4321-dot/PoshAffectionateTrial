@@ -4,6 +4,7 @@ import {
   completedSetForReopenedWorkout,
   getCurrentWeekWorkoutSession,
   getWorkoutCompletion,
+  restForWorkoutSet,
 } from "./workout-session";
 
 const session = (date: string): HistorySession => ({
@@ -75,5 +76,46 @@ describe("weekly workout completion", () => {
     );
     expect(complete.percent).toBe(100);
     expect(complete.status).toBe("completed");
+  });
+});
+
+describe("per-set rest", () => {
+  test("prefers the configured working-set rest over the exercise default", () => {
+    expect(
+      restForWorkoutSet(
+        {
+          id: "item-1",
+          exerciseId: "exercise-1",
+          sets: 2,
+          reps: 10,
+          weight: 20,
+          rest: 90,
+          notes: "",
+          workingSets: [
+            { id: "set-1", setNumber: 1, weight: 20, reps: 10, rest: 45 },
+            { id: "set-2", setNumber: 2, weight: 20, reps: 10, rest: 75 },
+          ],
+        },
+        1,
+      ),
+    ).toBe(75);
+  });
+
+  test("falls back safely for legacy items without per-set rest", () => {
+    expect(
+      restForWorkoutSet(
+        {
+          id: "item-1",
+          exerciseId: "exercise-1",
+          sets: 1,
+          reps: 10,
+          weight: 20,
+          rest: 90,
+          notes: "",
+        },
+        0,
+      ),
+    ).toBe(90);
+    expect(restForWorkoutSet(undefined, 0)).toBe(60);
   });
 });
