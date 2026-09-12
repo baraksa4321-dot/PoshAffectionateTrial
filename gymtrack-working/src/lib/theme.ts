@@ -93,6 +93,19 @@ export const THEME_PALETTES: Array<{
 export const THEME_STORAGE_KEY = "gymtrack.theme";
 export const DEFAULT_THEME: ThemePalette = "rose-gold";
 
+const NIGHT_THEME_COLORS: Record<ThemePalette, string> = {
+  pink: "#241a1e",
+  blue: "#151e25",
+  green: "#15231d",
+  black: "#17181c",
+  lavender: "#1f1c29",
+  peach: "#281d19",
+  "rose-gold": "#281c1e",
+  "dark-brown": "#211917",
+  "light-brown": "#26201d",
+  cream: "#27231b",
+};
+
 export function defaultThemeForGender(gender: "female" | "male" | undefined): ThemePalette {
   return gender === "male" ? "black" : "rose-gold";
 }
@@ -124,6 +137,11 @@ export function applyTheme(theme: ThemePalette | undefined) {
   if (typeof document === "undefined") return;
   const safeTheme = isThemePalette(theme) ? theme : DEFAULT_THEME;
   document.documentElement.dataset["theme"] = safeTheme;
+  if (document.documentElement.classList.contains("night-mode")) {
+    document
+      .querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+      ?.setAttribute("content", NIGHT_THEME_COLORS[safeTheme]);
+  }
 }
 
 export function applyNightMode(enabled: boolean) {
@@ -131,5 +149,10 @@ export function applyNightMode(enabled: boolean) {
   document.documentElement.classList.toggle("night-mode", enabled);
   document.documentElement.style.colorScheme = enabled ? "dark" : "light";
   const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  themeColor?.setAttribute("content", enabled ? "#101116" : "#f8f7f3");
+  const theme = document.documentElement.dataset["theme"];
+  const safeTheme = isThemePalette(theme) ? theme : DEFAULT_THEME;
+  themeColor?.setAttribute(
+    "content",
+    enabled ? NIGHT_THEME_COLORS[safeTheme] : "#f8f7f3",
+  );
 }

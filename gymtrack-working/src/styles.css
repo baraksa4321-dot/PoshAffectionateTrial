@@ -7321,13 +7321,37 @@ html.night-mode[data-theme="rose-gold"] {
   --sage: #91c2a6;
 }
 html.night-mode[data-theme="dark-brown"] {
-  /* Keep Dark Brown distinct from Light Brown in night mode. The accent is
-     lifted just enough for contrast, without turning into a pale tan theme. */
-  --primary: #9a6b56;
+  /* Dark Brown keeps its espresso/cocoa surfaces in night mode instead of
+     falling back to the shared blue-charcoal canvas. */
+  --background: #211917;
+  --foreground: #f5ebe6;
+  --surface: #2b211f;
+  --surface-2: #382925;
+  --cream: #2d221f;
+  --card: #2b211f;
+  --card-foreground: #f5ebe6;
+  --popover: #302421;
+  --popover-foreground: #f5ebe6;
+  --ink: #f5ebe6;
+  --ink-soft: #ddc9c0;
+  --muted: #261e1c;
+  --muted-foreground: #cbb8af;
+  --secondary: #352724;
+  --secondary-foreground: #f5ebe6;
+  --border: #5b4339;
+  --input: #62493e;
+  --primary: #a9745c;
   --primary-foreground: #fffaf7;
-  --rose: #ad7b65;
-  --accent: #c0a184;
+  --rose: #b17d67;
+  --rose-soft: #432e29;
+  --accent: #c3a083;
+  --accent-foreground: #f1dfd5;
   --sage: #91b99c;
+  --sage-soft: #2d4035;
+  --ring: #c4957a;
+  --gradient-start: #6e4939;
+  --gradient-mid: #9d6c55;
+  --gradient-end: #3b2924;
 }
 html.night-mode[data-theme="light-brown"] {
   --primary: #d4af97;
@@ -7357,6 +7381,24 @@ html.night-mode #root {
   background: var(--background) !important;
   background-color: var(--background) !important;
   color: var(--foreground);
+}
+
+/* iOS can leave the status-bar/safe-area strip outside the app shell.
+   Keep that strip on the same night canvas instead of exposing the daytime
+   white page behind it. */
+html.night-mode body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: max(4rem, env(safe-area-inset-top));
+  background: var(--background);
+  pointer-events: none;
+  z-index: 0;
+}
+
+html.night-mode #root {
+  position: relative;
+  z-index: 1;
 }
 
 html.night-mode .app-topbar,

@@ -18,6 +18,7 @@
 - [Coach-to-trainee synchronization](coach-trainee-sync.md) — Remote coach edits need explicit trainee rehydration, without overwriting pending offline-first local changes.
 - [iOS loading scroll lock](loading-scroll-lock.md) — A fixed splash layer does not stop Safari body dragging; lock html/body overflow and touch behavior during loading.
 - [Installed PWA safe-area chrome](ios-pwa-safe-area-chrome.md) — Paint the iOS home-indicator inset through the fixed navigation wrapper to avoid an empty strip below the tab bar.
+- [Night theme safe area](night-theme-safe-area.md) — iOS can expose a daytime top strip in night mode; cover the safe area and update theme-color per selected palette.
 - [Targeted formatting checks](targeted-formatting-checks.md) — Compare formatting against the baseline and avoid broad rewrites when a large UI file already has style drift.
 - [Remote refresh draft ownership](remote-refresh-draft-ownership.md) — Keep user-edited controlled fields in a local draft so periodic server refreshes cannot erase in-progress input.
 - [Editor refresh freeze](editor-refresh-freeze.md) — Pause coach workspace refresh replacement while an editor is open; perform one silent refresh after it closes.
