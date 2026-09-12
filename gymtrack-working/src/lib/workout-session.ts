@@ -1,6 +1,6 @@
 import type { HistoryEntry, HistorySession, WorkoutItem } from "./gym-types";
 
-function localDateKey(value: string | Date) {
+export function localDateKey(value: string | Date) {
   const date = value instanceof Date ? new Date(value) : new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
@@ -113,7 +113,7 @@ export function completedSetForReopenedWorkout(
 ) {
   if (!completedEntry) return false;
   const completedWorkingSets = completedEntry.sets.filter((set) => !set.warmup);
-  return Boolean(completedWorkingSets[workingSetIndex]);
+  return Boolean(completedWorkingSets[workingSetIndex]?.done);
 }
 
 export function restForWorkoutSet(

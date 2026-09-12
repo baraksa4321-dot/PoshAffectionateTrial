@@ -68,3 +68,4 @@
 - [Secure runtime secrets](secure-runtime-secrets.md) — ShellExec may not expose managed secret values; load them through the secure flow and restart the consuming workflow.
 - [Weekly workout scheduling](weekly-workout-scheduling.md) — Explicit Sunday-first weekdays drive the dashboard; fully legacy plans retain deterministic order fallback.
 - [Hook-safe autosave effects](hook-safe-autosave-effects.md) — Route autosave effects must be declared before role/data early returns so loading states never change hook order.
+- [Dashboard calendar and session reopen](dashboard-calendar-and-session-reopen.md) — Reopening must honor saved set completion and weekly activity must use local calendar dates.

@@ -53,6 +53,7 @@ import {
   getCurrentWeekDates,
   getCurrentWeekWorkoutSession,
   getWorkoutCompletion,
+  localDateKey,
   type WeeklyWorkoutStatus,
 } from "@/lib/workout-session";
 
@@ -328,13 +329,15 @@ function Dashboard() {
     setTimeout(() => setCheckInSuccessMsg(""), 3000);
   };
 
-  // Weekly Activity calculation
-  const startOfWeek = new Date(now);
-  const dow = now.getDay();
-  startOfWeek.setDate(now.getDate() - dow);
-  startOfWeek.setHours(0, 0, 0, 0);
-
-  const thisWeek = history.filter((s) => new Date(s.date) >= startOfWeek);
+  // Weekly activity uses the same local calendar dates as the workout schedule.
+  // Comparing Date instants here can move sessions across the Sunday boundary
+  // when the stored timestamp is close to local midnight.
+  const weekStartDate = weekDays[0]?.date ?? todayKey();
+  const weekEndDate = weekDays[weekDays.length - 1]?.date ?? weekStartDate;
+  const thisWeek = history.filter((s) => {
+    const date = localDateKey(s.date);
+    return date >= weekStartDate && date <= weekEndDate;
+  });
   const volume = thisWeek.reduce(
     (sum, s) =>
       sum +
@@ -398,7 +401,6 @@ function Dashboard() {
     .sort((a, b) => {
       return (a.workout.weekday ?? a.index) - (b.workout.weekday ?? b.index);
     })
-    .slice(0, Math.min(weeklyWorkouts.length, 7))
     .map(({ workout, index }) => {
     const weekIndex = workout.weekday ?? index;
     const defaultDate = weekDays[weekIndex]?.date ?? weekDays[weekDays.length - 1]?.date ?? todayDateStr;
@@ -418,20 +420,28 @@ function Dashboard() {
   const todayScheduledWorkouts = scheduledWorkouts.filter(
     (item) => item.scheduledDate === todayDateStr,
   );
-  const workoutReminderPayload = scheduledWorkouts
-    .map(({ workout, scheduledDate }) => `${scheduledDate}:${workout.id}:${workout.name}`)
-    .join("|");
+  const workoutReminderPayload = JSON.stringify(
+    scheduledWorkouts.map(({ workout, scheduledDate }) => ({
+      id: workout.id,
+      date: scheduledDate,
+      workoutName: workout.name,
+    })),
+  );
   useEffect(() => {
     void import("@/lib/notification-service").then(
       ({ scheduleWorkoutReminders, clearWorkoutReminders }) => {
         if (!authUser?.id || !reminderPreferences?.enabled) {
           return clearWorkoutReminders();
         }
+        const reminderWorkouts = JSON.parse(workoutReminderPayload) as Array<{
+          id: string;
+          date: string;
+          workoutName: string;
+        }>;
         return scheduleWorkoutReminders(
-          scheduledWorkouts.map(({ workout, scheduledDate }) => ({
-            id: `${authUser.id}:${scheduledDate}:${workout.id}`,
-            date: scheduledDate,
-            workoutName: workout.name,
+          reminderWorkouts.map((workout) => ({
+            ...workout,
+            id: `${authUser.id}:${workout.date}:${workout.id}`,
           })),
         );
       },
@@ -773,10 +783,10 @@ function Dashboard() {
                      האימונים שלך מחכים במסך האימונים.
                    </p>
                   <Link
-                    to="/programs"
+                    to="/workouts"
                     className="press mt-auto inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-primary px-2 text-[11px] font-bold text-primary-foreground"
                   >
-                    <Plus className="h-3.5 w-3.5" /> יצירת תכנית
+                    <Plus className="h-3.5 w-3.5" /> למסך האימונים
                   </Link>
                 </Card>
               </div>

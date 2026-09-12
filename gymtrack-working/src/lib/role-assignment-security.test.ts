@@ -199,6 +199,12 @@ const migration11 = readFileSync(
   ),
   "utf8",
 );
+const migration53 = readFileSync(
+  fileURLToPath(
+    new URL("../../supabase/migrations/53_profile_and_broadcast_rls_hardening.sql", import.meta.url),
+  ),
+  "utf8",
+);
 const planBuilderPermissions = readFileSync(
   fileURLToPath(
     new URL("../../supabase/migrations/37_plan_builder_permissions.sql", import.meta.url),
@@ -382,6 +388,16 @@ describe("role and assignment SQL security contract", () => {
     expect(migration11).toContain(
       "GRANT EXECUTE ON FUNCTION public.change_user_role(UUID, TEXT) TO authenticated",
     );
+  });
+
+  test("profile approval changes and broadcast reads are hardened", () => {
+    const triggerBody = normalizedFunctionBody(migration53, "prevent_role_self_update");
+
+    expect(triggerBody).toContain("NEW.approval_status IS DISTINCT FROM OLD.approval_status");
+    expect(triggerBody).toContain("NOT public.is_owner()");
+    expect(migration53).toContain('CREATE POLICY "Recipients can read broadcasts"');
+    expect(migration53).toContain("ON public.broadcast_announcements FOR SELECT");
+    expect(migration53).toContain("TO authenticated");
   });
 
   test("owners can write plans while trainees can only read their own plans", () => {

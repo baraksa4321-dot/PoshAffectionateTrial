@@ -51,6 +51,19 @@ describe("reopening a completed workout", () => {
 
     expect(completed).toBeUndefined();
   });
+
+  test("does not mark unfinished working sets when reopening a partial session", () => {
+    const partialEntry = {
+      ...session("2026-08-31T12:00:00.000Z").entries[0]!,
+      sets: [
+        { reps: 10, weight: 20, done: true },
+        { reps: 8, weight: 20, done: false },
+      ],
+    };
+
+    expect(completedSetForReopenedWorkout(partialEntry, 0)).toBe(true);
+    expect(completedSetForReopenedWorkout(partialEntry, 1)).toBe(false);
+  });
 });
 
 describe("weekly scheduling", () => {

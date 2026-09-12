@@ -1682,24 +1682,27 @@ export function CoachDashboardPage({
   );
   const hydratedBuilderRouteKeyRef = useRef<string | null>(null);
 
-  const selectExerciseForBuilder = (
-    exerciseId: string,
-    equipmentOverride?: string,
-    cableGripOverride?: string,
-    exerciseOverride?: Exercise,
-  ) => {
-    const exercise =
-      exerciseOverride ??
-      uniqueCanonicalExercises(store.exercises).find((candidate) => candidate.id === exerciseId);
-    const options = exercise ? exerciseEquipmentOptions(exercise) : [];
-    const nextEquipment =
-      equipmentOverride && options.includes(equipmentOverride)
-        ? equipmentOverride
-        : options[0] || exercise?.equipment || "";
-    setSelectedExId(exerciseId);
-    setSelectedEquipment(nextEquipment);
-    setSelectedCableGrip(nextEquipment === "פולי / כבלים" ? cableGripOverride || "" : "");
-  };
+  const selectExerciseForBuilder = useCallback(
+    (
+      exerciseId: string,
+      equipmentOverride?: string,
+      cableGripOverride?: string,
+      exerciseOverride?: Exercise,
+    ) => {
+      const exercise =
+        exerciseOverride ??
+        uniqueCanonicalExercises(store.exercises).find((candidate) => candidate.id === exerciseId);
+      const options = exercise ? exerciseEquipmentOptions(exercise) : [];
+      const nextEquipment =
+        equipmentOverride && options.includes(equipmentOverride)
+          ? equipmentOverride
+          : options[0] || exercise?.equipment || "";
+      setSelectedExId(exerciseId);
+      setSelectedEquipment(nextEquipment);
+      setSelectedCableGrip(nextEquipment === "פולי / כבלים" ? cableGripOverride || "" : "");
+    },
+    [store.exercises],
+  );
   const [targetWeight, setTargetWeight] = useState(20);
   const [setsCount, setSetsCount] = useState(3);
   const [setWeights, setSetWeights] = useState<number[]>([20, 20, 20]);
@@ -1734,7 +1737,7 @@ export function CoachDashboardPage({
       window.sessionStorage.removeItem("gymtrack-exercise-return-context");
     }
     window.sessionStorage.removeItem("gymtrack-created-exercise-id");
-  }, [authUser?.id, store.exercises]);
+  }, [authUser?.id, selectExerciseForBuilder, store.exercises]);
   useEffect(() => {
     if (!editingDayId) setShowExerciseForm(false);
     setOpenWorkoutReportId((current) =>
@@ -2371,6 +2374,7 @@ export function CoachDashboardPage({
   }, [
     isSelfSelected,
     selectedClientId,
+    store.bodyWeightLogs,
     store.bodyMeasurements,
     store.cardioLogs,
     store.coachMessages,
@@ -2917,6 +2921,7 @@ export function CoachDashboardPage({
     initialNutritionFoodId,
     initialNutritionMealId,
     initialProgramId,
+    selectExerciseForBuilder,
     selectedClientId,
   ]);
 
@@ -2956,7 +2961,7 @@ export function CoachDashboardPage({
         else window.scrollTo(0, pending.context.scrollY);
       });
     }
-  }, [clientDetails, pendingCreatedExercise, selectedClientId]);
+  }, [clientDetails, pendingCreatedExercise, selectExerciseForBuilder, selectedClientId]);
 
   useEffect(() => {
     if (!focusedExerciseId) return;
@@ -3533,11 +3538,12 @@ export function CoachDashboardPage({
   };
 
   // Assign Prescribed Exercise to Program Day
-  const handleAddExerciseToDay = async (
-    e: React.FormEvent | null,
-    exerciseIdOverride?: string,
-    keepEditorOpen = false,
-  ) => {
+  const handleAddExerciseToDay = useCallback(
+    async (
+      e: React.FormEvent | null,
+      exerciseIdOverride?: string,
+      keepEditorOpen = false,
+    ) => {
     e?.preventDefault();
     const exerciseId = exerciseIdOverride ?? selectedExId;
     if (!isCoach || !selectedClientId || !editingDayId || !exerciseId) return;
@@ -3872,7 +3878,53 @@ export function CoachDashboardPage({
     setBodyweightAlternativeId("");
     setExerciseBuilderNotice("התרגיל נוסף. אפשר לבחור תרגיל נוסף ולהמשיך לבנות.");
     pullClientDataForCoach(selectedClientId).then(applyClientDetails);
-  };
+    },
+    [
+      approvedAltIds,
+      applyClientDetails,
+      bodyweightAlternativeId,
+      clientDetails,
+      dropLevel1RepsMax,
+      dropLevel1RepsMin,
+      dropLevel1Weight,
+      dropLevel2RepsMax,
+      dropLevel2RepsMin,
+      dropLevel2Weight,
+      dropReductionMode,
+      dropReductionValue,
+      dropRepsMax,
+      dropRepsMin,
+      editingDayId,
+      editingItemId,
+      isCoach,
+      isSelfSelected,
+      repMax,
+      repMin,
+      restSec,
+      selectedCableGrip,
+      selectedClientId,
+      selectedEquipment,
+      selectedExId,
+      setModes,
+      setNotes,
+      setRepMaxes,
+      setRepMins,
+      setRests,
+      setWeights,
+      setsCount,
+      store.exercises,
+      supersetGroup,
+      supersetPartnerId,
+      supersetPartnerWeight,
+      supersetRepsMax,
+      supersetRepsMin,
+      targetWeight,
+      techNotes,
+      warmupReps,
+      warmupRepsMax,
+      warmupWeight,
+    ],
+  );
 
   useEffect(() => {
     if (!editingItemId || !showExerciseForm || !selectedClientId) return;
@@ -3880,39 +3932,7 @@ export function CoachDashboardPage({
       void handleAddExerciseToDay(null, undefined, true);
     }, 650);
     return () => window.clearTimeout(timeoutId);
-  }, [
-    editingItemId,
-    selectedClientId,
-    showExerciseForm,
-    selectedExId,
-    selectedEquipment,
-    selectedCableGrip,
-    setsCount,
-    setModes,
-    setWeights,
-    setRepMins,
-    setRepMaxes,
-    setRests,
-    setNotes,
-    targetWeight,
-    repMin,
-    repMax,
-    restSec,
-    techNotes,
-    warmupWeight,
-    warmupReps,
-    warmupRepsMax,
-    supersetPartnerId,
-    supersetPartnerWeight,
-    supersetRepsMin,
-    supersetRepsMax,
-    dropLevel1Weight,
-    dropLevel1RepsMin,
-    dropLevel1RepsMax,
-    dropLevel2Weight,
-    dropLevel2RepsMin,
-    dropLevel2RepsMax,
-  ]);
+  }, [editingItemId, handleAddExerciseToDay, selectedClientId, showExerciseForm]);
 
   useEffect(() => {
     const exerciseId = autoAssignCreatedExerciseId;
@@ -4207,7 +4227,7 @@ export function CoachDashboardPage({
     );
   };
 
-  const savePlannedMenu = async () => {
+  const savePlannedMenu = useCallback(async () => {
     if (!isCoach || !selectedClientId || savingPlannedMenu) return;
     const saveVersion = plannedMealsDraftVersionRef.current;
     const menuSnapshot = (JSON.parse(JSON.stringify(plannedMealsDraftRef.current)) as Meal[]).map(
@@ -4270,7 +4290,7 @@ export function CoachDashboardPage({
     } finally {
       setSavingPlannedMenu(false);
     }
-  };
+  }, [isCoach, isSelfSelected, savingPlannedMenu, selectedClientId]);
 
   useEffect(() => {
     if (!isCoach || !selectedClientId || !plannedMealsDraftDirtyRef.current || savingPlannedMenu) {
@@ -4280,7 +4300,7 @@ export function CoachDashboardPage({
       void savePlannedMenu();
     }, 650);
     return () => window.clearTimeout(timeoutId);
-  }, [isCoach, plannedMeals, savingPlannedMenu, selectedClientId]);
+  }, [isCoach, plannedMeals, savePlannedMenu, savingPlannedMenu, selectedClientId]);
 
   const renderOwnerCalorieToggle = (profile: ProfileRow, compact = false) => {
     const hasProfile = profile.profile_exists !== false;
@@ -4336,6 +4356,11 @@ export function CoachDashboardPage({
       return true;
     });
   }, [clientDetails?.workouts]);
+
+  const canonicalExerciseOptions = useMemo(
+    () => uniqueCanonicalExercises(store.exercises),
+    [store.exercises],
+  );
 
   useEffect(() => {
     if (!selectedClientId) {
@@ -4425,12 +4450,7 @@ export function CoachDashboardPage({
     b.date.localeCompare(a.date),
   )[0];
   const clientBodyWeightLogs = clientDetails?.bodyWeightLogs ?? [];
-  const clientBodyMeasurements = clientDetails?.bodyMeasurements ?? [];
   const clientHabits = clientDetails?.habits ?? [];
-  const clientCoachMessages = clientDetails?.coachMessages ?? [];
-  // Kept only for the legacy JSX branch below, which is intentionally disabled
-  // after the activity cards moved into the user profile modal.
-  const hiddenClientDetails = clientDetails as ClientDetails;
   const clientNutritionNotes = (clientDetails?.nutritionDays ?? []).flatMap((day) =>
     day.meals.flatMap((meal) =>
       meal.foods
@@ -4539,10 +4559,6 @@ export function CoachDashboardPage({
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b, "he")),
   ];
-  const canonicalExerciseOptions = useMemo(
-    () => uniqueCanonicalExercises(store.exercises),
-    [store.exercises],
-  );
   const filteredExerciseOptions = exerciseQueryLower
     ? canonicalExerciseOptions.filter((exercise) =>
         [
@@ -6371,297 +6387,6 @@ export function CoachDashboardPage({
                   className="workspace-tab-content space-y-4"
                   data-active-tab={activeWorkspaceTab}
                 >
-                  {!trackingLanding &&
-                  (showClientOverview || (workspacePage && openEditor === null)) ? (
-                    <>
-                      {!trackingLanding ? (
-                        <>
-                          {clientDetails && false ? (
-                            <>
-                              {/* Coach-managed monthly measurements */}
-                              <div
-                                id="coach-checkin"
-                                className="surface-card rounded-2xl p-4 space-y-3"
-                                onChange={markMeasurementDraftDirty}
-                              >
-                                <div className="flex items-center justify-between border-b pb-2">
-                                  <div>
-                                    <h4 className="font-bold text-sm text-ink">
-                                      צ׳ק־אין ומדידות חודשיות
-                                    </h4>
-                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                      המדידות נשמרות על ידי המאמנת או הבעלים בלבד
-                                    </p>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditingMeasurements((value) => !value)}
-                                    className="flex items-center gap-1 text-xs font-bold text-primary hover:underline"
-                                  >
-                                    <Edit2 className="h-3 w-3" />
-                                    {editingMeasurements ? "ביטול" : "עריכה"}
-                                  </button>
-                                </div>
-                                {editingMeasurements ? (
-                                  <>
-                                    <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
-                                      תאריך מדידה
-                                      <input
-                                        type="date"
-                                        value={measurementDraft.date}
-                                        onChange={(event) =>
-                                          setMeasurementDraft((current) => ({
-                                            ...current,
-                                            date: event.target.value,
-                                          }))
-                                        }
-                                        className="h-10 rounded-xl border border-border bg-white px-3 text-xs text-ink"
-                                      />
-                                    </label>
-                                    <div className="grid grid-cols-2 gap-2">
-                                      {(
-                                        [
-                                          ["chestCm", "חזה (ס״מ)"],
-                                          ["waistCm", "מותניים (ס״מ)"],
-                                          ["hipsCm", "ירכיים (ס״מ)"],
-                                          ["bicepsCm", "זרוע / יד (ס״מ)"],
-                                          ["thighsCm", "ירך (ס״מ)"],
-                                          ["calvesCm", "שוק / תאומים (ס״מ)"],
-                                          ["neckCm", "צוואר (ס״מ)"],
-                                          ["bodyFatPct", "אחוז שומן (%)"],
-                                          ["muscleMassKg", "מסת שריר (ק״ג)"],
-                                        ] as const
-                                      ).map(([field, label]) => (
-                                        <label
-                                          key={field}
-                                          className="grid gap-1 text-[11px] font-bold text-muted-foreground"
-                                        >
-                                          {label}
-                                          <FreeTextInput
-                                            min="0"
-                                            step={0.1}
-                                            value={measurementDraft[field] ?? ""}
-                                            onChange={(event) =>
-                                              setMeasurementDraft((current) => ({
-                                                ...current,
-                                                [field]: event.target.value
-                                                  ? Number(event.target.value)
-                                                  : undefined,
-                                              }))
-                                            }
-                                            className="h-10 rounded-xl border border-border bg-white px-3 text-sm text-ink"
-                                          />
-                                        </label>
-                                      ))}
-                                    </div>
-                                    <textarea
-                                      value={measurementDraft.notes ?? ""}
-                                      onChange={(event) =>
-                                        setMeasurementDraft((current) => ({
-                                          ...current,
-                                          notes: event.target.value,
-                                        }))
-                                      }
-                                      placeholder="הערות המאמנת לצ׳ק־אין..."
-                                      className="min-h-16 w-full rounded-xl border border-border bg-white p-3 text-xs text-ink"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={saveClientMeasurements}
-                                      className="flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-primary text-xs font-bold text-white"
-                                    >
-                                      <Save className="h-3.5 w-3.5" /> שמירת מדידות חודשיות
-                                    </button>
-                                  </>
-                                ) : null}
-                                {measurementNotice ? (
-                                  <p className="rounded-xl bg-emerald-50 p-2 text-xs font-semibold text-emerald-800">
-                                    {measurementNotice}
-                                  </p>
-                                ) : null}
-                                {!editingMeasurements ? (
-                                  <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
-                                    {[
-                                      ["מותניים", measurementDraft.waistCm, "ס״מ"],
-                                      ["אחוז שומן", measurementDraft.bodyFatPct, "%"],
-                                      ["מסת שריר", measurementDraft.muscleMassKg, "ק״ג"],
-                                    ].map(([label, value, unit]) => (
-                                      <div key={label} className="rounded-xl bg-secondary/50 p-2">
-                                        <span className="block text-muted-foreground">{label}</span>
-                                        <strong className="text-ink">
-                                          {value !== undefined ? `${value} ${unit}` : "לא נמדד"}
-                                        </strong>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : null}
-                              </div>
-
-                              <section
-                                data-testid="coach-activity-history"
-                                className="surface-card space-y-3 rounded-2xl border border-primary/15 bg-primary/[0.025] p-4"
-                                aria-label="היסטוריית פעילות"
-                              >
-                                <div className="flex items-center justify-between border-b border-primary/15 pb-2">
-                                  <div>
-                                    <h4 className="flex items-center gap-1.5 text-sm font-bold text-ink">
-                                      <Activity className="h-4 w-4 text-primary" /> היסטוריית פעילות
-                                    </h4>
-                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                      נתונים שנמשכו עבור המתאמנת שנבחרה בלבד
-                                    </p>
-                                  </div>
-                                  <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-                                    {clientBodyWeightLogs.length +
-                                      clientBodyMeasurements.length +
-                                      clientHabits.length +
-                                      clientCoachMessages.length}{" "}
-                                    רשומות
-                                  </span>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-2 text-[11px]">
-                                  <div
-                                    data-testid="coach-activity-nutrition"
-                                    className="rounded-xl bg-white/80 p-2.5"
-                                  >
-                                    <span className="block text-muted-foreground">
-                                      תזונה אחרונה
-                                    </span>
-                                    <strong className="mt-1 block text-ink">
-                                      {hiddenClientDetails.nutritionDays[0]
-                                        ? `${hiddenClientDetails.nutritionDays[0]?.date} · יעד ${hiddenClientDetails.nutritionTargets.calories ?? "—"} קל׳`
-                                        : "אין נתונים"}
-                                    </strong>
-                                    {hiddenClientDetails.nutritionDays[0] ? (
-                                      <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                                        {hiddenClientDetails.nutritionDays[0]?.meals.reduce(
-                                          (total, meal) => total + meal.foods.length,
-                                          0,
-                                        )}{" "}
-                                        מאכלים בפועל
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                  <div
-                                    data-testid="coach-activity-cardio"
-                                    className="rounded-xl bg-white/80 p-2.5"
-                                  >
-                                    <span className="block text-muted-foreground">
-                                      אירובי אחרון
-                                    </span>
-                                    <strong className="mt-1 block text-ink">
-                                      {hiddenClientDetails.cardioLogs?.[0]
-                                        ? `${hiddenClientDetails.cardioLogs[0]?.type} · ${hiddenClientDetails.cardioLogs[0]?.durationMin} דקות`
-                                        : "אין נתונים"}
-                                    </strong>
-                                    {hiddenClientDetails.cardioLogs?.[0] ? (
-                                      <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                                        {hiddenClientDetails.cardioLogs[0]?.calories} קל׳
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                  <div
-                                    data-testid="coach-activity-weight"
-                                    className="rounded-xl bg-white/80 p-2.5"
-                                  >
-                                    <span className="block text-muted-foreground">משקל אחרון</span>
-                                    <strong className="mt-1 block text-ink">
-                                      {clientBodyWeightLogs[0]
-                                        ? `${clientBodyWeightLogs[0]?.weight} ק״ג`
-                                        : "לא נמדד"}
-                                    </strong>
-                                    {clientBodyWeightLogs[0] ? (
-                                      <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                                        {clientBodyWeightLogs[0]?.date}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                  <div
-                                    data-testid="coach-activity-measurements"
-                                    className="rounded-xl bg-white/80 p-2.5"
-                                  >
-                                    <span className="block text-muted-foreground">
-                                      מדידה אחרונה
-                                    </span>
-                                    <strong className="mt-1 block text-ink">
-                                      {clientBodyMeasurements[0]?.waistCm
-                                        ? `מותניים ${clientBodyMeasurements[0]?.waistCm} ס״מ`
-                                        : "לא נמדד"}
-                                    </strong>
-                                    {clientBodyMeasurements[0]?.bodyFatPct ? (
-                                      <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                                        שומן {clientBodyMeasurements[0]?.bodyFatPct}%
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                  <div
-                                    data-testid="coach-activity-habits"
-                                    className="rounded-xl bg-white/80 p-2.5"
-                                  >
-                                    <span className="block text-muted-foreground">
-                                      הרגלים אחרונים
-                                    </span>
-                                    <strong className="mt-1 block text-ink">
-                                      {clientHabits[0]
-                                        ? `${clientHabits[0]?.steps.toLocaleString("he-IL")} צעדים`
-                                        : "אין נתונים"}
-                                    </strong>
-                                    {clientHabits[0] ? (
-                                      <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                                        {clientHabits[0]?.workoutDone
-                                          ? "אימון בוצע"
-                                          : "אימון טרם סומן"}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                  <div
-                                    data-testid="coach-activity-messages"
-                                    className="rounded-xl bg-white/80 p-2.5"
-                                  >
-                                    <span className="block text-muted-foreground">הודעות</span>
-                                    <strong className="mt-1 block text-ink">
-                                      {clientCoachMessages.length} הודעות שמורות
-                                    </strong>
-                                    {clientCoachMessages[0] ? (
-                                      <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
-                                        {clientCoachMessages[0]?.message}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                </div>
-
-                                <div
-                                  data-testid="coach-activity-challenges"
-                                  className="rounded-xl border border-amber-200 bg-amber-50/70 p-2.5 text-[11px]"
-                                >
-                                  <span className="block font-bold text-amber-900">
-                                    אתגרים זמינים
-                                  </span>
-                                  <p className="mt-1 text-amber-900/75">
-                                    {store.challenges.length > 0
-                                      ? [
-                                          ...store.challenges.filter(
-                                            (challenge) => !challenge.isBuiltIn,
-                                          ),
-                                          ...store.challenges.filter(
-                                            (challenge) => challenge.isBuiltIn,
-                                          ),
-                                        ]
-                                          .slice(0, 3)
-                                          .map((challenge) => challenge.title)
-                                          .join(" · ")
-                                      : "אין אתגרים זמינים"}
-                                  </p>
-                                </div>
-                              </section>
-                            </>
-                          ) : null}
-                        </>
-                      ) : null}
-                    </>
-                  ) : null}
-
                   {showClientOverview && !trackingLanding ? (
                     <section className="grid gap-3 lg:grid-cols-2">
                       <div className="surface-card space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.03] p-4">
