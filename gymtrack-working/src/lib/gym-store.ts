@@ -2583,11 +2583,29 @@ export function calculateRmr(profile?: UserProfile) {
 
 /* ---------- Cardio Logger ---------- */
 
+function cardioHistorySession(log: CardioLog): HistorySession {
+  return {
+    id: `cardio-session-${log.id}`,
+    workoutId: `cardio-${log.id}`,
+    workoutName: `אירובי · ${log.type}`,
+    programName: "אירובי",
+    date: `${log.date}T12:00:00`,
+    durationSec: Math.max(0, Math.round(log.durationMin * 60)),
+    entries: [],
+    notes: `${log.durationMin} דקות${log.distanceKm ? ` · ${log.distanceKm} ק״מ` : ""}${
+      log.calories > 0 ? ` · ${log.calories} קלוריות` : ""
+    }`,
+  };
+}
+
 export function saveCardioLog(log: Omit<CardioLog, "id">) {
   const entry: CardioLog = { id: uid(), ...log };
+  const session = cardioHistorySession(entry);
   set({
     ...data,
     deletedCardioLogIds: (data.deletedCardioLogIds ?? []).filter((id) => id !== entry.id),
+    deletedSessionIds: (data.deletedSessionIds ?? []).filter((id) => id !== session.id),
+    history: [session, ...data.history.filter((existing) => existing.id !== session.id)],
     cardioLogs: [entry, ...(data.cardioLogs ?? [])],
   });
   return entry;
@@ -2598,13 +2616,21 @@ export function updateCardioLog(log: CardioLog) {
   if (!currentLogs.some((entry) => entry.id === log.id)) {
     throw new Error("Cardio entry not found");
   }
-  set({ ...data, cardioLogs: currentLogs.map((entry) => (entry.id === log.id ? log : entry)) });
+  const session = cardioHistorySession(log);
+  set({
+    ...data,
+    history: [session, ...data.history.filter((existing) => existing.id !== session.id)],
+    cardioLogs: currentLogs.map((entry) => (entry.id === log.id ? log : entry)),
+  });
 }
 
 export function deleteCardioLog(id: string) {
+  const sessionId = `cardio-session-${id}`;
   set({
     ...data,
     deletedCardioLogIds: Array.from(new Set([...(data.deletedCardioLogIds ?? []), id])),
+    deletedSessionIds: Array.from(new Set([...(data.deletedSessionIds ?? []), sessionId])),
+    history: data.history.filter((session) => session.id !== sessionId),
     cardioLogs: (data.cardioLogs ?? []).filter((entry) => entry.id !== id),
   });
 }

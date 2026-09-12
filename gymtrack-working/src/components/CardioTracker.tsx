@@ -1,5 +1,5 @@
 import { Footprints, Pencil, Trash2, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Overlay } from "@/components/ui-app/Overlay";
 import { FreeTextInput } from "@/components/FreeTextInput";
 import {
@@ -11,7 +11,6 @@ import {
   useGym,
 } from "@/lib/gym-store";
 import { CARDIO_TYPES, type CardioLog } from "@/lib/gym-types";
-import { genderText } from "@/lib/gender-copy";
 
 const DEFAULT_CARDIO_TYPE = CARDIO_TYPES[0] ?? "הליכה";
 
@@ -31,7 +30,6 @@ function cardioFieldVisibility(type: string) {
 
 export function CardioTracker() {
   const { cardioLogs, userProfile } = useGym();
-  const gender = userProfile?.gender;
   const showCalories = userProfile?.showCalories !== false;
   const [showCardioModal, setShowCardioModal] = useState(false);
   const [editingCardioId, setEditingCardioId] = useState<string | null>(null);
@@ -42,8 +40,6 @@ export function CardioTracker() {
   const [cardioDistance, setCardioDistance] = useState("");
   const [cardioError, setCardioError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const autoSavedCardioIdRef = useRef<string | null>(null);
-  const cardioSaveTimerRef = useRef<number | null>(null);
 
   const cardioDurationValue = Number(cardioDuration) || 0;
   const cardioSpeedValue = Number(cardioSpeed) || 0;
@@ -66,8 +62,12 @@ export function CardioTracker() {
     setCardioError("");
   };
 
-  const persistCardioDraft = () => {
-    if (!showCardioModal || !cardioType || cardioDurationValue <= 0) return false;
+  const saveCardioEntry = () => {
+    if (!cardioType || cardioDurationValue <= 0) {
+      setCardioError("יש להזין משך אימון כדי להוסיף את האירובי.");
+      return;
+    }
+
     const log = {
       date: todayKey(),
       type: cardioType,
@@ -77,36 +77,27 @@ export function CardioTracker() {
       ...(Number(cardioDistance) > 0 ? { distanceKm: Number(cardioDistance) } : {}),
       calories: cardioCalories,
     };
-    const targetId = editingCardioId ?? autoSavedCardioIdRef.current;
 
-    if (targetId) {
-      updateCardioLog({ id: targetId, ...log });
+    if (editingCardioId) {
+      updateCardioLog({ id: editingCardioId, ...log });
+      setSuccessMessage("אימון האירובי עודכן ונוסף לפעילות השבוע ולדוח המאמן.");
     } else {
-      autoSavedCardioIdRef.current = saveCardioLog(log).id;
+      saveCardioLog(log);
+      setSuccessMessage("אימון האירובי נוסף לפעילות השבוע ולדוח המאמן.");
     }
 
     setCardioError("");
-    setSuccessMessage(
-      editingCardioId
-        ? genderText(gender, "אימון האירובי עודכן אוטומטית.", "אימון האירובי עודכן אוטומטית.")
-        : genderText(
-            gender,
-            "אימון אירובי נוסף אוטומטית לאימונים.",
-            "אימון אירובי נוסף אוטומטית לאימונים.",
-          ),
-    );
-    return true;
+    setEditingCardioId(null);
+    setCardioType(DEFAULT_CARDIO_TYPE);
+    setCardioDuration("");
+    setCardioSpeed("");
+    setCardioIncline("");
+    setCardioDistance("");
   };
 
   const closeCardioForm = () => {
-    persistCardioDraft();
-    if (cardioSaveTimerRef.current !== null) {
-      window.clearTimeout(cardioSaveTimerRef.current);
-      cardioSaveTimerRef.current = null;
-    }
     setShowCardioModal(false);
     resetCardioForm();
-    autoSavedCardioIdRef.current = null;
     setSuccessMessage("");
   };
 
@@ -122,38 +113,9 @@ export function CardioTracker() {
     } else {
       resetCardioForm();
     }
+    setSuccessMessage("");
     setShowCardioModal(true);
   };
-
-  useEffect(() => {
-    if (!showCardioModal || !cardioType || cardioDurationValue <= 0) return;
-
-    if (cardioSaveTimerRef.current !== null) {
-      window.clearTimeout(cardioSaveTimerRef.current);
-    }
-
-    cardioSaveTimerRef.current = window.setTimeout(() => {
-      persistCardioDraft();
-      cardioSaveTimerRef.current = null;
-    }, 650);
-
-    return () => {
-      if (cardioSaveTimerRef.current !== null) {
-        window.clearTimeout(cardioSaveTimerRef.current);
-        cardioSaveTimerRef.current = null;
-      }
-    };
-  }, [
-    cardioCalories,
-    cardioDistance,
-    cardioDurationValue,
-    cardioInclineValue,
-    cardioSpeedValue,
-    cardioType,
-    editingCardioId,
-    gender,
-    showCardioModal,
-  ]);
 
   return (
     <>
@@ -276,10 +238,15 @@ export function CardioTracker() {
               </div>
             ) : null}
             {cardioError ? <p className="text-xs font-semibold text-rose-700">{cardioError}</p> : null}
+            <button
+              type="button"
+              onClick={saveCardioEntry}
+              className="h-11 w-full rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            >
+              {editingCardioId ? "עדכון אימון אירובי" : "הוספת אימון אירובי"}
+            </button>
             <p className="text-center text-[11px] font-semibold text-muted-foreground">
-              {cardioDurationValue > 0
-                ? "האימון נשמר אוטומטית לאחר הזנת הפרטים."
-                : "הזיני משך זמן כדי להוסיף את האימון אוטומטית."}
+              האימון יתווסף רק לאחר לחיצה על הכפתור.
             </p>
             {(cardioLogs ?? []).length > 0 ? (
               <div className="border-t border-border/60 pt-3">

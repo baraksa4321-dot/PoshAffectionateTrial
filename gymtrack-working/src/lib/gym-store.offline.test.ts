@@ -187,6 +187,37 @@ beforeEach(() => {
 });
 
 describe("offline store lifecycle", () => {
+  test("adds explicit cardio entries to weekly history and removes them together", async () => {
+    const store = await loadStore("cardio-history-link");
+    const saved = store.saveCardioLog({
+      date: "2026-09-12",
+      type: "הליכון",
+      durationMin: 30,
+      speed: 8,
+      incline: 2,
+      calories: 240,
+    });
+
+    expect(store.getGymStoreSnapshot().cardioLogs[0]?.id).toBe(saved.id);
+    expect(store.getGymStoreSnapshot().history).toEqual([
+      expect.objectContaining({
+        id: `cardio-session-${saved.id}`,
+        workoutId: `cardio-${saved.id}`,
+        workoutName: "אירובי · הליכון",
+        durationSec: 1_800,
+        entries: [],
+      }),
+    ]);
+
+    store.updateCardioLog({ ...saved, durationMin: 35, calories: 280 });
+    expect(store.getGymStoreSnapshot().history[0]?.durationSec).toBe(2_100);
+    expect(store.getGymStoreSnapshot().history).toHaveLength(1);
+
+    store.deleteCardioLog(saved.id);
+    expect(store.getGymStoreSnapshot().cardioLogs).toHaveLength(0);
+    expect(store.getGymStoreSnapshot().history).toHaveLength(0);
+  });
+
   test("selects one planned meal option and replaces an earlier choice in the same group", async () => {
     Object.assign(navigator, { onLine: true });
     const main = {
