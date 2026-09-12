@@ -8,6 +8,7 @@ import {
   Crown,
   Dumbbell,
   Edit2,
+  Minus,
   Plus,
   Save,
   Shield,
@@ -1814,6 +1815,7 @@ export function CoachDashboardPage({
   const plannedMealsDraftRef = useRef<Meal[]>([]);
   const plannedMealsDraftVersionRef = useRef(0);
   const [menuFoodMealId, setMenuFoodMealId] = useState<string | null>(null);
+  const [expandedMenuMealIds, setExpandedMenuMealIds] = useState<Set<string>>(new Set());
   const [menuFoodId, setMenuFoodId] = useState("");
   const [menuFoodQuery, setMenuFoodQuery] = useState("");
   const [menuFoodQuantity, setMenuFoodQuantity] = useState(1);
@@ -2795,6 +2797,7 @@ export function CoachDashboardPage({
     if (plannedMealsDraftDirtyRef.current) return;
     setPlannedMeals(clientDetails?.plannedMeals ?? []);
     setMenuFoodMealId(null);
+    setExpandedMenuMealIds(new Set());
     setMenuFoodId("");
     setMenuFoodQuery("");
     setMenuNotice("");
@@ -2911,6 +2914,14 @@ export function CoachDashboardPage({
     initialProgramId,
     selectedClientId,
   ]);
+
+  useEffect(() => {
+    if (!focusedNutritionMealId) return;
+    setExpandedMenuMealIds((current) => {
+      if (current.has(focusedNutritionMealId)) return current;
+      return new Set(current).add(focusedNutritionMealId);
+    });
+  }, [focusedNutritionMealId]);
 
   useEffect(() => {
     const pending = pendingCreatedExercise;
@@ -4001,16 +4012,18 @@ export function CoachDashboardPage({
 
   const addPlannedMeal = () => {
     if (!isCoach) return;
+    const mealId = uid();
     markPlannedMealsDraftDirty();
     setPlannedMeals((current) => [
       ...current,
       {
-        id: uid(),
+        id: mealId,
         name: `ארוחה ${current.length + 1}`,
         foods: [],
         mealOptionGroupId: uid(),
       },
     ]);
+    setExpandedMenuMealIds((current) => new Set(current).add(mealId));
   };
 
   const addPlannedMealAlternative = (mealId: string) => {
@@ -4027,6 +4040,7 @@ export function CoachDashboardPage({
         mealOptionGroupId: optionGroupId,
       };
       const sourceIndex = current.findIndex((meal) => meal.id === mealId);
+      setExpandedMenuMealIds((expanded) => new Set(expanded).add(alternative.id));
       const groupedCurrent = current.map((meal) =>
         meal.id === source.id || meal.mealOptionGroupId === optionGroupId
           ? { ...meal, mealOptionGroupId: optionGroupId }
@@ -4102,6 +4116,11 @@ export function CoachDashboardPage({
     if (!isCoach) return;
     markPlannedMealsDraftDirty();
     setPlannedMeals((current) => current.filter((meal) => meal.id !== mealId));
+    setExpandedMenuMealIds((current) => {
+      const next = new Set(current);
+      next.delete(mealId);
+      return next;
+    });
     if (menuAlternativeFor?.mealId === mealId) {
       setMenuAlternativeFor(null);
       setMenuAlternativeFoodId("");
@@ -9126,6 +9145,11 @@ export function CoachDashboardPage({
                           group.meals.some((option) => option.id === meal.id),
                         );
                         const hasMealAlternatives = (optionGroup?.meals.length ?? 0) > 1;
+                         const isMealExpanded = expandedMenuMealIds.has(meal.id);
+                         const collapsedFoodSummary = meal.foods
+                           .slice(0, 3)
+                           .map((food) => food.name)
+                           .join(" · ");
                         return (
                           <div
                             key={meal.id}
@@ -9133,6 +9157,31 @@ export function CoachDashboardPage({
                             className="rounded-xl border border-emerald-200/70 bg-white p-3"
                           >
                             <div className="flex items-center gap-2">
+                               <button
+                                 type="button"
+                                 onClick={() =>
+                                   setExpandedMenuMealIds((current) => {
+                                     const next = new Set(current);
+                                     if (next.has(meal.id)) next.delete(meal.id);
+                                     else next.add(meal.id);
+                                     return next;
+                                   })
+                                 }
+                                 className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                                 aria-expanded={isMealExpanded}
+                                 aria-label={
+                                   isMealExpanded
+                                     ? `סגור ${meal.name || "ארוחה"}`
+                                     : `פתח ${meal.name || "ארוחה"}`
+                                 }
+                                 title={isMealExpanded ? "סגור ארוחה" : "פתח ארוחה"}
+                               >
+                                 {isMealExpanded ? (
+                                   <Minus className="h-3.5 w-3.5" />
+                                 ) : (
+                                   <Plus className="h-3.5 w-3.5" />
+                                 )}
+                               </button>
                               <input
                                 value={meal.name}
                                  onChange={(event) => {
@@ -9173,15 +9222,38 @@ export function CoachDashboardPage({
                               </button>
                               <button
                                 type="button"
-                                onClick={() =>
-                                  setMenuFoodMealId(menuFoodMealId === meal.id ? null : meal.id)
-                                }
+                                 onClick={() => {
+                                   setExpandedMenuMealIds((current) =>
+                                     new Set(current).add(meal.id),
+                                   );
+                                   setMenuFoodMealId(menuFoodMealId === meal.id ? null : meal.id);
+                                 }}
                                 className="rounded-lg bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800 hover:bg-emerald-200"
                               >
                                 + מאכל
                               </button>
                             </div>
 
+                             {!isMealExpanded ? (
+                               <button
+                                 type="button"
+                                 onClick={() =>
+                                   setExpandedMenuMealIds((current) =>
+                                     new Set(current).add(meal.id),
+                                   )
+                                 }
+                                 className="mt-2 flex w-full items-center justify-between gap-2 rounded-lg bg-emerald-50/70 px-2.5 py-2 text-start text-[11px] hover:bg-emerald-100"
+                                 aria-label={`פתח את ${meal.name || "הארוחה"}`}
+                               >
+                                 <span className="min-w-0 truncate text-ink">
+                                   {collapsedFoodSummary || "אין מאכלים בארוחה עדיין"}
+                                 </span>
+                                 <span className="shrink-0 font-semibold text-emerald-800">
+                                   {meal.foods.length} מאכלים
+                                 </span>
+                               </button>
+                             ) : (
+                               <>
                              {meal.foods.length > 0 ? (
                               <div className="mt-2 space-y-1">
                                    {meal.foods.map((food, foodIndex) => {
@@ -9347,6 +9419,8 @@ export function CoachDashboardPage({
                                           </div>
                                         </div>
                                       ) : null}
+                               </>
+                             )}
                                    </div>
                                     );
                                   })}
