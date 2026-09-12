@@ -1216,7 +1216,6 @@ function RootContent() {
   // women get the expressive animated surface and men get the spinner.
   // Until a gender is known, stay on the neutral spinner rather than guessing.
   const loadingMode = loadingPresentationForGender(activeLoadingGender);
-  const showExpressiveLoading = loadingMode === "expressive";
   const loadingCopyGender = activeLoadingGender ?? "female";
 
   useLoadingCycleEffect(() => {
@@ -1226,7 +1225,7 @@ function RootContent() {
     const persistedGender = readPersistedLoadingGender(authUser?.id);
     setLoadingGender(persistedGender);
     if (persistedGender) {
-      document.documentElement.dataset.loadingGender = persistedGender;
+      document.documentElement.dataset["loadingGender"] = persistedGender;
     }
     (window as GymTrackWindow).__MY_ROUTINE_BOOTED__ = true;
     const bootUrl = new URL(window.location.href);
@@ -1238,9 +1237,9 @@ function RootContent() {
 
   useLoadingCycleEffect(() => {
     if (activeLoadingGender) {
-      document.documentElement.dataset.loadingGender = activeLoadingGender;
+      document.documentElement.dataset["loadingGender"] = activeLoadingGender;
     } else {
-      delete document.documentElement.dataset.loadingGender;
+      delete document.documentElement.dataset["loadingGender"];
     }
   }, [activeLoadingGender]);
 
