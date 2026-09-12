@@ -48,7 +48,6 @@ import {
   saveRecipe,
   searchFoods,
   todayKey,
-  togglePlannedMealEaten,
   togglePlannedFoodEaten,
   uid,
   updateMealFood,
@@ -2046,7 +2045,14 @@ function NutritionLog() {
             </div>
             <div className="space-y-2.5">
               {mealOptionsGroup.meals.map((meal) => {
-                const isSelected = day.meals.some((logged) => logged.sourcePlanId === meal.id);
+                const loggedOption = mealOptionsGroup.meals.find((option) =>
+                  day.meals.some((logged) => logged.sourcePlanId === option.id),
+                );
+                const activeMealId =
+                  selectedPlannedMealIds[mealOptionsGroup.id] ??
+                  loggedOption?.id ??
+                  mealOptionsGroup.meals[0]?.id;
+                const isSelected = activeMealId === meal.id;
                 const totals = foodTotals(meal.foods);
                 return (
                   <button
@@ -2054,7 +2060,10 @@ function NutritionLog() {
                     type="button"
                     aria-pressed={isSelected}
                     onClick={() => {
-                      if (!isSelected) togglePlannedMealEaten(date, meal.id);
+                      setSelectedPlannedMealIds((current) => ({
+                        ...current,
+                        [mealOptionsGroup.id]: meal.id,
+                      }));
                       setMealOptionsFor(null);
                     }}
                     className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-start ${
@@ -2289,7 +2298,7 @@ function NutritionMacroGrid({
         <div
           key={item.label}
           data-nutrition-macro={item.label}
-          className="nutrition-macro-cell rounded-xl border border-border/35 bg-white/60 px-1.5 py-1.5 text-center"
+          className="nutrition-macro-cell rounded-xl border-2 border-border/80 bg-white px-1.5 py-1.5 text-center shadow-sm"
         >
           <span className="block text-[9px] font-bold text-muted-foreground">{item.label}</span>
           <strong
