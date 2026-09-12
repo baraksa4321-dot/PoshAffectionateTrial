@@ -316,6 +316,7 @@ function NutritionLog() {
   } | null>(null);
   const [substituteQuery, setSubstituteQuery] = useState("");
   const [mealOptionsFor, setMealOptionsFor] = useState<string | null>(null);
+  const [selectedPlannedMealIds, setSelectedPlannedMealIds] = useState<Record<string, string>>({});
   const [balanceMode, setBalanceMode] = useState<"daily" | "weekly">("daily");
 
   // New smart nutrition features state
@@ -1083,15 +1084,17 @@ function NutritionLog() {
             {groupPlannedMeals(day.plannedMeals).map((group) => {
               const primaryMeal = group.meals[0];
               if (!primaryMeal) return null;
-              const selectedMeal = group.meals.find((meal) =>
+              const loggedOption = group.meals.find((meal) =>
                 day.meals.some((logged) => logged.sourcePlanId === meal.id),
               );
-              const displayedMeal = selectedMeal ?? primaryMeal;
+              const selectedMealId =
+                selectedPlannedMealIds[group.id] ?? loggedOption?.id ?? primaryMeal.id;
+              const displayedMeal =
+                group.meals.find((meal) => meal.id === selectedMealId) ?? primaryMeal;
               const loggedMeal = day.meals.find(
                 (logged) => logged.sourcePlanId === displayedMeal.id,
               );
               const plannedTotals = foodTotals(displayedMeal.foods);
-              const isSelected = selectedMeal?.id === displayedMeal.id;
               return (
                 <article
                   key={group.id}
@@ -1119,11 +1122,7 @@ function NutritionLog() {
                   <div className="mt-3">
                         <div
                           key={displayedMeal.id}
-                          className={`rounded-xl border p-3 ${
-                            isSelected
-                              ? "border-primary/40 bg-primary/10"
-                              : "border-primary/10 bg-white/60"
-                          }`}
+                          className="rounded-2xl border border-primary/35 bg-white/90 p-3 shadow-sm"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <div className="min-w-0">
@@ -1133,27 +1132,10 @@ function NutritionLog() {
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
                               {showCalories ? (
-                                <span className="text-[11px] font-semibold text-primary">
+                                <span className="rounded-lg border border-primary/35 bg-primary/10 px-2 py-1 text-[11px] font-bold text-primary">
                                   {Math.round(plannedTotals.calories)} קלוריות
                                 </span>
                               ) : null}
-                              <button
-                                type="button"
-                                aria-pressed={isSelected}
-                                onClick={() => togglePlannedMealEaten(date, displayedMeal.id)}
-                                className={`inline-flex h-8 items-center gap-1 rounded-xl px-2.5 text-[11px] font-bold ${
-                                  isSelected
-                                    ? "bg-emerald-600 text-white"
-                                    : "bg-primary text-primary-foreground"
-                                }`}
-                              >
-                                {isSelected ? (
-                                  <CheckSquare className="h-3.5 w-3.5" />
-                                ) : (
-                                  <Square className="h-3.5 w-3.5" />
-                                )}
-                                {isSelected ? "סימון כלא נאכל" : "סימון כארוחה נאכלת"}
-                              </button>
                             </div>
                           </div>
                           {displayedMeal.foods.length > 0 ? (
@@ -1169,7 +1151,7 @@ function NutritionLog() {
                                 return (
                                   <div
                                     key={food.id}
-                                    className="nutrition-plan-food rounded-xl bg-white/80 px-3 py-2 text-start"
+                                    className="nutrition-plan-food rounded-2xl border border-border/80 bg-white px-3 py-2.5 text-start shadow-sm"
                                   >
                                     <div className="flex items-center justify-between gap-2">
                                       <span className="min-w-0 truncate text-[13px] font-semibold text-ink">
@@ -1209,18 +1191,22 @@ function NutritionLog() {
                                       }
                                     />
                                     <div className="mt-2 flex items-center justify-end gap-2">
-                                      {isSelected || group.meals.length === 1 ? (
+                                      {
                                         <button
                                           type="button"
                                           onClick={() =>
                                             togglePlannedFoodEaten(date, displayedMeal.id, food.id)
                                           }
-                                          className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary"
+                                          className={`rounded-xl border px-3 py-1.5 text-[11px] font-bold ${
+                                            loggedFood
+                                              ? "border-primary/35 bg-primary/10 text-primary"
+                                              : "border-primary bg-primary text-primary-foreground"
+                                          }`}
                                         >
                                           {loggedFood ? "סימון כלא נאכל" : "סימון כנאכל"}
                                         </button>
-                                      ) : null}
-                                      {isSelected || group.meals.length === 1 ? (
+                                      }
+                                      {
                                         <button
                                           type="button"
                                           onClick={() =>
@@ -1235,7 +1221,7 @@ function NutritionLog() {
                                           <Shuffle className="h-3.5 w-3.5" />
                                           החלפת מאכל
                                         </button>
-                                      ) : null}
+                                      }
                                     </div>
                                   </div>
                                 );
