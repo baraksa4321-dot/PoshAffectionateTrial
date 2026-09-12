@@ -126,7 +126,9 @@
     }
 
     const loadingScreen = document.querySelector(".loading-screen");
+    const animatedImage = loadingScreen?.querySelector(".loading-simple-animation");
     const media = loadingScreen?.querySelector(".loading-simple-video");
+    const fallback = loadingScreen?.querySelector(".loading-simple-fallback");
     const message = loadingScreen?.querySelector(".loading-witty-message");
     if (!(message instanceof HTMLElement)) return false;
 
@@ -134,12 +136,25 @@
     const messageIndex = (openingCycleIndex + rotationTick) % loadingMessages.length;
     const illustration = loadingIllustrations[animationIndex];
     const cycle = openingCycleIndex + rotationTick;
-    // Keep old cached video shells moving until the new inline SVG shell
-    // hydrates, but do not make the current loading UI depend on media decode.
+    if (animatedImage instanceof HTMLImageElement) {
+      const stage = animatedImage.closest(".loading-micro-stage");
+      const nextSource = `/loading/clean/${illustration}?v=loading-safe-3&cycle=${cycle}`;
+      if (fallback instanceof HTMLImageElement) {
+        fallback.src = `/loading/${illustration.replace(".gif", ".png")}`;
+      }
+      animatedImage.onerror = () => stage?.classList.add("loading-animation-failed");
+      animatedImage.onload = () => stage?.classList.remove("loading-animation-failed");
+      if (animatedImage.getAttribute("src") !== nextSource) {
+        stage?.classList.remove("loading-animation-failed");
+        animatedImage.src = nextSource;
+      }
+    }
+    // Keep old cached video shells moving until the current animated image
+    // shell hydrates, but do not make the current loading UI depend on video.
     if (media instanceof HTMLVideoElement) {
       const animationFile = illustration.replace(".gif", ".mp4");
-      const nextSource = `/loading/tinted/${animationFile}?v=video-safe-2&cycle=${cycle}`;
-      media.poster = `/loading/tinted/${illustration}?v=poster-safe-2`;
+      const nextSource = `/loading/tinted/${animationFile}?v=video-safe-3&cycle=${cycle}`;
+      media.poster = `/loading/tinted/${illustration}?v=poster-safe-3`;
       if (media.getAttribute("src") !== nextSource) {
         media.src = nextSource;
         media.load();

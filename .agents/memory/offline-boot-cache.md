@@ -15,8 +15,8 @@ Critical loading visuals should include a small local image fallback and have th
 
 **How to apply:** Keep the fallback independent of video decode/autoplay, update it when the pre-hydration watchdog rotates the loading state, and bump the app-shell cache when the loading assets or boot markup change.
 
-The primary animated loading presentation uses the inline SVG character renderer; the legacy GIF/MP4 path is compatibility-only for stale cached shells.
+The primary animated loading presentation uses the original character/fruit sequence backed by full-canvas cleaned GIFs; the legacy MP4 path is compatibility-only for stale cached shells.
 
-**Why:** The supplied transparent animation frames can retain prior character pixels in Safari, producing visible trails even when the app shell and media request succeed.
+**Why:** The supplied transparent animation frames can retain prior character pixels in Safari, producing visible trails even when the app shell and media request succeed. Full-canvas composited GIFs preserve the original artwork without the trail.
 
-**How to apply:** Keep loading-cycle rotation mapped to the SVG pose count, and bump both the Service Worker cache and watchdog query when changing the loading markup.
+**How to apply:** Keep loading-cycle rotation mapped to the original illustration list, point both the hydrated UI and pre-hydration watchdog at the cleaned assets, and bump both the Service Worker cache and watchdog query when changing the loading markup.
