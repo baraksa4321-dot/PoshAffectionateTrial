@@ -127,6 +127,41 @@ function amountForPlannedFood(food: MealFood): ShoppingAmount {
   const serving = normalizedShoppingText(food.servingSize);
   const quantity = Math.max(0, Number(food.quantity) || 0);
 
+  // Menu portions often describe cooked rice, while the shopping item is dry
+  // rice. One part dry rice yields roughly three parts cooked rice.
+  if (/אורז.*מבושל|cooked rice/i.test(name)) {
+    const cookedGrams =
+      numericMeasure(serving, /(\d+(?:[.,]\d+)?)\s*(?:גרם|g)(?=\s|$|[),.])/i) ??
+      (/כוס|cup/i.test(serving) ? 195 : /גרם|g/i.test(serving) ? quantity : null);
+    if (cookedGrams !== null) {
+      return {
+        value: (quantity * cookedGrams) / 3,
+        unitKey: "g",
+        unitLabel: "גרם",
+        packageSizes: [500, 1000],
+        packageUnit: "שקיות",
+      };
+    }
+  }
+
+  // Keep fresh cucumber entries together even when one menu row says "מנה"
+  // and another says "יחידה". Pickled cucumber is intentionally excluded.
+  if (/מלפפון(?!\s*חמוץ)/i.test(name)) {
+    const grams = numericMeasure(
+      serving,
+      /(\d+(?:[.,]\d+)?)\s*(?:גרם|g)(?=\s|$|[),.])/i,
+    );
+    const units = numericMeasure(serving, /(\d+(?:[.,]\d+)?)\s*(?:יחיד(?:ה|ות)|unit)/i);
+    const cucumberCount = grams !== null ? (quantity * grams) / 120 : quantity * (units ?? 1);
+    return {
+      value: cucumberCount,
+      unitKey: "cucumber",
+      unitLabel: "מלפפונים",
+      packageSizes: [1],
+      packageUnit: "מלפפונים",
+    };
+  }
+
   if (
     !/חלבון ביצה|egg white/i.test(name) &&
     /(ביצ(?:ה|ים)?|egg(?:s)?)/i.test(`${name} ${serving}`)
@@ -416,6 +451,7 @@ function singularPackageUnit(unit: string) {
     שקיות: "שקית",
     צנצנות: "צנצנת",
     פלפלים: "פלפל",
+    מלפפונים: "מלפפון",
   };
   return singular[unit] ?? unit;
 }
@@ -432,7 +468,9 @@ function packageDescription(
 ) {
   return plan.packages
     .map(({ size, count }) =>
-      `${count} ${count === 1 ? singularPackageUnit(packageUnit) : packageUnit} של ${size} ${requiredUnit}`,
+      `${count} ${count === 1 ? singularPackageUnit(packageUnit) : packageUnit} של ${size} ${
+        size === 1 ? singularPackageUnit(requiredUnit) : requiredUnit
+      }`,
     )
     .join(" + ") || `${plan.packageCount} ${packageUnit}`;
 }
@@ -460,7 +498,9 @@ export function buildShoppingList(
     for (const food of meal.foods) {
       const amount = amountForPlannedFood(food);
       if (amount.value <= 0) continue;
-      const key = `${normalizedShoppingText(food.name)}::${amount.unitKey}`;
+      const normalizedName = normalizedShoppingText(food.name);
+      const shoppingName = amount.unitKey === "cucumber" ? "מלפפון" : normalizedName;
+      const key = `${shoppingName}::${amount.unitKey}`;
       const existing = items.get(key);
       if (existing) {
         existing.requiredQuantity += amount.value * days;

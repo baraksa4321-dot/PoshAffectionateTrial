@@ -172,4 +172,40 @@ describe("fixed nutrition menu and calorie visibility", () => {
       purchasePackageDescription: "2 פלפלים של 150 גרם",
     });
   });
+
+  test("converts cooked rice portions to a practical dry-rice monthly purchase", () => {
+    const [item] = buildShoppingList(
+      [planned(food("אורז לבן מבושל", "100 גרם למנה", 1))],
+      "monthly",
+    );
+
+    expect(item).toMatchObject({
+      requiredQuantity: 1000,
+      requiredUnit: "גרם",
+      purchaseQuantity: 1,
+      purchaseUnit: "שקיות",
+      purchaseContentsQuantity: 1000,
+      purchasePackageDescription: "1 שקית של 1000 גרם",
+    });
+  });
+
+  test("merges cucumber rows that use serving and unit wording", () => {
+    const items = buildShoppingList(
+      [
+        planned(food("מלפפון", "מנה", 1)),
+        planned(food("מלפפון טרי עם קליפה", "יחידה למנה", 1)),
+      ],
+      "weekly",
+    );
+
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      name: "מלפפון",
+      requiredQuantity: 14,
+      requiredUnit: "מלפפונים",
+      purchaseQuantity: 14,
+      purchaseUnit: "מלפפונים",
+      purchasePackageDescription: "14 מלפפונים של 1 מלפפון",
+    });
+  });
 });

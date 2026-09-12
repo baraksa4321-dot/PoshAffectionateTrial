@@ -24,6 +24,7 @@
 - [Nutrition target permission verification](nutrition-target-permission-verification.md) — Verify target-edit access separately from cached workspace role so offline coach editing remains intact while trainee access is blocked.
 - [Food library ownership](food-library-ownership.md) — User edits to seeded foods must become owned overrides so sync does not restore the original values.
 - [Household food portions](household-food-portions.md) — Use food-specific household units with weight-backed conversions; do not force every menu or replacement choice into grams.
+- [Hebrew shopping-unit parsing](hebrew-shopping-units.md) — Use explicit lookaheads for numeric Hebrew units; JavaScript `\b` can fail after Hebrew letters.
 - [Gram portion convention](gram-portion-convention.md) — Gram quantities require per-gram MealFood nutrition; normalize legacy whole-serving rows at save boundaries.
 - [Supabase MCP fallback](supabase-mcp-fallback.md) — If generated Supabase MCP callbacks are unavailable, the installed custom MCP connection may still expose the streamable `/mcp` endpoint.
 - [Live Supabase sync drift](live-supabase-sync-drift.md) — Local realtime mocks can pass while the live schema or publication is behind; verify both before declaring cross-user sync ready.
