@@ -30,7 +30,7 @@
   }
 
   const loadingCycleStorageKey = "my-routine-loading-cycle-v6";
-  const loadingRotationIntervalMs = 1300;
+  const loadingRotationIntervalMs = 2000;
   const loadingIllustrations = [
     "user-strawberry.gif",
     "user-tomato.gif",
