@@ -14,3 +14,9 @@ When the loading UI itself changes, bump both the Service Worker cache name and 
 **Why:** A browser can keep serving an older cached HTML shell and watchdog script even while the live dev server exposes the corrected source, making a fixed loading cycle appear unchanged.
 
 **How to apply:** Verify the live HTML references the new watchdog version and verify the live Service Worker exposes the new cache name before diagnosing the rotation logic again.
+
+The early watchdog must query the loading screen independently of its mode attribute. A female presentation can be visually enabled by the root `data-loading-gender` CSS override while the React DOM still reports `data-loading-mode="plain"` during hydration.
+
+**Why:** Restricting the selector to the expressive mode makes the pre-hydration rotation silently find no image or message, leaving the first loading pair frozen.
+
+**How to apply:** Select the shared loading-screen container, then update its expressive image/message descendants; let CSS decide which presentation is visible.
