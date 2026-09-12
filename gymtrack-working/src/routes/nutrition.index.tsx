@@ -984,7 +984,6 @@ function NutritionLog() {
         <section className="nutrition-plan-section order-1 mt-4">
           <div className="mb-3 flex items-end justify-between gap-3">
             <div>
-              <p className="section-kicker text-primary">תפריט מהמאמן</p>
               <h2 className="mt-1 font-display text-xl font-extrabold text-ink">התפריט שלך</h2>
             </div>
           </div>
