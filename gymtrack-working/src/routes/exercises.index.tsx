@@ -539,14 +539,14 @@ function Library() {
       )}
       {optionEditor ? (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-3 sm:items-center"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/35 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:items-center"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) closeOptionEditor();
           }}
         >
           <div
-            className="surface-card max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl p-5 shadow-2xl"
+            className="surface-card max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto rounded-3xl p-5 shadow-2xl"
             role="dialog"
             aria-modal="true"
             aria-labelledby="exercise-library-option-dialog-title"

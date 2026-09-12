@@ -117,6 +117,8 @@ type CoachClientRow = {
   profiles?: { email?: string | null; full_name?: string | null; weight_kg?: number | null } | null;
 };
 
+type DashboardClientFilter = "clients" | "needsPlan" | "quiet";
+
 type ExerciseBuilderReturnContext = {
   returnUrl: string;
   clientId: string | null;
@@ -1461,6 +1463,10 @@ export function CoachDashboardPage({
   const [allProfiles, setAllProfiles] = useState<ProfileRow[]>([]);
   const [clientSearch, setClientSearch] = useState("");
   const [ownerUserSearch, setOwnerUserSearch] = useState("");
+  const [dashboardClientFilter, setDashboardClientFilter] = useState<DashboardClientFilter | null>(
+    null,
+  );
+  const [dashboardClientSearch, setDashboardClientSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [showClientWorkspace, setShowClientWorkspace] = useState(false);
   const [showClientProfile, setShowClientProfile] = useState(false);
@@ -4296,15 +4302,15 @@ export function CoachDashboardPage({
     : selfClientRow
       ? [selfClientRow, ...clients]
       : clients;
+  const clientSearchQuery = clientSearch.trim().toLocaleLowerCase();
   const filteredClients = selectableClients.filter((c) => {
     const emailStr = (c.profiles?.email || "").toLowerCase();
     const nameStr = profileDisplayName(c.profiles).toLowerCase();
-    const q = clientSearch.toLowerCase();
-    return !q
-      ? isOwner || c.client_id === authUser?.id
-      : emailStr.includes(q) || nameStr.includes(q);
+    return (
+      Boolean(clientSearchQuery) &&
+      (emailStr.includes(clientSearchQuery) || nameStr.includes(clientSearchQuery))
+    );
   });
-  const clientSearchQuery = clientSearch.trim().toLocaleLowerCase();
   const clientPickerRoute = clientsOnly && workspacePage && !clientId;
   const selectedClientInfo = selectableClients.find((c) => c.client_id === selectedClientId);
   const latestProgram = clientDetails?.programs?.[clientDetails.programs.length - 1];
@@ -4589,7 +4595,7 @@ export function CoachDashboardPage({
           .filter(Boolean)
           .some((value) => value!.toLocaleLowerCase().includes(ownerUserSearchLower)),
       )
-    : allProfiles;
+    : [];
   const menuFoodResults = searchFoods(store.foods, menuFoodQuery).slice(0, 24);
   const selectedMenuFood = store.foods.find((food) => food.id === menuFoodId);
   const menuAlternativeTarget = menuAlternativeFor
@@ -4619,9 +4625,23 @@ export function CoachDashboardPage({
   const quietClients = overviewRows.filter(
     (row) =>
       !row.details.history.some(
-        (session) => Date.now() - new Date(session.date).getTime() <= 14 * 24 * 60 * 60 * 1000,
+        (session) => Date.now() - new Date(session.date).getTime() <= 7 * 24 * 60 * 60 * 1000,
       ),
   );
+  const dashboardFilterRows =
+    dashboardClientFilter === "needsPlan"
+      ? needsPlan
+      : dashboardClientFilter === "quiet"
+        ? quietClients
+        : overviewRows;
+  const dashboardSearchLower = dashboardClientSearch.trim().toLocaleLowerCase();
+  const filteredDashboardRows = dashboardSearchLower
+    ? dashboardFilterRows.filter((row) => {
+        const name = profileDisplayName(row.client.profiles).toLocaleLowerCase();
+        const email = row.client.profiles?.email?.toLocaleLowerCase() ?? "";
+        return name.includes(dashboardSearchLower) || email.includes(dashboardSearchLower);
+      })
+    : [];
   const coachCount = allProfiles.filter((profile) => profile.role === "coach").length;
   const clientCount = allProfiles.filter((profile) => profile.role === "client").length;
   const ownerCount = allProfiles.filter((profile) => profile.role === "owner").length;
@@ -4720,32 +4740,112 @@ export function CoachDashboardPage({
           </section>
 
           {isOwner ? (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <div className="surface-card flex items-center justify-between gap-1 border-primary/25 bg-primary/5 px-2 py-1.5 text-start">
+            <>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setDashboardClientFilter((current) => (current === "clients" ? null : "clients"));
+                  setDashboardClientSearch("");
+                }}
+                aria-expanded={dashboardClientFilter === "clients"}
+                className={`surface-card flex items-center justify-between gap-1 border-primary/25 bg-primary/5 px-2 py-1.5 text-start transition-colors hover:border-primary/50 hover:bg-primary/10 ${
+                  dashboardClientFilter === "clients" ? "ring-2 ring-primary/25" : ""
+                }`}
+              >
                 <p className="truncate text-[10px] font-bold text-muted-foreground">מתאמנים</p>
                 <p className="font-display text-base font-extrabold leading-none text-ink">
                   {clients.length}
                 </p>
-              </div>
-              <div className="surface-card flex items-center justify-between gap-1 border-accent/60 bg-accent/20 px-2 py-1.5 text-start">
-                <p className="truncate text-[10px] font-bold text-muted-foreground">דורשים תכנית</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDashboardClientFilter((current) =>
+                    current === "needsPlan" ? null : "needsPlan",
+                  );
+                  setDashboardClientSearch("");
+                }}
+                aria-expanded={dashboardClientFilter === "needsPlan"}
+                className={`surface-card flex items-center justify-between gap-1 border-accent/60 bg-accent/20 px-2 py-1.5 text-start transition-colors hover:border-accent hover:bg-accent/30 ${
+                  dashboardClientFilter === "needsPlan" ? "ring-2 ring-accent/30" : ""
+                }`}
+              >
+                  <p className="truncate text-[10px] font-bold text-muted-foreground">
+                    דורשים תוכנית
+                  </p>
                 <p className="font-display text-base font-extrabold leading-none text-ink">
                   {needsPlan.length}
                 </p>
-              </div>
-              <div className="surface-card flex items-center justify-between gap-1 border-border bg-surface-2 px-2 py-1.5 text-start">
-                <p className="truncate text-[10px] font-bold text-muted-foreground">שקטים 14 יום</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDashboardClientFilter((current) => (current === "quiet" ? null : "quiet"));
+                  setDashboardClientSearch("");
+                }}
+                aria-expanded={dashboardClientFilter === "quiet"}
+                className={`surface-card flex items-center justify-between gap-1 border-border bg-surface-2 px-2 py-1.5 text-start transition-colors hover:border-primary/40 hover:bg-secondary ${
+                  dashboardClientFilter === "quiet" ? "ring-2 ring-primary/20" : ""
+                }`}
+              >
+                <p className="truncate text-[10px] font-bold text-muted-foreground">
+                  שקטים למשך שבוע
+                </p>
                 <p className="font-display text-base font-extrabold leading-none text-ink">
                   {quietClients.length}
                 </p>
+              </button>
               </div>
-              <div className="surface-card flex items-center justify-between gap-1 border-purple-200 bg-purple-50/70 px-2 py-1.5 text-start">
-                <p className="truncate text-[10px] font-bold text-purple-700">משתמשים</p>
-                <p className="font-display text-base font-extrabold leading-none text-purple-950">
-                  {allProfiles.length}
+              {dashboardClientFilter ? (
+                <section className="surface-card space-y-2 border-primary/20 bg-background p-3">
+                <p className="text-[11px] font-bold text-primary">
+                  {dashboardClientFilter === "needsPlan"
+                    ? "מתאמנים שדורשים תוכנית"
+                    : dashboardClientFilter === "quiet"
+                      ? "מתאמנים שקטים למשך שבוע"
+                      : "כל המתאמנים"}
                 </p>
-              </div>
-            </div>
+                <div className="num-pill flex h-10 items-center gap-2 px-3">
+                  <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <input
+                    type="search"
+                    value={dashboardClientSearch}
+                    onChange={(event) => setDashboardClientSearch(event.target.value)}
+                    placeholder="חיפוש לפי שם או אימייל..."
+                    className="w-full bg-transparent text-xs text-ink outline-none placeholder:text-muted-foreground"
+                    aria-label="חיפוש מתאמנים בכרטיסייה"
+                    autoFocus
+                  />
+                </div>
+                {dashboardSearchLower ? (
+                  filteredDashboardRows.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {filteredDashboardRows.map((row) => (
+                        <button
+                          key={row.client.client_id}
+                          type="button"
+                          onClick={() => openClientFromOverview(row.client.client_id)}
+                          className="flex w-full items-center justify-between gap-2 rounded-xl border border-border/60 bg-white px-3 py-2 text-start text-xs transition-colors hover:border-primary/40 hover:bg-primary/[0.03]"
+                        >
+                          <span className="truncate font-bold text-ink">
+                            {profileDisplayName(row.client.profiles)}
+                          </span>
+                          <span className="shrink-0 text-[10px] text-muted-foreground">
+                            פתיחת סביבת עבודה
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="rounded-xl bg-secondary p-3 text-center text-[11px] text-muted-foreground">
+                      לא נמצאו מתאמנים מתאימים.
+                    </p>
+                  )
+                ) : null}
+                </section>
+              ) : null}
+            </>
           ) : null}
 
           <section className="surface-card space-y-2.5 border-primary/20 bg-primary/5 p-4 text-start">
@@ -5611,8 +5711,9 @@ export function CoachDashboardPage({
                     );
                   })()
                 : null}
-              <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                {filteredOwnerProfiles.map((p) => {
+               {ownerUserSearchLower ? (
+                 <div className="max-h-48 space-y-1.5 overflow-y-auto">
+                   {filteredOwnerProfiles.map((p) => {
                   const isCurrentUser = p.id === authUser?.id;
                   const canChangeRole =
                     p.role === "owner" || p.role === "coach" || p.role === "client";
@@ -5679,8 +5780,9 @@ export function CoachDashboardPage({
                       </div>
                     </div>
                   );
-                })}
-              </div>
+                   })}
+                 </div>
+               ) : null}
               {ownerCalorieNotice && !selectedOwnerProfileId ? (
                 <p className="rounded-lg bg-purple-50 p-2 text-[11px] font-semibold text-purple-900">
                   {ownerCalorieNotice}
@@ -5702,17 +5804,6 @@ export function CoachDashboardPage({
 
         {clientsOnly ? (
           <>
-            {trackingLanding ? (
-              <section className="surface-card mb-1 border-primary/15 bg-primary/5 px-2 py-1 text-start">
-                <p className="text-xs font-bold text-ink">
-                  {genderText(
-                    gender,
-                    "בחרי מתאמן כדי לצפות במעקב היומי.",
-                    "בחר מתאמן כדי לצפות במעקב היומי.",
-                  )}
-                </p>
-              </section>
-            ) : null}
             {/* Client Search & List */}
             <section
               className={`space-y-3 rounded-3xl border border-border/70 bg-surface p-4 shadow-sm ${
