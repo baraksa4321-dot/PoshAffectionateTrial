@@ -987,9 +987,6 @@ function NutritionLog() {
               <p className="section-kicker text-primary">תפריט מהמאמן</p>
               <h2 className="mt-1 font-display text-xl font-extrabold text-ink">התפריט שלך</h2>
             </div>
-            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
-              לצפייה
-            </span>
           </div>
           <div className="space-y-2.5">
             {groupPlannedMeals(day.plannedMeals).map((group) => {
