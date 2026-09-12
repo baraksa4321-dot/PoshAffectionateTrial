@@ -1,4 +1,5 @@
 import type { Meal, MealFood, NutritionDay, UserProfile } from "./gym-types";
+import { EVERYDAY_FOOD_DATABASE } from "./israeli-food-db";
 
 export type PlannedMealOptionGroup = {
   id: string;
@@ -91,9 +92,106 @@ type ShoppingAmount = {
   value: number;
   unitKey: string;
   unitLabel: string;
+  wholeUnits?: boolean;
   packageSizes?: number[];
   packageUnit?: string;
 };
+
+type CountableProduceProfile = {
+  key: string;
+  gramsPerUnit: number;
+};
+
+function isNonWholeProduce(name: string) {
+  return /מיץ|שייק|רסק|מחית|סלט|קפוא|מיובש|חמוץ|צימוק|pickle|juice|smoothie|frozen|dried|raisins/i.test(
+    name,
+  );
+}
+
+function countableProduceProfile(name: string): CountableProduceProfile | null {
+  if (isNonWholeProduce(name)) return null;
+  const profiles: Array<[RegExp, string, number]> = [
+    [/עגבניות?\s*שרי|cherry tomato/i, "cherry-tomato", 15],
+    [/מלפפון|cucumber/i, "cucumber", 120],
+    [/עגבנ|tomato/i, "tomato", 172],
+    [/גזר|carrot/i, "carrot", 136],
+    [/קישוא|zucchini/i, "zucchini", 218],
+    [/פלפל אדום|גמבה|red pepper|bell pepper/i, "red-pepper", 185],
+    [/פלפל ירוק|green pepper/i, "green-pepper", 166],
+    [/פלפל צהוב|yellow pepper/i, "yellow-pepper", 122],
+    [/פלפל חריף|צ׳ילי|צילי|chili|hot pepper/i, "hot-pepper", 14],
+    [/ברוקולי|broccoli/i, "broccoli", 500],
+    [/כרובית|cauliflower/i, "cauliflower", 800],
+    [/כרוב(?!ית)|cabbage/i, "cabbage", 1200],
+    [/חסה|lettuce/i, "lettuce", 500],
+    [/בצל ירוק|green onion|scallion/i, "green-onion", 100],
+    [/בצל|onion/i, "onion", 150],
+    [/תפוח אדמה מתוק|בטטה|sweet potato/i, "sweet-potato", 250],
+    [/תפוח אדמה|potato/i, "potato", 170],
+    [/תפוח עץ|תפוח(?! אדמה)|apple/i, "apple", 150],
+    [/בננה|banana/i, "banana", 120],
+    [/אגס|pear/i, "pear", 170],
+    [/תפוז|orange/i, "orange", 180],
+    [/קלמנטינה|מנדרינה|tangerine|mandarin/i, "mandarin", 90],
+    [/אשכולית|grapefruit/i, "grapefruit", 230],
+    [/אפרסק|peach/i, "peach", 150],
+    [/נקטרינה|nectarine/i, "nectarine", 140],
+    [/שזיף|plum/i, "plum", 70],
+    [/קיווי|kiwi/i, "kiwi", 75],
+    [/אבוקדו|avocado/i, "avocado", 200],
+    [/לימון|ליים|lemon|lime/i, "lemon", 100],
+    [/צנונית|radish/i, "radish", 32],
+    [/ענבים|grapes?/i, "grapes", 500],
+    [/אבטיח|watermelon/i, "watermelon", 3000],
+    [/מלון|melon/i, "melon", 1000],
+    [/מנגו|mango/i, "mango", 200],
+    [/אננס|pineapple/i, "pineapple", 1000],
+    [/דובדבן|דובדבנים|cherr(?:y|ies)/i, "cherry", 10],
+    [/רימון|pomegranate/i, "pomegranate", 300],
+    [/תאנה|fig/i, "fig", 50],
+    [/אפרסמון|persimmon/i, "persimmon", 120],
+    [/משמש|apricot/i, "apricot", 35],
+    [/תמר|date/i, "date", 24],
+    [/תות|strawberr|אוכמני|blueberr|פטל|raspberr/i, "berries", 15],
+    [/פאפאיה|papaya/i, "papaya", 500],
+    [/פסיפלורה|passion fruit/i, "passion-fruit", 18],
+    [/גויאבה|guava/i, "guava", 90],
+    [/חציל|eggplant|aubergine/i, "eggplant", 300],
+    [/סלק|beet/i, "beet", 150],
+    [/קולורבי|kohlrabi/i, "kohlrabi", 200],
+    [/שומר|fennel/i, "fennel", 250],
+    [/כרישה|leek/i, "leek", 90],
+    [/ארטישוק|artichoke/i, "artichoke", 120],
+    [/אספרגוס|asparagus/i, "asparagus", 90],
+    [/פטרי[ו|י]ת|mushroom|פורטבלו|שיטאקה/i, "mushrooms", 400],
+    [/תרד|spinach|ארוגולה|arugula|אנדיב|endive/i, "leafy-greens", 100],
+    [/סלרי|celery/i, "celery", 300],
+    [/עשבי תיבול|פטרוזיליה|כוסברה|שמיר|herbs?|parsley|cilantro|dill/i, "herbs", 50],
+  ];
+  const match = profiles.find(([pattern]) => pattern.test(name));
+  return match ? { key: match[1], gramsPerUnit: match[2] } : null;
+}
+
+function inferredGramPortion(name: string, serving: string) {
+  if (!/מנה|serving|portion/i.test(serving)) return null;
+  if (/אורז|rice/i.test(name)) return 75;
+  if (/פסטה|מקרוני|ספגטי|קוסקוס|בורגול|קינואה|פתיתים|pasta|couscous|bulgur|quinoa/i.test(name)) {
+    return 80;
+  }
+  if (
+    /עוף|חזה|פרגית|הודו|בשר|סטייק|קציצה|דג|סלמון|טונה|שניצל|chicken|turkey|beef|steak|fish|salmon|tuna/i.test(
+      name,
+    )
+  ) {
+    return 150;
+  }
+  return null;
+}
+
+function catalogFoodForPlannedFood(food: MealFood) {
+  if (!food.foodId) return undefined;
+  return EVERYDAY_FOOD_DATABASE.find((catalogFood) => catalogFood.id === food.foodId);
+}
 
 function normalizedShoppingText(value: string) {
   return value
@@ -126,13 +224,43 @@ function amountForPlannedFood(food: MealFood): ShoppingAmount {
   const name = normalizedShoppingText(food.name);
   const serving = normalizedShoppingText(food.servingSize);
   const quantity = Math.max(0, Number(food.quantity) || 0);
+  const catalogFood = catalogFoodForPlannedFood(food);
+  const catalogName = normalizedShoppingText(catalogFood?.name ?? "");
+  const produce = countableProduceProfile(name) ?? countableProduceProfile(catalogName);
+  const catalogIsProduce =
+    /^(?:פירות|פירות יבשים|ירקות)$/.test(catalogFood?.category ?? "") &&
+    !isNonWholeProduce(name);
+
+  if (produce || catalogIsProduce) {
+    const grams = numericMeasure(
+      serving,
+      /(\d+(?:[.,]\d+)?)\s*(?:גרם|g)(?=\s|$|[),.])/i,
+    );
+    const isExplicitUnit = /יחיד|unit/i.test(serving);
+    const gramAmount = grams ?? (/גרם|g/i.test(serving) ? quantity : null);
+    const gramsPerUnit = produce?.gramsPerUnit ?? (
+      catalogFood?.category === "פירות" ? 150 : 250
+    );
+    return {
+      value: isExplicitUnit
+        ? quantity
+        : gramAmount !== null
+          ? gramAmount / gramsPerUnit
+          : quantity,
+      unitKey: `produce:${produce?.key ?? catalogFood?.id ?? "generic"}`,
+      unitLabel: "יחידות",
+      wholeUnits: true,
+    };
+  }
 
   // Menu portions often describe cooked rice, while the shopping item is dry
   // rice. One part dry rice yields roughly three parts cooked rice.
   if (/אורז.*מבושל|cooked rice/i.test(name)) {
-    const cookedGrams =
-      numericMeasure(serving, /(\d+(?:[.,]\d+)?)\s*(?:גרם|g)(?=\s|$|[),.])/i) ??
-      (/כוס|cup/i.test(serving) ? 195 : /גרם|g/i.test(serving) ? quantity : null);
+    const explicitCookedGrams = numericMeasure(
+      serving,
+      /(\d+(?:[.,]\d+)?)\s*(?:גרם|g)(?=\s|$|[),.])/i,
+    );
+    const cookedGrams = explicitCookedGrams ?? (/כוס|cup/i.test(serving) ? 195 : null);
     if (cookedGrams !== null) {
       return {
         value: (quantity * cookedGrams) / 3,
@@ -142,23 +270,14 @@ function amountForPlannedFood(food: MealFood): ShoppingAmount {
         packageUnit: "שקיות",
       };
     }
-  }
-
-  // Keep fresh cucumber entries together even when one menu row says "מנה"
-  // and another says "יחידה". Pickled cucumber is intentionally excluded.
-  if (/מלפפון(?!\s*חמוץ)/i.test(name)) {
-    const grams = numericMeasure(
-      serving,
-      /(\d+(?:[.,]\d+)?)\s*(?:גרם|g)(?=\s|$|[),.])/i,
-    );
-    const units = numericMeasure(serving, /(\d+(?:[.,]\d+)?)\s*(?:יחיד(?:ה|ות)|unit)/i);
-    const cucumberCount = grams !== null ? (quantity * grams) / 120 : quantity * (units ?? 1);
+    // A vague "מנה" in a menu represents a practical dry-rice serving,
+    // rather than 75g of cooked rice divided a second time.
     return {
-      value: cucumberCount,
-      unitKey: "cucumber",
-      unitLabel: "מלפפונים",
-      packageSizes: [1],
-      packageUnit: "מלפפונים",
+      value: quantity * 75,
+      unitKey: "g",
+      unitLabel: "גרם",
+      packageSizes: [500, 1000],
+      packageUnit: "שקיות",
     };
   }
 
@@ -200,6 +319,24 @@ function amountForPlannedFood(food: MealFood): ShoppingAmount {
   }
   if (/גרם|g/i.test(serving)) {
     return { value: quantity, unitKey: "g", unitLabel: "גרם" };
+  }
+
+  const inferredGrams = inferredGramPortion(name, serving);
+  if (inferredGrams !== null) {
+    if (/אורז|rice/i.test(name) && /מבושל|cooked/i.test(name)) {
+      return {
+        value: (quantity * inferredGrams) / 3,
+        unitKey: "g",
+        unitLabel: "גרם",
+        packageSizes: [500, 1000],
+        packageUnit: "שקיות",
+      };
+    }
+    return {
+      value: quantity * inferredGrams,
+      unitKey: "g",
+      unitLabel: "גרם",
+    };
   }
 
   const milliliters = numericMeasure(serving, /(\d+(?:[.,]\d+)?)\s*(?:מ["״]?ל|ml)\b/i);
@@ -320,6 +457,9 @@ function packageRuleFor(
     /גמבה|פלפל אדום|פלפל צהוב|פלפל ירוק|bell pepper/i.test(name)
   ) {
     return { packageSizes: [150], packageUnit: "פלפלים" };
+  }
+  if (amount.unitKey === "g" && /פטרי[ו|י]|mushroom/i.test(name)) {
+    return { packageSizes: [400], packageUnit: "מארזים" };
   }
   if (amount.unitKey === "pita") return { packageSizes: [5, 10], packageUnit: "חבילות" };
   if (amount.unitKey === "bread-slice") return { packageSizes: [16, 20], packageUnit: "שקיות" };
@@ -487,6 +627,7 @@ export function buildShoppingList(
       unitKey: string;
       requiredUnit: string;
       requiredQuantity: number;
+      wholeUnits?: boolean;
       packageSizes?: number[];
       packageUnit?: string;
     }
@@ -499,7 +640,7 @@ export function buildShoppingList(
       const amount = amountForPlannedFood(food);
       if (amount.value <= 0) continue;
       const normalizedName = normalizedShoppingText(food.name);
-      const shoppingName = amount.unitKey === "cucumber" ? "מלפפון" : normalizedName;
+      const shoppingName = amount.unitKey === "produce:cucumber" ? "מלפפון" : normalizedName;
       const key = `${shoppingName}::${amount.unitKey}`;
       const existing = items.get(key);
       if (existing) {
@@ -514,6 +655,7 @@ export function buildShoppingList(
         unitKey: amount.unitKey,
         requiredUnit: amount.unitLabel,
         requiredQuantity: amount.value * days,
+        ...(amount.wholeUnits ? { wholeUnits: true } : {}),
         ...(packageSizes ? { packageSizes } : {}),
         ...(packageUnit ? { packageUnit } : {}),
       });
@@ -522,7 +664,9 @@ export function buildShoppingList(
 
   return Array.from(items.entries())
     .map(([key, item]) => {
-      const requiredQuantity = roundShoppingQuantity(item.requiredQuantity);
+      const requiredQuantity = item.wholeUnits
+        ? Math.ceil(item.requiredQuantity - 1e-9)
+        : roundShoppingQuantity(item.requiredQuantity);
       const packagePlan = item.packageSizes
         ? packagePlanFor(requiredQuantity, item.packageSizes)
         : null;

@@ -165,12 +165,12 @@ describe("fixed nutrition menu and calorie visibility", () => {
   test("turns fresh bell pepper weight into countable supermarket units", () => {
     const [item] = buildShoppingList([planned(food("פלפל אדום (גמבה)", "גרם למנה", 300))]);
     expect(item).toMatchObject({
-      requiredQuantity: 300,
+      requiredQuantity: 2,
+      requiredUnit: "יחידות",
       purchaseQuantity: 2,
-      purchaseUnit: "פלפלים",
-      purchaseContentsQuantity: 300,
-      purchasePackageDescription: "2 פלפלים של 150 גרם",
+      purchaseUnit: "יחידות",
     });
+    expect(item?.purchasePackageDescription).toBeUndefined();
   });
 
   test("converts cooked rice portions to a practical dry-rice monthly purchase", () => {
@@ -189,7 +189,57 @@ describe("fixed nutrition menu and calorie visibility", () => {
     });
   });
 
-  test("merges cucumber rows that use serving and unit wording", () => {
+  test("infers a dry-rice amount when the menu only says מנה", () => {
+    const [weekly] = buildShoppingList(
+      [planned(food("אורז לבן מבושל", "מנה", 1))],
+      "weekly",
+    );
+    const [monthly] = buildShoppingList(
+      [planned(food("אורז לבן מבושל", "מנה", 1))],
+      "monthly",
+    );
+
+    expect(weekly).toMatchObject({
+      requiredQuantity: 525,
+      purchaseUnit: "שקיות",
+      purchaseContentsQuantity: 1000,
+    });
+    expect(monthly).toMatchObject({
+      requiredQuantity: 2250,
+      purchaseUnit: "שקיות",
+      purchaseContentsQuantity: 2500,
+    });
+  });
+
+  test("turns broccoli portions into whole units instead of gram portions", () => {
+    const [item] = buildShoppingList(
+      [planned(food("ברוקולי", "100 גרם למנה", 1))],
+      "weekly",
+    );
+
+    expect(item).toMatchObject({
+      requiredQuantity: 2,
+      requiredUnit: "יחידות",
+      purchaseQuantity: 2,
+      purchaseUnit: "יחידות",
+    });
+    expect(item?.purchasePackageDescription).toBeUndefined();
+  });
+
+  test("uses the food catalog category for an otherwise unknown produce name", () => {
+    const [item] = buildShoppingList([
+      planned(food("פרי עונתי", "100 גרם למנה", 100, "f-israel-186")),
+    ]);
+
+    expect(item).toMatchObject({
+      requiredQuantity: 1,
+      requiredUnit: "יחידות",
+      purchaseQuantity: 1,
+      purchaseUnit: "יחידות",
+    });
+  });
+
+  test("merges cucumber rows as plain whole units", () => {
     const items = buildShoppingList(
       [
         planned(food("מלפפון", "מנה", 1)),
@@ -202,10 +252,10 @@ describe("fixed nutrition menu and calorie visibility", () => {
     expect(items[0]).toMatchObject({
       name: "מלפפון",
       requiredQuantity: 14,
-      requiredUnit: "מלפפונים",
+      requiredUnit: "יחידות",
       purchaseQuantity: 14,
-      purchaseUnit: "מלפפונים",
-      purchasePackageDescription: "14 מלפפונים של 1 מלפפון",
+      purchaseUnit: "יחידות",
     });
+    expect(items[0]?.purchasePackageDescription).toBeUndefined();
   });
 });
