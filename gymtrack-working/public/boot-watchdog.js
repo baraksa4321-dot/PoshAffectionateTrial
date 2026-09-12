@@ -127,6 +127,7 @@
 
     const loadingScreen = document.querySelector(".loading-screen");
     const media = loadingScreen?.querySelector(".loading-simple-video");
+    const fallback = loadingScreen?.querySelector(".loading-simple-fallback");
     const message = loadingScreen?.querySelector(".loading-witty-message");
     if (!(media instanceof HTMLVideoElement) || !(message instanceof HTMLElement)) return false;
 
@@ -140,6 +141,9 @@
     if (media.getAttribute("src") !== nextSource) {
       media.src = nextSource;
       media.load();
+    }
+    if (fallback instanceof HTMLImageElement) {
+      fallback.src = `/loading/${illustration}`;
     }
     void media.play().catch(() => {
       // Muted inline video can need one more attempt after the first paint.

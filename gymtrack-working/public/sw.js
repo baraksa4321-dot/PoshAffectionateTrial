@@ -1,6 +1,23 @@
-const CACHE_NAME = "myroutine-app-shell-v16";
+const CACHE_NAME = "myroutine-app-shell-v17";
 const MAX_SEEN_PUSH_IDS = 100;
 const seenPushIds = new Set();
+const OFFLINE_BOOT_ASSETS = [
+  "./myroutine-logo.png",
+  "./brand-icon-192.png",
+  "./loading/user-strawberry.png",
+  "./loading/user-tomato.png",
+  "./loading/user-character-01.png",
+  "./loading/user-character-02.png",
+  "./loading/user-character-03.png",
+  "./loading/user-character-04.png",
+  "./loading/user-character-05.png",
+  "./loading/user-character-06.png",
+  "./loading/user-character-07.png",
+  "./loading/user-character-08.png",
+  "./loading/user-character-09.png",
+  "./loading/user-character-10.png",
+  "./loading/user-lemon.png",
+];
 
 function openFirebaseConfigDb() {
   return new Promise((resolve, reject) => {
@@ -59,6 +76,11 @@ self.addEventListener("install", (event) => {
         // The normal fetch handler can populate the shell on the first
         // online visit if the proxy rejects the install-time request.
       }
+      await Promise.all(
+        OFFLINE_BOOT_ASSETS.map((asset) =>
+          cache.add(new URL(asset, self.registration.scope).toString()).catch(() => undefined),
+        ),
+      );
     })(),
   );
 });

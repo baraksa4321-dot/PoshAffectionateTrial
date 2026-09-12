@@ -2695,13 +2695,33 @@ html[data-loading-gender="female"] .loading-screen[data-loading-mode="plain"] .l
   height: 138px;
 }
 
+.loading-simple-fallback {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  opacity: 1;
+  transition: opacity 160ms ease;
+}
+
 .loading-simple-video {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  opacity: 0;
   background: #f7f1ec;
   filter: saturate(1.04);
   mix-blend-mode: normal;
   /* Safari can paint a native start button over an autoplaying inline video.
      Keep the original animation and suppress only that browser chrome. */
   -webkit-appearance: none;
+}
+
+.loading-video-ready .loading-simple-fallback {
+  opacity: 0;
+}
+
+.loading-video-ready .loading-simple-video {
+  opacity: 1;
 }
 
 .loading-simple-video::-webkit-media-controls,

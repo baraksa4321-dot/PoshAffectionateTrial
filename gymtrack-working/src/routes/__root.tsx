@@ -510,11 +510,23 @@ function SimpleLoadingIllustration({
   variant: number;
   cycle: number;
 }) {
+  const [videoReady, setVideoReady] = useState(false);
   const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length]!;
   const animationFile = illustration.file.replace(".png", ".mp4");
   const posterFile = illustration.file.replace(".png", ".gif");
   return (
-    <div className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4}`}>
+    <div
+      className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4} ${
+        videoReady ? "loading-video-ready" : ""
+      }`}
+    >
+      <img
+        className="loading-simple-image loading-simple-fallback"
+        src={`/loading/${illustration.file}`}
+        alt=""
+        aria-hidden="true"
+        suppressHydrationWarning
+      />
       <video
         key={`loading-video-${cycle}`}
         className="loading-simple-image loading-simple-video"
@@ -525,7 +537,10 @@ function SimpleLoadingIllustration({
         muted
         playsInline
         preload="auto"
+        onCanPlay={() => setVideoReady(true)}
+        onError={() => setVideoReady(false)}
         onLoadedData={(event) => {
+          setVideoReady(true);
           void event.currentTarget.play().catch(() => {
             // Safari can defer muted autoplay until the first media event.
           });
@@ -1093,7 +1108,7 @@ function LegacyLoadingIllustration({ variant }: { variant: number }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    scripts: [{ async: true, src: "/boot-watchdog.js?v=10" }],
+    scripts: [{ async: true, src: "/boot-watchdog.js?v=11" }],
     meta: [
       { charSet: "utf-8" },
       {
@@ -1434,7 +1449,7 @@ function RootContent() {
         // Keep the offline app shell in production, where compiled asset URLs
         // remain stable for the lifetime of a deployed build.
         void navigator.serviceWorker
-           .register("/sw.js?v=20", { updateViaCache: "none" })
+           .register("/sw.js?v=21", { updateViaCache: "none" })
           .then((registration) => registration.update())
           .catch((error) => {
             console.warn("[App shell cache unavailable]:", error);
