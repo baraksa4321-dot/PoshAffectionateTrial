@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   LOADING_MESSAGES,
+  LOADING_ROTATION_INTERVAL_MS,
   loadingCycleIndexes,
   loadingPresentationForGender,
   readLoadingCycle,
@@ -9,6 +10,10 @@ import {
 } from "./loading-copy";
 
 describe("loading cycle", () => {
+  test("rotates to the next animation and message every two seconds", () => {
+    expect(LOADING_ROTATION_INTERVAL_MS).toBe(2_000);
+  });
+
   test("starts at zero and rejects invalid persisted values", () => {
     expect(readLoadingCycle(null)).toBe(0);
     expect(readLoadingCycle("")).toBe(0);

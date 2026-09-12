@@ -38,6 +38,7 @@ import {
   LOADING_CYCLE_STORAGE_KEY,
   LOADING_GENDER_EVENT,
   LOADING_GENDER_STORAGE_KEY,
+  LOADING_ROTATION_INTERVAL_MS,
   loadingCycleIndexes,
   loadingMessageForGender,
   loadingPresentationForGender,
@@ -1380,6 +1381,11 @@ function RootContent() {
   }, [isLoadingScreen]);
 
   useEffect(() => {
+    if (!isLoadingScreen) {
+      setLoadingRotationTick(0);
+      return;
+    }
+
     document.documentElement.lang = "he";
     document.documentElement.dir = "rtl";
     document.body.dir = "rtl";
@@ -1415,11 +1421,11 @@ function RootContent() {
     }
     const illustrationTimer = window.setInterval(() => {
       setLoadingRotationTick((current) => current + 1);
-    }, 1_500);
+    }, LOADING_ROTATION_INTERVAL_MS);
     return () => {
       window.clearInterval(illustrationTimer);
     };
-  }, []);
+  }, [isLoadingScreen]);
 
   useEffect(() => {
     if (!isLoadingScreen) {
