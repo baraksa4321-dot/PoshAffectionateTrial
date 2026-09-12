@@ -42,6 +42,7 @@ const USER_CACHE_PREFIX = "gymtrack.v1.user.";
 const USER_BOOT_CACHE_PREFIX = "gymtrack.v1.boot.";
 const USER_PENDING_PREFIX = "gymtrack.v1.pending.";
 const USER_REMINDER_PREFERENCES_PREFIX = "gymtrack.v1.reminders.";
+const OFFLINE_RESUME_USER_KEY = "gymtrack.v1.lastAuthenticatedUser";
 // Supabase auth and the initial profile/data hydration may cross several
 // network boundaries. Four seconds caused valid logins on slower connections
 // to be reported as permission failures before the request could finish.
@@ -571,6 +572,7 @@ const seed = (): GymData => {
 let data: GymData = seed();
 let hydrated = false;
 let currentUser: { id: string; email?: string } | null = null;
+let offlineResumeUser: { id: string; email?: string } | null = null;
 let authStatus: "loading" | "authenticated" | "unauthenticated" = "loading";
 let profileHydrationStatus: "loading" | "ready" | "error" = "loading";
 let profileHydrationError = "";
@@ -881,6 +883,42 @@ function drainQueuedRealtimeRefresh() {
 
 function browserIsOffline() {
   return typeof navigator !== "undefined" && navigator.onLine === false;
+}
+
+function readOfflineResumeUser() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(OFFLINE_RESUME_USER_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<{ id: string; email: string }>;
+    if (typeof parsed.id !== "string" || !parsed.id.trim()) return null;
+    return {
+      id: parsed.id,
+      ...(typeof parsed.email === "string" ? { email: parsed.email } : {}),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function rememberAuthenticatedUser(user: { id: string; email?: string }) {
+  offlineResumeUser = null;
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(OFFLINE_RESUME_USER_KEY, JSON.stringify(user));
+  } catch {
+    // Supabase's own persisted session remains the primary auth source.
+  }
+}
+
+function clearRememberedAuthenticatedUser() {
+  offlineResumeUser = null;
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(OFFLINE_RESUME_USER_KEY);
+  } catch {
+    // The in-memory fallback is cleared even when storage is unavailable.
+  }
 }
 
 function isNetworkFailure(message?: string) {
@@ -1222,6 +1260,7 @@ function load() {
 
   // Setup Supabase Auth state listener
   if (typeof window !== "undefined") {
+    offlineResumeUser = browserIsOffline() ? readOfflineResumeUser() : null;
     window.addEventListener("offline", () => {
       if (!currentUser) return;
       syncStatus = "offline";
@@ -1261,6 +1300,23 @@ function load() {
     }
 
     let authTimeoutId: number | null = null;
+    const resumeCachedUserOffline = () => {
+      if (!browserIsOffline() || !offlineResumeUser) return false;
+      const cached = resetDataForUser(offlineResumeUser.id);
+      if (!hasUsableOfflineCache(cached.data)) {
+        clearRememberedAuthenticatedUser();
+        data = seed();
+        return false;
+      }
+
+      const resumedUser = offlineResumeUser;
+      currentUser = resumedUser;
+      authResolved = true;
+      authResolutionAwaitingInitialEvent = false;
+      authStatus = "authenticated";
+      void startUserHydration(resumedUser.id, cached.data, cached.cacheKind);
+      return true;
+    };
     const authRequest = Promise.race([
       supabase.auth.getSession(),
       new Promise<{
@@ -1279,6 +1335,7 @@ function load() {
     ])
       .then(({ data: { session }, error }) => {
         if (error) {
+          if (resumeCachedUserOffline()) return;
           // A timeout/error must not leave INITIAL_SESSION ignored forever.
           // Supabase can still deliver the real session through the auth
           // listener after a slow getSession request finishes.
@@ -1291,6 +1348,7 @@ function load() {
           listeners.forEach((l) => l());
           return;
         }
+        if (!session?.user && resumeCachedUserOffline()) return;
         currentUser = session?.user
           ? {
               id: session.user.id,
@@ -1301,6 +1359,10 @@ function load() {
         authResolutionAwaitingInitialEvent = false;
         authStatus = session?.user ? "authenticated" : "unauthenticated";
         if (session?.user) {
+          rememberAuthenticatedUser({
+            id: session.user.id,
+            ...(session.user.email ? { email: session.user.email } : {}),
+          });
           const cached = resetDataForUser(session.user.id);
           startPlanRealtime(session.user.id);
           void startUserHydration(session.user.id, cached.data, cached.cacheKind);
@@ -1309,6 +1371,7 @@ function load() {
         notifyListeners();
       })
       .catch(() => {
+        if (resumeCachedUserOffline()) return;
         authResolved = true;
         authResolutionAwaitingInitialEvent = true;
         currentUser = null;
@@ -1324,6 +1387,9 @@ function load() {
     });
 
     supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === "INITIAL_SESSION" && !session?.user && offlineResumeUser && browserIsOffline()) {
+        return;
+      }
       if (
         _event === "INITIAL_SESSION" &&
         (!authResolved || !authResolutionAwaitingInitialEvent)
@@ -1349,6 +1415,10 @@ function load() {
       authStatus = session?.user ? "authenticated" : "unauthenticated";
 
       if (session?.user) {
+        rememberAuthenticatedUser({
+          id: session.user.id,
+          ...(session.user.email ? { email: session.user.email } : {}),
+        });
         // If user changed, reset memory state first to avoid leaking previous user data
         if (prevUserId && prevUserId !== session.user.id) {
           stopPlanRealtime();
@@ -1359,6 +1429,7 @@ function load() {
         void startUserHydration(session.user.id, cached.data, cached.cacheKind);
         return;
       } else {
+        clearRememberedAuthenticatedUser();
         // On sign-out, reset memory state to clean seed data
         stopPlanRealtime();
         hydrationGeneration += 1;
@@ -3440,6 +3511,7 @@ export function resetGymStoreForTests() {
   data = seed();
   hydrated = false;
   currentUser = null;
+  offlineResumeUser = null;
   authStatus = "loading";
   profileHydrationStatus = "loading";
   profileHydrationError = "";

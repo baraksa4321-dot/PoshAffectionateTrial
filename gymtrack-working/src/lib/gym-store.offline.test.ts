@@ -24,7 +24,10 @@ const syncCalls: Array<{ userId: string; localData: Record<string, unknown> }> =
 type RealtimeHandler = { userId: string; table: string; callback: () => void };
 const realtimeHandlers: RealtimeHandler[] = [];
 const realtimeStatusCallbacks: Array<(status: string) => void> = [];
-let nextSessionUser = { id: "user-a", email: "a@example.com" };
+let nextSessionUser: { id: string; email: string } | null = {
+  id: "user-a",
+  email: "a@example.com",
+};
 let pullImplementation: (
   userId: string,
   localState: Record<string, unknown>,
@@ -61,7 +64,7 @@ mock.module("./supabase", () => ({
   supabase: {
     auth: {
       getSession: async () => ({
-        data: { session: { user: nextSessionUser } },
+        data: { session: nextSessionUser ? { user: nextSessionUser } : null },
         error: null,
       }),
       onAuthStateChange: (
@@ -187,6 +190,20 @@ beforeEach(() => {
 });
 
 describe("offline store lifecycle", () => {
+  test("resumes the last authenticated account after a full offline PWA restart", async () => {
+    storage.set(
+      "gymtrack.v1.lastAuthenticatedUser",
+      JSON.stringify({ id: "user-a", email: "a@example.com" }),
+    );
+    storage.set("gymtrack.v1.user.user-a", JSON.stringify(cachedClientData));
+    nextSessionUser = null;
+
+    const store = await loadStore("offline-full-restart");
+
+    expect(store.getGymStoreSnapshot().userProfile?.role).toBe("client");
+    expect(store.getGymStoreSyncStatus()).toBe("offline");
+  });
+
   test("adds explicit cardio entries to weekly history and removes them together", async () => {
     const store = await loadStore("cardio-history-link");
     const saved = store.saveCardioLog({

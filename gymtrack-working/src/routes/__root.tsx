@@ -106,6 +106,7 @@ async function resetAuthSessionAndReload() {
     );
     authKeys.forEach((key) => window.localStorage.removeItem(key));
     window.localStorage.removeItem("supabase.auth.token");
+    window.localStorage.removeItem("gymtrack.v1.lastAuthenticatedUser");
     window.localStorage.removeItem(LOADING_GENDER_STORAGE_KEY);
   } catch {
     // Storage may be unavailable in private browsing; reload still lets the

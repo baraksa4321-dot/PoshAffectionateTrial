@@ -815,6 +815,7 @@ export function AppShell({
   const handleSignOut = async () => {
     try {
       window.localStorage.removeItem(LOADING_GENDER_STORAGE_KEY);
+      window.localStorage.removeItem("gymtrack.v1.lastAuthenticatedUser");
     } catch {
       // The auth event still clears the in-memory loading mode.
     }
