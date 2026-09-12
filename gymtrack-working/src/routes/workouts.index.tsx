@@ -3,7 +3,7 @@ import { ArrowLeft, Dumbbell } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CardioTracker } from "@/components/CardioTracker";
 import { ChallengeLibrary } from "@/components/ChallengeLibrary";
-import { EmptyState, SectionHeader } from "@/components/ui-app/primitives";
+import { EmptyState } from "@/components/ui-app/primitives";
 import { useGym } from "@/lib/gym-store";
 import { getCurrentWeekDates } from "@/lib/workout-session";
 
@@ -39,12 +39,10 @@ function Workouts() {
   return (
     <AppShell kicker="אימונים" title="האימונים שלי" subtitle="רשימה פשוטה של כל האימונים שלך">
       <section className="mt-5 text-start">
-          <SectionHeader
-            title="אימוני השבוע"
-            subtitle={`${weeklyWorkouts.length} אימונים`}
-            action={<ChallengeLibrary compact />}
-          />
-          {activeChallengeNames.length > 0 ? (
+        <div className="flex justify-end">
+          <ChallengeLibrary compact />
+        </div>
+        {activeChallengeNames.length > 0 ? (
             <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/5 px-3.5 py-3 text-start">
               <p className="text-[10px] font-bold tracking-[0.12em] text-primary uppercase">אתגרים פעילים</p>
               <p className="mt-1 text-xs font-extrabold text-ink">

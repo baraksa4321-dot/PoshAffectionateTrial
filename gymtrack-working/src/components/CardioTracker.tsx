@@ -42,12 +42,6 @@ export function CardioTracker() {
   const [cardioError, setCardioError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const now = new Date();
-  const startOfWeek = new Date(now);
-  const dayOfWeek = (now.getDay() + 6) % 7;
-  startOfWeek.setDate(now.getDate() - dayOfWeek);
-  startOfWeek.setHours(0, 0, 0, 0);
-
   const cardioDurationValue = Number(cardioDuration) || 0;
   const cardioSpeedValue = Number(cardioSpeed) || 0;
   const cardioInclineValue = Number(cardioIncline) || 0;
@@ -59,12 +53,6 @@ export function CardioTracker() {
     cardioSpeedValue,
     cardioInclineValue,
   );
-  const cardioThisWeek = (cardioLogs ?? []).filter(
-    (entry) => new Date(entry.date) >= startOfWeek,
-  );
-  const weeklyCardioMinutes = cardioThisWeek.reduce((sum, entry) => sum + entry.durationMin, 0);
-  const weeklyCardioCalories = cardioThisWeek.reduce((sum, entry) => sum + entry.calories, 0);
-
   const resetCardioForm = () => {
     setEditingCardioId(null);
     setCardioType(DEFAULT_CARDIO_TYPE);
@@ -132,13 +120,6 @@ export function CardioTracker() {
           <h2 className="break-words font-display text-[clamp(15px,4.5vw,17px)] font-extrabold leading-snug tracking-tight text-ink">
             אירובי
           </h2>
-          <p className="mt-1 break-words text-[clamp(11px,3.2vw,13px)] leading-snug text-muted-foreground">
-            {weeklyCardioMinutes
-              ? `${weeklyCardioMinutes} דקות השבוע${showCalories ? ` · כ-${weeklyCardioCalories} קל׳` : ""}`
-              : showCalories
-                ? "תיעוד אישי עם אומדן קלוריות"
-                : "תיעוד אישי של משך הפעילות"}
-          </p>
         </div>
         <button
           type="button"
@@ -196,18 +177,7 @@ export function CardioTracker() {
           </div>
         ) : (
           <div className="p-4">
-            <p className="text-[13px] font-bold text-ink">עדיין לא תיעדת אירובי</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              {genderText(
-                gender,
-                showCalories
-                  ? "הוסיפי הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך ואומדן קלוריות."
-                  : "הוסיפי הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך הפעילות.",
-                showCalories
-                  ? "הוסף הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך ואומדן קלוריות."
-                  : "הוסף הליכה, ריצה, אופניים או פעילות אחרת כדי לעקוב אחר משך הפעילות.",
-              )}
-            </p>
+            <p className="text-[13px] font-bold text-ink">אירובי</p>
           </div>
         )}
       </div>

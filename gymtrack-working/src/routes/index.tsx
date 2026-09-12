@@ -99,6 +99,11 @@ function formatNumericDate(date: Date) {
   });
 }
 
+function greetingForHour(hour: number, name: string) {
+  const greeting = hour >= 18 ? "ערב טוב" : hour >= 12 ? "צהריים טובים" : "בוקר טוב";
+  return name ? `${greeting}, ${name}.` : "היום שלי";
+}
+
 function formatDayDate(date: string) {
   const parsed = new Date(`${date}T12:00:00`);
   return parsed.toLocaleDateString("he-IL", { day: "numeric", month: "short" });
@@ -520,7 +525,7 @@ function Dashboard() {
 
   return (
     <AppShell
-      title={greetingName ? `בוקר טוב, ${greetingName}.` : "היום שלי"}
+      title={greetingForHour(now.getHours(), greetingName)}
       subtitle="היום שלך לא צריך יותר מקצב אחד טוב להתחיל ממנו."
       kicker={formatNumericDate(now)}
       pageClassName="dashboard-editorial-shell"
@@ -799,11 +804,7 @@ function Dashboard() {
                       : `מתוך ${targetCals} · ${Math.max(0, targetCals - totalsToday.calories)} נשארו`}
                   </p>
                 </>
-              ) : (
-                <p className="mt-3 text-[11px] font-semibold text-muted-foreground">
-                  ערכי קלוריות מוסתרים לפי הגדרת הפרופיל
-                </p>
-              )}
+              ) : null}
               <div className="mt-auto flex items-center justify-between rounded-xl bg-background/80 px-2 py-1.5 text-[10px] font-bold text-ink">
                 <span>{Math.round(totalsToday.protein)} גרם חלבון</span>
                 <ChevronLeft className="h-3.5 w-3.5" />
