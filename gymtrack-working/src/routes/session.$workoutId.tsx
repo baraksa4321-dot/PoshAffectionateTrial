@@ -116,6 +116,75 @@ function supersetLabels(items: WorkoutItem[]) {
 
 const ACTIVE_SESSION_KEY = (id: string) => `gymtrack.active_session.${id}`;
 const ACTIVE_SESSION_FEEDBACK_KEY = (id: string) => `gymtrack.active_session_feedback.${id}`;
+const ACTIVE_REST_TIMER_KEY = (id: string) => `gymtrack.active_rest_timer.${id}`;
+const MAX_PERFORMANCE_VIDEO_DURATION_SECONDS = 5 * 60;
+
+type PersistedRestTimer = {
+  rest: number;
+  restFinished: boolean;
+  restPaused: boolean;
+  restEndsAt: number | null;
+  smartTimerPosition: SmartTimerPosition | null;
+  smartTimerStarted: boolean;
+  restExpanded: boolean;
+};
+
+function readPersistedRestTimer(workoutId: string): PersistedRestTimer | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(ACTIVE_REST_TIMER_KEY(workoutId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PersistedRestTimer>;
+    if (!parsed || typeof parsed !== "object") return null;
+    return {
+      rest: typeof parsed.rest === "number" && parsed.rest >= 0 ? parsed.rest : 0,
+      restFinished: parsed.restFinished === true,
+      restPaused: parsed.restPaused === true,
+      restEndsAt:
+        typeof parsed.restEndsAt === "number" && Number.isFinite(parsed.restEndsAt)
+          ? parsed.restEndsAt
+          : null,
+      smartTimerPosition:
+        parsed.smartTimerPosition &&
+        typeof parsed.smartTimerPosition.exerciseIndex === "number" &&
+        typeof parsed.smartTimerPosition.setNumber === "number"
+          ? parsed.smartTimerPosition
+          : null,
+      smartTimerStarted: parsed.smartTimerStarted === true,
+      restExpanded: parsed.restExpanded === true,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function videoDuration(file: File): Promise<number | null> {
+  if (typeof document === "undefined") return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file);
+    const probe = document.createElement("video");
+    probe.preload = "metadata";
+    const timeoutId = window.setTimeout(() => {
+      URL.revokeObjectURL(objectUrl);
+      probe.remove();
+      resolve(null);
+    }, 8000);
+    probe.onloadedmetadata = () => {
+      window.clearTimeout(timeoutId);
+      const duration = Number.isFinite(probe.duration) ? probe.duration : null;
+      URL.revokeObjectURL(objectUrl);
+      probe.remove();
+      resolve(duration);
+    };
+    probe.onerror = () => {
+      window.clearTimeout(timeoutId);
+      URL.revokeObjectURL(objectUrl);
+      probe.remove();
+      resolve(null);
+    };
+    probe.src = objectUrl;
+  });
+}
 
 function videoUploadErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : "";
@@ -509,6 +578,7 @@ function Session() {
   const [smartTimerPosition, setSmartTimerPosition] = useState<SmartTimerPosition | null>(null);
   const [smartTimerStarted, setSmartTimerStarted] = useState(false);
   const [restPaused, setRestPaused] = useState(false);
+  const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [restExpanded, setRestExpanded] = useState(false);
   const [restOffset, setRestOffset] = useState({ x: 0, y: 0 });
   const [pendingExit, setPendingExit] = useState(false);
@@ -517,6 +587,7 @@ function Session() {
   const previousRestRef = useRef(0);
   const restCompletionVibratedRef = useRef(false);
   const vibrationAudioRef = useRef<AudioContext | null>(null);
+  const [restTimerHydrated, setRestTimerHydrated] = useState(false);
   const finishedSessionRef = useRef<HistorySession | null>(null);
   const restDragRef = useRef<{
     pointerId: number;
@@ -526,6 +597,69 @@ function Session() {
     offsetY: number;
   } | null>(null);
   const restDraggedRef = useRef(false);
+
+  useEffect(() => {
+    setRestTimerHydrated(false);
+    const persisted = readPersistedRestTimer(workoutId);
+    if (persisted) {
+      const hasExpired =
+        !persisted.restPaused &&
+        persisted.restEndsAt !== null &&
+        persisted.restEndsAt <= Date.now();
+      setRest(hasExpired ? 0 : persisted.rest);
+      setRestFinished(hasExpired || persisted.restFinished);
+      setSmartTimerPosition(persisted.smartTimerPosition);
+      setSmartTimerStarted(persisted.smartTimerStarted);
+      setRestPaused(persisted.restPaused);
+      setRestEndsAt(hasExpired ? null : persisted.restEndsAt);
+      setRestExpanded(persisted.restExpanded || !hasExpired);
+    } else {
+      setRest(0);
+      setRestFinished(false);
+      setSmartTimerPosition(null);
+      setSmartTimerStarted(false);
+      setRestPaused(false);
+      setRestEndsAt(null);
+      setRestExpanded(false);
+    }
+    setRestTimerHydrated(true);
+  }, [workoutId]);
+
+  useEffect(() => {
+    if (!restTimerHydrated) return;
+    const hasActiveTimer =
+      rest > 0 || restPaused || restFinished || smartTimerStarted || restEndsAt !== null;
+    try {
+      if (!hasActiveTimer) {
+        window.localStorage.removeItem(ACTIVE_REST_TIMER_KEY(workoutId));
+        return;
+      }
+      window.localStorage.setItem(
+        ACTIVE_REST_TIMER_KEY(workoutId),
+        JSON.stringify({
+          rest,
+          restFinished,
+          restPaused,
+          restEndsAt,
+          smartTimerPosition,
+          smartTimerStarted,
+          restExpanded,
+        } satisfies PersistedRestTimer),
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [
+    rest,
+    restFinished,
+    restPaused,
+    restEndsAt,
+    smartTimerPosition,
+    smartTimerStarted,
+    restExpanded,
+    restTimerHydrated,
+    workoutId,
+  ]);
 
   const prepareRestAudio = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -547,23 +681,49 @@ function Session() {
     }
   }, []);
 
+  const startRestTimer = useCallback((seconds: number) => {
+    const normalizedSeconds = Math.max(0, Math.round(seconds));
+    setRest(normalizedSeconds);
+    setRestEndsAt(normalizedSeconds > 0 ? Date.now() + normalizedSeconds * 1000 : null);
+    setRestFinished(false);
+    setRestPaused(false);
+  }, []);
+
+  const toggleRestPaused = useCallback(() => {
+    if (rest <= 0) return;
+    if (restPaused) {
+      setRestEndsAt(Date.now() + rest * 1000);
+      setRestPaused(false);
+      return;
+    }
+    const remaining = restEndsAt
+      ? Math.max(0, Math.ceil((restEndsAt - Date.now()) / 1000))
+      : rest;
+    setRest(remaining);
+    setRestEndsAt(null);
+    setRestPaused(true);
+  }, [rest, restEndsAt, restPaused]);
+
   const playRestCompletionSound = useCallback(() => {
     const audioContext = vibrationAudioRef.current;
     if (!audioContext) return;
 
     const playTone = () => {
       try {
-        const oscillator = audioContext.createOscillator();
-        const gain = audioContext.createGain();
-        oscillator.type = "sine";
-        oscillator.frequency.value = 880;
-        gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.18, audioContext.currentTime + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.34);
-        oscillator.connect(gain);
-        gain.connect(audioContext.destination);
-        oscillator.start();
-        oscillator.stop(audioContext.currentTime + 0.36);
+        [0, 0.24, 0.48].forEach((offset, index) => {
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          const startAt = audioContext.currentTime + offset;
+          oscillator.type = index === 1 ? "triangle" : "sine";
+          oscillator.frequency.value = index === 1 ? 1046 : 880;
+          gain.gain.setValueAtTime(0.0001, startAt);
+          gain.gain.exponentialRampToValueAtTime(0.26, startAt + 0.025);
+          gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.42);
+          oscillator.connect(gain);
+          gain.connect(audioContext.destination);
+          oscillator.start(startAt);
+          oscillator.stop(startAt + 0.45);
+        });
       } catch {
         // Some browsers can still block audio after the initial gesture.
       }
@@ -655,12 +815,18 @@ function Session() {
   ]);
 
   useEffect(() => {
-    if (rest <= 0 || isPaused || restPaused) return;
-    timerRef.current = setInterval(() => setRest((r) => Math.max(0, r - 1)), 1000);
+    if (!restTimerHydrated || restEndsAt === null || restPaused) return;
+    const updateRemaining = () => {
+      const remaining = Math.max(0, Math.ceil((restEndsAt - Date.now()) / 1000));
+      setRest(remaining);
+      if (remaining === 0) setRestEndsAt(null);
+    };
+    updateRemaining();
+    timerRef.current = setInterval(updateRemaining, 250);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPaused, rest, restPaused]);
+  }, [restEndsAt, restPaused, restTimerHydrated]);
 
   useEffect(() => {
     if (rest > 0) {
@@ -771,9 +937,7 @@ function Session() {
       setSmartTimerPosition({ exerciseIndex: ei, setNumber });
       setSmartTimerStarted(true);
       const restSec = restForWorkoutSet(workout.items[ei], setNumber - 1);
-      setRest(restSec);
-      setRestFinished(false);
-      setRestPaused(false);
+      startRestTimer(restSec);
       setRestExpanded(true);
     }
   };
@@ -788,9 +952,7 @@ function Session() {
     );
     setSmartTimerPosition(position);
     setSmartTimerStarted(true);
-    setRest(restSeconds);
-    setRestFinished(false);
-    setRestPaused(false);
+    startRestTimer(restSeconds);
     setRestExpanded(true);
   };
 
@@ -820,16 +982,25 @@ function Session() {
     try {
       localStorage.removeItem(ACTIVE_SESSION_KEY(workout.id));
       localStorage.removeItem(ACTIVE_SESSION_FEEDBACK_KEY(workout.id));
+      localStorage.removeItem(ACTIVE_REST_TIMER_KEY(workout.id));
     } catch {
       /* ignore */
     }
   };
 
-  const selectPerformanceVideo = (exerciseIndex: number, file: File | undefined) => {
+  const selectPerformanceVideo = async (exerciseIndex: number, file: File | undefined) => {
     if (!file) return;
     if (!file.type.startsWith("video/")) {
       setVideoUploadErrorExerciseIndex(exerciseIndex);
       setVideoUploadError("אפשר להעלות קובץ וידאו בלבד.");
+      return;
+    }
+    setVideoUploadError("");
+    setVideoUploadErrorExerciseIndex(null);
+    const duration = await videoDuration(file);
+    if (duration !== null && duration > MAX_PERFORMANCE_VIDEO_DURATION_SECONDS) {
+      setVideoUploadErrorExerciseIndex(exerciseIndex);
+      setVideoUploadError("אפשר להעלות סרטון באורך של עד 5 דקות.");
       return;
     }
     const nextUrl = URL.createObjectURL(file);
@@ -837,8 +1008,6 @@ function Session() {
     const uploadVersion = (videoUploadVersionsRef.current.get(exerciseIndex) ?? 0) + 1;
     videoUploadVersionsRef.current.set(exerciseIndex, uploadVersion);
     if (previousUrl?.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
-    setVideoUploadError("");
-    setVideoUploadErrorExerciseIndex(null);
     videoFilesRef.current.set(exerciseIndex, file);
     setVideoUploadsInFlight((count) => count + 1);
     const entriesWithLocalVideo = entriesRef.current.map((entry, index) =>
@@ -1265,8 +1434,7 @@ function Session() {
                       type="button"
                       onClick={() => {
                         prepareRestAudio();
-                        setRest(item?.rest ?? 60);
-                        setRestPaused(false);
+                        startRestTimer(item?.rest ?? 60);
                       }}
                       className="press flex shrink-0 items-center gap-1 rounded-full bg-secondary px-2.5 py-1.5 text-[11px] font-semibold text-ink cursor-pointer"
                       aria-label="התחל מנוחה"
@@ -1370,17 +1538,20 @@ function Session() {
 
               {/* The athlete's demonstration video is intentionally last:
                   it belongs to the completed exercise, after all sets. */}
-              <div className="mt-3 rounded-2xl border border-dashed border-primary/35 bg-primary/5 p-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="col-span-2 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-center text-[11px] font-semibold text-primary transition-colors hover:bg-primary/10">
-                    <ImagePlus className="h-4 w-4" />
-                    <span>{entry.videoUrl ? "החלפה מהגלריה" : "בחירה מהגלריה"}</span>
+              <div className="mt-3 rounded-2xl border border-dashed border-primary/35 bg-primary/5 px-2.5 py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-semibold text-muted-foreground">
+                    {entry.videoUrl ? "סרטון תרגיל" : "אפשר לצרף סרטון תרגיל"}
+                  </span>
+                  <label className="inline-flex cursor-pointer items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary transition-colors hover:bg-primary/15">
+                    <ImagePlus className="h-3 w-3" />
+                    <span>{entry.videoUrl ? "החלפה" : "הוספת סרטון"}</span>
                     <input
                       type="file"
                       accept="video/*"
                       className="sr-only"
                       onChange={(event) => {
-                        selectPerformanceVideo(ei, event.target.files?.[0]);
+                        void selectPerformanceVideo(ei, event.target.files?.[0]);
                         event.currentTarget.value = "";
                       }}
                     />
@@ -1781,7 +1952,7 @@ function Session() {
                     return;
                   }
                   if (rest > 0) {
-                    setRestPaused((paused) => !paused);
+                    toggleRestPaused();
                   } else {
                     startSmartRest();
                   }
@@ -1801,7 +1972,7 @@ function Session() {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
                     if (rest > 0) {
-                      setRestPaused((paused) => !paused);
+                      toggleRestPaused();
                     } else {
                       startSmartRest();
                     }
@@ -1842,9 +2013,7 @@ function Session() {
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation();
-                              setRest(seconds);
-                              setRestFinished(false);
-                              setRestPaused(false);
+                              startRestTimer(seconds);
                               setRestExpanded(false);
                             }}
                             className="press rounded-lg bg-white/15 px-1.5 py-1 text-[10px] font-bold text-primary-foreground hover:bg-white/25"
