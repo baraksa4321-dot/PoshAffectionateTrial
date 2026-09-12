@@ -9,7 +9,7 @@ Use a user-ID-keyed lightweight boot snapshot to establish the account role and 
 
 **How to apply:** Keep the boot snapshot privacy-scoped to the immutable authenticated user ID, omit only data that can safely be restored from reference libraries, clear the marker on explicit sign-out, and dedupe remote/local workout merges by stable workout ID.
 
-Critical loading visuals should include a small local image fallback and have those fallback assets precached by the Service Worker; reveal animated media only after it is playable.
+Critical loading visuals should include a small local image fallback and have those fallback assets precached by the Service Worker; keep animated media visible by default and switch to the fallback only after a media error.
 
 **Why:** Safari can show a broken media icon when an MP4 or GIF is unavailable during a cold offline PWA launch, even though the application shell itself is cached.
 

@@ -510,14 +510,14 @@ function SimpleLoadingIllustration({
   variant: number;
   cycle: number;
 }) {
-  const [videoReady, setVideoReady] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
   const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length]!;
   const animationFile = illustration.file.replace(".png", ".mp4");
   const posterFile = illustration.file.replace(".png", ".gif");
   return (
     <div
       className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4} ${
-        videoReady ? "loading-video-ready" : ""
+        videoFailed ? "loading-video-failed" : ""
       }`}
     >
       <img
@@ -537,10 +537,10 @@ function SimpleLoadingIllustration({
         muted
         playsInline
         preload="auto"
-        onCanPlay={() => setVideoReady(true)}
-        onError={() => setVideoReady(false)}
+        onCanPlay={() => setVideoFailed(false)}
+        onError={() => setVideoFailed(true)}
         onLoadedData={(event) => {
-          setVideoReady(true);
+          setVideoFailed(false);
           void event.currentTarget.play().catch(() => {
             // Safari can defer muted autoplay until the first media event.
           });

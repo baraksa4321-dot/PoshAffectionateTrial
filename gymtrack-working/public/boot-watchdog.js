@@ -128,6 +128,7 @@
     const loadingScreen = document.querySelector(".loading-screen");
     const media = loadingScreen?.querySelector(".loading-simple-video");
     const fallback = loadingScreen?.querySelector(".loading-simple-fallback");
+    const stage = media?.closest(".loading-micro-stage");
     const message = loadingScreen?.querySelector(".loading-witty-message");
     if (!(media instanceof HTMLVideoElement) || !(message instanceof HTMLElement)) return false;
 
@@ -139,6 +140,7 @@
     const nextSource = `/loading/tinted/${animationFile}?v=video-safe-1&cycle=${cycle}`;
     media.poster = `/loading/tinted/${illustration}?v=poster-safe-1`;
     if (media.getAttribute("src") !== nextSource) {
+      stage?.classList.remove("loading-video-failed");
       media.src = nextSource;
       media.load();
     }

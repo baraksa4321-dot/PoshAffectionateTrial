@@ -2699,7 +2699,8 @@ html[data-loading-gender="female"] .loading-screen[data-loading-mode="plain"] .l
   position: absolute;
   inset: 0;
   margin: auto;
-  opacity: 1;
+  opacity: 0;
+  pointer-events: none;
   transition: opacity 160ms ease;
 }
 
@@ -2707,7 +2708,7 @@ html[data-loading-gender="female"] .loading-screen[data-loading-mode="plain"] .l
   position: absolute;
   inset: 0;
   margin: auto;
-  opacity: 0;
+  opacity: 1;
   background: #f7f1ec;
   filter: saturate(1.04);
   mix-blend-mode: normal;
@@ -2716,12 +2717,15 @@ html[data-loading-gender="female"] .loading-screen[data-loading-mode="plain"] .l
   -webkit-appearance: none;
 }
 
-.loading-video-ready .loading-simple-fallback {
+.loading-video-failed .loading-simple-fallback {
   opacity: 0;
+  opacity: 1;
+  pointer-events: auto;
 }
 
-.loading-video-ready .loading-simple-video {
-  opacity: 1;
+.loading-video-failed .loading-simple-video {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .loading-simple-video::-webkit-media-controls,
