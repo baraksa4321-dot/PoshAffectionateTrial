@@ -315,6 +315,7 @@ function NutritionLog() {
     plannedMealId?: string;
   } | null>(null);
   const [substituteQuery, setSubstituteQuery] = useState("");
+  const [mealOptionsFor, setMealOptionsFor] = useState<string | null>(null);
   const [balanceMode, setBalanceMode] = useState<"daily" | "weekly">("daily");
 
   // New smart nutrition features state
@@ -581,6 +582,13 @@ function NutritionLog() {
       .sort((a, b) => a.calorieDistance - b.calorieDistance)
       .slice(0, 5);
   }, [substituteFor, substituteQuery]);
+
+  const mealOptionsGroup = useMemo(() => {
+    if (!mealOptionsFor) return null;
+    return (
+      groupPlannedMeals(gym.plannedMeals ?? []).find((group) => group.id === mealOptionsFor) ?? null
+    );
+  }, [gym.plannedMeals, mealOptionsFor]);
 
   const closeFoodPicker = () => {
     setPickerMealId(null);
@@ -1078,7 +1086,12 @@ function NutritionLog() {
               const selectedMeal = group.meals.find((meal) =>
                 day.meals.some((logged) => logged.sourcePlanId === meal.id),
               );
-              const summaryMeal = selectedMeal ?? primaryMeal;
+              const displayedMeal = selectedMeal ?? primaryMeal;
+              const loggedMeal = day.meals.find(
+                (logged) => logged.sourcePlanId === displayedMeal.id,
+              );
+              const plannedTotals = foodTotals(displayedMeal.foods);
+              const isSelected = selectedMeal?.id === displayedMeal.id;
               return (
                 <article
                   key={group.id}
@@ -1090,20 +1103,22 @@ function NutritionLog() {
                         {plannedMealDisplayName(primaryMeal.name) || "ארוחה"}
                       </h3>
                       <p className="mt-1 max-w-[18rem] text-[11px] font-semibold leading-relaxed text-primary">
-                        {plannedMealFoodSummary(summaryMeal)}
+                        {plannedMealFoodSummary(displayedMeal)}
                       </p>
                     </div>
+                    {group.meals.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => setMealOptionsFor(group.id)}
+                        className="inline-flex shrink-0 items-center rounded-xl border border-primary/35 bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground shadow-sm"
+                      >
+                        החלפת ארוחה
+                      </button>
+                    ) : null}
                   </div>
-                  <div className="mt-3 space-y-3">
-                    {group.meals.map((meal, optionIndex) => {
-                      const loggedMeal = day.meals.find(
-                        (logged) => logged.sourcePlanId === meal.id,
-                      );
-                      const plannedTotals = foodTotals(meal.foods);
-                      const isSelected = selectedMeal?.id === meal.id;
-                      return (
+                  <div className="mt-3">
                         <div
-                          key={meal.id}
+                          key={displayedMeal.id}
                           className={`rounded-xl border p-3 ${
                             isSelected
                               ? "border-primary/40 bg-primary/10"
@@ -1113,7 +1128,7 @@ function NutritionLog() {
                           <div className="flex items-center justify-between gap-2">
                             <div className="min-w-0">
                               <h4 className="truncate text-[13px] font-bold text-ink">
-                                {plannedMealFoodSummary(meal)}
+                                {plannedMealFoodSummary(displayedMeal)}
                               </h4>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
@@ -1125,7 +1140,7 @@ function NutritionLog() {
                               <button
                                 type="button"
                                 aria-pressed={isSelected}
-                                onClick={() => togglePlannedMealEaten(date, meal.id)}
+                                onClick={() => togglePlannedMealEaten(date, displayedMeal.id)}
                                 className={`inline-flex h-8 items-center gap-1 rounded-xl px-2.5 text-[11px] font-bold ${
                                   isSelected
                                     ? "bg-emerald-600 text-white"
@@ -1141,9 +1156,9 @@ function NutritionLog() {
                               </button>
                             </div>
                           </div>
-                          {meal.foods.length > 0 ? (
+                          {displayedMeal.foods.length > 0 ? (
                             <div className="mt-3 space-y-1.5">
-                              {meal.foods.map((food) => {
+                              {displayedMeal.foods.map((food) => {
                                 const loggedFood = loggedMeal?.foods.find(
                                   (item) => item.sourcePlanFoodId === food.id,
                                 );
@@ -1198,7 +1213,7 @@ function NutritionLog() {
                                         <button
                                           type="button"
                                           onClick={() =>
-                                            togglePlannedFoodEaten(date, meal.id, food.id)
+                                            togglePlannedFoodEaten(date, displayedMeal.id, food.id)
                                           }
                                           className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary"
                                         >
@@ -1212,7 +1227,7 @@ function NutritionLog() {
                                             setSubstituteFor({
                                               mealId: loggedMeal?.id ?? "",
                                               food,
-                                              plannedMealId: meal.id,
+                                               plannedMealId: displayedMeal.id,
                                             })
                                           }
                                           className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3.5 text-[12px] font-bold text-primary-foreground"
@@ -1232,8 +1247,6 @@ function NutritionLog() {
                             </p>
                           )}
                         </div>
-                      );
-                    })}
                   </div>
                 </article>
               );
@@ -2019,6 +2032,78 @@ function NutritionLog() {
         </Overlay>
       ) : null}
 
+      {/* Planned meal alternatives */}
+      {mealOptionsGroup ? (
+        <Overlay
+          open={Boolean(mealOptionsGroup)}
+          onClose={() => setMealOptionsFor(null)}
+          ariaLabel="החלפת ארוחה"
+          variant="bottom"
+          panelClassName="contents"
+          className="fade-in"
+        >
+          <div
+            className="scale-in max-h-[82dvh] overflow-y-auto rounded-t-[2rem] border-t border-border/50 bg-card p-5 text-start shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[12px] font-bold text-primary">החלפת ארוחה</p>
+                <h2 className="mt-1 font-display text-[20px] font-extrabold text-ink">
+                  בחרי את הארוחה שמתאימה לך
+                </h2>
+              </div>
+              <IconButton aria-label="סגור" onClick={() => setMealOptionsFor(null)}>
+                <X className="h-5 w-5" />
+              </IconButton>
+            </div>
+            <div className="space-y-2.5">
+              {mealOptionsGroup.meals.map((meal) => {
+                const isSelected = day.meals.some((logged) => logged.sourcePlanId === meal.id);
+                const totals = foodTotals(meal.foods);
+                return (
+                  <button
+                    key={meal.id}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => {
+                      if (!isSelected) togglePlannedMealEaten(date, meal.id);
+                      setMealOptionsFor(null);
+                    }}
+                    className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-start ${
+                      isSelected
+                        ? "border-primary/60 bg-primary/15"
+                        : "border-border/60 bg-secondary hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-bold text-ink">
+                        {plannedMealFoodSummary(meal)}
+                      </p>
+                      {showCalories ? (
+                        <p className="mt-1 text-[12px] font-semibold text-muted-foreground">
+                          {Math.round(totals.calories)} קלוריות
+                        </p>
+                      ) : null}
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-xl px-3 py-1.5 text-[11px] font-bold ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground"
+                          : "border border-primary/40 text-primary"
+                      }`}
+                    >
+                      {isSelected ? "נבחרה" : "בחירה"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </Overlay>
+      ) : null}
+
       {/* Food replacement */}
       {substituteFor ? (
         <Overlay
@@ -2061,6 +2146,32 @@ function NutritionLog() {
                 <X className="h-5 w-5" />
               </IconButton>
             </div>
+            <div className="mb-3 rounded-2xl border border-primary/30 bg-primary/10 p-3">
+              <p className="text-[11px] font-bold text-primary">הערכים והכמות להחלפה</p>
+              <p className="mt-1 text-[12px] font-semibold text-ink">
+                כמות יעד:{" "}
+                {formatMeasuredFoodAmount(
+                  substituteFor.food.servingSize,
+                  substituteFor.food.quantity,
+                )}
+              </p>
+              <NutritionMacroGrid
+                className="mt-2"
+                showCalories={showCalories}
+                calories={
+                  substituteFor.food.calories *
+                  mealFoodNutritionMultiplier(substituteFor.food)
+                }
+                protein={
+                  substituteFor.food.protein *
+                  mealFoodNutritionMultiplier(substituteFor.food)
+                }
+                carbs={
+                  substituteFor.food.carbs * mealFoodNutritionMultiplier(substituteFor.food)
+                }
+                fat={substituteFor.food.fat * mealFoodNutritionMultiplier(substituteFor.food)}
+              />
+            </div>
             <div className="num-pill mb-3 flex h-11 items-center gap-2 px-3.5">
               <Apple className="h-4 w-4 text-muted-foreground" />
               <input
@@ -2094,8 +2205,16 @@ function NutritionLog() {
                           {recipe.name}
                         </p>
                         <p className="mt-0.5 text-[12px] font-semibold text-muted-foreground">
-                          {recipe.nutrition.calories} קלוריות · {recipe.category}
+                          מנה אחת · {recipe.category}
                         </p>
+                        <NutritionMacroGrid
+                          className="mt-2"
+                          showCalories={showCalories}
+                          calories={recipe.nutrition.calories}
+                          protein={recipe.nutrition.protein}
+                          carbs={recipeCarbs(recipe)}
+                          fat={recipe.nutrition.fat}
+                        />
                       </div>
                       <span className="shrink-0 rounded-xl bg-primary px-2.5 py-1.5 text-[11px] font-bold text-primary-foreground">
                         בחירה
@@ -2129,6 +2248,9 @@ function NutritionLog() {
                         className="mt-0.5 text-[12px] font-semibold text-ink"
                       >
                         {formatCount(portion.quantity)} {portion.unitLabel}
+                      </p>
+                      <p className="mt-0.5 text-[10px] font-semibold text-muted-foreground">
+                        כמות לפי הערכים של המאכל המקורי
                       </p>
                       <NutritionMacroGrid
                         className="mt-2"
