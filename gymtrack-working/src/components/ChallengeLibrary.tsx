@@ -6,12 +6,9 @@ import {
   Copy,
   Dumbbell,
   Pencil,
-  Play,
   Plus,
-  ShieldCheck,
   Trophy,
   X,
-  Apple,
 } from "lucide-react";
 import { Overlay } from "@/components/ui-app/Overlay";
 import { PrimaryButton, SecondaryButton } from "@/components/ui-app/primitives";
@@ -20,12 +17,13 @@ import {
   duplicateChallenge,
   emptyChallenge,
   emptyItem,
+  addChallengeToProgram,
   enrollInChallenge,
   saveChallenge,
   useGym,
 } from "@/lib/gym-store";
 import { cloneChallenge } from "@/lib/challenge-library";
-import type { Challenge, WorkoutItem } from "@/lib/gym-types";
+import type { Challenge, Program, WorkoutItem } from "@/lib/gym-types";
 
 const accentClasses: Record<Challenge["accent"], string> = {
   sage: "bg-sage-soft text-primary",
@@ -35,11 +33,13 @@ const accentClasses: Record<Challenge["accent"], string> = {
 };
 
 export function ChallengeLibrary({ compact = false }: { compact?: boolean }) {
-  const { challenges, exercises, userProfile } = useGym();
+  const { challenges, exercises, programs, userProfile } = useGym();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Challenge | null>(null);
+  const [selectedProgramId, setSelectedProgramId] = useState("");
+  const [selectedWeekday, setSelectedWeekday] = useState(0);
   const isCoach = userProfile?.role === "coach" || userProfile?.role === "owner";
   const selected = challenges.find((challenge) => challenge.id === selectedId) ?? null;
   const editableExercises = useMemo(
@@ -58,6 +58,15 @@ export function ChallengeLibrary({ compact = false }: { compact?: boolean }) {
     if (!enrolled) return;
     close();
     void navigate({ to: "/workouts" });
+  };
+
+  const addToProgram = (challenge: Challenge) => {
+    const programId = selectedProgramId || programs[0]?.id;
+    if (!programId) return;
+    const workout = addChallengeToProgram(challenge.id, programId, selectedWeekday);
+    if (!workout) return;
+    close();
+    void navigate({ to: "/programs/$programId", params: { programId } });
   };
 
   const startEditing = (challenge?: Challenge) => {
@@ -110,10 +119,7 @@ export function ChallengeLibrary({ compact = false }: { compact?: boolean }) {
           <div className="mb-4 flex items-start justify-between gap-3 border-b border-border/60 pb-3">
             <div>
                <p className="text-[10px] font-bold tracking-[0.16em] text-primary uppercase">אתגרי אימון</p>
-                <h2 className="mt-1 font-display text-lg font-extrabold text-ink">איזה אתגר בא לך?</h2>
-               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  בוחרות מטרה. עושות את האימון. חוזרות על זה.
-               </p>
+                <h2 className="mt-1 font-display text-lg font-extrabold text-ink">אתגרים</h2>
             </div>
             <button type="button" onClick={close} aria-label="סגירת אתגרים" className="grid h-8 w-8 place-items-center rounded-xl text-muted-foreground hover:bg-secondary">
               <X className="h-4 w-4" />
@@ -140,6 +146,12 @@ export function ChallengeLibrary({ compact = false }: { compact?: boolean }) {
               isCoach={isCoach}
               onBack={() => setSelectedId(null)}
               onStart={() => begin(selected)}
+              programs={programs}
+              selectedProgramId={selectedProgramId || programs[0]?.id || ""}
+              selectedWeekday={selectedWeekday}
+              onProgramChange={setSelectedProgramId}
+              onWeekdayChange={setSelectedWeekday}
+              onAddToProgram={() => addToProgram(selected)}
               onEdit={() => startEditing(selected)}
             />
           ) : (
@@ -171,10 +183,6 @@ export function ChallengeLibrary({ compact = false }: { compact?: boolean }) {
                   יצירת אתגר חדש
                 </button>
               ) : null}
-               <div className="mt-4 flex items-start gap-2 rounded-2xl bg-primary/5 p-3 text-[11px] leading-relaxed text-muted-foreground">
-                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                 מתחילות קל. כאב חד או חוסר שליטה? עוצרות.
-              </div>
             </>
           )}
         </div>
@@ -188,14 +196,27 @@ function ChallengeDetail({
   isCoach,
   onBack,
   onStart,
+  programs,
+  selectedProgramId,
+  selectedWeekday,
+  onProgramChange,
+  onWeekdayChange,
+  onAddToProgram,
   onEdit,
 }: {
   challenge: Challenge;
   isCoach: boolean;
   onBack: () => void;
   onStart: () => void;
+  programs: Program[];
+  selectedProgramId: string;
+  selectedWeekday: number;
+  onProgramChange: (programId: string) => void;
+  onWeekdayChange: (weekday: number) => void;
+  onAddToProgram: () => void;
   onEdit: () => void;
 }) {
+  const weekdays = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
   return (
     <>
       <button type="button" onClick={onBack} className="mb-3 inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline">
@@ -212,7 +233,6 @@ function ChallengeDetail({
             <p className="mt-1 text-[11px] font-bold text-primary">{challenge.category} · {challenge.difficulty} · {challenge.durationLabel}</p>
           </div>
         </div>
-        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{challenge.description}</p>
       </div>
       <div className="mt-3 space-y-2">
         {challenge.sessions.map((session, index) => (
@@ -221,9 +241,7 @@ function ChallengeDetail({
               <Dumbbell className="h-4 w-4 text-primary" />
               <p className="text-sm font-extrabold text-ink">{session.name || `אימון ${index + 1}`}</p>
             </div>
-             <p className="mt-1 text-[11px] text-muted-foreground">
-                {session.items.length} תרגילים · האימון שלך
-             </p>
+             <p className="mt-1 text-[11px] text-muted-foreground">{session.items.length} תרגילים</p>
             <div className="mt-3 space-y-2">
               {session.items.map((item, itemIndex) => (
                 <div
@@ -243,9 +261,11 @@ function ChallengeDetail({
                            ? `יעד ${item.distanceKm} ק״מ · ${item.rest} שנ׳ מנוחה`
                            : `${item.sets} סטים · ${item.targetLabel ?? `${item.reps} חזרות`} · ${item.rest} שנ׳ מנוחה`}
                       </p>
-                      {item.notes ? (
-                        <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
-                          {item.notes}
+                      {item.targetSpeedKmH || item.targetInclinePct ? (
+                        <p className="mt-1 text-[10px] font-bold text-ink">
+                          {item.targetSpeedKmH ? `קצב ${item.targetSpeedKmH} קמ״ש` : ""}
+                          {item.targetSpeedKmH && item.targetInclinePct ? " · " : ""}
+                          {item.targetInclinePct ? `שיפוע ${item.targetInclinePct}%` : ""}
                         </p>
                       ) : null}
                     </div>
@@ -253,31 +273,50 @@ function ChallengeDetail({
                 </div>
               ))}
             </div>
-            {session.notes ? (
-              <p className="mt-3 rounded-xl bg-primary/5 px-3 py-2 text-[10px] leading-relaxed text-muted-foreground">
-                 <span className="font-extrabold text-ink">איך עושים: </span>
-                {session.notes}
-              </p>
-            ) : null}
           </div>
         ))}
       </div>
-      {challenge.nutritionTips?.length ? (
-        <div className="mt-3 rounded-2xl border border-emerald-200/70 bg-emerald-50/70 p-3">
-          <div className="flex items-center gap-2">
-            <Apple className="h-4 w-4 text-emerald-700" />
-            <p className="text-xs font-extrabold text-emerald-950">תדלוק והתאוששות</p>
-          </div>
-          <ul className="mt-2 space-y-1.5 text-[10px] leading-relaxed text-emerald-950/75">
-            {challenge.nutritionTips.map((tip) => <li key={tip}>• {tip}</li>)}
-          </ul>
-        </div>
-      ) : null}
       <div className="mt-4 flex flex-wrap gap-2">
         <PrimaryButton onClick={onStart}>
           <Dumbbell className="h-4 w-4" />
            הוסיפי לשבוע
         </PrimaryButton>
+        {isCoach && programs.length > 0 ? (
+          <div className="w-full rounded-2xl border border-border/60 bg-background p-3">
+            <p className="text-[11px] font-bold text-ink">הוספה לתוכנית</p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <select
+                value={selectedProgramId}
+                onChange={(event) => onProgramChange(event.target.value)}
+                className="min-w-0 rounded-xl border border-border/60 bg-surface px-2 py-2 text-xs font-bold text-ink"
+              >
+                {programs.map((program) => (
+                  <option key={program.id} value={program.id}>
+                    {program.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedWeekday}
+                onChange={(event) => onWeekdayChange(Number(event.target.value))}
+                className="min-w-0 rounded-xl border border-border/60 bg-surface px-2 py-2 text-xs font-bold text-ink"
+              >
+                {weekdays.map((day, index) => (
+                  <option key={day} value={index}>
+                    יום {day}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={onAddToProgram}
+              className="mt-2 h-10 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground"
+            >
+              הוסף לתוכנית
+            </button>
+          </div>
+        ) : null}
         {isCoach ? (
           <>
             <SecondaryButton onClick={onEdit}>
@@ -324,7 +363,6 @@ function ChallengeEditor({
       </div>
       <div className="space-y-2">
         <input value={challenge.title} onChange={(event) => onChange({ ...challenge, title: event.target.value })} placeholder="שם האתגר" className="w-full rounded-2xl border border-border/60 bg-background px-3 py-2.5 text-sm font-bold outline-none focus:border-primary" />
-        <textarea value={challenge.description} onChange={(event) => onChange({ ...challenge, description: event.target.value })} placeholder="תיאור והנחיות בטיחות" rows={3} className="w-full resize-none rounded-2xl border border-border/60 bg-background px-3 py-2.5 text-xs leading-relaxed outline-none focus:border-primary" />
         <div className="grid grid-cols-2 gap-2">
           <select value={challenge.difficulty} onChange={(event) => onChange({ ...challenge, difficulty: event.target.value as Challenge["difficulty"] })} className="rounded-2xl border border-border/60 bg-background px-3 py-2.5 text-xs font-bold outline-none">
             <option>מתחילים</option><option>ביניים</option><option>מתקדמים</option>
@@ -339,8 +377,10 @@ function ChallengeEditor({
               <label className="text-[10px] font-bold text-muted-foreground">סטים<input type="number" min={1} value={item.sets} onChange={(event) => onUpdateItem(item.id, { sets: Math.max(1, Number(event.target.value) || 1) })} className="mt-1 w-full rounded-xl border border-border/60 bg-secondary px-2 py-2 text-xs font-bold text-ink" /></label>
               <label className="text-[10px] font-bold text-muted-foreground">חזרות / שניות<input type="number" min={1} value={item.reps} onChange={(event) => onUpdateItem(item.id, { reps: Math.max(1, Number(event.target.value) || 1) })} className="mt-1 w-full rounded-xl border border-border/60 bg-secondary px-2 py-2 text-xs font-bold text-ink" /></label>
               <label className="text-[10px] font-bold text-muted-foreground">מנוחה<input type="number" min={0} value={item.rest} onChange={(event) => onUpdateItem(item.id, { rest: Math.max(0, Number(event.target.value) || 0) })} className="mt-1 w-full rounded-xl border border-border/60 bg-secondary px-2 py-2 text-xs font-bold text-ink" /></label>
+              <label className="text-[10px] font-bold text-muted-foreground">ק״מ<input type="number" min={0} step={0.1} value={item.distanceKm ?? ""} onChange={(event) => onUpdateItem(item.id, { distanceKm: event.target.value ? Number(event.target.value) : undefined })} className="mt-1 w-full rounded-xl border border-border/60 bg-secondary px-2 py-2 text-xs font-bold text-ink" /></label>
+              <label className="text-[10px] font-bold text-muted-foreground">קצב קמ״ש<input type="number" min={0} step={0.1} value={item.targetSpeedKmH ?? ""} onChange={(event) => onUpdateItem(item.id, { targetSpeedKmH: event.target.value ? Number(event.target.value) : undefined })} className="mt-1 w-full rounded-xl border border-border/60 bg-secondary px-2 py-2 text-xs font-bold text-ink" /></label>
+              <label className="text-[10px] font-bold text-muted-foreground">שיפוע %<input type="number" min={0} step={0.5} value={item.targetInclinePct ?? ""} onChange={(event) => onUpdateItem(item.id, { targetInclinePct: event.target.value ? Number(event.target.value) : undefined })} className="mt-1 w-full rounded-xl border border-border/60 bg-secondary px-2 py-2 text-xs font-bold text-ink" /></label>
             </div>
-            <input value={item.notes} onChange={(event) => onUpdateItem(item.id, { notes: event.target.value })} placeholder="הנחיה לסט" className="mt-2 w-full rounded-xl border border-border/60 bg-secondary px-2 py-2 text-xs text-ink outline-none focus:border-primary" />
           </div>
         ))}
         <div className="flex gap-2">

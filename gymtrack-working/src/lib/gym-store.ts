@@ -2083,7 +2083,7 @@ function createChallengeWorkout(challenge: Challenge, source: Workout): Workout 
     ...source,
     id: `challenge-run-${uid()}`,
     name: `${challenge.title} · ${source.name}`,
-    notes: [source.notes, `אתגר: ${challenge.title}`].filter(Boolean).join("\n\n"),
+    notes: source.notes,
     items: source.items.map((item) => {
       const copy = { ...item, id: `challenge-run-item-${uid()}` };
       if (item.workingSets) {
@@ -2095,6 +2095,33 @@ function createChallengeWorkout(challenge: Challenge, source: Workout): Workout 
       return copy;
     }),
   };
+}
+
+export function addChallengeToProgram(
+  challengeId: string,
+  programId: string,
+  weekday: number,
+) {
+  if (!canManageAssignedPlans()) return;
+  const challenge = data.challenges.find((item) => item.id === challengeId);
+  const program = data.programs.find((item) => item.id === programId);
+  const session = challenge?.sessions[0];
+  if (!challenge || !program || !session) return;
+
+  const workout = {
+    ...createChallengeWorkout(challenge, session),
+    weekday: Math.max(0, Math.min(6, Math.round(weekday))),
+  };
+  set({
+    ...data,
+    workouts: [...data.workouts, workout],
+    programs: data.programs.map((item) =>
+      item.id === programId && !item.dayIds.includes(workout.id)
+        ? { ...item, dayIds: [...item.dayIds, workout.id] }
+        : item,
+    ),
+  });
+  return workout;
 }
 
 /**

@@ -136,7 +136,10 @@ export type WorkoutItem = {
   rir?: number | null;
   rpe?: number | null;
   /** Optional running distance target represented by this item. */
-  distanceKm?: number;
+  distanceKm?: number | undefined;
+  /** Optional treadmill/cardio prescription values shown with the item. */
+  targetSpeedKmH?: number | undefined;
+  targetInclinePct?: number | undefined;
   warmups?: WarmupSet[];
   supersetId?: string;
   supersetPartnerId?: string;
@@ -151,6 +154,8 @@ export type Workout = {
   name: string;
   notes: string;
   items: WorkoutItem[];
+  /** Optional Sunday-first weekly slot used for the trainee's workout plan. */
+  weekday?: number;
   /** Marks challenge workouts that should also appear in the cardio log. */
   cardioType?: string;
 };

@@ -29,7 +29,12 @@ function Workouts() {
   const weeklyWorkouts = [
     ...workouts.filter((workout) => !activeChallengeWorkoutIds.has(workout.id)),
     ...workouts.filter((workout) => activeChallengeWorkoutIds.has(workout.id)),
-  ];
+  ].sort((a, b) => {
+    if (a.weekday === undefined && b.weekday === undefined) return 0;
+    if (a.weekday === undefined) return 1;
+    if (b.weekday === undefined) return -1;
+    return a.weekday - b.weekday;
+  });
 
   return (
     <AppShell kicker="אימונים" title="האימונים שלי" subtitle="רשימה פשוטה של כל האימונים שלך">
@@ -41,19 +46,16 @@ function Workouts() {
           />
           {activeChallengeNames.length > 0 ? (
             <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/5 px-3.5 py-3 text-start">
-              <p className="text-[10px] font-bold tracking-[0.12em] text-primary uppercase">תהליך פעיל</p>
+              <p className="text-[10px] font-bold tracking-[0.12em] text-primary uppercase">אתגרים פעילים</p>
               <p className="mt-1 text-xs font-extrabold text-ink">
                 {activeChallengeNames.join(" · ")}
-              </p>
-              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                האימונים של האתגר נשארים כאן בכל שבוע. פשוט נכנסים לאימון הבא וממשיכים מאיפה שעצרת.
               </p>
             </div>
           ) : null}
         {weeklyWorkouts.length > 0 ? (
           <div className="mt-3 space-y-2.5">
             {weeklyWorkouts.map((workout, index) => {
-              const day = weekDays[index];
+              const day = weekDays[workout.weekday ?? index];
               return (
                 <Link
                   key={workout.id}

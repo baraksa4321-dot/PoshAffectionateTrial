@@ -383,8 +383,18 @@ function Dashboard() {
     ...workouts.filter((workout) => !activeChallengeWorkoutIds.has(workout.id)),
     ...workouts.filter((workout) => activeChallengeWorkoutIds.has(workout.id)),
   ];
-  const scheduledWorkouts = weeklyWorkouts.slice(0, Math.min(weeklyWorkouts.length, 7)).map((workout, index) => {
-    const defaultDate = weekDays[index]?.date ?? weekDays[weekDays.length - 1]?.date ?? todayDateStr;
+  const scheduledWorkouts = weeklyWorkouts
+    .map((workout, index) => ({ workout, index }))
+    .sort((a, b) => {
+      if (a.workout.weekday === undefined && b.workout.weekday === undefined) return a.index - b.index;
+      if (a.workout.weekday === undefined) return 1;
+      if (b.workout.weekday === undefined) return -1;
+      return a.workout.weekday - b.workout.weekday;
+    })
+    .slice(0, Math.min(weeklyWorkouts.length, 7))
+    .map(({ workout, index }) => {
+    const weekIndex = workout.weekday ?? index;
+    const defaultDate = weekDays[weekIndex]?.date ?? weekDays[weekDays.length - 1]?.date ?? todayDateStr;
     const scheduledDate = defaultDate;
     const session = getCurrentWeekWorkoutSession(history, workout.id, now);
     const plannedSets = workout.items.reduce((sum, item) => sum + Math.max(0, item.sets), 0);

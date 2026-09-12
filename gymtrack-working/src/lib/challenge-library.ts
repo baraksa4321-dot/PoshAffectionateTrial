@@ -140,7 +140,7 @@ export const RETIRED_BUILT_IN_CHALLENGE_IDS = [
   "challenge-runner-core",
 ] as const;
 
-export const BUILT_IN_CHALLENGES: Challenge[] = [
+const BASE_BUILT_IN_CHALLENGES: Challenge[] = [
   skillChallenge(
     "challenge-handstand-wall",
     "עמידת ידיים על הקיר",
@@ -365,6 +365,146 @@ export const BUILT_IN_CHALLENGES: Challenge[] = [
       challengeItem("challenge-bike-cooldown", "ex-stationary-bike", "שחרור אופניים", 1, 300, "5 דקות", 0, "מורידות התנגדות בהדרגה."),
     ],
   ),
+];
+
+const RUNNING_CHALLENGES: Challenge[] = [
+  cardioChallenge(
+    "challenge-run-1k",
+    "ריצה 1 ק״מ",
+    "",
+    "מתחילים",
+    "1 אימון",
+    "sage",
+    "ריצה 1 ק״מ",
+    "",
+    "ריצה",
+    [
+      {
+        ...challengeItem("challenge-run-1k-distance", "ex-treadmill", "ריצה", 1, 1, "1 ק״מ", 0, ""),
+        distanceKm: 1,
+      },
+    ],
+  ),
+  cardioChallenge(
+    "challenge-run-3k",
+    "ריצה 3 ק״מ",
+    "",
+    "מתחילים",
+    "1 אימון",
+    "peach",
+    "ריצה 3 ק״מ",
+    "",
+    "ריצה",
+    [
+      {
+        ...challengeItem("challenge-run-3k-distance", "ex-treadmill", "ריצה", 1, 1, "3 ק״מ", 0, ""),
+        distanceKm: 3,
+      },
+    ],
+  ),
+  cardioChallenge(
+    "challenge-run-5k",
+    "ריצה 5 ק״מ",
+    "",
+    "ביניים",
+    "1 אימון",
+    "lavender",
+    "ריצה 5 ק״מ",
+    "",
+    "ריצה",
+    [
+      {
+        ...challengeItem("challenge-run-5k-distance", "ex-treadmill", "ריצה", 1, 1, "5 ק״מ", 0, ""),
+        distanceKm: 5,
+      },
+    ],
+  ),
+  cardioChallenge(
+    "challenge-run-10k",
+    "ריצה 10 ק״מ",
+    "",
+    "מתקדמים",
+    "1 אימון",
+    "sand",
+    "ריצה 10 ק״מ",
+    "",
+    "ריצה",
+    [
+      {
+        ...challengeItem("challenge-run-10k-distance", "ex-treadmill", "ריצה", 1, 1, "10 ק״מ", 0, ""),
+        distanceKm: 10,
+      },
+    ],
+  ),
+];
+
+const INCLINE_WALKING_CHALLENGES: Challenge[] = [
+  cardioChallenge(
+    "challenge-treadmill-incline-walk",
+    "הליכון — הליכה בשיפוע",
+    "",
+    "מתחילים",
+    "1 אימון",
+    "peach",
+    "הליכה בשיפוע",
+    "",
+    "הליכון",
+    [
+      {
+        ...challengeItem("challenge-incline-walk-warmup", "ex-treadmill", "חימום הליכון", 1, 5, "5 דקות", 0, ""),
+        targetSpeedKmH: 4,
+        targetInclinePct: 2,
+      },
+      {
+        ...challengeItem("challenge-incline-walk-main", "ex-treadmill", "הליכה בשיפוע", 1, 20, "20 דקות", 0, ""),
+        targetSpeedKmH: 5,
+        targetInclinePct: 8,
+      },
+      {
+        ...challengeItem("challenge-incline-walk-cooldown", "ex-treadmill", "שחרור הליכון", 1, 5, "5 דקות", 0, ""),
+        targetSpeedKmH: 4,
+        targetInclinePct: 2,
+      },
+    ],
+  ),
+  cardioChallenge(
+    "challenge-treadmill-incline-walk-30",
+    "הליכון — הליכה בשיפוע 30 דקות",
+    "",
+    "ביניים",
+    "1 אימון",
+    "sage",
+    "הליכה בשיפוע 30 דקות",
+    "",
+    "הליכון",
+    [
+      {
+        ...challengeItem("challenge-incline-walk-30-main", "ex-treadmill", "הליכה בשיפוע", 1, 30, "30 דקות", 0, ""),
+        targetSpeedKmH: 5.5,
+        targetInclinePct: 10,
+      },
+    ],
+  ),
+];
+
+function simplifyBuiltInChallenge(challenge: Challenge): Challenge {
+  const simplified: Challenge = {
+    ...challenge,
+    description: "",
+    sessions: challenge.sessions.map((session) => ({
+      ...session,
+      notes: "",
+      items: session.items.map((item) => ({ ...item, notes: "" })),
+    })),
+  };
+  delete simplified.nutritionTips;
+  return simplified;
+}
+
+export const BUILT_IN_CHALLENGES: Challenge[] = [
+  ...BASE_BUILT_IN_CHALLENGES.map(simplifyBuiltInChallenge),
+  ...RUNNING_CHALLENGES,
+  ...INCLINE_WALKING_CHALLENGES,
 ];
 
 export function cloneChallenge(challenge: Challenge): Challenge {

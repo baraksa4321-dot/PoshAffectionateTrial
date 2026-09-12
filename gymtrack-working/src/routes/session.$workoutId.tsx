@@ -1234,6 +1234,15 @@ function Session() {
                       {entry.cableGrip ? ` · מאחז: ${entry.cableGrip}` : ""}
                     </p>
                   ) : null}
+                  {item?.distanceKm || item?.targetSpeedKmH || item?.targetInclinePct ? (
+                    <p className="mt-1 text-[11px] font-bold text-primary">
+                      {item.distanceKm ? `${item.distanceKm} ק״מ` : ""}
+                      {item.distanceKm && (item.targetSpeedKmH || item.targetInclinePct) ? " · " : ""}
+                      {item.targetSpeedKmH ? `קצב ${item.targetSpeedKmH} קמ״ש` : ""}
+                      {item.targetSpeedKmH && item.targetInclinePct ? " · " : ""}
+                      {item.targetInclinePct ? `שיפוע ${item.targetInclinePct}%` : ""}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="flex items-center gap-1.5">
