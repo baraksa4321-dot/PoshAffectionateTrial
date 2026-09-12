@@ -4709,7 +4709,7 @@ export function CoachDashboardPage({
         const email = row.client.profiles?.email?.toLocaleLowerCase() ?? "";
         return name.includes(dashboardSearchLower) || email.includes(dashboardSearchLower);
       })
-    : [];
+    : dashboardFilterRows;
   const coachCount = allProfiles.filter((profile) => profile.role === "coach").length;
   const clientCount = allProfiles.filter((profile) => profile.role === "client").length;
   const ownerCount = allProfiles.filter((profile) => profile.role === "owner").length;
@@ -10610,33 +10610,29 @@ export function CoachDashboardPage({
                 autoFocus
               />
             </div>
-            {dashboardSearchLower ? (
-              filteredDashboardRows.length > 0 ? (
-                <div className="max-h-[45vh] space-y-1.5 overflow-y-auto pe-0.5">
-                  {filteredDashboardRows.map((row) => (
-                    <button
-                      key={row.client.client_id}
-                      type="button"
-                      onClick={() => openClientFromOverview(row.client.client_id)}
-                      className="flex w-full items-center justify-between gap-2 rounded-xl border border-border/60 bg-background px-3 py-2 text-start text-xs transition-colors hover:border-primary/40 hover:bg-primary/[0.03]"
-                    >
-                      <span className="truncate font-bold text-ink">
-                        {profileDisplayName(row.client.profiles)}
-                      </span>
-                      <span className="shrink-0 text-[10px] text-muted-foreground">
-                        פתיחת סביבת עבודה
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="rounded-xl bg-secondary p-3 text-center text-[11px] text-muted-foreground">
-                  לא נמצאו מתאמנים מתאימים.
-                </p>
-              )
+            {filteredDashboardRows.length > 0 ? (
+              <div className="max-h-[45vh] space-y-1.5 overflow-y-auto pe-0.5">
+                {filteredDashboardRows.map((row) => (
+                  <button
+                    key={row.client.client_id}
+                    type="button"
+                    onClick={() => openClientFromOverview(row.client.client_id)}
+                    className="flex w-full items-center justify-between gap-2 rounded-xl border border-border/60 bg-background px-3 py-2 text-start text-xs transition-colors hover:border-primary/40 hover:bg-primary/[0.03]"
+                  >
+                    <span className="truncate font-bold text-ink">
+                      {profileDisplayName(row.client.profiles)}
+                    </span>
+                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                      פתיחת סביבת עבודה
+                    </span>
+                  </button>
+                ))}
+              </div>
             ) : (
               <p className="rounded-xl bg-secondary p-3 text-center text-[11px] text-muted-foreground">
-                התחילי להקליד כדי לחפש מתאמן.
+                {dashboardSearchLower
+                  ? "לא נמצאו מתאמנים מתאימים."
+                  : "אין מתאמנים להצגה בכרטיסייה הזו."}
               </p>
             )}
           </div>
