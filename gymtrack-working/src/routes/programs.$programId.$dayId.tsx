@@ -563,13 +563,13 @@ function DayBuilder() {
               </IconButton>
             </div>
 
-            <div className="num-pill flex h-12 items-center gap-2 px-3">
-              <Search className="h-4 w-4 text-muted-foreground" />
+            <div className="num-pill flex min-h-12 w-full items-center gap-2 px-3 py-1">
+              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
               <input
                 value={pickerQuery}
                 onChange={(event) => setPickerQuery(event.target.value)}
                 placeholder="חפש לפי שם, ציוד או שריר..."
-                className="w-full bg-transparent text-[14px] outline-none"
+                className="min-w-0 flex-1 bg-transparent text-[14px] leading-5 outline-none"
               />
             </div>
 

@@ -270,7 +270,7 @@ function Library() {
       }
     >
       {/* Search */}
-      <div className="num-pill flex h-12 items-center gap-2 px-3.5">
+      <div className="num-pill flex min-h-12 w-full items-center gap-2 px-3.5 py-1">
         <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
         <input
           value={q}
@@ -280,7 +280,7 @@ function Library() {
             "חפשי לפי שם תרגיל, ציוד או שריר...",
             "חפש לפי שם תרגיל, ציוד או שריר...",
           )}
-          className="w-full min-w-0 bg-transparent text-[14px] outline-none placeholder:text-muted-foreground"
+          className="min-w-0 flex-1 bg-transparent text-[14px] leading-5 outline-none placeholder:text-muted-foreground"
         />
         <button
           type="button"

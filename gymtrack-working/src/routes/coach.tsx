@@ -5467,7 +5467,7 @@ export function CoachDashboardPage({
                   value={ownerUserSearch}
                   onChange={(event) => setOwnerUserSearch(event.target.value)}
                   placeholder="חיפוש לפי שם או אימייל..."
-                  className="w-full bg-transparent text-xs text-ink outline-none placeholder:text-muted-foreground"
+                  className="min-w-0 flex-1 bg-transparent text-xs leading-5 text-ink outline-none placeholder:text-muted-foreground"
                   aria-label="חיפוש משתמשים לפי שם או אימייל"
                 />
               </div>
@@ -5843,7 +5843,7 @@ export function CoachDashboardPage({
                 <span className="text-[11px] text-muted-foreground">תוכניות ותפריטים בלבד</span>
               </div>
 
-              <div className="num-pill flex h-10 items-center gap-2 px-3">
+              <div className="num-pill flex min-h-10 w-full items-center gap-2 px-3 py-1">
                 <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <label htmlFor="coach-client-search" className="sr-only">
                   חיפוש מתאמן
@@ -10361,13 +10361,13 @@ export function CoachDashboardPage({
                 </button>
               </div>
 
-              <div className="num-pill flex h-12 items-center gap-2 px-3">
-                <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="num-pill flex min-h-12 w-full items-center gap-2 px-3 py-1">
+                <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <input
                   value={exerciseQuery}
                   onChange={(event) => setExerciseQuery(event.target.value)}
                   placeholder="חפש לפי שם, ציוד או שריר..."
-                  className="w-full bg-transparent text-[14px] outline-none"
+                  className="min-w-0 flex-1 bg-transparent text-[14px] leading-5 outline-none"
                   autoFocus
                 />
               </div>

@@ -730,13 +730,13 @@ function NutritionLog() {
       >
         {showRecipes ? (
           <div className="border-t border-border/50 px-3 pb-3 pt-2">
-            <div className="num-pill mb-2 flex h-9 items-center gap-2 px-2.5">
+            <div className="num-pill mb-2 flex min-h-9 w-full items-center gap-2 px-2.5 py-1">
               <BookOpen className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <input
                 value={recipeQuery}
                 onChange={(event) => setRecipeQuery(event.target.value)}
                 placeholder={genderText(gender, "חפשי מתכון...", "חפש מתכון...")}
-                className="w-full bg-transparent text-[11px] text-ink outline-none placeholder:text-muted-foreground"
+                className="min-w-0 flex-1 bg-transparent text-[11px] leading-4 text-ink outline-none placeholder:text-muted-foreground"
                 aria-label="חיפוש מתכונים"
               />
             </div>

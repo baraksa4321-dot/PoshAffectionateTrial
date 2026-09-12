@@ -1368,6 +1368,13 @@ html.night-mode .auth-panel {
   padding: 0 4px;
 }
 
+/* Keep browser-native search controls from changing the height or padding of
+   the shared search rows on mobile Safari and Chromium. */
+input[type="search"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .ink-card {
   background: linear-gradient(
     135deg,

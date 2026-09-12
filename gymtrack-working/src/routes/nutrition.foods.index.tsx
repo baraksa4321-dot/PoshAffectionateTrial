@@ -103,7 +103,7 @@ function FoodLibrary() {
         </div>
       }
     >
-      <div className="num-pill flex h-12 items-center gap-2 px-3.5">
+      <div className="num-pill flex min-h-12 w-full items-center gap-2 px-3.5 py-1">
         <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
         <input
           value={query}
@@ -113,11 +113,11 @@ function FoodLibrary() {
             "חפשי לפי שם, מותג או ברקוד...",
             "חפש לפי שם, מותג או ברקוד...",
           )}
-          className="w-full min-w-0 bg-transparent text-[14px] outline-none placeholder:text-muted-foreground"
+          className="min-w-0 flex-1 bg-transparent text-[14px] leading-5 outline-none placeholder:text-muted-foreground"
         />
         <Barcode className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
       </div>
-      <label className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+      <label className="mt-2 flex min-h-9 w-full items-center gap-2 text-[11px] font-semibold text-muted-foreground">
         <Barcode className="h-3.5 w-3.5 text-primary" />
         <span className="sr-only">חיפוש ברקוד</span>
         <input
@@ -130,7 +130,7 @@ function FoodLibrary() {
           inputMode="numeric"
           pattern="[0-9]*"
           placeholder="אפשר להדביק כאן ברקוד"
-          className="min-w-0 flex-1 border-b border-border/60 bg-transparent px-1 py-1.5 text-[12px] text-ink outline-none placeholder:text-muted-foreground"
+          className="min-w-0 flex-1 border-b border-border/60 bg-transparent px-1 py-1.5 text-[12px] leading-5 text-ink outline-none placeholder:text-muted-foreground"
           aria-label="חיפוש לפי ברקוד"
         />
       </label>
