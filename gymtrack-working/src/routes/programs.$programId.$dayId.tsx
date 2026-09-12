@@ -25,13 +25,12 @@ import {
   Link2,
   Link2Off,
   Plus,
-  Save,
   Search,
   SlidersHorizontal,
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Stepper } from "@/components/Stepper";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
@@ -40,7 +39,6 @@ import {
   EmptyState,
   IconButton,
   Pill,
-  PrimaryButton,
   SecondaryButton,
   SectionHeader,
 } from "@/components/ui-app/primitives";
@@ -245,10 +243,31 @@ function DayBuilder() {
   const [creatingExercise, setCreatingExercise] = useState(false);
   const [newExerciseName, setNewExerciseName] = useState("");
   const [pendingDeleteDay, setPendingDeleteDay] = useState(false);
+  const [autoSaveState, setAutoSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const autoSaveTimerRef = useRef<number | null>(null);
   const sensors = useSensors(
     useSensor(TouchSensor, { activationConstraint: { delay: 120, tolerance: 8 } }),
     useSensor(PointerSensor),
   );
+
+  useEffect(() => {
+    if (!canManageProgram || !program?.id || !draft.name.trim() || draft.weekday === undefined) {
+      return;
+    }
+    if (autoSaveTimerRef.current !== null) window.clearTimeout(autoSaveTimerRef.current);
+    setAutoSaveState("saving");
+    autoSaveTimerRef.current = window.setTimeout(() => {
+      saveWorkoutInProgram(program.id, { ...draft, name: draft.name.trim() });
+      setAutoSaveState("saved");
+      autoSaveTimerRef.current = null;
+    }, 500);
+    return () => {
+      if (autoSaveTimerRef.current !== null) {
+        window.clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+    };
+  }, [canManageProgram, draft, program?.id]);
 
   if (userProfile?.role === undefined) {
     return (
@@ -325,12 +344,6 @@ function DayBuilder() {
         ? current
         : { ...current, items: arrayMove(current.items, oldIndex, newIndex) };
     });
-  };
-
-  const save = () => {
-    if (!canManageProgram || !draft.name.trim() || draft.weekday === undefined) return;
-    saveWorkoutInProgram(program.id, { ...draft, name: draft.name.trim() });
-    navigate({ to: "/programs/$programId", params: { programId: program.id } });
   };
 
   const pickerExercises = pickerExerciseCatalog.filter(
@@ -510,13 +523,11 @@ function DayBuilder() {
       )}
 
       <div className="mt-6 space-y-3">
-        <PrimaryButton
-          data-testid="button-save-day"
-          onClick={save}
-          leading={<Save className="h-4 w-4" strokeWidth={2.2} />}
-        >
-          שמור יום אימון
-        </PrimaryButton>
+        {autoSaveState !== "idle" ? (
+          <p className="text-center text-[11px] font-semibold text-muted-foreground">
+            {autoSaveState === "saving" ? "שומר אוטומטית..." : "השינויים נשמרו אוטומטית"}
+          </p>
+        ) : null}
         {!isNew ? (
           <button
             type="button"
@@ -1237,5 +1248,4 @@ function SortableItem({
 }
 
 void Pill;
-void PrimaryButton;
 void SecondaryButton;

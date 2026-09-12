@@ -45,8 +45,9 @@ function Workouts() {
       pageClassName="workouts-page"
     >
       <section className="mt-5 text-start">
-        <div className="flex justify-end">
+        <div className="flex items-center justify-end gap-1.5">
           <ChallengeLibrary compact />
+          <CardioTracker />
         </div>
         {activeChallengeNames.length > 0 ? (
             <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/5 px-3.5 py-3 text-start">
@@ -109,7 +110,6 @@ function Workouts() {
           />
         )}
       </section>
-      <CardioTracker />
     </AppShell>
   );
 }

@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Apple,
   ArrowLeft,
-  ChevronLeft,
   Dumbbell,
   Flame,
   Flame as FireIcon,
@@ -815,10 +814,6 @@ function Dashboard() {
                   </p>
                 </>
               ) : null}
-              <div className="mt-auto flex items-center justify-between rounded-xl bg-background/80 px-2 py-1.5 text-[10px] font-bold text-ink">
-                <span>{Math.round(totalsToday.protein)} גרם חלבון</span>
-                <ChevronLeft className="h-3.5 w-3.5" />
-              </div>
             </Link>
           </div>
         </div>

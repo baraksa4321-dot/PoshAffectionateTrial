@@ -136,6 +136,7 @@ function ProgramsPage() {
             action={
               <div className="flex items-center gap-1.5">
                 <ChallengeLibrary compact />
+                <CardioTracker />
                 <button
                   type="button"
                   onClick={() => setShowPlaylistMenu(true)}
@@ -276,8 +277,6 @@ function ProgramsPage() {
           />
         )}
       </section>
-
-      <CardioTracker />
 
       {showPlaylistMenu ? (
         <Overlay

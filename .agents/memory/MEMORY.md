@@ -67,3 +67,4 @@
 - [Meal option groups](meal-option-groups.md) — Represent alternate prescribed meals as grouped Meal records; keep food substitutions at the MealFood level.
 - [Secure runtime secrets](secure-runtime-secrets.md) — ShellExec may not expose managed secret values; load them through the secure flow and restart the consuming workflow.
 - [Weekly workout scheduling](weekly-workout-scheduling.md) — Explicit Sunday-first weekdays drive the dashboard; fully legacy plans retain deterministic order fallback.
+- [Hook-safe autosave effects](hook-safe-autosave-effects.md) — Route autosave effects must be declared before role/data early returns so loading states never change hook order.

@@ -1812,6 +1812,7 @@ export function CoachDashboardPage({
   const workspaceSwipeStart = useRef<{ x: number; y: number } | null>(null);
   const [plannedMeals, setPlannedMeals] = useState<Meal[]>([]);
   const plannedMealsDraftRef = useRef<Meal[]>([]);
+  const plannedMealsDraftVersionRef = useRef(0);
   const [menuFoodMealId, setMenuFoodMealId] = useState<string | null>(null);
   const [menuFoodId, setMenuFoodId] = useState("");
   const [menuFoodQuery, setMenuFoodQuery] = useState("");
@@ -1895,6 +1896,7 @@ export function CoachDashboardPage({
   };
   const markPlannedMealsDraftDirty = () => {
     plannedMealsDraftDirtyRef.current = true;
+    plannedMealsDraftVersionRef.current += 1;
   };
 
   useEffect(() => {
@@ -3514,7 +3516,11 @@ export function CoachDashboardPage({
   };
 
   // Assign Prescribed Exercise to Program Day
-  const handleAddExerciseToDay = async (e: React.FormEvent | null, exerciseIdOverride?: string) => {
+  const handleAddExerciseToDay = async (
+    e: React.FormEvent | null,
+    exerciseIdOverride?: string,
+    keepEditorOpen = false,
+  ) => {
     e?.preventDefault();
     const exerciseId = exerciseIdOverride ?? selectedExId;
     if (!isCoach || !selectedClientId || !editingDayId || !exerciseId) return;
@@ -3636,11 +3642,17 @@ export function CoachDashboardPage({
         }
         pullClientDataForCoach(selectedClientId).then(applyClientDetails);
       }
-      setEditingItemId(null);
-      setSelectedExId("");
-      setShowExerciseForm(false);
-      setTechniqueNotes("");
-      setExerciseBuilderNotice("השינויים נשמרו. אפשר להמשיך לבנות את האימון.");
+      if (!keepEditorOpen) {
+        setEditingItemId(null);
+        setSelectedExId("");
+        setShowExerciseForm(false);
+        setTechniqueNotes("");
+      }
+      setExerciseBuilderNotice(
+        keepEditorOpen
+          ? "השינויים עודכנו אוטומטית."
+          : "השינויים עודכנו. אפשר להמשיך לבנות את האימון.",
+      );
       return;
     }
 
@@ -3844,6 +3856,46 @@ export function CoachDashboardPage({
     setExerciseBuilderNotice("התרגיל נוסף. אפשר לבחור תרגיל נוסף ולהמשיך לבנות.");
     pullClientDataForCoach(selectedClientId).then(applyClientDetails);
   };
+
+  useEffect(() => {
+    if (!editingItemId || !showExerciseForm || !selectedClientId) return;
+    const timeoutId = window.setTimeout(() => {
+      void handleAddExerciseToDay(null, undefined, true);
+    }, 650);
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    editingItemId,
+    selectedClientId,
+    showExerciseForm,
+    selectedExId,
+    selectedEquipment,
+    selectedCableGrip,
+    setsCount,
+    setModes,
+    setWeights,
+    setRepMins,
+    setRepMaxes,
+    setRests,
+    setNotes,
+    targetWeight,
+    repMin,
+    repMax,
+    restSec,
+    techNotes,
+    warmupWeight,
+    warmupReps,
+    warmupRepsMax,
+    supersetPartnerId,
+    supersetPartnerWeight,
+    supersetRepsMin,
+    supersetRepsMax,
+    dropLevel1Weight,
+    dropLevel1RepsMin,
+    dropLevel1RepsMax,
+    dropLevel2Weight,
+    dropLevel2RepsMin,
+    dropLevel2RepsMax,
+  ]);
 
   useEffect(() => {
     const exerciseId = autoAssignCreatedExerciseId;
@@ -4118,6 +4170,7 @@ export function CoachDashboardPage({
 
   const savePlannedMenu = async () => {
     if (!isCoach || !selectedClientId || savingPlannedMenu) return;
+    const saveVersion = plannedMealsDraftVersionRef.current;
     const menuSnapshot = (JSON.parse(JSON.stringify(plannedMealsDraftRef.current)) as Meal[]).map(
       (meal) => ({
         ...meal,
@@ -4152,6 +4205,11 @@ export function CoachDashboardPage({
         throw new Error("התפריט שחזר מהשרת אינו זה שנשלח.");
       }
 
+      if (plannedMealsDraftVersionRef.current !== saveVersion) {
+        setMenuNotice("השינוי האחרון יישמר אוטומטית מיד לאחר סיום השמירה הנוכחית.");
+        return;
+      }
+
       plannedMealsDraftDirtyRef.current = false;
       if (isSelfSelected) {
         savePlannedMeals(persistedPlannedMeals);
@@ -4174,6 +4232,16 @@ export function CoachDashboardPage({
       setSavingPlannedMenu(false);
     }
   };
+
+  useEffect(() => {
+    if (!isCoach || !selectedClientId || !plannedMealsDraftDirtyRef.current || savingPlannedMenu) {
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      void savePlannedMenu();
+    }, 650);
+    return () => window.clearTimeout(timeoutId);
+  }, [isCoach, plannedMeals, savingPlannedMenu, selectedClientId]);
 
   const renderOwnerCalorieToggle = (profile: ProfileRow, compact = false) => {
     const hasProfile = profile.profile_exists !== false;
@@ -8079,7 +8147,9 @@ export function CoachDashboardPage({
                                                               }}
                                                               className="h-11 w-full rounded-full bg-primary text-sm font-bold text-primary-foreground shadow-sm"
                                                             >
-                                                              שמור תרגיל ליום אימון
+                                                               {editingItemId
+                                                                 ? "עדכון התרגיל באימון"
+                                                                 : "הוספת התרגיל לאימון"}
                                                             </button>
                                                           </div>
                                                         </div>
@@ -8954,14 +9024,18 @@ export function CoachDashboardPage({
                                                   </div>
                                                 ) : null}
 
-                                                <button
-                                                  type="submit"
-                                                  className="w-full rounded-lg bg-primary py-1.5 font-bold text-white shadow-xs cursor-pointer"
-                                                >
-                                                  {editingItemId
-                                                    ? "שמור שינויי תרגיל"
-                                                    : "שמור תרגיל ליום אימון"}
-                                                </button>
+                                                {editingItemId ? (
+                                                  <p className="rounded-lg bg-primary/10 px-3 py-2 text-center text-[11px] font-bold text-primary">
+                                                    השינויים נשמרים אוטומטית
+                                                  </p>
+                                                ) : (
+                                                  <button
+                                                    type="submit"
+                                                    className="w-full rounded-lg bg-primary py-1.5 font-bold text-white shadow-xs cursor-pointer"
+                                                  >
+                                                    הוספת התרגיל לאימון
+                                                  </button>
+                                                )}
                                               </form>
                                             </ExerciseBuilderPlacement>
                                           )}
@@ -9501,23 +9575,13 @@ export function CoachDashboardPage({
                       })}
                     </div>
 
-                             <div className="flex gap-2">
+                    <div className="flex">
                       <button
                         type="button"
                         onClick={addPlannedMeal}
-                        className="flex-1 rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-50"
+                        className="w-full rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-50"
                       >
                         + {genderText(gender, "הוסיפי ארוחה", "הוסף ארוחה")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={savePlannedMenu}
-                        disabled={savingPlannedMenu}
-                        className="flex-1 rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 disabled:cursor-wait disabled:opacity-60"
-                      >
-                        {savingPlannedMenu
-                          ? "שומר..."
-                          : genderText(gender, "שמרי תפריט", "שמור תפריט")}
                       </button>
                     </div>
                     {menuNotice ? (

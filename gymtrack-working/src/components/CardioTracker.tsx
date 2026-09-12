@@ -1,5 +1,5 @@
-import { Footprints, Pencil, Plus, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { Footprints, Pencil, Trash2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Overlay } from "@/components/ui-app/Overlay";
 import { FreeTextInput } from "@/components/FreeTextInput";
 import {
@@ -28,6 +28,7 @@ function cardioFieldVisibility(type: string) {
   };
 }
 
+
 export function CardioTracker() {
   const { cardioLogs, userProfile } = useGym();
   const gender = userProfile?.gender;
@@ -41,6 +42,8 @@ export function CardioTracker() {
   const [cardioDistance, setCardioDistance] = useState("");
   const [cardioError, setCardioError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const autoSavedCardioIdRef = useRef<string | null>(null);
+  const cardioSaveTimerRef = useRef<number | null>(null);
 
   const cardioDurationValue = Number(cardioDuration) || 0;
   const cardioSpeedValue = Number(cardioSpeed) || 0;
@@ -63,9 +66,48 @@ export function CardioTracker() {
     setCardioError("");
   };
 
+  const persistCardioDraft = () => {
+    if (!showCardioModal || !cardioType || cardioDurationValue <= 0) return false;
+    const log = {
+      date: todayKey(),
+      type: cardioType,
+      durationMin: cardioDurationValue,
+      ...(cardioSpeedValue > 0 ? { speed: cardioSpeedValue } : {}),
+      ...(cardioInclineValue > 0 ? { incline: cardioInclineValue } : {}),
+      ...(Number(cardioDistance) > 0 ? { distanceKm: Number(cardioDistance) } : {}),
+      calories: cardioCalories,
+    };
+    const targetId = editingCardioId ?? autoSavedCardioIdRef.current;
+
+    if (targetId) {
+      updateCardioLog({ id: targetId, ...log });
+    } else {
+      autoSavedCardioIdRef.current = saveCardioLog(log).id;
+    }
+
+    setCardioError("");
+    setSuccessMessage(
+      editingCardioId
+        ? genderText(gender, "אימון האירובי עודכן אוטומטית.", "אימון האירובי עודכן אוטומטית.")
+        : genderText(
+            gender,
+            "אימון אירובי נוסף אוטומטית לאימונים.",
+            "אימון אירובי נוסף אוטומטית לאימונים.",
+          ),
+    );
+    return true;
+  };
+
   const closeCardioForm = () => {
+    persistCardioDraft();
+    if (cardioSaveTimerRef.current !== null) {
+      window.clearTimeout(cardioSaveTimerRef.current);
+      cardioSaveTimerRef.current = null;
+    }
     setShowCardioModal(false);
     resetCardioForm();
+    autoSavedCardioIdRef.current = null;
+    setSuccessMessage("");
   };
 
   const openCardioForm = (entry?: CardioLog) => {
@@ -83,105 +125,47 @@ export function CardioTracker() {
     setShowCardioModal(true);
   };
 
-  const handleCardioSave = () => {
-    if (!cardioType || cardioDurationValue <= 0) {
-      setCardioError(
-        genderText(gender, "בחרי פעילות ומשך זמן גדול מאפס.", "בחר פעילות ומשך זמן גדול מאפס."),
-      );
-      return;
+  useEffect(() => {
+    if (!showCardioModal || !cardioType || cardioDurationValue <= 0) return;
+
+    if (cardioSaveTimerRef.current !== null) {
+      window.clearTimeout(cardioSaveTimerRef.current);
     }
 
-    const log = {
-      date: todayKey(),
-      type: cardioType,
-      durationMin: cardioDurationValue,
-      ...(cardioSpeedValue > 0 ? { speed: cardioSpeedValue } : {}),
-      ...(cardioInclineValue > 0 ? { incline: cardioInclineValue } : {}),
-      ...(Number(cardioDistance) > 0 ? { distanceKm: Number(cardioDistance) } : {}),
-      calories: cardioCalories,
+    cardioSaveTimerRef.current = window.setTimeout(() => {
+      persistCardioDraft();
+      cardioSaveTimerRef.current = null;
+    }, 650);
+
+    return () => {
+      if (cardioSaveTimerRef.current !== null) {
+        window.clearTimeout(cardioSaveTimerRef.current);
+        cardioSaveTimerRef.current = null;
+      }
     };
-
-    if (editingCardioId) updateCardioLog({ id: editingCardioId, ...log });
-    else saveCardioLog(log);
-
-    setSuccessMessage(
-      editingCardioId
-        ? genderText(gender, "אימון האירובי עודכן.", "אימון האירובי עודכן.")
-        : genderText(gender, "אימון אירובי נשמר.", "אימון אירובי נשמר."),
-    );
-    window.setTimeout(() => setSuccessMessage(""), 3000);
-    closeCardioForm();
-  };
+  }, [
+    cardioCalories,
+    cardioDistance,
+    cardioDurationValue,
+    cardioInclineValue,
+    cardioSpeedValue,
+    cardioType,
+    editingCardioId,
+    gender,
+    showCardioModal,
+  ]);
 
   return (
-    <section className="mt-6 text-start">
-      <div className="mb-3.5 flex items-end justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className="break-words font-display text-[clamp(15px,4.5vw,17px)] font-extrabold leading-snug tracking-tight text-ink">
-            אירובי
-          </h2>
-        </div>
-        <button
-          type="button"
-          onClick={() => openCardioForm()}
-          className="press inline-flex h-8 items-center gap-1 rounded-full bg-primary px-3 text-[12px] font-bold text-primary-foreground"
-        >
-          <Plus className="h-3.5 w-3.5" /> הוספה
-        </button>
-      </div>
-
-      {successMessage ? (
-        <p className="mb-3 rounded-2xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-bold text-primary">
-          {successMessage}
-        </p>
-      ) : null}
-
-      <div className="surface-card overflow-hidden rounded-3xl border border-border/60">
-        {(cardioLogs ?? []).length ? (
-          <div className="divide-y divide-border/60">
-            {(cardioLogs ?? []).slice(0, 3).map((entry) => (
-              <div key={entry.id} className="flex items-center gap-3 p-3.5">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
-                  <Footprints className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-bold text-ink">{entry.type}</p>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    {entry.durationMin} דקות
-                    {showCalories ? ` · כ-${entry.calories} קל׳ · ` : " · "}
-                    {new Date(entry.date).toLocaleDateString("he-IL")}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => openCardioForm(entry)}
-                  aria-label={`עריכת ${entry.type}`}
-                  className="grid h-8 w-8 place-items-center rounded-xl text-muted-foreground hover:bg-secondary hover:text-ink"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    deleteCardioLog(entry.id);
-                    setSuccessMessage("אימון האירובי נמחק.");
-                    window.setTimeout(() => setSuccessMessage(""), 3000);
-                  }}
-                  aria-label={`מחיקת ${entry.type}`}
-                  className="grid h-8 w-8 place-items-center rounded-xl text-muted-foreground hover:bg-rose-50 hover:text-rose-700"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="p-4">
-            <p className="text-[13px] font-bold text-ink">אירובי</p>
-          </div>
-        )}
-      </div>
-
+    <>
+      <button
+        type="button"
+        onClick={() => openCardioForm()}
+        className="press inline-flex h-8 items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 text-[10px] font-bold text-ink transition-colors hover:bg-primary/20"
+        aria-label="פתיחת רישום אירובי"
+      >
+        <Footprints className="h-3.5 w-3.5 text-primary" />
+        אירובי
+      </button>
       {showCardioModal ? (
         <Overlay
           open={showCardioModal}
@@ -213,6 +197,11 @@ export function CardioTracker() {
                 <X className="h-4 w-4" />
               </button>
             </div>
+            {successMessage ? (
+              <p className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-[11px] font-bold text-primary">
+                {successMessage}
+              </p>
+            ) : null}
 
             <div className="grid gap-3 text-xs">
               <label className="grid gap-1.5 font-bold text-muted-foreground">
@@ -287,16 +276,46 @@ export function CardioTracker() {
               </div>
             ) : null}
             {cardioError ? <p className="text-xs font-semibold text-rose-700">{cardioError}</p> : null}
-            <button
-              type="button"
-              onClick={handleCardioSave}
-              className="h-11 w-full rounded-2xl bg-primary text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90"
-            >
-              {editingCardioId ? "שמור שינויים" : "שמור אימון אירובי"}
-            </button>
+            <p className="text-center text-[11px] font-semibold text-muted-foreground">
+              {cardioDurationValue > 0
+                ? "האימון נשמר אוטומטית לאחר הזנת הפרטים."
+                : "הזיני משך זמן כדי להוסיף את האימון אוטומטית."}
+            </p>
+            {(cardioLogs ?? []).length > 0 ? (
+              <div className="border-t border-border/60 pt-3">
+                <p className="mb-2 text-[10px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
+                  אימונים אחרונים
+                </p>
+                <div className="space-y-1.5">
+                  {(cardioLogs ?? []).slice(0, 3).map((entry) => (
+                    <div key={entry.id} className="flex items-center gap-2 rounded-xl bg-secondary/60 px-2.5 py-2">
+                      <span className="min-w-0 flex-1 truncate text-[11px] font-bold text-ink">
+                        {entry.type} · {entry.durationMin} דקות
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => openCardioForm(entry)}
+                        aria-label={`עריכת ${entry.type}`}
+                        className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground hover:bg-background hover:text-ink"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteCardioLog(entry.id)}
+                        aria-label={`מחיקת ${entry.type}`}
+                        className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground hover:bg-rose-50 hover:text-rose-700"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </Overlay>
       ) : null}
-    </section>
+    </>
   );
 }

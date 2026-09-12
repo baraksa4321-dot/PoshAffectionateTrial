@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, GripVertical, Plus, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { exerciseDisplayName } from "@/lib/exercise-library";
 import { Stepper } from "@/components/Stepper";
@@ -37,6 +37,22 @@ function Builder() {
 
   const [draft, setDraft] = useState<Workout>(existing ?? emptyWorkout());
   const [picker, setPicker] = useState(false);
+  const autoSaveTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!canManageProgram || !draft.name.trim()) return;
+    if (autoSaveTimerRef.current !== null) window.clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = window.setTimeout(() => {
+      saveWorkout({ ...draft, name: draft.name.trim() });
+      autoSaveTimerRef.current = null;
+    }, 500);
+    return () => {
+      if (autoSaveTimerRef.current !== null) {
+        window.clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+    };
+  }, [canManageProgram, draft]);
 
   if (userProfile?.role === undefined) {
     return (
@@ -110,12 +126,6 @@ function Builder() {
     items[index] = items[target]!;
     items[target] = a;
     setDraft({ ...draft, items });
-  };
-
-  const onSave = () => {
-    const w = { ...draft, name: draft.name.trim() || "אימון ללא שם" };
-    saveWorkout(w);
-    navigate({ to: "/programs" });
   };
 
   return (
@@ -358,14 +368,6 @@ function Builder() {
         className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-secondary font-semibold active:scale-[0.98]"
       >
         <Plus className="h-5 w-5" /> הוסף תרגיל
-      </button>
-
-      <button
-        type="button"
-        onClick={onSave}
-        className="mt-3 h-14 w-full rounded-xl bg-primary text-base font-semibold text-primary-foreground active:scale-[0.98]"
-      >
-        שמור אימון
       </button>
 
       {!isNew && (
