@@ -6234,6 +6234,7 @@ body {
 
   .nutrition-page .app-main {
     padding-top: 0.35rem !important;
+    padding-bottom: calc(8rem + env(safe-area-inset-bottom)) !important;
   }
 
   .nutrition-page .nutrition-date-selector {
@@ -7469,7 +7470,7 @@ html.night-mode [class*="border-border/"] {
  * and account control, so the feature tiles need their own breathing room. */
 @media (max-width: 639px) {
   html:not(.night-mode) .dashboard-editorial-shell .app-main {
-    padding-top: 2.5rem !important;
+    padding-top: 0.65rem !important;
   }
 
   html:not(.night-mode) .dashboard-editorial-shell .home-feature-item {
