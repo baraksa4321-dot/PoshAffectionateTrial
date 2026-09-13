@@ -1,0 +1,10 @@
+---
+name: Video feedback
+description: Coach comments on trainee performance videos use a dedicated, realtime-safe feedback record.
+---
+
+Use a dedicated video-feedback record for comments attached to a specific uploaded performance video; keep general workout feedback separate. The record carries the trainee, coach, session, exercise, storage path, message, and read timestamp. RLS limits reads to the trainee or assigned coach, creation to assigned coaches, and read-state updates to the trainee.
+
+**Why:** General client feedback cannot identify the exact video or support the unread/read loop required by the trainee home screen.
+
+**How to apply:** Keep the table optional during staged schema rollout, include it in both trainee and selected-coach realtime subscriptions, and preserve the local unread state until the server confirms `seen_at`.

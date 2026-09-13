@@ -72,3 +72,4 @@
 - [Date-of-birth age source](date-of-birth-age-source.md) — Treat date of birth as the only editable age source; display and calculate completed age rather than accepting manual age input.
 - [Push token ownership](push-token-claim.md) — FCM token rotation needs an authenticated server-side claim because token uniqueness spans users while RLS scopes rows.
 - [Rest timer background limits](rest-timer-background.md) — Native local notifications are reliable; Web/PWA background sound needs a system-push or media-session strategy.
+- [Video feedback](video-feedback.md) — Keep coach comments on specific performance videos in a dedicated RLS-protected realtime record with trainee read state.

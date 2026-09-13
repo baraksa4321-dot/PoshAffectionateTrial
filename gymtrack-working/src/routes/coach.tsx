@@ -75,6 +75,7 @@ import {
   uniqueCanonicalExercises,
 } from "../lib/exercise-library";
 import { loadCoachMessages, sendCoachMessage } from "../lib/coach-messages";
+import { createVideoFeedback } from "../lib/video-feedback";
 import { isSafeHttpUrl, isSafeVideoSource } from "../lib/url-security";
 import {
   getNextWorkoutReportWeekOffset,
@@ -97,6 +98,7 @@ import type {
   MealFood,
   Program,
   UserRole,
+  VideoFeedback,
   Workout,
   WorkoutItem,
 } from "../lib/gym-types";
@@ -679,21 +681,125 @@ type WorkoutReviewRecord = {
   entry: HistoryEntry;
 };
 
+function VideoFeedbackThread({
+  clientId,
+  sessionId,
+  workoutId,
+  entry,
+  title,
+  videoFeedbacks,
+}: {
+  clientId: string;
+  sessionId: string;
+  workoutId?: string;
+  entry: HistoryEntry;
+  title: string;
+  videoFeedbacks: VideoFeedback[];
+}) {
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const [localFeedbacks, setLocalFeedbacks] = useState(videoFeedbacks);
+  const feedbacks = localFeedbacks.filter(
+    (feedback) =>
+      feedback.sessionId === sessionId &&
+      feedback.exerciseId === entry.exerciseId &&
+      feedback.videoPath === entry.videoPath,
+  );
+
+  useEffect(() => setLocalFeedbacks(videoFeedbacks), [videoFeedbacks]);
+
+  return (
+    <div className="mt-2 rounded-xl border border-primary/20 bg-primary/[0.035] p-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="flex items-center gap-1 text-[11px] font-bold text-primary">
+          <MessageSquare className="h-3.5 w-3.5" /> משוב למתאמן
+        </p>
+        <span className="text-[10px] text-muted-foreground">{feedbacks.length} תגובות</span>
+      </div>
+      {feedbacks.length > 0 ? (
+        <div className="mt-2 space-y-1.5">
+          {feedbacks.map((feedback) => (
+            <div key={feedback.id} className="rounded-lg bg-white/90 px-2.5 py-2 text-[11px] text-ink">
+              <p className="font-semibold leading-relaxed">{feedback.message}</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                {new Date(feedback.createdAt).toLocaleString("he-IL")}
+                {feedback.seenAt ? " · נצפה" : " · עדיין לא נצפה"}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      <textarea
+        value={draft}
+        onChange={(event) => {
+          setDraft(event.target.value);
+          setError("");
+        }}
+        placeholder={`כתבו משוב על ${title}...`}
+        aria-label={`משוב על סרטון ${title}`}
+        className="mt-2 min-h-16 w-full resize-y rounded-lg border border-border bg-white p-2 text-[11px] text-ink outline-none focus:border-primary"
+      />
+      {error ? <p className="mt-1 text-[10px] font-semibold text-destructive">{error}</p> : null}
+      <button
+        type="button"
+        disabled={sending || !draft.trim()}
+        onClick={async () => {
+          setSending(true);
+          setError("");
+          try {
+            const created = await createVideoFeedback({
+              clientId,
+              sessionId,
+              workoutId: workoutId ?? "",
+              exerciseId: entry.exerciseId,
+              exerciseName: title,
+              videoPath: entry.videoPath ?? "",
+              message: draft,
+            });
+            setLocalFeedbacks((current) => [created, ...current]);
+            setDraft("");
+          } catch (feedbackError: unknown) {
+            setError(errorMessage(feedbackError, "שליחת המשוב נכשלה."));
+          } finally {
+            setSending(false);
+          }
+        }}
+        className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-[10px] font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {sending ? "שולח..." : "שליחת משוב למתאמן"}
+      </button>
+    </div>
+  );
+}
+
 function WorkoutReviewExerciseCard({
   item,
   exercise,
   records,
   replacementEntry,
   onOpenPlan,
+  clientId,
+  workoutId,
+  videoFeedbacks = [],
 }: {
   item: WorkoutItem;
   exercise?: Exercise | undefined;
   records: WorkoutReviewRecord[];
   replacementEntry?: HistoryEntry | undefined;
   onOpenPlan?: (() => void) | undefined;
+  clientId?: string;
+  workoutId?: string;
+  videoFeedbacks?: VideoFeedback[];
 }) {
   const completed = records.length > 0;
   const title = records[0]?.entry.exerciseName || item.exerciseName || exercise?.name || "תרגיל";
+  const [feedbackDraft, setFeedbackDraft] = useState("");
+  const [sendingFeedback, setSendingFeedback] = useState(false);
+  const [feedbackError, setFeedbackError] = useState("");
+  const [localFeedbacks, setLocalFeedbacks] = useState<VideoFeedback[]>(videoFeedbacks);
+
+  useEffect(() => setLocalFeedbacks(videoFeedbacks), [videoFeedbacks]);
 
   return (
     <article
@@ -819,6 +925,88 @@ function WorkoutReviewExerciseCard({
                   <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-900">
                     הסרטון עדיין בתהליך העלאה ולא זמין לצפייה כאן.
                   </p>
+                ) : null}
+                {videoUrl && clientId && sessionId && entry.videoPath ? (
+                  <div className="mt-2 rounded-xl border border-primary/20 bg-primary/[0.035] p-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="flex items-center gap-1 text-[11px] font-bold text-primary">
+                        <MessageSquare className="h-3.5 w-3.5" /> משוב למתאמן
+                      </p>
+                      <span className="text-[10px] text-muted-foreground">
+                        {localFeedbacks.filter(
+                          (feedback) =>
+                            feedback.sessionId === sessionId &&
+                            feedback.exerciseId === entry.exerciseId &&
+                            feedback.videoPath === entry.videoPath,
+                        ).length}{" "}
+                        תגובות
+                      </span>
+                    </div>
+                    <div className="mt-2 space-y-1.5">
+                      {localFeedbacks
+                        .filter(
+                          (feedback) =>
+                            feedback.sessionId === sessionId &&
+                            feedback.exerciseId === entry.exerciseId &&
+                            feedback.videoPath === entry.videoPath,
+                        )
+                        .map((feedback) => (
+                          <div
+                            key={feedback.id}
+                            className="rounded-lg bg-white/90 px-2.5 py-2 text-[11px] text-ink"
+                          >
+                            <p className="font-semibold leading-relaxed">{feedback.message}</p>
+                            <p className="mt-1 text-[10px] text-muted-foreground">
+                              {new Date(feedback.createdAt).toLocaleString("he-IL")}
+                              {feedback.seenAt ? " · נצפה" : " · עדיין לא נצפה"}
+                            </p>
+                          </div>
+                        ))}
+                    </div>
+                    <textarea
+                      value={feedbackDraft}
+                      onChange={(event) => {
+                        setFeedbackDraft(event.target.value);
+                        setFeedbackError("");
+                      }}
+                      placeholder="כתבו למתאמן משוב על הטכניקה בסרטון..."
+                      aria-label={`משוב על סרטון ${title}`}
+                      className="mt-2 min-h-16 w-full resize-y rounded-lg border border-border bg-white p-2 text-[11px] text-ink outline-none focus:border-primary"
+                    />
+                    {feedbackError ? (
+                      <p role="alert" className="mt-1 text-[10px] font-semibold text-destructive">
+                        {feedbackError}
+                      </p>
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled={sendingFeedback || !feedbackDraft.trim()}
+                      onClick={async () => {
+                        setSendingFeedback(true);
+                        setFeedbackError("");
+                        try {
+                          const created = await createVideoFeedback({
+                            clientId,
+                            sessionId,
+                            workoutId: workoutId ?? "",
+                            exerciseId: entry.exerciseId,
+                            exerciseName: title,
+                            videoPath: entry.videoPath ?? "",
+                            message: feedbackDraft,
+                          });
+                          setLocalFeedbacks((current) => [created, ...current]);
+                          setFeedbackDraft("");
+                        } catch (error: unknown) {
+                          setFeedbackError(errorMessage(error, "שליחת המשוב נכשלה."));
+                        } finally {
+                          setSendingFeedback(false);
+                        }
+                      }}
+                      className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-[10px] font-bold text-primary-foreground transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {sendingFeedback ? "שולח..." : "שליחת משוב למתאמן"}
+                    </button>
+                  </div>
                 ) : null}
               </div>
             );
@@ -1096,10 +1284,14 @@ function WorkoutDailyReport({
   workout,
   history,
   exercises,
+  clientId,
+  videoFeedbacks = [],
 }: {
   workout: Workout;
   history: HistorySession[];
   exercises: Exercise[];
+  clientId?: string;
+  videoFeedbacks?: VideoFeedback[];
 }) {
   const [reportDate, setReportDate] = useState(() => reportDateKey(new Date()));
   const today = reportDateKey(new Date());
@@ -1285,11 +1477,23 @@ function WorkoutDailyReport({
                         {entry.videoUrl &&
                         !entry.videoUrl.startsWith("blob:") &&
                         isSignedWorkoutPerformanceVideo(entry.videoUrl) ? (
-                          <WorkoutVideoPlayer
-                            source={entry.videoUrl}
-                            title={`סרטון ביצוע עבור ${entry.exerciseName || "תרגיל"}`}
-                            className="mt-1.5 max-h-52 w-full rounded-lg bg-black object-contain"
-                          />
+                          <>
+                            <WorkoutVideoPlayer
+                              source={entry.videoUrl}
+                              title={`סרטון ביצוע עבור ${entry.exerciseName || "תרגיל"}`}
+                              className="mt-1.5 max-h-52 w-full rounded-lg bg-black object-contain"
+                            />
+                            {clientId && sessionId && entry.videoPath ? (
+                              <VideoFeedbackThread
+                                clientId={clientId}
+                                sessionId={sessionId}
+                                workoutId={workout.id}
+                                entry={entry}
+                                title={entry.exerciseName || "תרגיל"}
+                                videoFeedbacks={videoFeedbacks}
+                              />
+                            ) : null}
+                          </>
                         ) : entry.videoUrl?.startsWith("blob:") ? (
                           <p className="mt-1.5 rounded-lg bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-900">
                             הסרטון עדיין בתהליך העלאה ולא זמין לצפייה כאן.
@@ -9117,6 +9321,8 @@ export function CoachDashboardPage({
                                                 <WorkoutDailyReport
                                                   workout={dayItem}
                                                   history={clientDetails?.history ?? []}
+                                                  clientId={selectedClientId ?? undefined}
+                                                  videoFeedbacks={clientDetails?.videoFeedbacks ?? []}
                                                   exercises={Array.from(
                                                     new Map(
                                                       [

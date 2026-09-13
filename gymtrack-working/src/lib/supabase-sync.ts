@@ -22,10 +22,12 @@ import {
   type SavedRecipe,
   type BroadcastAnnouncement,
   type FoodCatalogMetadata,
+  type VideoFeedback,
 } from "./gym-types";
 import { BUILT_IN_CHALLENGES, cloneChallenge } from "./challenge-library";
 import { isSafeHttpUrl } from "./url-security";
 import { calculateAge, isValidDateOfBirth } from "./age";
+import { videoFeedbackFromRow } from "./video-feedback";
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "pending" | "conflict" | "error" | "offline";
 export type PullResult =
@@ -51,6 +53,7 @@ export type CoachClientData = {
   bodyMeasurements: BodyMeasurement[];
   habits: ClientHabits[];
   coachMessages: CoachMessage[];
+  videoFeedbacks?: VideoFeedback[];
   profile?: UserProfile;
   error?: string;
 };
@@ -310,6 +313,7 @@ export function subscribeToCoachClientChanges(
       { table: "body_measurements", filter: `user_id=eq.${clientId}` },
       { table: "client_habits", filter: `user_id=eq.${clientId}` },
       { table: "client_feedback", filter: `client_id=eq.${clientId}` },
+      { table: "video_feedback", filter: `client_id=eq.${clientId}` },
       { table: "coach_messages", filter: `client_id=eq.${clientId}` },
       { table: "coach_clients", filter: `client_id=eq.${clientId}` },
     ],
@@ -1382,6 +1386,11 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .select("*")
       .eq("client_id", userId)
       .order("created_at", { ascending: false });
+    const videoFeedbackPromise = supabase
+      .from("video_feedback")
+      .select("*")
+      .eq("client_id", userId)
+      .order("created_at", { ascending: false });
     const broadcastsPromise = supabase
       .from("broadcast_announcements")
       .select("*")
@@ -1453,6 +1462,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .eq("user_id", userId);
     const [
       messagesResult,
+      videoFeedbackResult,
       broadcastsResult,
       clientLinksResult,
       customExercisesResult,
@@ -1472,6 +1482,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       favoritesResult,
     ] = await Promise.all([
       messagesPromise,
+      videoFeedbackPromise,
       broadcastsPromise,
       clientLinksPromise,
       customExercisesPromise,
@@ -1505,6 +1516,21 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
           isRead: m.is_read,
         }))
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+
+    const { data: videoFeedbackRows, error: videoFeedbackError } = videoFeedbackResult;
+    if (
+      videoFeedbackError &&
+      !isMissingTableInSchemaCache(videoFeedbackError, "video_feedback")
+    ) {
+      throw new Error(`Video feedback pull failed: ${videoFeedbackError.message}`);
+    }
+    if (videoFeedbackError) {
+      nextData.videoFeedbacks = [];
+    } else {
+      nextData.videoFeedbacks = (videoFeedbackRows ?? [])
+        .map((row) => videoFeedbackFromRow(row as Record<string, unknown>))
+        .filter((feedback) => feedback.id && feedback.videoPath);
     }
 
     if (
@@ -1984,6 +2010,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       cardioResult,
       habitsResult,
       coachMessagesResult,
+      videoFeedbackResult,
     ] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", clientId).maybeSingle(),
       supabase.from("custom_exercises").select("*").eq("user_id", clientId),
@@ -2014,6 +2041,11 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       supabase
         .from("coach_messages")
         .select("id, coach_id, client_id, message, created_at, is_read")
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("video_feedback")
+        .select("*")
         .eq("client_id", clientId)
         .order("created_at", { ascending: false }),
     ]);
@@ -2082,6 +2114,13 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       console.warn(`[Optional client messages pull skipped]: ${coachMessagesError.message}`);
     } else if (coachMessagesError) {
       throw new Error(`Client messages pull failed: ${coachMessagesError.message}`);
+    }
+    const { data: dbVideoFeedback, error: videoFeedbackError } = videoFeedbackResult;
+    if (
+      videoFeedbackError &&
+      !isMissingTableInSchemaCache(videoFeedbackError, "video_feedback")
+    ) {
+      throw new Error(`Client video feedback pull failed: ${videoFeedbackError.message}`);
     }
 
     const workoutsMap = new Map<string, Workout>();
@@ -2292,6 +2331,9 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       bodyMeasurements: measurementList,
       habits: habitsList,
       coachMessages: coachMessagesList,
+      videoFeedbacks: (dbVideoFeedback ?? [])
+        .map((row) => videoFeedbackFromRow(row as Record<string, unknown>))
+        .filter((feedback) => feedback.id && feedback.videoPath),
       ...(profile
         ? {
             profile: {

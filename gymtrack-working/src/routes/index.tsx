@@ -22,6 +22,9 @@ import {
   ChevronDown,
   BarChart3,
   RotateCcw,
+  Video,
+  Eye,
+  CheckCheck,
 } from "lucide-react";
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import { AppShell } from "@/components/AppShell";
@@ -46,6 +49,8 @@ import {
   useAuthUser,
   personalRecords,
 } from "@/lib/gym-store";
+import { markVideoFeedbackSeen } from "@/lib/video-feedback";
+import type { VideoFeedback } from "@/lib/gym-types";
 import { genderText } from "@/lib/gender-copy";
 import { getLatestVisibleCoachMessage } from "@/lib/message-history";
 import { supabase } from "@/lib/supabase";
@@ -61,6 +66,7 @@ import {
 type HomeCardId =
   | "profile"
   | "coach-message"
+  | "video-feedback"
   | "consistency"
   | "workout"
   | "nutrition"
@@ -72,6 +78,7 @@ const HOME_CARD_ORDER_KEY = "myroutine-home-card-order-v2";
 const DEFAULT_HOME_CARD_ORDER: HomeCardId[] = [
   "profile",
   "coach-message",
+  "video-feedback",
   "consistency",
   "workout",
   "nutrition",
@@ -145,6 +152,7 @@ function Dashboard() {
     userProfile,
     preExitChecklist,
     coachMessages,
+    videoFeedbacks,
     broadcasts,
     challengeEnrollments,
     reminderPreferences,
@@ -172,6 +180,11 @@ function Dashboard() {
   const [checklistInput, setChecklistInput] = useState("");
   const [showChecklistModal, setShowChecklistModal] = useState(false);
   const [showProgressModal, setShowProgressModal] = useState(false);
+  const [showVideoFeedbackModal, setShowVideoFeedbackModal] = useState(false);
+  const [markingFeedbackId, setMarkingFeedbackId] = useState<string | null>(null);
+  const [locallySeenFeedbackIds, setLocallySeenFeedbackIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [progressRange, setProgressRange] = useState<7 | 30 | 90>(30);
   const [progressExerciseId, setProgressExerciseId] = useState("");
   const [homeCardOrder, setHomeCardOrder] = useState<HomeCardId[]>(() => {
@@ -491,6 +504,35 @@ function Dashboard() {
     }
   }, [authUser?.id]);
   const latestCoachMsg = getLatestVisibleCoachMessage(coachMessages, dismissedMessageIds);
+  const videoFeedbackRows = (videoFeedbacks ?? [])
+    .map((feedback: VideoFeedback) => {
+      const session = history.find((candidate) => candidate.id === feedback.sessionId);
+      const entry = session?.entries.find(
+        (candidate) =>
+          candidate.videoPath === feedback.videoPath &&
+          candidate.exerciseId === feedback.exerciseId,
+      );
+      return { feedback, session, entry };
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.feedback.createdAt).getTime() - new Date(a.feedback.createdAt).getTime(),
+    );
+  const unreadVideoFeedbackCount = videoFeedbackRows.filter(
+    ({ feedback }) =>
+      !feedback.seenAt && !locallySeenFeedbackIds.has(feedback.id),
+  ).length;
+  const markFeedbackSeen = async (feedbackId: string) => {
+    setMarkingFeedbackId(feedbackId);
+    try {
+      await markVideoFeedbackSeen(feedbackId);
+      setLocallySeenFeedbackIds((current) => new Set(current).add(feedbackId));
+    } catch {
+      // The next Realtime/pull refresh keeps the item unread if the write failed.
+    } finally {
+      setMarkingFeedbackId(null);
+    }
+  };
   const latestBroadcast =
     broadcasts?.find((message) => !dismissedMessageIds.includes(message.id)) ?? null;
   const dismissMessage = async (id: string, isBroadcast: boolean) => {
@@ -638,6 +680,39 @@ function Dashboard() {
             </p>
           </div>
         )}
+
+        <button
+          type="button"
+          {...homeCardProps("video-feedback")}
+          onClick={() => setShowVideoFeedbackModal(true)}
+          className="dashboard-notice surface-card flex w-full items-center justify-between gap-3 border-primary/20 bg-primary/5 p-4 text-start"
+          data-testid="video-feedback-home-button"
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+              <Video className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="flex items-center gap-2 text-sm font-bold text-ink">
+                משובים על סרטוני התרגילים
+                {unreadVideoFeedbackCount > 0 ? (
+                  <span
+                    className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-extrabold text-primary-foreground"
+                    aria-label={`${unreadVideoFeedbackCount} משובים חדשים`}
+                  >
+                    {unreadVideoFeedbackCount}
+                  </span>
+                ) : null}
+              </span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {videoFeedbackRows.length > 0
+                  ? `${videoFeedbackRows.length} משובים מהמאמן על הסרטונים שלך`
+                  : "כאן יופיעו משובים שהמאמן יכתוב על הסרטונים שלך"}
+              </span>
+            </span>
+          </span>
+          <span className="shrink-0 text-[10px] font-bold text-primary">פתיחה</span>
+        </button>
 
         {/* Consistency Banner */}
         <div
@@ -1088,6 +1163,135 @@ function Dashboard() {
                   ) : null}
                 </div>
               </>
+            )}
+          </div>
+        </Overlay>
+      ) : null}
+
+      {showVideoFeedbackModal ? (
+        <Overlay
+          open={showVideoFeedbackModal}
+          onClose={() => setShowVideoFeedbackModal(false)}
+          ariaLabel="משובים על סרטוני התרגילים"
+        >
+          <div
+            className="w-full max-w-lg space-y-3 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-border/70 pb-3">
+              <div>
+                <h3 className="flex items-center gap-2 text-base font-extrabold text-ink">
+                  <Video className="h-5 w-5 text-primary" /> משובים על סרטוני התרגילים
+                </h3>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                  כאן תראי את ההערות שהמאמן כתב על סרטוני הביצוע שלך. אחרי שקראת משוב, סמני אותו
+                  כנקרא כדי לעדכן את המונה בבית.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVideoFeedbackModal(false)}
+                aria-label="סגירת משובי הסרטונים"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-secondary hover:text-ink"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {unreadVideoFeedbackCount > 0 ? (
+              <button
+                type="button"
+                disabled={markingFeedbackId !== null}
+                onClick={() => {
+                  void Promise.all(
+                    videoFeedbackRows
+                      .filter(
+                        ({ feedback }) =>
+                          !feedback.seenAt && !locallySeenFeedbackIds.has(feedback.id),
+                      )
+                      .map(({ feedback }) => markFeedbackSeen(feedback.id)),
+                  );
+                }}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-[11px] font-bold text-primary disabled:opacity-50"
+              >
+                <CheckCheck className="h-3.5 w-3.5" /> סימון כל המשובים כנקראו
+              </button>
+            ) : null}
+
+            {videoFeedbackRows.length > 0 ? (
+              <div className="max-h-[65vh] space-y-2 overflow-y-auto pe-1">
+                {videoFeedbackRows.map(({ feedback, session, entry }) => {
+                  const unread =
+                    !feedback.seenAt && !locallySeenFeedbackIds.has(feedback.id);
+                  return (
+                    <article
+                      key={feedback.id}
+                      className={`rounded-2xl border p-3 ${
+                        unread
+                          ? "border-primary/35 bg-primary/[0.055]"
+                          : "border-border/70 bg-white/70"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="flex items-center gap-2 text-xs font-extrabold text-ink">
+                            {entry?.exerciseName || feedback.exerciseName}
+                            {unread ? (
+                              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-extrabold text-primary-foreground">
+                                חדש
+                              </span>
+                            ) : null}
+                          </p>
+                          <p className="mt-1 text-[10px] text-muted-foreground">
+                            {session?.workoutName || "אימון"} ·{" "}
+                            {new Date(feedback.createdAt).toLocaleString("he-IL")}
+                          </p>
+                        </div>
+                        {unread ? (
+                          <span
+                            className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary"
+                            aria-label="משוב שטרם נקרא"
+                          />
+                        ) : (
+                          <Eye className="h-4 w-4 shrink-0 text-emerald-600" aria-label="נקרא" />
+                        )}
+                      </div>
+                      {entry?.videoUrl ? (
+                        <video
+                          src={entry.videoUrl}
+                          controls
+                          playsInline
+                          preload="metadata"
+                          className="mt-2 max-h-56 w-full rounded-xl bg-black object-contain"
+                          aria-label={`סרטון ${entry.exerciseName || feedback.exerciseName}`}
+                        />
+                      ) : null}
+                      <p className="mt-2 rounded-xl bg-secondary/55 p-2.5 text-xs font-semibold leading-relaxed text-ink">
+                        {feedback.message}
+                      </p>
+                      {unread ? (
+                        <button
+                          type="button"
+                          disabled={markingFeedbackId === feedback.id}
+                          onClick={() => void markFeedbackSeen(feedback.id)}
+                          className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-[10px] font-bold text-primary-foreground disabled:opacity-50"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          {markingFeedbackId === feedback.id ? "שומר..." : "סימנתי כנקרא"}
+                        </button>
+                      ) : (
+                        <p className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-emerald-700">
+                          <CheckCheck className="h-3.5 w-3.5" /> נקרא
+                        </p>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl bg-secondary/45 p-5 text-center text-xs text-muted-foreground">
+                עדיין אין משובים על סרטוני תרגיל. אחרי שהמאמן יגיב, הם יופיעו כאן גם בזמן האימון.
+              </div>
             )}
           </div>
         </Overlay>

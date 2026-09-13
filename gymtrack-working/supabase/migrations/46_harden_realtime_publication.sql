@@ -16,6 +16,7 @@ BEGIN
     'body_measurements',
     'client_habits',
     'client_feedback',
+    'video_feedback',
     'coach_messages',
     'broadcast_announcements',
     'coach_clients',

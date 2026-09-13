@@ -562,6 +562,7 @@ const seed = (): GymData => {
     recipes: [],
     recentFoods: [],
     favoriteFoods: [],
+    videoFeedbacks: [],
     bodyWeightLogs: [],
     cardioLogs: [],
     preExitChecklist: [],
@@ -659,6 +660,7 @@ function mergeRemotePlanRefresh(localData: GymData, remoteData: GymData): GymDat
         ...(remoteData.coachMessages ?? []),
         ...(localData.coachMessages ?? []),
       ]),
+      videoFeedbacks: remoteData.videoFeedbacks ?? localData.videoFeedbacks ?? [],
       broadcasts: remoteData.broadcasts ?? localData.broadcasts ?? [],
       userProfile: {
         ...localProfile,
@@ -677,6 +679,7 @@ function mergeRemotePlanRefresh(localData: GymData, remoteData: GymData): GymDat
       ...(remoteData.coachMessages ?? []),
       ...(localData.coachMessages ?? []),
     ]),
+    videoFeedbacks: remoteData.videoFeedbacks ?? localData.videoFeedbacks ?? [],
     broadcasts: remoteData.broadcasts ?? localData.broadcasts ?? [],
     programs: remoteData.programs ?? localData.programs,
     workouts: dedupeWorkoutsById([
@@ -824,6 +827,7 @@ function startPlanRealtime(userId: string, preserveReconnectBackoff = false) {
   addTableSubscription("client_habits", `user_id=eq.${userId}`);
   addTableSubscription("coach_messages", `client_id=eq.${userId}`);
   addTableSubscription("coach_messages", `coach_id=eq.${userId}`);
+  addTableSubscription("video_feedback", `client_id=eq.${userId}`);
   // Audience filtering is enforced by the table's RLS policy. Pulling the
   // visible rows after an event avoids exposing another audience through the
   // local store and also handles inserts/deletes without a client-side filter.
@@ -1221,6 +1225,7 @@ function migrate(d: Partial<GymData>, includeReferenceLibraries = true): GymData
     recentFoods: d.recentFoods ?? [],
     favoriteFoods: d.favoriteFoods ?? [],
     coachMessages: dedupeCoachMessages(d.coachMessages ?? []),
+    videoFeedbacks: d.videoFeedbacks ?? [],
     broadcasts: d.broadcasts ?? [],
     bodyWeightLogs: d.bodyWeightLogs?.length ? d.bodyWeightLogs : [],
     bodyMeasurements: d.bodyMeasurements ?? [],

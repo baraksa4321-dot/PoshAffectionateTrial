@@ -249,6 +249,20 @@ export type HistorySession = {
   discomfortNotes?: string;
 };
 
+export type VideoFeedback = {
+  id: string;
+  clientId: string;
+  coachId: string;
+  sessionId: string;
+  workoutId?: string;
+  exerciseId: string;
+  exerciseName: string;
+  videoPath: string;
+  message: string;
+  createdAt: string;
+  seenAt?: string;
+};
+
 export type FoodItem = {
   id: string;
   name: string;
@@ -534,6 +548,7 @@ export type GymData = {
   bodyMeasurements?: BodyMeasurement[];
   habits?: ClientHabits[];
   coachMessages?: CoachMessage[];
+  videoFeedbacks?: VideoFeedback[];
   broadcasts?: BroadcastAnnouncement[];
   changeHistory?: CoachChangeHistory[];
   cardioLogs?: CardioLog[];
