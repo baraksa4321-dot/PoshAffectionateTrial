@@ -512,7 +512,7 @@ function SimpleLoadingIllustration({
   cycle: number;
 }) {
   const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length]!;
-  const animationFile = illustration.file.replace(".png", ".gif");
+  const animationFile = illustration.file.replace(".png", ".anim.webp");
   return (
     <div className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4}`}>
       <img
@@ -525,7 +525,7 @@ function SimpleLoadingIllustration({
       <img
         key={`loading-animation-${cycle}`}
         className="loading-simple-image loading-simple-animation"
-        src={`/loading/tinted/${animationFile}?v=gif-safe-1&cycle=${cycle}`}
+        src={`/loading/tinted/${animationFile}?v=animated-webp-1&cycle=${cycle}`}
         alt={`איור טעינה: ${illustration.label}`}
         onError={(event) => {
           event.currentTarget.style.display = "none";

@@ -154,7 +154,7 @@
     if (document.documentElement.dataset.loadingAccount !== "animation") return false;
 
     const loadingScreen = document.querySelector(".loading-screen");
-    const media = loadingScreen?.querySelector(".loading-simple-video");
+    const media = loadingScreen?.querySelector(".loading-simple-animation");
     const message = loadingScreen?.querySelector(".loading-witty-message");
     if (!(message instanceof HTMLElement)) return false;
 
@@ -162,19 +162,14 @@
     const messageIndex = (openingCycleIndex + rotationTick) % loadingMessages.length;
     const illustration = loadingIllustrations[animationIndex];
     const cycle = openingCycleIndex + rotationTick;
-    // Keep the original full-frame video animation moving before React
-    // hydrates, including on a shell left behind by an older cache.
-    if (media instanceof HTMLVideoElement) {
-      const animationFile = illustration.replace(".gif", ".mp4");
-      const nextSource = `/loading/tinted/${animationFile}?v=video-safe-4&cycle=${cycle}`;
-      media.poster = `/loading/tinted/${illustration}?v=poster-safe-4`;
+    // Keep the full-frame image animation moving before React hydrates,
+    // including on a shell left behind by an older cache.
+    if (media instanceof HTMLImageElement) {
+      const animationFile = illustration.replace(".gif", ".anim.webp");
+      const nextSource = `/loading/tinted/${animationFile}?v=animated-webp-1&cycle=${cycle}`;
       if (media.getAttribute("src") !== nextSource) {
         media.src = nextSource;
-        media.load();
       }
-      void media.play().catch(() => {
-        // Muted inline video can need one more attempt after the first paint.
-      });
     }
     message.textContent = loadingMessageForGender(
       loadingMessages[messageIndex],

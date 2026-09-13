@@ -27,8 +27,8 @@ describe("offline loading assets", () => {
 
     expect(rootRoute).toContain("SIMPLE_LOADING_ILLUSTRATIONS");
     expect(rootRoute).toContain("isAnimatedLoadingUser");
-    expect(rootRoute).toContain("loading-simple-fallback");
-    expect(rootRoute).toContain("loading-simple-video");
+    expect(rootRoute).toContain("loading-simple-static");
+    expect(rootRoute).toContain("loading-simple-animation");
     expect(rootRoute).toContain("/loading/tinted/${animationFile}");
     expect(serviceWorker).toContain("./loading/user-strawberry.png");
     expect(
@@ -36,7 +36,7 @@ describe("offline loading assets", () => {
     ).toBe(true);
     expect(
       illustrations
-        .map((file) => file.replace(".png", ".mp4"))
+        .map((file) => file.replace(".png", ".anim.webp"))
         .every((file) => existsSync(resolve(projectRoot, "public/loading/tinted", file))),
     ).toBe(true);
   });
