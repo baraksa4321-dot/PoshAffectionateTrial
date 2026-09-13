@@ -7,4 +7,4 @@ Do not treat `ACTIVE_HEALTHY`, an applied migration list, or a local export file
 
 **Why:** The Supabase MCP exposes project health and SQL but not backup availability, and a management API token may be listed in the project snapshot while remaining unavailable to the sandbox.
 
-**How to apply:** If the management API cannot list backups, ask the user to confirm the latest backup/restore-point timestamp from Supabase Dashboard before applying migrations; never substitute a health check for backup verification.
+**How to apply:** If the management API cannot list backups or returns no usable restore evidence, ask the user to confirm a current backup/restore point from Supabase Dashboard before applying migrations; never substitute a health check for backup verification.
