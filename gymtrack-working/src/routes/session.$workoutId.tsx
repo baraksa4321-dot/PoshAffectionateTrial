@@ -1650,16 +1650,17 @@ function Session() {
                 </div>
               </div>
 
-              {/* The athlete's demonstration video is intentionally last:
-                  it belongs to the completed exercise, after all sets. */}
-              <div className="mt-3 rounded-2xl border border-dashed border-primary/35 bg-primary/5 px-2.5 py-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] font-semibold text-muted-foreground">
-                    {entry.videoUrl ? "סרטון תרגיל" : "אפשר לצרף סרטון תרגיל"}
-                  </span>
-                  <label className="inline-flex cursor-pointer items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary transition-colors hover:bg-primary/15">
+              <div className="mt-3 rounded-2xl border border-border/60 bg-background p-3">
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <p className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
+                    איך היה התרגיל?
+                  </p>
+                  <label
+                    className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-primary/20 bg-primary/5 px-2 py-1 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10"
+                    aria-label={entry.videoUrl ? "החלפת סרטון תרגיל" : "הוספת סרטון תרגיל"}
+                  >
                     <ImagePlus className="h-3 w-3" />
-                    <span>{entry.videoUrl ? "החלפה" : "הוספת סרטון"}</span>
+                    <span>{entry.videoUrl ? "החלפה" : "סרטון"}</span>
                     <input
                       type="file"
                       accept="video/*"
@@ -1671,39 +1672,6 @@ function Session() {
                     />
                   </label>
                 </div>
-                {entry.videoUrl ? (
-                  <video
-                    className="mt-2 max-h-52 w-full rounded-xl bg-black object-contain"
-                    src={entry.videoUrl}
-                    controls
-                    playsInline
-                    preload="metadata"
-                    aria-label={`סרטון ביצוע ${entry.exerciseName}`}
-                  />
-                ) : null}
-                {videoUploadsInFlight > 0 && entry.videoUrl?.startsWith("blob:") ? (
-                  <p className="mt-2 text-[10px] font-semibold text-primary">
-                    הסרטון נשמר במכשיר וממשיך לעלות לענן…
-                  </p>
-                ) : null}
-                {videoUploadError && videoUploadErrorExerciseIndex === ei ? (
-                  <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-rose-50 px-2 py-1.5">
-                    <p className="text-[10px] font-semibold text-destructive">{videoUploadError}</p>
-                    <button
-                      type="button"
-                      onClick={() => retryPerformanceVideo(ei)}
-                      className="shrink-0 rounded-md bg-white px-2 py-1 text-[10px] font-bold text-primary"
-                    >
-                      נסי שוב
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="mt-3 rounded-2xl border border-border/60 bg-background p-3">
-                <p className="mb-2 text-[10px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
-                  איך היה התרגיל?
-                </p>
                 <div className="grid grid-cols-3 gap-1.5">
                   {(
                     [
@@ -1742,6 +1710,33 @@ function Session() {
                   placeholder="כאב, אי־נוחות או הערה למאמנת..."
                   className="mt-2 min-h-14 w-full rounded-xl border border-border/60 bg-white p-2 text-[11px] text-ink outline-none focus:border-primary"
                 />
+                {entry.videoUrl ? (
+                  <video
+                    className="mt-2 max-h-52 w-full rounded-xl bg-black object-contain"
+                    src={entry.videoUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    aria-label={`סרטון ביצוע ${entry.exerciseName}`}
+                  />
+                ) : null}
+                {videoUploadsInFlight > 0 && entry.videoUrl?.startsWith("blob:") ? (
+                  <p className="mt-2 text-[10px] font-semibold text-primary">
+                    הסרטון נשמר במכשיר וממשיך לעלות לענן…
+                  </p>
+                ) : null}
+                {videoUploadError && videoUploadErrorExerciseIndex === ei ? (
+                  <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-rose-50 px-2 py-1.5">
+                    <p className="text-[10px] font-semibold text-destructive">{videoUploadError}</p>
+                    <button
+                      type="button"
+                      onClick={() => retryPerformanceVideo(ei)}
+                      className="shrink-0 rounded-md bg-white px-2 py-1 text-[10px] font-bold text-primary"
+                    >
+                      נסי שוב
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </article>
           );
