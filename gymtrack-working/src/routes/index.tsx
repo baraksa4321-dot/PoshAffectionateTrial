@@ -859,7 +859,7 @@ function Dashboard() {
               label="נפח ק״ג"
               value={volume >= 1000 ? `${(volume / 1000).toFixed(1)}k` : String(Math.round(volume))}
               icon={TrendingUp}
-              tone="sage"
+              tone="rose"
             />
             <StatTile
               label="זמן אימון"

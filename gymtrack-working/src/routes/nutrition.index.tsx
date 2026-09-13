@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Camera,
   BookOpen,
+  Check,
   CheckSquare,
   ChevronLeft,
   ChevronRight,
@@ -1047,8 +1048,28 @@ function NutritionLog() {
                                 return (
                                   <div
                                     key={food.id}
-                                   className="nutrition-plan-food rounded-xl border border-border/80 bg-white px-2 py-1.5 text-start shadow-sm"
+                                   className="nutrition-plan-food relative rounded-xl border border-border/80 bg-white px-2 py-2 pe-10 text-start shadow-sm"
                                   >
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        togglePlannedFoodEaten(date, displayedMeal.id, food.id)
+                                      }
+                                      aria-pressed={Boolean(loggedFood)}
+                                      aria-label={
+                                        loggedFood
+                                          ? `בטלי סימון אכילה עבור ${displayFood.name}`
+                                          : `סמני כנאכל עבור ${displayFood.name}`
+                                      }
+                                      title={loggedFood ? "בטלי סימון" : "סמני כנאכל"}
+                                      className={`absolute end-2 top-2 grid h-6 w-6 place-items-center rounded-full border transition-colors ${
+                                        loggedFood
+                                          ? "border-primary bg-primary text-primary-foreground"
+                                          : "border-border bg-background text-muted-foreground hover:border-primary hover:text-primary"
+                                      }`}
+                                    >
+                                      <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                                    </button>
                                     <div className="flex items-center justify-between gap-2">
                                        <span className="min-w-0 truncate text-[12px] font-semibold text-ink">
                                         {displayFood.name}
@@ -1087,21 +1108,6 @@ function NutritionLog() {
                                       }
                                     />
                                     <div className="mt-1 flex items-center justify-end gap-1.5">
-                                      {
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            togglePlannedFoodEaten(date, displayedMeal.id, food.id)
-                                          }
-                                           className={`rounded-lg border px-2.5 py-1 text-[10px] font-bold ${
-                                            loggedFood
-                                              ? "border-primary/35 bg-primary/10 text-primary"
-                                              : "border-primary bg-primary text-primary-foreground"
-                                          }`}
-                                        >
-                                          {loggedFood ? "סימון כלא נאכל" : "סימון כנאכל"}
-                                        </button>
-                                      }
                                       {
                                         <button
                                           type="button"
