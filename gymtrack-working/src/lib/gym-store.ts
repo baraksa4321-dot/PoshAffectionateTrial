@@ -1262,7 +1262,27 @@ function load() {
 
   // Setup Supabase Auth state listener
   if (typeof window !== "undefined") {
-    offlineResumeUser = browserIsOffline() ? readOfflineResumeUser() : null;
+    offlineResumeUser = readOfflineResumeUser();
+    if (offlineResumeUser) {
+      const cached = resetDataForUser(offlineResumeUser.id);
+      if (hasUsableOfflineCache(cached.data)) {
+        // iOS can terminate the WebView while the app is merely backgrounded.
+        // Paint the authenticated user's trusted local snapshot immediately,
+        // then let getSession validate it and refresh from Supabase silently.
+        currentUser = offlineResumeUser;
+        authStatus = "authenticated";
+        profileHydrationStatus = "ready";
+        profileHydrationError = "";
+        hasPendingCloudChanges = hasPersistedPendingChanges(offlineResumeUser.id);
+        syncStatus = browserIsOffline()
+          ? "offline"
+          : hasPendingCloudChanges
+            ? "pending"
+            : "synced";
+      } else {
+        offlineResumeUser = null;
+      }
+    }
     window.addEventListener("offline", () => {
       if (!currentUser) return;
       syncStatus = "offline";
