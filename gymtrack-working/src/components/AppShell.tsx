@@ -58,6 +58,7 @@ import {
   isKeyboardEditableElement,
 } from "../lib/keyboard-viewport";
 
+const WORKSPACE_KEY = "gymtrack.workspace";
 const FULL_NAME_REQUIRED_ERROR = "יש להזין שם פרטי ושם משפחה כדי ליצור חשבון.";
 
 type ProfileDraft = {
@@ -78,6 +79,10 @@ function profileDraftFrom(profile?: UserProfile): ProfileDraft {
     gender: profile?.gender ?? "female",
     coachId: profile?.coachId ?? "",
   };
+}
+
+function isManagementPath(pathname: string) {
+  return /(^|\/)(coach|exercises|programs)(\/|$)/.test(pathname);
 }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -159,6 +164,7 @@ export function AppShell({
   const location = useLocation();
   const navigate = useNavigate();
   const router = useRouter();
+  const isManagementRoute = isManagementPath(location.pathname);
   const showHomeOnlyHeaderControls =
     location.pathname === "/" || location.pathname === "/coach";
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -166,6 +172,13 @@ export function AppShell({
   const topbarRef = useRef<HTMLElement>(null);
   const mainRef = useRef<HTMLElement>(null);
 
+  const [activeMode, setActiveMode] = useState<"personal" | "management">(() => {
+    if (typeof window === "undefined") return "personal";
+    if (isManagementPath(window.location.pathname)) return "management";
+    return window.sessionStorage.getItem(WORKSPACE_KEY) === "management"
+      ? "management"
+      : "personal";
+  });
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [themeError, setThemeError] = useState("");
   const [guestTheme, setGuestTheme] = useState<ThemePalette>(
@@ -178,7 +191,7 @@ export function AppShell({
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("gymtrack.night-mode") === "true";
   });
-  const managementView = isCoach;
+  const managementView = isCoach && (activeMode === "management" || isManagementRoute);
   const SyncIcon = cloudSyncStatus === "offline" ? CloudOff : Cloud;
   const syncIconClass =
     cloudSyncStatus === "offline"
@@ -202,6 +215,21 @@ export function AppShell({
           : cloudSyncStatus === "error"
             ? "השינויים נשמרו במכשיר — הסנכרון דורש תשומת לב"
             : "הנתונים מסונכרנים";
+
+  useEffect(() => {
+    if (!isManagementRoute) return;
+    setActiveMode("management");
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(WORKSPACE_KEY, "management");
+    }
+  }, [isManagementRoute]);
+
+  const setWorkspace = (workspace: "personal" | "management") => {
+    setActiveMode(workspace);
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(WORKSPACE_KEY, workspace);
+    }
+  };
 
   useEffect(() => {
     applyTheme(theme);
@@ -447,31 +475,35 @@ export function AppShell({
     }
   };
 
-  const NAV = isCoach
+  const NAV = managementView
     ? [
         {
           to: "/coach",
           label: "",
           id: "management-home",
           icon: Home,
+          onClick: () => setWorkspace("management"),
         },
         {
           to: "/programs",
           label: "תוכניות",
           id: "programs",
           icon: Dumbbell,
+          onClick: () => setWorkspace("management"),
         },
         {
           to: "/coach/tracking",
           label: "מעקב",
           id: "tracking",
           icon: Activity,
+          onClick: () => setWorkspace("management"),
         },
         {
           to: "/exercises",
           label: "תרגילים",
           id: "exercises",
           icon: Dumbbell,
+          onClick: () => setWorkspace("management"),
         },
       ]
     : [
@@ -480,18 +512,21 @@ export function AppShell({
           label: "היום שלי",
           id: "home",
           icon: Home,
+          onClick: () => setWorkspace("personal"),
         },
         {
           to: "/workouts",
           label: "האימונים שלי",
           id: "workouts",
           icon: LayoutGrid,
+          onClick: () => setWorkspace("personal"),
         },
         {
           to: "/nutrition",
           label: "התזונה שלי",
           id: "nutrition",
           icon: Apple,
+          onClick: () => setWorkspace("personal"),
         },
       ];
 
@@ -535,6 +570,7 @@ export function AppShell({
     const nextIndex = deltaX > 0 ? currentIndex + 1 : currentIndex - 1;
     const nextItem = NAV[nextIndex];
     if (!nextItem) return;
+    nextItem.onClick?.();
     void navigate({ to: nextItem.to });
   };
 
@@ -988,6 +1024,46 @@ export function AppShell({
               ) : (
                 <span />
               )}
+              {isCoach && showHomeOnlyHeaderControls ? (
+                <div
+                  className="flex items-center gap-2 rounded-full border border-border bg-surface-2 p-0.5"
+                  role="group"
+                  aria-label="בחירת מצב עבודה"
+                >
+                  <Link
+                    to="/"
+                    preload="intent"
+                    onClick={() => setWorkspace("personal")}
+                    aria-current={activeMode === "personal" ? "page" : undefined}
+                    className={`press min-w-20 rounded-full px-3 ${
+                      compactHeader ? "py-1 text-[10px]" : "py-1.5 text-[11px]"
+                    } text-center font-bold transition-colors ${
+                      activeMode === "personal"
+                        ? "bg-surface text-ink shadow-sm"
+                        : "text-muted-foreground hover:text-ink"
+                    }`}
+                  >
+                    אישי
+                  </Link>
+                  <Link
+                    to="/coach"
+                    preload="intent"
+                    onClick={() => setWorkspace("management")}
+                    aria-current={activeMode === "management" ? "page" : undefined}
+                    className={`press min-w-20 rounded-full px-3 ${
+                      compactHeader ? "py-1 text-[10px]" : "py-1.5 text-[11px]"
+                    } text-center font-bold transition-colors ${
+                      activeMode === "management"
+                        ? isOwner
+                          ? "bg-ink text-primary-foreground"
+                          : "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-ink"
+                    }`}
+                  >
+                    {isOwner ? "בעלים" : "מאמן"}
+                  </Link>
+                </div>
+              ) : null}
             </div>
           ) : null}
           {title || action || (user && showHomeOnlyHeaderControls) || !user ? (
