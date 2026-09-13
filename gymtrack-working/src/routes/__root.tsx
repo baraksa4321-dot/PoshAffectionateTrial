@@ -510,13 +510,14 @@ function SimpleLoadingIllustration({
   variant: number;
   cycle: number;
 }) {
-  const [animationFailed, setAnimationFailed] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
   const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length]!;
-  const animationFile = illustration.file.replace(".png", ".gif");
+  const animationFile = illustration.file.replace(".png", ".mp4");
+  const posterFile = illustration.file.replace(".png", ".gif");
   return (
     <div
       className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4} ${
-        animationFailed ? "loading-animation-failed" : ""
+        videoFailed ? "loading-video-failed" : ""
       }`}
     >
       <img
@@ -526,13 +527,25 @@ function SimpleLoadingIllustration({
         aria-hidden="true"
         suppressHydrationWarning
       />
-      <img
-        key={`loading-animation-${cycle}`}
-        className="loading-simple-image loading-simple-animation"
-        src={`/loading/clean/${animationFile}?v=loading-safe-3&cycle=${cycle}`}
-        alt={`איור טעינה: ${illustration.label}`}
-        onLoad={() => setAnimationFailed(false)}
-        onError={() => setAnimationFailed(true)}
+      <video
+        key={`loading-video-${cycle}`}
+        className="loading-simple-image loading-simple-video"
+        src={`/loading/tinted/${animationFile}?v=video-safe-4&cycle=${cycle}`}
+        poster={`/loading/tinted/${posterFile}?v=poster-safe-4`}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        onCanPlay={() => setVideoFailed(false)}
+        onError={() => setVideoFailed(true)}
+        onLoadedData={(event) => {
+          setVideoFailed(false);
+          void event.currentTarget.play().catch(() => {
+            // Safari can defer muted autoplay until the first media event.
+          });
+        }}
+        aria-label={`איור טעינה: ${illustration.label}`}
         suppressHydrationWarning
       />
     </div>
@@ -1095,7 +1108,7 @@ function LegacyLoadingIllustration({ variant }: { variant: number }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    scripts: [{ async: true, src: "/boot-watchdog.js?v=13" }],
+    scripts: [{ async: true, src: "/boot-watchdog.js?v=14" }],
     meta: [
       { charSet: "utf-8" },
       {
@@ -1436,7 +1449,7 @@ function RootContent() {
         // Keep the offline app shell in production, where compiled asset URLs
         // remain stable for the lifetime of a deployed build.
         void navigator.serviceWorker
-           .register("/sw.js?v=23", { updateViaCache: "none" })
+           .register("/sw.js?v=24", { updateViaCache: "none" })
           .then((registration) => registration.update())
           .catch((error) => {
             console.warn("[App shell cache unavailable]:", error);

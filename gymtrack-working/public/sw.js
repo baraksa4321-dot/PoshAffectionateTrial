@@ -1,4 +1,4 @@
-const CACHE_NAME = "myroutine-app-shell-v19";
+const CACHE_NAME = "myroutine-app-shell-v20";
 const MAX_SEEN_PUSH_IDS = 100;
 const seenPushIds = new Set();
 const OFFLINE_BOOT_ASSETS = [
@@ -17,19 +17,6 @@ const OFFLINE_BOOT_ASSETS = [
   "./loading/user-character-09.png",
   "./loading/user-character-10.png",
   "./loading/user-lemon.png",
-  "./loading/clean/user-strawberry.gif",
-  "./loading/clean/user-tomato.gif",
-  "./loading/clean/user-character-01.gif",
-  "./loading/clean/user-character-02.gif",
-  "./loading/clean/user-lemon.gif",
-  "./loading/clean/user-character-03.gif",
-  "./loading/clean/user-character-04.gif",
-  "./loading/clean/user-character-05.gif",
-  "./loading/clean/user-character-06.gif",
-  "./loading/clean/user-character-07.gif",
-  "./loading/clean/user-character-08.gif",
-  "./loading/clean/user-character-09.gif",
-  "./loading/clean/user-character-10.gif",
 ];
 
 function openFirebaseConfigDb() {

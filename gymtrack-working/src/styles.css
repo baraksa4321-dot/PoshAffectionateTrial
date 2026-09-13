@@ -2704,15 +2704,6 @@ html[data-loading-gender="female"] .loading-screen[data-loading-mode="plain"] .l
   transition: opacity 160ms ease;
 }
 
-.loading-simple-animation {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  margin: auto;
-  opacity: 1;
-  pointer-events: none;
-}
-
 .loading-simple-video {
   position: absolute;
   inset: 0;
@@ -2726,13 +2717,11 @@ html[data-loading-gender="female"] .loading-screen[data-loading-mode="plain"] .l
   -webkit-appearance: none;
 }
 
-.loading-animation-failed .loading-simple-fallback,
 .loading-video-failed .loading-simple-fallback {
   opacity: 1;
   pointer-events: auto;
 }
 
-.loading-animation-failed .loading-simple-animation,
 .loading-video-failed .loading-simple-video {
   opacity: 0;
   pointer-events: none;
