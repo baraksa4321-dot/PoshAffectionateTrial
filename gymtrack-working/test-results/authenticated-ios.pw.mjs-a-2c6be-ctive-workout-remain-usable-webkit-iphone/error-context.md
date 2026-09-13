@@ -12,259 +12,107 @@
 # Error details
 
 ```
-Test timeout of 45000ms exceeded.
-```
-
-```
-Error: locator.click: Test timeout of 45000ms exceeded.
+Error: page.goto: Page crashed
 Call log:
-  - waiting for getByRole('button', { name: 'שמור שינויי תרגיל', exact: true })
+  - navigating to "http://127.0.0.1:4173/", waiting until "load"
 
-```
-
-# Page snapshot
-
-```yaml
-- generic [ref=e2]:
-  - banner [ref=e3]:
-    - generic [ref=e4]:
-      - generic [ref=e5]:
-        - link "MY routine — דף הבית" [ref=e6]:
-          - /url: /
-          - img "MY routine" [ref=e7]
-        - button "מעבר לתצוגת לילה" [ref=e8]
-      - generic [ref=e11]:
-        - generic [ref=e12]:
-          - paragraph [ref=e13]: בניית תוכניות ותפריטים
-          - heading "עריכה" [level=1] [ref=e14]
-        - button "אין חיבור לאינטרנט — השינויים נשמרים במכשיר" [ref=e16]
-  - main [ref=e21]:
-    - generic [ref=e22]: אין חיבור לאינטרנט — השינויים נשמרים במכשיר
-    - generic [ref=e28]:
-      - generic [ref=e29]:
-        - generic [ref=e30]:
-          - paragraph [ref=e31]: בניית אימון
-          - textbox "שם יום האימון" [ref=e32]: אימון בדיקה ארוך
-          - generic [ref=e33]:
-            - text: יום קבוע בשבוע
-            - combobox "יום קבוע בשבוע" [ref=e34]:
-              - option "בחרי יום בשבוע" [disabled] [selected]
-              - option "ראשון"
-              - option "שני"
-              - option "שלישי"
-              - option "רביעי"
-              - option "חמישי"
-              - option "שישי"
-              - option "שבת"
-          - paragraph [ref=e35]: 8 תרגילים בתוכנית
-        - generic [ref=e36]:
-          - button "סגירת הוספה" [expanded] [ref=e37]
-          - button "סגירת בניית אימון" [ref=e39]
-      - generic [ref=e43]:
-        - generic [ref=e44]:
-          - generic [ref=e45]:
-            - generic [ref=e46]:
-              - generic [ref=e47]: תרגיל בדיקה 1 (Smoke Exercise 1)
-              - generic [ref=e48]: מכונה · 20 ק״ג לכל צד· 4 סטים × 8-8 חזרות
-            - generic [ref=e49]:
-              - button "סגירה" [ref=e50]
-              - button "הסר את תרגיל בדיקה 1" [ref=e51] [cursor=pointer]
-          - generic [ref=e56]:
-            - generic [ref=e57]:
-              - paragraph [ref=e58]: עריכת תרגיל באימון
-              - button "ביטול עריכה" [ref=e59]
-            - generic [ref=e60]:
-              - generic [ref=e61]: בחרי תרגיל מספרייה
-              - button "תרגיל בדיקה 1 (Smoke Exercise 1)" [ref=e62]
-            - generic [ref=e68]:
-              - generic [ref=e69]: חיפוש מכשיר / ציוד לתרגיל
-              - textbox "חיפוש מכשיר / ציוד לתרגיל" [ref=e71]:
-                - /placeholder: חיפוש מכשיר...
-                - text: מכונה
-            - paragraph [ref=e72]: השינויים עודכנו אוטומטית.
-            - generic [ref=e73]:
-              - paragraph [ref=e74]: הגדרת סטים
-              - generic [ref=e75]:
-                - text: מספר סטים
-                - textbox "מספר סטים" [ref=e76]: "4"
-            - generic [ref=e77]:
-              - generic [ref=e78]:
-                - generic [ref=e79]:
-                  - generic [ref=e80]: סט 1
-                  - combobox "סוג סט 1" [ref=e82]:
-                    - option "סט רגיל" [selected]
-                    - option "סט חימום"
-                    - option "דרופ סט"
-                    - option "סופר־סט"
-                - generic [ref=e83]:
-                  - generic [ref=e84]:
-                    - text: משקל לכל צד (ק״ג)
-                    - textbox "משקל לכל צד (ק״ג)" [ref=e85]: "20"
-                  - generic [ref=e86]:
-                    - text: חזרות מינ׳
-                    - textbox "חזרות מינ׳" [ref=e87]: "8"
-                  - generic [ref=e88]:
-                    - text: חזרות מקס׳
-                    - textbox "חזרות מקס׳" [ref=e89]: "8"
-                  - generic [ref=e90]:
-                    - text: הערה לסט
-                    - textbox "הערה לסט" [ref=e91]:
-                      - /placeholder: "למשל: עד כשל"
-                  - generic [ref=e92]:
-                    - text: זמן מנוחה (שניות)
-                    - textbox "זמן מנוחה (שניות)" [ref=e93]: "60"
-              - generic [ref=e94]:
-                - generic [ref=e95]:
-                  - generic [ref=e96]: סט 2
-                  - generic [ref=e97]:
-                    - button "העתק מהקודם" [ref=e98]
-                    - combobox "סוג סט 2" [ref=e99]:
-                      - option "סט רגיל" [selected]
-                      - option "סט חימום"
-                      - option "דרופ סט"
-                      - option "סופר־סט"
-                - generic [ref=e100]:
-                  - generic [ref=e101]:
-                    - text: משקל לכל צד (ק״ג)
-                    - textbox "משקל לכל צד (ק״ג)" [ref=e102]: "20"
-                  - generic [ref=e103]:
-                    - text: חזרות מינ׳
-                    - textbox "חזרות מינ׳" [ref=e104]: "8"
-                  - generic [ref=e105]:
-                    - text: חזרות מקס׳
-                    - textbox "חזרות מקס׳" [ref=e106]: "8"
-                  - generic [ref=e107]:
-                    - text: הערה לסט
-                    - textbox "הערה לסט" [ref=e108]:
-                      - /placeholder: "למשל: עד כשל"
-                  - generic [ref=e109]:
-                    - text: זמן מנוחה (שניות)
-                    - textbox "זמן מנוחה (שניות)" [ref=e110]: "60"
-              - generic [ref=e111]:
-                - generic [ref=e112]:
-                  - generic [ref=e113]: סט 3
-                  - generic [ref=e114]:
-                    - button "העתק מהקודם" [ref=e115]
-                    - combobox "סוג סט 3" [ref=e116]:
-                      - option "סט רגיל" [selected]
-                      - option "סט חימום"
-                      - option "דרופ סט"
-                      - option "סופר־סט"
-                - generic [ref=e117]:
-                  - generic [ref=e118]:
-                    - text: משקל לכל צד (ק״ג)
-                    - textbox "משקל לכל צד (ק״ג)" [ref=e119]: "20"
-                  - generic [ref=e120]:
-                    - text: חזרות מינ׳
-                    - textbox "חזרות מינ׳" [ref=e121]: "8"
-                  - generic [ref=e122]:
-                    - text: חזרות מקס׳
-                    - textbox "חזרות מקס׳" [ref=e123]: "8"
-                  - generic [ref=e124]:
-                    - text: הערה לסט
-                    - textbox "הערה לסט" [ref=e125]:
-                      - /placeholder: "למשל: עד כשל"
-                  - generic [ref=e126]:
-                    - text: זמן מנוחה (שניות)
-                    - textbox "זמן מנוחה (שניות)" [ref=e127]: "60"
-              - generic [ref=e128]:
-                - generic [ref=e129]:
-                  - generic [ref=e130]: סט 4
-                  - generic [ref=e131]:
-                    - button "העתק מהקודם" [ref=e132]
-                    - combobox "סוג סט 4" [ref=e133]:
-                      - option "סט רגיל" [selected]
-                      - option "סט חימום"
-                      - option "דרופ סט"
-                      - option "סופר־סט"
-                - generic [ref=e134]:
-                  - generic [ref=e135]:
-                    - text: משקל לכל צד (ק״ג)
-                    - textbox "משקל לכל צד (ק״ג)" [ref=e136]: "20"
-                  - generic [ref=e137]:
-                    - text: חזרות מינ׳
-                    - textbox "חזרות מינ׳" [ref=e138]: "8"
-                  - generic [ref=e139]:
-                    - text: חזרות מקס׳
-                    - textbox "חזרות מקס׳" [active] [ref=e140]: "12"
-                  - generic [ref=e141]:
-                    - text: הערה לסט
-                    - textbox "הערה לסט" [ref=e142]:
-                      - /placeholder: "למשל: עד כשל"
-                  - generic [ref=e143]:
-                    - text: זמן מנוחה (שניות)
-                    - textbox "זמן מנוחה (שניות)" [ref=e144]: "60"
-            - generic [ref=e145]:
-              - text: הערה למתאמן על התרגיל
-              - textbox "הערה למתאמן על התרגיל" [ref=e146]:
-                - /placeholder: "למשל: לשמור על גב ישר ולבצע לאט..."
-            - paragraph [ref=e147]: השינויים נשמרים אוטומטית
-        - generic [ref=e149]:
-          - generic [ref=e150]:
-            - generic [ref=e151]: תרגיל בדיקה 2 (Smoke Exercise 2)
-            - generic [ref=e152]: מכונה · 21 ק״ג לכל צד· 3 סטים × 9 חזרות
-          - generic [ref=e153]:
-            - button "עריכה" [ref=e154]
-            - button "הסר את תרגיל בדיקה 2" [ref=e155] [cursor=pointer]
-        - generic [ref=e160]:
-          - generic [ref=e161]:
-            - generic [ref=e162]: תרגיל בדיקה 3 (Smoke Exercise 3)
-            - generic [ref=e163]: מכונה · 22 ק״ג לכל צד· 3 סטים × 10 חזרות
-          - generic [ref=e164]:
-            - button "עריכה" [ref=e165]
-            - button "הסר את תרגיל בדיקה 3" [ref=e166] [cursor=pointer]
-        - generic [ref=e171]:
-          - generic [ref=e172]:
-            - generic [ref=e173]: תרגיל בדיקה 4 (Smoke Exercise 4)
-            - generic [ref=e174]: מכונה · 23 ק״ג לכל צד· 3 סטים × 11 חזרות
-          - generic [ref=e175]:
-            - button "עריכה" [ref=e176]
-            - button "הסר את תרגיל בדיקה 4" [ref=e177] [cursor=pointer]
-        - generic [ref=e182]:
-          - generic [ref=e183]:
-            - generic [ref=e184]: תרגיל בדיקה 5 (Smoke Exercise 5)
-            - generic [ref=e185]: מכונה · 24 ק״ג לכל צד· 3 סטים × 8 חזרות
-          - generic [ref=e186]:
-            - button "עריכה" [ref=e187]
-            - button "הסר את תרגיל בדיקה 5" [ref=e188] [cursor=pointer]
-        - generic [ref=e193]:
-          - generic [ref=e194]:
-            - generic [ref=e195]: תרגיל בדיקה 6 (Smoke Exercise 6)
-            - generic [ref=e196]: מכונה · 25 ק״ג לכל צד· 3 סטים × 9 חזרות
-          - generic [ref=e197]:
-            - button "עריכה" [ref=e198]
-            - button "הסר את תרגיל בדיקה 6" [ref=e199] [cursor=pointer]
-        - generic [ref=e204]:
-          - generic [ref=e205]:
-            - generic [ref=e206]: תרגיל בדיקה 7 (Smoke Exercise 7)
-            - generic [ref=e207]: מכונה · 26 ק״ג לכל צד· 3 סטים × 10 חזרות
-          - generic [ref=e208]:
-            - button "עריכה" [ref=e209]
-            - button "הסר את תרגיל בדיקה 7" [ref=e210] [cursor=pointer]
-        - generic [ref=e215]:
-          - generic [ref=e216]:
-            - generic [ref=e217]: תרגיל בדיקה 8 (Smoke Exercise 8)
-            - generic [ref=e218]: מכונה · 27 ק״ג לכל צד· 3 סטים × 11 חזרות
-          - generic [ref=e219]:
-            - button "עריכה" [ref=e220]
-            - button "הסר את תרגיל בדיקה 8" [ref=e221] [cursor=pointer]
-      - button "פתיחת דוח" [ref=e225]:
-        - generic [ref=e226]: דוח
-  - navigation "ניווט ראשי":
-    - generic [ref=e227]:
-      - link [ref=e228]:
-        - /url: /coach
-      - link "מתאמנים" [ref=e232]:
-        - /url: /coach/clients
-      - link "מעקב" [ref=e239]:
-        - /url: /coach/tracking
-      - link "תרגילים" [ref=e243]:
-        - /url: /exercises
 ```
 
 # Test source
 
 ```ts
+  977  |       otherCardioLog,
+  978  |       bodyWeightLog,
+  979  |       otherBodyWeightLog,
+  980  |       bodyMeasurement,
+  981  |       otherBodyMeasurement,
+  982  |       habit,
+  983  |       otherHabit,
+  984  |       coachMessage,
+  985  |       otherCoachMessage,
+  986  |       broadcastAnnouncement,
+  987  |       challenge,
+  988  |       householdFoods,
+  989  |       initialOnline: online,
+  990  |       failSelectedTraineeDataOnce,
+  991  |       pendingChanges,
+  992  |       trackBootCacheTiming,
+  993  |     },
+  994  |   );
+  995  | }
+  996  | 
+  997  | function assertKeyboardVisible(locator) {
+  998  |   return locator.scrollIntoViewIfNeeded().then(() =>
+  999  |     expect
+  1000 |       .poll(
+  1001 |         async () => {
+  1002 |           return locator.evaluate((element) => {
+  1003 |             const rect = element.getBoundingClientRect();
+  1004 |             const viewport = window.visualViewport;
+  1005 |             const viewportTop = viewport?.offsetTop ?? 0;
+  1006 |             const viewportBottom = viewportTop + (viewport?.height ?? window.innerHeight);
+  1007 |             return {
+  1008 |               focused: document.activeElement === element,
+  1009 |               visible: rect.top >= viewportTop - 1 && rect.bottom <= viewportBottom + 1,
+  1010 |             };
+  1011 |           });
+  1012 |         },
+  1013 |         {
+  1014 |           message: "The focused feedback field did not settle inside the visible iPhone viewport.",
+  1015 |         },
+  1016 |       )
+  1017 |       .toMatchObject({ focused: true, visible: true }),
+  1018 |   );
+  1019 | }
+  1020 | 
+  1021 | test("iPhone loading video is ready and advances before and after hydration", async ({ page }) => {
+  1022 |   test.skip(
+  1023 |     test.info().project.name !== "webkit-iphone",
+  1024 |     "The loading-media regression is specific to the iPhone WebKit profile.",
+  1025 |   );
+  1026 | 
+  1027 |   let releaseHydration;
+  1028 |   const hydrationGate = new Promise((resolve) => {
+  1029 |     releaseHydration = resolve;
+  1030 |   });
+  1031 |   await page.route("**/@id/virtual:tanstack-start-dev-client-entry", (route) =>
+  1032 |     hydrationGate.then(() => route.continue()),
+  1033 |   );
+  1034 | 
+  1035 |   await page.goto("/", { waitUntil: "domcontentloaded" });
+  1036 |   const loadingVideo = page.locator(".loading-simple-video");
+  1037 |   await expect(loadingVideo).toHaveCount(1);
+  1038 |   expect(await page.evaluate(() => Boolean(window.__MY_ROUTINE_BOOTED__))).toBe(false);
+  1039 | 
+  1040 |   const readVideoState = () =>
+  1041 |     loadingVideo.evaluate((video) => ({
+  1042 |       currentTime: video.currentTime,
+  1043 |       duration: video.duration,
+  1044 |       readyState: video.readyState,
+  1045 |     }));
+  1046 |   const assertVideoAdvances = async () => {
+  1047 |     await expect.poll(async () => (await readVideoState()).readyState).toBeGreaterThanOrEqual(2);
+  1048 |     const first = await readVideoState();
+  1049 |     await page.waitForTimeout(250);
+  1050 |     const second = await readVideoState();
+  1051 |     expect(second.readyState).toBeGreaterThanOrEqual(2);
+  1052 | 
+  1053 |     const elapsed =
+  1054 |       Number.isFinite(second.duration) && second.currentTime < first.currentTime
+  1055 |         ? second.duration - first.currentTime + second.currentTime
+  1056 |         : second.currentTime - first.currentTime;
+  1057 |     expect(elapsed).toBeGreaterThan(0.05);
+  1058 |   };
+  1059 | 
+  1060 |   // The watchdog owns this server-rendered shell while the app module is
+  1061 |   // intentionally held back. This catches a loaded-but-frozen first frame.
+  1062 |   await assertVideoAdvances();
+  1063 | 
+  1064 |   releaseHydration();
+  1065 |   await expect.poll(() => page.evaluate(() => Boolean(window.__MY_ROUTINE_BOOTED__))).toBe(true);
+  1066 | 
+  1067 |   // A fast unauthenticated hydration may remove the splash immediately. When
+  1068 |   // WebKit keeps it visible long enough, verify the React-owned node too.
   1069 |   if (await loadingVideo.count()) {
   1070 |     await assertVideoAdvances();
   1071 |   }
@@ -273,7 +121,8 @@ Call log:
   1074 | test("authenticated iPhone coach workspace and active workout remain usable", async ({ page }) => {
   1075 |   await installFixture(page);
   1076 | 
-  1077 |   await page.goto("/");
+> 1077 |   await page.goto("/");
+       |              ^ Error: page.goto: Page crashed
   1078 |   const coachNav = page.getByTestId("link-nav-coach");
   1079 |   await expect(coachNav).toBeVisible({ timeout: 20_000 });
   1080 |   await coachNav.click();
@@ -365,8 +214,7 @@ Call log:
   1166 |   const fourthSet = page.getByText("סט 4", { exact: true }).locator("..").locator("..");
   1167 |   await fourthSet.getByRole("textbox", { name: "חזרות מינ׳", exact: true }).fill("8");
   1168 |   await fourthSet.getByRole("textbox", { name: "חזרות מקס׳", exact: true }).fill("12");
-> 1169 |   await page.getByRole("button", { name: "שמור שינויי תרגיל", exact: true }).click();
-       |                                                                              ^ Error: locator.click: Test timeout of 45000ms exceeded.
+  1169 |   await page.getByRole("button", { name: "שמור שינויי תרגיל", exact: true }).click();
   1170 | 
   1171 |   await page.getByRole("button", { name: "עריכה", exact: true }).first().click();
   1172 |   await expect(page.getByText("עריכת תרגיל באימון", { exact: true })).toBeVisible();
@@ -375,96 +223,4 @@ Call log:
   1175 |   await expect(
   1176 |     reopenedFourthSet.getByRole("textbox", { name: "חזרות מינ׳", exact: true }),
   1177 |   ).toHaveValue("8");
-  1178 |   await expect(
-  1179 |     reopenedFourthSet.getByRole("textbox", { name: "חזרות מקס׳", exact: true }),
-  1180 |   ).toHaveValue("12");
-  1181 | 
-  1182 |   const thirdSetMode = page.getByRole("combobox", { name: "סוג סט 3" });
-  1183 |   await thirdSetMode.selectOption("drop");
-  1184 |   const dropRestInput = page.getByRole("textbox", { name: "דרופ סט זמן מנוחה" });
-  1185 |   await dropRestInput.fill("45");
-  1186 |   await expect(dropRestInput).toHaveValue("45");
-  1187 | 
-  1188 |   await thirdSetMode.selectOption("superset");
-  1189 |   const supersetSearch = page.getByRole("searchbox", {
-  1190 |     name: "חיפוש תרגיל בן־זוג לסופר סט",
-  1191 |   });
-  1192 |   await supersetSearch.fill("תרגיל בדיקה 2");
-  1193 |   const supersetOption = page
-  1194 |     .getByRole("listbox", { name: "תוצאות חיפוש לתרגיל בן־זוג" })
-  1195 |     .getByRole("option", { name: /תרגיל בדיקה 2/ });
-  1196 |   await expect(supersetOption).toBeVisible();
-  1197 |   await supersetOption.click({ force: true });
-  1198 |   await expect(supersetSearch).toHaveValue("");
-  1199 |   await expect(page.getByText(/^נבחר: תרגיל בדיקה 2/)).toBeVisible({
-  1200 |     timeout: 20_000,
-  1201 |   });
-  1202 | 
-  1203 |   await page.getByRole("button", { name: "סגירת בניית אימון", exact: true }).click();
-  1204 |   await expect(dayButtons).toHaveCount(4);
-  1205 | 
-  1206 |   await page.getByRole("tab", { name: "תפריט תזונה" }).click();
-  1207 |   await page.getByRole("button", { name: "+ מאכל" }).first().click();
-  1208 |   const foodSearch = page.locator('input[type="search"][id^="menu-food-search-"]').first();
-  1209 |   await foodSearch.fill("אורז");
-  1210 |   await assertKeyboardVisible(foodSearch);
-  1211 |   await expect(foodSearch).toHaveValue("אורז");
-  1212 |   await page.getByRole("option", { name: /אורז/ }).first().click();
-  1213 |   const addFoodButton = page.getByRole("button", { name: "הוסיפי לארוחה", exact: true }).first();
-  1214 |   await expect(addFoodButton).toBeEnabled();
-  1215 |   await addFoodButton.click();
-  1216 |   const nutritionMeal = page.locator('[id^="coach-menu-meal-"]').first();
-  1217 |   const nutritionFoodQuantity = nutritionMeal.getByTestId("nutrition-food-quantity").first();
-  1218 |   await expect(nutritionFoodQuantity).toBeVisible();
-  1219 |   await expect(nutritionFoodQuantity).toHaveText(/\d/);
-  1220 |   const coachMacroGrid = nutritionMeal.getByTestId("nutrition-macro-grid").first();
-  1221 |   const coachMacroLabels = ["חלבון", "פחמימות", "שומן", "קלוריות"];
-  1222 |   for (const [index, label] of coachMacroLabels.entries()) {
-  1223 |     const macro = coachMacroGrid.locator("[data-nutrition-macro]").nth(index);
-  1224 |     await expect(macro).toHaveAttribute("data-nutrition-macro", label);
-  1225 |     await expect(macro.locator("[data-nutrition-macro-value]")).toHaveText(/\d/);
-  1226 |   }
-  1227 |   const menuDraft = page.getByRole("textbox", { name: "שם הארוחה" }).first();
-  1228 |   await menuDraft.fill("טיוטת תפריט לפני פתיחת הדוח");
-  1229 |   await expect(menuDraft).toHaveValue("טיוטת תפריט לפני פתיחת הדוח");
-  1230 | 
-  1231 |   await page.getByRole("tab", { name: "תוכנית אימונים" }).click();
-  1232 |   await dayButtons.nth(0).click();
-  1233 |   await expect(page.getByRole("tab", { name: "תפריט תזונה" })).toBeHidden();
-  1234 |   await page.getByRole("button", { name: "סגירת בניית אימון", exact: true }).click();
-  1235 |   await page.getByRole("tab", { name: "תפריט תזונה" }).click();
-  1236 |   await expect(menuDraft).toHaveValue("טיוטת תפריט לפני פתיחת הדוח");
-  1237 | 
-  1238 |   await page.goto(`/session/${WORKOUT_ID}`);
-  1239 |   await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
-  1240 |   const progress = page.locator(".workout-progress-sticky");
-  1241 |   const firstExercise = page.locator("article").first();
-  1242 |   const progressBottom = await progress.boundingBox();
-  1243 |   const firstExerciseTop = await firstExercise.boundingBox();
-  1244 |   expect(progressBottom?.y + progressBottom?.height).toBeLessThanOrEqual(firstExerciseTop?.y ?? 0);
-  1245 | 
-  1246 |   const repsInput = page.locator('input[inputmode="decimal"]').first();
-  1247 |   await repsInput.fill("123");
-  1248 |   await assertKeyboardVisible(repsInput);
-  1249 |   await page.keyboard.press("Tab");
-  1250 |   await expect(repsInput).toHaveValue("123");
-  1251 | 
-  1252 |   await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
-  1253 |   const workoutNote = page.getByPlaceholder("למשל: עומס קל במרפק ימין בסט האחרון...");
-  1254 |   await expect(workoutNote).toBeVisible();
-  1255 |   await workoutNote.fill("הערת בדיקה 123");
-  1256 |   await assertKeyboardVisible(workoutNote);
-  1257 |   await expect(workoutNote).toHaveValue("הערת בדיקה 123");
-  1258 |   await page.keyboard.press("Escape");
-  1259 |   await expect(workoutNote).toBeHidden();
-  1260 | 
-  1261 |   await page.getByRole("button", { name: "סמן סט כבוצע" }).first().click();
-  1262 |   await expect(page.getByText("4%", { exact: true })).toBeVisible();
-  1263 |   await page.getByRole("button", { name: "בטל סיום סט" }).first().click();
-  1264 |   await expect(page.getByText("0%", { exact: true })).toBeVisible();
-  1265 |   await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
-  1266 |   await expect(workoutNote).toBeVisible();
-  1267 |   await expect(workoutNote).toHaveValue("הערת בדיקה 123");
-  1268 |   await page.keyboard.press("Escape");
-  1269 |   await expect(workoutNote).toBeHidden();
 ```

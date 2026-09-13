@@ -12,30 +12,40 @@
 # Error details
 
 ```
-Error: expect(locator).toContainText(expected) failed
-
-Locator: getByTestId('coach-message-banner')
-Expected substring: "הודעה שנשלחה מהפרופיל ונראית למתאמנת"
-Received string:    " הודעה מהמאמן שלך25.8.2026\"כל הכבוד על ההתמדה השבוע\""
-Timeout: 8000ms
-
+Error: page.goto: Page crashed
 Call log:
-  - Expect "toContainText" with timeout 8000ms
-  - waiting for getByTestId('coach-message-banner')
-    19 × locator resolved to <div data-home-card-id="coach-message" data-testid="coach-message-banner" data-tsd-source="/src/routes/index.tsx:576:11" class="dashboard-notice surface-card space-y-1.5 border-primary/20 bg-primary/5 p-4 text-start">…</div>
-       - unexpected value " הודעה מהמאמן שלך25.8.2026"כל הכבוד על ההתמדה השבוע""
+  - navigating to "http://127.0.0.1:4173/", waiting until "load"
 
-```
-
-```yaml
-- text: הודעה מהמאמן שלך 25.8.2026
-- button "מחיקת הודעת המאמן"
-- paragraph: "\"כל הכבוד על ההתמדה השבוע\""
 ```
 
 # Test source
 
 ```ts
+  1424 |   await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
+  1425 |   const workspace = page.locator('[data-coach-workspace="true"]');
+  1426 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
+  1427 |     timeout: 20_000,
+  1428 |   });
+  1429 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
+  1430 | 
+  1431 |   const profile = page.locator('[data-coach-client-profile-inline="true"]');
+  1432 |   await expect(profile).toBeVisible();
+  1433 |   await expect(profile).toContainText("63.4");
+  1434 |   await expect(profile).toContainText("74");
+  1435 |   await expect(profile).toContainText("8,500");
+  1436 |   await expect(profile).toContainText("הליכה מהירה");
+  1437 |   await expect(profile).toContainText("כל הכבוד על ההתמדה השבוע");
+  1438 |   await expect(profile).not.toContainText("71.8");
+  1439 |   await expect(profile).not.toContainText("הודעה של מתאמנת אחרת");
+  1440 | 
+  1441 |   await page.getByRole("button", { name: "סגירת פרופיל המשתמש" }).click();
+  1442 |   await page.getByRole("button", { name: "סגירת תכנית המתאמן" }).click();
+  1443 |   await expect(workspace).toHaveCount(0);
+  1444 | 
+  1445 |   const clientSearch = page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" });
+  1446 |   await expect(clientSearch).toBeVisible();
+  1447 |   await clientSearch.fill("מתאמנת אחרת");
+  1448 |   await expect(page.getByText("מתאמנת אחרת", { exact: true })).toBeVisible();
   1449 |   await page.getByText("מתאמנת אחרת", { exact: true }).click();
   1450 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
   1451 |     timeout: 20_000,
@@ -111,7 +121,8 @@ Call log:
   1521 | }) => {
   1522 |   await installFixture(page);
   1523 | 
-  1524 |   await page.goto("/");
+> 1524 |   await page.goto("/");
+       |              ^ Error: page.goto: Page crashed
   1525 |   await page.getByTestId("link-nav-coach").click();
   1526 |   await expect(page).toHaveURL(/\/coach\/clients/);
   1527 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("בדיקה");
@@ -136,8 +147,7 @@ Call log:
   1546 |   await expect(traineeMessage).toContainText("כל הכבוד על ההתמדה השבוע");
   1547 | 
   1548 |   await traineePage.evaluate(() => window.__iosSmokeSetOnline(true));
-> 1549 |   await expect(traineeMessage).toContainText(profileMessageText);
-       |                                ^ Error: expect(locator).toContainText(expected) failed
+  1549 |   await expect(traineeMessage).toContainText(profileMessageText);
   1550 | });
   1551 | 
   1552 | test("trainee reopens a received coach message offline before reconnect refresh", async ({
@@ -213,29 +223,4 @@ Call log:
   1622 |   const coachNav = page.getByTestId("link-nav-coach");
   1623 |   await expect(coachNav).toBeVisible({ timeout: 20_000 });
   1624 | 
-  1625 |   await expect
-  1626 |     .poll(() =>
-  1627 |       page.evaluate(() => ({
-  1628 |         workspaceMountedAt: window.__iosSmokeWorkspaceMountedAt,
-  1629 |         fullCacheReadAt: window.__iosSmokeFullCacheReadAt,
-  1630 |       })),
-  1631 |     )
-  1632 |     .toMatchObject({
-  1633 |       workspaceMountedAt: expect.any(Number),
-  1634 |       fullCacheReadAt: expect.any(Number),
-  1635 |     });
-  1636 | 
-  1637 |   const bootTiming = await page.evaluate(() => ({
-  1638 |     workspaceMountedAt: window.__iosSmokeWorkspaceMountedAt,
-  1639 |     fullCacheReadAt: window.__iosSmokeFullCacheReadAt,
-  1640 |   }));
-  1641 |   expect(bootTiming.workspaceMountedAt).toBeLessThan(bootTiming.fullCacheReadAt);
-  1642 | 
-  1643 |   await expect
-  1644 |     .poll(() => page.evaluate(() => window.__iosSmokeInitialPullCompleteAt))
-  1645 |     .not.toBeNull();
-  1646 |   await expect
-  1647 |     .poll(() => page.evaluate(() => window.__iosSmokeFullCacheWriteCount))
-  1648 |     .toBeGreaterThan(0);
-  1649 | 
 ```

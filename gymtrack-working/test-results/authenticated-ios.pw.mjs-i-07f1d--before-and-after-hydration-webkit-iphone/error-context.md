@@ -12,33 +12,17 @@
 # Error details
 
 ```
-Error: expect(locator).toHaveCount(expected) failed
-
-Locator:  locator('.loading-simple-video')
-Expected: 1
-Received: 0
-Timeout:  8000ms
-
+Error: page.goto: Page crashed
 Call log:
-  - Expect "toHaveCount" with timeout 8000ms
-  - waiting for locator('.loading-simple-video')
-    20 × locator resolved to 0 elements
-       - unexpected value "0"
+  - navigating to "http://127.0.0.1:4173/", waiting until "domcontentloaded"
 
-```
-
-# Page snapshot
-
-```yaml
-- generic [ref=e2]:
-  - status "MY routine נטען" [ref=e3]:
-    - status "טוען" [ref=e5]
-  - img "MY routine" [ref=e6]
 ```
 
 # Test source
 
 ```ts
+  935  |                 duration_label: challenge.durationLabel,
+  936  |                 owner_id: coachMessage.coach_id,
   937  |                 updated_at: "2026-08-20T00:00:00.000Z",
   938  |               },
   939  |             ];
@@ -137,10 +121,10 @@ Call log:
   1032 |     hydrationGate.then(() => route.continue()),
   1033 |   );
   1034 | 
-  1035 |   await page.goto("/", { waitUntil: "domcontentloaded" });
+> 1035 |   await page.goto("/", { waitUntil: "domcontentloaded" });
+       |              ^ Error: page.goto: Page crashed
   1036 |   const loadingVideo = page.locator(".loading-simple-video");
-> 1037 |   await expect(loadingVideo).toHaveCount(1);
-       |                              ^ Error: expect(locator).toHaveCount(expected) failed
+  1037 |   await expect(loadingVideo).toHaveCount(1);
   1038 |   expect(await page.evaluate(() => Boolean(window.__MY_ROUTINE_BOOTED__))).toBe(false);
   1039 | 
   1040 |   const readVideoState = () =>
@@ -239,6 +223,4 @@ Call log:
   1133 |     .poll(() =>
   1134 |       workspace.evaluate((element) => {
   1135 |         const last = element.lastElementChild;
-  1136 |         return Boolean(last && last.getBoundingClientRect().bottom <= window.innerHeight);
-  1137 |       }),
 ```

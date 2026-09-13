@@ -12,66 +12,28 @@
 # Error details
 
 ```
-Error: expect(locator).toBeVisible() failed
-
-Locator: locator('#coach-menu').getByText('2 כף', { exact: true })
-Expected: visible
-Timeout: 8000ms
-Error: element(s) not found
-
+Error: page.goto: Page crashed
 Call log:
-  - Expect "toBeVisible" with timeout 8000ms
-  - waiting for locator('#coach-menu').getByText('2 כף', { exact: true })
+  - navigating to "http://127.0.0.1:4173/", waiting until "load"
 
-```
-
-```yaml
-- banner:
-  - link "MY routine — דף הבית":
-    - /url: /
-    - img "MY routine"
-  - button "מעבר לתצוגת לילה"
-  - paragraph: בניית תוכניות ותפריטים
-  - heading "עריכה" [level=1]
-  - button "נמצאה התנגשות — נדרשת בחירה לפני סנכרון"
-- main:
-  - text: נמצאה התנגשות — נדרשת בחירה לפני סנכרון
-  - heading "מתאמנת בדיקה" [level=3]
-  - button "פתיחת פרופיל המשתמש": פרופיל
-  - button "סגירת תכנית המתאמן"
-  - navigation "ניווט בסביבת העריכה":
-    - tab "תוכנית אימונים"
-    - tab "תפריט תזונה" [selected]
-  - heading "בניית תפריט למתאמן" [level=4]
-  - paragraph: התפריט נשמר כתבנית קבועה ונפרד מהיומן בפועל. תאריך הבדיקה מציג רק את מה שנרשם בפועל.
-  - textbox "תאריך להצגת רישום בפועל": 2026-08-26
-  - text: חלבון 3.3 ג׳ פחמימות 0.5 ג׳ שומן 1.5 ג׳ קלוריות 28.5 קל׳
-  - button "פתח ארוחת בדיקה"
-  - textbox "שם הארוחה": ארוחת בדיקה
-  - button "+ ארוחה אחרת"
-  - button "מחק ארוחת בדיקה"
-  - button "+ מאכל"
-  - button "פתח את ארוחת בדיקה": קוטג׳ 5% 1 מאכלים
-  - button "+ הוסיפי ארוחה"
-  - heading "יעד קלורי ותזונה למתאמן" [level=3]
-  - button "ערוך יעדים"
-  - button "הצגת קלוריות למתאמן מוצג במסכי התזונה והמאזן" [pressed]
-  - button "מחשבון BMR"
-  - text: קלוריות 1900 kcal ימי מעקב 1 ימים
-- navigation "ניווט ראשי":
-  - link:
-    - /url: /coach
-  - link "מתאמנים":
-    - /url: /coach/clients
-  - link "מעקב":
-    - /url: /coach/tracking
-  - link "תרגילים":
-    - /url: /exercises
 ```
 
 # Test source
 
 ```ts
+  1185 |   await dropRestInput.fill("45");
+  1186 |   await expect(dropRestInput).toHaveValue("45");
+  1187 | 
+  1188 |   await thirdSetMode.selectOption("superset");
+  1189 |   const supersetSearch = page.getByRole("searchbox", {
+  1190 |     name: "חיפוש תרגיל בן־זוג לסופר סט",
+  1191 |   });
+  1192 |   await supersetSearch.fill("תרגיל בדיקה 2");
+  1193 |   const supersetOption = page
+  1194 |     .getByRole("listbox", { name: "תוצאות חיפוש לתרגיל בן־זוג" })
+  1195 |     .getByRole("option", { name: /תרגיל בדיקה 2/ });
+  1196 |   await expect(supersetOption).toBeVisible();
+  1197 |   await supersetOption.click({ force: true });
   1198 |   await expect(supersetSearch).toHaveValue("");
   1199 |   await expect(page.getByText(/^נבחר: תרגיל בדיקה 2/)).toBeVisible({
   1200 |     timeout: 20_000,
@@ -159,7 +121,8 @@ Call log:
   1282 | test("household portions stay correct across coach save and trainee replacement", async ({ page }) => {
   1283 |   await installFixture(page, { online: true });
   1284 | 
-  1285 |   await page.goto("/");
+> 1285 |   await page.goto("/");
+       |              ^ Error: page.goto: Page crashed
   1286 |   await page.getByTestId("link-nav-coach").click();
   1287 |   await expect(page).toHaveURL(/\/coach\/clients/);
   1288 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת");
@@ -172,8 +135,7 @@ Call log:
   1295 |   await page.getByRole("tab", { name: "תפריט תזונה" }).click();
   1296 |   const menu = page.locator("#coach-menu");
   1297 |   await expect(menu).toBeVisible();
-> 1298 |   await expect(menu.getByText("2 כף", { exact: true })).toBeVisible();
-       |                                                         ^ Error: expect(locator).toBeVisible() failed
+  1298 |   await expect(menu.getByText("2 כף", { exact: true })).toBeVisible();
   1299 | 
   1300 |   const addFood = async (searchTerm, unit, quantity) => {
   1301 |     await menu.getByRole("button", { name: "+ מאכל", exact: true }).first().click();
@@ -261,17 +223,4 @@ Call log:
   1383 |   await installFixture(page, { role: "trainee", showCalories: false });
   1384 | 
   1385 |   await page.goto("/nutrition");
-  1386 |   const plannedFoodQuantity = page.getByTestId("nutrition-food-quantity").first();
-  1387 |   await expect(plannedFoodQuantity).toBeVisible();
-  1388 |   await expect(plannedFoodQuantity).toHaveText(/\d/);
-  1389 | 
-  1390 |   const plannedMacroGrid = page.getByTestId("nutrition-macro-grid").first();
-  1391 |   const visibleMacroLabels = ["חלבון", "פחמימות", "שומן"];
-  1392 |   for (const [index, label] of visibleMacroLabels.entries()) {
-  1393 |     const macro = plannedMacroGrid.locator("[data-nutrition-macro]").nth(index);
-  1394 |     await expect(macro).toHaveAttribute("data-nutrition-macro", label);
-  1395 |     await expect(macro.locator("[data-nutrition-macro-value]")).toHaveText(/\d/);
-  1396 |   }
-  1397 |   await expect(plannedMacroGrid.locator('[data-nutrition-macro="קלוריות"]')).toHaveCount(0);
-  1398 | 
 ```
