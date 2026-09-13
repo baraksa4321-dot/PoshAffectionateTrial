@@ -7,4 +7,4 @@ Authenticated users may arrive from Supabase Auth without a corresponding `profi
 
 **Why:** The connected project does not reliably provide an auth-to-profile trigger, and treating a missing row as fatal blocks every first-time signup.
 
-**How to apply:** Keep identity checks strict (`authUser.id` must equal the requested user id), never infer privileged roles, and do not bypass RLS or add a schema migration solely for this recovery path.
+**How to apply:** Keep identity checks strict (`authUser.id` must equal the requested user id), never infer privileged roles, and do not bypass RLS or add a schema migration solely for this recovery path. Owner approval views should treat verified Auth users missing a profile as pending recovery candidates; repair the client row before approval or rejection.

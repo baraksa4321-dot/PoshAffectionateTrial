@@ -3045,6 +3045,14 @@ export function CoachDashboardPage({
     setApprovalUserId(profile.id);
     setApprovalNotice("");
     try {
+      if (profile.profile_exists === false) {
+        const { data: repairData, error: repairError } = await supabase.rpc(
+          "repair_missing_client_profile",
+          { target_user_id: profile.id },
+        );
+        if (repairError) throw repairError;
+        if (repairData !== true) throw new Error("יצירת פרופיל המתאמן לא התקבלה במסד הנתונים");
+      }
       const { data, error } = await supabase.rpc("approve_client_registration_with_visibility", {
         target_client_id: profile.id,
         approved_full_name: fullName,
@@ -3072,6 +3080,14 @@ export function CoachDashboardPage({
     setApprovalUserId(profile.id);
     setApprovalNotice("");
     try {
+      if (profile.profile_exists === false) {
+        const { data: repairData, error: repairError } = await supabase.rpc(
+          "repair_missing_client_profile",
+          { target_user_id: profile.id },
+        );
+        if (repairError) throw repairError;
+        if (repairData !== true) throw new Error("יצירת פרופיל המתאמן לא התקבלה במסד הנתונים");
+      }
       const { data, error } = await supabase.rpc("reject_client_registration", {
         target_client_id: profile.id,
       });
@@ -4783,7 +4799,9 @@ export function CoachDashboardPage({
   const clientCount = allProfiles.filter((profile) => profile.role === "client").length;
   const ownerCount = allProfiles.filter((profile) => profile.role === "owner").length;
   const pendingApprovals = allProfiles.filter(
-    (profile) => profile.role === "client" && profile.approval_status === "pending",
+    (profile) =>
+      (profile.role === "client" && profile.approval_status === "pending") ||
+      (profile.profile_exists === false && Boolean(profile.email_confirmed_at)),
   );
   const visibleAttentionItems =
     attentionView === "open" ? attentionItems.filter((item) => !item.reviewed) : attentionItems;
