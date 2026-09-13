@@ -212,31 +212,62 @@ const IMPORTED_ROWS = [
 const IMPORT_SOURCE_NOTE =
   "יובא מקובץ המאכלים החסרים; ערך סטנדרטי ל-100 גרם/מ״ל. יש לאמת מוצרי מותג מול האריזה.";
 
+const FOOD_DICTIONARY_VERIFIED: Record<
+  string,
+  NonNullable<FoodItem["nutritionReview"]>
+> = {
+  פלאפל: {
+    status: "reviewed",
+    origin: "verified",
+    checkedAt: "2026-09-13",
+    confidence: "high",
+    sources: [
+      {
+        name: "FoodsDictionary — פלאפל",
+        url: "https://www.foodsdictionary.co.il/Products/1/%D7%A4%D7%9C%D7%90%D7%A4%D7%9C",
+        kind: "food-dictionary",
+        match: "same-food",
+        valuesPer: "100g",
+      },
+    ],
+    method: "existing-value",
+    notes:
+      "שם זהה וערכי הקלוריות, החלבון, הפחמימות והשומן תואמים לדף FoodsDictionary; האתר לא סיפק ערך סיבים מלא בדף שנבדק.",
+  },
+};
+
 export const IMPORTED_ISRAELI_FOODS: FoodItem[] = IMPORTED_ROWS.map(
-  ([name, category, calories, protein, carbs, fat], index) => ({
-    id: `f-israel-import-${String(index + 1).padStart(3, "0")}`,
-    name,
-    category,
-    servingSize: "100 גרם/מ״ל",
-    calories,
-    protein,
-    carbs,
-    fat,
-    notes: IMPORT_SOURCE_NOTE,
-    nutritionReview: {
-      status: "unreviewed",
-      origin: "estimated",
-      confidence: "medium",
-      sources: [
-        {
-          name: "FoodsDictionary / ערך תזונתי סטנדרטי",
-          kind: "food-dictionary",
-          match: "same-food",
-          valuesPer: "100g",
-        },
-      ],
-      method: "existing-value",
+  ([name, category, calories, protein, carbs, fat], index) => {
+    const verifiedReview = FOOD_DICTIONARY_VERIFIED[name];
+
+    return {
+      id: `f-israel-import-${String(index + 1).padStart(3, "0")}`,
+      name,
+      category,
+      servingSize: "100 גרם/מ״ל",
+      calories,
+      protein,
+      carbs,
+      fat,
+      approvalStatus: "approved",
       notes: IMPORT_SOURCE_NOTE,
-    },
-  }),
+      nutritionReview:
+        verifiedReview ??
+        {
+          status: "unreviewed",
+          origin: "estimated",
+          confidence: "medium",
+          sources: [
+            {
+              name: "FoodsDictionary / ערך תזונתי סטנדרטי",
+              kind: "food-dictionary",
+              match: "same-food",
+              valuesPer: "100g",
+            },
+          ],
+          method: "existing-value",
+          notes: IMPORT_SOURCE_NOTE,
+        },
+    };
+  },
 );

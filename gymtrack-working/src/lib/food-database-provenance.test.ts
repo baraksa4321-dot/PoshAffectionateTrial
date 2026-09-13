@@ -20,15 +20,16 @@ describe("food library expansion provenance", () => {
     expect(new Set(allSeedFoods.map((food) => food.id)).size).toBe(allSeedFoods.length);
   });
 
-  test("keeps all 200 workbook foods in the unreviewed imported layer", () => {
+  test("keeps all 200 workbook foods approved while preserving source review state", () => {
     expect(IMPORTED_ISRAELI_FOODS).toHaveLength(200);
     expect(new Set(IMPORTED_ISRAELI_FOODS.map((food) => food.name)).size).toBe(200);
+    expect(IMPORTED_ISRAELI_FOODS.every((food) => food.approvalStatus === "approved")).toBe(true);
+    expect(IMPORTED_ISRAELI_FOODS.filter((food) => food.nutritionReview?.status === "reviewed")).toHaveLength(1);
     expect(
-      IMPORTED_ISRAELI_FOODS.every(
+      IMPORTED_ISRAELI_FOODS.filter((food) => food.nutritionReview?.status === "unreviewed").every(
         (food) =>
           food.servingSize === "100 גרם/מ״ל" &&
-          food.nutritionReview?.status === "unreviewed" &&
-          food.nutritionReview.origin === "estimated",
+          food.nutritionReview?.origin === "estimated",
       ),
     ).toBe(true);
   });
