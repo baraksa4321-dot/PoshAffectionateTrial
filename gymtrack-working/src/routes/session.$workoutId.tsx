@@ -703,13 +703,32 @@ function Session() {
   useEffect(() => {
     if (!restTimerHydrated) return;
     if (restPaused || restEndsAt === null) {
-      void cancelRestTimerNotification();
+      void cancelRestTimerNotification(workoutId);
       return;
     }
-    void scheduleRestTimerNotification(restEndsAt).catch((error) => {
-      console.warn("[Rest timer] Could not schedule native completion alert:", error);
+    void scheduleRestTimerNotification(restEndsAt, workoutId).catch((error) => {
+      console.warn("[Rest timer] Could not schedule completion alert:", error);
     });
-  }, [restEndsAt, restPaused, restTimerHydrated]);
+  }, [restEndsAt, restPaused, restTimerHydrated, workoutId]);
+
+  useEffect(() => {
+    if (!restTimerHydrated || restPaused || restEndsAt === null) return;
+    const rescheduleAfterReconnect = () => {
+      void scheduleRestTimerNotification(restEndsAt, workoutId).catch((error) => {
+        console.warn("[Rest timer] Could not restore completion alert:", error);
+      });
+    };
+    window.addEventListener("online", rescheduleAfterReconnect);
+    window.addEventListener("focus", rescheduleAfterReconnect);
+    window.addEventListener("pageshow", rescheduleAfterReconnect);
+    document.addEventListener("visibilitychange", rescheduleAfterReconnect);
+    return () => {
+      window.removeEventListener("online", rescheduleAfterReconnect);
+      window.removeEventListener("focus", rescheduleAfterReconnect);
+      window.removeEventListener("pageshow", rescheduleAfterReconnect);
+      document.removeEventListener("visibilitychange", rescheduleAfterReconnect);
+    };
+  }, [restEndsAt, restPaused, restTimerHydrated, workoutId]);
 
   const prepareRestAudio = useCallback(() => {
     if (typeof window === "undefined") return;

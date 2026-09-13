@@ -2,10 +2,11 @@ import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { supabase } from "./supabase";
 
-const SERVICE_WORKER_URL = "/sw.js?v=26";
+const SERVICE_WORKER_URL = "/sw.js?v=27";
 const WORKOUT_NOTIFICATION_PREFIX = 82_000;
 const REST_TIMER_NOTIFICATION_ID = 81_999;
 const REST_TIMER_CHANNEL_ID = "gymtrack-rest-timer-v1";
+const REST_TIMER_DEVICE_KEY = "gymtrack.rest-timer-device-key";
 const FIREBASE_APP_NAME = "gymtrack";
 const WORKOUT_REMINDER_HOUR = 8;
 const WORKOUT_REMINDER_MINUTE = 0;
@@ -64,6 +65,54 @@ function notificationId(value: string): number {
 
 function tokenStorageKey(userId: string, currentPlatform: string) {
   return `gymtrack.push-token:${userId}:${currentPlatform}`;
+}
+
+function restTimerDeviceKey() {
+  if (typeof window === "undefined") return "server";
+  try {
+    const existing = window.localStorage.getItem(REST_TIMER_DEVICE_KEY);
+    if (existing) return existing;
+    const generated =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    window.localStorage.setItem(REST_TIMER_DEVICE_KEY, generated);
+    return generated;
+  } catch {
+    return "ephemeral";
+  }
+}
+
+function restTimerKey(scope: string) {
+  return `${restTimerDeviceKey()}:${scope || "active"}`;
+}
+
+function isMissingRestTimerRpc(error: { message?: string } | null) {
+  return Boolean(
+    error &&
+      (/schedule_rest_timer|cancel_rest_timer/i.test(error.message ?? "") ||
+        /schema cache|function .* does not exist/i.test(error.message ?? "")),
+  );
+}
+
+async function queueWebRestTimer(endsAt: Date, timerScope: string) {
+  const { error } = await supabase.rpc("schedule_rest_timer", {
+    p_timer_key: restTimerKey(timerScope),
+    p_ends_at: endsAt.toISOString(),
+  });
+  if (error && !isMissingRestTimerRpc(error)) throw new Error(error.message);
+  if (isMissingRestTimerRpc(error)) {
+    console.warn(
+      "[Rest timer] Server scheduling is not enabled; using the best-effort Service Worker fallback.",
+    );
+  }
+}
+
+async function cancelQueuedWebRestTimer(timerScope: string) {
+  const { error } = await supabase.rpc("cancel_rest_timer", {
+    p_timer_key: restTimerKey(timerScope),
+  });
+  if (error && !isMissingRestTimerRpc(error)) throw new Error(error.message);
 }
 
 function scheduledWorkoutDate(date: string): Date | null {
@@ -172,7 +221,7 @@ export async function requestRestTimerNotificationPermission() {
   await Notification.requestPermission();
 }
 
-export async function scheduleRestTimerNotification(endsAt: number) {
+export async function scheduleRestTimerNotification(endsAt: number, timerScope = "active") {
   const at = new Date(endsAt);
   if (Number.isNaN(at.getTime()) || at.getTime() <= Date.now()) return;
 
@@ -182,6 +231,11 @@ export async function scheduleRestTimerNotification(endsAt: number) {
       webRestTimerTimeout = null;
     }
     const delay = Math.max(0, at.getTime() - Date.now());
+    // The Edge Function dispatcher is the closed-app delivery path. It uses
+    // the registered FCM web token and remains independent of this page.
+    void queueWebRestTimer(at, timerScope).catch((error) => {
+      console.warn("[Rest timer] Could not queue server completion alert:", error);
+    });
     if ("serviceWorker" in navigator) {
       void navigator.serviceWorker.ready
         .then((registration) => {
@@ -256,12 +310,17 @@ export async function scheduleRestTimerNotification(endsAt: number) {
   });
 }
 
-export async function cancelRestTimerNotification() {
+export async function cancelRestTimerNotification(timerScope = "active") {
   if (!Capacitor.isNativePlatform()) {
     if (webRestTimerTimeout !== null) {
       window.clearTimeout(webRestTimerTimeout);
       webRestTimerTimeout = null;
     }
+    void cancelQueuedWebRestTimer(timerScope).catch((error) => {
+      if (!isMissingRestTimerRpc(error)) {
+        console.warn("[Rest timer] Could not cancel server completion alert:", error);
+      }
+    });
     if ("serviceWorker" in navigator) {
       void navigator.serviceWorker.ready
         .then((registration) => registration.active?.postMessage({ type: "cancel-rest-timer" }))

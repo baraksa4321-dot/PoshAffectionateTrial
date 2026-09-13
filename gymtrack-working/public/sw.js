@@ -1,4 +1,4 @@
-const CACHE_NAME = "myroutine-app-shell-v21";
+const CACHE_NAME = "myroutine-app-shell-v22";
 const MAX_SEEN_PUSH_IDS = 100;
 const seenPushIds = new Set();
 let restTimerTimeout = null;
@@ -22,11 +22,47 @@ const OFFLINE_BOOT_ASSETS = [
 
 function openFirebaseConfigDb() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("gymtrack-notifications", 1);
-    request.onupgradeneeded = () => request.result.createObjectStore("config");
+    const request = indexedDB.open("gymtrack-notifications", 2);
+    request.onupgradeneeded = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains("config")) {
+        database.createObjectStore("config");
+      }
+      if (!database.objectStoreNames.contains("seen-pushes")) {
+        database.createObjectStore("seen-pushes");
+      }
+    };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
+}
+
+async function wasPushSeen(messageId) {
+  if (seenPushIds.has(messageId)) return true;
+  seenPushIds.add(messageId);
+  if (typeof indexedDB === "undefined") return false;
+  try {
+    const database = await openFirebaseConfigDb();
+    const alreadySeen = await new Promise((resolve, reject) => {
+      const transaction = database.transaction("seen-pushes", "readwrite");
+      const store = transaction.objectStore("seen-pushes");
+      const request = store.get(messageId);
+      let seen = false;
+      request.onsuccess = () => {
+        seen = Boolean(request.result);
+        if (!seen) store.put(Date.now(), messageId);
+      };
+      transaction.oncomplete = () => resolve(seen);
+      request.onerror = () => reject(request.error);
+      transaction.onerror = () => reject(transaction.error);
+    });
+    database.close();
+    return alreadySeen;
+  } catch {
+    // In-memory dedupe still protects repeated deliveries during this worker
+    // lifetime when IndexedDB is unavailable.
+    return false;
+  }
 }
 
 async function saveFirebaseConfig(config) {
@@ -164,6 +200,8 @@ function parsePushPayload(event) {
   const messageId =
     (typeof payload.messageId === "string" && payload.messageId) ||
     (typeof payload.message_id === "string" && payload.message_id) ||
+    (typeof data.messageId === "string" && data.messageId) ||
+    (typeof data.message_id === "string" && data.message_id) ||
     `${title}:${body}:${String(data.deep_link || data.deepLink || data.url || "")}`;
 
   return { title, body, data, messageId };
@@ -173,9 +211,7 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     (async () => {
       const payload = parsePushPayload(event);
-      if (!payload || seenPushIds.has(payload.messageId)) return;
-
-      seenPushIds.add(payload.messageId);
+      if (!payload || (await wasPushSeen(payload.messageId))) return;
       if (seenPushIds.size > MAX_SEEN_PUSH_IDS) {
         seenPushIds.delete(seenPushIds.values().next().value);
       }
