@@ -343,6 +343,32 @@ type AttentionItem = {
 
 const ATTENTION_STORAGE_KEY = "gymtrack-coach-attention-v1";
 const ATTENTION_DAY_MS = 24 * 60 * 60 * 1000;
+const COACH_CLIENT_CACHE_PREFIX = "gymtrack-coach-client-cache-v1";
+
+function coachClientCacheKey(coachId: string, clientId: string) {
+  return `${COACH_CLIENT_CACHE_PREFIX}:${coachId}:${clientId}`;
+}
+
+function readCoachClientCache(coachId: string, clientId: string): ClientDetails | null {
+  if (typeof window === "undefined" || !coachId || !clientId) return null;
+  try {
+    const raw = window.localStorage.getItem(coachClientCacheKey(coachId, clientId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as ClientDetails;
+    return parsed && !parsed.error && Array.isArray(parsed.workouts) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCoachClientCache(coachId: string, clientId: string, details: ClientDetails) {
+  if (typeof window === "undefined" || details.error) return;
+  try {
+    window.localStorage.setItem(coachClientCacheKey(coachId, clientId), JSON.stringify(details));
+  } catch {
+    // A large history or a constrained private-mode quota must not block refresh.
+  }
+}
 
 function attentionDateKey(value: string | undefined | null) {
   return value ? value.slice(0, 10) : "";
@@ -2110,9 +2136,12 @@ export function CoachDashboardPage({
   const applySelectedClientRefreshResult = useCallback(
     (result: ClientDetails) => {
       applyClientDetails(result, { preserveOnError: true });
+      if (!result.error && authUser?.id && selectedClientId) {
+        writeCoachClientCache(authUser.id, selectedClientId, result);
+      }
       setClientRefreshInFlight(false);
     },
-    [applyClientDetails],
+    [applyClientDetails, authUser?.id, selectedClientId],
   );
 
   const markMeasurementDraftDirty = () => {
@@ -2663,7 +2692,16 @@ export function CoachDashboardPage({
   useEffect(() => {
     if (!selectedClientId || isSelfSelected) return;
     let active = true;
-    setLoadingDetails(true);
+    const cachedDetails = authUser?.id
+      ? readCoachClientCache(authUser.id, selectedClientId)
+      : null;
+    if (cachedDetails) {
+      applyClientDetails(cachedDetails);
+      setLoadingDetails(false);
+      setClientRefreshInFlight(true);
+    } else {
+      setLoadingDetails(true);
+    }
     setClientDetailsError("");
     setManagementError("");
     setClientRefreshInFlight(true);
@@ -2684,6 +2722,9 @@ export function CoachDashboardPage({
       .then((res) => {
         if (!active) return;
         applyClientDetails(res);
+        if (!res.error && authUser?.id) {
+          writeCoachClientCache(authUser.id, selectedClientId, res);
+        }
         setLoadingDetails(false);
         setClientRefreshInFlight(false);
       })
@@ -2698,6 +2739,7 @@ export function CoachDashboardPage({
     };
   }, [
     applyClientDetails,
+    authUser?.id,
     isSelfSelected,
     selectedClientId,
   ]);

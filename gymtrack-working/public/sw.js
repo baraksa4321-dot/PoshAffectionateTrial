@@ -1,6 +1,7 @@
 const CACHE_NAME = "myroutine-app-shell-v21";
 const MAX_SEEN_PUSH_IDS = 100;
 const seenPushIds = new Set();
+let restTimerTimeout = null;
 const OFFLINE_BOOT_ASSETS = [
   "./myroutine-logo.png",
   "./brand-icon-192.png",
@@ -51,15 +52,46 @@ async function readFirebaseConfig() {
 }
 
 self.addEventListener("message", (event) => {
-  if (event.data?.type !== "configure-firebase") return;
-  event.waitUntil(
-    saveFirebaseConfig(event.data.config)
-      .then(() => event.ports?.[0]?.postMessage({ ok: true }))
-      .catch((error) => {
-        console.warn("[FCM service worker config]", error);
-        event.ports?.[0]?.postMessage({ ok: false });
-      }),
-  );
+  const type = event.data?.type;
+  if (type === "configure-firebase") {
+    event.waitUntil(
+      saveFirebaseConfig(event.data.config)
+        .then(() => event.ports?.[0]?.postMessage({ ok: true }))
+        .catch((error) => {
+          console.warn("[FCM service worker config]", error);
+          event.ports?.[0]?.postMessage({ ok: false });
+        }),
+    );
+    return;
+  }
+
+  if (type === "cancel-rest-timer") {
+    if (restTimerTimeout !== null) {
+      clearTimeout(restTimerTimeout);
+      restTimerTimeout = null;
+    }
+    return;
+  }
+
+  if (type !== "schedule-rest-timer") return;
+  const endsAt = Number(event.data?.endsAt);
+  if (!Number.isFinite(endsAt) || endsAt <= Date.now()) return;
+  if (restTimerTimeout !== null) clearTimeout(restTimerTimeout);
+  restTimerTimeout = setTimeout(() => {
+    restTimerTimeout = null;
+    self.registration
+      .showNotification("זמן המנוחה הסתיים", {
+        body: "אפשר להתחיל את הסט הבא.",
+        icon: "/icons/icon-192.png",
+        dir: "rtl",
+        lang: "he",
+        tag: "gymtrack-rest-timer",
+        renotify: true,
+        silent: false,
+        data: { type: "rest-timer" },
+      })
+      .catch(() => undefined);
+  }, Math.max(0, endsAt - Date.now()));
 });
 
 self.addEventListener("install", (event) => {

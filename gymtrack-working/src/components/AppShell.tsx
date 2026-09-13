@@ -52,6 +52,7 @@ import { Overlay } from "./ui-app/Overlay";
 import { BrandLogo } from "./BrandLogo";
 import { FreeTextInput } from "./FreeTextInput";
 import { genderText } from "../lib/gender-copy";
+import { usePersistentDraft, usePersistentFormDrafts } from "../lib/form-drafts";
 import { LOADING_GENDER_EVENT, LOADING_GENDER_STORAGE_KEY } from "../lib/loading-copy";
 import {
   getKeyboardViewportMetrics,
@@ -153,6 +154,7 @@ export function AppShell({
   pageClassName?: string | undefined;
   children: ReactNode;
 }) {
+  usePersistentFormDrafts();
   const store = useGym();
   const user = useAuthUser();
   const cloudSyncStatus = useCloudSyncStatus();
@@ -578,11 +580,14 @@ export function AppShell({
   const [showAuthModal, setShowAuthModal] = useState(authOnly);
   const [isSignUp, setIsSignUp] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = usePersistentDraft("auth.email", "");
+  const [fullName, setFullName] = usePersistentDraft("auth.signup.fullName", "");
   const [password, setPassword] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
-  const [gender, setGender] = useState<"female" | "male" | undefined>(undefined);
+  const [dateOfBirth, setDateOfBirth] = usePersistentDraft("auth.signup.dateOfBirth", "");
+  const [gender, setGender] = usePersistentDraft<"female" | "male" | undefined>(
+    "auth.signup.gender",
+    undefined,
+  );
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() =>

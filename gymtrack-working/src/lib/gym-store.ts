@@ -838,7 +838,13 @@ function startPlanRealtime(userId: string, preserveReconnectBackoff = false) {
   planRealtimeChannel = channel.subscribe((status) => {
     if (status === "SUBSCRIBED") {
       realtimeReconnectAttempts = 0;
-      drainQueuedRealtimeRefresh();
+      // Realtime subscriptions do not replay events that arrived while the
+      // app was backgrounded. Pull once after an actual reconnect; the first
+      // subscription is followed by the normal initial hydration pull.
+      if (preserveReconnectBackoff) {
+        queuedRealtimeRefreshUserId = userId;
+        drainQueuedRealtimeRefresh();
+      }
       return;
     }
     if (status !== "CHANNEL_ERROR" && status !== "TIMED_OUT" && status !== "CLOSED") return;
@@ -1318,6 +1324,16 @@ function load() {
       }
       if (!planRealtimeUserId) startPlanRealtime(currentUser.id);
     });
+    const refreshAfterResume = () => {
+      if (!currentUser || document.visibilityState === "hidden") return;
+      if (!planRealtimeUserId) startPlanRealtime(currentUser.id);
+      queuedRealtimeRefreshUserId = currentUser.id;
+      drainQueuedRealtimeRefresh();
+    };
+    window.addEventListener("pageshow", refreshAfterResume);
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", refreshAfterResume);
+    }
     if (typeof window.setInterval === "function") {
       window.setInterval(() => {
         if (document.visibilityState !== "visible") return;
@@ -1327,8 +1343,8 @@ function load() {
     }
 
     let authTimeoutId: number | null = null;
-    const resumeCachedUserOffline = () => {
-      if (!browserIsOffline() || !offlineResumeUser) return false;
+    const resumeCachedUser = () => {
+      if (!offlineResumeUser) return false;
       const cached = resetDataForUser(offlineResumeUser.id);
       if (!hasUsableOfflineCache(cached.data)) {
         clearRememberedAuthenticatedUser();
@@ -1362,7 +1378,7 @@ function load() {
     ])
       .then(({ data: { session }, error }) => {
         if (error) {
-          if (resumeCachedUserOffline()) return;
+          if (resumeCachedUser()) return;
           // A timeout/error must not leave INITIAL_SESSION ignored forever.
           // Supabase can still deliver the real session through the auth
           // listener after a slow getSession request finishes.
@@ -1375,7 +1391,7 @@ function load() {
           listeners.forEach((l) => l());
           return;
         }
-        if (!session?.user && resumeCachedUserOffline()) return;
+        if (!session?.user && resumeCachedUser()) return;
         currentUser = session?.user
           ? {
               id: session.user.id,
@@ -1398,7 +1414,7 @@ function load() {
         notifyListeners();
       })
       .catch(() => {
-        if (resumeCachedUserOffline()) return;
+        if (resumeCachedUser()) return;
         authResolved = true;
         authResolutionAwaitingInitialEvent = true;
         currentUser = null;

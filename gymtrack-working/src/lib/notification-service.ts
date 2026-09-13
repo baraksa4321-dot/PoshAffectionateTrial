@@ -2,7 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { supabase } from "./supabase";
 
-const SERVICE_WORKER_URL = "/sw.js?v=25";
+const SERVICE_WORKER_URL = "/sw.js?v=26";
 const WORKOUT_NOTIFICATION_PREFIX = 82_000;
 const REST_TIMER_NOTIFICATION_ID = 81_999;
 const REST_TIMER_CHANNEL_ID = "gymtrack-rest-timer-v1";
@@ -182,6 +182,16 @@ export async function scheduleRestTimerNotification(endsAt: number) {
       webRestTimerTimeout = null;
     }
     const delay = Math.max(0, at.getTime() - Date.now());
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.ready
+        .then((registration) => {
+          registration.active?.postMessage({
+            type: "schedule-rest-timer",
+            endsAt: at.getTime(),
+          });
+        })
+        .catch(() => undefined);
+    }
     webRestTimerTimeout = window.setTimeout(() => {
       webRestTimerTimeout = null;
       // Browsers do not expose a reliable background audio scheduler for a
@@ -251,6 +261,11 @@ export async function cancelRestTimerNotification() {
     if (webRestTimerTimeout !== null) {
       window.clearTimeout(webRestTimerTimeout);
       webRestTimerTimeout = null;
+    }
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.ready
+        .then((registration) => registration.active?.postMessage({ type: "cancel-rest-timer" }))
+        .catch(() => undefined);
     }
     return;
   }

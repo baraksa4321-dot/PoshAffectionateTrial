@@ -262,15 +262,31 @@ function subscribeToRealtimeTables(
   };
 
   const handleOffline = () => notifyConnectionStatus("disconnected");
+  const handleResume = () => {
+    if (stopped || typeof document === "undefined" || document.visibilityState === "hidden") {
+      return;
+    }
+    if (!channel && !reconnectTimer) {
+      scheduleReconnect();
+      return;
+    }
+    // A channel can remain technically open after the browser suspended it.
+    // Ask the consumer for one silent RLS pull even when no postgres event was
+    // delivered while the page was hidden.
+    onChange("__resume__");
+  };
   const handleOnline = () => {
     if (stopped) return;
     notifyConnectionStatus("reconnecting");
     if (!channel && !reconnectTimer) scheduleReconnect();
+    else onChange("__resume__");
   };
 
   if (typeof window !== "undefined") {
     window.addEventListener("offline", handleOffline);
     window.addEventListener("online", handleOnline);
+    document.addEventListener("visibilitychange", handleResume);
+    window.addEventListener("pageshow", handleResume);
   }
   subscribe();
   return () => {
@@ -278,6 +294,8 @@ function subscribeToRealtimeTables(
     if (typeof window !== "undefined") {
       window.removeEventListener("offline", handleOffline);
       window.removeEventListener("online", handleOnline);
+      document.removeEventListener("visibilitychange", handleResume);
+      window.removeEventListener("pageshow", handleResume);
     }
     if (reconnectTimer) {
       clearTimeout(reconnectTimer);
