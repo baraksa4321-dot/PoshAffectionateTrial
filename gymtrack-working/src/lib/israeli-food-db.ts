@@ -1,5 +1,6 @@
 import type { FoodItem } from "./gym-types";
 import { COMMON_FOODS } from "./common-foods";
+import { IMPORTED_ISRAELI_FOODS } from "./imported-israeli-foods";
 import { ISRAELI_PROTEIN_PRODUCTS } from "./protein-product-catalog";
 import { USDA_FOOD_EXPANSION } from "./usda-food-expansion";
 
@@ -5946,7 +5947,10 @@ const ISRAELI_SUPERMARKET_FOODS: FoodItem[] = [
   },
 ];
 
-export const ISRAELI_FOOD_DATABASE: FoodItem[] = ISRAELI_SUPERMARKET_FOODS;
+export const ISRAELI_FOOD_DATABASE: FoodItem[] = [
+  ...ISRAELI_SUPERMARKET_FOODS,
+  ...IMPORTED_ISRAELI_FOODS,
+];
 
 const EXCLUDED_EVERYDAY_CATEGORIES = new Set([
   "גלידות",
