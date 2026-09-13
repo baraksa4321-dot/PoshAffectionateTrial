@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  ANIMATED_LOADING_EMAIL,
   LOADING_MESSAGES,
   LOADING_ROTATION_INTERVAL_MS,
+  isAnimatedLoadingUser,
   loadingCycleIndexes,
   loadingPresentationForGender,
   readLoadingCycle,
@@ -10,6 +12,13 @@ import {
 } from "./loading-copy";
 
 describe("loading cycle", () => {
+  test("limits animated loading to the designated account", () => {
+    expect(isAnimatedLoadingUser(ANIMATED_LOADING_EMAIL)).toBe(true);
+    expect(isAnimatedLoadingUser("MAYAYOSFAN234@GMAIL.COM")).toBe(true);
+    expect(isAnimatedLoadingUser("someone@example.com")).toBe(false);
+    expect(isAnimatedLoadingUser(undefined)).toBe(false);
+  });
+
   test("rotates to the next animation and message every 2 seconds", () => {
     expect(LOADING_ROTATION_INTERVAL_MS).toBe(2_000);
   });

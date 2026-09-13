@@ -22,7 +22,11 @@
   };
 
   const canUseAnimatedLoading = readStoredAuthEmail() === animatedLoadingEmail;
-  document.documentElement.dataset.loadingAccount = canUseAnimatedLoading ? "animation" : "spinner";
+  if (document.documentElement) {
+    document.documentElement.dataset.loadingAccount = canUseAnimatedLoading
+      ? "animation"
+      : "spinner";
+  }
 
   // Apply the last selected palette and loading presentation before React
   // hydrates. This keeps the first iOS/PWA paint from flashing the defaults.
