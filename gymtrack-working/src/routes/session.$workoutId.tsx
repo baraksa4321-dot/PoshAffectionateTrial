@@ -44,6 +44,7 @@ import {
   personalRecords,
   saveSession,
   uid,
+  useAuthUser,
   useGym,
 } from "@/lib/gym-store";
 import { BODYWEIGHT_EXERCISES, replaceWithBodyweight } from "@/lib/bodyweight-exercises";
@@ -114,10 +115,14 @@ function supersetLabels(items: WorkoutItem[]) {
   return labels;
 }
 
-const ACTIVE_SESSION_KEY = (id: string) => `gymtrack.active_session.${id}`;
-const ACTIVE_SESSION_STARTED_AT_KEY = (id: string) => `gymtrack.active_session_started_at.${id}`;
-const ACTIVE_SESSION_FEEDBACK_KEY = (id: string) => `gymtrack.active_session_feedback.${id}`;
-const ACTIVE_REST_TIMER_KEY = (id: string) => `gymtrack.active_rest_timer.${id}`;
+const ACTIVE_SESSION_KEY = (userId: string, id: string) =>
+  `gymtrack.active_session.${userId}.${id}`;
+const ACTIVE_SESSION_STARTED_AT_KEY = (userId: string, id: string) =>
+  `gymtrack.active_session_started_at.${userId}.${id}`;
+const ACTIVE_SESSION_FEEDBACK_KEY = (userId: string, id: string) =>
+  `gymtrack.active_session_feedback.${userId}.${id}`;
+const ACTIVE_REST_TIMER_KEY = (userId: string, id: string) =>
+  `gymtrack.active_rest_timer.${userId}.${id}`;
 const MAX_PERFORMANCE_VIDEO_DURATION_SECONDS = 5 * 60;
 
 type PersistedRestTimer = {
@@ -130,10 +135,10 @@ type PersistedRestTimer = {
   restExpanded: boolean;
 };
 
-function readPersistedRestTimer(workoutId: string): PersistedRestTimer | null {
-  if (typeof window === "undefined") return null;
+function readPersistedRestTimer(userId: string, workoutId: string): PersistedRestTimer | null {
+  if (typeof window === "undefined" || !userId) return null;
   try {
-    const raw = window.localStorage.getItem(ACTIVE_REST_TIMER_KEY(workoutId));
+    const raw = window.localStorage.getItem(ACTIVE_REST_TIMER_KEY(userId, workoutId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<PersistedRestTimer>;
     if (!parsed || typeof parsed !== "object") return null;
@@ -159,10 +164,12 @@ function readPersistedRestTimer(workoutId: string): PersistedRestTimer | null {
   }
 }
 
-function readPersistedSessionStartedAt(workoutId: string): number | null {
-  if (typeof window === "undefined") return null;
+function readPersistedSessionStartedAt(userId: string, workoutId: string): number | null {
+  if (typeof window === "undefined" || !userId) return null;
   try {
-    const value = Number(window.localStorage.getItem(ACTIVE_SESSION_STARTED_AT_KEY(workoutId)));
+    const value = Number(
+      window.localStorage.getItem(ACTIVE_SESSION_STARTED_AT_KEY(userId, workoutId)),
+    );
     return Number.isFinite(value) && value > 0 ? value : null;
   } catch {
     return null;
@@ -257,13 +264,14 @@ function latestHistoryFeedback(
 }
 
 function loadSavedSessionFeedback(
+  userId: string,
   workoutId: string,
   history: HistorySession[] = [],
 ): SavedSessionFeedback {
   const historyFallback = latestHistoryFeedback(history, workoutId);
-  if (typeof window === "undefined") return historyFallback;
+  if (typeof window === "undefined" || !userId) return historyFallback;
   try {
-    const raw = window.localStorage.getItem(ACTIVE_SESSION_FEEDBACK_KEY(workoutId));
+    const raw = window.localStorage.getItem(ACTIVE_SESSION_FEEDBACK_KEY(userId, workoutId));
     if (!raw) return historyFallback;
     try {
       const parsed = JSON.parse(raw) as Partial<SavedSessionFeedback>;
@@ -332,6 +340,8 @@ type SmartTimerPosition = {
 function Session() {
   const { workoutId } = Route.useParams();
   const navigate = useNavigate();
+  const authUser = useAuthUser();
+  const sessionOwnerId = authUser?.id ?? "";
   const { workouts, exercises, history, programs, userProfile } = useGym();
   const gender = userProfile?.gender;
   const workout = workouts.find((w) => w.id === workoutId);
@@ -382,9 +392,9 @@ function Session() {
   );
   const [difficultyRating, setDifficultyRating] = useState<
     "easy" | "appropriate" | "difficult"
-  >(() => loadSavedSessionFeedback(workoutId, history).difficultyRating ?? "appropriate");
+  >(() => loadSavedSessionFeedback(sessionOwnerId, workoutId, history).difficultyRating ?? "appropriate");
   const [feedbackDraft, setFeedbackDraft] = useState(() => {
-    const saved = loadSavedSessionFeedback(workoutId, history);
+    const saved = loadSavedSessionFeedback(sessionOwnerId, workoutId, history);
     return {
       workoutId,
       discomfortNotes: saved.discomfortNotes,
@@ -395,7 +405,7 @@ function Session() {
   const setDiscomfortNotes = (notes: string) =>
     setFeedbackDraft({ workoutId, discomfortNotes: notes });
   const [exerciseFeedback, setExerciseFeedback] = useState<Record<number, ExerciseFeedbackDraft>>(
-    () => loadSavedSessionFeedback(workoutId, history).exerciseFeedback,
+    () => loadSavedSessionFeedback(sessionOwnerId, workoutId, history).exerciseFeedback,
   );
 
   const [replacingIndex, setReplacingIndex] = useState<number | null>(null);
@@ -406,7 +416,7 @@ function Session() {
     if (typeof window === "undefined") return [];
 
     try {
-      const saved = window.localStorage.getItem(ACTIVE_SESSION_KEY(workoutId));
+      const saved = window.localStorage.getItem(ACTIVE_SESSION_KEY(sessionOwnerId, workoutId));
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length === workout.items.length) {
@@ -543,7 +553,7 @@ function Session() {
 
   const [entries, setEntries] = useState<HistoryEntry[]>(initial);
   useEffect(() => {
-    const saved = loadSavedSessionFeedback(workoutId, history);
+    const saved = loadSavedSessionFeedback(sessionOwnerId, workoutId, history);
     setFeedbackDraft({
       workoutId,
       discomfortNotes: saved.discomfortNotes,
@@ -556,7 +566,7 @@ function Session() {
     if (hydratedFeedbackWorkoutIdRef.current === workoutId) return;
     if (!history.some((session) => session.workoutId === workoutId)) return;
 
-    const saved = loadSavedSessionFeedback(workoutId, history);
+    const saved = loadSavedSessionFeedback(sessionOwnerId, workoutId, history);
     setFeedbackDraft({
       workoutId,
       discomfortNotes: saved.discomfortNotes,
@@ -576,7 +586,9 @@ function Session() {
       }),
     );
   }, [initial]);
-  const [startedAt] = useState(() => readPersistedSessionStartedAt(workoutId) ?? Date.now());
+  const [startedAt] = useState(
+    () => readPersistedSessionStartedAt(sessionOwnerId, workoutId) ?? Date.now(),
+  );
   const entriesRef = useRef(entries);
   const videoFilesRef = useRef(new Map<number, File>());
   const videoUploadVersionsRef = useRef(new Map<number, number>());
@@ -612,7 +624,7 @@ function Session() {
 
   useEffect(() => {
     setRestTimerHydrated(false);
-    const persisted = readPersistedRestTimer(workoutId);
+    const persisted = readPersistedRestTimer(sessionOwnerId, workoutId);
     if (persisted) {
       const hasExpired =
         !persisted.restPaused &&
@@ -643,11 +655,11 @@ function Session() {
       rest > 0 || restPaused || restFinished || smartTimerStarted || restEndsAt !== null;
     try {
       if (!hasActiveTimer) {
-        window.localStorage.removeItem(ACTIVE_REST_TIMER_KEY(workoutId));
+        window.localStorage.removeItem(ACTIVE_REST_TIMER_KEY(sessionOwnerId, workoutId));
         return;
       }
       window.localStorage.setItem(
-        ACTIVE_REST_TIMER_KEY(workoutId),
+        ACTIVE_REST_TIMER_KEY(sessionOwnerId, workoutId),
         JSON.stringify({
           rest,
           restFinished,
@@ -792,7 +804,11 @@ function Session() {
   useEffect(() => {
     if (!workoutId || entries.length === 0) return;
     try {
-      window.localStorage.setItem(ACTIVE_SESSION_KEY(workoutId), JSON.stringify(entries));
+      if (!sessionOwnerId) return;
+      window.localStorage.setItem(
+        ACTIVE_SESSION_KEY(sessionOwnerId, workoutId),
+        JSON.stringify(entries),
+      );
     } catch {
       /* ignore */
     }
@@ -802,7 +818,7 @@ function Session() {
     if (!workoutId) return;
     try {
       window.localStorage.setItem(
-        ACTIVE_SESSION_STARTED_AT_KEY(workoutId),
+        ACTIVE_SESSION_STARTED_AT_KEY(sessionOwnerId, workoutId),
         String(startedAt),
       );
     } catch {
@@ -820,7 +836,7 @@ function Session() {
     }
     try {
       localStorage.setItem(
-        ACTIVE_SESSION_FEEDBACK_KEY(workoutId),
+        ACTIVE_SESSION_FEEDBACK_KEY(sessionOwnerId, workoutId),
         JSON.stringify({
           difficultyRating,
           discomfortNotes,
@@ -908,13 +924,14 @@ function Session() {
     if (!workout || restoredVideoDraftWorkoutIdRef.current === workoutId) return;
     restoredVideoDraftWorkoutIdRef.current = workoutId;
     let cancelled = false;
-    void loadWorkoutVideoDrafts(workoutId)
+    if (!sessionOwnerId) return;
+    void loadWorkoutVideoDrafts(sessionOwnerId, workoutId)
       .then((drafts) => {
         if (cancelled) return;
         drafts.forEach(({ exerciseIndex, file }) => {
           const existingUrl = entriesRef.current[exerciseIndex]?.videoUrl;
           if (existingUrl && !existingUrl.startsWith("blob:")) {
-            void removeWorkoutVideoDraft(workoutId, exerciseIndex);
+            void removeWorkoutVideoDraft(sessionOwnerId, workoutId, exerciseIndex);
             return;
           }
           selectPerformanceVideo(exerciseIndex, file);
@@ -1004,10 +1021,12 @@ function Session() {
 
   const clearSavedSession = () => {
     try {
-      window.localStorage.removeItem(ACTIVE_SESSION_KEY(workout.id));
-      window.localStorage.removeItem(ACTIVE_SESSION_STARTED_AT_KEY(workout.id));
-      window.localStorage.removeItem(ACTIVE_SESSION_FEEDBACK_KEY(workout.id));
-      window.localStorage.removeItem(ACTIVE_REST_TIMER_KEY(workout.id));
+      window.localStorage.removeItem(ACTIVE_SESSION_KEY(sessionOwnerId, workout.id));
+      window.localStorage.removeItem(
+        ACTIVE_SESSION_STARTED_AT_KEY(sessionOwnerId, workout.id),
+      );
+      window.localStorage.removeItem(ACTIVE_SESSION_FEEDBACK_KEY(sessionOwnerId, workout.id));
+      window.localStorage.removeItem(ACTIVE_REST_TIMER_KEY(sessionOwnerId, workout.id));
     } catch {
       /* ignore */
     }
@@ -1040,7 +1059,8 @@ function Session() {
     );
     entriesRef.current = entriesWithLocalVideo;
     setEntries(entriesWithLocalVideo);
-    void saveWorkoutVideoDraft(workout.id, exerciseIndex, file).catch((error: unknown) => {
+    if (!sessionOwnerId) return;
+    void saveWorkoutVideoDraft(sessionOwnerId, workout.id, exerciseIndex, file).catch((error: unknown) => {
       setVideoUploadErrorExerciseIndex(exerciseIndex);
       setVideoUploadError(
         error instanceof Error ? error.message : "לא ניתן לשמור את הסרטון במכשיר",
@@ -1061,7 +1081,7 @@ function Session() {
         });
         entriesRef.current = entriesWithUploadedVideo;
         setEntries(entriesWithUploadedVideo);
-        void removeWorkoutVideoDraft(workout.id, exerciseIndex);
+        void removeWorkoutVideoDraft(sessionOwnerId, workout.id, exerciseIndex);
         const finishedSession = finishedSessionRef.current;
         if (finishedSession) {
           const updatedSession: HistorySession = {
@@ -1095,7 +1115,8 @@ function Session() {
       selectPerformanceVideo(exerciseIndex, file);
       return;
     }
-    void loadWorkoutVideoDrafts(workout.id).then((drafts) => {
+    if (!sessionOwnerId) return;
+    void loadWorkoutVideoDrafts(sessionOwnerId, workout.id).then((drafts) => {
       const draft = drafts.find((item) => item.exerciseIndex === exerciseIndex);
       if (draft) selectPerformanceVideo(exerciseIndex, draft.file);
     });

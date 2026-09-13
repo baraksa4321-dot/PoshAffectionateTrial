@@ -151,76 +151,76 @@ Call log:
   1477 |   await expect(replacementMacroGrid.locator('[data-nutrition-macro="קלוריות"]')).toHaveCount(0);
   1478 | });
   1479 | 
-  1480 | test("coach profile resets measurements, activity, and messages when switching trainees", async ({
-  1481 |   page,
-  1482 | }) => {
-  1483 |   await installFixture(page);
-  1484 | 
-  1485 |   await page.goto("/");
-  1486 |   await page.getByTestId("link-nav-coach").click();
-  1487 |   await expect(page).toHaveURL(/\/coach\/clients/);
-  1488 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת");
-  1489 | 
-  1490 |   await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
-  1491 |   const workspace = page.locator('[data-coach-workspace="true"]');
-  1492 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
-  1493 |     timeout: 20_000,
-  1494 |   });
-  1495 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
-  1496 | 
-  1497 |   const profile = page.locator('[data-coach-client-profile-inline="true"]');
-  1498 |   await expect(profile).toBeVisible();
-  1499 |   await expect(profile).toContainText("63.4");
-  1500 |   await expect(profile).toContainText("74");
-  1501 |   await expect(profile).toContainText("8,500");
-  1502 |   await expect(profile).toContainText("הליכה מהירה");
-  1503 |   await expect(profile).toContainText("כל הכבוד על ההתמדה השבוע");
-  1504 |   await expect(profile).not.toContainText("71.8");
-  1505 |   await expect(profile).not.toContainText("הודעה של מתאמנת אחרת");
-  1506 | 
-  1507 |   await page.getByRole("button", { name: "סגירת פרופיל המשתמש" }).click();
-  1508 |   await page.getByRole("button", { name: "סגירת תכנית המתאמן" }).click();
-  1509 |   await expect(workspace).toHaveCount(0);
-  1510 | 
-  1511 |   const clientSearch = page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" });
-  1512 |   await expect(clientSearch).toBeVisible();
-  1513 |   await clientSearch.fill("מתאמנת אחרת");
-  1514 |   await expect(page.getByText("מתאמנת אחרת", { exact: true })).toBeVisible();
-  1515 |   await page.getByText("מתאמנת אחרת", { exact: true }).click();
-  1516 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
-  1517 |     timeout: 20_000,
-  1518 |   });
-  1519 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
-  1520 | 
-  1521 |   await expect(profile).toBeVisible();
-  1522 |   await expect(profile).toContainText("71.8");
-  1523 |   await expect(profile).toContainText("88");
-  1524 |   await expect(profile).toContainText("1,234");
-  1525 |   await expect(profile).toContainText("רכיבה אחרת");
-  1526 |   await expect(profile).toContainText("הודעה של מתאמנת אחרת");
-  1527 |   await expect(profile).not.toContainText("63.4");
-  1528 |   await expect(profile).not.toContainText("כל הכבוד על ההתמדה השבוע");
-  1529 |   await expect(profile).not.toContainText("מתאמנת בדיקה");
-  1530 | });
-  1531 | 
-  1532 | test("coach profile retry recovers after a temporary trainee data failure", async ({ page }) => {
-  1533 |   await installFixture(page, { failSelectedTraineeDataOnce: true });
-  1534 | 
-  1535 |   await page.goto("/");
-  1536 |   await page.getByTestId("link-nav-coach").click();
-  1537 |   await expect(page).toHaveURL(/\/coach\/clients/);
-  1538 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת בדיקה");
-  1539 |   await page.evaluate(() => window.__iosSmokeArmSelectedTraineeDataFailure());
-  1540 |   await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
+  1480 | test("trainee can check and uncheck a planned food", async ({ page }) => {
+  1481 |   await installFixture(page, { role: "trainee", online: false });
+  1482 | 
+  1483 |   await page.goto("/nutrition");
+  1484 |   const plannedFood = page.locator(".nutrition-plan-food").first();
+  1485 |   await expect(plannedFood).toBeVisible();
+  1486 | 
+  1487 |   const checkButton = plannedFood.getByRole("button").first();
+  1488 |   await expect(checkButton).toHaveAttribute("aria-pressed", "false");
+  1489 |   await expect(checkButton).toHaveAttribute("title", "סמני כנאכל");
+  1490 |   await expect(checkButton).toHaveText("");
+  1491 | 
+  1492 |   await checkButton.click();
+  1493 |   await expect(checkButton).toHaveAttribute("aria-pressed", "true");
+  1494 |   await expect(checkButton).toHaveAttribute("title", "בטלי סימון");
+  1495 |   await expect(checkButton).toHaveClass(/bg-primary/);
+  1496 |   await expect
+  1497 |     .poll(() =>
+  1498 |       page.evaluate(() => {
+  1499 |         const raw = window.localStorage.getItem("gymtrack.v1.user.ios-smoke-client");
+  1500 |         const cached = raw ? JSON.parse(raw) : null;
+  1501 |         const today = new Date();
+  1502 |         const date = [
+  1503 |           today.getFullYear(),
+  1504 |           String(today.getMonth() + 1).padStart(2, "0"),
+  1505 |           String(today.getDate()).padStart(2, "0"),
+  1506 |         ].join("-");
+  1507 |         const day = cached?.nutritionDays?.find((item) => item.date === date);
+  1508 |         return day?.meals?.some((meal) =>
+  1509 |           meal.foods?.some((food) => food.sourcePlanFoodId === "ios-smoke-planned-cottage"),
+  1510 |         );
+  1511 |       }),
+  1512 |     )
+  1513 |     .toBe(true);
+  1514 | 
+  1515 |   await checkButton.click();
+  1516 |   await expect(checkButton).toHaveAttribute("aria-pressed", "false");
+  1517 |   await expect(checkButton).toHaveAttribute("title", "סמני כנאכל");
+  1518 |   await expect(checkButton).not.toHaveClass(/bg-primary/);
+  1519 |   await expect
+  1520 |     .poll(() =>
+  1521 |       page.evaluate(() => {
+  1522 |         const raw = window.localStorage.getItem("gymtrack.v1.user.ios-smoke-client");
+  1523 |         const cached = raw ? JSON.parse(raw) : null;
+  1524 |         const today = new Date();
+  1525 |         const date = [
+  1526 |           today.getFullYear(),
+  1527 |           String(today.getMonth() + 1).padStart(2, "0"),
+  1528 |           String(today.getDate()).padStart(2, "0"),
+  1529 |         ].join("-");
+  1530 |         const day = cached?.nutritionDays?.find((item) => item.date === date);
+  1531 |         return day?.meals?.some((meal) =>
+  1532 |           meal.foods?.some((food) => food.sourcePlanFoodId === "ios-smoke-planned-cottage"),
+  1533 |         );
+  1534 |       }),
+  1535 |     )
+  1536 |     .toBe(false);
+  1537 | });
+  1538 | 
+  1539 | test("trainee keeps a checked planned food after reopening nutrition", async ({ page }) => {
+  1540 |   await installFixture(page, { role: "trainee", online: false });
   1541 | 
-  1542 |   const workspace = page.locator('[data-coach-workspace="true"]');
-  1543 |   const detailsError = page.getByTestId("coach-client-details-error");
-  1544 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "error", {
-  1545 |     timeout: 20_000,
-  1546 |   });
-  1547 |   await expect(workspace).toHaveAttribute("aria-busy", "false");
-  1548 |   await expect(detailsError).toBeVisible();
-  1549 |   await expect(detailsError).toContainText("temporary selected trainee data failure");
-  1550 |   await expect(workspace.getByTestId("coach-client-details-loading")).toHaveCount(0);
-  1551 | 
+  1542 |   await page.goto("/nutrition");
+  1543 |   const plannedFood = page.locator(".nutrition-plan-food").first();
+  1544 |   await expect(plannedFood).toBeVisible();
+  1545 | 
+  1546 |   const checkButton = plannedFood.getByRole("button").first();
+  1547 |   await checkButton.click();
+  1548 |   await expect(checkButton).toHaveAttribute("aria-pressed", "true");
+  1549 |   await expect
+  1550 |     .poll(() =>
+  1551 |       page.evaluate(() => {
 ```

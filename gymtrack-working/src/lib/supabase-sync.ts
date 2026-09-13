@@ -696,7 +696,13 @@ export async function syncLocalToSupabase(
     }
 
     // 3. Programs & Program Days
-    if (localData.programs.length > 0) {
+    // Clients can read their assigned plan, but plan definitions are managed
+    // only by coaches and owners. Their local snapshot can still contain the
+    // assigned programs, so never replay those rows through the generic
+    // client sync or every refresh will produce an RLS failure.
+    const canSyncPlans =
+      localData.userProfile?.role === "coach" || localData.userProfile?.role === "owner";
+    if (canSyncPlans && localData.programs.length > 0) {
       const programPayload = localData.programs.map((p) => ({
         id: p.id,
         user_id: userId,
@@ -753,18 +759,20 @@ export async function syncLocalToSupabase(
         }
       }
     }
-    await deleteRowsExplicitlyDeleted(
-      userId,
-      "programs",
-      localData.deletedProgramIds ?? [],
-      "Programs",
-    );
-    await deleteRowsExplicitlyDeleted(
-      userId,
-      "program_days",
-      localData.deletedWorkoutIds ?? [],
-      "Program days",
-    );
+    if (canSyncPlans) {
+      await deleteRowsExplicitlyDeleted(
+        userId,
+        "programs",
+        localData.deletedProgramIds ?? [],
+        "Programs",
+      );
+      await deleteRowsExplicitlyDeleted(
+        userId,
+        "program_days",
+        localData.deletedWorkoutIds ?? [],
+        "Program days",
+      );
+    }
 
     // 3b. Challenge catalog. This table is additive and optional while older
     // connected projects are waiting for the challenge migration.
@@ -1595,8 +1603,16 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     if (programDaysError) throw new Error(`Program days pull failed: ${programDaysError.message}`);
 
     if (dbPrograms) {
-      const deletedProgramIds = new Set(nextData.deletedProgramIds ?? []);
-      const deletedWorkoutIds = new Set(nextData.deletedWorkoutIds ?? []);
+      const canManagePlans = role === "coach" || role === "owner";
+      // Client plan rows are authoritative from the server. A stale tombstone
+      // from an older/offline cache must not hide a plan that the client is no
+      // longer permitted to delete.
+      const deletedProgramIds = new Set(canManagePlans ? (nextData.deletedProgramIds ?? []) : []);
+      const deletedWorkoutIds = new Set(canManagePlans ? (nextData.deletedWorkoutIds ?? []) : []);
+      if (!canManagePlans) {
+        nextData.deletedProgramIds = [];
+        nextData.deletedWorkoutIds = [];
+      }
       const workoutsMap = new Map(nextData.workouts.map((w) => [w.id, w]));
       const programsList: Program[] = [];
 

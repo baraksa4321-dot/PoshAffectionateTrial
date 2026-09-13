@@ -3,6 +3,7 @@ const STORE_NAME = "videos";
 
 type StoredVideoDraft = {
   key: string;
+  userId?: string;
   workoutId: string;
   exerciseIndex: number;
   file: Blob;
@@ -15,8 +16,8 @@ export type WorkoutVideoDraft = {
   file: File;
 };
 
-function draftKey(workoutId: string, exerciseIndex: number) {
-  return `${workoutId}:${exerciseIndex}`;
+function draftKey(userId: string, workoutId: string, exerciseIndex: number) {
+  return `${userId}:${workoutId}:${exerciseIndex}`;
 }
 
 function openDraftDatabase(): Promise<IDBDatabase> {
@@ -36,6 +37,7 @@ function openDraftDatabase(): Promise<IDBDatabase> {
 }
 
 export async function saveWorkoutVideoDraft(
+  userId: string,
   workoutId: string,
   exerciseIndex: number,
   file: File,
@@ -45,7 +47,8 @@ export async function saveWorkoutVideoDraft(
     await new Promise<void>((resolve, reject) => {
       const transaction = database.transaction(STORE_NAME, "readwrite");
       transaction.objectStore(STORE_NAME).put({
-        key: draftKey(workoutId, exerciseIndex),
+        key: draftKey(userId, workoutId, exerciseIndex),
+        userId,
         workoutId,
         exerciseIndex,
         file,
@@ -61,7 +64,10 @@ export async function saveWorkoutVideoDraft(
   }
 }
 
-export async function loadWorkoutVideoDrafts(workoutId: string): Promise<WorkoutVideoDraft[]> {
+export async function loadWorkoutVideoDrafts(
+  userId: string,
+  workoutId: string,
+): Promise<WorkoutVideoDraft[]> {
   const database = await openDraftDatabase();
   try {
     return await new Promise<WorkoutVideoDraft[]>((resolve, reject) => {
@@ -69,7 +75,7 @@ export async function loadWorkoutVideoDrafts(workoutId: string): Promise<Workout
       const request = transaction.objectStore(STORE_NAME).getAll();
       request.onsuccess = () => {
         const drafts = (request.result as StoredVideoDraft[])
-          .filter((draft) => draft.workoutId === workoutId)
+          .filter((draft) => draft.userId === userId && draft.workoutId === workoutId)
           .map((draft) => ({
             exerciseIndex: draft.exerciseIndex,
             file: new File([draft.file], draft.fileName, { type: draft.contentType }),
@@ -84,15 +90,67 @@ export async function loadWorkoutVideoDrafts(workoutId: string): Promise<Workout
   }
 }
 
-export async function removeWorkoutVideoDraft(workoutId: string, exerciseIndex: number) {
+export async function removeWorkoutVideoDraft(
+  userId: string,
+  workoutId: string,
+  exerciseIndex: number,
+) {
   const database = await openDraftDatabase();
   try {
     await new Promise<void>((resolve, reject) => {
       const transaction = database.transaction(STORE_NAME, "readwrite");
-      transaction.objectStore(STORE_NAME).delete(draftKey(workoutId, exerciseIndex));
+      transaction.objectStore(STORE_NAME).delete(draftKey(userId, workoutId, exerciseIndex));
       transaction.oncomplete = () => resolve();
       transaction.onerror = () =>
         reject(transaction.error ?? new Error("Could not remove video draft"));
+    });
+  } finally {
+    database.close();
+  }
+}
+
+export async function clearWorkoutDraftsForUser(userId: string) {
+  if (typeof window !== "undefined") {
+    try {
+      const prefixes = [
+        "gymtrack.active_session.",
+        "gymtrack.active_session_started_at.",
+        "gymtrack.active_session_feedback.",
+        "gymtrack.active_rest_timer.",
+      ];
+      for (let index = window.localStorage.length - 1; index >= 0; index -= 1) {
+        const key = window.localStorage.key(index);
+        if (
+          key &&
+          prefixes.some((prefix) => {
+            if (!key.startsWith(prefix)) return false;
+            const suffix = key.slice(prefix.length);
+            return suffix.startsWith(`${userId}.`) || !suffix.includes(".");
+          })
+        ) {
+          window.localStorage.removeItem(key);
+        }
+      }
+    } catch {
+      /* ignore storage failures */
+    }
+  }
+
+  if (typeof indexedDB === "undefined") return;
+  const database = await openDraftDatabase();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const transaction = database.transaction(STORE_NAME, "readwrite");
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.getAll();
+      request.onsuccess = () => {
+        for (const draft of request.result as StoredVideoDraft[]) {
+          if (!draft.userId || draft.userId === userId) store.delete(draft.key);
+        }
+      };
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () =>
+        reject(transaction.error ?? new Error("Could not clear video drafts"));
     });
   } finally {
     database.close();

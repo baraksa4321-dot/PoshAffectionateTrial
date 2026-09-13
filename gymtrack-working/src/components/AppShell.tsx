@@ -34,6 +34,7 @@ import {
   disableNotificationDelivery,
 } from "../lib/notification-service";
 import { supabase } from "../lib/supabase";
+import { clearWorkoutDraftsForUser } from "../lib/workout-video-drafts";
 import {
   applyNightMode,
   applyTheme,
@@ -831,6 +832,7 @@ export function AppShell({
     } catch {
       // The auth event still clears the in-memory loading mode.
     }
+    if (user?.id) await clearWorkoutDraftsForUser(user.id);
     if (user?.id) await disableNotificationDelivery(user.id);
     await supabase.auth.signOut();
   };

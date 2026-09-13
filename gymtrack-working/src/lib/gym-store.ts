@@ -3,6 +3,7 @@ import { assertValidFoodNutrition, assertValidMealFood } from "./nutrition-integ
 import { ISRAELI_PROTEIN_PRODUCTS } from "./protein-product-catalog";
 import { supabase } from "./supabase";
 import { pullSupabaseData, syncLocalToSupabase, type SyncStatus } from "./supabase-sync";
+import { clearWorkoutDraftsForUser } from "./workout-video-drafts";
 import { normalizeFixedPlannedMenu, plannedMealOptionGroupId } from "./nutrition-planning";
 import { mealFoodNutritionMultiplier } from "./food-portions";
 import { calculateAge } from "./age";
@@ -1955,6 +1956,7 @@ export function clearCurrentUserLocalCache() {
     try {
       window.localStorage.removeItem(userCacheKey(userId));
       window.localStorage.removeItem(userPendingKey(userId));
+      void clearWorkoutDraftsForUser(userId);
     } catch {
       /* ignore storage failures */
     }

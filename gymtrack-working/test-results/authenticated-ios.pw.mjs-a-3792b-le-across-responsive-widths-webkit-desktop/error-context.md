@@ -7,7 +7,7 @@
 # Test info
 
 - Name: authenticated-ios.pw.mjs >> authenticated core routes remain usable across responsive widths
-- Location: gymtrack-working/e2e/authenticated-ios.pw.mjs:1564:1
+- Location: gymtrack-working/e2e/authenticated-ios.pw.mjs:1683:1
 
 # Error details
 
@@ -21,206 +21,206 @@ Call log:
 # Test source
 
 ```ts
-  1474 |     await expect(macro).toHaveAttribute("data-nutrition-macro", label);
-  1475 |     await expect(macro.locator("[data-nutrition-macro-value]")).toHaveText(/\d/);
-  1476 |   }
-  1477 |   await expect(replacementMacroGrid.locator('[data-nutrition-macro="קלוריות"]')).toHaveCount(0);
-  1478 | });
-  1479 | 
-  1480 | test("coach profile resets measurements, activity, and messages when switching trainees", async ({
-  1481 |   page,
-  1482 | }) => {
-  1483 |   await installFixture(page);
-  1484 | 
-  1485 |   await page.goto("/");
-  1486 |   await page.getByTestId("link-nav-coach").click();
-  1487 |   await expect(page).toHaveURL(/\/coach\/clients/);
-  1488 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת");
-  1489 | 
-  1490 |   await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
-  1491 |   const workspace = page.locator('[data-coach-workspace="true"]');
-  1492 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
-  1493 |     timeout: 20_000,
-  1494 |   });
-  1495 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
-  1496 | 
-  1497 |   const profile = page.locator('[data-coach-client-profile-inline="true"]');
-  1498 |   await expect(profile).toBeVisible();
-  1499 |   await expect(profile).toContainText("63.4");
-  1500 |   await expect(profile).toContainText("74");
-  1501 |   await expect(profile).toContainText("8,500");
-  1502 |   await expect(profile).toContainText("הליכה מהירה");
-  1503 |   await expect(profile).toContainText("כל הכבוד על ההתמדה השבוע");
-  1504 |   await expect(profile).not.toContainText("71.8");
-  1505 |   await expect(profile).not.toContainText("הודעה של מתאמנת אחרת");
-  1506 | 
-  1507 |   await page.getByRole("button", { name: "סגירת פרופיל המשתמש" }).click();
-  1508 |   await page.getByRole("button", { name: "סגירת תכנית המתאמן" }).click();
-  1509 |   await expect(workspace).toHaveCount(0);
-  1510 | 
-  1511 |   const clientSearch = page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" });
-  1512 |   await expect(clientSearch).toBeVisible();
-  1513 |   await clientSearch.fill("מתאמנת אחרת");
-  1514 |   await expect(page.getByText("מתאמנת אחרת", { exact: true })).toBeVisible();
-  1515 |   await page.getByText("מתאמנת אחרת", { exact: true }).click();
-  1516 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
-  1517 |     timeout: 20_000,
-  1518 |   });
-  1519 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
-  1520 | 
-  1521 |   await expect(profile).toBeVisible();
-  1522 |   await expect(profile).toContainText("71.8");
-  1523 |   await expect(profile).toContainText("88");
-  1524 |   await expect(profile).toContainText("1,234");
-  1525 |   await expect(profile).toContainText("רכיבה אחרת");
-  1526 |   await expect(profile).toContainText("הודעה של מתאמנת אחרת");
-  1527 |   await expect(profile).not.toContainText("63.4");
-  1528 |   await expect(profile).not.toContainText("כל הכבוד על ההתמדה השבוע");
-  1529 |   await expect(profile).not.toContainText("מתאמנת בדיקה");
-  1530 | });
-  1531 | 
-  1532 | test("coach profile retry recovers after a temporary trainee data failure", async ({ page }) => {
-  1533 |   await installFixture(page, { failSelectedTraineeDataOnce: true });
-  1534 | 
-  1535 |   await page.goto("/");
-  1536 |   await page.getByTestId("link-nav-coach").click();
-  1537 |   await expect(page).toHaveURL(/\/coach\/clients/);
-  1538 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת בדיקה");
-  1539 |   await page.evaluate(() => window.__iosSmokeArmSelectedTraineeDataFailure());
-  1540 |   await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
-  1541 | 
-  1542 |   const workspace = page.locator('[data-coach-workspace="true"]');
-  1543 |   const detailsError = page.getByTestId("coach-client-details-error");
-  1544 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "error", {
-  1545 |     timeout: 20_000,
-  1546 |   });
-  1547 |   await expect(workspace).toHaveAttribute("aria-busy", "false");
-  1548 |   await expect(detailsError).toBeVisible();
-  1549 |   await expect(detailsError).toContainText("temporary selected trainee data failure");
-  1550 |   await expect(workspace.getByTestId("coach-client-details-loading")).toHaveCount(0);
-  1551 | 
-  1552 |   await page.getByTestId("coach-client-details-retry").click();
-  1553 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
-  1554 |     timeout: 20_000,
-  1555 |   });
-  1556 |   await expect(workspace.getByTestId("coach-client-details-ready")).toBeVisible();
-  1557 |   await expect(detailsError).toHaveCount(0);
-  1558 | 
-  1559 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
-  1560 |   await expect(page.locator('[data-coach-client-profile-inline="true"]')).toBeVisible();
-  1561 |   await expect(page.getByText("פרופיל המשתמש", { exact: true })).toBeVisible();
-  1562 | });
-  1563 | 
-  1564 | test("authenticated core routes remain usable across responsive widths", async ({ page }) => {
-  1565 |   await installFixture(page);
-  1566 | 
-  1567 |   const routes = [
-  1568 |     { path: "/workouts", marker: "האימונים שלי" },
-  1569 |     { path: "/programs", marker: "התוכניות שלך" },
-  1570 |     { path: "/exercises", marker: "תרגילים" },
-  1571 |     { path: "/nutrition", marker: "יומן תזונה" },
-  1572 |   ];
-  1573 | 
-> 1574 |   await page.goto("/coach/clients");
+  1593 |         );
+  1594 |       }),
+  1595 |     )
+  1596 |     .toBe(true);
+  1597 | });
+  1598 | 
+  1599 | test("coach profile resets measurements, activity, and messages when switching trainees", async ({
+  1600 |   page,
+  1601 | }) => {
+  1602 |   await installFixture(page);
+  1603 | 
+  1604 |   await page.goto("/");
+  1605 |   await page.getByTestId("link-nav-coach").click();
+  1606 |   await expect(page).toHaveURL(/\/coach\/clients/);
+  1607 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת");
+  1608 | 
+  1609 |   await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
+  1610 |   const workspace = page.locator('[data-coach-workspace="true"]');
+  1611 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
+  1612 |     timeout: 20_000,
+  1613 |   });
+  1614 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
+  1615 | 
+  1616 |   const profile = page.locator('[data-coach-client-profile-inline="true"]');
+  1617 |   await expect(profile).toBeVisible();
+  1618 |   await expect(profile).toContainText("63.4");
+  1619 |   await expect(profile).toContainText("74");
+  1620 |   await expect(profile).toContainText("8,500");
+  1621 |   await expect(profile).toContainText("הליכה מהירה");
+  1622 |   await expect(profile).toContainText("כל הכבוד על ההתמדה השבוע");
+  1623 |   await expect(profile).not.toContainText("71.8");
+  1624 |   await expect(profile).not.toContainText("הודעה של מתאמנת אחרת");
+  1625 | 
+  1626 |   await page.getByRole("button", { name: "סגירת פרופיל המשתמש" }).click();
+  1627 |   await page.getByRole("button", { name: "סגירת תכנית המתאמן" }).click();
+  1628 |   await expect(workspace).toHaveCount(0);
+  1629 | 
+  1630 |   const clientSearch = page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" });
+  1631 |   await expect(clientSearch).toBeVisible();
+  1632 |   await clientSearch.fill("מתאמנת אחרת");
+  1633 |   await expect(page.getByText("מתאמנת אחרת", { exact: true })).toBeVisible();
+  1634 |   await page.getByText("מתאמנת אחרת", { exact: true }).click();
+  1635 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
+  1636 |     timeout: 20_000,
+  1637 |   });
+  1638 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
+  1639 | 
+  1640 |   await expect(profile).toBeVisible();
+  1641 |   await expect(profile).toContainText("71.8");
+  1642 |   await expect(profile).toContainText("88");
+  1643 |   await expect(profile).toContainText("1,234");
+  1644 |   await expect(profile).toContainText("רכיבה אחרת");
+  1645 |   await expect(profile).toContainText("הודעה של מתאמנת אחרת");
+  1646 |   await expect(profile).not.toContainText("63.4");
+  1647 |   await expect(profile).not.toContainText("כל הכבוד על ההתמדה השבוע");
+  1648 |   await expect(profile).not.toContainText("מתאמנת בדיקה");
+  1649 | });
+  1650 | 
+  1651 | test("coach profile retry recovers after a temporary trainee data failure", async ({ page }) => {
+  1652 |   await installFixture(page, { failSelectedTraineeDataOnce: true });
+  1653 | 
+  1654 |   await page.goto("/");
+  1655 |   await page.getByTestId("link-nav-coach").click();
+  1656 |   await expect(page).toHaveURL(/\/coach\/clients/);
+  1657 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת בדיקה");
+  1658 |   await page.evaluate(() => window.__iosSmokeArmSelectedTraineeDataFailure());
+  1659 |   await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
+  1660 | 
+  1661 |   const workspace = page.locator('[data-coach-workspace="true"]');
+  1662 |   const detailsError = page.getByTestId("coach-client-details-error");
+  1663 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "error", {
+  1664 |     timeout: 20_000,
+  1665 |   });
+  1666 |   await expect(workspace).toHaveAttribute("aria-busy", "false");
+  1667 |   await expect(detailsError).toBeVisible();
+  1668 |   await expect(detailsError).toContainText("temporary selected trainee data failure");
+  1669 |   await expect(workspace.getByTestId("coach-client-details-loading")).toHaveCount(0);
+  1670 | 
+  1671 |   await page.getByTestId("coach-client-details-retry").click();
+  1672 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
+  1673 |     timeout: 20_000,
+  1674 |   });
+  1675 |   await expect(workspace.getByTestId("coach-client-details-ready")).toBeVisible();
+  1676 |   await expect(detailsError).toHaveCount(0);
+  1677 | 
+  1678 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
+  1679 |   await expect(page.locator('[data-coach-client-profile-inline="true"]')).toBeVisible();
+  1680 |   await expect(page.getByText("פרופיל המשתמש", { exact: true })).toBeVisible();
+  1681 | });
+  1682 | 
+  1683 | test("authenticated core routes remain usable across responsive widths", async ({ page }) => {
+  1684 |   await installFixture(page);
+  1685 | 
+  1686 |   const routes = [
+  1687 |     { path: "/workouts", marker: "האימונים שלי" },
+  1688 |     { path: "/programs", marker: "התוכניות שלך" },
+  1689 |     { path: "/exercises", marker: "תרגילים" },
+  1690 |     { path: "/nutrition", marker: "יומן תזונה" },
+  1691 |   ];
+  1692 | 
+> 1693 |   await page.goto("/coach/clients");
        |              ^ Error: page.goto: Page crashed
-  1575 |   await expect(page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" })).toBeVisible();
-  1576 | 
-  1577 |   for (const route of routes) {
-  1578 |     await page.goto(route.path);
-  1579 |     await expect(page.getByRole("heading", { name: route.marker, exact: true })).toBeVisible({
-  1580 |       timeout: 20_000,
-  1581 |     });
-  1582 |   }
-  1583 | });
-  1584 | 
-  1585 | test("trainee sees the message sent from the coach profile after reconnecting", async ({
-  1586 |   page,
-  1587 | }) => {
-  1588 |   await installFixture(page);
-  1589 | 
-  1590 |   await page.goto("/");
-  1591 |   await page.getByTestId("link-nav-coach").click();
-  1592 |   await expect(page).toHaveURL(/\/coach\/clients/);
-  1593 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("בדיקה");
-  1594 |   await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
-  1595 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
-  1596 | 
-  1597 |   const profileMessage = page.getByTestId("coach-client-message-profile");
-  1598 |   await expect(profileMessage).toBeVisible();
-  1599 |   const profileMessageText = "הודעה שנשלחה מהפרופיל ונראית למתאמנת";
-  1600 |   await profileMessage.getByPlaceholder("כתבי הודעה למתאמן...").fill(profileMessageText);
-  1601 |   await profileMessage.getByRole("button", { name: "שלח", exact: true }).click();
-  1602 |   await expect
-  1603 |     .poll(async () =>
-  1604 |       page.evaluate((key) => window.localStorage.getItem(key), "ios-smoke.remote-coach-messages"),
-  1605 |     )
-  1606 |     .toContain(profileMessageText);
-  1607 | 
-  1608 |   const traineePage = await page.context().newPage();
-  1609 |   await installFixture(traineePage, { role: "trainee" });
-  1610 |   await traineePage.goto("/");
-  1611 |   const traineeMessage = traineePage.getByTestId("coach-message-banner");
-  1612 |   await expect(traineeMessage).toContainText("כל הכבוד על ההתמדה השבוע");
-  1613 | 
-  1614 |   await traineePage.evaluate(() => window.__iosSmokeSetOnline(true));
-  1615 |   await expect(traineeMessage).toContainText(profileMessageText);
-  1616 | });
-  1617 | 
-  1618 | test("trainee reopens a received coach message offline before reconnect refresh", async ({
-  1619 |   page,
-  1620 | }) => {
-  1621 |   await installFixture(page, { role: "trainee" });
-  1622 | 
-  1623 |   await page.goto("/");
-  1624 |   const traineeMessage = page.getByTestId("coach-message-banner");
-  1625 |   await expect(traineeMessage).toContainText("כל הכבוד על ההתמדה השבוע");
-  1626 |   await expect.poll(() => page.evaluate(() => window.__iosSmokeCoachMessageReads())).toBe(0);
-  1627 | 
-  1628 |   await page.reload();
-  1629 |   const reopenedMessage = page.getByTestId("coach-message-banner");
-  1630 |   await expect(reopenedMessage).toContainText("כל הכבוד על ההתמדה השבוע");
-  1631 |   await expect.poll(() => page.evaluate(() => window.__iosSmokeCoachMessageReads())).toBe(0);
-  1632 | 
-  1633 |   await page.evaluate(() => window.__iosSmokeSetOnline(true));
-  1634 |   await expect
-  1635 |     .poll(() => page.evaluate(() => window.__iosSmokeCoachMessageReads()))
-  1636 |     .toBeGreaterThan(0);
-  1637 |   await expect(reopenedMessage).toContainText("כל הכבוד על ההתמדה השבוע");
-  1638 |   await expect
-  1639 |     .poll(async () => {
-  1640 |       const cached = await page.evaluate(
-  1641 |         (key) => JSON.parse(window.localStorage.getItem(key) ?? "{}"),
-  1642 |         "gymtrack.v1.user.ios-smoke-client",
-  1643 |       );
-  1644 |       return cached.coachMessages?.length ?? 0;
-  1645 |     })
-  1646 |     .toBe(1);
-  1647 | });
-  1648 | 
-  1649 | test("trainee reopens a broadcast notice offline before reconnect refresh", async ({ page }) => {
-  1650 |   const refreshedBroadcastText = "הודעת תפוצה לאחר רענון reconnect";
-  1651 |   await installFixture(page, {
-  1652 |     role: "trainee",
-  1653 |     broadcastAnnouncementAfterReconnect: {
-  1654 |       ...broadcastAnnouncement,
-  1655 |       message: refreshedBroadcastText,
-  1656 |       created_at: "2026-08-25T09:00:00.000Z",
-  1657 |     },
-  1658 |   });
-  1659 | 
-  1660 |   await page.goto("/");
-  1661 |   const broadcast = page.getByTestId("broadcast-message-banner");
-  1662 |   await expect(broadcast).toContainText("הודעת תפוצה לבדיקה");
-  1663 |   await expect.poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads())).toBe(0);
-  1664 | 
-  1665 |   await page.reload();
-  1666 |   const reopenedBroadcast = page.getByTestId("broadcast-message-banner");
-  1667 |   await expect(reopenedBroadcast).toContainText("הודעת תפוצה לבדיקה");
-  1668 |   await expect.poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads())).toBe(0);
-  1669 | 
-  1670 |   await page.evaluate(() => window.__iosSmokeSetOnline(true));
-  1671 |   await expect
-  1672 |     .poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads()))
-  1673 |     .toBeGreaterThan(0);
-  1674 |   await expect(reopenedBroadcast).toContainText(refreshedBroadcastText);
+  1694 |   await expect(page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" })).toBeVisible();
+  1695 | 
+  1696 |   for (const route of routes) {
+  1697 |     await page.goto(route.path);
+  1698 |     await expect(page.getByRole("heading", { name: route.marker, exact: true })).toBeVisible({
+  1699 |       timeout: 20_000,
+  1700 |     });
+  1701 |   }
+  1702 | });
+  1703 | 
+  1704 | test("trainee sees the message sent from the coach profile after reconnecting", async ({
+  1705 |   page,
+  1706 | }) => {
+  1707 |   await installFixture(page);
+  1708 | 
+  1709 |   await page.goto("/");
+  1710 |   await page.getByTestId("link-nav-coach").click();
+  1711 |   await expect(page).toHaveURL(/\/coach\/clients/);
+  1712 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("בדיקה");
+  1713 |   await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
+  1714 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
+  1715 | 
+  1716 |   const profileMessage = page.getByTestId("coach-client-message-profile");
+  1717 |   await expect(profileMessage).toBeVisible();
+  1718 |   const profileMessageText = "הודעה שנשלחה מהפרופיל ונראית למתאמנת";
+  1719 |   await profileMessage.getByPlaceholder("כתבי הודעה למתאמן...").fill(profileMessageText);
+  1720 |   await profileMessage.getByRole("button", { name: "שלח", exact: true }).click();
+  1721 |   await expect
+  1722 |     .poll(async () =>
+  1723 |       page.evaluate((key) => window.localStorage.getItem(key), "ios-smoke.remote-coach-messages"),
+  1724 |     )
+  1725 |     .toContain(profileMessageText);
+  1726 | 
+  1727 |   const traineePage = await page.context().newPage();
+  1728 |   await installFixture(traineePage, { role: "trainee" });
+  1729 |   await traineePage.goto("/");
+  1730 |   const traineeMessage = traineePage.getByTestId("coach-message-banner");
+  1731 |   await expect(traineeMessage).toContainText("כל הכבוד על ההתמדה השבוע");
+  1732 | 
+  1733 |   await traineePage.evaluate(() => window.__iosSmokeSetOnline(true));
+  1734 |   await expect(traineeMessage).toContainText(profileMessageText);
+  1735 | });
+  1736 | 
+  1737 | test("trainee reopens a received coach message offline before reconnect refresh", async ({
+  1738 |   page,
+  1739 | }) => {
+  1740 |   await installFixture(page, { role: "trainee" });
+  1741 | 
+  1742 |   await page.goto("/");
+  1743 |   const traineeMessage = page.getByTestId("coach-message-banner");
+  1744 |   await expect(traineeMessage).toContainText("כל הכבוד על ההתמדה השבוע");
+  1745 |   await expect.poll(() => page.evaluate(() => window.__iosSmokeCoachMessageReads())).toBe(0);
+  1746 | 
+  1747 |   await page.reload();
+  1748 |   const reopenedMessage = page.getByTestId("coach-message-banner");
+  1749 |   await expect(reopenedMessage).toContainText("כל הכבוד על ההתמדה השבוע");
+  1750 |   await expect.poll(() => page.evaluate(() => window.__iosSmokeCoachMessageReads())).toBe(0);
+  1751 | 
+  1752 |   await page.evaluate(() => window.__iosSmokeSetOnline(true));
+  1753 |   await expect
+  1754 |     .poll(() => page.evaluate(() => window.__iosSmokeCoachMessageReads()))
+  1755 |     .toBeGreaterThan(0);
+  1756 |   await expect(reopenedMessage).toContainText("כל הכבוד על ההתמדה השבוע");
+  1757 |   await expect
+  1758 |     .poll(async () => {
+  1759 |       const cached = await page.evaluate(
+  1760 |         (key) => JSON.parse(window.localStorage.getItem(key) ?? "{}"),
+  1761 |         "gymtrack.v1.user.ios-smoke-client",
+  1762 |       );
+  1763 |       return cached.coachMessages?.length ?? 0;
+  1764 |     })
+  1765 |     .toBe(1);
+  1766 | });
+  1767 | 
+  1768 | test("trainee reopens a broadcast notice offline before reconnect refresh", async ({ page }) => {
+  1769 |   const refreshedBroadcastText = "הודעת תפוצה לאחר רענון reconnect";
+  1770 |   await installFixture(page, {
+  1771 |     role: "trainee",
+  1772 |     broadcastAnnouncementAfterReconnect: {
+  1773 |       ...broadcastAnnouncement,
+  1774 |       message: refreshedBroadcastText,
+  1775 |       created_at: "2026-08-25T09:00:00.000Z",
+  1776 |     },
+  1777 |   });
+  1778 | 
+  1779 |   await page.goto("/");
+  1780 |   const broadcast = page.getByTestId("broadcast-message-banner");
+  1781 |   await expect(broadcast).toContainText("הודעת תפוצה לבדיקה");
+  1782 |   await expect.poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads())).toBe(0);
+  1783 | 
+  1784 |   await page.reload();
+  1785 |   const reopenedBroadcast = page.getByTestId("broadcast-message-banner");
+  1786 |   await expect(reopenedBroadcast).toContainText("הודעת תפוצה לבדיקה");
+  1787 |   await expect.poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads())).toBe(0);
+  1788 | 
+  1789 |   await page.evaluate(() => window.__iosSmokeSetOnline(true));
+  1790 |   await expect
+  1791 |     .poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads()))
+  1792 |     .toBeGreaterThan(0);
+  1793 |   await expect(reopenedBroadcast).toContainText(refreshedBroadcastText);
 ```

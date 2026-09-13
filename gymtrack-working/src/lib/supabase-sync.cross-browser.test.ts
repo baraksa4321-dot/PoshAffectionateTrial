@@ -585,7 +585,7 @@ describe("cross-browser Supabase sync boundaries", () => {
     expect(hasFilter("coach_recipes", "coach_id", "client-b")).toBe(true);
   });
 
-  test("writes every user-owned sync payload with the authenticated user id", async () => {
+  test("writes coach-owned plan and user-owned sync payloads with the authenticated user id", async () => {
     const program: Program = { id: "program-b", name: "Client plan", notes: "", dayIds: ["day-b"] };
     const workout: Workout = { id: "day-b", name: "Day", notes: "", items: [] };
     const history: HistorySession = {
@@ -601,7 +601,7 @@ describe("cross-browser Supabase sync boundaries", () => {
 
     const { syncLocalToSupabase } = await syncModule;
     const result = await syncLocalToSupabase("client-b", {
-      ...makeLocalData({ weight: 70, role: "client" }),
+      ...makeLocalData({ weight: 70, role: "coach" }),
       workouts: [workout],
       programs: [program],
       history: [history],
@@ -629,6 +629,66 @@ describe("cross-browser Supabase sync boundaries", () => {
         expect((payload as { user_id: string }).user_id).toBe("client-b");
       }
     }
+  });
+
+  test("does not replay client-owned plan definitions through generic sync", async () => {
+    const program: Program = { id: "client-plan", name: "Assigned plan", notes: "", dayIds: ["client-day"] };
+    const workout: Workout = { id: "client-day", name: "Day", notes: "", items: [] };
+
+    const { syncLocalToSupabase } = await syncModule;
+    const result = await syncLocalToSupabase("client-b", {
+      ...makeLocalData({ weight: 70, role: "client" }),
+      workouts: [workout],
+      programs: [program],
+      deletedProgramIds: ["old-client-plan"],
+      deletedWorkoutIds: ["old-client-day"],
+    });
+
+    expect(result.success).toBe(true);
+    expect(callsFor("programs", "upsert")).toHaveLength(0);
+    expect(callsFor("program_days", "upsert")).toHaveLength(0);
+    expect(callsFor("programs", "delete")).toHaveLength(0);
+    expect(callsFor("program_days", "delete")).toHaveLength(0);
+  });
+
+  test("restores authoritative client plans hidden by stale local tombstones", async () => {
+    setResponse("profiles", { id: "client-b", role: "client", weight_kg: 70 });
+    setResponse("programs", [
+      {
+        id: "assigned-plan",
+        user_id: "client-b",
+        name: "Assigned plan",
+        description: "",
+      },
+    ]);
+    setResponse("program_days", [
+      {
+        id: "assigned-day",
+        program_id: "assigned-plan",
+        user_id: "client-b",
+        name: "Day A",
+        items: [],
+        sort_order: 0,
+      },
+    ]);
+
+    const { pullSupabaseData } = await syncModule;
+    const result = await pullSupabaseData("client-b", {
+      ...makeLocalData({ weight: 70, role: "client" }),
+      deletedProgramIds: ["assigned-plan"],
+      deletedWorkoutIds: ["assigned-day"],
+    });
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.programs).toEqual([
+      expect.objectContaining({ id: "assigned-plan", dayIds: ["assigned-day"] }),
+    ]);
+    expect(result.data.workouts).toEqual([
+      expect.objectContaining({ id: "assigned-day", name: "Day A" }),
+    ]);
+    expect(result.data.deletedProgramIds).toEqual([]);
+    expect(result.data.deletedWorkoutIds).toEqual([]);
   });
 
   test("falls back to live legacy activity columns without aborting the sync", async () => {
