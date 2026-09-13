@@ -5,6 +5,7 @@ import { supabase } from "./supabase";
 const SERVICE_WORKER_URL = "/sw.js?v=25";
 const WORKOUT_NOTIFICATION_PREFIX = 82_000;
 const REST_TIMER_NOTIFICATION_ID = 81_999;
+const REST_TIMER_CHANNEL_ID = "gymtrack-rest-timer-v1";
 const FIREBASE_APP_NAME = "gymtrack";
 const WORKOUT_REMINDER_HOUR = 8;
 const WORKOUT_REMINDER_MINUTE = 0;
@@ -152,14 +153,25 @@ export async function scheduleRestTimerNotification(endsAt: number) {
   await LocalNotifications.cancel({
     notifications: [{ id: REST_TIMER_NOTIFICATION_ID }],
   }).catch(() => undefined);
+  if (Capacitor.getPlatform() === "android") {
+    await LocalNotifications.createChannel({
+      id: REST_TIMER_CHANNEL_ID,
+      name: "סיום טיימר מנוחה",
+      description: "צליל והתראה כשהמנוחה בין הסטים מסתיימת",
+      sound: "rest_timer.wav",
+      importance: 5,
+      visibility: 1,
+      vibration: true,
+    }).catch(() => undefined);
+  }
   await LocalNotifications.schedule({
     notifications: [
       {
         id: REST_TIMER_NOTIFICATION_ID,
         title: "זמן המנוחה הסתיים",
         body: "אפשר להתחיל את הסט הבא.",
-        sound: "default",
-        channelId: "gymtrack",
+        sound: "rest_timer.wav",
+        channelId: REST_TIMER_CHANNEL_ID,
         schedule: { at, allowWhileIdle: true },
         extra: { type: "rest-timer" },
       },

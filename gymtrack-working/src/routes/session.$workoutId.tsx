@@ -615,6 +615,8 @@ function Session() {
   const previousRestRef = useRef(0);
   const restCompletionVibratedRef = useRef(false);
   const vibrationAudioRef = useRef<AudioContext | null>(null);
+  const restCompletionAudioRef = useRef<HTMLAudioElement | null>(null);
+  const restCompletionAudioUnlockedRef = useRef(false);
   const [restTimerHydrated, setRestTimerHydrated] = useState(false);
   const finishedSessionRef = useRef<HistorySession | null>(null);
   const restDragRef = useRef<{
@@ -702,6 +704,34 @@ function Session() {
 
   const prepareRestAudio = useCallback(() => {
     if (typeof window === "undefined") return;
+    try {
+      if (!restCompletionAudioRef.current) {
+        const audio = new Audio("/sounds/rest_timer.wav?v=1");
+        audio.preload = "auto";
+        audio.setAttribute("playsinline", "");
+        restCompletionAudioRef.current = audio;
+      }
+      const completionAudio = restCompletionAudioRef.current;
+      completionAudio.load();
+      if (!restCompletionAudioUnlockedRef.current) {
+        completionAudio.muted = true;
+        completionAudio.currentTime = 0;
+        void completionAudio
+          .play()
+          .then(() => {
+            completionAudio.pause();
+            completionAudio.currentTime = 0;
+            completionAudio.muted = false;
+            restCompletionAudioUnlockedRef.current = true;
+          })
+          .catch(() => {
+            completionAudio.muted = false;
+          });
+      }
+    } catch {
+      restCompletionAudioRef.current = null;
+    }
+
     const AudioContextCtor =
       window.AudioContext ||
       (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext })
@@ -761,11 +791,10 @@ function Session() {
 
   const playRestCompletionSound = useCallback(() => {
     const audioContext = vibrationAudioRef.current;
-    if (!audioContext) return;
-
     const playTone = () => {
+      if (!audioContext) return;
       try {
-        [0, 0.24, 0.48].forEach((offset, index) => {
+        [0, 0.55, 1.1].forEach((offset, index) => {
           const oscillator = audioContext.createOscillator();
           const gain = audioContext.createGain();
           const startAt = audioContext.currentTime + offset;
@@ -773,17 +802,25 @@ function Session() {
           oscillator.frequency.value = index === 1 ? 1046 : 880;
           gain.gain.setValueAtTime(0.0001, startAt);
           gain.gain.exponentialRampToValueAtTime(0.26, startAt + 0.025);
-          gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.42);
+          gain.gain.exponentialRampToValueAtTime(0.0001, startAt + (index === 2 ? 0.58 : 0.42));
           oscillator.connect(gain);
           gain.connect(audioContext.destination);
           oscillator.start(startAt);
-          oscillator.stop(startAt + 0.45);
+          oscillator.stop(startAt + (index === 2 ? 0.6 : 0.45));
         });
       } catch {
         // Some browsers can still block audio after the initial gesture.
       }
     };
 
+    const completionAudio = restCompletionAudioRef.current;
+    if (completionAudio) {
+      completionAudio.muted = false;
+      completionAudio.currentTime = 0;
+      void completionAudio.play().catch(playTone);
+      return;
+    }
+    if (!audioContext) return;
     if (audioContext.state === "suspended") {
       void audioContext.resume().then(playTone).catch(() => undefined);
     } else {

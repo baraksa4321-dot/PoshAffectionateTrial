@@ -1149,19 +1149,83 @@ function ScrollToTop() {
   const router = useRouter();
 
   useEffect(() => {
-    const resetScroll = () => {
-      const appScrollContainer = document.querySelector<HTMLElement>(
-        '[data-app-scroll-container="true"]',
-      );
-      appScrollContainer?.scrollTo({ top: 0, behavior: "auto" });
-      window.scrollTo(0, 0);
-      // Keep the document fallback for loading and non-AppShell routes.
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
+    const storageKey = "gymtrack.last-location.v1";
+    const currentPath = () =>
+      `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    let previousPath = currentPath();
+    let scrollContainer: HTMLElement | null = null;
+    let scrollFrame = 0;
+
+    const readSaved = () => {
+      try {
+        const raw = window.localStorage.getItem(storageKey);
+        if (!raw) return null;
+        const saved = JSON.parse(raw) as { path?: unknown; scrollTop?: unknown };
+        return typeof saved.path === "string" && typeof saved.scrollTop === "number"
+          ? { path: saved.path, scrollTop: Math.max(0, saved.scrollTop) }
+          : null;
+      } catch {
+        return null;
+      }
     };
 
-    resetScroll();
-    return router.subscribe("onResolved", resetScroll);
+    const persistScroll = () => {
+      if (scrollFrame) return;
+      scrollFrame = window.requestAnimationFrame(() => {
+        scrollFrame = 0;
+        const top = scrollContainer?.scrollTop ?? window.scrollY;
+        try {
+          window.localStorage.setItem(
+            storageKey,
+            JSON.stringify({ path: currentPath(), scrollTop: top }),
+          );
+        } catch {
+          // Navigation still works when local storage is unavailable.
+        }
+      });
+    };
+
+    const bindScrollContainer = () => {
+      const next = document.querySelector<HTMLElement>('[data-app-scroll-container="true"]');
+      if (next === scrollContainer) return;
+      scrollContainer?.removeEventListener("scroll", persistScroll);
+      scrollContainer = next;
+      scrollContainer?.addEventListener("scroll", persistScroll, { passive: true });
+    };
+
+    const saved = readSaved();
+    const restoreInitialScroll = () => {
+      bindScrollContainer();
+      if (!saved || saved.path !== currentPath()) return;
+      scrollContainer?.scrollTo({ top: saved.scrollTop, behavior: "auto" });
+      window.scrollTo(0, saved.scrollTop);
+    };
+    [0, 60, 180, 420, 800].forEach((delay) => window.setTimeout(restoreInitialScroll, delay));
+
+    window.addEventListener("scroll", persistScroll, { passive: true });
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") persistScroll();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    const unsubscribe = router.subscribe("onResolved", () => {
+      const nextPath = currentPath();
+      bindScrollContainer();
+      if (nextPath === previousPath) return;
+      previousPath = nextPath;
+      scrollContainer?.scrollTo({ top: 0, behavior: "auto" });
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      persistScroll();
+    });
+    return () => {
+      unsubscribe();
+      if (scrollFrame) window.cancelAnimationFrame(scrollFrame);
+      scrollContainer?.removeEventListener("scroll", persistScroll);
+      window.removeEventListener("scroll", persistScroll);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [router]);
 
   return null;
