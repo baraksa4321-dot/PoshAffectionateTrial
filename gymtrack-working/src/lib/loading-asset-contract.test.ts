@@ -26,6 +26,7 @@ describe("offline loading assets", () => {
     ];
 
     expect(rootRoute).toContain("SIMPLE_LOADING_ILLUSTRATIONS");
+    expect(rootRoute).toContain("isAnimatedLoadingUser");
     expect(rootRoute).toContain("loading-simple-fallback");
     expect(rootRoute).toContain("loading-simple-video");
     expect(rootRoute).toContain("/loading/tinted/${animationFile}");

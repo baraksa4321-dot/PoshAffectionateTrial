@@ -44,6 +44,7 @@ import {
   loadingPresentationForGender,
   readLoadingGender,
   readLoadingCycle,
+  isAnimatedLoadingUser,
   type LoadingGender,
 } from "../lib/loading-copy";
 import { applyTheme, readStoredTheme } from "../lib/theme";
@@ -1206,6 +1207,7 @@ function RootContent() {
   const authStatus = useAuthStatus();
   const authUser = useAuthUser();
   const { userProfile } = useGym();
+  const canUseAnimatedLoading = isAnimatedLoadingUser(authUser?.email);
   // Keep the first SSR and browser render identical. The persisted cycle is
   // applied after mount so loading media cannot trigger a hydration mismatch.
   const [openingCycleIndex, setOpeningCycleIndex] = useState(0);
@@ -1250,10 +1252,11 @@ function RootContent() {
   // the normal splash.
   const isLoadingScreen = requiresInitialLoading && !suppressTransientLoading;
   const activeLoadingGender = userProfile?.gender ?? loadingGender;
-  // Loading is intentionally determined by the profile gender:
-  // women get the expressive animated surface and men get the spinner.
-  // Until a gender is known, stay on the neutral spinner rather than guessing.
-  const loadingMode = loadingPresentationForGender(activeLoadingGender);
+  // The animated loading surface is a private account preference. Everyone
+  // else gets the palette-colored spinner, regardless of profile gender.
+  const loadingMode = canUseAnimatedLoading
+    ? loadingPresentationForGender(activeLoadingGender)
+    : "plain";
   const loadingCopyGender = activeLoadingGender ?? "female";
 
   useLoadingCycleEffect(() => {
@@ -1280,6 +1283,12 @@ function RootContent() {
       delete document.documentElement.dataset["loadingGender"];
     }
   }, [activeLoadingGender]);
+
+  useLoadingCycleEffect(() => {
+    document.documentElement.dataset["loadingAccount"] = canUseAnimatedLoading
+      ? "animation"
+      : "spinner";
+  }, [canUseAnimatedLoading]);
 
   useLoadingCycleEffect(() => {
     if (!canResumeInteractiveSession()) return;
@@ -1418,7 +1427,7 @@ function RootContent() {
   }, [isLoadingScreen]);
 
   useEffect(() => {
-    if (!isLoadingScreen) {
+    if (!isLoadingScreen || !canUseAnimatedLoading) {
       setLoadingRotationTick(0);
       return;
     }
@@ -1449,7 +1458,7 @@ function RootContent() {
         // Keep the offline app shell in production, where compiled asset URLs
         // remain stable for the lifetime of a deployed build.
         void navigator.serviceWorker
-           .register("/sw.js?v=24", { updateViaCache: "none" })
+            .register("/sw.js?v=25", { updateViaCache: "none" })
           .then((registration) => registration.update())
           .catch((error) => {
             console.warn("[App shell cache unavailable]:", error);
@@ -1462,7 +1471,7 @@ function RootContent() {
     return () => {
       window.clearInterval(illustrationTimer);
     };
-  }, [isLoadingScreen]);
+  }, [canUseAnimatedLoading, isLoadingScreen]);
 
   useEffect(() => {
     if (!isLoadingScreen) {

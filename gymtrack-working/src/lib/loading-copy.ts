@@ -42,9 +42,14 @@ export const LOADING_CYCLE_STORAGE_KEY = "my-routine-loading-cycle-v6";
 export const LOADING_GENDER_STORAGE_KEY = "my-routine-loading-gender-v1";
 export const LOADING_GENDER_EVENT = "myroutine:loading-gender";
 export const LOADING_ROTATION_INTERVAL_MS = 2_000;
+export const ANIMATED_LOADING_EMAIL = "mayayosfan234@gmail.com";
 
 export type LoadingGender = "female" | "male";
 export type LoadingPresentation = "expressive" | "plain";
+
+export function isAnimatedLoadingUser(email?: string | null) {
+  return email?.trim().toLocaleLowerCase() === ANIMATED_LOADING_EMAIL;
+}
 
 export function readLoadingGender(value: string | null): LoadingGender | undefined {
   return value === "female" || value === "male" ? value : undefined;

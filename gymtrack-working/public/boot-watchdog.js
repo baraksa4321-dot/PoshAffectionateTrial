@@ -1,6 +1,29 @@
 (() => {
   if (window.__MY_ROUTINE_BOOTED__) return;
 
+  const animatedLoadingEmail = "mayayosfan234@gmail.com";
+
+  const readStoredAuthEmail = () => {
+    try {
+      const authKeys = Object.keys(window.localStorage).filter(
+        (key) => key.startsWith("sb-") && key.endsWith("-auth-token"),
+      );
+      for (const key of authKeys) {
+        const raw = window.localStorage.getItem(key);
+        if (!raw) continue;
+        const session = JSON.parse(raw);
+        const email = session?.user?.email;
+        if (typeof email === "string") return email.trim().toLowerCase();
+      }
+    } catch {
+      // React will apply the authenticated account mode after hydration.
+    }
+    return "";
+  };
+
+  const canUseAnimatedLoading = readStoredAuthEmail() === animatedLoadingEmail;
+  document.documentElement.dataset.loadingAccount = canUseAnimatedLoading ? "animation" : "spinner";
+
   // Apply the last selected palette and loading presentation before React
   // hydrates. This keeps the first iOS/PWA paint from flashing the defaults.
   try {
@@ -124,6 +147,7 @@
       stopLoadingRotation();
       return false;
     }
+    if (document.documentElement.dataset.loadingAccount !== "animation") return false;
 
     const loadingScreen = document.querySelector(".loading-screen");
     const media = loadingScreen?.querySelector(".loading-simple-video");
