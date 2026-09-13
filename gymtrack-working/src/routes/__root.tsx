@@ -1262,7 +1262,9 @@ function RootContent() {
   const [loadingGender, setLoadingGender] = useState<LoadingGender | undefined>(undefined);
   const loadingWasVisibleRef = useRef(false);
   const [loadingRecoveryTimedOut, setLoadingRecoveryTimedOut] = useState(false);
-  const [suppressTransientLoading, setSuppressTransientLoading] = useState(false);
+  const [suppressTransientLoading, setSuppressTransientLoading] = useState(
+    canResumeInteractiveSession,
+  );
   const hasBeenInteractiveRef = useRef(false);
   const wasHiddenRef = useRef(false);
   const loadingIndexes = loadingCycleIndexes(
@@ -1297,7 +1299,10 @@ function RootContent() {
   // the cached app is still usable. Keep the current route visible in that
   // case; a real reload starts with hasBeenInteractiveRef=false and still gets
   // the normal splash.
-  const isLoadingScreen = requiresInitialLoading && !suppressTransientLoading;
+  const isLoadingScreen =
+    requiresInitialLoading &&
+    !suppressTransientLoading &&
+    !hasBeenInteractiveRef.current;
   const activeLoadingGender = userProfile?.gender ?? loadingGender;
   // The animated loading surface is a private account preference. Everyone
   // else gets the palette-colored spinner, regardless of profile gender.
