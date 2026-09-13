@@ -1477,6 +1477,65 @@ test("trainee nutrition quantities and macro visibility stay consistent", async 
   await expect(replacementMacroGrid.locator('[data-nutrition-macro="קלוריות"]')).toHaveCount(0);
 });
 
+test("trainee can check and uncheck a planned food", async ({ page }) => {
+  await installFixture(page, { role: "trainee", online: false });
+
+  await page.goto("/nutrition");
+  const plannedFood = page.locator(".nutrition-plan-food").first();
+  await expect(plannedFood).toBeVisible();
+
+  const checkButton = plannedFood.getByRole("button").first();
+  await expect(checkButton).toHaveAttribute("aria-pressed", "false");
+  await expect(checkButton).toHaveAttribute("title", "סמני כנאכל");
+  await expect(checkButton).toHaveText("");
+
+  await checkButton.click();
+  await expect(checkButton).toHaveAttribute("aria-pressed", "true");
+  await expect(checkButton).toHaveAttribute("title", "בטלי סימון");
+  await expect(checkButton).toHaveClass(/bg-primary/);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const raw = window.localStorage.getItem("gymtrack.v1.user.ios-smoke-client");
+        const cached = raw ? JSON.parse(raw) : null;
+        const today = new Date();
+        const date = [
+          today.getFullYear(),
+          String(today.getMonth() + 1).padStart(2, "0"),
+          String(today.getDate()).padStart(2, "0"),
+        ].join("-");
+        const day = cached?.nutritionDays?.find((item) => item.date === date);
+        return day?.meals?.some((meal) =>
+          meal.foods?.some((food) => food.sourcePlanFoodId === "ios-smoke-planned-cottage"),
+        );
+      }),
+    )
+    .toBe(true);
+
+  await checkButton.click();
+  await expect(checkButton).toHaveAttribute("aria-pressed", "false");
+  await expect(checkButton).toHaveAttribute("title", "סמני כנאכל");
+  await expect(checkButton).not.toHaveClass(/bg-primary/);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const raw = window.localStorage.getItem("gymtrack.v1.user.ios-smoke-client");
+        const cached = raw ? JSON.parse(raw) : null;
+        const today = new Date();
+        const date = [
+          today.getFullYear(),
+          String(today.getMonth() + 1).padStart(2, "0"),
+          String(today.getDate()).padStart(2, "0"),
+        ].join("-");
+        const day = cached?.nutritionDays?.find((item) => item.date === date);
+        return day?.meals?.some((meal) =>
+          meal.foods?.some((food) => food.sourcePlanFoodId === "ios-smoke-planned-cottage"),
+        );
+      }),
+    )
+    .toBe(false);
+});
+
 test("coach profile resets measurements, activity, and messages when switching trainees", async ({
   page,
 }) => {
