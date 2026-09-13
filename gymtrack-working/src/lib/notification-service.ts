@@ -4,6 +4,7 @@ import { supabase } from "./supabase";
 
 const SERVICE_WORKER_URL = "/sw.js?v=25";
 const WORKOUT_NOTIFICATION_PREFIX = 82_000;
+const REST_TIMER_NOTIFICATION_ID = 81_999;
 const FIREBASE_APP_NAME = "gymtrack";
 const WORKOUT_REMINDER_HOUR = 8;
 const WORKOUT_REMINDER_MINUTE = 0;
@@ -141,6 +142,36 @@ export async function showForegroundNotification(title: string, body: string) {
   } else {
     await showWebNotification(title, body);
   }
+}
+
+export async function scheduleRestTimerNotification(endsAt: number) {
+  if (!Capacitor.isNativePlatform()) return;
+  const at = new Date(endsAt);
+  if (Number.isNaN(at.getTime()) || at.getTime() <= Date.now()) return;
+
+  await LocalNotifications.cancel({
+    notifications: [{ id: REST_TIMER_NOTIFICATION_ID }],
+  }).catch(() => undefined);
+  await LocalNotifications.schedule({
+    notifications: [
+      {
+        id: REST_TIMER_NOTIFICATION_ID,
+        title: "זמן המנוחה הסתיים",
+        body: "אפשר להתחיל את הסט הבא.",
+        sound: "default",
+        channelId: "gymtrack",
+        schedule: { at, allowWhileIdle: true },
+        extra: { type: "rest-timer" },
+      },
+    ],
+  });
+}
+
+export async function cancelRestTimerNotification() {
+  if (!Capacitor.isNativePlatform()) return;
+  await LocalNotifications.cancel({
+    notifications: [{ id: REST_TIMER_NOTIFICATION_ID }],
+  }).catch(() => undefined);
 }
 
 async function configureNativeNotifications(userId: string): Promise<DeliveryResult> {

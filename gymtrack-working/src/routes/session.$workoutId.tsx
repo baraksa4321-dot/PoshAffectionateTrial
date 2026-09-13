@@ -56,6 +56,10 @@ import type {
   WorkoutItem,
 } from "@/lib/gym-types";
 import { genderText } from "@/lib/gender-copy";
+import {
+  cancelRestTimerNotification,
+  scheduleRestTimerNotification,
+} from "@/lib/notification-service";
 import { isSafeVideoSource } from "@/lib/url-security";
 import {
   completedSetForReopenedWorkout,
@@ -684,6 +688,17 @@ function Session() {
     restTimerHydrated,
     workoutId,
   ]);
+
+  useEffect(() => {
+    if (!restTimerHydrated) return;
+    if (restPaused || restEndsAt === null) {
+      void cancelRestTimerNotification();
+      return;
+    }
+    void scheduleRestTimerNotification(restEndsAt).catch((error) => {
+      console.warn("[Rest timer] Could not schedule native completion alert:", error);
+    });
+  }, [restEndsAt, restPaused, restTimerHydrated]);
 
   const prepareRestAudio = useCallback(() => {
     if (typeof window === "undefined") return;

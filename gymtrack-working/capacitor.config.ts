@@ -8,6 +8,7 @@ const config: CapacitorConfig = {
   plugins: {
     LocalNotifications: {
       iconColor: "#7c5cff",
+      presentationOptions: ["sound", "banner", "list"],
     },
   },
 };
