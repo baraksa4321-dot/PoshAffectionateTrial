@@ -150,6 +150,15 @@ export async function scheduleRestTimerNotification(endsAt: number) {
   const at = new Date(endsAt);
   if (Number.isNaN(at.getTime()) || at.getTime() <= Date.now()) return;
 
+  const permission = await LocalNotifications.checkPermissions();
+  const resolvedPermission =
+    permission.display === "prompt"
+      ? await LocalNotifications.requestPermissions()
+      : permission;
+  if (resolvedPermission.display !== "granted") {
+    throw new Error("הרשאת ההתראות נדחתה, ולכן אי אפשר להשמיע טיימר ברקע.");
+  }
+
   await LocalNotifications.cancel({
     notifications: [{ id: REST_TIMER_NOTIFICATION_ID }],
   }).catch(() => undefined);
