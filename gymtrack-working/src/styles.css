@@ -56,16 +56,16 @@
 html.night-mode .text-emerald-700,
 html.night-mode .text-emerald-800,
 html.night-mode .text-emerald-600 {
-  color: #86efac !important;
+  color: var(--status-success) !important;
 }
 html.night-mode .text-amber-700,
 html.night-mode .text-amber-600 {
-  color: #fcd34d !important;
+  color: var(--status-warning) !important;
 }
 html.night-mode .text-rose-700,
 html.night-mode .text-rose-600,
 html.night-mode .text-red-700 {
-  color: #fda4af !important;
+  color: var(--status-danger) !important;
 }
 html.night-mode .border-white,
 html.night-mode .border-white\/80 {
@@ -90,7 +90,7 @@ html.night-mode textarea::placeholder {
   --foreground: #252329;
   --surface: #ffffff;
   --surface-2: #f7e5e8;
-  --cream: #fbf2df;
+  --cream: #fbf5f6;
 
   --card: var(--surface);
   --card-foreground: var(--foreground);
@@ -109,8 +109,8 @@ html.night-mode textarea::placeholder {
   --rose: #b7677b;
   --rose-soft: #f7e5e8;
 
-  --accent: #e8c98d;
-  --accent-foreground: #70552a;
+  --accent: #d8a0ae;
+  --accent-foreground: #5b3542;
 
   --ink: #252329;
   --ink-soft: #665f6a;
@@ -126,7 +126,7 @@ html.night-mode textarea::placeholder {
   --ring: #d58a9b;
   --gradient-start: #d58a9b;
   --gradient-mid: #e5a6b4;
-  --gradient-end: #f3c7c5;
+  --gradient-end: #f0d8de;
   --shadow-color: 66 45 53;
   --elevation-1:
     0 3px 8px rgb(var(--shadow-color) / 9%), 0 14px 30px rgb(var(--shadow-color) / 12%);
@@ -137,29 +137,29 @@ html.night-mode textarea::placeholder {
 :root[data-theme="pink"] {
   --background: #ffffff;
   --foreground: #49343b;
-  --surface: #fffafb;
-  --surface-2: #f2dce2;
-  --cream: #f8eef0;
-  --primary: #d58a9b;
-  --primary-foreground: #4a1c27;
-  --secondary: #efd0d8;
-  --secondary-foreground: #5d3c47;
-  --sage: #d9b5bd;
-  --sage-soft: #f8eef0;
-  --rose: #d58a9b;
-  --rose-soft: #efb9c5;
-  --accent: #e6b0bd;
-  --accent-foreground: #51343d;
-  --ink: #3f2d34;
-  --ink-soft: #705761;
-  --muted: #f8eef0;
-  --muted-foreground: #765d68;
-  --border: #e4b8c3;
-  --input: #e4b8c3;
-  --ring: #d58a9b;
-  --gradient-start: #d58a9b;
-  --gradient-mid: #e6a7b5;
-  --gradient-end: #f1d5dc;
+  --surface: #fffdfd;
+  --surface-2: #faf1f3;
+  --cream: #fcf6f7;
+  --primary: #b86d7f;
+  --primary-foreground: #ffffff;
+  --secondary: #f4e7eb;
+  --secondary-foreground: #603b47;
+  --sage: #bd8492;
+  --sage-soft: #f8edef;
+  --rose: #a95e72;
+  --rose-soft: #f7e8ec;
+  --accent: #c98b9b;
+  --accent-foreground: #593542;
+  --ink: #382830;
+  --ink-soft: #725d66;
+  --muted: #fbf6f7;
+  --muted-foreground: #765f68;
+  --border: #eadde1;
+  --input: #e6d7dc;
+  --ring: #b86d7f;
+  --gradient-start: #b86d7f;
+  --gradient-mid: #d09aa8;
+  --gradient-end: #f1dfe4;
 }
 
 :root[data-theme="pink"] body {
