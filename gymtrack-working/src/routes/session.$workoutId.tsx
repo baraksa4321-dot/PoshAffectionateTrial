@@ -697,21 +697,37 @@ function Session() {
       if (!vibrationAudioRef.current) {
         vibrationAudioRef.current = new AudioContextCtor();
       }
-      if (vibrationAudioRef.current.state === "suspended") {
-        void vibrationAudioRef.current.resume();
+      const audioContext = vibrationAudioRef.current;
+      const unlockAudioOutput = () => {
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        gain.gain.value = 0.0001;
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.01);
+      };
+      if (audioContext.state === "suspended") {
+        void audioContext.resume().then(unlockAudioOutput).catch(() => undefined);
+      } else {
+        unlockAudioOutput();
       }
     } catch {
       vibrationAudioRef.current = null;
     }
   }, []);
 
-  const startRestTimer = useCallback((seconds: number) => {
-    const normalizedSeconds = Math.max(0, Math.round(seconds));
-    setRest(normalizedSeconds);
-    setRestEndsAt(normalizedSeconds > 0 ? Date.now() + normalizedSeconds * 1000 : null);
-    setRestFinished(false);
-    setRestPaused(false);
-  }, []);
+  const startRestTimer = useCallback(
+    (seconds: number) => {
+      prepareRestAudio();
+      const normalizedSeconds = Math.max(0, Math.round(seconds));
+      setRest(normalizedSeconds);
+      setRestEndsAt(normalizedSeconds > 0 ? Date.now() + normalizedSeconds * 1000 : null);
+      setRestFinished(false);
+      setRestPaused(false);
+    },
+    [prepareRestAudio],
+  );
 
   const toggleRestPaused = useCallback(() => {
     if (rest <= 0) return;
