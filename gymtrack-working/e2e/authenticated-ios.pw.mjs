@@ -1536,6 +1536,66 @@ test("trainee can check and uncheck a planned food", async ({ page }) => {
     .toBe(false);
 });
 
+test("trainee keeps a checked planned food after reopening nutrition", async ({ page }) => {
+  await installFixture(page, { role: "trainee", online: false });
+
+  await page.goto("/nutrition");
+  const plannedFood = page.locator(".nutrition-plan-food").first();
+  await expect(plannedFood).toBeVisible();
+
+  const checkButton = plannedFood.getByRole("button").first();
+  await checkButton.click();
+  await expect(checkButton).toHaveAttribute("aria-pressed", "true");
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const raw = window.localStorage.getItem("gymtrack.v1.user.ios-smoke-client");
+        const cached = raw ? JSON.parse(raw) : null;
+        const today = new Date();
+        const date = [
+          today.getFullYear(),
+          String(today.getMonth() + 1).padStart(2, "0"),
+          String(today.getDate()).padStart(2, "0"),
+        ].join("-");
+        const day = cached?.nutritionDays?.find((item) => item.date === date);
+        return day?.meals?.some((meal) =>
+          meal.foods?.some((food) => food.sourcePlanFoodId === "ios-smoke-planned-cottage"),
+        );
+      }),
+    )
+    .toBe(true);
+
+  await page.getByRole("link", { name: "היום שלי", exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.getByRole("link", { name: "התזונה שלי", exact: true }).click();
+  await expect(page).toHaveURL(/\/nutrition/);
+
+  const reopenedFood = page.locator(".nutrition-plan-food").first();
+  const reopenedCheckButton = reopenedFood.getByRole("button").first();
+  await expect(reopenedCheckButton).toBeVisible();
+  await expect(reopenedCheckButton).toHaveAttribute("aria-pressed", "true");
+  await expect(reopenedCheckButton).toHaveAttribute("title", "בטלי סימון");
+  await expect(reopenedCheckButton).toHaveClass(/bg-primary/);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const raw = window.localStorage.getItem("gymtrack.v1.user.ios-smoke-client");
+        const cached = raw ? JSON.parse(raw) : null;
+        const today = new Date();
+        const date = [
+          today.getFullYear(),
+          String(today.getMonth() + 1).padStart(2, "0"),
+          String(today.getDate()).padStart(2, "0"),
+        ].join("-");
+        const day = cached?.nutritionDays?.find((item) => item.date === date);
+        return day?.meals?.some((meal) =>
+          meal.foods?.some((food) => food.sourcePlanFoodId === "ios-smoke-planned-cottage"),
+        );
+      }),
+    )
+    .toBe(true);
+});
+
 test("coach profile resets measurements, activity, and messages when switching trainees", async ({
   page,
 }) => {
