@@ -5415,103 +5415,120 @@ export function CoachDashboardPage({
               </div>
             </section>
           ) : null}
-          {isOwner && ownerHomeTab === "checkins" ? (
-            <section className="surface-card space-y-3 border-amber-200 bg-amber-50/45 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">
-                    מעקב קצר
-                  </p>
-                  <h3 className="mt-1 flex items-center gap-2 text-sm font-extrabold text-amber-950">
-                    <Activity className="h-4 w-4 text-amber-700" />
-                    צ׳ק־אין למתאמנים
-                  </h3>
-                  <p className="mt-1 text-[11px] leading-relaxed text-amber-900/75">
-                    מי דורש תשומת לב, מי יציב, ומי עדיין לא צבר מספיק נתונים.
-                  </p>
+          {isOwner && !clientsOnly ? (
+            <Overlay
+              open={ownerHomeTab === "checkins"}
+              onClose={() => setOwnerHomeTab("overview")}
+              ariaLabel="צ׳ק־אין למתאמנים"
+              panelClassName="max-w-2xl p-0"
+            >
+              <section className="surface-card space-y-3 border-amber-200 bg-amber-50/45 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">
+                      מעקב קצר
+                    </p>
+                    <h3 className="mt-1 flex items-center gap-2 text-sm font-extrabold text-amber-950">
+                      <Activity className="h-4 w-4 text-amber-700" />
+                      צ׳ק־אין למתאמנים
+                    </h3>
+                    <p className="mt-1 text-[11px] leading-relaxed text-amber-900/75">
+                      מי דורש תשומת לב, מי יציב, ומי עדיין לא צבר מספיק נתונים.
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-start gap-2">
+                    <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-extrabold text-amber-900">
+                      {attentionOpenCount} פתוחים
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setOwnerHomeTab("overview")}
+                      aria-label="סגירת כרטיס הצ׳ק־אין"
+                      className="grid h-7 w-7 place-items-center rounded-full text-amber-800 transition-colors hover:bg-amber-100"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
-                <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-extrabold text-amber-900">
-                  {attentionOpenCount} פתוחים
-                </span>
-              </div>
-              {attentionItems.length === 0 ? (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center text-xs font-semibold text-emerald-800">
-                  עדיין אין מספיק נתוני פעילות להצגת צ׳ק־אין.
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {attentionItems.map((item) => {
-                    const itemProfile = allProfiles.find((profile) => profile.id === item.clientId);
-                    const statusLabel =
-                      item.status === "needs-attention"
-                        ? "דורש תשומת לב"
-                        : item.status === "stable"
-                          ? "יציב"
-                          : "אין מספיק נתונים";
-                    const statusClass =
-                      item.status === "needs-attention"
-                        ? "bg-amber-100 text-amber-800"
-                        : item.status === "stable"
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-slate-100 text-slate-700";
-                    return (
-                      <div
-                        key={item.clientId}
-                        className={`rounded-2xl border bg-background p-3 ${
-                          item.reviewed ? "border-border/60 opacity-75" : "border-amber-200"
-                        }`}
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <h4 className="text-sm font-extrabold text-ink">{item.clientName}</h4>
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${statusClass}`}
-                              >
-                                {statusLabel}
-                              </span>
+                {attentionItems.length === 0 ? (
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center text-xs font-semibold text-emerald-800">
+                    עדיין אין מספיק נתוני פעילות להצגת צ׳ק־אין.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {attentionItems.map((item) => {
+                      const itemProfile = allProfiles.find((profile) => profile.id === item.clientId);
+                      const statusLabel =
+                        item.status === "needs-attention"
+                          ? "דורש תשומת לב"
+                          : item.status === "stable"
+                            ? "יציב"
+                            : "אין מספיק נתונים";
+                      const statusClass =
+                        item.status === "needs-attention"
+                          ? "bg-amber-100 text-amber-800"
+                          : item.status === "stable"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-slate-100 text-slate-700";
+                      return (
+                        <div
+                          key={item.clientId}
+                          className={`rounded-2xl border bg-background p-3 ${
+                            item.reviewed ? "border-border/60 opacity-75" : "border-amber-200"
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <h4 className="text-sm font-extrabold text-ink">{item.clientName}</h4>
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${statusClass}`}
+                                >
+                                  {statusLabel}
+                                </span>
+                              </div>
+                              <p className="mt-1 text-[11px] text-muted-foreground">
+                                {item.reasons.length > 0
+                                  ? item.reasons.map((reason) => reason.label).join(" · ")
+                                  : "אין סיבה חריגה כרגע"}
+                              </p>
                             </div>
-                            <p className="mt-1 text-[11px] text-muted-foreground">
-                              {item.reasons.length > 0
-                                ? item.reasons.map((reason) => reason.label).join(" · ")
-                                : "אין סיבה חריגה כרגע"}
-                            </p>
+                            <button
+                              type="button"
+                              disabled={!itemProfile}
+                              onClick={() => {
+                                if (itemProfile) void openOwnerProfile(itemProfile);
+                              }}
+                              className="shrink-0 rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-[10px] font-extrabold text-purple-800 hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              פתיחת פרופיל
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            disabled={!itemProfile}
-                            onClick={() => {
-                              if (itemProfile) void openOwnerProfile(itemProfile);
-                            }}
-                            className="shrink-0 rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-[10px] font-extrabold text-purple-800 hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            פתיחת פרופיל
-                          </button>
-                        </div>
-                        <div className="mt-3 grid grid-cols-2 gap-2 text-[10px]">
-                          <div className="rounded-xl bg-surface-2 p-2">
-                            <span className="block text-muted-foreground">אימוני 4 שבועות</span>
-                            <strong className="mt-0.5 block text-ink">
-                              {item.fourWeekWorkoutRate == null
-                                ? "—"
-                                : `${item.fourWeekWorkoutRate}%`}
-                            </strong>
-                          </div>
-                          <div className="rounded-xl bg-surface-2 p-2">
-                            <span className="block text-muted-foreground">תזונה השבוע</span>
-                            <strong className="mt-0.5 block text-ink">
-                              {item.fourWeekNutritionRate == null
-                                ? "—"
-                                : `${item.fourWeekNutritionRate}%`}
-                            </strong>
+                          <div className="mt-3 grid grid-cols-2 gap-2 text-[10px]">
+                            <div className="rounded-xl bg-surface-2 p-2">
+                              <span className="block text-muted-foreground">אימוני 4 שבועות</span>
+                              <strong className="mt-0.5 block text-ink">
+                                {item.fourWeekWorkoutRate == null
+                                  ? "—"
+                                  : `${item.fourWeekWorkoutRate}%`}
+                              </strong>
+                            </div>
+                            <div className="rounded-xl bg-surface-2 p-2">
+                              <span className="block text-muted-foreground">תזונה השבוע</span>
+                              <strong className="mt-0.5 block text-ink">
+                                {item.fourWeekNutritionRate == null
+                                  ? "—"
+                                  : `${item.fourWeekNutritionRate}%`}
+                              </strong>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            </Overlay>
           ) : null}
         </section>
       ) : null}
@@ -5526,19 +5543,39 @@ export function CoachDashboardPage({
           </div>
         ) : null}
         {/* Owner Management Section */}
-        {isOwner && !clientsOnly && ownerHomeTab !== "checkins" && (
-          <div className="surface-card space-y-3 rounded-3xl border border-purple-200 bg-purple-50/60 p-3 sm:p-5">
-            <div className="flex items-center justify-between border-b border-purple-200/60 pb-2">
-              <div className="flex items-center gap-2">
-                <Crown className="h-5 w-5 text-purple-700" />
-                <h3 className="text-sm font-bold text-purple-950">
-                  {ownerHomeTab === "profiles" ? "פרופילים" : "ניהול משתמשים והרשאות בעלים"}
-                </h3>
+        {isOwner && !clientsOnly ? (
+          <Overlay
+            open={ownerHomeTab === "profiles"}
+            onClose={() => {
+              setOwnerHomeTab("overview");
+              setSelectedOwnerProfileId(null);
+            }}
+            ariaLabel="ניהול פרופילים והרשאות בעלים"
+            panelClassName="max-w-3xl p-0"
+          >
+            <div className="surface-card space-y-3 rounded-3xl border border-purple-200 bg-purple-50/60 p-3 sm:p-5">
+              <div className="flex items-center justify-between gap-3 border-b border-purple-200/60 pb-2">
+                <div className="flex items-center gap-2">
+                  <Crown className="h-5 w-5 text-purple-700" />
+                  <h3 className="text-sm font-bold text-purple-950">פרופילים</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-full">
+                    {allProfiles.length} משתמשים במערכת
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOwnerHomeTab("overview");
+                      setSelectedOwnerProfileId(null);
+                    }}
+                    aria-label="סגירת כרטיס הפרופילים"
+                    className="grid h-7 w-7 place-items-center rounded-full text-purple-800 transition-colors hover:bg-purple-100"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-              <span className="text-[11px] font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-full">
-                {allProfiles.length} משתמשים במערכת
-              </span>
-            </div>
 
             <div className="space-y-2 pt-1">
               {pendingApprovals.length > 0 ? (
@@ -6032,8 +6069,9 @@ export function CoachDashboardPage({
                 </p>
               ) : null}
             </div>
-          </div>
-        )}
+            </div>
+          </Overlay>
+        ) : null}
 
         {clientsOnly ? (
           <>
