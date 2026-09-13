@@ -64,6 +64,7 @@ import {
   jsonValuesEqual,
 } from "../lib/coach-plan-payloads";
 import { calculateCalorieEstimate } from "../lib/calorie-calculator";
+import { calculateAge, dateOfBirthInputBounds, isValidDateOfBirth } from "../lib/age";
 import { groupPlannedMeals, plannedMealOptionGroupId } from "../lib/nutrition-planning";
 import {
   exerciseDisplayName,
@@ -283,6 +284,7 @@ type ProfileRow = {
   coach_id?: string | null;
   coach_ids?: string[];
   show_calories?: boolean | null;
+  date_of_birth?: string | null;
   age?: number | null;
   height_cm?: number | null;
   weight_kg?: number | null;
@@ -1860,7 +1862,7 @@ export function CoachDashboardPage({
     date: todayKey(),
   });
   const [measurementNotice, setMeasurementNotice] = useState("");
-  const [profileAge, setProfileAge] = useState("");
+  const [profileDateOfBirth, setProfileDateOfBirth] = useState("");
   const [profileHeight, setProfileHeight] = useState("");
   const [profileWeight, setProfileWeight] = useState("");
   const [profileWorkouts, setProfileWorkouts] = useState("");
@@ -2582,7 +2584,7 @@ export function CoachDashboardPage({
     setCalTarget(clientDetails?.nutritionTargets?.calories ?? 0);
     setProtTarget(clientDetails?.nutritionTargets?.protein ?? 0);
     const profile = clientDetails?.profile;
-    setProfileAge(profile?.age === undefined ? "" : String(profile.age));
+    setProfileDateOfBirth(profile?.dateOfBirth ?? "");
     setProfileHeight(profile?.height === undefined ? "" : String(profile.height));
     setProfileWeight(profile?.weight && profile.weight > 0 ? String(profile.weight) : "");
     setProfileWorkouts(
@@ -2593,10 +2595,11 @@ export function CoachDashboardPage({
     setProfileNotice("");
   }, [clientDetails]);
 
+  const calculatedProfileAge = calculateAge(profileDateOfBirth);
   const calorieProfile = clientDetails?.profile
     ? {
         ...clientDetails.profile,
-        age: profileAge === "" ? undefined : Number(profileAge),
+        ...(calculatedProfileAge === undefined ? {} : { age: calculatedProfileAge }),
         height: profileHeight === "" ? undefined : Number(profileHeight),
         weight: profileWeight === "" ? 0 : Number(profileWeight),
         workoutsPerWeek: profileWorkouts === "" ? undefined : Number(profileWorkouts),
@@ -2605,14 +2608,14 @@ export function CoachDashboardPage({
     : null;
   const calorieEstimate =
     calorieProfile &&
-    profileAge !== "" &&
+    calculatedProfileAge !== undefined &&
     profileHeight !== "" &&
     profileWeight !== "" &&
     profileWorkouts !== "" &&
     bmrGender !== ""
       ? calculateCalorieEstimate({
           ...calorieProfile,
-          age: Number(profileAge),
+          age: calculatedProfileAge,
           height: Number(profileHeight),
           weight: Number(profileWeight),
           workoutsPerWeek: Number(profileWorkouts),
@@ -2622,7 +2625,8 @@ export function CoachDashboardPage({
 
   const saveClientCalorieProfile = async () => {
     if (!selectedClientId || !clientDetails?.profile) return;
-    const age = profileAge === "" ? undefined : Number(profileAge);
+    const dateOfBirth = profileDateOfBirth === "" ? undefined : profileDateOfBirth;
+    const age = dateOfBirth ? calculateAge(dateOfBirth) : undefined;
     const height = profileHeight === "" ? undefined : Number(profileHeight);
     const weight = profileWeight === "" ? undefined : Number(profileWeight);
     const workouts = profileWorkouts === "" ? undefined : Number(profileWorkouts);
@@ -2631,6 +2635,8 @@ export function CoachDashboardPage({
       [age, height, weight, workouts].every(
         (value) => value !== undefined && Number.isFinite(value),
       ) &&
+      dateOfBirth !== undefined &&
+      isValidDateOfBirth(dateOfBirth) &&
       gender !== undefined &&
       (age ?? 0) > 0 &&
       (height ?? 0) > 0 &&
@@ -2638,12 +2644,13 @@ export function CoachDashboardPage({
       (workouts ?? -1) >= 0 &&
       (workouts ?? 15) <= 14;
     if (!valid) {
-      setProfileNotice("יש להשלים גיל, גובה, משקל ומספר אימונים תקינים כדי לשמור ולחשב.");
+      setProfileNotice("יש להשלים תאריך לידה, גובה, משקל ומספר אימונים תקינים כדי לשמור ולחשב.");
       return;
     }
     const { error } = await supabase
       .from("profiles")
       .update({
+        date_of_birth: dateOfBirth,
         age_years: age,
         height_cm: height,
         weight_kg: weight,
@@ -2664,6 +2671,7 @@ export function CoachDashboardPage({
             ...(current.profile
               ? {
                   ...current.profile,
+                  ...(dateOfBirth === undefined ? {} : { dateOfBirth }),
                   ...(age === undefined ? {} : { age }),
                   ...(height === undefined ? {} : { height }),
                   weight: weight ?? 0,
@@ -5794,7 +5802,7 @@ export function CoachDashboardPage({
                             </strong>
                           </div>
                           <div className="rounded-xl bg-surface-2 p-2">
-                            <span className="block text-muted-foreground">גובה / גיל</span>
+                            <span className="block text-muted-foreground">גובה</span>
                             <strong className="text-ink">
                               {selectedProfile.height_cm ??
                                 selectedOwnerProfileDetails?.profile?.height ??
@@ -5803,13 +5811,21 @@ export function CoachDashboardPage({
                               selectedOwnerProfileDetails?.profile?.height
                                 ? " ס״מ"
                                 : ""}
-                              {" · "}
-                              {selectedProfile.age ??
-                                selectedOwnerProfileDetails?.profile?.age ??
-                                "—"}{" "}
-                              גיל
                             </strong>
                           </div>
+                          {selectedProfile.date_of_birth ||
+                          selectedOwnerProfileDetails?.profile?.dateOfBirth ? (
+                            <div className="rounded-xl bg-surface-2 p-2">
+                              <span className="block text-muted-foreground">גיל מחושב</span>
+                              <strong className="text-ink">
+                                {calculateAge(
+                                  selectedProfile.date_of_birth ??
+                                    selectedOwnerProfileDetails?.profile?.dateOfBirth,
+                                ) ?? "—"}{" "}
+                                שנים
+                              </strong>
+                            </div>
+                          ) : null}
                         </div>
                         {selectedProfile.profile_exists !== false ? (
                           <div className="mt-3 flex flex-col gap-2 rounded-xl border border-purple-100 bg-purple-50 p-2 sm:flex-row sm:items-center">
@@ -9673,15 +9689,19 @@ export function CoachDashboardPage({
                             </select>
                           </label>
                           <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
-                            גיל
-                            <FreeTextInput
-                              min="1"
-                              max="120"
-                              value={profileAge}
-                              onChange={(event) => setProfileAge(event.target.value)}
-                              placeholder="נדרש"
+                            תאריך לידה
+                            <input
+                              type="date"
+                              {...dateOfBirthInputBounds()}
+                              value={profileDateOfBirth}
+                              onChange={(event) => setProfileDateOfBirth(event.target.value)}
                               className="h-9 rounded-lg border border-border bg-white px-2 text-center text-xs text-ink"
                             />
+                            <span className="text-[9px] font-medium text-muted-foreground">
+                              {calculateAge(profileDateOfBirth) === undefined
+                                ? "נדרש"
+                                : `גיל מחושב: ${calculateAge(profileDateOfBirth)}`}
+                            </span>
                           </label>
                           <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
                             גובה (ס״מ)
@@ -9745,7 +9765,7 @@ export function CoachDashboardPage({
                           </div>
                         ) : (
                           <p className="mt-3 text-[10px] font-semibold text-muted-foreground">
-                            השלימי גיל, גובה, משקל, מין ומספר אימונים בשבוע — ללא כל אחד מהם לא יוצג
+                            השלימי תאריך לידה, גובה, משקל, מין ומספר אימונים בשבוע — ללא כל אחד מהם לא יוצג
                             חישוב.
                           </p>
                         )}

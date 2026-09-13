@@ -5,6 +5,7 @@ import { supabase } from "./supabase";
 import { pullSupabaseData, syncLocalToSupabase, type SyncStatus } from "./supabase-sync";
 import { normalizeFixedPlannedMenu, plannedMealOptionGroupId } from "./nutrition-planning";
 import { mealFoodNutritionMultiplier } from "./food-portions";
+import { calculateAge } from "./age";
 import {
   type Challenge,
   type ChallengeEnrollment,
@@ -2620,14 +2621,15 @@ export function saveBodyMeasurement(measurement: Omit<BodyMeasurement, "id">) {
 /** RMR Calculation using Mifflin-St Jeor formula */
 export function calculateRmr(profile?: UserProfile) {
   const p = profile ?? data.userProfile;
+  const age = calculateAge(p?.dateOfBirth);
   if (
     !p ||
     !Number.isFinite(p.weight) ||
     p.weight <= 0 ||
     !Number.isFinite(p.height) ||
     (p.height ?? 0) <= 0 ||
-    !Number.isFinite(p.age) ||
-    (p.age ?? 0) <= 0 ||
+    !Number.isFinite(age) ||
+    (age ?? 0) <= 0 ||
     !p.gender ||
     !Number.isFinite(p.workoutsPerWeek) ||
     (p.workoutsPerWeek ?? -1) < 0
@@ -2636,7 +2638,7 @@ export function calculateRmr(profile?: UserProfile) {
   }
   const w = p.weight;
   const h = p.height!;
-  const a = p.age!;
+  const a = age!;
   const isFemale = p.gender === "female";
 
   const baseRmr = 10 * w + 6.25 * h - 5 * a + (isFemale ? -161 : 5);

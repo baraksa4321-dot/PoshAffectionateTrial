@@ -453,6 +453,9 @@ export type UserProfile = {
   fullName?: string;
   weight: number; // kg
   height?: number; // cm
+  /** ISO date (YYYY-MM-DD); age is derived from this value. */
+  dateOfBirth?: string;
+  /** Legacy/cache field kept for BMR compatibility; never edited directly in the UI. */
   age?: number;
   gender?: "female" | "male";
   /** Owner-controlled loading presentation override. Undefined follows gender defaults. */

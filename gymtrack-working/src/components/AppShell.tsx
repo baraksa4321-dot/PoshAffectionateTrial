@@ -43,6 +43,11 @@ import {
   THEME_PALETTES,
 } from "../lib/theme";
 import type { ThemePalette, UserProfile } from "../lib/gym-types";
+import {
+  calculateAge,
+  dateOfBirthInputBounds,
+  isValidDateOfBirth,
+} from "../lib/age";
 import { Overlay } from "./ui-app/Overlay";
 import { BrandLogo } from "./BrandLogo";
 import { FreeTextInput } from "./FreeTextInput";
@@ -60,7 +65,7 @@ type ProfileDraft = {
   fullName: string;
   weight: string;
   height: string;
-  age: string;
+  dateOfBirth: string;
   gender: "female" | "male";
   coachId: string;
 };
@@ -70,7 +75,7 @@ function profileDraftFrom(profile?: UserProfile): ProfileDraft {
     fullName: profile?.fullName ?? "",
     weight: profile?.weight && profile.weight > 0 ? String(profile.weight) : "",
     height: profile?.height && profile.height > 0 ? String(profile.height) : "",
-    age: profile?.age && profile.age > 0 ? String(profile.age) : "",
+    dateOfBirth: profile?.dateOfBirth ?? "",
     gender: profile?.gender ?? "female",
     coachId: profile?.coachId ?? "",
   };
@@ -574,6 +579,7 @@ export function AppShell({
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState<"female" | "male" | undefined>(undefined);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showSyncModal, setShowSyncModal] = useState(false);
@@ -681,6 +687,9 @@ export function AppShell({
         if (!gender) {
           throw new Error("יש לבחור מין כדי להתאים את חוויית הטעינה.");
         }
+        if (!isValidDateOfBirth(dateOfBirth)) {
+          throw new Error("יש להזין תאריך לידה תקין שאינו בעתיד.");
+        }
         const { data, error } = await supabase.auth.signUp({
           email: normalizedEmail,
           password,
@@ -690,6 +699,7 @@ export function AppShell({
               theme,
               gender,
               full_name: normalizedFullName,
+              date_of_birth: dateOfBirth,
             },
           },
         });
@@ -740,6 +750,7 @@ export function AppShell({
           theme,
           gender,
           ...(isSignUp ? { full_name: fullName.trim().replace(/\s+/g, " ") } : {}),
+          ...(isSignUp ? { date_of_birth: dateOfBirth } : {}),
         },
       });
       if (themeSaveError) throw themeSaveError;
@@ -747,6 +758,7 @@ export function AppShell({
       setEmail("");
       setFullName("");
       setPassword("");
+      setDateOfBirth("");
       setPendingVerificationEmail(null);
     } catch (err: unknown) {
       setErrorMsg(errorMessage(err, "אירעה שגיאה בחיבור ל-Supabase"));
@@ -902,11 +914,14 @@ export function AppShell({
 
     let weight: number | undefined;
     let height: number | undefined;
-    let age: number | undefined;
+    let dateOfBirth: string | undefined;
     try {
       weight = parsePositiveNumber(profileDraft.weight, "משקל");
       height = parsePositiveNumber(profileDraft.height, "גובה");
-      age = parsePositiveNumber(profileDraft.age, "גיל");
+      if (profileDraft.dateOfBirth && !isValidDateOfBirth(profileDraft.dateOfBirth)) {
+        throw new Error("יש להזין תאריך לידה תקין שאינו בעתיד.");
+      }
+      dateOfBirth = profileDraft.dateOfBirth || undefined;
     } catch (error) {
       setProfileError(errorMessage(error, "יש לבדוק את פרטי הפרופיל."));
       return;
@@ -927,12 +942,22 @@ export function AppShell({
         fullName: normalizedName,
         weight: weight ?? currentProfile.weight ?? 0,
         gender: profileDraft.gender,
+        ...(dateOfBirth ? { dateOfBirth } : {}),
         ...(profileDraft.coachId ? { coachId: profileDraft.coachId } : {}),
       };
       if (height === undefined) delete nextProfile.height;
       else nextProfile.height = height;
-      if (age === undefined) delete nextProfile.age;
-      else nextProfile.age = age;
+      if (dateOfBirth) {
+        const calculatedAge = calculateAge(dateOfBirth);
+        if (calculatedAge === undefined) {
+          setProfileError("לא ניתן לחשב גיל מתאריך הלידה שסופק.");
+          return;
+        }
+        nextProfile.age = calculatedAge;
+      } else {
+        delete nextProfile.dateOfBirth;
+        delete nextProfile.age;
+      }
       if (!profileDraft.coachId) delete nextProfile.coachId;
       saveUserProfile(nextProfile);
       setShowProfileModal(false);
@@ -1332,20 +1357,26 @@ export function AppShell({
                   />
                 </label>
                 <label className="block text-xs font-bold text-muted-foreground">
-                  גיל
-                  <FreeTextInput
-                    inputMode="numeric"
-                    min="0"
-                    step="1"
-                    value={profileDraft.age}
+                  תאריך לידה
+                  <input
+                    type="date"
+                    {...dateOfBirthInputBounds()}
+                    value={profileDraft.dateOfBirth}
                     onChange={(event) =>
                       setProfileDraft((current) => ({
                         ...current,
-                        age: event.target.value,
+                        dateOfBirth: event.target.value,
                       }))
                     }
                     className="mt-1 w-full rounded-2xl border border-border bg-background px-3.5 py-3 text-sm font-bold text-ink outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
                   />
+                  <span className="mt-1 block text-[10px] font-medium text-muted-foreground">
+                    {!profileDraft.dateOfBirth && store.userProfile?.age !== undefined
+                      ? "יש להשלים תאריך לידה כדי שהגיל יתעדכן אוטומטית"
+                      : profileDraft.dateOfBirth && calculateAge(profileDraft.dateOfBirth) !== undefined
+                        ? `גיל מחושב: ${calculateAge(profileDraft.dateOfBirth)}`
+                        : "מלאי תאריך לידה כדי לחשב גיל"}
+                  </span>
                 </label>
                 <label className="block text-xs font-bold text-muted-foreground">
                   מין
@@ -1612,6 +1643,30 @@ export function AppShell({
                       className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
                       placeholder="השם שיוצג באפליקציה"
                     />
+                  </div>
+                ) : null}
+                {isSignUp ? (
+                  <div>
+                    <label
+                      htmlFor="signup-date-of-birth"
+                      className="mb-1.5 block text-[12px] font-bold uppercase tracking-wide text-muted-foreground"
+                    >
+                      תאריך לידה
+                    </label>
+                    <input
+                      id="signup-date-of-birth"
+                      name="dateOfBirth"
+                      type="date"
+                      required
+                      {...dateOfBirthInputBounds()}
+                      value={dateOfBirth}
+                      onChange={(event) => setDateOfBirth(event.target.value)}
+                      autoComplete="bday"
+                      className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
+                    />
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      הגיל יחושב אוטומטית וישתנה ביום ההולדת.
+                    </p>
                   </div>
                 ) : null}
                 <div>

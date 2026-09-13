@@ -25,6 +25,7 @@ import {
 } from "./gym-types";
 import { BUILT_IN_CHALLENGES, cloneChallenge } from "./challenge-library";
 import { isSafeHttpUrl } from "./url-security";
+import { calculateAge, isValidDateOfBirth } from "./age";
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "pending" | "conflict" | "error" | "offline";
 export type PullResult =
@@ -589,7 +590,8 @@ export async function syncLocalToSupabase(
             email: userEmail || undefined,
             weight_kg: p.weight,
             height_cm: p.height,
-            age_years: p.age,
+            age_years: p.dateOfBirth ? calculateAge(p.dateOfBirth) : p.age,
+            ...(p.dateOfBirth ? { date_of_birth: p.dateOfBirth } : {}),
             workouts_per_week: p.workoutsPerWeek,
             gender: p.gender,
             // Role and coach assignment are server-owned. Normal profile
@@ -1233,6 +1235,10 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
             metadata["gender"] === "male" || metadata["gender"] === "female"
               ? metadata["gender"]
               : undefined,
+          ...(typeof metadata["date_of_birth"] === "string" &&
+          isValidDateOfBirth(metadata["date_of_birth"])
+            ? { date_of_birth: metadata["date_of_birth"] }
+            : {}),
           role: "client",
           today_routine_enabled: true,
           updated_at: new Date().toISOString(),
@@ -1261,7 +1267,15 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
     }
     const fullName = profile.full_name || nextData.userProfile?.fullName;
     const height = profile.height_cm ? Number(profile.height_cm) : nextData.userProfile?.height;
-    const age = profile.age_years ? Number(profile.age_years) : nextData.userProfile?.age;
+    const dateOfBirth =
+      typeof profile.date_of_birth === "string" && isValidDateOfBirth(profile.date_of_birth)
+        ? profile.date_of_birth
+        : nextData.userProfile?.dateOfBirth;
+    const age = dateOfBirth
+      ? calculateAge(dateOfBirth)
+      : profile.age_years
+        ? Number(profile.age_years)
+        : nextData.userProfile?.age;
     const workoutsPerWeek = profile.workouts_per_week
       ? Number(profile.workouts_per_week)
       : nextData.userProfile?.workoutsPerWeek;
@@ -1300,6 +1314,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       ...(fullName === undefined ? {} : { fullName }),
       ...(height === undefined ? {} : { height }),
       ...(age === undefined ? {} : { age }),
+      ...(dateOfBirth === undefined ? {} : { dateOfBirth }),
       ...(workoutsPerWeek === undefined ? {} : { workoutsPerWeek }),
       ...(gender === undefined ? {} : { gender }),
       ...(hasLoadingAnimationsSetting ? { loadingAnimationsEnabled } : {}),
@@ -2221,6 +2236,15 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
             ...(profile.gender === "male" || profile.gender === "female"
               ? { gender: profile.gender }
               : {}),
+             ...(typeof profile.date_of_birth === "string" &&
+             isValidDateOfBirth(profile.date_of_birth)
+               ? {
+                   dateOfBirth: profile.date_of_birth,
+                   age: calculateAge(profile.date_of_birth),
+                 }
+               : profile.age_years
+                 ? { age: Number(profile.age_years) }
+                 : {}),
             ...(profile.coach_id ? { coachId: profile.coach_id } : {}),
              ...(profile.next_checkin_date ? { nextCheckinDate: profile.next_checkin_date } : {}),
           }
