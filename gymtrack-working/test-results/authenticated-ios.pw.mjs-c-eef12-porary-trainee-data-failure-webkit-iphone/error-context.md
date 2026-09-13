@@ -12,24 +12,26 @@
 # Error details
 
 ```
-Error: page.goto: Page crashed
+Error: Channel closed
+```
+
+```
+Error: expect(locator).toHaveAttribute(expected) failed
+
+Locator: locator('[data-coach-workspace="true"]')
+Expected: "error"
+Error: element(s) not found
+
 Call log:
-  - navigating to "http://127.0.0.1:4173/", waiting until "load"
+  - Expect "toHaveAttribute" with timeout 20000ms
+  - waiting for locator('[data-coach-workspace="true"]')
+  - Test ended.
 
 ```
 
 # Test source
 
 ```ts
-  1554 |         const today = new Date();
-  1555 |         const date = [
-  1556 |           today.getFullYear(),
-  1557 |           String(today.getMonth() + 1).padStart(2, "0"),
-  1558 |           String(today.getDate()).padStart(2, "0"),
-  1559 |         ].join("-");
-  1560 |         const day = cached?.nutritionDays?.find((item) => item.date === date);
-  1561 |         return day?.meals?.some((meal) =>
-  1562 |           meal.foods?.some((food) => food.sourcePlanFoodId === "ios-smoke-planned-cottage"),
   1563 |         );
   1564 |       }),
   1565 |     )
@@ -121,8 +123,7 @@ Call log:
   1651 | test("coach profile retry recovers after a temporary trainee data failure", async ({ page }) => {
   1652 |   await installFixture(page, { failSelectedTraineeDataOnce: true });
   1653 | 
-> 1654 |   await page.goto("/");
-       |              ^ Error: page.goto: Page crashed
+  1654 |   await page.goto("/");
   1655 |   await page.getByTestId("link-nav-coach").click();
   1656 |   await expect(page).toHaveURL(/\/coach\/clients/);
   1657 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת בדיקה");
@@ -131,7 +132,8 @@ Call log:
   1660 | 
   1661 |   const workspace = page.locator('[data-coach-workspace="true"]');
   1662 |   const detailsError = page.getByTestId("coach-client-details-error");
-  1663 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "error", {
+> 1663 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "error", {
+       |                           ^ Error: expect(locator).toHaveAttribute(expected) failed
   1664 |     timeout: 20_000,
   1665 |   });
   1666 |   await expect(workspace).toHaveAttribute("aria-busy", "false");
@@ -223,4 +225,13 @@ Call log:
   1752 |   await page.evaluate(() => window.__iosSmokeSetOnline(true));
   1753 |   await expect
   1754 |     .poll(() => page.evaluate(() => window.__iosSmokeCoachMessageReads()))
+  1755 |     .toBeGreaterThan(0);
+  1756 |   await expect(reopenedMessage).toContainText("כל הכבוד על ההתמדה השבוע");
+  1757 |   await expect
+  1758 |     .poll(async () => {
+  1759 |       const cached = await page.evaluate(
+  1760 |         (key) => JSON.parse(window.localStorage.getItem(key) ?? "{}"),
+  1761 |         "gymtrack.v1.user.ios-smoke-client",
+  1762 |       );
+  1763 |       return cached.coachMessages?.length ?? 0;
 ```

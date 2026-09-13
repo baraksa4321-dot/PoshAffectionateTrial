@@ -12,17 +12,33 @@
 # Error details
 
 ```
-Error: page.goto: Page crashed
-Call log:
-  - navigating to "http://127.0.0.1:4173/", waiting until "domcontentloaded"
+Error: expect(locator).toHaveCount(expected) failed
 
+Locator:  locator('.loading-simple-video')
+Expected: 1
+Received: 0
+Timeout:  8000ms
+
+Call log:
+  - Expect "toHaveCount" with timeout 8000ms
+  - waiting for locator('.loading-simple-video')
+    20 × locator resolved to 0 elements
+       - unexpected value "0"
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - status "MY routine נטען" [ref=e3]:
+    - status "טוען" [ref=e5]
+  - img "MY routine" [ref=e6]
 ```
 
 # Test source
 
 ```ts
-  943  |                 owner_id: coachMessage.coach_id,
-  944  |                 updated_at: "2026-08-20T00:00:00.000Z",
   945  |               },
   946  |             ];
   947  |           }
@@ -121,10 +137,10 @@ Call log:
   1040 |     hydrationGate.then(() => route.continue()),
   1041 |   );
   1042 | 
-> 1043 |   await page.goto("/", { waitUntil: "domcontentloaded" });
-       |              ^ Error: page.goto: Page crashed
+  1043 |   await page.goto("/", { waitUntil: "domcontentloaded" });
   1044 |   const loadingVideo = page.locator(".loading-simple-video");
-  1045 |   await expect(loadingVideo).toHaveCount(1);
+> 1045 |   await expect(loadingVideo).toHaveCount(1);
+       |                              ^ Error: expect(locator).toHaveCount(expected) failed
   1046 |   expect(await page.evaluate(() => Boolean(window.__MY_ROUTINE_BOOTED__))).toBe(false);
   1047 | 
   1048 |   const readVideoState = () =>
@@ -223,4 +239,6 @@ Call log:
   1141 |   await installFixture(page);
   1142 | 
   1143 |   await page.goto("/");
+  1144 |   const coachNav = page.getByTestId("link-nav-coach");
+  1145 |   await expect(coachNav).toBeVisible({ timeout: 20_000 });
 ```
