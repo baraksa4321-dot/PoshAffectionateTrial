@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { COMMON_FOODS } from "./common-foods";
+import { IMPORTED_ISRAELI_FOODS } from "./imported-israeli-foods";
 import { ISRAELI_FOOD_DATABASE, EVERYDAY_FOOD_DATABASE } from "./israeli-food-db";
 import { nutritionSourceFor } from "./nutrition-integrity";
 import { ISRAELI_PROTEIN_PRODUCTS } from "./protein-product-catalog";
@@ -17,6 +18,19 @@ describe("food library expansion provenance", () => {
     expect(USDA_FOOD_EXPANSION.length).toBeGreaterThan(299);
     expect(EVERYDAY_FOOD_DATABASE.length).toBeGreaterThan(699);
     expect(new Set(allSeedFoods.map((food) => food.id)).size).toBe(allSeedFoods.length);
+  });
+
+  test("keeps all 200 workbook foods in the unreviewed imported layer", () => {
+    expect(IMPORTED_ISRAELI_FOODS).toHaveLength(200);
+    expect(new Set(IMPORTED_ISRAELI_FOODS.map((food) => food.name)).size).toBe(200);
+    expect(
+      IMPORTED_ISRAELI_FOODS.every(
+        (food) =>
+          food.servingSize === "100 גרם/מ״ל" &&
+          food.nutritionReview?.status === "unreviewed" &&
+          food.nutritionReview.origin === "estimated",
+      ),
+    ).toBe(true);
   });
 
   test("keeps USDA rows traceable without promoting them to verified values", () => {
