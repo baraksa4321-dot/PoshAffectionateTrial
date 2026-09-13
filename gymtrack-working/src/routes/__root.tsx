@@ -511,42 +511,25 @@ function SimpleLoadingIllustration({
   variant: number;
   cycle: number;
 }) {
-  const [videoFailed, setVideoFailed] = useState(false);
   const illustration = SIMPLE_LOADING_ILLUSTRATIONS[variant % SIMPLE_LOADING_ILLUSTRATIONS.length]!;
-  const animationFile = illustration.file.replace(".png", ".mp4");
-  const posterFile = illustration.file.replace(".png", ".gif");
+  const animationFile = illustration.file.replace(".png", ".gif");
   return (
-    <div
-      className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4} ${
-        videoFailed ? "loading-video-failed" : ""
-      }`}
-    >
+    <div className={`loading-micro-stage loading-simple-stage loading-simple-pose-${variant % 4}`}>
       <img
-        className="loading-simple-image loading-simple-fallback"
+        className="loading-simple-image loading-simple-static"
         src={`/loading/${illustration.file}`}
         alt=""
         aria-hidden="true"
         suppressHydrationWarning
       />
-      <video
-        key={`loading-video-${cycle}`}
-        className="loading-simple-image loading-simple-video"
-        src={`/loading/tinted/${animationFile}?v=video-safe-4&cycle=${cycle}`}
-        poster={`/loading/tinted/${posterFile}?v=poster-safe-4`}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        onCanPlay={() => setVideoFailed(false)}
-        onError={() => setVideoFailed(true)}
-        onLoadedData={(event) => {
-          setVideoFailed(false);
-          void event.currentTarget.play().catch(() => {
-            // Safari can defer muted autoplay until the first media event.
-          });
+      <img
+        key={`loading-animation-${cycle}`}
+        className="loading-simple-image loading-simple-animation"
+        src={`/loading/tinted/${animationFile}?v=gif-safe-1&cycle=${cycle}`}
+        alt={`איור טעינה: ${illustration.label}`}
+        onError={(event) => {
+          event.currentTarget.style.display = "none";
         }}
-        aria-label={`איור טעינה: ${illustration.label}`}
         suppressHydrationWarning
       />
     </div>

@@ -2746,42 +2746,22 @@ html:not([data-loading-account="animation"]) .loading-plain-content {
   height: 138px;
 }
 
-.loading-simple-fallback {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 160ms ease;
-}
-
-.loading-simple-video {
+.loading-simple-static {
   position: absolute;
   inset: 0;
   margin: auto;
   opacity: 1;
-  background: #f7f1ec;
+  pointer-events: none;
+}
+
+.loading-simple-animation {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  opacity: 1;
+  background: transparent;
   filter: saturate(1.04);
   mix-blend-mode: normal;
-  /* Safari can paint a native start button over an autoplaying inline video.
-     Keep the original animation and suppress only that browser chrome. */
-  -webkit-appearance: none;
-}
-
-.loading-video-failed .loading-simple-fallback {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.loading-video-failed .loading-simple-video {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.loading-simple-video::-webkit-media-controls,
-.loading-simple-video::-webkit-media-controls-start-playback-button {
-  display: none !important;
-  -webkit-appearance: none;
 }
 
 .loading-reference-image {
