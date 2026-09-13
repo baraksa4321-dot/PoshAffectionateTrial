@@ -486,7 +486,7 @@ export function AppShell({
           onClick: () => setWorkspace("management"),
         },
         {
-          to: "/programs",
+          to: "/coach/clients",
           label: "תוכניות",
           id: "programs",
           icon: Dumbbell,
@@ -1371,7 +1371,7 @@ export function AppShell({
                         dateOfBirth: event.target.value,
                       }))
                     }
-                    className="mt-1 w-full rounded-2xl border border-border bg-background px-3.5 py-3 text-sm font-bold text-ink outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                    className="mt-1 w-full appearance-none rounded-2xl border border-border bg-background px-3.5 py-3 text-[13px] font-semibold leading-5 text-ink outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
                   />
                   <span className="mt-1 block text-[10px] font-medium text-muted-foreground">
                     {!profileDraft.dateOfBirth && store.userProfile?.age !== undefined

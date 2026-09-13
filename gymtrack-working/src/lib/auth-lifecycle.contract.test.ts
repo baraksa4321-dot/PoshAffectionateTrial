@@ -20,6 +20,9 @@ const ownerRpcPrivileges = read(
   "../../supabase/migrations/34_revoke_public_owner_auth_rpc_execute.sql",
 );
 const roleHardening = read("../../supabase/migrations/09_security_fixes.sql");
+const dateOfBirthRepairMigration = read(
+  "../../supabase/migrations/58_profile_date_of_birth_repair.sql",
+);
 
 describe("Supabase auth lifecycle contracts", () => {
   test("signup and resend use the app entry point while password reset keeps its recovery route", () => {
@@ -80,5 +83,17 @@ describe("Supabase auth lifecycle contracts", () => {
     expect(appShell).toContain("const showWorkspaceSwitcher = Boolean(user && isCoach);");
     expect(appShell).toContain("{headerAccessory || showWorkspaceSwitcher ? (");
     expect(appShell).toContain("{showWorkspaceSwitcher ? (");
+  });
+
+  test("management Programs opens the combined coach plan workspace", () => {
+    expect(appShell).toContain('to: "/coach/clients"');
+    expect(appShell).toContain('label: "תוכניות"');
+  });
+
+  test("the DOB repair migration is idempotent and refreshes PostgREST", () => {
+    expect(dateOfBirthRepairMigration).toContain(
+      "ADD COLUMN IF NOT EXISTS date_of_birth DATE",
+    );
+    expect(dateOfBirthRepairMigration).toContain("NOTIFY pgrst, 'reload schema'");
   });
 });
