@@ -1137,6 +1137,41 @@ test("coach BMR editor restores date of birth and keeps age read-only", async ({
   expect(manualAgeInputs).toBe(0);
 });
 
+test("coach tracking keeps the trainee profile button on the coach home only", async ({ page }) => {
+  await installFixture(page);
+
+  await page.goto("/coach/tracking");
+  await expect(page.getByRole("heading", { name: "מעקב", exact: true })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.getByText("ביצועי מתאמנים בפועל", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "פתיחת פרופיל המשתמש" })).toHaveCount(0);
+
+  await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("בדיקה");
+  await expect(page.getByText("מתאמנת בדיקה", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "פתח דוח", exact: true }).click();
+  await expect(page).toHaveURL(/\/coach\/tracking\/ios-smoke-client$/);
+  const trackingWorkspace = page.locator('[data-coach-workspace="true"]');
+  await expect(trackingWorkspace).toHaveAttribute("data-coach-details-state", "ready", {
+    timeout: 20_000,
+  });
+  await expect(page.getByText("דוח המעקב:", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "פתיחת פרופיל המשתמש" })).toHaveCount(0);
+
+  await page.goto("/coach/clients");
+  await expect(page.getByRole("heading", { name: "עריכה", exact: true })).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("בדיקה");
+  await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
+  await expect(page.locator('[data-coach-workspace="true"]')).toHaveAttribute(
+    "data-coach-details-state",
+    "ready",
+    { timeout: 20_000 },
+  );
+  await expect(page.getByRole("button", { name: "פתיחת פרופיל המשתמש" })).toBeVisible();
+});
+
 test("authenticated iPhone coach workspace and active workout remain usable", async ({ page }) => {
   await installFixture(page);
 
