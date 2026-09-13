@@ -22,7 +22,7 @@ Timeout:  8000ms
 Call log:
   - Expect "toHaveCount" with timeout 8000ms
   - waiting for locator('.loading-simple-video')
-    20 × locator resolved to 0 elements
+    19 × locator resolved to 0 elements
        - unexpected value "0"
 
 ```

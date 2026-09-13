@@ -22,7 +22,7 @@ Timeout: 8000ms
 Call log:
   - Expect "toContainText" with timeout 8000ms
   - waiting for getByTestId('coach-message-banner')
-    20 × locator resolved to <div data-home-card-id="coach-message" data-testid="coach-message-banner" data-tsd-source="/src/routes/index.tsx:576:11" class="dashboard-notice surface-card space-y-1.5 border-primary/20 bg-primary/5 p-4 text-start">…</div>
+    19 × locator resolved to <div data-home-card-id="coach-message" data-testid="coach-message-banner" data-tsd-source="/src/routes/index.tsx:576:11" class="dashboard-notice surface-card space-y-1.5 border-primary/20 bg-primary/5 p-4 text-start">…</div>
        - unexpected value " הודעה מהמאמן שלך25.8.2026"כל הכבוד על ההתמדה השבוע""
 
 ```
