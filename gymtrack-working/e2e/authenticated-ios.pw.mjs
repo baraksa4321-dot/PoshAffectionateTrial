@@ -457,6 +457,7 @@ async function installFixture(
     failSelectedTraineeDataOnce = false,
     fullCacheValue = null,
     bootCacheValue = null,
+    broadcastAnnouncementAfterReconnect = null,
     plannedMenu = null,
     pendingChanges = false,
     trackBootCacheTiming = false,
@@ -511,6 +512,7 @@ async function installFixture(
       coachMessage,
       otherCoachMessage,
       broadcastAnnouncement,
+      broadcastAnnouncementAfterReconnect,
       challenge,
       householdFoods,
       initialOnline,
@@ -519,6 +521,7 @@ async function installFixture(
       trackBootCacheTiming,
     }) => {
       let isOnline = initialOnline;
+      let remoteBroadcastAnnouncement = broadcastAnnouncement;
       let persistedClientProfile = {
         ...clientProfile,
         planned_menu: clientProfile.planned_menu,
@@ -530,6 +533,9 @@ async function installFixture(
         get: () => isOnline,
       });
       window.__iosSmokeSetOnline = (nextOnline) => {
+        if (nextOnline && !isOnline && broadcastAnnouncementAfterReconnect) {
+          remoteBroadcastAnnouncement = broadcastAnnouncementAfterReconnect;
+        }
         isOnline = nextOnline;
         window.dispatchEvent(new Event(nextOnline ? "online" : "offline"));
       };
@@ -927,7 +933,7 @@ async function installFixture(
               .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
           } else if (path === "broadcast_announcements") {
             if ((init?.method ?? "GET").toUpperCase() === "GET") broadcastReads += 1;
-            body = [broadcastAnnouncement];
+            body = [remoteBroadcastAnnouncement];
           } else if (path === "challenges") {
             body = [
               {
@@ -984,6 +990,7 @@ async function installFixture(
       coachMessage,
       otherCoachMessage,
       broadcastAnnouncement,
+      broadcastAnnouncementAfterReconnect,
       challenge,
       householdFoods,
       initialOnline: online,
@@ -1581,7 +1588,15 @@ test("trainee reopens a received coach message offline before reconnect refresh"
 });
 
 test("trainee reopens a broadcast notice offline before reconnect refresh", async ({ page }) => {
-  await installFixture(page, { role: "trainee" });
+  const refreshedBroadcastText = "הודעת תפוצה לאחר רענון reconnect";
+  await installFixture(page, {
+    role: "trainee",
+    broadcastAnnouncementAfterReconnect: {
+      ...broadcastAnnouncement,
+      message: refreshedBroadcastText,
+      created_at: "2026-08-25T09:00:00.000Z",
+    },
+  });
 
   await page.goto("/");
   const broadcast = page.getByTestId("broadcast-message-banner");
@@ -1597,7 +1612,7 @@ test("trainee reopens a broadcast notice offline before reconnect refresh", asyn
   await expect
     .poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads()))
     .toBeGreaterThan(0);
-  await expect(reopenedBroadcast).toContainText("הודעת תפוצה לבדיקה");
+  await expect(reopenedBroadcast).toContainText(refreshedBroadcastText);
   await expect
     .poll(async () => {
       const cached = await page.evaluate(
@@ -1607,6 +1622,15 @@ test("trainee reopens a broadcast notice offline before reconnect refresh", asyn
       return cached.broadcasts?.length ?? 0;
     })
     .toBe(1);
+  await expect
+    .poll(async () => {
+      const cached = await page.evaluate(
+        (key) => JSON.parse(window.localStorage.getItem(key) ?? "{}"),
+        "gymtrack.v1.user.ios-smoke-client",
+      );
+      return cached.broadcasts?.[0]?.message ?? null;
+    })
+    .toBe(refreshedBroadcastText);
 });
 
 test("authenticated workspace paints from the boot cache before full refresh", async ({ page }) => {
