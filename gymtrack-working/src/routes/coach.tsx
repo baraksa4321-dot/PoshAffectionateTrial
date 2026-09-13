@@ -1862,11 +1862,13 @@ export function CoachDashboardPage({
     date: todayKey(),
   });
   const [measurementNotice, setMeasurementNotice] = useState("");
+  const [profileFullName, setProfileFullName] = useState("");
   const [profileDateOfBirth, setProfileDateOfBirth] = useState("");
   const [profileHeight, setProfileHeight] = useState("");
   const [profileWeight, setProfileWeight] = useState("");
   const [profileWorkouts, setProfileWorkouts] = useState("");
   const [profileGender, setProfileGender] = useState<"female" | "male" | "">("");
+  const [profileTodayRoutine, setProfileTodayRoutine] = useState(true);
   const [bmrGender, setBmrGender] = useState<"female" | "male" | "">("");
   const [profileNotice, setProfileNotice] = useState("");
   const [showBmrCalculator, setShowBmrCalculator] = useState(false);
@@ -2584,6 +2586,7 @@ export function CoachDashboardPage({
     setCalTarget(clientDetails?.nutritionTargets?.calories ?? 0);
     setProtTarget(clientDetails?.nutritionTargets?.protein ?? 0);
     const profile = clientDetails?.profile;
+    setProfileFullName(profile?.fullName ?? "");
     setProfileDateOfBirth(profile?.dateOfBirth ?? "");
     setProfileHeight(profile?.height === undefined ? "" : String(profile.height));
     setProfileWeight(profile?.weight && profile.weight > 0 ? String(profile.weight) : "");
@@ -2592,6 +2595,7 @@ export function CoachDashboardPage({
     );
     setProfileGender(profile?.gender ?? "");
     setBmrGender(profile?.gender ?? "");
+    setProfileTodayRoutine(profile?.todayRoutineEnabled ?? true);
     setProfileNotice("");
   }, [clientDetails]);
 
@@ -2625,6 +2629,7 @@ export function CoachDashboardPage({
 
   const saveClientCalorieProfile = async () => {
     if (!selectedClientId || !clientDetails?.profile) return;
+    const fullName = profileFullName.trim().replace(/\s+/g, " ");
     const dateOfBirth = profileDateOfBirth === "" ? undefined : profileDateOfBirth;
     const age = dateOfBirth ? calculateAge(dateOfBirth) : undefined;
     const height = profileHeight === "" ? undefined : Number(profileHeight);
@@ -2637,6 +2642,7 @@ export function CoachDashboardPage({
       ) &&
       dateOfBirth !== undefined &&
       isValidDateOfBirth(dateOfBirth) &&
+      fullName.split(/\s+/).filter(Boolean).length >= 2 &&
       gender !== undefined &&
       (age ?? 0) > 0 &&
       (height ?? 0) > 0 &&
@@ -2644,18 +2650,22 @@ export function CoachDashboardPage({
       (workouts ?? -1) >= 0 &&
       (workouts ?? 15) <= 14;
     if (!valid) {
-      setProfileNotice("יש להשלים תאריך לידה, גובה, משקל ומספר אימונים תקינים כדי לשמור ולחשב.");
+      setProfileNotice(
+        "יש להשלים שם מלא, תאריך לידה, גובה, משקל ומספר אימונים תקינים כדי לשמור.",
+      );
       return;
     }
     const { error } = await supabase
       .from("profiles")
       .update({
+        full_name: fullName,
         date_of_birth: dateOfBirth,
         age_years: age,
         height_cm: height,
         weight_kg: weight,
         workouts_per_week: workouts,
         gender,
+        today_routine_enabled: profileTodayRoutine,
         updated_at: new Date().toISOString(),
       })
       .eq("id", selectedClientId);
@@ -2671,18 +2681,20 @@ export function CoachDashboardPage({
             ...(current.profile
               ? {
                   ...current.profile,
+                  fullName,
                   ...(dateOfBirth === undefined ? {} : { dateOfBirth }),
                   ...(age === undefined ? {} : { age }),
                   ...(height === undefined ? {} : { height }),
                   weight: weight ?? 0,
                   ...(workouts === undefined ? {} : { workoutsPerWeek: workouts }),
                   ...(gender === undefined ? {} : { gender }),
+                  todayRoutineEnabled: profileTodayRoutine,
                 }
               : {}),
           }
         : current,
     );
-    setProfileNotice("נתוני הגוף נשמרו. הנתונים והחישוב זמינים רק באזור המאמן.");
+    setProfileNotice("פרטי המשתמש נשמרו. הנתונים והחישוב זמינים רק באזור המאמן.");
   };
 
   const saveClientCalorieVisibility = async (showCalories: boolean) => {
@@ -4837,7 +4849,7 @@ export function CoachDashboardPage({
       }
       headerAccessory={
         !clientsOnly && isOwner ? (
-          <div className="flex items-center gap-1.5">
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
             <button
               type="button"
               onClick={() => setOwnerHomeTab((current) => (current === "profiles" ? "overview" : "profiles"))}
@@ -10018,6 +10030,147 @@ export function CoachDashboardPage({
                   <X className="h-4 w-4" />
                 </button>
               </div>
+
+              <section
+                data-testid="coach-client-profile-editor"
+                className="space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.035] p-4"
+                onChange={markProfileDraftDirty}
+              >
+                <div className="flex items-center justify-between gap-2 border-b border-primary/15 pb-2">
+                  <div>
+                    <h3 className="text-sm font-bold text-ink">פרטי משתמש</h3>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      לבעלים ולמאמן המשויך יש הרשאה לערוך את כל פרטי הפרופיל.
+                    </p>
+                  </div>
+                  <Edit2 className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                </div>
+                <p className="rounded-xl bg-white/70 px-3 py-2 text-[11px] text-muted-foreground">
+                  אימייל החשבון:{" "}
+                  <strong className="break-all text-ink">
+                    {selectedClientInfo?.profiles?.email ?? "לא זמין"}
+                  </strong>
+                  <span className="ms-1">(שינוי אימייל מתבצע דרך אבטחת החשבון)</span>
+                </p>
+                <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
+                  שם מלא
+                  <input
+                    type="text"
+                    value={profileFullName}
+                    onChange={(event) => setProfileFullName(event.target.value)}
+                    className="h-10 w-full min-w-0 rounded-xl border border-border bg-white px-3 text-sm text-ink outline-none focus:border-primary"
+                    placeholder="שם פרטי ושם משפחה"
+                  />
+                </label>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
+                    מין
+                    <select
+                      value={profileGender}
+                      onChange={(event) => {
+                        const value = event.target.value as "female" | "male" | "";
+                        setProfileGender(value);
+                        setBmrGender(value);
+                      }}
+                      className="h-10 w-full min-w-0 rounded-xl border border-border bg-white px-3 text-sm text-ink outline-none focus:border-primary"
+                    >
+                      <option value="">לא צוין</option>
+                      <option value="female">נקבה</option>
+                      <option value="male">זכר</option>
+                    </select>
+                  </label>
+                  <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
+                    תאריך לידה
+                    <input
+                      type="date"
+                      {...dateOfBirthInputBounds()}
+                      value={profileDateOfBirth}
+                      onChange={(event) => setProfileDateOfBirth(event.target.value)}
+                      className="h-10 w-full min-w-0 rounded-xl border border-border bg-white px-3 text-sm text-ink outline-none focus:border-primary"
+                    />
+                    <span className="text-[10px] font-medium text-muted-foreground">
+                      {calculateAge(profileDateOfBirth) === undefined
+                        ? "הגיל יחושב אוטומטית מתאריך הלידה"
+                        : `גיל מחושב: ${calculateAge(profileDateOfBirth)}`}
+                    </span>
+                  </label>
+                  <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
+                    גובה (ס״מ)
+                    <FreeTextInput
+                      min="1"
+                      max="300"
+                      value={profileHeight}
+                      onChange={(event) => setProfileHeight(event.target.value)}
+                      className="h-10 w-full min-w-0 rounded-xl border border-border bg-white px-3 text-sm text-ink"
+                    />
+                  </label>
+                  <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
+                    משקל (ק״ג)
+                    <FreeTextInput
+                      min="0.1"
+                      max="500"
+                      step={0.1}
+                      value={profileWeight}
+                      onChange={(event) => setProfileWeight(event.target.value)}
+                      className="h-10 w-full min-w-0 rounded-xl border border-border bg-white px-3 text-sm text-ink"
+                    />
+                  </label>
+                  <label className="grid gap-1 text-[11px] font-bold text-muted-foreground sm:col-span-2">
+                    אימונים בשבוע
+                    <FreeTextInput
+                      min="0"
+                      max="14"
+                      value={profileWorkouts}
+                      onChange={(event) => setProfileWorkouts(event.target.value)}
+                      className="h-10 w-full min-w-0 rounded-xl border border-border bg-white px-3 text-sm text-ink"
+                    />
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    markProfileDraftDirty();
+                    setProfileTodayRoutine((current) => !current);
+                  }}
+                  aria-pressed={profileTodayRoutine}
+                  className="flex w-full items-center justify-between rounded-xl border border-primary/15 bg-white px-3 py-2.5 text-start"
+                >
+                  <span>
+                    <span className="block text-[11px] font-bold text-ink">הצגת שגרת היום</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {profileTodayRoutine ? "מוצגת למשתמש" : "מוסתרת מהמשתמש"}
+                    </span>
+                  </span>
+                  <span
+                    className={`relative h-5 w-9 shrink-0 rounded-full ${
+                      profileTodayRoutine ? "bg-primary" : "bg-border"
+                    }`}
+                    aria-hidden="true"
+                  >
+                    <span
+                      className={`absolute top-1 h-3 w-3 rounded-full bg-white shadow ${
+                        profileTodayRoutine ? "start-5" : "start-1"
+                      }`}
+                    />
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={saveClientCalorieProfile}
+                  className="flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-sm"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  שמירת פרטי המשתמש
+                </button>
+                {profileNotice ? (
+                  <p
+                    role="status"
+                    className="rounded-xl bg-emerald-50 p-2 text-xs font-semibold text-emerald-800"
+                  >
+                    {profileNotice}
+                  </p>
+                ) : null}
+              </section>
 
               <section
                 data-testid="coach-client-message-profile"

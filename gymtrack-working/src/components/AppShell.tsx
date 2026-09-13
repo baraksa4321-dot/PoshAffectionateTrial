@@ -1018,7 +1018,7 @@ export function AppShell({
               }`}
             >
               {headerAccessory ? (
-                <div className="min-w-0 shrink-0">{headerAccessory}</div>
+                <div className="min-w-0 flex-1 overflow-visible">{headerAccessory}</div>
               ) : (
                 <span />
               )}
