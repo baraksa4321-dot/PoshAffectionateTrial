@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
   Calendar,
@@ -49,6 +49,8 @@ function ProgramsPage() {
   const [selectedMusicGenre, setSelectedMusicGenre] = useState<BuiltInMusicGenre | null>(null);
   const [showMusicSearch, setShowMusicSearch] = useState(false);
   const [musicSearchQuery, setMusicSearchQuery] = useState("");
+
+  if (role === "client") return <Navigate to="/workouts" replace />;
 
   const filteredMusicTracks = BUILT_IN_MUSIC_GENRES.flatMap((genre) =>
     genre.tracks.map((track) => ({ genre, track })),

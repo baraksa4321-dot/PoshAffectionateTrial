@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 // @ts-nocheck
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import {
   ArrowRight,
   ChevronDown,
@@ -249,6 +249,8 @@ function DayBuilder() {
     useSensor(TouchSensor, { activationConstraint: { delay: 120, tolerance: 8 } }),
     useSensor(PointerSensor),
   );
+
+  if (userProfile?.role === "client") return <Navigate to="/workouts" replace />;
 
   useEffect(() => {
     if (!canManageProgram || !program?.id || !draft.name.trim() || draft.weekday === undefined) {

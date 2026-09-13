@@ -521,13 +521,17 @@ export function AppShell({
           icon: LayoutGrid,
           onClick: () => setWorkspace("personal"),
         },
-        {
-          to: "/programs",
-          label: "תוכניות",
-          id: "programs",
-          icon: Dumbbell,
-          onClick: () => setWorkspace("personal"),
-        },
+        ...(role === "client"
+          ? []
+          : [
+              {
+                to: "/programs" as const,
+                label: "תוכניות",
+                id: "programs",
+                icon: Dumbbell,
+                onClick: () => setWorkspace("personal"),
+              },
+            ]),
         {
           to: "/nutrition",
           label: "התזונה שלי",

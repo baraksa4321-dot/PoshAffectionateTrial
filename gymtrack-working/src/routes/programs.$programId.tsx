@@ -14,7 +14,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import {
   ArrowRight,
   Check,
@@ -73,6 +73,8 @@ function ProgramDetail() {
     useSensor(TouchSensor, { activationConstraint: { delay: 120, tolerance: 8 } }),
     useSensor(PointerSensor),
   );
+
+  if (role === "client") return <Navigate to="/workouts" replace />;
 
   if (!program) {
     return (
