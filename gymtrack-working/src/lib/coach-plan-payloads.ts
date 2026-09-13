@@ -42,6 +42,9 @@ export function clientNutritionTargetUpsertPayload(
   date: string,
   calories: number,
   protein: number,
+  carbs?: number,
+  fat?: number,
+  fiber?: number,
 ) {
   return {
     id,
@@ -49,6 +52,9 @@ export function clientNutritionTargetUpsertPayload(
     date,
     target_calories: calories,
     target_protein: protein,
+    ...(carbs === undefined ? {} : { target_carbs: carbs }),
+    ...(fat === undefined ? {} : { target_fat: fat }),
+    ...(fiber === undefined ? {} : { target_fiber: fiber }),
     updated_at: new Date().toISOString(),
   };
 }

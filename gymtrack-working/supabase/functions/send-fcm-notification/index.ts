@@ -197,7 +197,8 @@ Deno.serve(async (request) => {
       requestBody.deepLink !== undefined &&
       (typeof requestBody.deepLink !== "string" ||
         requestBody.deepLink.length > 500 ||
-        !requestBody.deepLink.startsWith("/"))
+        !requestBody.deepLink.startsWith("/") ||
+        requestBody.deepLink.startsWith("//"))
     ) {
       throw new RequestError("The notification deep link must be an internal path.", 400);
     }

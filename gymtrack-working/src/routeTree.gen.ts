@@ -17,6 +17,7 @@ import { Route as CoachClientsRouteImport } from './routes/coach.clients'
 import { Route as CoachTrackingRouteImport } from './routes/coach.tracking'
 import { Route as ExercisesIndexRouteImport } from './routes/exercises.index'
 import { Route as ExercisesExerciseIdRouteImport } from './routes/exercises.$exerciseId'
+import { Route as HistoryIndexRouteImport } from './routes/history.index'
 import { Route as NutritionIndexRouteImport } from './routes/nutrition.index'
 import { Route as ProgramsIndexRouteImport } from './routes/programs.index'
 import { Route as ProgramsProgramIdRouteImport } from './routes/programs.$programId'
@@ -71,6 +72,11 @@ const ExercisesIndexRoute = ExercisesIndexRouteImport.update({
 const ExercisesExerciseIdRoute = ExercisesExerciseIdRouteImport.update({
   id: '/exercises/$exerciseId',
   path: '/exercises/$exerciseId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoryIndexRoute = HistoryIndexRouteImport.update({
+  id: '/history/',
+  path: '/history/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NutritionIndexRoute = NutritionIndexRouteImport.update({
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/workouts/$workoutId': typeof WorkoutsWorkoutIdRoute
   '/coach/': typeof CoachIndexRoute
   '/exercises/': typeof ExercisesIndexRoute
+  '/history/': typeof HistoryIndexRoute
   '/nutrition/': typeof NutritionIndexRoute
   '/programs/': typeof ProgramsIndexRoute
   '/workouts/': typeof WorkoutsIndexRoute
@@ -185,6 +192,7 @@ export interface FileRoutesByTo {
   '/workouts/$workoutId': typeof WorkoutsWorkoutIdRoute
   '/coach': typeof CoachIndexRoute
   '/exercises': typeof ExercisesIndexRoute
+  '/history': typeof HistoryIndexRoute
   '/nutrition': typeof NutritionIndexRoute
   '/programs': typeof ProgramsIndexRoute
   '/workouts': typeof WorkoutsIndexRoute
@@ -211,6 +219,7 @@ export interface FileRoutesById {
   '/workouts/$workoutId': typeof WorkoutsWorkoutIdRoute
   '/coach/': typeof CoachIndexRoute
   '/exercises/': typeof ExercisesIndexRoute
+  '/history/': typeof HistoryIndexRoute
   '/nutrition/': typeof NutritionIndexRoute
   '/programs/': typeof ProgramsIndexRoute
   '/workouts/': typeof WorkoutsIndexRoute
@@ -238,6 +247,7 @@ export interface FileRouteTypes {
     | '/workouts/$workoutId'
     | '/coach/'
     | '/exercises/'
+    | '/history/'
     | '/nutrition/'
     | '/programs/'
     | '/workouts/'
@@ -260,6 +270,7 @@ export interface FileRouteTypes {
     | '/workouts/$workoutId'
     | '/coach'
     | '/exercises'
+    | '/history'
     | '/nutrition'
     | '/programs'
     | '/workouts'
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
     | '/workouts/$workoutId'
     | '/coach/'
     | '/exercises/'
+    | '/history/'
     | '/nutrition/'
     | '/programs/'
     | '/workouts/'
@@ -308,6 +320,7 @@ export interface RootRouteChildren {
   SessionWorkoutIdRoute: typeof SessionWorkoutIdRoute
   WorkoutsWorkoutIdRoute: typeof WorkoutsWorkoutIdRoute
   ExercisesIndexRoute: typeof ExercisesIndexRoute
+  HistoryIndexRoute: typeof HistoryIndexRoute
   NutritionIndexRoute: typeof NutritionIndexRoute
   ProgramsIndexRoute: typeof ProgramsIndexRoute
   WorkoutsIndexRoute: typeof WorkoutsIndexRoute
@@ -371,6 +384,13 @@ declare module '@tanstack/react-router' {
       path: '/exercises/$exerciseId'
       fullPath: '/exercises/$exerciseId'
       preLoaderRoute: typeof ExercisesExerciseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/history/': {
+      id: '/history/'
+      path: '/history'
+      fullPath: '/history/'
+      preLoaderRoute: typeof HistoryIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/nutrition/': {
@@ -556,6 +576,7 @@ const rootRouteChildren: RootRouteChildren = {
   SessionWorkoutIdRoute: SessionWorkoutIdRoute,
   WorkoutsWorkoutIdRoute: WorkoutsWorkoutIdRoute,
   ExercisesIndexRoute: ExercisesIndexRoute,
+  HistoryIndexRoute: HistoryIndexRoute,
   NutritionIndexRoute: NutritionIndexRoute,
   ProgramsIndexRoute: ProgramsIndexRoute,
   WorkoutsIndexRoute: WorkoutsIndexRoute,

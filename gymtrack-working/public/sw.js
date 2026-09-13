@@ -212,10 +212,12 @@ self.addEventListener("notificationclick", (event) => {
   const notificationData = event.notification?.data ?? {};
   const fcmData = notificationData.FCM_MSG?.data ?? notificationData;
   const deepLink = fcmData.deep_link || fcmData.deepLink || fcmData.url || "";
+  const isInternalDeepLink =
+    typeof deepLink === "string" && deepLink.startsWith("/") && !deepLink.startsWith("//");
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       const existing = clients.find((client) => "focus" in client);
-      const target = deepLink
+      const target = isInternalDeepLink
         ? new URL(deepLink, self.registration.scope).toString()
         : self.registration.scope;
       if (existing) {

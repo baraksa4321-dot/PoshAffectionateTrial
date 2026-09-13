@@ -8,6 +8,10 @@
 - משימת הסנכרון התחילה.
 - `46_harden_realtime_publication.sql` כולל כעת גם `challenges` ו־`challenge_enrollments`.
 - נוסף `realtime-publication-contract.test.ts`, שמצליב בין subscriptions בקוד לבין migration publication paths.
+- Push deep links מסוג `//external-host` נחסמים ב־Edge Function וב־Service Worker.
+- נוסף מסלול מאובטח ל־FCM token rotation דרך `claim_push_token`.
+- יעדי תזונה כוללים כעת calories, protein, carbs, fat ו־fiber ב־push/pull ובמסך המאמן.
+- נוספו ניווט ראשי ל־Programs ול־History ומסך היסטוריה אישי מלא.
 - הבדיקה המקומית החדשה עוברת; אימות Supabase חי עדיין לא הורץ ללא אישור וחשבונות smoke ייעודיים.
 
 ## סיכום מנהלים

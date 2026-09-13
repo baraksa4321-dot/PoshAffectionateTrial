@@ -56,6 +56,9 @@ describe("coach plan payload boundaries", () => {
         "2026-08-26",
         2100,
         140,
+        220,
+        70,
+        30,
       ),
     ).toMatchObject({
       id: "trainee-1_2026-08-26",
@@ -63,6 +66,9 @@ describe("coach plan payload boundaries", () => {
       date: "2026-08-26",
       target_calories: 2100,
       target_protein: 140,
+      target_carbs: 220,
+      target_fat: 70,
+      target_fiber: 30,
     });
   });
 

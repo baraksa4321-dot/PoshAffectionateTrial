@@ -6,6 +6,7 @@ import {
   CloudOff,
   Dumbbell,
   Home,
+  History,
   LayoutGrid,
   LogIn,
   LogOut,
@@ -522,10 +523,24 @@ export function AppShell({
           onClick: () => setWorkspace("personal"),
         },
         {
+          to: "/programs",
+          label: "תוכניות",
+          id: "programs",
+          icon: Dumbbell,
+          onClick: () => setWorkspace("personal"),
+        },
+        {
           to: "/nutrition",
           label: "התזונה שלי",
           id: "nutrition",
           icon: Apple,
+          onClick: () => setWorkspace("personal"),
+        },
+        {
+          to: "/history",
+          label: "היסטוריה",
+          id: "history",
+          icon: History,
           onClick: () => setWorkspace("personal"),
         },
       ];

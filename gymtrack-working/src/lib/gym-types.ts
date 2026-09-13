@@ -342,6 +342,9 @@ export type NutritionDay = {
   /** Daily targets captured with the row so later global target changes do not rewrite history. */
   targetCalories?: number;
   targetProtein?: number;
+  targetCarbs?: number;
+  targetFat?: number;
+  targetFiber?: number;
 };
 
 export type NutritionTargets = {

@@ -1812,6 +1812,9 @@ export function CoachDashboardPage({
   const [selectedTrackingWorkoutId, setSelectedTrackingWorkoutId] = useState<string | null>(null);
   const [calTarget, setCalTarget] = useState(0);
   const [protTarget, setProtTarget] = useState(0);
+  const [carbsTarget, setCarbsTarget] = useState(0);
+  const [fatTarget, setFatTarget] = useState(0);
+  const [fiberTarget, setFiberTarget] = useState(0);
   const [menuDate, setMenuDate] = useState(todayKey());
   // Actual logs are reviewed independently from the plan editor. Keeping a
   // separate date cursor prevents changing the prescribed menu while browsing
@@ -2585,6 +2588,9 @@ export function CoachDashboardPage({
     if (profileDraftDirtyRef.current) return;
     setCalTarget(clientDetails?.nutritionTargets?.calories ?? 0);
     setProtTarget(clientDetails?.nutritionTargets?.protein ?? 0);
+    setCarbsTarget(clientDetails?.nutritionTargets?.carbs ?? 0);
+    setFatTarget(clientDetails?.nutritionTargets?.fat ?? 0);
+    setFiberTarget(clientDetails?.nutritionTargets?.fiber ?? 0);
     const profile = clientDetails?.profile;
     setProfileFullName(profile?.fullName ?? "");
     setProfileDateOfBirth(profile?.dateOfBirth ?? "");
@@ -4050,13 +4056,22 @@ export function CoachDashboardPage({
     const today = todayKey();
     const calories = Number(calTarget);
     const protein = Number(protTarget);
+    const carbs = Number(carbsTarget);
+    const fat = Number(fatTarget);
+    const fiber = Number(fiberTarget);
     if (
       !Number.isFinite(calories) ||
       calories <= 0 ||
       !Number.isFinite(protein) ||
-      protein <= 0
+      protein <= 0 ||
+      !Number.isFinite(carbs) ||
+      carbs < 0 ||
+      !Number.isFinite(fat) ||
+      fat < 0 ||
+      !Number.isFinite(fiber) ||
+      fiber < 0
     ) {
-      setManagementError("יש להזין יעד קלוריות ויעד חלבון חיוביים.");
+      setManagementError("יש להזין יעד קלוריות וחלבון חיוביים, ויעדי פחמימות, שומן וסיבים שאינם שליליים.");
       setSavingNutritionTargets(false);
       return;
     }
@@ -4071,6 +4086,9 @@ export function CoachDashboardPage({
             today,
             calories,
             protein,
+            carbs,
+            fat,
+            fiber,
           ),
         );
 
@@ -9819,6 +9837,33 @@ export function CoachDashboardPage({
                               className="w-full rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
                             />
                           </div>
+                           {[
+                             ["פחמימות (g)", carbsTarget, setCarbsTarget],
+                             ["שומן (g)", fatTarget, setFatTarget],
+                             ["סיבים (g)", fiberTarget, setFiberTarget],
+                           ].map(([label, value, setter]) => (
+                             <div key={String(label)}>
+                               <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                                 {String(label)}
+                               </label>
+                               <FreeTextInput
+                                 value={Number(value) || ""}
+                                 inputMode="decimal"
+                                 onChange={(e) => {
+                                   const nextValue = e.target.value;
+                                   if (nextValue === "") {
+                                     (setter as (value: number) => void)(0);
+                                     return;
+                                   }
+                                   const parsed = Number(nextValue);
+                                   if (Number.isFinite(parsed)) {
+                                     (setter as (value: number) => void)(parsed);
+                                   }
+                                 }}
+                                 className="w-full rounded-xl border border-border px-3 py-1.5 text-xs outline-none focus:border-primary"
+                               />
+                             </div>
+                           ))}
                         </div>
                         <button
                           onClick={handleSaveNutritionTargets}

@@ -124,6 +124,18 @@ test("opens the Service Worker scope when a notification has no deep link", asyn
   expect(harness.openedTargets).toEqual([scope]);
 });
 
+test("does not navigate to an external origin from a protocol-relative deep link", async () => {
+  const scope = "https://example.test/gymtrack/";
+  const harness = await createHarness(scope);
+
+  const result = await harness.click({
+    deep_link: "//evil.example/phishing",
+  });
+
+  expect(result.closed).toBe(true);
+  expect(harness.openedTargets).toEqual([scope]);
+});
+
 test("displays a data-only FCM push during a cold Service Worker start", async () => {
   const harness = await createHarness("https://example.test/gymtrack/");
 

@@ -83,16 +83,30 @@ async function savePushToken(userId: string, token: string, currentPlatform = pl
     // The database remains the source of truth when local storage is unavailable.
   }
 
-  const { error } = await supabase.from("push_tokens").upsert(
-    {
-      user_id: userId,
-      token,
-      provider: "fcm",
-      platform: currentPlatform,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "token" },
-  );
+  let { error } = await supabase.rpc("claim_push_token", {
+    p_token: token,
+    p_platform: currentPlatform,
+  });
+  // Keep staged deployments usable until migration 56 reaches the connected
+  // project. The RPC is the safe rotation path; this fallback preserves the
+  // previous behavior only for projects that do not know the function yet.
+  if (
+    error &&
+    (/claim_push_token/i.test(error.message) ||
+      /schema cache|function .* does not exist/i.test(error.message))
+  ) {
+    const fallback = await supabase.from("push_tokens").upsert(
+      {
+        user_id: userId,
+        token,
+        provider: "fcm",
+        platform: currentPlatform,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "token" },
+    );
+    error = fallback.error;
+  }
   if (error) throw new Error(`שמירת מכשיר להתראות נכשלה: ${error.message}`);
 
   if (previousToken && previousToken !== token) {

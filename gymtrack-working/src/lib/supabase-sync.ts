@@ -1103,11 +1103,25 @@ export async function syncLocalToSupabase(
             ? { target_protein: localData.nutritionTargets.protein }
             : {}
           : { target_protein: nd.targetProtein }),
+        ...(nd.targetCarbs === undefined
+          ? nd.date === localToday && localData.nutritionTargets.carbs !== undefined
+            ? { target_carbs: localData.nutritionTargets.carbs }
+            : {}
+          : { target_carbs: nd.targetCarbs }),
+        ...(nd.targetFat === undefined
+          ? nd.date === localToday && localData.nutritionTargets.fat !== undefined
+            ? { target_fat: localData.nutritionTargets.fat }
+            : {}
+          : { target_fat: nd.targetFat }),
+        ...(nd.targetFiber === undefined
+          ? nd.date === localToday && localData.nutritionTargets.fiber !== undefined
+            ? { target_fiber: localData.nutritionTargets.fiber }
+            : {}
+          : { target_fiber: nd.targetFiber }),
       }));
     if (
       !localData.nutritionDays.some((day) => day.date === localToday) &&
-      (localData.nutritionTargets.calories !== undefined ||
-        localData.nutritionTargets.protein !== undefined)
+      Object.values(localData.nutritionTargets).some((value) => value !== undefined)
     ) {
       nutritionPayload.push({
         id: `${userId}_${localToday}`,
@@ -1122,6 +1136,15 @@ export async function syncLocalToSupabase(
         ...(localData.nutritionTargets.protein === undefined
           ? {}
           : { target_protein: localData.nutritionTargets.protein }),
+        ...(localData.nutritionTargets.carbs === undefined
+          ? {}
+          : { target_carbs: localData.nutritionTargets.carbs }),
+        ...(localData.nutritionTargets.fat === undefined
+          ? {}
+          : { target_fat: localData.nutritionTargets.fat }),
+        ...(localData.nutritionTargets.fiber === undefined
+          ? {}
+          : { target_fiber: localData.nutritionTargets.fiber }),
       });
     }
     if (nutritionPayload.length > 0) {
@@ -1897,6 +1920,15 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
         ...(row.target_protein === null || row.target_protein === undefined
           ? {}
           : { targetProtein: Number(row.target_protein) }),
+        ...(row.target_carbs === null || row.target_carbs === undefined
+          ? {}
+          : { targetCarbs: Number(row.target_carbs) }),
+        ...(row.target_fat === null || row.target_fat === undefined
+          ? {}
+          : { targetFat: Number(row.target_fat) }),
+        ...(row.target_fiber === null || row.target_fiber === undefined
+          ? {}
+          : { targetFiber: Number(row.target_fiber) }),
       }));
       nextData.nutritionDays = daysList.filter(
         (day) => !deletedNutritionDayIds.has(day.id ?? "") && !deletedNutritionDayIds.has(day.date),
@@ -2110,6 +2142,15 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
     const latestNutritionProteinTarget = (dbNutritionDays || []).find(
       (row) => row.target_protein !== null && row.target_protein !== undefined,
     )?.target_protein;
+    const latestNutritionCarbsTarget = (dbNutritionDays || []).find(
+      (row) => row.target_carbs !== null && row.target_carbs !== undefined,
+    )?.target_carbs;
+    const latestNutritionFatTarget = (dbNutritionDays || []).find(
+      (row) => row.target_fat !== null && row.target_fat !== undefined,
+    )?.target_fat;
+    const latestNutritionFiberTarget = (dbNutritionDays || []).find(
+      (row) => row.target_fiber !== null && row.target_fiber !== undefined,
+    )?.target_fiber;
     const measurementList: BodyMeasurement[] = (dbMeasurements || []).map((row) => ({
       id: row.id,
       date: typeof row.date === "string" ? row.date.slice(0, 10) : row.date,
@@ -2221,8 +2262,12 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       workouts: Array.from(workoutsMap.values()),
       nutritionDays: nutritionList,
       plannedMeals: profile.planned_menu || [],
-      nutritionTargets:
-        latestNutritionTarget === undefined && latestNutritionProteinTarget === undefined
+        nutritionTargets:
+        latestNutritionTarget === undefined &&
+        latestNutritionProteinTarget === undefined &&
+        latestNutritionCarbsTarget === undefined &&
+        latestNutritionFatTarget === undefined &&
+        latestNutritionFiberTarget === undefined
           ? {}
           : {
               ...(latestNutritionTarget === undefined
@@ -2231,6 +2276,15 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
               ...(latestNutritionProteinTarget === undefined
                 ? {}
                 : { protein: Number(latestNutritionProteinTarget) }),
+              ...(latestNutritionCarbsTarget === undefined
+                ? {}
+                : { carbs: Number(latestNutritionCarbsTarget) }),
+              ...(latestNutritionFatTarget === undefined
+                ? {}
+                : { fat: Number(latestNutritionFatTarget) }),
+              ...(latestNutritionFiberTarget === undefined
+                ? {}
+                : { fiber: Number(latestNutritionFiberTarget) }),
             },
        history: signedHistoryList,
       cardioLogs: cardioList,
