@@ -4782,10 +4782,6 @@ export function CoachDashboardPage({
   const coachCount = allProfiles.filter((profile) => profile.role === "coach").length;
   const clientCount = allProfiles.filter((profile) => profile.role === "client").length;
   const ownerCount = allProfiles.filter((profile) => profile.role === "owner").length;
-  const today = todayKey();
-  const newTodayProfiles = allProfiles.filter(
-    (profile) => profile.created_at?.slice(0, 10) === today,
-  );
   const pendingApprovals = allProfiles.filter(
     (profile) => profile.role === "client" && profile.approval_status === "pending",
   );
@@ -4824,6 +4820,26 @@ export function CoachDashboardPage({
       headerAccessory={
         !clientsOnly && isOwner ? (
           <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setOwnerHomeTab((current) => (current === "profiles" ? "overview" : "profiles"))}
+              aria-pressed={ownerHomeTab === "profiles"}
+              aria-label="פתיחת אישורי הרשמה"
+              title="אישורי הרשמה"
+              className={`bodyweight-header-toggle press inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                ownerHomeTab === "profiles"
+                  ? "border-primary/40 bg-primary/15 text-primary ring-1 ring-primary/20"
+                  : "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
+              }`}
+            >
+              <UserCheck className="h-3.5 w-3.5" aria-hidden="true" />
+              אישורים
+              {pendingApprovals.length > 0 ? (
+                <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[8px] leading-none">
+                  {pendingApprovals.length}
+                </span>
+              ) : null}
+            </button>
             <button
               type="button"
               onClick={() =>
@@ -5069,61 +5085,6 @@ export function CoachDashboardPage({
               </div>
             ) : null}
           </section>
-
-          {isOwner ? (
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <div className="surface-card border-primary/20 bg-primary/5 px-2.5 py-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-primary">
-                      פעילות חדשה
-                    </p>
-                    <h3 className="text-xs font-bold text-ink">נרשמו היום</h3>
-                  </div>
-                  <span className="font-display text-lg font-extrabold leading-none text-primary">
-                    {newTodayProfiles.length}
-                  </span>
-                </div>
-                {newTodayProfiles.length > 0 ? (
-                  <div className="mt-2 space-y-1">
-                    {newTodayProfiles.slice(0, 3).map((profile) => (
-                      <div
-                        key={profile.id}
-                        className="flex items-center justify-between text-[11px]"
-                      >
-                        <span className="truncate font-semibold text-ink">
-                          {profileDisplayName(profile)}
-                        </span>
-                        <span className="text-muted-foreground">
-                          {profile.role === "coach" ? "מאמן" : "מתאמן"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-1 text-[10px] text-muted-foreground">אין הרשמות חדשות היום.</p>
-                )}
-              </div>
-              <div className="surface-card border-amber-200 bg-amber-50/70 px-2.5 py-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-amber-700">
-                      דורש טיפול
-                    </p>
-                    <h3 className="text-xs font-bold text-ink">אישורי הרשמה</h3>
-                  </div>
-                  <span className="font-display text-lg font-extrabold leading-none text-amber-800">
-                    {pendingApprovals.length}
-                  </span>
-                </div>
-                <p className="mt-1 text-[10px] leading-snug text-amber-900/75">
-                  {pendingApprovals.length > 0
-                    ? "יש מתאמנים שממתינים לאישור שם ושיוך למאמן."
-                    : "אין כרגע הרשמות שממתינות לאישור."}
-                </p>
-              </div>
-            </div>
-          ) : null}
 
         </section>
       ) : null}
