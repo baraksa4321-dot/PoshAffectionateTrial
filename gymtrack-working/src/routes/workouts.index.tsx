@@ -44,7 +44,7 @@ function Workouts() {
       subtitle="רשימה פשוטה של כל האימונים שלך"
       pageClassName="workouts-page"
     >
-      <section className="mt-5 text-start">
+      <section className="mt-4 text-start">
         <div className="flex items-center justify-end gap-1.5">
           <ChallengeLibrary compact />
           <CardioTracker />
@@ -58,7 +58,7 @@ function Workouts() {
             </div>
           ) : null}
         {weeklyWorkouts.length > 0 ? (
-          <div className="mt-3 space-y-2.5">
+          <div className="mt-2 space-y-2">
             {weeklyWorkouts.map((workout, index) => {
               const day = workout.weekday === undefined
                 ? isLegacyWeekdaySchedule
@@ -70,9 +70,9 @@ function Workouts() {
                   key={workout.id}
                   to="/session/$workoutId"
                   params={{ workoutId: workout.id }}
-                  className="surface-card press flex items-center gap-3 border-border/70 bg-background p-3.5 text-start"
+                  className="surface-card press flex items-center gap-3 border-border/70 bg-background p-3 text-start"
                 >
-                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
                     <Dumbbell className="h-5 w-5" aria-hidden="true" />
                   </div>
                   <div className="min-w-0 flex-1">

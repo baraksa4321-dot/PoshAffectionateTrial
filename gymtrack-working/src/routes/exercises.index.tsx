@@ -49,7 +49,7 @@ export const Route = createFileRoute("/exercises/")({
 });
 
 const field =
-  "w-full rounded-2xl border border-border/60 bg-secondary px-4 py-3.5 text-[14px] outline-none focus:border-primary";
+  "w-full rounded-2xl border border-border/60 bg-secondary px-3.5 py-3 text-[14px] outline-none focus:border-primary";
 const labelCls =
   "mb-1.5 block text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase";
 
@@ -297,7 +297,7 @@ function Library() {
         </button>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 rounded-2xl bg-secondary p-1 text-[12px] font-bold">
+      <div className="mt-3 grid grid-cols-3 rounded-2xl bg-secondary p-1 text-[12px] font-bold">
         {(
           [
             ["exercises", "מאגר תרגילים"],
@@ -310,7 +310,7 @@ function Library() {
             type="button"
             aria-pressed={activeTab === tab}
             onClick={() => setActiveTab(tab)}
-            className={`rounded-xl px-2 py-2.5 transition-colors ${
+            className={`rounded-xl px-2 py-2 transition-colors ${
               activeTab === tab
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground"
@@ -379,25 +379,25 @@ function Library() {
         </div>
       ) : null}
 
-          <SectionHeader
-        className="mt-5 text-start"
+      <SectionHeader
+        className="mt-4 text-start"
         title={`${list.length} תרגילים בספרייה`}
         subtitle={genderText(gender, "לחצי על תרגיל לעריכה ופרטים", "לחץ על תרגיל לעריכה ופרטים")}
       />
 
-          <div className="space-y-2.5">
+      <div className="space-y-2">
         {list.map((e) => {
           const showCustom = e.muscleGroup === "אחר" && e.customMuscleGroup;
           const primary = showCustom ? e.customMuscleGroup! : e.muscleGroup;
           const secondaryCount = (e.muscleGroups?.length ?? 1) - 1;
           return (
-            <div key={e.id} className="surface-card flex items-center gap-2 p-3.5">
+            <div key={e.id} className="surface-card flex items-center gap-2 p-3">
               <Link
                 to="/exercises/$exerciseId"
                 params={{ exerciseId: e.id }}
                 className="press flex min-w-0 flex-1 items-center gap-3.5"
               >
-                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-sage-soft text-primary">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-sage-soft text-primary">
                   <Dumbbell className="h-5 w-5" strokeWidth={1.8} />
                 </div>
                 <div className="min-w-0 flex-1 text-start">
@@ -431,7 +431,7 @@ function Library() {
         })}
       </div>
 
-          {list.length === 0 ? (
+      {list.length === 0 ? (
         <EmptyState
           icon={Dumbbell}
           title="לא נמצאו תרגילים"

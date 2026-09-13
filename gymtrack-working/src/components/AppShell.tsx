@@ -946,10 +946,10 @@ export function AppShell({
   return (
     <div
       ref={shellRef}
-      className={
+        className={
         authOnly
-            ? `app-shell fixed inset-0 z-[100] min-h-[100lvh] w-full overflow-auto bg-background text-foreground ${pageClassName}`
-            : `app-shell flex h-[100lvh] min-h-0 w-full flex-col overflow-hidden bg-background text-foreground ${pageClassName}`
+            ? `app-shell app-shell--compact-rhythm fixed inset-0 z-[100] min-h-[100lvh] w-full overflow-auto bg-background text-foreground ${pageClassName}`
+            : `app-shell app-shell--compact-rhythm flex h-[100lvh] min-h-0 w-full flex-col overflow-hidden bg-background text-foreground ${pageClassName}`
       }
       data-management-view={managementView ? "true" : undefined}
       data-compact-header={compactHeader ? "true" : undefined}
@@ -962,12 +962,12 @@ export function AppShell({
       >
         <div
           className={`app-topbar__inner mx-auto w-full max-w-3xl px-4 sm:px-6 ${
-            compactHeader ? "pb-1.5 pt-0" : "pb-2 pt-0"
+            compactHeader ? "pb-1.5 pt-0" : "pb-1.5 pt-0"
           }`}
         >
           <div
             className={`app-topbar__brand-row flex items-center justify-between gap-3 border-b border-border/50 ${
-              compactHeader ? "mb-1 pb-0.5" : "mb-2 pb-1"
+              compactHeader ? "mb-1 pb-0.5" : "mb-1.5 pb-0.5"
             }`}
           >
             <BrandLogo />
@@ -989,7 +989,7 @@ export function AppShell({
           {headerAccessory || (isCoach && showHomeOnlyHeaderControls) ? (
             <div
               className={`app-topbar__utility-row flex items-center justify-between gap-2 border-b border-border/50 ${
-                compactHeader ? "mb-1 pb-0.5" : "mb-2 pb-1"
+                compactHeader ? "mb-1 pb-0.5" : "mb-1.5 pb-0.5"
               }`}
             >
               {headerAccessory ? (
@@ -1140,8 +1140,8 @@ export function AppShell({
         ref={mainRef}
         data-app-scroll-container="true"
         data-management-view={managementView ? "true" : undefined}
-        className={`app-main page-enter page-scroll-container mx-auto w-full max-w-3xl px-4 pb-8 sm:px-6 ${
-          compactHeader ? "flex flex-col pt-1.5" : "pt-5 sm:pt-7"
+        className={`app-main page-enter page-scroll-container mx-auto w-full max-w-3xl px-4 pb-7 sm:px-6 ${
+          compactHeader ? "flex flex-col pt-1.5" : "pt-3.5 sm:pt-5"
         }`}
         onTouchStart={handleMainTouchStart}
         onTouchEnd={handleMainTouchEnd}

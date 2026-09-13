@@ -2,10 +2,10 @@ import { ChevronLeft } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-/** Primary content surface with a quiet lift and generous touch target. */
+/** Primary content surface with a quiet lift and comfortable touch target. */
 export function Card({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("ui-card surface-card px-4 py-4 text-foreground sm:px-5", className)} {...props}>
+    <div className={cn("ui-card surface-card px-3.5 py-3.5 text-foreground sm:px-4", className)} {...props}>
       {children}
     </div>
   );
@@ -36,9 +36,9 @@ export function ListRow({
   children?: ReactNode;
 }) {
   const inner = (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-3">
       {leading ? (
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary border border-border/50">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary border border-border/50">
           {leading}
         </div>
       ) : null}
@@ -58,8 +58,8 @@ export function ListRow({
     return (
       <a
         href={href}
-        className={cn(
-          "ui-card surface-card press block px-4 py-3.5 sm:px-5 border-r-2 border-r-transparent hover:border-r-primary transition-all",
+          className={cn(
+            "ui-card surface-card press block px-3.5 py-3 border-r-2 border-r-transparent hover:border-r-primary transition-all",
           className,
         )}
       >
@@ -72,8 +72,8 @@ export function ListRow({
       <button
         type="button"
         onClick={onClick}
-        className={cn(
-          "ui-card surface-card press block w-full px-4 py-3.5 text-start sm:px-5 border-r-2 border-r-transparent hover:border-r-primary transition-all",
+          className={cn(
+            "ui-card surface-card press block w-full px-3.5 py-3 text-start border-r-2 border-r-transparent hover:border-r-primary transition-all",
           className,
         )}
       >
@@ -81,7 +81,7 @@ export function ListRow({
       </button>
     );
   }
-  return <div className={cn("ui-card surface-card px-4 py-3.5 sm:px-5", className)}>{inner}</div>;
+  return <div className={cn("ui-card surface-card px-3.5 py-3", className)}>{inner}</div>;
 }
 
 /** Pill / chip — used for tags, filters, status. */
@@ -166,13 +166,13 @@ export function SectionHeader({
   className?: string;
 }) {
   return (
-    <div className={cn("mb-3.5 flex items-end justify-between gap-4 px-0.5", className)}>
+    <div className={cn("mb-2.5 flex items-end justify-between gap-3 px-0.5", className)}>
       <div className="min-w-0 text-start">
         <h2 className="break-words font-display text-[clamp(15px,4.5vw,17px)] font-extrabold leading-snug tracking-tight text-ink">
           {title}
         </h2>
         {subtitle ? (
-          <p className="mt-1 break-words text-[clamp(11px,3.2vw,13px)] leading-snug text-muted-foreground">
+          <p className="mt-0.5 break-words text-[clamp(11px,3.2vw,13px)] leading-snug text-muted-foreground">
             {subtitle}
           </p>
         ) : null}
@@ -205,7 +205,7 @@ export function StatTile({
   return (
     <div
       className={cn(
-        "surface-card flex min-h-[92px] flex-col gap-2 px-3.5 py-3.5 text-start shadow-none",
+        "surface-card flex min-h-[82px] flex-col gap-1.5 px-3 py-2.75 text-start shadow-none",
         tone === "sage" && "border-t-2 border-t-primary bg-primary/10",
         tone === "rose" && "border-t-2 border-t-rose bg-rose-soft/45",
         tone === "cream" && "border-t-2 border-t-accent bg-cream/55",
@@ -218,7 +218,7 @@ export function StatTile({
         </p>
         {Icon ? <Icon className={cn("h-4 w-4", tones[tone])} strokeWidth={2} /> : null}
       </div>
-      <div className="mt-1 flex items-baseline gap-2">
+      <div className="mt-0.5 flex items-baseline gap-2">
         <p className="font-display text-[24px] font-bold leading-none tabular-nums text-ink">
           {value}
         </p>
@@ -243,9 +243,9 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="mx-auto flex max-w-sm flex-col items-center rounded-2xl border border-dashed border-border/60 bg-surface/50 px-6 py-12 text-center">
+    <div className="mx-auto flex max-w-sm flex-col items-center rounded-2xl border border-dashed border-border/60 bg-surface/50 px-5 py-8 text-center">
       {Icon ? (
-        <div className="mb-4 grid h-12 w-12 place-items-center rounded-2xl border border-border/50 bg-secondary text-primary">
+        <div className="mb-3 grid h-11 w-11 place-items-center rounded-2xl border border-border/50 bg-secondary text-primary">
           <Icon className="h-6 w-6" strokeWidth={1.5} />
         </div>
       ) : null}
@@ -255,7 +255,7 @@ export function EmptyState({
       {description ? (
         <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{description}</p>
       ) : null}
-      {action ? <div className="mt-6 w-full">{action}</div> : null}
+      {action ? <div className="mt-4 w-full">{action}</div> : null}
     </div>
   );
 }

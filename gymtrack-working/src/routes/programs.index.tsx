@@ -87,7 +87,7 @@ function ProgramsPage() {
       }
     >
       {adding && isOwner ? (
-        <div className="surface-card mt-4 p-4 text-start">
+        <div className="surface-card mt-3 p-3.5 text-start">
           <div className="flex items-center justify-between gap-2">
             <p className="text-[11px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
               תכנית חדשה
@@ -129,7 +129,7 @@ function ProgramsPage() {
       ) : null}
 
       {/* Programs list */}
-      <section className="mt-6">
+      <section className="mt-4">
         <SectionHeader
           title="התוכניות שלך"
           subtitle={`${programs.length} תוכניות פעילות`}
@@ -151,7 +151,7 @@ function ProgramsPage() {
         />
 
         {programs.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {programs.map((program) => {
               const daysCount = program.dayIds.length;
               const exerciseCount = program.dayIds.reduce((sum, id) => {
@@ -163,9 +163,9 @@ function ProgramsPage() {
               ).length;
               const programNote = visibleProgramNote(program.notes);
               return (
-                <article key={program.id} className="surface-card press p-4">
-                  <div className="flex items-start gap-3.5">
-                    <div className="relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-sage-soft text-primary">
+                <article key={program.id} className="surface-card press p-3.5">
+                  <div className="flex items-start gap-3">
+                    <div className="relative grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-sage-soft text-primary">
                       <Calendar className="h-5 w-5" strokeWidth={2} />
                       {completedDays > 0 ? (
                         <span

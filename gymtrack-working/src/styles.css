@@ -8599,3 +8599,108 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
     line-height: 1.05;
   }
 }
+
+/* Compact information rhythm
+ * Keep the reference card's hierarchy — title and actions stay together,
+ * secondary details stay short, and long lists can breathe inside their own
+ * scroll area — without shrinking controls below a usable touch size. */
+.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
+  .app-main {
+  padding-top: 0.9rem;
+}
+
+.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
+  .app-main
+  > .surface-card.p-4,
+.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
+  .app-main
+  > .surface-card.p-5,
+.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
+  .app-main
+  > .surface-card.p-6 {
+  margin-top: 0.75rem;
+}
+
+.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
+  .surface-card.p-4 {
+  padding: 0.85rem !important;
+}
+
+.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
+  .surface-card.p-5 {
+  padding: 1rem !important;
+}
+
+.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
+  .surface-card.p-6 {
+  padding: 1.15rem !important;
+}
+
+.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
+  .space-y-3
+  > :not(:first-child) {
+  margin-top: 0.6rem !important;
+}
+
+.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
+  .space-y-4
+  > :not(:first-child) {
+  margin-top: 0.7rem !important;
+}
+
+.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
+  .space-y-5
+  > :not(:first-child) {
+  margin-top: 0.8rem !important;
+}
+
+.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
+  .space-y-6
+  > :not(:first-child) {
+  margin-top: 1rem !important;
+}
+
+.app-shell--compact-rhythm.dashboard-editorial-shell:not(.session-compact):not(
+    .auth-editorial-shell
+  )
+  .home-card-stack
+  > :not(:first-child),
+.app-shell--compact-rhythm.dashboard-editorial-shell:not(.session-compact):not(
+    .auth-editorial-shell
+  )
+  .dashboard-module {
+  margin-top: 0.8rem !important;
+}
+
+.app-shell--compact-rhythm.dashboard-editorial-shell:not(.session-compact):not(
+    .auth-editorial-shell
+  )
+  .home-feature-grid {
+  gap: 0.6rem;
+}
+
+@media (max-width: 767px) {
+  .app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
+    .app-topbar__inner {
+    padding-inline: 0.85rem;
+  }
+
+  .app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
+    .app-topbar__heading {
+    gap: 0.6rem;
+  }
+
+  .app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
+    .app-main {
+    padding-inline: 0.85rem;
+    padding-bottom: calc(4.4rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  .app-shell--compact-rhythm.dashboard-editorial-shell:not(.session-compact):not(
+      .auth-editorial-shell
+    )
+    .app-main
+    > .home-card-stack {
+    margin-top: 0.2rem;
+  }
+}
