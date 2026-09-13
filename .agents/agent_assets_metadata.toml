@@ -322,3 +322,17 @@ mtime_ms = 1789294065346
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:629484c3-bab3-4ee2-b0c1-889a1ae62755/10ff381a-a534-4362-a2b0-02b29c1e5bc4/4b609b88-1a1b-4db1-b2e0-fe648c9ad737"
 storage_version_token = "1789294073015947"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "ZKTZxan29oOHa9sh7Sn-i"
+uri = "file://exports/gymtrack-foodsdictionary-audit.csv"
+type = "table"
+title = "דוח בדיקת מאגר המזון מול FoodsDictionary"
+description = "דוח CSV מלא של 858 שמות המזון: התאמות שנמצאו, דפים ללא ערכים, שמות שלא נמצאו, והערכים הקיימים להשוואה. לא בוצע אישור גורף או שינוי בערכי המאגר."
+logical_id = "f4f3f46d-5f04-4804-8a39-24b3f3b28501"
+content_hash = "sha256:6c5518b6e49214a3b78b4c984be99475b47ffe7d71dac3f149d47f6321beaef5"
+size = 234936
+mtime_ms = 1789294880140
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:629484c3-bab3-4ee2-b0c1-889a1ae62755/f4f3f46d-5f04-4804-8a39-24b3f3b28501/13e2e446-fad8-4c59-a8bf-613ce84dce66"
+storage_version_token = "1789294886361505"
+content_type = "text/csv"
