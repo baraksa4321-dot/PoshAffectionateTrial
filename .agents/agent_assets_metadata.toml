@@ -308,3 +308,17 @@ mtime_ms = 1789222828027
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:629484c3-bab3-4ee2-b0c1-889a1ae62755/2c300414-a1fd-4ef3-b6e7-8ad6d67a13d8/b72c2595-f3dc-48e2-9236-dbea9f099db6"
 storage_version_token = "1789222836215932"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "izt8P9lVA69orijEURUmm"
+uri = "file://exports/gymtrack-food-names.zip"
+type = "unspecified"
+title = "מאגר שמות המאכלים של GymTrack"
+description = "ZIP עם 858 שמות מאכלים ייחודיים, רשימת המאכלים היומיומית, וקובץ CSV שמציין את מקור כל שם."
+logical_id = "10ff381a-a534-4362-a2b0-02b29c1e5bc4"
+content_hash = "sha256:3802faacac33f355e3ce641ea01808cbec3490c1d9f423d42e5eb4b04521975d"
+size = 19357
+mtime_ms = 1789294065346
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:629484c3-bab3-4ee2-b0c1-889a1ae62755/10ff381a-a534-4362-a2b0-02b29c1e5bc4/4b609b88-1a1b-4db1-b2e0-fe648c9ad737"
+storage_version_token = "1789294073015947"
+content_type = "application/octet-stream"
