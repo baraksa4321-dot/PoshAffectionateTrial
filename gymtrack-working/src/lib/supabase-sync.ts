@@ -2193,6 +2193,12 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
         isRead: Boolean(row.is_read),
       }))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const profileDateOfBirth =
+      typeof profile.date_of_birth === "string" &&
+      isValidDateOfBirth(profile.date_of_birth)
+        ? profile.date_of_birth
+        : undefined;
+    const profileAge = profileDateOfBirth ? calculateAge(profileDateOfBirth) : undefined;
     return {
       exercises: exerciseList,
       programs: programsList,
@@ -2218,35 +2224,36 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       coachMessages: coachMessagesList,
       ...(profile
         ? {
-            weight: Number(profile.weight_kg || 65),
-            height: Number(profile.height_cm || 165),
-            role: profile.role as UserRole,
-            todayRoutineEnabled: profile.today_routine_enabled ?? true,
-            showCalories: profile.show_calories ?? true,
-             ...(Object.prototype.hasOwnProperty.call(profile, "loading_animations_enabled")
-               ? {
-                   loadingAnimationsEnabled:
-                     typeof profile.loading_animations_enabled === "boolean"
-                       ? profile.loading_animations_enabled
-                       : undefined,
-                 }
-               : {}),
-            ...(profile.email ? { email: profile.email } : {}),
-            ...(profile.full_name ? { name: profile.full_name } : {}),
-            ...(profile.gender === "male" || profile.gender === "female"
-              ? { gender: profile.gender }
-              : {}),
-             ...(typeof profile.date_of_birth === "string" &&
-             isValidDateOfBirth(profile.date_of_birth)
-               ? {
-                   dateOfBirth: profile.date_of_birth,
-                   age: calculateAge(profile.date_of_birth),
-                 }
-               : profile.age_years
-                 ? { age: Number(profile.age_years) }
-                 : {}),
-            ...(profile.coach_id ? { coachId: profile.coach_id } : {}),
-             ...(profile.next_checkin_date ? { nextCheckinDate: profile.next_checkin_date } : {}),
+            profile: {
+              weight: Number(profile.weight_kg || 65),
+              height: Number(profile.height_cm || 165),
+              role: profile.role as UserRole,
+              todayRoutineEnabled: profile.today_routine_enabled ?? true,
+              showCalories: profile.show_calories ?? true,
+              ...(Object.prototype.hasOwnProperty.call(profile, "loading_animations_enabled")
+                ? {
+                    loadingAnimationsEnabled:
+                      typeof profile.loading_animations_enabled === "boolean"
+                        ? profile.loading_animations_enabled
+                        : undefined,
+                  }
+                : {}),
+              ...(profile.email ? { email: profile.email } : {}),
+              ...(profile.full_name ? { fullName: profile.full_name } : {}),
+              ...(profile.gender === "male" || profile.gender === "female"
+                ? { gender: profile.gender }
+                : {}),
+              ...(profileDateOfBirth
+                ? {
+                    dateOfBirth: profileDateOfBirth,
+                    ...(profileAge === undefined ? {} : { age: profileAge }),
+                  }
+                : profile.age_years
+                  ? { age: Number(profile.age_years) }
+                  : {}),
+              ...(profile.coach_id ? { coachId: profile.coach_id } : {}),
+              ...(profile.next_checkin_date ? { nextCheckinDate: profile.next_checkin_date } : {}),
+            },
           }
         : {}),
     };

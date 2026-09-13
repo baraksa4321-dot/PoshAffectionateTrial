@@ -9622,7 +9622,10 @@ export function CoachDashboardPage({
 
                     <button
                       type="button"
-                      onClick={() => setShowBmrCalculator(true)}
+                      onClick={() => {
+                        setShowBmrCalculator(true);
+                        setProfileDateOfBirth(clientDetails?.profile?.dateOfBirth ?? "");
+                      }}
                       className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-primary/20 bg-primary/5 px-3 text-[11px] font-bold text-primary"
                     >
                       <Calculator className="h-3.5 w-3.5" />
@@ -9630,6 +9633,7 @@ export function CoachDashboardPage({
                     </button>
                     {showBmrCalculator ? (
                       <div
+                        data-testid="coach-bmr-editor"
                         className="rounded-2xl border border-primary/15 bg-card/80 p-3"
                         onChange={markProfileDraftDirty}
                       >

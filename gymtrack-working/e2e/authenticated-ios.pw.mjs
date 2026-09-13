@@ -131,6 +131,7 @@ const clientProfile = {
   weight_kg: 64,
   height_cm: 166,
   age_years: 29,
+  date_of_birth: "1998-05-17",
   workouts_per_week: 4,
   gender: "female",
   show_calories: true,
@@ -1076,6 +1077,64 @@ test("iPhone loading video is ready and advances before and after hydration", as
   if (await loadingVideo.count()) {
     await assertVideoAdvances();
   }
+});
+
+test("signup collects a bounded date of birth", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: /אין לך חשבון\?/ }).click();
+  const dateOfBirth = page.locator("#signup-date-of-birth");
+  await expect(dateOfBirth).toBeVisible();
+
+  const bounds = await dateOfBirth.evaluate((input) => ({
+    required: input.required,
+    min: input.min,
+    max: input.max,
+  }));
+  const expectedBounds = await page.evaluate(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return {
+      min: `${year - 120}-01-01`,
+      max: `${year}-${month}-${day}`,
+    };
+  });
+
+  expect(bounds).toEqual({
+    required: true,
+    ...expectedBounds,
+  });
+});
+
+test("coach BMR editor restores date of birth and keeps age read-only", async ({ page }) => {
+  await installFixture(page, { online: true });
+
+  await page.goto(`/coach/clients/${CLIENT_ID}`);
+
+  const workspace = page.locator('[data-coach-workspace="true"]');
+  await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
+    timeout: 20_000,
+  });
+  await page.getByRole("tab", { name: "תפריט תזונה" }).click();
+  const bmrButton = page.getByRole("button", { name: "מחשבון BMR", exact: true });
+  await bmrButton.evaluate((element) =>
+    element.scrollIntoView({ block: "center", inline: "nearest" }),
+  );
+  await bmrButton.dispatchEvent("click");
+
+  const bmrEditor = page.getByTestId("coach-bmr-editor");
+  await expect(bmrEditor).toBeVisible();
+  await expect(bmrEditor.locator('input[type="date"]')).toHaveValue("1998-05-17");
+  await expect(bmrEditor.getByText("גיל מחושב: 28", { exact: true })).toBeVisible();
+  const manualAgeInputs = await bmrEditor.locator("input").evaluateAll((inputs) =>
+    inputs.filter((input) => {
+      const labelText = input.closest("label")?.textContent?.trim() ?? "";
+      return labelText.startsWith("גיל");
+    }).length,
+  );
+  expect(manualAgeInputs).toBe(0);
 });
 
 test("authenticated iPhone coach workspace and active workout remain usable", async ({ page }) => {
