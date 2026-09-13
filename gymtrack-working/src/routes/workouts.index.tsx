@@ -3,6 +3,7 @@ import { ArrowLeft, Dumbbell } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CardioTracker } from "@/components/CardioTracker";
 import { ChallengeLibrary } from "@/components/ChallengeLibrary";
+import { MusicAtmosphereButton } from "@/components/MusicAtmosphereButton";
 import { EmptyState } from "@/components/ui-app/primitives";
 import { useGym } from "@/lib/gym-store";
 import { getCurrentWeekDates } from "@/lib/workout-session";
@@ -45,9 +46,10 @@ function Workouts() {
       pageClassName="workouts-page"
     >
       <section className="mt-4 text-start">
-        <div className="flex items-center justify-end gap-1.5">
+          <div className="flex items-center justify-end gap-1.5">
           <ChallengeLibrary compact />
           <CardioTracker />
+            <MusicAtmosphereButton gender={gender} />
         </div>
         {activeChallengeNames.length > 0 ? (
             <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/5 px-3.5 py-3 text-start">

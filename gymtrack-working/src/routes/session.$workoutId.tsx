@@ -1283,7 +1283,7 @@ function Session() {
     }
     summaryNavigationTimerRef.current = window.setTimeout(() => {
       setShowSummaryModal(false);
-      navigate({ to: "/programs" });
+       navigate({ to: "/workouts" });
     }, 3200);
   };
 
@@ -2029,7 +2029,7 @@ function Session() {
                           window.clearTimeout(summaryNavigationTimerRef.current);
                         }
                         setShowSummaryModal(false);
-                        navigate({ to: "/programs" });
+                         navigate({ to: "/workouts" });
                       }}
                       className="press rounded-2xl bg-secondary px-3 py-3 text-xs font-bold text-ink"
                     >
@@ -2240,7 +2240,7 @@ function Session() {
         cancelLabel={genderText(gender, "המשיכי באימון", "המשך באימון")}
         onConfirm={() => {
           setPendingExit(false);
-          navigate({ to: "/programs" });
+           navigate({ to: "/workouts" });
         }}
         onCancel={() => setPendingExit(false)}
       />

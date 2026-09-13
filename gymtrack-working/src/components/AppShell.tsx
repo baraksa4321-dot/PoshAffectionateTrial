@@ -521,9 +521,8 @@ export function AppShell({
           icon: LayoutGrid,
           onClick: () => setWorkspace("personal"),
         },
-        ...(role === "client"
-          ? []
-          : [
+        ...(role === "coach" || role === "owner"
+          ? [
               {
                 to: "/programs" as const,
                 label: "תוכניות",

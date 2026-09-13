@@ -50,7 +50,16 @@ function ProgramsPage() {
   const [showMusicSearch, setShowMusicSearch] = useState(false);
   const [musicSearchQuery, setMusicSearchQuery] = useState("");
 
-  if (role === "client") return <Navigate to="/workouts" replace />;
+  if (role === undefined) {
+    return (
+      <AppShell title="תוכניות" kicker="בודקת הרשאות">
+        <div className="surface-card mt-4 p-5 text-center text-sm text-muted-foreground">
+          טוענת את סביבת העבודה...
+        </div>
+      </AppShell>
+    );
+  }
+  if (!isCoach) return <Navigate to="/workouts" replace />;
 
   const filteredMusicTracks = BUILT_IN_MUSIC_GENRES.flatMap((genre) =>
     genre.tracks.map((track) => ({ genre, track })),
