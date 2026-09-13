@@ -3,6 +3,13 @@
 **תאריך הבדיקה:** 13 בספטמבר 2026  
 **מטרת הבדיקה:** לבדוק את המוצר מקצה לקצה לפני פרסום: סנכרון, הרשאות, פושים והתראות, תפריטים, התחברות והרשמה, תזונה, אימונים, בניית תוכניות ותרגילים, יעדים, משוב, הודעות והחוויה הכללית.
 
+## התקדמות מאז כתיבת הדוח
+
+- משימת הסנכרון התחילה.
+- `46_harden_realtime_publication.sql` כולל כעת גם `challenges` ו־`challenge_enrollments`.
+- נוסף `realtime-publication-contract.test.ts`, שמצליב בין subscriptions בקוד לבין migration publication paths.
+- הבדיקה המקומית החדשה עוברת; אימות Supabase חי עדיין לא הורץ ללא אישור וחשבונות smoke ייעודיים.
+
 ## סיכום מנהלים
 
 המוצר רחב ובנוי היטב ברמת התשתית. קיימים:
@@ -58,7 +65,7 @@
 
 | עדיפות | ממצא | ראיות | השפעה |
 |---|---|---|---|
-| P1 | `challenges` ו־`challenge_enrollments` מקבלים subscription בצד הלקוח אך לא נמצאים בפרסום ה־Realtime | `src/lib/gym-store.ts:817-818`; `supabase/migrations/30_realtime_sync_publication.sql:9-23`; `46_harden_realtime_publication.sql:8-22` | שינוי באתגר או הרשמה ממכשיר אחר לא מגיע בזמן אמת |
+| P1 → תוקן מקומית | `challenges` ו־`challenge_enrollments` קיבלו subscription בצד הלקוח בלי כיסוי ב־hardening הכללי | `src/lib/gym-store.ts:817-818`; migrations `43`, `46`, `47`; contract test חדש | ה־hardening המקומי כולל כעת את שתי הטבלאות; עדיין נדרש live smoke כדי לוודא שהמigrations הרלוונטיים מוחלים ב־Supabase |
 | P1 | הרשאות RLS, RPC ו־Realtime אמיתיות לא אומתו | `supabase/role-permission-validation.md:7-11,24-30`; בדיקות מקומיות ב־`src/lib/role-assignment-security.test.ts:215-420` | ייתכן drift בין migration לבין ההתנהגות החיה |
 | P2 | כיסוי ה־Realtime חלקי עבור custom exercises, recipes, food/favorites/catalog ועוד | `src/lib/gym-store.ts:814-831`; `src/lib/supabase-sync.ts:324-335` | המשתמש תלוי ב־fallback refresh או ניווט מחדש |
 | P2 | Pull של hydration אינו סובלני באותה מידה ל־tables/columns חסרים כמו ה־write path | `src/lib/supabase-sync.ts:1353-1492` | schema legacy אחד עלול להפיל hydration רחב |

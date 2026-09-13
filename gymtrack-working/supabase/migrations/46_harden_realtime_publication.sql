@@ -18,7 +18,9 @@ BEGIN
     'client_feedback',
     'coach_messages',
     'broadcast_announcements',
-    'coach_clients'
+    'coach_clients',
+    'challenges',
+    'challenge_enrollments'
   ]
   LOOP
     IF to_regclass('public.' || table_name) IS NOT NULL THEN
