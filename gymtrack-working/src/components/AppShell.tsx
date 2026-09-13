@@ -165,6 +165,7 @@ export function AppShell({
   const navigate = useNavigate();
   const router = useRouter();
   const isManagementRoute = isManagementPath(location.pathname);
+  const showWorkspaceSwitcher = Boolean(user && isCoach);
   const showHomeOnlyHeaderControls =
     location.pathname === "/" || location.pathname === "/coach";
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -1013,7 +1014,7 @@ export function AppShell({
               )}
             </button>
           </div>
-          {headerAccessory || (isCoach && showHomeOnlyHeaderControls) ? (
+          {headerAccessory || showWorkspaceSwitcher ? (
             <div
               className={`app-topbar__utility-row flex items-center justify-between gap-2 border-b border-border/50 ${
                 compactHeader ? "mb-1 pb-0.5" : "mb-1.5 pb-0.5"
@@ -1024,7 +1025,7 @@ export function AppShell({
               ) : (
                 <span />
               )}
-              {isCoach && showHomeOnlyHeaderControls ? (
+              {showWorkspaceSwitcher ? (
                 <div
                   className="flex items-center gap-2 rounded-full border border-border bg-surface-2 p-0.5"
                   role="group"

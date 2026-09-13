@@ -75,4 +75,10 @@ describe("Supabase auth lifecycle contracts", () => {
     expect(roleHardening).toContain("Only the Owner can change user roles");
     expect(roleHardening).toContain("role = (SELECT p.role FROM public.profiles p");
   });
+
+  test("management users can switch back to personal mode from every management route", () => {
+    expect(appShell).toContain("const showWorkspaceSwitcher = Boolean(user && isCoach);");
+    expect(appShell).toContain("{headerAccessory || showWorkspaceSwitcher ? (");
+    expect(appShell).toContain("{showWorkspaceSwitcher ? (");
+  });
 });
