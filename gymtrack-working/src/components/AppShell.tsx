@@ -12,7 +12,6 @@ import {
   Moon,
   Sun,
   User,
-  Users,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -448,35 +447,31 @@ export function AppShell({
     }
   };
 
-  const NAV = managementView
+  const NAV = isCoach
     ? [
         {
           to: "/coach",
           label: "",
           id: "management-home",
           icon: Home,
-          onClick: () => setWorkspace("management"),
         },
         {
-          to: "/coach/clients",
-          label: "מתאמנים",
-          id: "coach",
-          icon: Users,
-          onClick: () => setWorkspace("management"),
+          to: "/programs",
+          label: "תוכניות",
+          id: "programs",
+          icon: Dumbbell,
         },
         {
           to: "/coach/tracking",
           label: "מעקב",
           id: "tracking",
           icon: Activity,
-          onClick: () => setWorkspace("management"),
         },
         {
           to: "/exercises",
           label: "תרגילים",
           id: "exercises",
           icon: Dumbbell,
-          onClick: () => setWorkspace("management"),
         },
       ]
     : [
@@ -485,32 +480,18 @@ export function AppShell({
           label: "היום שלי",
           id: "home",
           icon: Home,
-          onClick: () => setWorkspace("personal"),
         },
         {
           to: "/workouts",
           label: "האימונים שלי",
           id: "workouts",
           icon: LayoutGrid,
-          onClick: () => setWorkspace("personal"),
         },
-        ...(role === "coach" || role === "owner"
-          ? [
-              {
-                to: "/programs" as const,
-                label: "תוכניות",
-                id: "programs",
-                icon: Dumbbell,
-                onClick: () => setWorkspace("personal"),
-              },
-            ]
-          : []),
         {
           to: "/nutrition",
           label: "התזונה שלי",
           id: "nutrition",
           icon: Apple,
-          onClick: () => setWorkspace("personal"),
         },
       ];
 
@@ -554,7 +535,6 @@ export function AppShell({
     const nextIndex = deltaX > 0 ? currentIndex + 1 : currentIndex - 1;
     const nextItem = NAV[nextIndex];
     if (!nextItem) return;
-    nextItem.onClick?.();
     void navigate({ to: nextItem.to });
   };
 
@@ -1008,46 +988,6 @@ export function AppShell({
               ) : (
                 <span />
               )}
-              {isCoach && showHomeOnlyHeaderControls ? (
-                <div
-                  className="flex items-center gap-2 rounded-full border border-border bg-surface-2 p-0.5"
-                  role="group"
-                  aria-label="בחירת מצב עבודה"
-                >
-                  <Link
-                    to="/"
-                    preload="intent"
-                    onClick={() => setWorkspace("personal")}
-                    aria-current={activeMode === "personal" ? "page" : undefined}
-                    className={`press min-w-20 rounded-full px-3 ${
-                      compactHeader ? "py-1 text-[10px]" : "py-1.5 text-[11px]"
-                    } text-center font-bold transition-colors ${
-                      activeMode === "personal"
-                        ? "bg-surface text-ink shadow-sm"
-                        : "text-muted-foreground hover:text-ink"
-                    }`}
-                  >
-                    אישי
-                  </Link>
-                  <Link
-                    to="/coach"
-                    preload="intent"
-                    onClick={() => setWorkspace("management")}
-                    aria-current={activeMode === "management" ? "page" : undefined}
-                    className={`press min-w-20 rounded-full px-3 ${
-                      compactHeader ? "py-1 text-[10px]" : "py-1.5 text-[11px]"
-                    } text-center font-bold transition-colors ${
-                      activeMode === "management"
-                        ? isOwner
-                          ? "bg-ink text-primary-foreground"
-                          : "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-ink"
-                    }`}
-                  >
-                    {isOwner ? "בעלים" : "מאמן"}
-                  </Link>
-                </div>
-              ) : null}
             </div>
           ) : null}
           {title || action || (user && showHomeOnlyHeaderControls) || !user ? (
@@ -1838,12 +1778,11 @@ export function AppShell({
             className="nav-shell app-bottom-nav pointer-events-auto mx-auto flex w-full max-w-3xl items-center justify-between border-t bg-background/95 backdrop-blur-xl"
             style={{ paddingBottom: "0.25rem" }}
           >
-            {NAV.map(({ to, label, id, icon: Icon, onClick }) => (
+            {NAV.map(({ to, label, id, icon: Icon }) => (
               <Link
                 key={to}
                 to={to}
                 preload="intent"
-                onClick={onClick}
                 activeOptions={{ exact: to === "/" || to === "/coach" }}
                 data-testid={`link-nav-${id}`}
                 className="app-nav-link press group relative flex min-h-[3.1rem] flex-1 flex-col items-center justify-center gap-0.5 py-1 text-muted-foreground transition-colors data-[status=active]:text-primary hover:text-ink"
