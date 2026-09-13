@@ -369,9 +369,9 @@ function attentionActivityDate(details: ClientDetails) {
 
 function attentionReasonLabel(reason: AttentionReason) {
   return reason === "workout-missing"
-    ? "אימון חסר"
+    ? "אימון לא בוצע היום"
     : reason === "nutrition-missing"
-      ? "תזונה חסרה"
+      ? "תזונה לא נרשמה היום"
       : reason === "checkin-late"
         ? "צ׳ק־אין באיחור"
         : reason === "difficulty"
@@ -1850,6 +1850,7 @@ export function CoachDashboardPage({
   >({});
   const [attentionView, setAttentionView] = useState<"open" | "all">("open");
   const [expandedAttentionClientId, setExpandedAttentionClientId] = useState<string | null>(null);
+  const [attentionQueueOpen, setAttentionQueueOpen] = useState(false);
   const [clientRefreshInFlight, setClientRefreshInFlight] = useState(false);
   const focusedNutritionScrollTargetRef = useRef<string | null>(null);
   const draftOwnerRef = useRef<string | null>(null);
@@ -2158,9 +2159,41 @@ export function CoachDashboardPage({
 
   const attentionItems = useMemo<AttentionItem[]>(() => {
     const now = Date.now();
+    const currentDate = todayKey();
+    const currentWeekday = new Date(`${currentDate}T12:00:00`).getDay();
     return overviewRows
       .map(({ client, details }) => {
         const clientId = client.client_id;
+        const todayHistory = details.history.filter(
+          (item) => attentionDateKey(item.date) === currentDate,
+        );
+        const todayNutrition = details.nutritionDays.find(
+          (item) => attentionDateKey(item.date) === currentDate,
+        );
+        const todayNutritionFoods =
+          todayNutrition?.meals.flatMap((meal) => meal.foods) ?? [];
+        const todayNutritionTotals = foodTotals(todayNutritionFoods);
+        const nutritionTargets = {
+          calories: todayNutrition?.targetCalories ?? details.nutritionTargets?.calories ?? 0,
+          protein: todayNutrition?.targetProtein ?? details.nutritionTargets?.protein ?? 0,
+          carbs: todayNutrition?.targetCarbs ?? details.nutritionTargets?.carbs ?? 0,
+          fat: todayNutrition?.targetFat ?? details.nutritionTargets?.fat ?? 0,
+          fiber: todayNutrition?.targetFiber ?? details.nutritionTargets?.fiber ?? 0,
+        };
+        const nutritionTargetEntries = (
+          Object.keys(nutritionTargets) as Array<keyof typeof nutritionTargets>
+        )
+          .map((key) => ({
+            actual: todayNutritionTotals[key],
+            target: nutritionTargets[key],
+          }))
+          .filter(({ target }) => target > 0);
+        const nutritionIsLow =
+          todayNutritionFoods.length > 0 &&
+          nutritionTargetEntries.some(({ actual, target }) => actual < target * 0.8);
+        const nutritionIsHigh =
+          todayNutritionFoods.length > 0 &&
+          nutritionTargetEntries.some(({ actual, target }) => actual > target * 1.2);
         const recentHistory = details.history.filter(
           (item) => attentionDaysAgo(item.date, now) <= 28,
         );
@@ -2209,14 +2242,34 @@ export function CoachDashboardPage({
           details.nutritionDays.length > 0 ||
           details.plannedMeals.some((meal) => meal.foods.length > 0);
 
-        if (hasWorkoutData && !recentHistory.some((session) => session.entries.length > 0)) {
+        const hasWeekdaySchedule = details.workouts.some(
+          (workout) => normalizeWeekday(workout.weekday) !== undefined,
+        );
+        const workoutScheduledToday =
+          hasWorkoutPlan &&
+          (hasWeekdaySchedule
+            ? details.workouts.some(
+                (workout) => normalizeWeekday(workout.weekday) === currentWeekday,
+              )
+            : true);
+        if (
+          hasWorkoutData &&
+          workoutScheduledToday &&
+          !todayHistory.some((session) => session.entries.length > 0)
+        ) {
           reasons.push({ key: "workout-missing", label: attentionReasonLabel("workout-missing") });
         }
-        if (hasNutritionData && recentNutrition.length === 0) {
+        if (hasNutritionData && todayNutritionFoods.length === 0) {
           reasons.push({
             key: "nutrition-missing",
             label: attentionReasonLabel("nutrition-missing"),
           });
+        }
+        if (nutritionIsLow) {
+          reasons.push({ key: "nutrition-missing", label: "תזונה נמוכה היום" });
+        }
+        if (nutritionIsHigh) {
+          reasons.push({ key: "nutrition-missing", label: "תזונה גבוהה היום" });
         }
         if (
           (details.profile?.nextCheckinDate &&
@@ -4866,7 +4919,22 @@ export function CoachDashboardPage({
         clientsOnly ? (trackingLanding ? "ביצועי מתאמנים בפועל" : "בניית תוכניות ותפריטים") : ""
       }
       headerAccessory={
-        !clientsOnly && isOwner ? (
+        trackingLanding ? (
+          <button
+            type="button"
+            onClick={() => setAttentionQueueOpen(true)}
+            aria-label="פתיחת תור תשומת הלב"
+            className="bodyweight-header-toggle press inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-1 text-[9px] font-bold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <Activity className="h-3.5 w-3.5" aria-hidden="true" />
+            לשים ❤️
+            {attentionOpenCount > 0 ? (
+              <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[8px] leading-none">
+                {attentionOpenCount}
+              </span>
+            ) : null}
+          </button>
+        ) : !clientsOnly && isOwner ? (
           <div className="flex min-w-0 flex-nowrap items-center justify-end gap-1">
             <button
               type="button"
@@ -5139,14 +5207,20 @@ export function CoachDashboardPage({
 
       {trackingLanding ? (
         <AttentionQueuePlacement>
-          {overviewRows.length === 0 ? (
-            <div className="surface-card p-4 text-sm text-muted-foreground">
-              {clients.length === 0
-                ? "עדיין אין מתאמנים משויכים. עברי ללשונית מתאמנים כדי להוסיף מתאמן."
-                : genderText(gender, "טוענת את סיכום המתאמנים...", "טוען את סיכום המתאמנים...")}
-            </div>
-          ) : (
-            <section className="surface-card space-y-2 border-primary/20 bg-primary/[0.025] p-3">
+          <Overlay
+            open={attentionQueueOpen}
+            onClose={() => setAttentionQueueOpen(false)}
+            ariaLabel="לשים ❤️"
+            panelClassName="max-w-2xl p-0"
+          >
+            {overviewRows.length === 0 ? (
+              <div className="surface-card p-4 text-sm text-muted-foreground">
+                {clients.length === 0
+                  ? "עדיין אין מתאמנים משויכים. עברי ללשונית מתאמנים כדי להוסיף מתאמן."
+                  : genderText(gender, "טוענת את סיכום המתאמנים...", "טוען את סיכום המתאמנים...")}
+              </div>
+            ) : (
+              <section className="surface-card space-y-2 border-primary/20 bg-primary/[0.025] p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-primary">
@@ -5170,6 +5244,14 @@ export function CoachDashboardPage({
                     className="rounded-full border border-border bg-background px-2 py-0.5 text-[9px] font-bold text-muted-foreground hover:border-primary/40 hover:text-primary"
                   >
                     {attentionView === "open" ? "הצגת כולם" : "הצגת פתוחים"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAttentionQueueOpen(false)}
+                    aria-label="סגירת תור תשומת הלב"
+                    className="grid h-7 w-7 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                  >
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -5392,8 +5474,9 @@ export function CoachDashboardPage({
                   })}
                 </div>
               )}
-            </section>
-          )}
+              </section>
+            )}
+          </Overlay>
         </AttentionQueuePlacement>
       ) : null}
 
