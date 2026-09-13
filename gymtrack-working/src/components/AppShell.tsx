@@ -530,7 +530,8 @@ export function AppShell({
                 icon: Dumbbell,
                 onClick: () => setWorkspace("personal"),
               },
-            ]),
+            ]
+          : []),
         {
           to: "/nutrition",
           label: "התזונה שלי",
