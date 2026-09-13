@@ -371,8 +371,8 @@ html.night-mode textarea::placeholder {
   --input: #e4bbb3;
   --ring: #c98283;
   --gradient-start: #c98283;
-  --gradient-mid: #dfaa9d;
-  --gradient-end: #f3d8c9;
+  --gradient-mid: #d9a6a4;
+  --gradient-end: #f2dcdf;
 }
 
 /*
@@ -535,22 +535,58 @@ html.night-mode textarea::placeholder {
  * also covers responsive, hover, focus and disabled utility variants.
  */
 :root[data-theme] {
+  /* Derive every secondary semantic token from the selected primary hue.
+   * This prevents a blue palette from inheriting green status surfaces or a
+   * pink palette from inheriting orange/gold accents. */
+  --surface-2: color-mix(in srgb, var(--primary) 13%, var(--surface));
+  --cream: color-mix(in srgb, var(--primary) 7%, var(--surface));
+  --secondary: color-mix(in srgb, var(--primary) 16%, var(--surface));
+  --secondary-foreground: color-mix(in srgb, var(--primary) 72%, var(--ink));
   --sage: color-mix(in srgb, var(--primary) 72%, var(--surface));
   --sage-soft: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  --rose: color-mix(in srgb, var(--primary) 84%, var(--ink));
+  --rose-soft: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  --accent: color-mix(in srgb, var(--primary) 52%, var(--surface));
+  --accent-foreground: color-mix(in srgb, var(--primary) 68%, var(--ink));
+  --border: color-mix(in srgb, var(--primary) 20%, var(--surface));
+  --input: color-mix(in srgb, var(--primary) 24%, var(--surface));
+  --ring: var(--primary);
   --destructive: var(--rose);
   --destructive-foreground: var(--primary-foreground);
   --status-success: color-mix(in srgb, var(--primary) 78%, var(--ink));
   --status-success-soft: color-mix(in srgb, var(--primary) 11%, var(--background));
   --status-success-border: color-mix(in srgb, var(--primary) 35%, var(--border));
-  --status-warning: color-mix(in srgb, var(--accent) 78%, var(--ink));
-  --status-warning-soft: color-mix(in srgb, var(--accent) 14%, var(--background));
-  --status-warning-border: color-mix(in srgb, var(--accent) 38%, var(--border));
+  --status-warning: color-mix(in srgb, var(--primary) 78%, var(--ink));
+  --status-warning-soft: color-mix(in srgb, var(--primary) 14%, var(--background));
+  --status-warning-border: color-mix(in srgb, var(--primary) 38%, var(--border));
   --status-info: color-mix(in srgb, var(--primary) 78%, var(--ink));
   --status-info-soft: color-mix(in srgb, var(--primary) 11%, var(--background));
   --status-info-border: color-mix(in srgb, var(--primary) 35%, var(--border));
   --status-danger: color-mix(in srgb, var(--rose) 82%, var(--ink));
   --status-danger-soft: color-mix(in srgb, var(--rose) 12%, var(--background));
   --status-danger-border: color-mix(in srgb, var(--rose) 38%, var(--border));
+}
+
+.stat-tile--primary,
+.stat-tile--rose,
+.stat-tile--accent {
+  border-top-width: 2px;
+  border-top-style: solid;
+}
+
+.stat-tile--primary {
+  border-top-color: var(--primary) !important;
+  background-color: color-mix(in srgb, var(--primary) 12%, var(--surface)) !important;
+}
+
+.stat-tile--rose {
+  border-top-color: var(--rose) !important;
+  background-color: color-mix(in srgb, var(--primary) 16%, var(--surface)) !important;
+}
+
+.stat-tile--accent {
+  border-top-color: var(--accent) !important;
+  background-color: color-mix(in srgb, var(--primary) 7%, var(--surface)) !important;
 }
 
 :root[data-theme] [class*="bg-emerald-"],

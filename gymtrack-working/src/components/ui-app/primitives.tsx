@@ -206,9 +206,9 @@ export function StatTile({
     <div
       className={cn(
         "surface-card flex min-h-[82px] flex-col gap-1.5 px-3 py-2.75 text-start shadow-none",
-        tone === "sage" && "border-t-2 border-t-primary bg-primary/10",
-        tone === "rose" && "border-t-2 border-t-rose bg-rose-soft/45",
-        tone === "cream" && "border-t-2 border-t-accent bg-cream/55",
+        tone === "sage" && "stat-tile--primary",
+        tone === "rose" && "stat-tile--rose",
+        tone === "cream" && "stat-tile--accent",
         tone === "ink" && "border-t-2 border-t-ink bg-surface",
       )}
     >
