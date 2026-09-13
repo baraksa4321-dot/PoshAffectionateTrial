@@ -1707,6 +1707,9 @@ input[type="search"] {
 .overlay-panel input:not([type="hidden"]):not([type="file"]),
 .overlay-panel textarea,
 .overlay-panel select {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
   border-radius: var(--radius-md);
   transition:
     border-color 160ms ease,

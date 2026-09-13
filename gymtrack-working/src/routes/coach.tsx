@@ -8,6 +8,7 @@ import {
   Crown,
   Dumbbell,
   Edit2,
+  Heart,
   Minus,
   Plus,
   Save,
@@ -1490,6 +1491,12 @@ export function CoachDashboardPage({
     });
     return () => window.cancelAnimationFrame(frame);
   }, [clientsOnly, showClientProfile]);
+
+  useEffect(() => {
+    if (trackingLanding) {
+      setShowClientProfile(false);
+    }
+  }, [trackingLanding]);
 
   const [roleChangeUserId, setRoleChangeUserId] = useState<string | null>(null);
   const [roleChangeNotice, setRoleChangeNotice] = useState("");
@@ -4927,7 +4934,8 @@ export function CoachDashboardPage({
             className="bodyweight-header-toggle press inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-1 text-[9px] font-bold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             <Activity className="h-3.5 w-3.5" aria-hidden="true" />
-            לשים ❤️
+            <Heart className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
+            לשים לב
             {attentionOpenCount > 0 ? (
               <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[8px] leading-none">
                 {attentionOpenCount}
@@ -5210,7 +5218,7 @@ export function CoachDashboardPage({
           <Overlay
             open={attentionQueueOpen}
             onClose={() => setAttentionQueueOpen(false)}
-            ariaLabel="לשים ❤️"
+            ariaLabel="לשים לב"
             panelClassName="max-w-2xl p-0"
           >
             {overviewRows.length === 0 ? (
@@ -6371,18 +6379,20 @@ export function CoachDashboardPage({
                     </span>
                   </h3>
                   <div className="flex shrink-0 items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setShowClientProfile(true)}
-                      aria-label="פתיחת פרופיל המשתמש"
-                      disabled={!clientDetails || loadingDetails}
-                      className={`flex items-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10 ${
-                        clientsOnly || trackingLanding ? "h-8" : "h-9"
-                      } disabled:cursor-not-allowed disabled:opacity-50`}
-                    >
-                      <UserCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                      פרופיל
-                    </button>
+                    {!trackingLanding ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowClientProfile(true)}
+                        aria-label="פתיחת פרופיל המשתמש"
+                        disabled={!clientDetails || loadingDetails}
+                        className={`flex items-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10 ${
+                          clientsOnly ? "h-8" : "h-9"
+                        } disabled:cursor-not-allowed disabled:opacity-50`}
+                      >
+                        <UserCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                        פרופיל
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => {

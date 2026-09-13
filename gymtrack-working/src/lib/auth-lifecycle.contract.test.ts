@@ -9,6 +9,7 @@ const appShell = read("../components/AppShell.tsx");
 const gymStore = read("./gym-store.ts");
 const supabaseSync = read("./supabase-sync.ts");
 const coachRoute = read("../routes/coach.tsx");
+const styles = read("../styles.css");
 const ownerMigration = read("../../supabase/migrations/31_owner_auth_profile_visibility.sql");
 const insertHardening = read(
   "../../supabase/migrations/32_registration_profile_insert_hardening.sql",
@@ -95,5 +96,20 @@ describe("Supabase auth lifecycle contracts", () => {
       "ADD COLUMN IF NOT EXISTS date_of_birth DATE",
     );
     expect(dateOfBirthRepairMigration).toContain("NOTIFY pgrst, 'reload schema'");
+  });
+
+  test("tracking uses a drawn palette heart and keeps profile on the home workspace", () => {
+    expect(coachRoute).toContain('<Heart className="h-3.5 w-3.5 fill-current"');
+    expect(coachRoute).toContain("לשים לב");
+    expect(coachRoute).not.toContain("לשים ❤️");
+    expect(coachRoute).toMatch(
+      /\{!trackingLanding \? \([\s\S]*?aria-label="פתיחת פרופיל המשתמש"/,
+    );
+  });
+
+  test("app fields stay within their card or flex container", () => {
+    expect(styles).toContain("box-sizing: border-box;");
+    expect(styles).toContain("min-width: 0;");
+    expect(styles).toContain("max-width: 100%;");
   });
 });
