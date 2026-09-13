@@ -1295,6 +1295,7 @@ function RootContent() {
   // only an unresolved auth/profile state blocks the first screen. Background
   // refreshes keep the current UI visible and cannot reintroduce the splash.
   const requiresInitialLoading = authStatus === "loading" || isProfileHydrating;
+  const sessionCanResume = canResumeInteractiveSession();
   // A background resume can briefly make Supabase report a loading state while
   // the cached app is still usable. Keep the current route visible in that
   // case; a real reload starts with hasBeenInteractiveRef=false and still gets
@@ -1302,7 +1303,8 @@ function RootContent() {
   const isLoadingScreen =
     requiresInitialLoading &&
     !suppressTransientLoading &&
-    !hasBeenInteractiveRef.current;
+    !hasBeenInteractiveRef.current &&
+    !sessionCanResume;
   const activeLoadingGender = userProfile?.gender ?? loadingGender;
   // The animated loading surface is a private account preference. Everyone
   // else gets the palette-colored spinner, regardless of profile gender.

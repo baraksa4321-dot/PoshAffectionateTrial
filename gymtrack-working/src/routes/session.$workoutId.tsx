@@ -58,13 +58,16 @@ import type {
 import { genderText } from "@/lib/gender-copy";
 import {
   cancelRestTimerNotification,
+  requestRestTimerNotificationPermission,
   scheduleRestTimerNotification,
 } from "@/lib/notification-service";
+import { reconcileRestTimer } from "@/lib/rest-timer";
 import { isSafeVideoSource } from "@/lib/url-security";
 import {
   completedSetForReopenedWorkout,
   getCurrentWeekWorkoutSession,
   restForWorkoutSet,
+  completedSessionVolume,
 } from "@/lib/workout-session";
 import {
   loadWorkoutVideoDrafts,
@@ -308,7 +311,7 @@ function sessionSummaryStats(session: HistorySession | null) {
   const doneSets = sets.filter((set) => set.done);
   return {
     doneSets: doneSets.length,
-    volume: doneSets.reduce((sum, set) => sum + set.weight * set.reps, 0),
+    volume: session ? completedSessionVolume(session) : 0,
     maxWeight: doneSets.length ? Math.max(...doneSets.map((set) => set.weight)) : 0,
     exercises: session?.entries.filter((entry) => entry.sets.some((set) => set.done && !set.warmup)).length ?? 0,
     durationSec: session?.durationSec ?? 0,
@@ -632,17 +635,23 @@ function Session() {
     setRestTimerHydrated(false);
     const persisted = readPersistedRestTimer(sessionOwnerId, workoutId);
     if (persisted) {
-      const hasExpired =
-        !persisted.restPaused &&
-        persisted.restEndsAt !== null &&
-        persisted.restEndsAt <= Date.now();
-      setRest(hasExpired ? 0 : persisted.rest);
-      setRestFinished(hasExpired || persisted.restFinished);
+      const reconciled = reconcileRestTimer(persisted, Date.now());
+      // The interval is suspended while a tab/PWA is in the background. Seed
+      // the transition detector so returning after expiry still produces one
+      // completion event instead of only showing a stale zero.
+      if (reconciled.shouldNotify) {
+        previousRestRef.current = persisted.rest;
+        restCompletionVibratedRef.current = false;
+      } else {
+        previousRestRef.current = 0;
+      }
+      setRest(reconciled.rest);
+      setRestFinished(reconciled.restFinished);
       setSmartTimerPosition(persisted.smartTimerPosition);
       setSmartTimerStarted(persisted.smartTimerStarted);
       setRestPaused(persisted.restPaused);
-      setRestEndsAt(hasExpired ? null : persisted.restEndsAt);
-      setRestExpanded(persisted.restExpanded || !hasExpired);
+      setRestEndsAt(reconciled.restEndsAt);
+      setRestExpanded(persisted.restExpanded || !reconciled.restFinished);
     } else {
       setRest(0);
       setRestFinished(false);
@@ -765,6 +774,9 @@ function Session() {
   const startRestTimer = useCallback(
     (seconds: number) => {
       prepareRestAudio();
+      // This runs from the timer button's user gesture, so browsers are still
+      // allowed to ask once for the background notification permission.
+      void requestRestTimerNotificationPermission().catch(() => undefined);
       const normalizedSeconds = Math.max(0, Math.round(seconds));
       setRest(normalizedSeconds);
       setRestEndsAt(normalizedSeconds > 0 ? Date.now() + normalizedSeconds * 1000 : null);
@@ -794,33 +806,32 @@ function Session() {
     const playTone = () => {
       if (!audioContext) return;
       try {
-        [0, 0.55, 1.1].forEach((offset, index) => {
-          const oscillator = audioContext.createOscillator();
-          const gain = audioContext.createGain();
-          const startAt = audioContext.currentTime + offset;
-          oscillator.type = index === 1 ? "triangle" : "sine";
-          oscillator.frequency.value = index === 1 ? 1046 : 880;
-          gain.gain.setValueAtTime(0.0001, startAt);
-          gain.gain.exponentialRampToValueAtTime(0.26, startAt + 0.025);
-          gain.gain.exponentialRampToValueAtTime(0.0001, startAt + (index === 2 ? 0.58 : 0.42));
-          oscillator.connect(gain);
-          gain.connect(audioContext.destination);
-          oscillator.start(startAt);
-          oscillator.stop(startAt + (index === 2 ? 0.6 : 0.45));
-        });
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        const startAt = audioContext.currentTime;
+        const duration = 2;
+        oscillator.type = "sine";
+        oscillator.frequency.value = 880;
+        gain.gain.setValueAtTime(0.0001, startAt);
+        gain.gain.exponentialRampToValueAtTime(0.26, startAt + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration - 0.04);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start(startAt);
+        oscillator.stop(startAt + duration);
       } catch {
         // Some browsers can still block audio after the initial gesture.
       }
     };
 
-    const completionAudio = restCompletionAudioRef.current;
-    if (completionAudio) {
+    if (!audioContext) {
+      const completionAudio = restCompletionAudioRef.current;
+      if (!completionAudio) return;
       completionAudio.muted = false;
       completionAudio.currentTime = 0;
-      void completionAudio.play().catch(playTone);
+      void completionAudio.play();
       return;
     }
-    if (!audioContext) return;
     if (audioContext.state === "suspended") {
       void audioContext.resume().then(playTone).catch(() => undefined);
     } else {
@@ -933,6 +944,7 @@ function Session() {
     timerRef.current = setInterval(updateRemaining, 250);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = null;
     };
   }, [restEndsAt, restPaused, restTimerHydrated]);
 

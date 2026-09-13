@@ -1,5 +1,28 @@
 import type { HistoryEntry, HistorySession, WorkoutItem } from "./gym-types";
 
+export function isPureBodyweightEntry(entry: Pick<HistoryEntry, "exerciseId" | "exerciseName" | "equipment">) {
+  if (entry.equipment === "משקל גוף") return true;
+  if (entry.equipment === "משקל גוף בתוספת משקל") return false;
+  return (
+    entry.exerciseId.startsWith("bw-") &&
+    /משקל גוף|bodyweight/i.test(entry.exerciseName) &&
+    !/תוספת משקל|משקל נוסף|weighted/i.test(entry.exerciseName)
+  );
+}
+
+export function completedSessionVolume(session: HistorySession) {
+  return session.entries.reduce(
+    (total, entry) =>
+      total +
+      (isPureBodyweightEntry(entry)
+        ? 0
+        : entry.sets
+            .filter((set) => set.done && !set.warmup)
+            .reduce((entryTotal, set) => entryTotal + Math.max(0, set.weight) * Math.max(0, set.reps), 0)),
+    0,
+  );
+}
+
 export function localDateKey(value: string | Date) {
   const date = value instanceof Date ? new Date(value) : new Date(value);
   if (Number.isNaN(date.getTime())) return "";

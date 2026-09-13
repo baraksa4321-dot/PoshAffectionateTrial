@@ -54,6 +54,7 @@ import {
   getCurrentWeekWorkoutSession,
   getWorkoutCompletion,
   localDateKey,
+  completedSessionVolume,
   type WeeklyWorkoutStatus,
 } from "@/lib/workout-session";
 
@@ -338,15 +339,7 @@ function Dashboard() {
     const date = localDateKey(s.date);
     return date >= weekStartDate && date <= weekEndDate;
   });
-  const volume = thisWeek.reduce(
-    (sum, s) =>
-      sum +
-      s.entries.reduce(
-        (v, e) => v + e.sets.filter((x) => x.done).reduce((a, b) => a + b.reps * b.weight, 0),
-        0,
-      ),
-    0,
-  );
+  const volume = thisWeek.reduce((sum, session) => sum + completedSessionVolume(session), 0);
   const totalDurationMin = Math.round(
     thisWeek.reduce((sum, s) => sum + (s.durationSec || 0), 0) / 60,
   );

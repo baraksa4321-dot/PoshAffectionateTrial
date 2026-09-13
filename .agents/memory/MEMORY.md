@@ -71,3 +71,4 @@
 - [Dashboard calendar and session reopen](dashboard-calendar-and-session-reopen.md) — Reopening must honor saved set completion and weekly activity must use local calendar dates.
 - [Date-of-birth age source](date-of-birth-age-source.md) — Treat date of birth as the only editable age source; display and calculate completed age rather than accepting manual age input.
 - [Push token ownership](push-token-claim.md) — FCM token rotation needs an authenticated server-side claim because token uniqueness spans users while RLS scopes rows.
+- [Rest timer background limits](rest-timer-background.md) — Native local notifications are reliable; Web/PWA background sound needs a system-push or media-session strategy.

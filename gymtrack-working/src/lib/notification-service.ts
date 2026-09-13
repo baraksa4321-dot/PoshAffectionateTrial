@@ -35,6 +35,7 @@ let nativeUserId: string | null = null;
 let webForegroundUnsubscribe: (() => void) | null = null;
 let webTokenRefreshCleanup: (() => void) | null = null;
 let webUserId: string | null = null;
+let webRestTimerTimeout: number | null = null;
 
 function firebaseConfig(): FirebaseClientConfig | null {
   const values = {
@@ -159,10 +160,53 @@ export async function showForegroundNotification(title: string, body: string) {
   }
 }
 
+export async function requestRestTimerNotificationPermission() {
+  if (
+    Capacitor.isNativePlatform() ||
+    typeof window === "undefined" ||
+    !("Notification" in window) ||
+    Notification.permission !== "default"
+  ) {
+    return;
+  }
+  await Notification.requestPermission();
+}
+
 export async function scheduleRestTimerNotification(endsAt: number) {
-  if (!Capacitor.isNativePlatform()) return;
   const at = new Date(endsAt);
   if (Number.isNaN(at.getTime()) || at.getTime() <= Date.now()) return;
+
+  if (!Capacitor.isNativePlatform()) {
+    if (webRestTimerTimeout !== null) {
+      window.clearTimeout(webRestTimerTimeout);
+      webRestTimerTimeout = null;
+    }
+    const delay = Math.max(0, at.getTime() - Date.now());
+    webRestTimerTimeout = window.setTimeout(() => {
+      webRestTimerTimeout = null;
+      // Browsers do not expose a reliable background audio scheduler for a
+      // normal tab. A granted system notification is the best available
+      // background fallback; the in-page Web Audio tone handles foreground.
+      if (
+        document.visibilityState === "hidden" &&
+        "Notification" in window &&
+        Notification.permission === "granted"
+      ) {
+        try {
+          new Notification("זמן המנוחה הסתיים", {
+            body: "אפשר להתחיל את הסט הבא.",
+            icon: "/icons/icon-192.png",
+            dir: "rtl",
+            lang: "he",
+            tag: "gymtrack-rest-timer",
+          });
+        } catch {
+          // The browser can reject notifications in an unsupported context.
+        }
+      }
+    }, delay);
+    return;
+  }
 
   const permission = await LocalNotifications.checkPermissions();
   const resolvedPermission =
@@ -203,7 +247,13 @@ export async function scheduleRestTimerNotification(endsAt: number) {
 }
 
 export async function cancelRestTimerNotification() {
-  if (!Capacitor.isNativePlatform()) return;
+  if (!Capacitor.isNativePlatform()) {
+    if (webRestTimerTimeout !== null) {
+      window.clearTimeout(webRestTimerTimeout);
+      webRestTimerTimeout = null;
+    }
+    return;
+  }
   await LocalNotifications.cancel({
     notifications: [{ id: REST_TIMER_NOTIFICATION_ID }],
   }).catch(() => undefined);
