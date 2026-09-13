@@ -7,7 +7,7 @@
 # Test info
 
 - Name: authenticated-ios.pw.mjs >> active workout values survive leaving and reopening the session
-- Location: gymtrack-working/e2e/authenticated-ios.pw.mjs:1683:1
+- Location: gymtrack-working/e2e/authenticated-ios.pw.mjs:1742:1
 
 # Error details
 
@@ -21,65 +21,6 @@ Call log:
 # Test source
 
 ```ts
-  1586 |   page,
-  1587 | }) => {
-  1588 |   await installFixture(page);
-  1589 | 
-  1590 |   await page.goto("/");
-  1591 |   await page.getByTestId("link-nav-coach").click();
-  1592 |   await expect(page).toHaveURL(/\/coach\/clients/);
-  1593 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("בדיקה");
-  1594 |   await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
-  1595 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
-  1596 | 
-  1597 |   const profileMessage = page.getByTestId("coach-client-message-profile");
-  1598 |   await expect(profileMessage).toBeVisible();
-  1599 |   const profileMessageText = "הודעה שנשלחה מהפרופיל ונראית למתאמנת";
-  1600 |   await profileMessage.getByPlaceholder("כתבי הודעה למתאמן...").fill(profileMessageText);
-  1601 |   await profileMessage.getByRole("button", { name: "שלח", exact: true }).click();
-  1602 |   await expect
-  1603 |     .poll(async () =>
-  1604 |       page.evaluate((key) => window.localStorage.getItem(key), "ios-smoke.remote-coach-messages"),
-  1605 |     )
-  1606 |     .toContain(profileMessageText);
-  1607 | 
-  1608 |   const traineePage = await page.context().newPage();
-  1609 |   await installFixture(traineePage, { role: "trainee" });
-  1610 |   await traineePage.goto("/");
-  1611 |   const traineeMessage = traineePage.getByTestId("coach-message-banner");
-  1612 |   await expect(traineeMessage).toContainText("כל הכבוד על ההתמדה השבוע");
-  1613 | 
-  1614 |   await traineePage.evaluate(() => window.__iosSmokeSetOnline(true));
-  1615 |   await expect(traineeMessage).toContainText(profileMessageText);
-  1616 | });
-  1617 | 
-  1618 | test("trainee reopens a received coach message offline before reconnect refresh", async ({
-  1619 |   page,
-  1620 | }) => {
-  1621 |   await installFixture(page, { role: "trainee" });
-  1622 | 
-  1623 |   await page.goto("/");
-  1624 |   const traineeMessage = page.getByTestId("coach-message-banner");
-  1625 |   await expect(traineeMessage).toContainText("כל הכבוד על ההתמדה השבוע");
-  1626 |   await expect.poll(() => page.evaluate(() => window.__iosSmokeCoachMessageReads())).toBe(0);
-  1627 | 
-  1628 |   await page.reload();
-  1629 |   const reopenedMessage = page.getByTestId("coach-message-banner");
-  1630 |   await expect(reopenedMessage).toContainText("כל הכבוד על ההתמדה השבוע");
-  1631 |   await expect.poll(() => page.evaluate(() => window.__iosSmokeCoachMessageReads())).toBe(0);
-  1632 | 
-  1633 |   await page.evaluate(() => window.__iosSmokeSetOnline(true));
-  1634 |   await expect
-  1635 |     .poll(() => page.evaluate(() => window.__iosSmokeCoachMessageReads()))
-  1636 |     .toBeGreaterThan(0);
-  1637 |   await expect(reopenedMessage).toContainText("כל הכבוד על ההתמדה השבוע");
-  1638 |   await expect
-  1639 |     .poll(async () => {
-  1640 |       const cached = await page.evaluate(
-  1641 |         (key) => JSON.parse(window.localStorage.getItem(key) ?? "{}"),
-  1642 |         "gymtrack.v1.user.ios-smoke-client",
-  1643 |       );
-  1644 |       return cached.coachMessages?.length ?? 0;
   1645 |     })
   1646 |     .toBe(1);
   1647 | });
@@ -121,8 +62,7 @@ Call log:
   1683 |     .toBe(1);
   1684 |   await expect
   1685 |     .poll(async () => {
-> 1686 |       const cached = await page.evaluate(
-       |              ^ Error: page.goto: Page crashed
+  1686 |       const cached = await page.evaluate(
   1687 |         (key) => JSON.parse(window.localStorage.getItem(key) ?? "{}"),
   1688 |         "gymtrack.v1.user.ios-smoke-client",
   1689 |       );
@@ -181,7 +121,8 @@ Call log:
   1742 | test("active workout values survive leaving and reopening the session", async ({ page }) => {
   1743 |   await installFixture(page);
   1744 | 
-  1745 |   await page.goto(`/session/${WORKOUT_ID}`);
+> 1745 |   await page.goto(`/session/${WORKOUT_ID}`);
+       |              ^ Error: page.goto: Page crashed
   1746 |   await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
   1747 | 
   1748 |   const repsInput = page.locator('input[inputmode="decimal"]').first();
@@ -223,4 +164,18 @@ Call log:
   1784 |     /border-primary/,
   1785 |   );
   1786 |   await expect(
+  1787 |     reopenedFirstExercise.getByPlaceholder("כאב, אי־נוחות או הערה למאמנת..."),
+  1788 |   ).toHaveValue("הערת תרגיל בטיוטה");
+  1789 | 
+  1790 |   // Reopening the completion sheet restores the unfinished workout note.
+  1791 |   await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
+  1792 |   const reopenedWorkoutNote = page.getByPlaceholder("למשל: עומס קל במרפק ימין בסט האחרון...");
+  1793 |   await expect(reopenedWorkoutNote).toHaveValue("הערת סיום בטיוטת האימון");
+  1794 |   await page.getByRole("button", { name: "אישור ושמירת אימון" }).click();
+  1795 |   await expect(page).toHaveURL(/\/programs/);
+  1796 |   await expect
+  1797 |     .poll(() => page.evaluate((key) => localStorage.getItem(key), ACTIVE_SESSION_FEEDBACK_KEY))
+  1798 |     .toBeNull();
+  1799 | });
+  1800 | 
 ```

@@ -7,7 +7,7 @@
 # Test info
 
 - Name: authenticated-ios.pw.mjs >> trainee reopens a broadcast notice offline before reconnect refresh
-- Location: gymtrack-working/e2e/authenticated-ios.pw.mjs:1590:1
+- Location: gymtrack-working/e2e/authenticated-ios.pw.mjs:1649:1
 
 # Error details
 
@@ -21,65 +21,6 @@ Call log:
 # Test source
 
 ```ts
-  1501 |   await expect(profile).toContainText("8,500");
-  1502 |   await expect(profile).toContainText("הליכה מהירה");
-  1503 |   await expect(profile).toContainText("כל הכבוד על ההתמדה השבוע");
-  1504 |   await expect(profile).not.toContainText("71.8");
-  1505 |   await expect(profile).not.toContainText("הודעה של מתאמנת אחרת");
-  1506 | 
-  1507 |   await page.getByRole("button", { name: "סגירת פרופיל המשתמש" }).click();
-  1508 |   await page.getByRole("button", { name: "סגירת תכנית המתאמן" }).click();
-  1509 |   await expect(workspace).toHaveCount(0);
-  1510 | 
-  1511 |   const clientSearch = page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" });
-  1512 |   await expect(clientSearch).toBeVisible();
-  1513 |   await clientSearch.fill("מתאמנת אחרת");
-  1514 |   await expect(page.getByText("מתאמנת אחרת", { exact: true })).toBeVisible();
-  1515 |   await page.getByText("מתאמנת אחרת", { exact: true }).click();
-  1516 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
-  1517 |     timeout: 20_000,
-  1518 |   });
-  1519 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
-  1520 | 
-  1521 |   await expect(profile).toBeVisible();
-  1522 |   await expect(profile).toContainText("71.8");
-  1523 |   await expect(profile).toContainText("88");
-  1524 |   await expect(profile).toContainText("1,234");
-  1525 |   await expect(profile).toContainText("רכיבה אחרת");
-  1526 |   await expect(profile).toContainText("הודעה של מתאמנת אחרת");
-  1527 |   await expect(profile).not.toContainText("63.4");
-  1528 |   await expect(profile).not.toContainText("כל הכבוד על ההתמדה השבוע");
-  1529 |   await expect(profile).not.toContainText("מתאמנת בדיקה");
-  1530 | });
-  1531 | 
-  1532 | test("coach profile retry recovers after a temporary trainee data failure", async ({ page }) => {
-  1533 |   await installFixture(page, { failSelectedTraineeDataOnce: true });
-  1534 | 
-  1535 |   await page.goto("/");
-  1536 |   await page.getByTestId("link-nav-coach").click();
-  1537 |   await expect(page).toHaveURL(/\/coach\/clients/);
-  1538 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת בדיקה");
-  1539 |   await page.evaluate(() => window.__iosSmokeArmSelectedTraineeDataFailure());
-  1540 |   await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
-  1541 | 
-  1542 |   const workspace = page.locator('[data-coach-workspace="true"]');
-  1543 |   const detailsError = page.getByTestId("coach-client-details-error");
-  1544 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "error", {
-  1545 |     timeout: 20_000,
-  1546 |   });
-  1547 |   await expect(workspace).toHaveAttribute("aria-busy", "false");
-  1548 |   await expect(detailsError).toBeVisible();
-  1549 |   await expect(detailsError).toContainText("temporary selected trainee data failure");
-  1550 |   await expect(workspace.getByTestId("coach-client-details-loading")).toHaveCount(0);
-  1551 | 
-  1552 |   await page.getByTestId("coach-client-details-retry").click();
-  1553 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
-  1554 |     timeout: 20_000,
-  1555 |   });
-  1556 |   await expect(workspace.getByTestId("coach-client-details-ready")).toBeVisible();
-  1557 |   await expect(detailsError).toHaveCount(0);
-  1558 | 
-  1559 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
   1560 |   await expect(page.locator('[data-coach-client-profile-inline="true"]')).toBeVisible();
   1561 |   await expect(page.getByText("פרופיל המשתמש", { exact: true })).toBeVisible();
   1562 | });
@@ -121,8 +62,7 @@ Call log:
   1598 |   await expect(profileMessage).toBeVisible();
   1599 |   const profileMessageText = "הודעה שנשלחה מהפרופיל ונראית למתאמנת";
   1600 |   await profileMessage.getByPlaceholder("כתבי הודעה למתאמן...").fill(profileMessageText);
-> 1601 |   await profileMessage.getByRole("button", { name: "שלח", exact: true }).click();
-       |              ^ Error: page.goto: Page crashed
+  1601 |   await profileMessage.getByRole("button", { name: "שלח", exact: true }).click();
   1602 |   await expect
   1603 |     .poll(async () =>
   1604 |       page.evaluate((key) => window.localStorage.getItem(key), "ios-smoke.remote-coach-messages"),
@@ -181,7 +121,8 @@ Call log:
   1657 |     },
   1658 |   });
   1659 | 
-  1660 |   await page.goto("/");
+> 1660 |   await page.goto("/");
+       |              ^ Error: page.goto: Page crashed
   1661 |   const broadcast = page.getByTestId("broadcast-message-banner");
   1662 |   await expect(broadcast).toContainText("הודעת תפוצה לבדיקה");
   1663 |   await expect.poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads())).toBe(0);
@@ -223,4 +164,63 @@ Call log:
   1699 |     bootCacheValue: reopenBootCacheValue,
   1700 |     pendingChanges: true,
   1701 |     trackBootCacheTiming: true,
+  1702 |   });
+  1703 | 
+  1704 |   await page.goto("/");
+  1705 |   const coachNav = page.getByTestId("link-nav-coach");
+  1706 |   await expect(coachNav).toBeVisible({ timeout: 20_000 });
+  1707 | 
+  1708 |   await expect
+  1709 |     .poll(() =>
+  1710 |       page.evaluate(() => ({
+  1711 |         workspaceMountedAt: window.__iosSmokeWorkspaceMountedAt,
+  1712 |         fullCacheReadAt: window.__iosSmokeFullCacheReadAt,
+  1713 |       })),
+  1714 |     )
+  1715 |     .toMatchObject({
+  1716 |       workspaceMountedAt: expect.any(Number),
+  1717 |       fullCacheReadAt: expect.any(Number),
+  1718 |     });
+  1719 | 
+  1720 |   const bootTiming = await page.evaluate(() => ({
+  1721 |     workspaceMountedAt: window.__iosSmokeWorkspaceMountedAt,
+  1722 |     fullCacheReadAt: window.__iosSmokeFullCacheReadAt,
+  1723 |   }));
+  1724 |   expect(bootTiming.workspaceMountedAt).toBeLessThan(bootTiming.fullCacheReadAt);
+  1725 | 
+  1726 |   await expect
+  1727 |     .poll(() => page.evaluate(() => window.__iosSmokeInitialPullCompleteAt))
+  1728 |     .not.toBeNull();
+  1729 |   await expect
+  1730 |     .poll(() => page.evaluate(() => window.__iosSmokeFullCacheWriteCount))
+  1731 |     .toBeGreaterThan(0);
+  1732 | 
+  1733 |   const refreshedCache = await page.evaluate(
+  1734 |     (key) => JSON.parse(localStorage.getItem(key) ?? "{}"),
+  1735 |     `gymtrack.v1.user.${COACH_ID}`,
+  1736 |   );
+  1737 |   expect(refreshedCache.foods.length).toBeGreaterThanOrEqual(reopenFullCacheValue.foods.length);
+  1738 |   expect(refreshedCache.workouts[0].items[0].reps).toBe(123);
+  1739 |   expect(refreshedCache.preExitChecklist[0].label).toBe("עריכה מקומית שנשמרת");
+  1740 | });
+  1741 | 
+  1742 | test("active workout values survive leaving and reopening the session", async ({ page }) => {
+  1743 |   await installFixture(page);
+  1744 | 
+  1745 |   await page.goto(`/session/${WORKOUT_ID}`);
+  1746 |   await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
+  1747 | 
+  1748 |   const repsInput = page.locator('input[inputmode="decimal"]').first();
+  1749 |   await repsInput.fill("123");
+  1750 |   await page.keyboard.press("Tab");
+  1751 |   await expect(repsInput).toHaveValue("123");
+  1752 | 
+  1753 |   // Completion feedback belongs to the active workout draft and should follow
+  1754 |   // the workout when the coach navigates away before saving.
+  1755 |   await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
+  1756 |   const workoutNote = page.getByPlaceholder("למשל: עומס קל במרפק ימין בסט האחרון...");
+  1757 |   await expect(workoutNote).toBeVisible();
+  1758 |   await workoutNote.fill("הערת סיום בטיוטת האימון");
+  1759 |   await assertKeyboardVisible(workoutNote);
+  1760 |   await expect(workoutNote).toHaveValue("הערת סיום בטיוטת האימון");
 ```

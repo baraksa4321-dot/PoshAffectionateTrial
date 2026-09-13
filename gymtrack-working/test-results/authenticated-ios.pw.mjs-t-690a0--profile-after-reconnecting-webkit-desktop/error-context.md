@@ -7,7 +7,7 @@
 # Test info
 
 - Name: authenticated-ios.pw.mjs >> trainee sees the message sent from the coach profile after reconnecting
-- Location: gymtrack-working/e2e/authenticated-ios.pw.mjs:1526:1
+- Location: gymtrack-working/e2e/authenticated-ios.pw.mjs:1585:1
 
 # Error details
 
@@ -21,65 +21,6 @@ Call log:
 # Test source
 
 ```ts
-  1431 |     .filter({ hasText: "כף" })
-  1432 |     .first();
-  1433 |   await expect(yogurtReplacement).toContainText("כף");
-  1434 |   const replacementName = (await yogurtReplacement.locator("p").first().textContent())?.trim();
-  1435 |   expect(replacementName).toBeTruthy();
-  1436 |   await yogurtReplacement.click();
-  1437 |   await expect(replacementDialog).toBeHidden();
-  1438 | 
-  1439 |   await traineePage.getByRole("link", { name: "היום שלי", exact: true }).click();
-  1440 |   await traineePage.getByRole("link", { name: "התזונה שלי", exact: true }).click();
-  1441 |   await expect(traineePage).toHaveURL(/\/nutrition/);
-  1442 |   await expect(traineePage.getByText(replacementName, { exact: true })).toBeVisible();
-  1443 |   await expect(traineePage.getByTestId("nutrition-food-quantity").first()).toHaveText(
-  1444 |     /\d+(?:\.\d+)? כף/,
-  1445 |   );
-  1446 | });
-  1447 | 
-  1448 | test("trainee nutrition quantities and macro visibility stay consistent", async ({ page }) => {
-  1449 |   await installFixture(page, { role: "trainee", showCalories: false });
-  1450 | 
-  1451 |   await page.goto("/nutrition");
-  1452 |   const plannedFoodQuantity = page.getByTestId("nutrition-food-quantity").first();
-  1453 |   await expect(plannedFoodQuantity).toBeVisible();
-  1454 |   await expect(plannedFoodQuantity).toHaveText(/\d/);
-  1455 | 
-  1456 |   const plannedMacroGrid = page.getByTestId("nutrition-macro-grid").first();
-  1457 |   const visibleMacroLabels = ["חלבון", "פחמימות", "שומן"];
-  1458 |   for (const [index, label] of visibleMacroLabels.entries()) {
-  1459 |     const macro = plannedMacroGrid.locator("[data-nutrition-macro]").nth(index);
-  1460 |     await expect(macro).toHaveAttribute("data-nutrition-macro", label);
-  1461 |     await expect(macro.locator("[data-nutrition-macro-value]")).toHaveText(/\d/);
-  1462 |   }
-  1463 |   await expect(plannedMacroGrid.locator('[data-nutrition-macro="קלוריות"]')).toHaveCount(0);
-  1464 | 
-  1465 |   await page.getByRole("button", { name: "החלפת מאכל", exact: true }).first().click();
-  1466 |   const replacementDialog = page.getByRole("dialog", { name: "החלפת מאכל" });
-  1467 |   await expect(replacementDialog).toBeVisible();
-  1468 |   const replacementQuantity = replacementDialog.getByTestId("nutrition-food-quantity").first();
-  1469 |   await expect(replacementQuantity).toBeVisible();
-  1470 |   await expect(replacementQuantity).toHaveText(/\d/);
-  1471 |   const replacementMacroGrid = replacementDialog.getByTestId("nutrition-macro-grid").first();
-  1472 |   for (const [index, label] of visibleMacroLabels.entries()) {
-  1473 |     const macro = replacementMacroGrid.locator("[data-nutrition-macro]").nth(index);
-  1474 |     await expect(macro).toHaveAttribute("data-nutrition-macro", label);
-  1475 |     await expect(macro.locator("[data-nutrition-macro-value]")).toHaveText(/\d/);
-  1476 |   }
-  1477 |   await expect(replacementMacroGrid.locator('[data-nutrition-macro="קלוריות"]')).toHaveCount(0);
-  1478 | });
-  1479 | 
-  1480 | test("coach profile resets measurements, activity, and messages when switching trainees", async ({
-  1481 |   page,
-  1482 | }) => {
-  1483 |   await installFixture(page);
-  1484 | 
-  1485 |   await page.goto("/");
-  1486 |   await page.getByTestId("link-nav-coach").click();
-  1487 |   await expect(page).toHaveURL(/\/coach\/clients/);
-  1488 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת");
-  1489 | 
   1490 |   await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
   1491 |   const workspace = page.locator('[data-coach-workspace="true"]');
   1492 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
@@ -121,8 +62,7 @@ Call log:
   1528 |   await expect(profile).not.toContainText("כל הכבוד על ההתמדה השבוע");
   1529 |   await expect(profile).not.toContainText("מתאמנת בדיקה");
   1530 | });
-> 1531 | 
-       |              ^ Error: page.goto: Page crashed
+  1531 | 
   1532 | test("coach profile retry recovers after a temporary trainee data failure", async ({ page }) => {
   1533 |   await installFixture(page, { failSelectedTraineeDataOnce: true });
   1534 | 
@@ -181,7 +121,8 @@ Call log:
   1587 | }) => {
   1588 |   await installFixture(page);
   1589 | 
-  1590 |   await page.goto("/");
+> 1590 |   await page.goto("/");
+       |              ^ Error: page.goto: Page crashed
   1591 |   await page.getByTestId("link-nav-coach").click();
   1592 |   await expect(page).toHaveURL(/\/coach\/clients/);
   1593 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("בדיקה");
@@ -223,4 +164,63 @@ Call log:
   1629 |   const reopenedMessage = page.getByTestId("coach-message-banner");
   1630 |   await expect(reopenedMessage).toContainText("כל הכבוד על ההתמדה השבוע");
   1631 |   await expect.poll(() => page.evaluate(() => window.__iosSmokeCoachMessageReads())).toBe(0);
+  1632 | 
+  1633 |   await page.evaluate(() => window.__iosSmokeSetOnline(true));
+  1634 |   await expect
+  1635 |     .poll(() => page.evaluate(() => window.__iosSmokeCoachMessageReads()))
+  1636 |     .toBeGreaterThan(0);
+  1637 |   await expect(reopenedMessage).toContainText("כל הכבוד על ההתמדה השבוע");
+  1638 |   await expect
+  1639 |     .poll(async () => {
+  1640 |       const cached = await page.evaluate(
+  1641 |         (key) => JSON.parse(window.localStorage.getItem(key) ?? "{}"),
+  1642 |         "gymtrack.v1.user.ios-smoke-client",
+  1643 |       );
+  1644 |       return cached.coachMessages?.length ?? 0;
+  1645 |     })
+  1646 |     .toBe(1);
+  1647 | });
+  1648 | 
+  1649 | test("trainee reopens a broadcast notice offline before reconnect refresh", async ({ page }) => {
+  1650 |   const refreshedBroadcastText = "הודעת תפוצה לאחר רענון reconnect";
+  1651 |   await installFixture(page, {
+  1652 |     role: "trainee",
+  1653 |     broadcastAnnouncementAfterReconnect: {
+  1654 |       ...broadcastAnnouncement,
+  1655 |       message: refreshedBroadcastText,
+  1656 |       created_at: "2026-08-25T09:00:00.000Z",
+  1657 |     },
+  1658 |   });
+  1659 | 
+  1660 |   await page.goto("/");
+  1661 |   const broadcast = page.getByTestId("broadcast-message-banner");
+  1662 |   await expect(broadcast).toContainText("הודעת תפוצה לבדיקה");
+  1663 |   await expect.poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads())).toBe(0);
+  1664 | 
+  1665 |   await page.reload();
+  1666 |   const reopenedBroadcast = page.getByTestId("broadcast-message-banner");
+  1667 |   await expect(reopenedBroadcast).toContainText("הודעת תפוצה לבדיקה");
+  1668 |   await expect.poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads())).toBe(0);
+  1669 | 
+  1670 |   await page.evaluate(() => window.__iosSmokeSetOnline(true));
+  1671 |   await expect
+  1672 |     .poll(() => page.evaluate(() => window.__iosSmokeBroadcastReads()))
+  1673 |     .toBeGreaterThan(0);
+  1674 |   await expect(reopenedBroadcast).toContainText(refreshedBroadcastText);
+  1675 |   await expect
+  1676 |     .poll(async () => {
+  1677 |       const cached = await page.evaluate(
+  1678 |         (key) => JSON.parse(window.localStorage.getItem(key) ?? "{}"),
+  1679 |         "gymtrack.v1.user.ios-smoke-client",
+  1680 |       );
+  1681 |       return cached.broadcasts?.length ?? 0;
+  1682 |     })
+  1683 |     .toBe(1);
+  1684 |   await expect
+  1685 |     .poll(async () => {
+  1686 |       const cached = await page.evaluate(
+  1687 |         (key) => JSON.parse(window.localStorage.getItem(key) ?? "{}"),
+  1688 |         "gymtrack.v1.user.ios-smoke-client",
+  1689 |       );
+  1690 |       return cached.broadcasts?.[0]?.message ?? null;
 ```

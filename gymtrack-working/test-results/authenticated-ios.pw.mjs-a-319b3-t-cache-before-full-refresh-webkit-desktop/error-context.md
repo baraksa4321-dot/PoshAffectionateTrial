@@ -7,7 +7,7 @@
 # Test info
 
 - Name: authenticated-ios.pw.mjs >> authenticated workspace paints from the boot cache before full refresh
-- Location: gymtrack-working/e2e/authenticated-ios.pw.mjs:1636:1
+- Location: gymtrack-working/e2e/authenticated-ios.pw.mjs:1695:1
 
 # Error details
 
@@ -21,65 +21,6 @@ Call log:
 # Test source
 
 ```ts
-  1545 |     timeout: 20_000,
-  1546 |   });
-  1547 |   await expect(workspace).toHaveAttribute("aria-busy", "false");
-  1548 |   await expect(detailsError).toBeVisible();
-  1549 |   await expect(detailsError).toContainText("temporary selected trainee data failure");
-  1550 |   await expect(workspace.getByTestId("coach-client-details-loading")).toHaveCount(0);
-  1551 | 
-  1552 |   await page.getByTestId("coach-client-details-retry").click();
-  1553 |   await expect(workspace).toHaveAttribute("data-coach-details-state", "ready", {
-  1554 |     timeout: 20_000,
-  1555 |   });
-  1556 |   await expect(workspace.getByTestId("coach-client-details-ready")).toBeVisible();
-  1557 |   await expect(detailsError).toHaveCount(0);
-  1558 | 
-  1559 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
-  1560 |   await expect(page.locator('[data-coach-client-profile-inline="true"]')).toBeVisible();
-  1561 |   await expect(page.getByText("פרופיל המשתמש", { exact: true })).toBeVisible();
-  1562 | });
-  1563 | 
-  1564 | test("authenticated core routes remain usable across responsive widths", async ({ page }) => {
-  1565 |   await installFixture(page);
-  1566 | 
-  1567 |   const routes = [
-  1568 |     { path: "/workouts", marker: "האימונים שלי" },
-  1569 |     { path: "/programs", marker: "התוכניות שלך" },
-  1570 |     { path: "/exercises", marker: "תרגילים" },
-  1571 |     { path: "/nutrition", marker: "יומן תזונה" },
-  1572 |   ];
-  1573 | 
-  1574 |   await page.goto("/coach/clients");
-  1575 |   await expect(page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" })).toBeVisible();
-  1576 | 
-  1577 |   for (const route of routes) {
-  1578 |     await page.goto(route.path);
-  1579 |     await expect(page.getByRole("heading", { name: route.marker, exact: true })).toBeVisible({
-  1580 |       timeout: 20_000,
-  1581 |     });
-  1582 |   }
-  1583 | });
-  1584 | 
-  1585 | test("trainee sees the message sent from the coach profile after reconnecting", async ({
-  1586 |   page,
-  1587 | }) => {
-  1588 |   await installFixture(page);
-  1589 | 
-  1590 |   await page.goto("/");
-  1591 |   await page.getByTestId("link-nav-coach").click();
-  1592 |   await expect(page).toHaveURL(/\/coach\/clients/);
-  1593 |   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("בדיקה");
-  1594 |   await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
-  1595 |   await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
-  1596 | 
-  1597 |   const profileMessage = page.getByTestId("coach-client-message-profile");
-  1598 |   await expect(profileMessage).toBeVisible();
-  1599 |   const profileMessageText = "הודעה שנשלחה מהפרופיל ונראית למתאמנת";
-  1600 |   await profileMessage.getByPlaceholder("כתבי הודעה למתאמן...").fill(profileMessageText);
-  1601 |   await profileMessage.getByRole("button", { name: "שלח", exact: true }).click();
-  1602 |   await expect
-  1603 |     .poll(async () =>
   1604 |       page.evaluate((key) => window.localStorage.getItem(key), "ios-smoke.remote-coach-messages"),
   1605 |     )
   1606 |     .toContain(profileMessageText);
@@ -121,8 +62,7 @@ Call log:
   1642 |         "gymtrack.v1.user.ios-smoke-client",
   1643 |       );
   1644 |       return cached.coachMessages?.length ?? 0;
-> 1645 |     })
-       |              ^ Error: page.goto: Page crashed
+  1645 |     })
   1646 |     .toBe(1);
   1647 | });
   1648 | 
@@ -181,7 +121,8 @@ Call log:
   1701 |     trackBootCacheTiming: true,
   1702 |   });
   1703 | 
-  1704 |   await page.goto("/");
+> 1704 |   await page.goto("/");
+       |              ^ Error: page.goto: Page crashed
   1705 |   const coachNav = page.getByTestId("link-nav-coach");
   1706 |   await expect(coachNav).toBeVisible({ timeout: 20_000 });
   1707 | 
@@ -223,4 +164,59 @@ Call log:
   1743 |   await installFixture(page);
   1744 | 
   1745 |   await page.goto(`/session/${WORKOUT_ID}`);
+  1746 |   await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
+  1747 | 
+  1748 |   const repsInput = page.locator('input[inputmode="decimal"]').first();
+  1749 |   await repsInput.fill("123");
+  1750 |   await page.keyboard.press("Tab");
+  1751 |   await expect(repsInput).toHaveValue("123");
+  1752 | 
+  1753 |   // Completion feedback belongs to the active workout draft and should follow
+  1754 |   // the workout when the coach navigates away before saving.
+  1755 |   await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
+  1756 |   const workoutNote = page.getByPlaceholder("למשל: עומס קל במרפק ימין בסט האחרון...");
+  1757 |   await expect(workoutNote).toBeVisible();
+  1758 |   await workoutNote.fill("הערת סיום בטיוטת האימון");
+  1759 |   await assertKeyboardVisible(workoutNote);
+  1760 |   await expect(workoutNote).toHaveValue("הערת סיום בטיוטת האימון");
+  1761 |   await page.keyboard.press("Escape");
+  1762 |   await expect(workoutNote).toBeHidden();
+  1763 | 
+  1764 |   const firstExercise = page.locator("article").first();
+  1765 |   await firstExercise.getByRole("button", { name: "קל", exact: true }).click();
+  1766 |   const exerciseNote = firstExercise.getByPlaceholder("כאב, אי־נוחות או הערה למאמנת...");
+  1767 |   await exerciseNote.fill("הערת תרגיל בטיוטה");
+  1768 |   await expect(exerciseNote).toHaveValue("הערת תרגיל בטיוטה");
+  1769 | 
+  1770 |   await page.goto("/programs");
+  1771 |   // TanStack can finish the document navigation before the route's client
+  1772 |   // transition settles on WebKit. Wait for visible route content before
+  1773 |   // starting the next navigation, otherwise WebKit reports an interrupted
+  1774 |   // goto even though the app is healthy.
+  1775 |   await expect(page.getByText("התוכניות שלך", { exact: true })).toBeVisible();
+  1776 |   await page.goto(`/session/${WORKOUT_ID}`);
+  1777 |   await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
+  1778 |   await page.reload();
+  1779 |   await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
+  1780 |   await expect(page.locator('input[inputmode="decimal"]').first()).toHaveValue("123");
+  1781 | 
+  1782 |   const reopenedFirstExercise = page.locator("article").first();
+  1783 |   await expect(reopenedFirstExercise.getByRole("button", { name: "קל", exact: true })).toHaveClass(
+  1784 |     /border-primary/,
+  1785 |   );
+  1786 |   await expect(
+  1787 |     reopenedFirstExercise.getByPlaceholder("כאב, אי־נוחות או הערה למאמנת..."),
+  1788 |   ).toHaveValue("הערת תרגיל בטיוטה");
+  1789 | 
+  1790 |   // Reopening the completion sheet restores the unfinished workout note.
+  1791 |   await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
+  1792 |   const reopenedWorkoutNote = page.getByPlaceholder("למשל: עומס קל במרפק ימין בסט האחרון...");
+  1793 |   await expect(reopenedWorkoutNote).toHaveValue("הערת סיום בטיוטת האימון");
+  1794 |   await page.getByRole("button", { name: "אישור ושמירת אימון" }).click();
+  1795 |   await expect(page).toHaveURL(/\/programs/);
+  1796 |   await expect
+  1797 |     .poll(() => page.evaluate((key) => localStorage.getItem(key), ACTIVE_SESSION_FEEDBACK_KEY))
+  1798 |     .toBeNull();
+  1799 | });
+  1800 | 
 ```
