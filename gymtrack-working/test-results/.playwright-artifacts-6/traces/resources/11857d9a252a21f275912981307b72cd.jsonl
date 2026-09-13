@@ -1,4 +1,0 @@
-{"type":"receive","time":1789288968987.7156,"opcode":1,"data":"{\"type\":\"connected\"}"}
-{"type":"send","time":1789288969922.4507,"opcode":1,"data":"{\"type\":\"custom\",\"event\":\"vite:forward-console\",\"data\":{\"type\":\"log\",\"data\":{\"level\":\"warn\",\"message\":\"[Realtime channel_error]: scheduling an automatic resubscription\"}}}"}
-{"type":"send","time":1789288971226.2517,"opcode":1,"data":"{\"type\":\"custom\",\"event\":\"vite:forward-console\",\"data\":{\"type\":\"log\",\"data\":{\"level\":\"warn\",\"message\":\"[Coach client realtime channel_error]: scheduling an automatic resubscription\"}}}"}
-{"type":"send","time":1789288971227.7896,"opcode":1,"data":"{\"type\":\"custom\",\"event\":\"vite:forward-console\",\"data\":{\"type\":\"log\",\"data\":{\"level\":\"warn\",\"message\":\"[Coach client realtime channel_error]: scheduling an automatic resubscription\"}}}"}
