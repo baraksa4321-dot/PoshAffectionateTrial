@@ -59,7 +59,6 @@ import {
   isKeyboardEditableElement,
 } from "../lib/keyboard-viewport";
 
-const WORKSPACE_KEY = "gymtrack.workspace";
 const FULL_NAME_REQUIRED_ERROR = "יש להזין שם פרטי ושם משפחה כדי ליצור חשבון.";
 
 type ProfileDraft = {
@@ -80,10 +79,6 @@ function profileDraftFrom(profile?: UserProfile): ProfileDraft {
     gender: profile?.gender ?? "female",
     coachId: profile?.coachId ?? "",
   };
-}
-
-function isManagementPath(pathname: string) {
-  return /(^|\/)(coach|exercises)(\/|$)/.test(pathname);
 }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -165,7 +160,6 @@ export function AppShell({
   const location = useLocation();
   const navigate = useNavigate();
   const router = useRouter();
-  const isManagementRoute = isManagementPath(location.pathname);
   const showHomeOnlyHeaderControls =
     location.pathname === "/" || location.pathname === "/coach";
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -173,13 +167,6 @@ export function AppShell({
   const topbarRef = useRef<HTMLElement>(null);
   const mainRef = useRef<HTMLElement>(null);
 
-  const [activeMode, setActiveMode] = useState<"personal" | "management">(() => {
-    if (typeof window === "undefined") return "personal";
-    if (isManagementPath(window.location.pathname)) return "management";
-    return window.sessionStorage.getItem(WORKSPACE_KEY) === "management"
-      ? "management"
-      : "personal";
-  });
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [themeError, setThemeError] = useState("");
   const [guestTheme, setGuestTheme] = useState<ThemePalette>(
@@ -192,7 +179,7 @@ export function AppShell({
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("gymtrack.night-mode") === "true";
   });
-  const managementView = isCoach && (activeMode === "management" || isManagementRoute);
+  const managementView = isCoach;
   const SyncIcon = cloudSyncStatus === "offline" ? CloudOff : Cloud;
   const syncIconClass =
     cloudSyncStatus === "offline"
@@ -216,20 +203,6 @@ export function AppShell({
           : cloudSyncStatus === "error"
             ? "השינויים נשמרו במכשיר — הסנכרון דורש תשומת לב"
             : "הנתונים מסונכרנים";
-
-  useEffect(() => {
-    if (isManagementRoute) {
-      setActiveMode("management");
-      window.sessionStorage.setItem(WORKSPACE_KEY, "management");
-    }
-  }, [isManagementRoute]);
-
-  const setWorkspace = (workspace: "personal" | "management") => {
-    setActiveMode(workspace);
-    if (typeof window !== "undefined") {
-      window.sessionStorage.setItem(WORKSPACE_KEY, workspace);
-    }
-  };
 
   useEffect(() => {
     applyTheme(theme);
