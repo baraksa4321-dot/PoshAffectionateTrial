@@ -1267,7 +1267,10 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   const fourthSet = page.getByText("סט 4", { exact: true }).locator("..").locator("..");
   await fourthSet.getByRole("textbox", { name: "חזרות מינ׳", exact: true }).fill("8");
   await fourthSet.getByRole("textbox", { name: "חזרות מקס׳", exact: true }).fill("12");
-  await page.getByRole("button", { name: "שמור שינויי תרגיל", exact: true }).click();
+  await expect(page.getByText("השינויים עודכנו אוטומטית.", { exact: true })).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.getByRole("button", { name: "ביטול עריכה", exact: true }).click();
 
   await page.getByRole("button", { name: "עריכה", exact: true }).first().click();
   await expect(page.getByText("עריכת תרגיל באימון", { exact: true })).toBeVisible();
@@ -1396,13 +1399,19 @@ test("household portions stay correct across coach save and trainee replacement"
   await page.getByRole("tab", { name: "תפריט תזונה" }).click();
   const menu = page.locator("#coach-menu");
   await expect(menu).toBeVisible();
+  await menu.getByRole("button", { name: "פתח את ארוחת בדיקה", exact: true }).click();
   await expect(menu.getByText("2 כף", { exact: true })).toBeVisible();
 
   const addFood = async (searchTerm, unit, quantity) => {
     await menu.getByRole("button", { name: "+ מאכל", exact: true }).first().click();
     const foodSearch = menu.locator('input[type="search"][id^="menu-food-search-"]').first();
     await foodSearch.fill(searchTerm);
-    await menu.getByRole("option", { name: new RegExp(searchTerm) }).first().click();
+    const foodOption = menu.getByRole("option", { name: new RegExp(searchTerm) }).first();
+    await expect(foodOption).toBeVisible();
+    // On narrow WebKit/Chromium viewports, the virtual keyboard can detach
+    // the result while Playwright is auto-scrolling it into view. The option
+    // is already visible here, so avoid a second layout-driven scroll.
+    await foodOption.click({ force: true });
     const unitSelect = menu.getByRole("combobox", { name: "יחידת מידה למאכל" });
     await expect(unitSelect).toBeVisible();
     await unitSelect.selectOption(unit);
@@ -1429,9 +1438,9 @@ test("household portions stay correct across coach save and trainee replacement"
     ).toHaveText(value);
   }
 
-  const saveMenuButton = menu.getByRole("button", { name: "שמרי תפריט", exact: true });
-  await saveMenuButton.click();
-  await expect(saveMenuButton).toHaveText("שמרי תפריט");
+  await expect(menu).toContainText("התפריט נשמר ויופיע למתאמן במסך התזונה האישי.", {
+    timeout: 20_000,
+  });
   await expect(menu).toContainText("יוגורט טבעי");
 
   await page.getByRole("button", { name: "סגירת תכנית המתאמן" }).click();
@@ -1441,12 +1450,14 @@ test("household portions stay correct across coach save and trainee replacement"
     timeout: 20_000,
   });
   await page.getByRole("tab", { name: "תפריט תזונה" }).click();
-  await expect(page.locator("#coach-menu")).toContainText("יוגורט טבעי");
-  await expect(page.locator("#coach-menu")).toContainText("1 יחידה");
-  await expect(page.locator("#coach-menu")).toContainText("1 כף");
-  await expect(page.locator("#coach-menu")).toContainText("1 כוס");
-  await expect(page.locator("#coach-menu")).toContainText("2 פרוסה");
-  await expect(page.locator("#coach-menu")).toContainText("1 כוס");
+  const reopenedMenu = page.locator("#coach-menu");
+  await reopenedMenu.getByRole("button", { name: "פתח את ארוחת בדיקה", exact: true }).click();
+  await expect(reopenedMenu).toContainText("יוגורט טבעי");
+  await expect(reopenedMenu).toContainText("1 יחידה");
+  await expect(reopenedMenu).toContainText("1 כף");
+  await expect(reopenedMenu).toContainText("1 כוס");
+  await expect(reopenedMenu).toContainText("2 פרוסה");
+  await expect(reopenedMenu).toContainText("1 כוס");
 
   const savedPlannedMenu = await page.evaluate(() => window.__iosSmokeGetPlannedMenu?.());
   const traineePage = await page.context().newPage();
@@ -1474,7 +1485,7 @@ test("household portions stay correct across coach save and trainee replacement"
   await traineePage.getByRole("link", { name: "היום שלי", exact: true }).click();
   await traineePage.getByRole("link", { name: "התזונה שלי", exact: true }).click();
   await expect(traineePage).toHaveURL(/\/nutrition/);
-  await expect(traineePage.getByText(replacementName, { exact: true })).toBeVisible();
+  await expect(traineePage.getByText(replacementName, { exact: true }).first()).toBeVisible();
   await expect(traineePage.getByTestId("nutrition-food-quantity").first()).toHaveText(
     /\d+(?:\.\d+)? כף/,
   );

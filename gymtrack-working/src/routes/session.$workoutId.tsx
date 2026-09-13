@@ -1060,6 +1060,21 @@ function Session() {
       const restSec = restForWorkoutSet(workout.items[ei], setNumber - 1);
       startRestTimer(restSec);
       setRestExpanded(true);
+    } else if (
+      smartTimerPosition?.exerciseIndex === ei &&
+      smartTimerPosition.setNumber ===
+        (entries[ei]?.sets.slice(0, si + 1).filter((set) => !set.warmup).length ?? 1)
+    ) {
+      // The active rest period belongs to this completed set. If the user
+      // undoes that completion, stop the stale timer instead of leaving a
+      // floating expanded control over the workout actions.
+      setRest(0);
+      setRestEndsAt(null);
+      setRestFinished(false);
+      setRestPaused(false);
+      setSmartTimerPosition(null);
+      setSmartTimerStarted(false);
+      setRestExpanded(false);
     }
   };
 

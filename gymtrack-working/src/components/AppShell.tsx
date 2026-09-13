@@ -154,9 +154,9 @@ export function AppShell({
   pageClassName?: string | undefined;
   children: ReactNode;
 }) {
-  usePersistentFormDrafts();
   const store = useGym();
   const user = useAuthUser();
+  usePersistentFormDrafts(user?.id ?? "guest");
   const cloudSyncStatus = useCloudSyncStatus();
   const syncConflicts = useSyncConflicts().filter((conflict) => conflict.status === "unresolved");
   const role = store.userProfile?.role;
@@ -1052,9 +1052,10 @@ export function AppShell({
                     אישי
                   </Link>
                   <Link
-                    to="/coach"
+                    to="/coach/clients"
                     preload="intent"
                     onClick={() => setWorkspace("management")}
+                    data-testid="link-nav-coach"
                     aria-current={activeMode === "management" ? "page" : undefined}
                     className={`press min-w-20 rounded-full px-3 ${
                       compactHeader ? "py-1 text-[10px]" : "py-1.5 text-[11px]"

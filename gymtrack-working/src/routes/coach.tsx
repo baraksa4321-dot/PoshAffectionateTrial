@@ -2094,6 +2094,7 @@ export function CoachDashboardPage({
   const measurementDraftDirtyRef = useRef(false);
   const profileDraftDirtyRef = useRef(false);
   const plannedMealsDraftDirtyRef = useRef(false);
+  const plannedMenuOwnerRef = useRef<string | null>(null);
   const editorRefreshLockRef = useRef(false);
   const refreshQueuedWhileEditingRef = useRef(false);
   const wasRefreshBlockedRef = useRef(false);
@@ -2158,6 +2159,7 @@ export function CoachDashboardPage({
   useEffect(() => {
     if (draftOwnerRef.current === selectedClientId) return;
     draftOwnerRef.current = selectedClientId;
+    plannedMenuOwnerRef.current = null;
     setShowClientProfile(false);
     measurementDraftDirtyRef.current = false;
     profileDraftDirtyRef.current = false;
@@ -2721,6 +2723,16 @@ export function CoachDashboardPage({
     void pullClientDataForCoach(selectedClientId)
       .then((res) => {
         if (!active) return;
+        if (editorRefreshLockRef.current) {
+          // A cached client can become editable before the initial remote
+          // refresh resolves. Do not replace the editor state underneath the
+          // user; the queued refresh effect will apply this result after the
+          // editor closes.
+          refreshQueuedWhileEditingRef.current = true;
+          setLoadingDetails(false);
+          setClientRefreshInFlight(false);
+          return;
+        }
         applyClientDetails(res);
         if (!res.error && authUser?.id) {
           writeCoachClientCache(authUser.id, selectedClientId, res);
@@ -3137,12 +3149,16 @@ export function CoachDashboardPage({
     // never reach the trainee.
     if (plannedMealsDraftDirtyRef.current) return;
     setPlannedMeals(clientDetails?.plannedMeals ?? []);
-    setMenuFoodMealId(null);
-    setExpandedMenuMealIds(new Set());
-    setMenuFoodId("");
-    setMenuFoodQuery("");
-    setMenuNotice("");
-  }, [clientDetails]);
+    const ownerChanged = plannedMenuOwnerRef.current !== selectedClientId;
+    plannedMenuOwnerRef.current = selectedClientId;
+    if (ownerChanged) {
+      setMenuFoodMealId(null);
+      setExpandedMenuMealIds(new Set());
+      setMenuFoodId("");
+      setMenuFoodQuery("");
+      setMenuNotice("");
+    }
+  }, [clientDetails, selectedClientId]);
 
   useEffect(() => {
     plannedMealsDraftRef.current = plannedMeals;

@@ -1445,7 +1445,8 @@ function load() {
         Boolean(nextUserId) &&
         nextUserId === prevUserId &&
         authStatus === "authenticated" &&
-        profileHydrationStatus !== "loading";
+        profileHydrationStatus !== "loading" &&
+        !authResolutionAwaitingInitialEvent;
       if (sameReadyUser) return;
       currentUser = session?.user
         ? {
