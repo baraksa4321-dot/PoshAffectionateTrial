@@ -1343,7 +1343,7 @@ function load() {
     }
 
     let authTimeoutId: number | null = null;
-    const resumeCachedUser = () => {
+    const resumeCachedUser = (awaitInitialAuthEvent = false) => {
       if (!offlineResumeUser) return false;
       const cached = resetDataForUser(offlineResumeUser.id);
       if (!hasUsableOfflineCache(cached.data)) {
@@ -1355,7 +1355,7 @@ function load() {
       const resumedUser = offlineResumeUser;
       currentUser = resumedUser;
       authResolved = true;
-      authResolutionAwaitingInitialEvent = false;
+      authResolutionAwaitingInitialEvent = awaitInitialAuthEvent;
       authStatus = "authenticated";
       void startUserHydration(resumedUser.id, cached.data, cached.cacheKind);
       return true;
@@ -1378,7 +1378,7 @@ function load() {
     ])
       .then(({ data: { session }, error }) => {
         if (error) {
-          if (resumeCachedUser()) return;
+          if (resumeCachedUser(true)) return;
           // A timeout/error must not leave INITIAL_SESSION ignored forever.
           // Supabase can still deliver the real session through the auth
           // listener after a slow getSession request finishes.
@@ -1391,7 +1391,7 @@ function load() {
           listeners.forEach((l) => l());
           return;
         }
-        if (!session?.user && resumeCachedUser()) return;
+        if (!session?.user && browserIsOffline() && resumeCachedUser()) return;
         currentUser = session?.user
           ? {
               id: session.user.id,
@@ -1414,7 +1414,7 @@ function load() {
         notifyListeners();
       })
       .catch(() => {
-        if (resumeCachedUser()) return;
+        if (resumeCachedUser(true)) return;
         authResolved = true;
         authResolutionAwaitingInitialEvent = true;
         currentUser = null;
