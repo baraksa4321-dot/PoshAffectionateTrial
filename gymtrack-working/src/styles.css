@@ -9185,3 +9185,75 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
     max-width: 34rem;
   }
 }
+
+/* -------------------------------------------------------------------------
+ * Finish pass
+ * Small interaction and rendering details that make the existing visual
+ * language feel intentional without changing layout or behavior.
+ * ------------------------------------------------------------------------- */
+:where(html, body, #root) {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:where(button, a, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 72%, white 28%);
+  outline-offset: 3px;
+}
+
+:where(button, a) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dashboard-editorial-shell .dashboard-quick-actions .bodyweight-header-toggle {
+  min-height: 2.65rem;
+  border-color: color-mix(in srgb, var(--primary) 20%, var(--border));
+  background: color-mix(in srgb, var(--primary) 5%, var(--surface));
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.dashboard-editorial-shell .dashboard-quick-actions .bodyweight-header-toggle:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.dashboard-editorial-shell .home-primary-card > .ink-card button,
+.dashboard-editorial-shell .home-secondary-card,
+.dashboard-editorial-shell .dashboard-quick-actions .bodyweight-header-toggle {
+  touch-action: manipulation;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dashboard-editorial-shell .home-secondary-card:hover {
+    border-color: color-mix(in srgb, var(--rose) 30%, var(--border));
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 92%),
+      0 10px 22px rgb(var(--shadow-color) / 8%);
+    transform: translateY(-1px);
+  }
+
+  .dashboard-editorial-shell .home-primary-card > .ink-card button:hover {
+    box-shadow: 0 7px 15px rgb(122 54 55 / 17%);
+    transform: translateY(-1px);
+  }
+
+  .dashboard-editorial-shell .dashboard-quick-actions .bodyweight-header-toggle:hover {
+    border-color: color-mix(in srgb, var(--primary) 38%, var(--border));
+    background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+    box-shadow: 0 4px 10px rgb(var(--shadow-color) / 6%);
+    color: var(--primary);
+    transform: translateY(-1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-editorial-shell .home-secondary-card,
+  .dashboard-editorial-shell .home-primary-card > .ink-card button,
+  .dashboard-editorial-shell .dashboard-quick-actions .bodyweight-header-toggle {
+    transition: none;
+  }
+}

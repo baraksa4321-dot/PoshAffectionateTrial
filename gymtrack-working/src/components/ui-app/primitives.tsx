@@ -59,7 +59,7 @@ export function ListRow({
       <a
         href={href}
           className={cn(
-            "ui-card surface-card press block px-3.5 py-3 border-r-2 border-r-transparent hover:border-r-primary transition-all",
+            "ui-card surface-card press block px-3.5 py-3 border-r-2 border-r-transparent hover:border-r-primary transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2",
           className,
         )}
       >
@@ -73,7 +73,7 @@ export function ListRow({
         type="button"
         onClick={onClick}
           className={cn(
-            "ui-card surface-card press block w-full px-3.5 py-3 text-start border-r-2 border-r-transparent hover:border-r-primary transition-all",
+            "ui-card surface-card press block w-full px-3.5 py-3 text-start border-r-2 border-r-transparent hover:border-r-primary transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2",
           className,
         )}
       >
