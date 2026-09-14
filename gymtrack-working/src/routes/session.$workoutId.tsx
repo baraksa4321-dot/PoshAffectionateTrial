@@ -66,6 +66,8 @@ import { isSafeVideoSource } from "@/lib/url-security";
 import {
   completedSetForReopenedWorkout,
   getCurrentWeekWorkoutSession,
+  getWeekStart,
+  localDateKey,
   restForWorkoutSet,
   completedSessionVolume,
 } from "@/lib/workout-session";
@@ -122,14 +124,16 @@ function supersetLabels(items: WorkoutItem[]) {
   return labels;
 }
 
-const ACTIVE_SESSION_KEY = (userId: string, id: string) =>
-  `gymtrack.active_session.${userId}.${id}`;
-const ACTIVE_SESSION_STARTED_AT_KEY = (userId: string, id: string) =>
-  `gymtrack.active_session_started_at.${userId}.${id}`;
-const ACTIVE_SESSION_FEEDBACK_KEY = (userId: string, id: string) =>
-  `gymtrack.active_session_feedback.${userId}.${id}`;
-const ACTIVE_REST_TIMER_KEY = (userId: string, id: string) =>
-  `gymtrack.active_rest_timer.${userId}.${id}`;
+const currentWeekKey = (referenceDate = new Date()) =>
+  localDateKey(getWeekStart(referenceDate));
+const ACTIVE_SESSION_KEY = (userId: string, id: string, weekKey: string) =>
+  `gymtrack.active_session.${userId}.${id}.${weekKey}`;
+const ACTIVE_SESSION_STARTED_AT_KEY = (userId: string, id: string, weekKey: string) =>
+  `gymtrack.active_session_started_at.${userId}.${id}.${weekKey}`;
+const ACTIVE_SESSION_FEEDBACK_KEY = (userId: string, id: string, weekKey: string) =>
+  `gymtrack.active_session_feedback.${userId}.${id}.${weekKey}`;
+const ACTIVE_REST_TIMER_KEY = (userId: string, id: string, weekKey: string) =>
+  `gymtrack.active_rest_timer.${userId}.${id}.${weekKey}`;
 const MAX_PERFORMANCE_VIDEO_DURATION_SECONDS = 5 * 60;
 
 type PersistedRestTimer = {
@@ -142,10 +146,14 @@ type PersistedRestTimer = {
   restExpanded: boolean;
 };
 
-function readPersistedRestTimer(userId: string, workoutId: string): PersistedRestTimer | null {
+function readPersistedRestTimer(
+  userId: string,
+  workoutId: string,
+  weekKey: string,
+): PersistedRestTimer | null {
   if (typeof window === "undefined" || !userId) return null;
   try {
-    const raw = window.localStorage.getItem(ACTIVE_REST_TIMER_KEY(userId, workoutId));
+    const raw = window.localStorage.getItem(ACTIVE_REST_TIMER_KEY(userId, workoutId, weekKey));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<PersistedRestTimer>;
     if (!parsed || typeof parsed !== "object") return null;
@@ -171,11 +179,15 @@ function readPersistedRestTimer(userId: string, workoutId: string): PersistedRes
   }
 }
 
-function readPersistedSessionStartedAt(userId: string, workoutId: string): number | null {
+function readPersistedSessionStartedAt(
+  userId: string,
+  workoutId: string,
+  weekKey: string,
+): number | null {
   if (typeof window === "undefined" || !userId) return null;
   try {
     const value = Number(
-      window.localStorage.getItem(ACTIVE_SESSION_STARTED_AT_KEY(userId, workoutId)),
+      window.localStorage.getItem(ACTIVE_SESSION_STARTED_AT_KEY(userId, workoutId, weekKey)),
     );
     return Number.isFinite(value) && value > 0 ? value : null;
   } catch {
@@ -242,14 +254,13 @@ function isFeedbackRating(
 function latestHistoryFeedback(
   history: HistorySession[],
   workoutId: string,
+  referenceDate = new Date(),
 ): SavedSessionFeedback {
   const empty: SavedSessionFeedback = {
     discomfortNotes: "",
     exerciseFeedback: {},
   };
-  const latestSession = history
-    .filter((session) => session.workoutId === workoutId)
-    .sort((a, b) => Date.parse(b.date) - Date.parse(a.date))[0];
+  const latestSession = getCurrentWeekWorkoutSession(history, workoutId, referenceDate);
   if (!latestSession) return empty;
 
   const exerciseFeedback: Record<number, ExerciseFeedbackDraft> = {};
@@ -274,11 +285,14 @@ function loadSavedSessionFeedback(
   userId: string,
   workoutId: string,
   history: HistorySession[] = [],
+  weekKey = currentWeekKey(),
 ): SavedSessionFeedback {
   const historyFallback = latestHistoryFeedback(history, workoutId);
   if (typeof window === "undefined" || !userId) return historyFallback;
   try {
-    const raw = window.localStorage.getItem(ACTIVE_SESSION_FEEDBACK_KEY(userId, workoutId));
+    const raw = window.localStorage.getItem(
+      ACTIVE_SESSION_FEEDBACK_KEY(userId, workoutId, weekKey),
+    );
     if (!raw) return historyFallback;
     try {
       const parsed = JSON.parse(raw) as Partial<SavedSessionFeedback>;
@@ -351,6 +365,16 @@ function Session() {
   const sessionOwnerId = authUser?.id ?? "";
   const { workouts, exercises, history, programs, userProfile } = useGym();
   const gender = userProfile?.gender;
+  const [weekKey, setWeekKey] = useState(() => currentWeekKey());
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      const nextWeekKey = currentWeekKey();
+      setWeekKey((currentWeekKeyValue) =>
+        currentWeekKeyValue === nextWeekKey ? currentWeekKeyValue : nextWeekKey,
+      );
+    }, 30_000);
+    return () => window.clearInterval(intervalId);
+  }, []);
   const workout = workouts.find((w) => w.id === workoutId);
   const currentProgram = programs.find((program) => program.dayIds.includes(workoutId));
   const [cardExercise, setCardExercise] = useState<Exercise | null>(null);
@@ -360,7 +384,7 @@ function Session() {
   );
   const regularWorkoutSnapshot = useRef(workout);
   const bodyweightModeWorkoutIdRef = useRef<string | null>(null);
-  const hydratedEntriesWorkoutIdRef = useRef<string | null>(null);
+  const hydratedEntriesSessionKeyRef = useRef<string | null>(null);
   const hydratedFeedbackWorkoutIdRef = useRef<string | null>(null);
   const summaryNavigationTimerRef = useRef<number | null>(null);
   useEffect(() => {
@@ -399,9 +423,13 @@ function Session() {
   );
   const [difficultyRating, setDifficultyRating] = useState<
     "easy" | "appropriate" | "difficult"
-  >(() => loadSavedSessionFeedback(sessionOwnerId, workoutId, history).difficultyRating ?? "appropriate");
+  >(
+    () =>
+      loadSavedSessionFeedback(sessionOwnerId, workoutId, history, weekKey).difficultyRating ??
+      "appropriate",
+  );
   const [feedbackDraft, setFeedbackDraft] = useState(() => {
-    const saved = loadSavedSessionFeedback(sessionOwnerId, workoutId, history);
+    const saved = loadSavedSessionFeedback(sessionOwnerId, workoutId, history, weekKey);
     return {
       workoutId,
       discomfortNotes: saved.discomfortNotes,
@@ -412,7 +440,7 @@ function Session() {
   const setDiscomfortNotes = (notes: string) =>
     setFeedbackDraft({ workoutId, discomfortNotes: notes });
   const [exerciseFeedback, setExerciseFeedback] = useState<Record<number, ExerciseFeedbackDraft>>(
-    () => loadSavedSessionFeedback(sessionOwnerId, workoutId, history).exerciseFeedback,
+    () => loadSavedSessionFeedback(sessionOwnerId, workoutId, history, weekKey).exerciseFeedback,
   );
 
   const [replacingIndex, setReplacingIndex] = useState<number | null>(null);
@@ -423,7 +451,9 @@ function Session() {
     if (typeof window === "undefined") return [];
 
     try {
-      const saved = window.localStorage.getItem(ACTIVE_SESSION_KEY(sessionOwnerId, workoutId));
+      const saved = window.localStorage.getItem(
+        ACTIVE_SESSION_KEY(sessionOwnerId, workoutId, weekKey),
+      );
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length === workout.items.length) {
@@ -556,24 +586,24 @@ function Session() {
         sets: [...warmups, ...working],
       };
     });
-  }, [workout, exercises, history, workoutId]);
+  }, [workout, exercises, history, workoutId, weekKey]);
 
   const [entries, setEntries] = useState<HistoryEntry[]>(initial);
   useEffect(() => {
-    const saved = loadSavedSessionFeedback(sessionOwnerId, workoutId, history);
+    const saved = loadSavedSessionFeedback(sessionOwnerId, workoutId, history, weekKey);
     setFeedbackDraft({
       workoutId,
       discomfortNotes: saved.discomfortNotes,
     });
     setDifficultyRating(saved.difficultyRating ?? "appropriate");
     setExerciseFeedback(saved.exerciseFeedback);
-  }, [workoutId]);
+  }, [workoutId, weekKey]);
 
   useEffect(() => {
     if (hydratedFeedbackWorkoutIdRef.current === workoutId) return;
     if (!history.some((session) => session.workoutId === workoutId)) return;
 
-    const saved = loadSavedSessionFeedback(sessionOwnerId, workoutId, history);
+    const saved = loadSavedSessionFeedback(sessionOwnerId, workoutId, history, weekKey);
     setFeedbackDraft({
       workoutId,
       discomfortNotes: saved.discomfortNotes,
@@ -581,7 +611,7 @@ function Session() {
     setDifficultyRating(saved.difficultyRating ?? "appropriate");
     setExerciseFeedback(saved.exerciseFeedback);
     hydratedFeedbackWorkoutIdRef.current = workoutId;
-  }, [history, workoutId]);
+  }, [history, weekKey, workoutId]);
 
   useEffect(() => {
     setEntries((current) =>
@@ -593,8 +623,8 @@ function Session() {
       }),
     );
   }, [initial]);
-  const [startedAt] = useState(
-    () => readPersistedSessionStartedAt(sessionOwnerId, workoutId) ?? Date.now(),
+  const [startedAt, setStartedAt] = useState(
+    () => readPersistedSessionStartedAt(sessionOwnerId, workoutId, weekKey) ?? Date.now(),
   );
   const entriesRef = useRef(entries);
   const videoFilesRef = useRef(new Map<number, File>());
@@ -633,7 +663,7 @@ function Session() {
 
   useEffect(() => {
     setRestTimerHydrated(false);
-    const persisted = readPersistedRestTimer(sessionOwnerId, workoutId);
+    const persisted = readPersistedRestTimer(sessionOwnerId, workoutId, weekKey);
     if (persisted) {
       const reconciled = reconcileRestTimer(persisted, Date.now());
       // The interval is suspended while a tab/PWA is in the background. Seed
@@ -662,7 +692,7 @@ function Session() {
       setRestExpanded(false);
     }
     setRestTimerHydrated(true);
-  }, [workoutId]);
+  }, [weekKey, workoutId]);
 
   useEffect(() => {
     if (!restTimerHydrated) return;
@@ -670,11 +700,13 @@ function Session() {
       rest > 0 || restPaused || restFinished || smartTimerStarted || restEndsAt !== null;
     try {
       if (!hasActiveTimer) {
-        window.localStorage.removeItem(ACTIVE_REST_TIMER_KEY(sessionOwnerId, workoutId));
+        window.localStorage.removeItem(
+          ACTIVE_REST_TIMER_KEY(sessionOwnerId, workoutId, weekKey),
+        );
         return;
       }
       window.localStorage.setItem(
-        ACTIVE_REST_TIMER_KEY(sessionOwnerId, workoutId),
+        ACTIVE_REST_TIMER_KEY(sessionOwnerId, workoutId, weekKey),
         JSON.stringify({
           rest,
           restFinished,
@@ -697,6 +729,7 @@ function Session() {
     smartTimerStarted,
     restExpanded,
     restTimerHydrated,
+    weekKey,
     workoutId,
   ]);
 
@@ -894,17 +927,25 @@ function Session() {
   );
 
   useEffect(() => {
-    if (!workout || hydratedEntriesWorkoutIdRef.current === workoutId) return;
-    hydratedEntriesWorkoutIdRef.current = workoutId;
+    const sessionKey = `${workoutId}:${weekKey}`;
+    if (!workout || hydratedEntriesSessionKeyRef.current === sessionKey) return;
+    hydratedEntriesSessionKeyRef.current = sessionKey;
     setEntries(initial);
-  }, [initial, workout, workoutId]);
+  }, [initial, weekKey, workout, workoutId]);
+
+  const startedAtWeekKeyRef = useRef(weekKey);
+  useEffect(() => {
+    if (startedAtWeekKeyRef.current === weekKey) return;
+    startedAtWeekKeyRef.current = weekKey;
+    setStartedAt(readPersistedSessionStartedAt(sessionOwnerId, workoutId, weekKey) ?? Date.now());
+  }, [sessionOwnerId, weekKey, workoutId]);
 
   useEffect(() => {
     if (!workoutId || entries.length === 0) return;
     try {
       if (!sessionOwnerId) return;
       window.localStorage.setItem(
-        ACTIVE_SESSION_KEY(sessionOwnerId, workoutId),
+        ACTIVE_SESSION_KEY(sessionOwnerId, workoutId, weekKey),
         JSON.stringify(entries),
       );
     } catch {
@@ -916,13 +957,13 @@ function Session() {
     if (!workoutId) return;
     try {
       window.localStorage.setItem(
-        ACTIVE_SESSION_STARTED_AT_KEY(sessionOwnerId, workoutId),
+        ACTIVE_SESSION_STARTED_AT_KEY(sessionOwnerId, workoutId, weekKey),
         String(startedAt),
       );
     } catch {
       /* ignore */
     }
-  }, [startedAt, workoutId]);
+  }, [startedAt, weekKey, workoutId]);
 
   useEffect(() => {
     if (
@@ -934,7 +975,7 @@ function Session() {
     }
     try {
       localStorage.setItem(
-        ACTIVE_SESSION_FEEDBACK_KEY(sessionOwnerId, workoutId),
+        ACTIVE_SESSION_FEEDBACK_KEY(sessionOwnerId, workoutId, weekKey),
         JSON.stringify({
           difficultyRating,
           discomfortNotes,
@@ -949,6 +990,7 @@ function Session() {
     discomfortNotes,
     exerciseFeedback,
     feedbackDraft.workoutId,
+    weekKey,
     workoutId,
   ]);
 
@@ -1135,12 +1177,18 @@ function Session() {
 
   const clearSavedSession = () => {
     try {
-      window.localStorage.removeItem(ACTIVE_SESSION_KEY(sessionOwnerId, workout.id));
       window.localStorage.removeItem(
-        ACTIVE_SESSION_STARTED_AT_KEY(sessionOwnerId, workout.id),
+        ACTIVE_SESSION_KEY(sessionOwnerId, workout.id, weekKey),
       );
-      window.localStorage.removeItem(ACTIVE_SESSION_FEEDBACK_KEY(sessionOwnerId, workout.id));
-      window.localStorage.removeItem(ACTIVE_REST_TIMER_KEY(sessionOwnerId, workout.id));
+      window.localStorage.removeItem(
+        ACTIVE_SESSION_STARTED_AT_KEY(sessionOwnerId, workout.id, weekKey),
+      );
+      window.localStorage.removeItem(
+        ACTIVE_SESSION_FEEDBACK_KEY(sessionOwnerId, workout.id, weekKey),
+      );
+      window.localStorage.removeItem(
+        ACTIVE_REST_TIMER_KEY(sessionOwnerId, workout.id, weekKey),
+      );
     } catch {
       /* ignore */
     }
