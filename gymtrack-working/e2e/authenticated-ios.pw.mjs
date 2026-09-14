@@ -744,6 +744,7 @@ async function installFixture(
       };
       window.__iosSmokeVideoUploadStarted = false;
       window.__iosSmokeVideoUploadCompleted = false;
+      let workoutVideoSignCount = 0;
       let coachMessageReads = 0;
       window.__iosSmokeCoachMessageReads = () => coachMessageReads;
       let broadcastReads = 0;
@@ -766,9 +767,10 @@ async function installFixture(
         }
         if (url.includes("/storage/v1/")) {
           if (url.includes("/object/sign/")) {
+            const signToken = workoutVideoSignCount++ === 0 ? "expired" : "fresh";
             return new Response(
               JSON.stringify({
-                signedURL: "/storage/v1/object/sign/workout-videos/ios-smoke-video",
+                signedURL: `/storage/v1/object/sign/workout-videos/ios-smoke-video?token=${signToken}`,
               }),
               {
                 status: 200,
@@ -2318,7 +2320,11 @@ test("authenticated roles approve challenges and keep a video workout readable",
         return rows.some(
           (row) =>
             row.workout_id === "ios-smoke-workout" &&
-            row.entries?.some((entry) => entry.video_path),
+            row.entries?.some(
+              (entry) =>
+                typeof entry.videoUrl === "string" &&
+                !entry.videoUrl.startsWith("http"),
+            ),
         );
       }),
     )
@@ -2329,4 +2335,87 @@ test("authenticated roles approve challenges and keep a video workout readable",
   await traineePage.goto("/");
   await expect(traineePage.getByText("פעילות השבוע", { exact: true })).toBeVisible();
   await expect(traineePage.getByText(/1 אימונים בוצעו השבוע/)).toBeVisible();
+});
+
+test("iPhone trainee video survives upload, expired signed URL, and history reopen", async ({
+  page,
+}) => {
+  await installFixture(page, { role: "trainee", online: true });
+  let signedVideoRequests = 0;
+  await page.route(
+    "**/storage/v1/object/sign/workout-videos/ios-smoke-video**",
+    async (route) => {
+      signedVideoRequests += 1;
+      if (signedVideoRequests === 1) {
+        await route.fulfill({
+          status: 403,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "signed URL expired" }),
+        });
+        return;
+      }
+      await route.fulfill({
+        path: "gymtrack-working/public/loading/tinted/user-character-01.mp4",
+        contentType: "video/mp4",
+      });
+    },
+  );
+
+  await page.goto(`/session/${WORKOUT_ID}`);
+  await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
+  await page
+    .locator('input[type="file"][accept="video/*"]')
+    .first()
+    .setInputFiles("gymtrack-working/public/loading/tinted/user-character-01.mp4");
+  const performanceVideo = page.locator("video").last();
+  await expect(performanceVideo).toBeVisible();
+  await expect
+    .poll(() => performanceVideo.evaluate((video) => video.readyState >= 2))
+    .toBe(true);
+  await expect.poll(() => page.evaluate(() => window.__iosSmokeVideoUploadStarted)).toBe(true);
+
+  await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
+  await page.getByRole("button", { name: "אישור ושמירת אימון" }).click();
+  await expect(page.getByText("האימון נשמר חלקית", { exact: true })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.__iosSmokeVideoUploadCompleted)).toBe(true);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const rows = JSON.parse(localStorage.getItem("ios-smoke.remote-workout-sessions") ?? "[]");
+        return rows.some(
+          (row) =>
+            row.workout_id === "ios-smoke-workout" &&
+            row.entries?.some(
+              (entry) =>
+                typeof entry.videoUrl === "string" &&
+                !entry.videoUrl.startsWith("http"),
+            ),
+        );
+      }),
+    )
+    .toBe(true);
+  await expect.poll(() => performanceVideo.getAttribute("src")).toMatch(/token=fresh/);
+  await expect.poll(() => signedVideoRequests).toBeGreaterThanOrEqual(2);
+  await expect
+    .poll(() => performanceVideo.evaluate((video) => video.readyState >= 2))
+    .toBe(true);
+
+  await page.reload();
+  await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
+  const reopenedPerformanceVideo = page.locator("video").last();
+  await expect(reopenedPerformanceVideo).toBeVisible();
+  await expect
+    .poll(() => reopenedPerformanceVideo.evaluate((video) => video.readyState >= 2))
+    .toBe(true);
+
+  await reopenedPerformanceVideo.evaluate((video) => video.dispatchEvent(new Event("error")));
+  await expect.poll(() => signedVideoRequests).toBeGreaterThanOrEqual(3);
+  await reopenedPerformanceVideo.evaluate((video) => video.dispatchEvent(new Event("error")));
+  await expect(
+    page.getByText(
+      "הסרטון נשמר, אבל הדפדפן לא הצליח לנגן את הפורמט הזה. נסי MP4 מסוג H.264.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(page.getByText(/העלאת סרטון ביצוע נכשלה/)).toHaveCount(0);
 });

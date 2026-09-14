@@ -425,6 +425,10 @@ function Session() {
   const [videoUploadErrorExerciseIndex, setVideoUploadErrorExerciseIndex] = useState<number | null>(
     null,
   );
+  const videoUploadErrorExerciseIndexRef = useRef<number | null>(null);
+  useEffect(() => {
+    videoUploadErrorExerciseIndexRef.current = videoUploadErrorExerciseIndex;
+  }, [videoUploadErrorExerciseIndex]);
   const [difficultyRating, setDifficultyRating] = useState<
     "easy" | "appropriate" | "difficult"
   >(
@@ -1263,6 +1267,14 @@ function Session() {
         });
         entriesRef.current = entriesWithUploadedVideo;
         setEntries(entriesWithUploadedVideo);
+        // A browser may reject the local preview before the upload finishes
+        // (for example for an iPhone HEVC recording). Once the object is
+        // uploaded, that transient preview error must not be presented as an
+        // upload failure.
+        if (videoUploadErrorExerciseIndexRef.current === exerciseIndex) {
+          setVideoUploadError("");
+          setVideoUploadErrorExerciseIndex(null);
+        }
         void removeWorkoutVideoDraft(sessionOwnerId, workout.id, exerciseIndex);
         const finishedSession = finishedSessionRef.current;
         if (finishedSession) {

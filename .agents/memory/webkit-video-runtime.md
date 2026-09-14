@@ -7,4 +7,4 @@ The configured Nix WebKit runner can launch and serve media correctly, but its b
 
 **Why:** A real loading-media regression test must remain real for iPhone WebKit; replacing the video with a fake clock would make the test pass without verifying playback.
 
-**How to apply:** Keep the WebKit loading-video test fail-closed for real iPhone-capable environments. If local validation hits this crash, report the runner limitation separately and do not add a media shim or silently skip the test.
+**How to apply:** Keep the WebKit loading-video test fail-closed for real iPhone-capable environments. If local validation hits this crash or fails before a video element becomes available, report the runner limitation separately and do not add a media shim or silently skip the test; use a Chromium mobile run to validate the surrounding upload/reopen flow.
