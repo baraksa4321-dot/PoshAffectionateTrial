@@ -8899,8 +8899,8 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 }
 
 .app-home-utility-row {
-  min-height: 2.25rem !important;
-  margin-bottom: 0.25rem !important;
+  min-height: 2rem !important;
+  margin-bottom: 0.1rem !important;
   padding-bottom: 0 !important;
   flex-wrap: nowrap !important;
   justify-content: flex-start !important;
