@@ -9,6 +9,7 @@ import {
   Crown,
   Dumbbell,
   Edit2,
+  Footprints,
   Heart,
   Minus,
   Plus,
@@ -108,7 +109,7 @@ import type {
   Workout,
   WorkoutItem,
 } from "../lib/gym-types";
-import { EQUIPMENT } from "../lib/gym-types";
+import { CARDIO_TYPES, EQUIPMENT } from "../lib/gym-types";
 import { genderText } from "../lib/gender-copy";
 import { WEEKDAY_LABELS, normalizeWeekday } from "../lib/workout-session";
 import {
@@ -1954,6 +1955,7 @@ export function CoachDashboardPage({
   const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
   const [editingDayId, setEditingDayId] = useState<string | null>(null);
   const [showExerciseForm, setShowExerciseForm] = useState(false);
+  const [showCardioForm, setShowCardioForm] = useState(false);
   const [openWorkoutReportId, setOpenWorkoutReportId] = useState<string | null>(null);
   const [focusedExerciseId, setFocusedExerciseId] = useState<string | null>(null);
   const [newDayName, setNewDayName] = useState("");
@@ -2036,7 +2038,10 @@ export function CoachDashboardPage({
     window.sessionStorage.removeItem("gymtrack-created-exercise-id");
   }, [authUser?.id, selectExerciseForBuilder, store.exercises]);
   useEffect(() => {
-    if (!editingDayId) setShowExerciseForm(false);
+    if (!editingDayId) {
+      setShowExerciseForm(false);
+      setShowCardioForm(false);
+    }
     setOpenWorkoutReportId((current) =>
       current && editingDayId && current !== editingDayId ? null : current,
     );
@@ -2097,6 +2102,12 @@ export function CoachDashboardPage({
   const [supersetRepsMax, setSupersetRepsMax] = useState(12);
   const [approvedAltIds, setApprovedAltIds] = useState<string[]>([]);
   const [bodyweightAlternativeId, setBodyweightAlternativeId] = useState("");
+  const [cardioType, setCardioType] = useState(CARDIO_TYPES[0] ?? "הליכה");
+  const [cardioDuration, setCardioDuration] = useState("30");
+  const [cardioDistance, setCardioDistance] = useState("");
+  const [cardioSpeed, setCardioSpeed] = useState("");
+  const [cardioIncline, setCardioIncline] = useState("");
+  const [cardioNotes, setCardioNotes] = useState("");
 
   // Nutrition Prescription state
   const [editingNutrition, setEditingNutrition] = useState(false);
@@ -4531,6 +4542,71 @@ export function CoachDashboardPage({
       warmupWeight,
     ],
   );
+
+  const handleAddCardioToDay = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!isCoach || !selectedClientId || !editingDayId) return;
+
+    const currentDay = clientDetails?.workouts?.find((workout) => workout.id === editingDayId);
+    const durationMin = Number(cardioDuration);
+    if (!currentDay || !cardioType || !Number.isFinite(durationMin) || durationMin <= 0) {
+      setManagementError("יש לבחור פעילות ולהזין משך אירובי גדול מאפס.");
+      return;
+    }
+
+    setManagementError("");
+    const distanceKm = Number(cardioDistance);
+    const targetSpeedKmH = Number(cardioSpeed);
+    const targetInclinePct = Number(cardioIncline);
+    const cardioItem: WorkoutItem = {
+      id: uid(),
+      exerciseId: `cardio-${uid()}`,
+      exerciseName: cardioType,
+      cardioType,
+      durationMin: Math.round(durationMin),
+      targetLabel: `${Math.round(durationMin)} דקות`,
+      sets: 1,
+      reps: 1,
+      repType: "fixed",
+      weight: 0,
+      rest: 0,
+      notes: cardioNotes.trim(),
+      ...(Number.isFinite(distanceKm) && distanceKm > 0 ? { distanceKm } : {}),
+      ...(Number.isFinite(targetSpeedKmH) && targetSpeedKmH > 0 ? { targetSpeedKmH } : {}),
+      ...(Number.isFinite(targetInclinePct) && targetInclinePct > 0
+        ? { targetInclinePct }
+        : {}),
+    };
+    const updatedItems = [...currentDay.items, cardioItem];
+    const updatedWorkout = {
+      ...currentDay,
+      items: updatedItems,
+      cardioType,
+    };
+
+    if (isSelfSelected) {
+      saveWorkout(updatedWorkout);
+    } else {
+      const { error } = await supabase
+        .from("program_days")
+        .update(clientProgramDayItemsUpdatePayload(updatedItems))
+        .eq("id", editingDayId)
+        .eq("user_id", selectedClientId);
+      if (error) {
+        setManagementError(`שמירת האימון האירובי נכשלה: ${error.message}`);
+        return;
+      }
+      pullClientDataForCoach(selectedClientId).then(applyClientDetails);
+    }
+
+    setShowCardioForm(false);
+    setCardioType(CARDIO_TYPES[0] ?? "הליכה");
+    setCardioDuration("30");
+    setCardioDistance("");
+    setCardioSpeed("");
+    setCardioIncline("");
+    setCardioNotes("");
+  };
 
   useEffect(() => {
     if (!editingItemId || !showExerciseForm || !selectedClientId) return;
@@ -7716,6 +7792,7 @@ export function CoachDashboardPage({
                                             setEditingDayId(dayItem.id);
                                             setOpenWorkoutReportId(null);
                                             setShowExerciseForm(false);
+                                             setShowCardioForm(false);
                                             setEditingItemId(null);
                                             setSelectedExId("");
                                           }}
@@ -7867,6 +7944,7 @@ export function CoachDashboardPage({
                                                 type="button"
                                                 onClick={() => {
                                                   setShowExerciseForm((current) => !current);
+                                                   setShowCardioForm(false);
                                                   setEditingItemId(null);
                                                   setSelectedExId("");
                                                   setOpenWorkoutReportId(null);
@@ -7877,10 +7955,26 @@ export function CoachDashboardPage({
                                                 <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                                                 {showExerciseForm ? "סגירת הוספה" : "הוספת תרגיל"}
                                               </button>
+                                               <button
+                                                 type="button"
+                                                 onClick={() => {
+                                                   setShowCardioForm((current) => !current);
+                                                   setShowExerciseForm(false);
+                                                   setEditingItemId(null);
+                                                   setSelectedExId("");
+                                                   setOpenWorkoutReportId(null);
+                                                 }}
+                                                 aria-expanded={showCardioForm}
+                                                 className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 text-[11px] font-extrabold text-primary shadow-sm transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                               >
+                                                 <Footprints className="h-3.5 w-3.5" aria-hidden="true" />
+                                                 {showCardioForm ? "סגירת אירובי" : "הוספת אירובי"}
+                                               </button>
                                               <button
                                                 type="button"
                                                 onClick={() => {
                                                   setShowExerciseForm(false);
+                                                   setShowCardioForm(false);
                                                   setEditingItemId(null);
                                                   setSelectedExId("");
                                                   setOpenWorkoutReportId(null);
@@ -7902,6 +7996,7 @@ export function CoachDashboardPage({
                                                 const exMeta = store.exercises.find(
                                                   (e) => e.id === exItem.exerciseId,
                                                 );
+                                                const isCardioItem = Boolean(exItem.cardioType);
 
                                                 return (
                                                   <div
@@ -7916,9 +8011,11 @@ export function CoachDashboardPage({
                                                     <div className="flex items-start justify-between gap-2">
                                                       <div>
                                                         <span className="block font-display text-[15px] font-extrabold text-ink">
-                                                          {exMeta
-                                                            ? exerciseDisplayName(exMeta)
-                                                            : "תרגיל"}
+                                                          {isCardioItem
+                                                            ? exItem.cardioType
+                                                            : exMeta
+                                                              ? exerciseDisplayName(exMeta)
+                                                              : exItem.exerciseName || "תרגיל"}
                                                         </span>
                                                         {exItem.supersetPartnerId ? (
                                                           <span className="mt-0.5 block text-[11px] font-bold text-violet-800">
@@ -7939,25 +8036,42 @@ export function CoachDashboardPage({
                                                             · ללא מנוחה
                                                           </span>
                                                         ) : null}
-                                                        <span className="mt-1 inline-flex rounded-full bg-background/80 px-2.5 py-1 text-[11px] font-bold text-ink">
-                                                          {exItem.equipment || exMeta?.equipment
-                                                            ? `${exItem.equipment || exMeta?.equipment}${
-                                                                exItem.cableGrip
-                                                                  ? ` · ${exItem.cableGrip}`
-                                                                  : ""
-                                                              } · `
-                                                            : ""}
-                                                          {exItem.targetWeight || exItem.weight}{" "}
-                                                          {weightValueUnit(
-                                                            exItem.equipment || exMeta?.equipment,
-                                                          )}
-                                                          · {exItem.sets} סטים ×{" "}
-                                                          {exItem.repMin || exItem.reps}
-                                                          {exItem.repMax
-                                                            ? `-${exItem.repMax}`
-                                                            : ""}{" "}
-                                                          חזרות
-                                                        </span>
+                                                        {isCardioItem ? (
+                                                          <span className="mt-1 inline-flex flex-wrap rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
+                                                            {exItem.durationMin
+                                                              ? `${exItem.durationMin} דקות`
+                                                              : exItem.targetLabel}
+                                                            {exItem.distanceKm
+                                                              ? ` · ${exItem.distanceKm} ק״מ`
+                                                              : ""}
+                                                            {exItem.targetSpeedKmH
+                                                              ? ` · קצב ${exItem.targetSpeedKmH} קמ״ש`
+                                                              : ""}
+                                                            {exItem.targetInclinePct
+                                                              ? ` · שיפוע ${exItem.targetInclinePct}%`
+                                                              : ""}
+                                                          </span>
+                                                        ) : (
+                                                          <span className="mt-1 inline-flex rounded-full bg-background/80 px-2.5 py-1 text-[11px] font-bold text-ink">
+                                                            {exItem.equipment || exMeta?.equipment
+                                                              ? `${exItem.equipment || exMeta?.equipment}${
+                                                                  exItem.cableGrip
+                                                                    ? ` · ${exItem.cableGrip}`
+                                                                    : ""
+                                                                } · `
+                                                              : ""}
+                                                            {exItem.targetWeight || exItem.weight}{" "}
+                                                            {weightValueUnit(
+                                                              exItem.equipment || exMeta?.equipment,
+                                                            )}
+                                                            · {exItem.sets} סטים ×{" "}
+                                                            {exItem.repMin || exItem.reps}
+                                                            {exItem.repMax
+                                                              ? `-${exItem.repMax}`
+                                                              : ""}{" "}
+                                                            חזרות
+                                                          </span>
+                                                        )}
                                                         <div className="mt-1 flex flex-wrap gap-1">
                                                           {exItem.warmups?.length ? (
                                                             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
@@ -7998,22 +8112,24 @@ export function CoachDashboardPage({
                                                         </div>
                                                       </div>
                                                       <div className="flex shrink-0 items-center gap-1">
-                                                        <button
-                                                          type="button"
-                                                          onClick={() => {
-                                                            setEditingDayId(dayItem.id);
-                                                            setShowExerciseForm(true);
-                                                            setEditingItemId((current) =>
-                                                              current === exItem.id
-                                                                ? null
-                                                                : exItem.id,
-                                                            );
-                                                            if (editingItemId === exItem.id) return;
-                                                            selectExerciseForBuilder(
-                                                              exItem.exerciseId,
-                                                              exItem.equipment,
-                                                              exItem.cableGrip,
-                                                            );
+                                                         {!isCardioItem ? (
+                                                           <button
+                                                             type="button"
+                                                             onClick={() => {
+                                                               setEditingDayId(dayItem.id);
+                                                               setShowCardioForm(false);
+                                                               setShowExerciseForm(true);
+                                                               setEditingItemId((current) =>
+                                                                 current === exItem.id
+                                                                   ? null
+                                                                   : exItem.id,
+                                                               );
+                                                               if (editingItemId === exItem.id) return;
+                                                               selectExerciseForBuilder(
+                                                                 exItem.exerciseId,
+                                                                 exItem.equipment,
+                                                                 exItem.cableGrip,
+                                                               );
                                                             setTargetWeight(
                                                               exItem.targetWeight || exItem.weight,
                                                             );
@@ -8236,13 +8352,14 @@ export function CoachDashboardPage({
                                                                 exItem.repMax ||
                                                                 10,
                                                             );
-                                                          }}
-                                                          className="rounded-lg bg-background px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/10"
-                                                        >
-                                                          {editingItemId === exItem.id
-                                                            ? "סגירה"
-                                                            : "עריכה"}
-                                                        </button>
+                                                             }}
+                                                             className="rounded-lg bg-background px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/10"
+                                                           >
+                                                             {editingItemId === exItem.id
+                                                               ? "סגירה"
+                                                               : "עריכה"}
+                                                           </button>
+                                                         ) : null}
                                                         <button
                                                           type="button"
                                                           onClick={() =>
@@ -8252,7 +8369,11 @@ export function CoachDashboardPage({
                                                             )
                                                           }
                                                           className="rounded-lg p-1 text-muted-foreground hover:text-red-600 cursor-pointer"
-                                                          aria-label={`הסר את ${exMeta?.name || "התרגיל"}`}
+                                                           aria-label={`הסר את ${
+                                                             isCardioItem
+                                                               ? exItem.cardioType || "האימון האירובי"
+                                                               : exMeta?.name || exItem.exerciseName || "התרגיל"
+                                                           }`}
                                                         >
                                                           <Trash2 className="h-3.5 w-3.5" />
                                                         </button>
@@ -8777,6 +8898,106 @@ export function CoachDashboardPage({
                                             </div>
                                           )}
 
+                                          {isDayActive && showCardioForm && (
+                                            <form
+                                              onSubmit={handleAddCardioToDay}
+                                              className="mt-2 space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.04] p-3 text-xs"
+                                            >
+                                              <div className="flex items-center gap-2">
+                                                <Footprints className="h-4 w-4 text-primary" aria-hidden="true" />
+                                                <p className="text-[11px] font-extrabold text-primary">
+                                                  הוספת אימון אירובי
+                                                </p>
+                                              </div>
+                                              <div className="grid gap-2 sm:grid-cols-2">
+                                                <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                  פעילות
+                                                  <select
+                                                    value={cardioType}
+                                                    onChange={(event) => setCardioType(event.target.value)}
+                                                    className="h-10 rounded-xl border border-border bg-background px-2 text-xs font-semibold text-ink outline-none focus:border-primary"
+                                                  >
+                                                    {CARDIO_TYPES.map((type) => (
+                                                      <option key={type} value={type}>
+                                                        {type}
+                                                      </option>
+                                                    ))}
+                                                  </select>
+                                                </label>
+                                                <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                  משך בדקות
+                                                  <FreeTextInput
+                                                    min={1}
+                                                    value={cardioDuration}
+                                                    onChange={(event) => setCardioDuration(event.target.value)}
+                                                    className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink outline-none focus:border-primary"
+                                                  />
+                                                </label>
+                                              </div>
+                                              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                                {(cardioType.includes("ריצה") ||
+                                                  cardioType.includes("הליכון") ||
+                                                  cardioType.includes("Treadmill") ||
+                                                  cardioType.includes("אופניים")) ? (
+                                                  <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                    קצב קמ״ש
+                                                    <FreeTextInput
+                                                      min={0}
+                                                      step={0.1}
+                                                      value={cardioSpeed}
+                                                      onChange={(event) => setCardioSpeed(event.target.value)}
+                                                      className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink outline-none focus:border-primary"
+                                                    />
+                                                  </label>
+                                                ) : null}
+                                                {cardioType.includes("הליכון") ||
+                                                cardioType.includes("Treadmill") ? (
+                                                  <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                    שיפוע %
+                                                    <FreeTextInput
+                                                      min={0}
+                                                      step={0.5}
+                                                      value={cardioIncline}
+                                                      onChange={(event) => setCardioIncline(event.target.value)}
+                                                      className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink outline-none focus:border-primary"
+                                                    />
+                                                  </label>
+                                                ) : null}
+                                                {(cardioType.includes("ריצה") ||
+                                                  cardioType.includes("אופניים") ||
+                                                  cardioType.includes("חתירה") ||
+                                                  cardioType.includes("טיול")) ? (
+                                                  <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                    מרחק ק״מ
+                                                    <FreeTextInput
+                                                      min={0}
+                                                      step={0.1}
+                                                      value={cardioDistance}
+                                                      onChange={(event) => setCardioDistance(event.target.value)}
+                                                      className="h-10 rounded-xl border border-border bg-background px-2 text-center text-sm font-bold text-ink outline-none focus:border-primary"
+                                                    />
+                                                  </label>
+                                                ) : null}
+                                              </div>
+                                              <label className="grid gap-1 text-[10px] font-bold text-muted-foreground">
+                                                הערה למתאמן
+                                                <textarea
+                                                  rows={2}
+                                                  value={cardioNotes}
+                                                  onChange={(event) => setCardioNotes(event.target.value)}
+                                                  placeholder="למשל: קצב קל ואחיד"
+                                                  className="rounded-xl border border-border bg-background px-3 py-2 text-sm font-normal text-ink outline-none focus:border-primary"
+                                                />
+                                              </label>
+                                              <button
+                                                type="submit"
+                                                className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-extrabold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                              >
+                                                <Footprints className="h-3.5 w-3.5" aria-hidden="true" />
+                                                הוספת האימון האירובי
+                                              </button>
+                                            </form>
+                                          )}
                                           {isDayActive && showExerciseForm && (
                                             <ExerciseBuilderPlacement exerciseId={editingItemId}>
                                               <form

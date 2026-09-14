@@ -109,6 +109,10 @@ export type WorkoutItem = {
   exerciseId: string;
   /** Snapshot used when a custom exercise is not present in the viewer's catalog yet. */
   exerciseName?: string;
+  /** Optional prescribed cardio activity for coach-built workout items. */
+  cardioType?: string;
+  /** Optional prescribed cardio duration in minutes. */
+  durationMin?: number;
   /** Equipment selected for this prescription, separate from the catalog default. */
   equipment?: string;
   /** Cable grip selected for this prescription, when equipment is cable / pulley. */

@@ -1620,6 +1620,11 @@ function Session() {
                       {item.targetInclinePct ? `שיפוע ${item.targetInclinePct}%` : ""}
                     </p>
                   ) : null}
+                  {item?.durationMin ? (
+                    <p className="mt-1 text-[11px] font-bold text-primary">
+                      משך יעד: {item.durationMin} דקות
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="flex items-center gap-1.5">

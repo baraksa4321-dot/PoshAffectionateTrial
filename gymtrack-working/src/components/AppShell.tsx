@@ -173,6 +173,8 @@ export function AppShell({
   const navigate = useNavigate();
   const router = useRouter();
   const isManagementRoute = isManagementPath(location.pathname);
+  const isDashboardShell = pageClassName.split(/\s+/).includes("dashboard-editorial-shell");
+  const compactWorkspaceControls = compactHeader || isDashboardShell;
   const showWorkspaceSwitcher = Boolean(
     user && isCoach && (location.pathname === "/" || location.pathname === "/coach"),
   );
@@ -1045,7 +1047,7 @@ export function AppShell({
                     onClick={() => setWorkspace("personal")}
                     aria-current={activeMode === "personal" ? "page" : undefined}
                     className={`press min-w-20 rounded-full px-3 ${
-                      compactHeader ? "py-1 text-[10px]" : "py-1.5 text-[11px]"
+                      compactWorkspaceControls ? "py-0.5 text-[9px]" : "py-1.5 text-[11px]"
                     } text-center font-bold transition-colors ${
                       activeMode === "personal"
                         ? "bg-surface text-ink shadow-sm"
@@ -1061,7 +1063,7 @@ export function AppShell({
                     data-testid="link-nav-coach"
                     aria-current={activeMode === "management" ? "page" : undefined}
                     className={`press min-w-20 rounded-full px-3 ${
-                      compactHeader ? "py-1 text-[10px]" : "py-1.5 text-[11px]"
+                      compactWorkspaceControls ? "py-0.5 text-[9px]" : "py-1.5 text-[11px]"
                     } text-center font-bold transition-colors ${
                       activeMode === "management"
                         ? isOwner
@@ -1119,11 +1121,15 @@ export function AppShell({
                       aria-label="פתיחת הפרופיל האישי"
                       className="flex max-w-[150px] min-w-0 cursor-pointer flex-col truncate text-start leading-tight transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      <span className="truncate">
+                      <span className={`truncate ${isDashboardShell ? "text-[11px]" : ""}`}>
                         {store.userProfile?.fullName || "החשבון שלי"}
                       </span>
                       {user.email ? (
-                        <span className="truncate text-[9px] font-medium text-muted-foreground">
+                      <span
+                        className={`truncate font-medium text-muted-foreground ${
+                          isDashboardShell ? "text-[8px]" : "text-[9px]"
+                        }`}
+                      >
                           {user.email}
                         </span>
                       ) : null}

@@ -2596,18 +2596,20 @@ export function programDays(d: GymData, programId: string): Workout[] {
 export function saveSession(session: HistorySession) {
   const workout = data.workouts.find((item) => item.id === session.workoutId);
   const cardioLogId = `challenge-cardio-${session.id}`;
+  const prescribedCardioType =
+    workout?.cardioType ?? workout?.items.find((item) => item.cardioType)?.cardioType;
   const shouldCreateCardioLog =
-    Boolean(workout?.cardioType) &&
+    Boolean(prescribedCardioType) &&
     !(data.cardioLogs ?? []).some((log) => log.id === cardioLogId);
   const cardioLog = shouldCreateCardioLog
     ? {
         id: cardioLogId,
         date: session.date.slice(0, 10),
-        type: workout?.cardioType ?? "אירובי",
+        type: prescribedCardioType ?? "אירובי",
         durationMin: Math.max(1, Math.round((session.durationSec ?? 0) / 60)),
         intensity: "moderate" as const,
         calories: calculateCardioCalories(
-          workout?.cardioType ?? "אירובי",
+          prescribedCardioType ?? "אירובי",
           Math.max(1, Math.round((session.durationSec ?? 0) / 60)),
           data.userProfile?.weight ?? 65,
         ),
