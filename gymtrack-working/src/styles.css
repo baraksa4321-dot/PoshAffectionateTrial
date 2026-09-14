@@ -4994,6 +4994,7 @@ html[data-keyboard-open] .nav-shell {
   right: auto;
   border-right: 0;
   border-left: 0;
+  border-radius: 0 0.75rem 0.75rem 0;
 }
 
 .workout-report-bookmark-open:hover,
