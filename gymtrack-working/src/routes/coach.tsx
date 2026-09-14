@@ -6606,14 +6606,18 @@ export function CoachDashboardPage({
                             </span>
                           ) : (
                             <Link
-                              to="/coach/tracking/$clientId"
+                              to={
+                                trackingLanding
+                                  ? "/coach/tracking/$clientId"
+                                  : "/coach/clients/$clientId/program"
+                              }
                               params={{ clientId: c.client_id }}
                               onClick={(event) => {
                                 event.stopPropagation();
                               }}
                               className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-primary/20"
                             >
-                              פתח דוח
+                              {trackingLanding ? "פתח דוח" : "פתח תוכניות"}
                             </Link>
                           )}
                           <ChevronLeft

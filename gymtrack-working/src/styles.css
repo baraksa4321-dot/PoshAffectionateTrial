@@ -8990,8 +8990,14 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 }
 
 @media (max-width: 767px) {
+  .overlay-inline-panel .workout-builder-surface {
+    width: 100%;
+    margin-inline: 0;
+  }
+
   .workout-builder-surface {
     padding-inline: 0.7rem;
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom));
   }
 
   .workout-builder-header > div:last-child {
