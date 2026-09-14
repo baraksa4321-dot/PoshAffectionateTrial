@@ -1825,7 +1825,7 @@ export async function flushCloudSync(): Promise<{
   const error =
     syncStatus === "offline"
       ? "אין חיבור כרגע; האימון נשמר במכשיר ויסונכרן כשהחיבור יחזור"
-      : "שמירת האימון בענן עדיין ממתינה לניסיון נוסף";
+      : "השינויים נשמרו במכשיר; הסנכרון לענן עדיין ממתין לניסיון נוסף";
   return syncStatus === "offline" || isNetworkFailure(error)
     ? { success: true, deferred: true, error }
     : { success: false, error };

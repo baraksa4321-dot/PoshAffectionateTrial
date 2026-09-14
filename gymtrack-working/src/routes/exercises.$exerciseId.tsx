@@ -290,7 +290,7 @@ function OptionImagesEditor({
                   <img
                     src={image}
                     alt={`תמונה עבור ${option}`}
-                    className="h-28 w-full rounded-xl border border-border/40 object-cover"
+                    className="h-28 w-full rounded-xl border border-border/40 bg-secondary p-1 object-contain"
                   />
                   <button
                     type="button"
@@ -926,7 +926,7 @@ function ExerciseDetail() {
                   src={src}
                   alt={`${ex.name} ${i + 1}`}
                   loading="lazy"
-                  className="h-44 w-64 shrink-0 rounded-2xl border border-border/40 object-cover"
+                  className="h-44 w-64 shrink-0 rounded-2xl border border-border/40 bg-secondary p-2 object-contain"
                 />
               ))}
             </div>
@@ -1157,7 +1157,7 @@ function ImagesEditor({ images, onChange }: { images: string[]; onChange: (v: st
               <img
                 src={src}
                 alt={`תמונת תרגיל ${i + 1}`}
-                className="h-20 w-20 rounded-xl border border-border/40 object-cover"
+                className="h-20 w-20 rounded-xl border border-border/40 bg-secondary p-1 object-contain"
               />
               <button
                 type="button"
