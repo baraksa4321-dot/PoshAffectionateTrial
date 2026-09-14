@@ -25,6 +25,8 @@ describe("video feedback contracts", () => {
     expect(homeRoute).toContain("unreadVideoFeedbackCount");
     expect(homeRoute).toContain("markVideoFeedbackSeen");
     expect(homeRoute).toContain("סימנתי כנקרא");
+    expect(homeRoute).toContain("יוסר מהרשימה שלך");
+    expect(homeRoute).toContain("!feedback.seenAt");
   });
 
   test("video feedback is persisted with read state and Realtime publication", () => {
