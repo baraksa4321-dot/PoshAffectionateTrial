@@ -1096,7 +1096,7 @@ export function AppShell({
           </div>
           {resolvedHeaderAccessory || showWorkspaceSwitcher ? (
             <div
-              className={`app-topbar__utility-row relative flex items-center justify-end gap-2 border-b border-border/50 ${
+              className={`app-topbar__utility-row relative flex items-center justify-end gap-2 ${
                 showWorkspaceSwitcher ? "min-h-[2.25rem]" : ""
               } ${
                 compactHeader ? "mb-1 pb-0.5" : "mb-1.5 pb-0.5"
