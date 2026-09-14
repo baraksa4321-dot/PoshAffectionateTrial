@@ -526,6 +526,10 @@ function Dashboard() {
   }, [authUser?.id]);
   const latestCoachMsg = getLatestVisibleCoachMessage(coachMessages, dismissedMessageIds);
   const videoFeedbackRows = (videoFeedbacks ?? [])
+    .filter(
+      (feedback) =>
+        !feedback.seenAt && !locallySeenFeedbackIds.has(feedback.id),
+    )
     .map((feedback: VideoFeedback) => {
       const { session, entry } = historyEntryForVideoFeedback(feedback, history);
       return { feedback, session, entry };
@@ -534,10 +538,7 @@ function Dashboard() {
       (a, b) =>
         new Date(b.feedback.createdAt).getTime() - new Date(a.feedback.createdAt).getTime(),
     );
-  const unreadVideoFeedbackCount = videoFeedbackRows.filter(
-    ({ feedback }) =>
-      !feedback.seenAt && !locallySeenFeedbackIds.has(feedback.id),
-  ).length;
+  const unreadVideoFeedbackCount = videoFeedbackRows.length;
   const markFeedbackSeen = async (feedbackId: string) => {
     setMarkingFeedbackId(feedbackId);
     try {
@@ -977,7 +978,7 @@ function Dashboard() {
               משובים
               {unreadVideoFeedbackCount > 0 ? (
                 <span
-                  className="absolute end-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-extrabold leading-none text-primary-foreground shadow-sm"
+                  className="absolute start-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-extrabold leading-none text-primary-foreground shadow-sm"
                   aria-hidden="true"
                 >
                   {unreadVideoFeedbackCount > 99 ? "99+" : unreadVideoFeedbackCount}
@@ -1234,7 +1235,7 @@ function Dashboard() {
                 </h3>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                   כאן תראי את ההערות שהמאמן כתב על סרטוני הביצוע שלך. אחרי שקראת משוב, סמני אותו
-                  כנקרא כדי לעדכן את המונה בבית.
+                  כנקרא והוא יוסר מהרשימה שלך.
                 </p>
               </div>
               <button
