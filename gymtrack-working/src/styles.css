@@ -5000,6 +5000,10 @@ html[data-keyboard-open] .nav-shell {
   width: min(100%, 34rem);
   box-sizing: border-box;
   overflow-y: auto;
+  min-height: 0;
+  max-height: 100%;
+  scrollbar-gutter: stable;
+  touch-action: pan-y;
   visibility: hidden;
   pointer-events: none;
   border-inline-end: 1px solid color-mix(in oklch, var(--primary) 18%, var(--border));
@@ -9029,7 +9033,8 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 /* The report is a real drawer, so its own content can be denser without
  * changing the builder or the rest of the application. */
 .workout-report-panel {
-  padding: 0.55rem 0.7rem calc(4.25rem + env(safe-area-inset-bottom));
+  height: 100%;
+  padding: 0.55rem 0.7rem calc(8.5rem + env(safe-area-inset-bottom));
 }
 
 .workout-report-drawer-header {

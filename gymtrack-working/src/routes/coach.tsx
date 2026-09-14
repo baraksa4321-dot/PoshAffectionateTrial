@@ -61,6 +61,7 @@ import {
   updateProgramDayWeekday,
   subscribeToCoachClientChanges,
   subscribeToCoachManagementChanges,
+  signWorkoutPerformanceVideo,
 } from "../lib/supabase-sync";
 import { supabase } from "../lib/supabase";
 import { notifyRemotePush } from "../lib/notification-service";
@@ -644,19 +645,46 @@ function exerciseDemoVideoSources(exercise: Exercise | undefined): string[] {
 
 function WorkoutVideoPlayer({
   source,
+  videoPath,
   title,
   className,
 }: {
   source: string;
+  videoPath?: string | undefined;
   title: string;
   className?: string | undefined;
 }) {
   const [hasError, setHasError] = useState(false);
-  const embedUrl = youtubeEmbedUrl(source);
+  const [playbackSource, setPlaybackSource] = useState(source);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [didRefresh, setDidRefresh] = useState(false);
+  const embedUrl = youtubeEmbedUrl(playbackSource);
 
   useEffect(() => {
     setHasError(false);
-  }, [source]);
+    setPlaybackSource(source);
+    setIsRefreshing(false);
+    setDidRefresh(false);
+  }, [source, videoPath]);
+
+  const handleVideoError = async () => {
+    if (!videoPath || didRefresh || isRefreshing) {
+      setHasError(true);
+      return;
+    }
+
+    setIsRefreshing(true);
+    setDidRefresh(true);
+    try {
+      const freshUrl = await signWorkoutPerformanceVideo(videoPath);
+      setPlaybackSource(freshUrl);
+      setHasError(false);
+    } catch {
+      setHasError(true);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   if (!isSafeVideoSource(source)) {
     return (
@@ -671,7 +699,7 @@ function WorkoutVideoPlayer({
       <div className="space-y-1.5 rounded-lg bg-black p-3 text-center text-[11px] text-white">
         <p>לא ניתן להציג את הסרטון בתוך האפליקציה.</p>
         <a
-          href={source}
+          href={playbackSource}
           target="_blank"
           rel="noreferrer"
           className="font-bold text-white underline underline-offset-2"
@@ -708,11 +736,12 @@ function WorkoutVideoPlayer({
 
   return (
     <video
-      src={source}
+      key={playbackSource}
+      src={playbackSource}
       controls
       playsInline
       preload="metadata"
-      onError={() => setHasError(true)}
+      onError={() => void handleVideoError()}
       className={className ?? "max-h-64 w-full object-contain"}
       aria-label={title}
     />
@@ -1649,6 +1678,11 @@ function WorkoutDailyReport({
             <p>
               {completedSets} מתוך {totalSets} סטים בוצעו בפועל
             </p>
+            <p>
+              בתוכנית: {workout.items.length} תרגילים · בוצעו:{" "}
+              {new Set(sessions.flatMap((currentSession) => currentSession.entries.map((entry) => entry.exerciseId))).size}{" "}
+              תרגילים
+            </p>
             {sessions.map((session) =>
               session.difficultyRating ? (
                 <p key={`${session.id}-difficulty`}>
@@ -1660,98 +1694,172 @@ function WorkoutDailyReport({
         ) : null}
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-3">
         {exerciseRows.length > 0 ? (
-          exerciseRows.map(({ item, entries, replacementEntry, exercise }) => (
-            <div
-              key={item.id}
-              className={`rounded-xl border px-3 py-2.5 text-[11px] ${
-                entries.length > 0
-                  ? "border-emerald-200 bg-emerald-50/70"
-                  : "border-border/60 bg-white/80"
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 text-start">
-                  <strong className="block truncate text-ink">
-                    {entries[0]?.entry.exerciseName ||
-                      item.exerciseName ||
-                      exercise?.name ||
-                      "תרגיל"}
-                  </strong>
-                  {entries.length === 0 ? (
-                    <>
-                      <p className="mt-1 text-muted-foreground">
-                        תוכנן: {item.sets} סטים × {item.repMin || item.reps}
-                        {item.repMax ? `–${item.repMax}` : ""} חזרות ·{" "}
-                        {item.targetWeight || item.weight} ק״ג
+          exerciseRows.map(({ item, entries, replacementEntry, exercise }) => {
+            const exerciseName =
+              entries[0]?.entry.exerciseName || item.exerciseName || exercise?.name || "תרגיל";
+            const plannedReps = `${item.repMin ?? item.reps}${item.repMax ? `–${item.repMax}` : ""}`;
+            const plannedWeight =
+              item.targetWeight ?? item.weight
+                ? `${item.targetWeight ?? item.weight} ק״ג`
+                : "משקל לפי ביצוע";
+            const plannedDetails = [
+              `${item.sets} סטים × ${plannedReps} חזרות`,
+              plannedWeight,
+              item.equipment,
+              item.cableGrip,
+              item.rest ? `מנוחה ${item.rest} שניות` : undefined,
+              item.tempo ? `קצב ${item.tempo}` : undefined,
+              item.rir !== null && item.rir !== undefined ? `RIR ${item.rir}` : undefined,
+              item.rpe !== null && item.rpe !== undefined ? `RPE ${item.rpe}` : undefined,
+            ].filter(Boolean);
+
+            return (
+              <article
+                key={item.id}
+                className={`overflow-hidden rounded-2xl border text-[11px] ${
+                  entries.length > 0
+                    ? "border-emerald-200 bg-emerald-50/55"
+                    : "border-border/70 bg-white/85"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3 border-b border-current/10 px-3 py-3">
+                  <div className="min-w-0 text-start">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
+                      תרגיל {workout.items.findIndex((candidate) => candidate.id === item.id) + 1}
+                    </p>
+                    <h5 className="mt-0.5 text-sm font-extrabold text-ink">{exerciseName}</h5>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${
+                      entries.length > 0
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-white/80 text-muted-foreground"
+                    }`}
+                  >
+                    {entries.length > 0 ? "בוצע בפועל" : "לא בוצע"}
+                  </span>
+                </div>
+
+                <div className="grid gap-2 p-2.5 sm:grid-cols-2">
+                  <div className="rounded-xl border border-primary/10 bg-white/75 p-2.5 text-start">
+                    <p className="font-extrabold text-primary">מה היה אמור להיות</p>
+                    <p className="mt-1 leading-5 text-ink">{plannedDetails.join(" · ")}</p>
+                    {item.notes?.trim() ? (
+                      <p className="mt-2 border-t border-border/60 pt-2 leading-5 text-muted-foreground">
+                        דגשים: {item.notes.trim()}
                       </p>
-                      {replacementEntry ? (
-                        <p className="mt-1 font-semibold text-primary">
-                          הוחלף ב־{replacementEntry.exerciseName || "תרגיל אחר"}
+                    ) : null}
+                    {item.techniqueNotes?.trim() ? (
+                      <p className="mt-1 leading-5 text-muted-foreground">
+                        טכניקה: {item.techniqueNotes.trim()}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/65 p-2.5 text-start">
+                    <p className="font-extrabold text-emerald-800">מה בוצע בפועל</p>
+                    {entries.length > 0 ? (
+                      entries.map(({ entry, sessionId }, entryIndex) => (
+                        <div key={`${sessionId}-${entry.exerciseId}-${entryIndex}`} className="mt-1.5">
+                          {entry.sets.length > 0 ? (
+                            <div className="space-y-1">
+                              {entry.sets.map((set, setIndex) => (
+                                <p
+                                  key={`${entryIndex}-${setIndex}`}
+                                  className={set.done ? "text-ink" : "text-muted-foreground"}
+                                >
+                                  <span className="font-bold">סט {setIndex + 1}:</span>{" "}
+                                  {set.weight} ק״ג × {set.reps} חזרות{" "}
+                                  {set.done ? "✓" : "— לא בוצע"}
+                                </p>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-muted-foreground">לא נרשמו סטים.</p>
+                          )}
+                          {entry.replacedExerciseName || replacementEntry ? (
+                            <p className="mt-2 font-semibold text-primary">
+                              הוחלף ב־{entry.replacedExerciseName || replacementEntry?.exerciseName}
+                            </p>
+                          ) : null}
+                        </div>
+                      ))
+                    ) : replacementEntry ? (
+                      <p className="mt-1.5 leading-5 text-primary">
+                        לא בוצע התרגיל המקורי. נרשם במקום זאת:{" "}
+                        <strong>{replacementEntry.exerciseName || "תרגיל אחר"}</strong>
+                      </p>
+                    ) : (
+                      <p className="mt-1.5 leading-5 text-muted-foreground">
+                        לא נמצא ביצוע לתרגיל הזה בתאריך שנבחר.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {entries.map(({ entry, sessionId }, entryIndex) => {
+                  const entryNote = entry.feedback?.notes?.trim() || entry.notes?.trim();
+                  const performanceVideoUrl = entry.videoUrl;
+                  const hasVideo =
+                    Boolean(performanceVideoUrl) &&
+                    isSafeVideoSource(performanceVideoUrl) &&
+                    !performanceVideoUrl.startsWith("blob:");
+
+                  return (
+                    <div
+                      key={`details-${sessionId}-${entry.exerciseId}-${entryIndex}`}
+                      className="space-y-2 border-t border-current/10 px-2.5 pb-3"
+                    >
+                      {entryNote ? (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-2.5 text-start text-amber-950">
+                          <p className="font-extrabold">הערה על התרגיל</p>
+                          <p className="mt-1 leading-5">{entryNote}</p>
+                        </div>
+                      ) : null}
+                      {hasVideo ? (
+                        <div className="rounded-xl border border-slate-200 bg-slate-950 p-1.5">
+                          <p className="px-1.5 pb-1.5 text-start text-[10px] font-bold text-white">
+                            סרטון ביצוע של {exerciseName}
+                          </p>
+                          <WorkoutVideoPlayer
+                            source={performanceVideoUrl ?? ""}
+                            videoPath={entry.videoPath}
+                            title={`סרטון ביצוע עבור ${exerciseName}`}
+                            className="max-h-60 w-full rounded-lg bg-black object-contain"
+                          />
+                          {clientId && sessionId && entry.videoPath ? (
+                            <VideoFeedbackThread
+                              clientId={clientId}
+                              sessionId={sessionId}
+                              workoutId={workout.id}
+                              entry={entry}
+                              title={exerciseName}
+                              videoFeedbacks={videoFeedbacks}
+                            />
+                          ) : null}
+                        </div>
+                      ) : entry.videoUrl?.startsWith("blob:") ? (
+                        <p className="rounded-xl bg-amber-50 px-2.5 py-2 text-start text-[10px] font-semibold text-amber-900">
+                          הסרטון עדיין בתהליך העלאה ולא זמין לצפייה כאן.
                         </p>
                       ) : null}
-                    </>
-                  ) : (
-                    entries.map(({ entry, sessionId }, entryIndex) => (
-                      <div key={`${sessionId}-${entry.exerciseId}-${entryIndex}`}>
-                        <p className="mt-1 text-muted-foreground">
-                          {entry.sets.length > 0
-                            ? entry.sets
-                                .map(
-                                  (set, setIndex) =>
-                                    `סט ${setIndex + 1}: ${set.weight} ק״ג × ${set.reps}${
-                                      set.done ? " ✓" : " — לא בוצע"
-                                    }`,
-                                )
-                                .join(" · ")
-                            : "לא נרשמו סטים"}
-                        </p>
-                        {entry.notes?.trim() || entry.feedback?.notes?.trim() ? (
-                          <p className="mt-1 text-ink">
-                            הערה: {entry.feedback?.notes?.trim() || entry.notes.trim()}
-                          </p>
-                        ) : null}
-                        {entry.videoUrl &&
-                        !entry.videoUrl.startsWith("blob:") &&
-                        isSignedWorkoutPerformanceVideo(entry.videoUrl) ? (
-                          <>
-                            <WorkoutVideoPlayer
-                              source={entry.videoUrl}
-                              title={`סרטון ביצוע עבור ${entry.exerciseName || "תרגיל"}`}
-                              className="mt-1.5 max-h-52 w-full rounded-lg bg-black object-contain"
-                            />
-                            {clientId && sessionId && entry.videoPath ? (
-                              <VideoFeedbackThread
-                                clientId={clientId}
-                                sessionId={sessionId}
-                                workoutId={workout.id}
-                                entry={entry}
-                                title={entry.exerciseName || "תרגיל"}
-                                videoFeedbacks={videoFeedbacks}
-                              />
-                            ) : null}
-                          </>
-                        ) : entry.videoUrl?.startsWith("blob:") ? (
-                          <p className="mt-1.5 rounded-lg bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-900">
-                            הסרטון עדיין בתהליך העלאה ולא זמין לצפייה כאן.
-                          </p>
-                        ) : null}
-                      </div>
-                    ))
-                  )}
-                </div>
-                <span
-                  className={`shrink-0 text-[10px] font-bold ${
-                    entries.length > 0 ? "text-emerald-700" : "text-muted-foreground"
-                  }`}
-                >
-                  {entries.length > 0 ? "בוצע בפועל" : "טרם בוצע"}
-                </span>
-              </div>
-              <WorkoutExerciseDemoVideos exercise={exercise} />
-            </div>
-          ))
+                    </div>
+                  );
+                })}
+
+                {exercise ? (
+                  <div className="border-t border-current/10 px-2.5 pb-3">
+                    <p className="mb-1.5 text-start text-[10px] font-bold text-primary">
+                      סרטון הדגמה של התרגיל
+                    </p>
+                    <WorkoutExerciseDemoVideos exercise={exercise} />
+                  </div>
+                ) : null}
+              </article>
+            );
+          })
         ) : (
           <p className="rounded-xl bg-white/80 p-3 text-center text-xs text-muted-foreground">
             באימון הזה עדיין לא הוגדרו תרגילים.
@@ -1761,7 +1869,7 @@ function WorkoutDailyReport({
 
       {additionalEntries.length > 0 ? (
         <div className="space-y-1.5">
-          <p className="text-[11px] font-extrabold text-ink">תרגילים שבוצעו ואינם בתוכנית</p>
+          <p className="text-[11px] font-extrabold text-ink">תרגילים שבוצעו בנוסף לתוכנית</p>
           {additionalEntries.map(({ entry, sessionId, index }) => {
             const exercise =
               exercises.find((candidate) => candidate.id === entry.exerciseId) ??
@@ -1772,36 +1880,60 @@ function WorkoutDailyReport({
                       entry.exerciseName.trim().toLocaleLowerCase(),
                   )
                 : undefined);
+            const additionalVideoUrl = entry.videoUrl;
             return (
               <div
                 key={`additional-${sessionId}-${entry.exerciseId}-${index}`}
-                className="rounded-xl border border-sky-200 bg-sky-50/65 p-2.5 text-[10px]"
+                className="rounded-2xl border border-sky-200 bg-sky-50/65 p-3 text-[11px]"
               >
                 <div className="flex items-start justify-between gap-2">
                   <strong className="text-start text-ink">{entry.exerciseName || "תרגיל"}</strong>
                   <span className="shrink-0 font-bold text-sky-800">בוצע בפועל</span>
                 </div>
+                <div className="mt-2 rounded-xl bg-white/75 p-2.5 text-start">
+                  <p className="font-extrabold text-sky-800">מה בוצע בפועל</p>
+                  <div className="mt-1 space-y-1 text-muted-foreground">
+                    {entry.sets.length > 0
+                      ? entry.sets.map((set, setIndex) => (
+                          <p key={`${sessionId}-${entry.exerciseId}-extra-set-${setIndex}`}>
+                            <span className="font-bold">סט {setIndex + 1}:</span>{" "}
+                            {set.weight} ק״ג × {set.reps} חזרות{" "}
+                            {set.done ? "✓" : "— לא בוצע"}
+                          </p>
+                        ))
+                      : "לא נרשמו סטים"}
+                  </div>
+                </div>
+                {entry.notes?.trim() ? (
+                  <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50/80 p-2 text-start text-amber-950">
+                    <strong>הערה:</strong> {entry.notes.trim()}
+                  </p>
+                ) : null}
+                {additionalVideoUrl &&
+                isSafeVideoSource(additionalVideoUrl) &&
+                !additionalVideoUrl.startsWith("blob:") ? (
+                  <div className="mt-2 rounded-xl border border-slate-200 bg-slate-950 p-1.5">
+                    <p className="px-1.5 pb-1.5 text-start text-[10px] font-bold text-white">
+                      סרטון ביצוע
+                    </p>
+                    <WorkoutVideoPlayer
+                      source={additionalVideoUrl}
+                      videoPath={entry.videoPath}
+                      title={`סרטון ביצוע עבור ${entry.exerciseName || "תרגיל"}`}
+                      className="max-h-60 w-full rounded-lg bg-black object-contain"
+                    />
+                  </div>
+                ) : null}
                 <WorkoutExerciseDemoVideos exercise={exercise} />
-                <p className="mt-1 text-muted-foreground">
-                  {entry.sets.length > 0
-                    ? entry.sets
-                        .map(
-                          (set, setIndex) =>
-                            `סט ${setIndex + 1}: ${set.weight} ק״ג × ${set.reps}${
-                              set.done ? " ✓" : " — לא בוצע"
-                            }`,
-                        )
-                        .join(" · ")
-                    : "לא נרשמו סטים"}
-                </p>
               </div>
             );
           })}
         </div>
       ) : null}
 
-      {sessions.some((session) => session.notes?.trim() || session.discomfortNotes?.trim()) ? (
+      {sessions.length > 0 ? (
         <div className="space-y-1.5">
+          <p className="text-[11px] font-extrabold text-ink">סיכום והערות לסיום האימון</p>
           {sessions.map((session) => (
             <div key={`${session.id}-notes`}>
               {session.notes?.trim() ? (
@@ -1816,6 +1948,11 @@ function WorkoutDailyReport({
               ) : null}
             </div>
           ))}
+          {!sessions.some((session) => session.notes?.trim() || session.discomfortNotes?.trim()) ? (
+            <p className="rounded-lg bg-white/75 px-2 py-1.5 text-[10px] text-muted-foreground">
+              לא נרשמו הערות כלליות או דיווח על אי־נוחות באימון הזה.
+            </p>
+          ) : null}
         </div>
       ) : null}
 
