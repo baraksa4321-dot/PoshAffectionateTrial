@@ -661,10 +661,28 @@ function WorkoutVideoPlayer({
   const embedUrl = youtubeEmbedUrl(playbackSource);
 
   useEffect(() => {
+    let cancelled = false;
     setHasError(false);
     setPlaybackSource(source);
     setIsRefreshing(false);
     setDidRefresh(false);
+    if (!isSafeVideoSource(source) && videoPath) {
+      setIsRefreshing(true);
+      setDidRefresh(true);
+      void signWorkoutPerformanceVideo(videoPath)
+        .then((freshUrl) => {
+          if (!cancelled) setPlaybackSource(freshUrl);
+        })
+        .catch(() => {
+          if (!cancelled) setHasError(true);
+        })
+        .finally(() => {
+          if (!cancelled) setIsRefreshing(false);
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
   }, [source, videoPath]);
 
   const handleVideoError = async () => {
@@ -686,7 +704,14 @@ function WorkoutVideoPlayer({
     }
   };
 
-  if (!isSafeVideoSource(source)) {
+  if (!isSafeVideoSource(playbackSource)) {
+    if (isRefreshing) {
+      return (
+        <div className={className ?? "rounded-lg bg-black p-3 text-center text-[11px] text-white"}>
+          טוען את הסרטון...
+        </div>
+      );
+    }
     return (
       <div className={className ?? "rounded-lg bg-black p-3 text-center text-[11px] text-white"}>
         הסרטון אינו זמין להצגה.
@@ -980,6 +1005,7 @@ function VideoFeedbackInbox({
                   <div className="mt-2 aspect-video overflow-hidden rounded-xl bg-black">
                     <WorkoutVideoPlayer
                       source={video.entry.videoUrl ?? ""}
+                      videoPath={video.entry.videoPath}
                       title={`סרטון ביצוע של ${video.clientName} · ${
                         video.entry.exerciseName || "תרגיל"
                       }`}
@@ -1120,7 +1146,7 @@ function WorkoutReviewExerciseCard({
             const videoUrl =
               entry.videoUrl &&
               !entry.videoUrl.startsWith("blob:") &&
-              isSignedWorkoutPerformanceVideo(entry.videoUrl)
+              isSafeVideoSource(entry.videoUrl)
                 ? entry.videoUrl
                 : undefined;
             return (
@@ -1180,11 +1206,10 @@ function WorkoutReviewExerciseCard({
                     <p className="mb-1.5 flex items-center gap-1 text-[11px] font-bold text-primary">
                       <Video className="h-3.5 w-3.5" /> סרטון ביצוע
                     </p>
-                    <video
-                      src={videoUrl}
-                      controls
-                      playsInline
-                      preload="metadata"
+                    <WorkoutVideoPlayer
+                      source={videoUrl ?? ""}
+                      videoPath={entry.videoPath}
+                      title={`סרטון ביצוע עבור ${title}`}
                       className="max-h-64 w-full rounded-lg bg-black object-contain"
                     />
                   </div>
