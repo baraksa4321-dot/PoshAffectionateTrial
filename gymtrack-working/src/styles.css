@@ -877,13 +877,6 @@ html.night-mode .nutrition-balance-card {
     padding-top: max(3rem, env(safe-area-inset-top)) !important;
   }
 
-  .workout-report-bookmark {
-    top: max(3rem, env(safe-area-inset-top)) !important;
-  }
-
-  .workout-report-panel {
-    padding-top: 1rem !important;
-  }
 }
 
 html.night-mode .app-topbar {
@@ -4943,109 +4936,55 @@ html[data-keyboard-open] .nav-shell {
   display: none;
 }
 
-.workout-surface-bookmark {
-  position: absolute;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid color-mix(in oklch, var(--primary) 35%, var(--border));
-  background: var(--background);
-  color: var(--primary);
-  box-shadow: 0 8px 24px oklch(0.2 0.03 35 / 0.12);
-  transition:
-    background-color 180ms ease,
-    color 180ms ease,
-    transform 180ms ease;
-}
-
-.workout-surface-bookmark:hover,
-.workout-surface-bookmark:focus-visible,
-.workout-report-bookmark-open {
-  background: var(--primary);
-  color: var(--primary-foreground);
-}
-
-.workout-surface-bookmark:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-.workout-report-bookmark {
-  position: absolute;
-  z-index: 5;
-  top: 1rem;
-  right: 0;
-  min-height: 7rem;
-  width: 2.75rem;
-  border-left: 0;
-  border-radius: 0.75rem 0 0 0.75rem;
-  transform: none;
-  font-size: 0.7rem;
-}
-
-.workout-report-bookmark:hover,
-.workout-report-bookmark:focus-visible {
-  transform: translateY(-1px);
-}
-
-.workout-report-bookmark-open {
-  left: 0;
-  right: auto;
-  border-right: 0;
-  border-left: 0;
-  border-radius: 0 0.75rem 0.75rem 0;
-}
-
-.workout-report-bookmark-open:hover,
-.workout-report-bookmark-open:focus-visible {
-  transform: translateY(-1px);
-}
-
-.workout-report-bookmark span {
-  writing-mode: vertical-rl;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-}
-
 .workout-report-panel {
   position: absolute;
-  z-index: 3;
-  inset: 0;
+  z-index: 8;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(100%, 34rem);
   box-sizing: border-box;
   overflow-y: auto;
-  max-height: 100%;
-  border-radius: 0;
-  border: 0;
+  visibility: hidden;
+  pointer-events: none;
+  border-inline-end: 1px solid color-mix(in oklch, var(--primary) 18%, var(--border));
   background: var(--background);
-  padding: 1.25rem 1rem calc(5.5rem + env(safe-area-inset-bottom));
-  box-shadow: 0 18px 36px rgb(var(--shadow-color) / 12%);
+  padding: 1rem 1rem calc(5.5rem + env(safe-area-inset-bottom));
+  box-shadow: 14px 0 34px rgb(var(--shadow-color) / 14%);
+  transform: translateX(-104%);
+  transition:
+    transform 260ms cubic-bezier(0.22, 0.8, 0.24, 1),
+    visibility 0s linear 260ms;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 
-.workout-report-bookmark-open ~ .workout-report-panel {
-  inset: 0;
+.workout-report-panel[data-open="true"] {
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(0);
+  transition-delay: 0s;
 }
 
-.workout-report-panel > div:first-child {
-  padding-left: 4rem;
+.workout-report-drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid color-mix(in oklch, var(--primary) 16%, var(--border));
+  padding-bottom: 0.85rem;
 }
 
-/* The inline coach editor has one page scroll root. Keep the report tab
-   available while its workout content moves underneath it on small screens. */
 @media (max-width: 767px) {
-  .overlay-inline-panel .workout-report-bookmark {
-    position: fixed;
-    top: calc(var(--app-topbar-height, 0px) + 0.75rem);
-    right: 0;
-    width: 2.75rem;
+  .overlay-inline-panel .workout-builder-surface {
+    width: calc(100% + 2rem);
+    margin-inline: -1rem;
   }
+}
 
-  .overlay-inline-panel .workout-report-bookmark-open {
-    left: 0;
-    right: auto;
+@media (prefers-reduced-motion: reduce) {
+  .workout-report-panel {
+    transition: none;
   }
 }
 

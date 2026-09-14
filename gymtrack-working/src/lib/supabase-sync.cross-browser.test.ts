@@ -439,6 +439,54 @@ describe("cross-browser Supabase sync boundaries", () => {
     ]);
   });
 
+  test("retries program days without weekday when the connected schema is behind", async () => {
+    setResponse("profiles", { id: "client-b", role: "client", weight_kg: 70 });
+    setResponse("programs", [
+      {
+        id: "program-1",
+        user_id: "client-b",
+        name: "תוכנית התחלה",
+        description: "",
+      },
+    ]);
+    setActionResponses("program_days", "select", [
+      {
+        data: null,
+        error: {
+          code: "PGRST204",
+          message: "Could not find the 'weekday' column of 'program_days' in the schema cache",
+        },
+      },
+      {
+        data: [
+          {
+            id: "day-1",
+            program_id: "program-1",
+            user_id: "client-b",
+            name: "יום ראשון",
+            items: [],
+            sort_order: 0,
+            updated_at: "2026-09-14T00:00:00.000Z",
+          },
+        ],
+        error: null,
+      },
+    ]);
+
+    const { pullClientDataForCoach } = await syncModule;
+    const result = await pullClientDataForCoach("client-b");
+
+    expect(result.error).toBeUndefined();
+    expect(result.workouts).toEqual([
+      expect.objectContaining({
+        id: "day-1",
+        name: "יום ראשון",
+        items: [],
+      }),
+    ]);
+    expect(callsFor("program_days", "select")).toHaveLength(2);
+  });
+
   test("keeps coach and client data queries scoped to the requested client", async () => {
     setResponse("profiles", { id: "client-b", role: "client", weight_kg: 70 });
     setResponse("custom_exercises", [

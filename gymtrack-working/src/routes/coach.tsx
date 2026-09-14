@@ -7594,6 +7594,29 @@ export function CoachDashboardPage({
                                               <button
                                                 type="button"
                                                 onClick={() => {
+                                                  setOpenWorkoutReportId((current) =>
+                                                    current === dayItem.id ? null : dayItem.id,
+                                                  );
+                                                  setShowExerciseForm(false);
+                                                  setEditingItemId(null);
+                                                  setSelectedExId("");
+                                                }}
+                                                aria-label="פתיחת דוח"
+                                                title="פתיחת דוח"
+                                                aria-controls={`workout-report-${dayItem.id}`}
+                                                aria-expanded={openWorkoutReportId === dayItem.id}
+                                                className={`workout-report-trigger inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-[11px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                                                  openWorkoutReportId === dayItem.id
+                                                    ? "border-primary bg-primary text-primary-foreground"
+                                                    : "border-primary/25 bg-primary/5 text-primary hover:bg-primary/10"
+                                                }`}
+                                              >
+                                                <Activity className="h-3.5 w-3.5" aria-hidden="true" />
+                                                דוח אימון
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
                                                   setShowExerciseForm((current) => !current);
                                                   setEditingItemId(null);
                                                   setSelectedExId("");
@@ -9383,40 +9406,15 @@ export function CoachDashboardPage({
                                               </form>
                                             </ExerciseBuilderPlacement>
                                           )}
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setOpenWorkoutReportId((current) =>
-                                                current === dayItem.id ? null : dayItem.id,
-                                              );
-                                            }}
-                                            aria-label={
-                                              openWorkoutReportId === dayItem.id
-                                                ? "סגירת דוח"
-                                                : "פתיחת דוח"
-                                            }
-                                            aria-expanded={openWorkoutReportId === dayItem.id}
-                                            aria-controls={`workout-report-${dayItem.id}`}
-                                            title={
-                                              openWorkoutReportId === dayItem.id
-                                                ? "סגירת דוח"
-                                                : "פתיחת דוח"
-                                            }
-                                            className={`workout-surface-bookmark workout-report-bookmark ${
-                                              openWorkoutReportId === dayItem.id
-                                                ? "workout-report-bookmark-open"
-                                                : ""
-                                            }`}
+                                          <section
+                                            id={`workout-report-${dayItem.id}`}
+                                            className="workout-report-panel"
+                                            data-open={openWorkoutReportId === dayItem.id}
+                                            aria-hidden={openWorkoutReportId !== dayItem.id}
+                                            aria-labelledby={`workout-report-heading-${dayItem.id}`}
                                           >
-                                            <span>דוח</span>
-                                          </button>
-                                          {openWorkoutReportId === dayItem.id ? (
-                                            <section
-                                              id={`workout-report-${dayItem.id}`}
-                                              className="workout-report-panel"
-                                              aria-labelledby={`workout-report-heading-${dayItem.id}`}
-                                            >
-                                              <div className="mb-3 min-w-0 pe-8">
+                                            <div className="workout-report-drawer-header">
+                                              <div className="min-w-0">
                                                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
                                                   דוח האימון
                                                 </p>
@@ -9427,22 +9425,30 @@ export function CoachDashboardPage({
                                                   {dayItem.name}
                                                 </h3>
                                               </div>
-                                              <WorkoutDailyReport
-                                                workout={dayItem}
-                                                history={clientDetails?.history ?? []}
-                                                clientId={selectedClientId ?? undefined}
-                                                videoFeedbacks={clientDetails?.videoFeedbacks ?? []}
-                                                exercises={Array.from(
-                                                  new Map(
-                                                    [
-                                                      ...store.exercises,
-                                                      ...(clientDetails?.exercises ?? []),
-                                                    ].map((exercise) => [exercise.id, exercise]),
-                                                  ).values(),
-                                                )}
-                                              />
-                                            </section>
-                                          ) : null}
+                                              <button
+                                                type="button"
+                                                onClick={() => setOpenWorkoutReportId(null)}
+                                                aria-label="סגירת דוח"
+                                                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border bg-surface text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                              >
+                                                <X className="h-4 w-4" aria-hidden="true" />
+                                              </button>
+                                            </div>
+                                            <WorkoutDailyReport
+                                              workout={dayItem}
+                                              history={clientDetails?.history ?? []}
+                                              clientId={selectedClientId ?? undefined}
+                                              videoFeedbacks={clientDetails?.videoFeedbacks ?? []}
+                                              exercises={Array.from(
+                                                new Map(
+                                                  [
+                                                    ...store.exercises,
+                                                    ...(clientDetails?.exercises ?? []),
+                                                  ].map((exercise) => [exercise.id, exercise]),
+                                                ).values(),
+                                              )}
+                                            />
+                                          </section>
                                         </div>
                                       </WorkoutSurfacePlacement>
                                     );

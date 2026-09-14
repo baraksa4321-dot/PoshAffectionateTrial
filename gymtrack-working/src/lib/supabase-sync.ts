@@ -404,6 +404,25 @@ function isSchemaCompatibilityError(error: unknown, tableName: string): boolean 
   );
 }
 
+const legacyProgramDaysSelect =
+  "id, program_id, user_id, name, items, sort_order, updated_at";
+
+async function selectProgramDaysForUser(userId: string) {
+  const result = await supabase.from("program_days").select("*").eq("user_id", userId);
+  if (!result.error || !isMissingColumnInSchema(result.error, "program_days", "weekday")) {
+    return result;
+  }
+
+  // Migration 50 is additive, but older connected Supabase projects can
+  // briefly expose the old schema cache. Keep the plan usable while the
+  // project catches up instead of failing the entire coach workspace.
+  console.warn("[Program days pull] weekday column is missing; using legacy columns");
+  return supabase
+    .from("program_days")
+    .select(legacyProgramDaysSelect)
+    .eq("user_id", userId);
+}
+
 function cardioCloudId(localId: string): string {
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(localId)) {
     return localId;
@@ -1431,7 +1450,7 @@ export async function pullSupabaseData(userId: string, localState: GymData): Pro
       .select("*")
       .eq("user_id", userId);
     const programsPromise = supabase.from("programs").select("*").eq("user_id", userId);
-    const programDaysPromise = supabase.from("program_days").select("*").eq("user_id", userId);
+    const programDaysPromise = selectProgramDaysForUser(userId);
     const challengesPromise = supabase.from("challenges").select("*");
     const challengeEnrollmentsPromise = supabase
       .from("challenge_enrollments")
@@ -2033,7 +2052,7 @@ export async function pullClientDataForCoach(clientId: string): Promise<CoachCli
       supabase.from("profiles").select("*").eq("id", clientId).maybeSingle(),
       supabase.from("custom_exercises").select("*").eq("user_id", clientId),
       supabase.from("programs").select("*").eq("user_id", clientId),
-      supabase.from("program_days").select("*").eq("user_id", clientId),
+      selectProgramDaysForUser(clientId),
       supabase
         .from("nutrition_days")
         .select("*")
