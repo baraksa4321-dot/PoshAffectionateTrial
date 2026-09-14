@@ -8,7 +8,9 @@ const read = (relativePath: string) => readFileSync(`${here}/${relativePath}`, "
 const coachRoute = read("../routes/coach.tsx");
 const homeRoute = read("../routes/index.tsx");
 const sync = read("./supabase-sync.ts");
+const notificationService = read("./notification-service.ts");
 const migration = read("../../supabase/migrations/59_video_feedback.sql");
+const reminderMigration = read("../../supabase/migrations/62_video_feedback_reminders.sql");
 
 describe("video feedback contracts", () => {
   test("coach feedback is attached to the uploaded video and client", () => {
@@ -31,5 +33,14 @@ describe("video feedback contracts", () => {
     expect(migration).toContain("GRANT UPDATE (seen_at) ON public.video_feedback TO authenticated");
     expect(migration).toContain("public.is_coach_of(client_id)");
     expect(migration).toContain("ALTER PUBLICATION supabase_realtime ADD TABLE public.video_feedback");
+  });
+
+  test("unread feedback schedules one durable five-day reminder and cancels it when seen", () => {
+    expect(notificationService).toContain("schedule_video_feedback_reminder");
+    expect(notificationService).toContain("cancel_video_feedback_reminder");
+    expect(homeRoute).toContain("scheduleVideoFeedbackReminder");
+    expect(reminderMigration).toContain("public.video_feedback_reminders");
+    expect(reminderMigration).toContain("p_remind_at > NOW()");
+    expect(reminderMigration).toContain("cancel_video_feedback_reminder");
   });
 });

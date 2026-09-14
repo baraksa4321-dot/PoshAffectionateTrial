@@ -14,6 +14,14 @@ type TimerRow = {
   attempts: number;
 };
 
+type FeedbackReminderRow = {
+  id: string;
+  feedback_id: string;
+  client_id: string;
+  remind_at: string;
+  attempts: number;
+};
+
 function base64Url(value: ArrayBuffer | string) {
   const bytes = typeof value === "string" ? new TextEncoder().encode(value) : new Uint8Array(value);
   let binary = "";
@@ -137,6 +145,80 @@ async function sendTimerPushes(
   return { sent, failed, invalidTokens };
 }
 
+async function sendFeedbackReminderPushes(
+  admin: ReturnType<typeof createClient>,
+  reminder: FeedbackReminderRow,
+  accessToken: string,
+  projectId: string,
+) {
+  const { data: tokens, error } = await admin
+    .from("push_tokens")
+    .select("token, platform")
+    .eq("user_id", reminder.client_id);
+  if (error) throw new Error(`Could not load feedback reminder devices: ${error.message}`);
+  if (!tokens?.length) return { sent: 0, failed: 0, invalidTokens: [] as string[] };
+
+  const title = "יש לך משוב חדש מהמאמן";
+  const body = "עברו כמה ימים ועדיין לא אישרת את המשוב. כדאי להיכנס ולצפות בו.";
+  const invalidTokens: string[] = [];
+  let sent = 0;
+  let failed = 0;
+  for (const tokenRow of tokens) {
+    const nativePlatform = tokenRow.platform === "android" || tokenRow.platform === "ios";
+    const response = await fetch(
+      `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+      {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          message: {
+            token: tokenRow.token,
+            ...(nativePlatform
+              ? {
+                  notification: { title, body },
+                  ...(tokenRow.platform === "android"
+                    ? {
+                        android: {
+                          priority: "high",
+                          notification: { channel_id: "gymtrack", sound: "default" },
+                        },
+                      }
+                    : {
+                        apns: {
+                          headers: { "apns-push-type": "alert", "apns-priority": "10" },
+                          payload: { aps: { sound: "default" } },
+                        },
+                      }),
+                }
+              : {}),
+            data: {
+              type: "video-feedback-reminder",
+              messageId: `video-feedback-reminder:${reminder.id}`,
+              feedbackId: reminder.feedback_id,
+              title,
+              body,
+              deep_link: "/",
+            },
+          },
+        }),
+      },
+    );
+    if (response.ok) {
+      sent += 1;
+      continue;
+    }
+    failed += 1;
+    const responseBody = await response.text();
+    if (responseBody.includes("UNREGISTERED") || responseBody.includes("NOT_FOUND")) {
+      invalidTokens.push(tokenRow.token);
+    }
+  }
+  return { sent, failed, invalidTokens };
+}
+
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -164,6 +246,16 @@ Deno.serve(async (request) => {
       .order("ends_at", { ascending: true })
       .limit(100);
     if (dueError) throw new Error(`Could not load due rest timers: ${dueError.message}`);
+    const { data: dueFeedbackReminders, error: feedbackDueError } = await admin
+      .from("video_feedback_reminders")
+      .select("id,feedback_id,client_id,remind_at,attempts")
+      .eq("status", "scheduled")
+      .lte("remind_at", now)
+      .order("remind_at", { ascending: true })
+      .limit(100);
+    if (feedbackDueError) {
+      throw new Error(`Could not load due feedback reminders: ${feedbackDueError.message}`);
+    }
 
     const projectId = Deno.env.get("FIREBASE_PROJECT_ID")?.trim();
     if (!projectId) throw new Error("Firebase project id is missing.");
@@ -231,7 +323,77 @@ Deno.serve(async (request) => {
         failed += 1;
       }
     }
-    return jsonResponse({ processed: dueTimers?.length ?? 0, sent, failed, skipped });
+    for (const reminder of (dueFeedbackReminders ?? []) as FeedbackReminderRow[]) {
+      const { data: claimed, error: claimError } = await admin
+        .from("video_feedback_reminders")
+        .update({
+          status: "claimed",
+          attempts: reminder.attempts + 1,
+          claimed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", reminder.id)
+        .eq("status", "scheduled")
+        .select("id,feedback_id,client_id,remind_at,attempts")
+        .maybeSingle();
+      if (claimError) throw new Error(`Could not claim feedback reminder: ${claimError.message}`);
+      if (!claimed) {
+        skipped += 1;
+        continue;
+      }
+
+      try {
+        accessToken ??= await googleAccessToken();
+        const result = await sendFeedbackReminderPushes(
+          admin,
+          claimed as FeedbackReminderRow,
+          accessToken,
+          projectId,
+        );
+        sent += result.sent;
+        failed += result.failed;
+        if (result.invalidTokens.length) {
+          await admin.from("push_tokens").delete().in("token", result.invalidTokens);
+        }
+        const delivered = result.sent > 0 || result.failed === 0;
+        await admin
+          .from("video_feedback_reminders")
+          .update(
+            delivered
+              ? {
+                  status: "delivered",
+                  delivered_at: new Date().toISOString(),
+                  last_error: null,
+                  updated_at: new Date().toISOString(),
+                }
+              : {
+                  status: claimed.attempts >= MAX_ATTEMPTS ? "failed" : "scheduled",
+                  last_error: "FCM did not accept the feedback reminder push.",
+                  claimed_at: null,
+                  updated_at: new Date().toISOString(),
+                },
+          )
+          .eq("id", claimed.id);
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : "Unknown push failure.";
+        await admin
+          .from("video_feedback_reminders")
+          .update({
+            status: claimed.attempts >= MAX_ATTEMPTS ? "failed" : "scheduled",
+            last_error: detail.slice(0, 1_000),
+            claimed_at: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", claimed.id);
+        failed += 1;
+      }
+    }
+    return jsonResponse({
+      processed: (dueTimers?.length ?? 0) + (dueFeedbackReminders?.length ?? 0),
+      sent,
+      failed,
+      skipped,
+    });
   } catch (error) {
     console.error("[dispatch-rest-timer-notifications]", error);
     return jsonResponse(

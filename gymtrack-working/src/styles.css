@@ -4770,7 +4770,7 @@ html:not([data-loading-account="animation"]) .loading-plain-content {
   overflow-y: auto;
   overscroll-behavior-y: contain;
   scroll-padding-top: calc(var(--app-topbar-height, 5rem) + 1rem);
-  scroll-padding-bottom: 6.5rem;
+  scroll-padding-bottom: calc(9rem + env(safe-area-inset-bottom));
 }
 
 /* Personal workout pages need enough scroll tail to expose the cardio card

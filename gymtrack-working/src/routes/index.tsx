@@ -533,6 +533,42 @@ function Dashboard() {
       setMarkingFeedbackId(null);
     }
   };
+  const feedbackReminderPayload = JSON.stringify(
+    videoFeedbackRows.map(({ feedback }) => ({
+      id: feedback.id,
+      createdAt: feedback.createdAt,
+      seen: Boolean(feedback.seenAt || locallySeenFeedbackIds.has(feedback.id)),
+    })),
+  );
+  useEffect(() => {
+    if (!authUser?.id) return;
+    let cancelled = false;
+    void import("@/lib/notification-service")
+      .then(({ scheduleVideoFeedbackReminder, cancelVideoFeedbackReminder }) =>
+        Promise.all(
+          (JSON.parse(feedbackReminderPayload) as Array<{
+            id: string;
+            createdAt: string;
+            seen: boolean;
+          }>).map((feedback) =>
+            (feedback.seen
+              ? cancelVideoFeedbackReminder(feedback.id)
+              : scheduleVideoFeedbackReminder(feedback.id, feedback.createdAt)
+            ).catch((error) => {
+              if (!cancelled) {
+                console.warn("[Feedback reminder] Could not update reminder:", error);
+              }
+            }),
+          ),
+        ),
+      )
+      .catch((error) => {
+        if (!cancelled) console.warn("[Feedback reminder] Could not load reminder service:", error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser?.id, feedbackReminderPayload]);
   const latestBroadcast =
     broadcasts?.find((message) => !dismissedMessageIds.includes(message.id)) ?? null;
   const dismissMessage = async (id: string, isBroadcast: boolean) => {
@@ -601,6 +637,29 @@ function Dashboard() {
           >
             <Scale className="h-3.5 w-3.5" aria-hidden="true" />
             שקילה
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowVideoFeedbackModal(true)}
+            aria-label={
+              unreadVideoFeedbackCount > 0
+                ? `${unreadVideoFeedbackCount} משובים חדשים`
+                : "פתיחת משובים"
+            }
+            title="משובים מהמאמן"
+            data-testid="video-feedback-home-button"
+            className="bodyweight-header-toggle press relative inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-1 text-[9px] font-medium text-primary transition-colors hover:bg-primary/10"
+          >
+            <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
+            משובים
+            {unreadVideoFeedbackCount > 0 ? (
+              <span
+                className="absolute -end-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-extrabold leading-none text-primary-foreground shadow-sm"
+                aria-hidden="true"
+              >
+                {unreadVideoFeedbackCount > 99 ? "99+" : unreadVideoFeedbackCount}
+              </span>
+            ) : null}
           </button>
         </div>
       }
@@ -680,39 +739,6 @@ function Dashboard() {
             </p>
           </div>
         )}
-
-        <button
-          type="button"
-          {...homeCardProps("video-feedback")}
-          onClick={() => setShowVideoFeedbackModal(true)}
-          className="dashboard-notice surface-card flex w-full items-center justify-between gap-3 border-primary/20 bg-primary/5 p-4 text-start"
-          data-testid="video-feedback-home-button"
-        >
-          <span className="flex min-w-0 items-center gap-2">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
-              <Video className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <span className="min-w-0">
-              <span className="flex items-center gap-2 text-sm font-bold text-ink">
-                משובים על סרטוני התרגילים
-                {unreadVideoFeedbackCount > 0 ? (
-                  <span
-                    className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-extrabold text-primary-foreground"
-                    aria-label={`${unreadVideoFeedbackCount} משובים חדשים`}
-                  >
-                    {unreadVideoFeedbackCount}
-                  </span>
-                ) : null}
-              </span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">
-                {videoFeedbackRows.length > 0
-                  ? `${videoFeedbackRows.length} משובים מהמאמן על הסרטונים שלך`
-                  : "כאן יופיעו משובים שהמאמן יכתוב על הסרטונים שלך"}
-              </span>
-            </span>
-          </span>
-          <span className="shrink-0 text-[10px] font-bold text-primary">פתיחה</span>
-        </button>
 
         {/* Consistency Banner */}
         <div
@@ -922,18 +948,18 @@ function Dashboard() {
             </button>
           </div>
           <div className="grid grid-cols-3 gap-2.5">
-            <StatTile label="אימונים" value={String(thisWeek.length)} icon={Flame} tone="rose" />
+            <StatTile label="אימונים" value={String(thisWeek.length)} icon={Flame} tone="sage" />
             <StatTile
               label="נפח ק״ג"
               value={volume >= 1000 ? `${(volume / 1000).toFixed(1)}k` : String(Math.round(volume))}
               icon={TrendingUp}
-              tone="rose"
+              tone="sage"
             />
             <StatTile
               label="זמן אימון"
               value={`${totalDurationMin}m`}
               icon={Dumbbell}
-              tone="cream"
+              tone="sage"
             />
           </div>
         </section>

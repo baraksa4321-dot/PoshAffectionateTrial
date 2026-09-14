@@ -18,9 +18,16 @@ GymTrack has two supported delivery paths:
   notification sound. A regular web tab without granted notifications cannot
   receive a closed-app alert.
 
+The same durable dispatcher also sends trainee reminders for unread coach video
+feedback. When the trainee opens the dashboard, each unread feedback item is
+scheduled for five days after it was created. Opening the feedback marks it
+seen and cancels its pending reminder. A reminder is sent only once after a
+successful FCM delivery.
+
 ## Deployment
 
-1. Apply migration `61_rest_timer_notifications.sql`.
+1. Apply migrations `61_rest_timer_notifications.sql` and
+   `62_video_feedback_reminders.sql`.
 2. Deploy both Edge Functions:
    `send-fcm-notification` and `dispatch-rest-timer-notifications`.
 3. Configure a Supabase scheduled invocation for
@@ -39,6 +46,9 @@ guarantee millisecond timing. The native path remains the exact local schedule.
 - Scheduling is an authenticated upsert by `(user_id, timer_key)`. Reconnect,
   focus, visibility, and online events upsert the same row, so they do not
   create additional alerts.
+- Feedback reminders are an authenticated upsert by `feedback_id`; repeated
+  dashboard hydration does not reset a reminder that was already delivered or
+  failed.
 - Pausing or replacing a timer calls `cancel_rest_timer`; cancellation marks
   scheduled or claimed rows cancelled. A cancellation that races with a push
   already accepted by FCM can still produce that one in-flight alert.

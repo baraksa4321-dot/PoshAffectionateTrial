@@ -579,6 +579,36 @@ export async function clearWorkoutReminders() {
   }
 }
 
+const VIDEO_FEEDBACK_REMINDER_DELAY_MS = 5 * 24 * 60 * 60 * 1_000;
+
+function feedbackReminderDate(createdAt: string) {
+  const createdAtMs = Date.parse(createdAt);
+  const earliest = Date.now() + 60_000;
+  return new Date(
+    Math.max(
+      Number.isFinite(createdAtMs) ? createdAtMs + VIDEO_FEEDBACK_REMINDER_DELAY_MS : earliest,
+      earliest,
+    ),
+  );
+}
+
+export async function scheduleVideoFeedbackReminder(feedbackId: string, createdAt: string) {
+  if (!feedbackId) return;
+  const { error } = await supabase.rpc("schedule_video_feedback_reminder", {
+    p_feedback_id: feedbackId,
+    p_remind_at: feedbackReminderDate(createdAt).toISOString(),
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function cancelVideoFeedbackReminder(feedbackId: string) {
+  if (!feedbackId) return;
+  const { error } = await supabase.rpc("cancel_video_feedback_reminder", {
+    p_feedback_id: feedbackId,
+  });
+  if (error) throw new Error(error.message);
+}
+
 export async function notifyRemotePush(payload: {
   recipientUserId?: string;
   audience?: "assigned_clients" | "coaches" | "clients" | "everyone";

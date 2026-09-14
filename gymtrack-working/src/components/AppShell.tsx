@@ -1180,7 +1180,7 @@ export function AppShell({
         onTouchStart={handleMainTouchStart}
         onTouchEnd={handleMainTouchEnd}
         style={{
-          paddingBottom: "calc(4.8rem + env(safe-area-inset-bottom))",
+          paddingBottom: "calc(9rem + env(safe-area-inset-bottom))",
         }}
       >
         {user ? <span className="sr-only">{syncTitle}</span> : null}
