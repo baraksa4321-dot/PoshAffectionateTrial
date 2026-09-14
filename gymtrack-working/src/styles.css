@@ -9304,7 +9304,7 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   top: 50%;
   left: 50%;
   z-index: 1;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) !important;
 }
 
 .app-auth-shell .app-topbar__accessory {
@@ -9317,7 +9317,11 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 }
 
 .app-auth-shell .app-workspace-switcher {
-  top: 50%;
+  top: 50% !important;
+}
+
+.app-auth-shell .app-topbar__heading {
+  margin-top: -0.45rem;
 }
 
 @media (max-width: 639px) {
