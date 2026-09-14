@@ -1087,20 +1087,24 @@ export function AppShell({
               ) : null}
             </div>
           ) : null}
-          {!hideHeading && (title || action || (user && showHomeOnlyHeaderControls) || !user) ? (
+          {(title || action || (user && showHomeOnlyHeaderControls) || !user) ? (
             <div className="app-topbar__heading flex items-start gap-3">
               <div className="min-w-0 flex-1 text-start">
-                {kicker ? <p className="app-shell-kicker">{kicker}</p> : null}
-                {title ? (
-                  <h1
-                    className={`min-w-0 break-words font-display font-extrabold leading-snug tracking-tight text-ink ${
-                      compactHeader
-                        ? "text-[clamp(15px,4vw,18px)]"
-                        : "text-[clamp(16px,4.5vw,20px)]"
-                    }`}
-                  >
-                    {headerTitle}
-                  </h1>
+                {!hideHeading ? (
+                  <>
+                    {kicker ? <p className="app-shell-kicker">{kicker}</p> : null}
+                    {title ? (
+                      <h1
+                        className={`min-w-0 break-words font-display font-extrabold leading-snug tracking-tight text-ink ${
+                          compactHeader
+                            ? "text-[clamp(15px,4vw,18px)]"
+                            : "text-[clamp(16px,4.5vw,20px)]"
+                        }`}
+                      >
+                        {headerTitle}
+                      </h1>
+                    ) : null}
+                  </>
                 ) : null}
               </div>
               <div className="flex shrink-0 items-center gap-2 pt-0.5">
