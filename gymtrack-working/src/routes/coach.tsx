@@ -5493,6 +5493,7 @@ export function CoachDashboardPage({
   const pendingApprovals = allProfiles.filter(
     (profile) => profile.role === "client" && profile.approval_status === "pending",
   );
+  const pendingApprovalCount = pendingApprovals.length + pendingChallenges.length;
   const visibleAttentionItems =
     attentionView === "open" ? attentionItems.filter((item) => !item.reviewed) : attentionItems;
   const attentionOpenCount = attentionItems.filter(
@@ -5768,17 +5769,17 @@ export function CoachDashboardPage({
               setOwnerHomeTab((current) => (current === "approvals" ? "overview" : "approvals"))
             }
             aria-pressed={ownerHomeTab === "approvals"}
-            aria-label="פתיחת אישורי הרשמה"
-            title="אישורי הרשמה"
+            aria-label="פתיחת אישורי משתמשים ואתגרים"
+            title="אישורים"
             className={`surface-card flex min-w-0 items-center justify-center gap-1 border-primary/25 bg-primary/5 px-1.5 py-2 text-[9px] font-bold text-primary transition-colors hover:border-primary/50 hover:bg-primary/10 ${
               ownerHomeTab === "approvals" ? "ring-2 ring-primary/25" : ""
             }`}
           >
             <UserCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             <span className="truncate">אישורים</span>
-            {pendingApprovals.length > 0 ? (
+            {pendingApprovalCount > 0 ? (
               <span className="rounded-full bg-primary/15 px-1 py-0.5 text-[8px] leading-none">
-                {pendingApprovals.length}
+                {pendingApprovalCount}
               </span>
             ) : null}
           </button>
@@ -6267,7 +6268,7 @@ export function CoachDashboardPage({
               setOwnerHomeTab("overview");
               setSelectedOwnerProfileId(null);
             }}
-            ariaLabel="ניהול פרופילים והרשאות בעלים"
+            ariaLabel="אישורי משתמשים ואתגרים ופרופילים"
             panelClassName="max-w-3xl p-0"
           >
             <div className="surface-card space-y-3 rounded-3xl border border-purple-200 bg-purple-50/60 p-3 sm:p-5">
@@ -6280,9 +6281,9 @@ export function CoachDashboardPage({
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-full">
-                     {ownerHomeTab === "approvals"
-                       ? `${pendingApprovals.length} ממתינים`
-                       : `${profileDirectory.length} משתמשים במערכת`}
+                    {ownerHomeTab === "approvals"
+                      ? `${pendingApprovalCount} ממתינים`
+                      : `${profileDirectory.length} משתמשים במערכת`}
                   </span>
                   <button
                     type="button"
@@ -6290,7 +6291,7 @@ export function CoachDashboardPage({
                       setOwnerHomeTab("overview");
                       setSelectedOwnerProfileId(null);
                     }}
-                    aria-label="סגירת כרטיס הפרופילים"
+                    aria-label="סגירת כרטיס האישורים והפרופילים"
                     className="grid h-7 w-7 place-items-center rounded-full text-purple-800 transition-colors hover:bg-purple-100"
                   >
                     <X className="h-4 w-4" />
@@ -6426,9 +6427,66 @@ export function CoachDashboardPage({
                   ) : null}
                 </div>
               ) : null}
-              {ownerHomeTab === "approvals" && pendingApprovals.length === 0 ? (
+              {isOwner && pendingChallenges.length > 0 ? (
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-bold text-ink">אישור אתגרים למתאמנים</p>
+                    <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">
+                      {pendingChallenges.length} ממתינים
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                    אתגרים שמאמנים יצרו יופיעו למתאמנים רק אחרי אישור בעלים.
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    {pendingChallenges.map((challenge) => (
+                      <div
+                        key={challenge.id}
+                        className="rounded-xl border border-primary/15 bg-white p-2.5"
+                      >
+                        <div className="flex items-start gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-extrabold text-ink">{challenge.title}</p>
+                            <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                              {challenge.description || "ללא תיאור"} · {challenge.sessions.length} אימונים
+                            </p>
+                          </div>
+                          <span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-1 text-[9px] font-bold text-amber-700">
+                            ממתין
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={approvingChallengeId === challenge.id}
+                          onClick={() => {
+                            setApprovingChallengeId(challenge.id);
+                            setChallengeApprovalError("");
+                            void approveChallenge(challenge.id).then((result) => {
+                              if (!result.success) setChallengeApprovalError(result.error);
+                              setApprovingChallengeId(null);
+                            });
+                          }}
+                          className="mt-2.5 w-full rounded-xl bg-primary py-2 text-[11px] font-bold text-primary-foreground disabled:opacity-60"
+                        >
+                          {approvingChallengeId === challenge.id
+                            ? "מאשר..."
+                            : "אישור והצגה למתאמנים"}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {challengeApprovalError ? (
+                <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-destructive">
+                  {challengeApprovalError}
+                </p>
+              ) : null}
+              {ownerHomeTab === "approvals" &&
+              pendingApprovals.length === 0 &&
+              pendingChallenges.length === 0 ? (
                 <p className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center text-xs font-semibold text-emerald-800">
-                  אין כרגע מתאמנים שממתינים לאישור בעלים.
+                  אין כרגע משתמשים או אתגרים שממתינים לאישור בעלים.
                 </p>
               ) : null}
               {ownerHomeTab === "profiles" ? (

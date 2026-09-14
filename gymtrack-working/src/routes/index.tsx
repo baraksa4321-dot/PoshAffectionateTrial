@@ -24,6 +24,7 @@ import {
   RotateCcw,
   Video,
   Eye,
+  CheckCheck,
 } from "lucide-react";
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import { AppShell } from "@/components/AppShell";
