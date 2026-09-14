@@ -8883,6 +8883,17 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   gap: 0.45rem !important;
 }
 
+.app-topbar__heading-actions {
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  row-gap: 0.3rem;
+}
+
+.app-topbar__heading-accessory {
+  min-width: 0;
+}
+
 .app-topbar h1 {
   line-height: 1.1 !important;
 }

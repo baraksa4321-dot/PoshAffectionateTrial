@@ -256,6 +256,16 @@ function Library() {
       kicker="ספרייה"
       title="תרגילים"
       subtitle={`${catalogExercises.length} תנועות בספרייה`}
+      action={
+        <Link
+          to="/exercises/$exerciseId"
+          params={{ exerciseId: "new" }}
+          aria-label={genderText(gender, "הוסיפי תרגיל", "הוסף תרגיל")}
+          className="press grid h-11 w-11 place-items-center rounded-2xl bg-primary text-primary-foreground cursor-pointer"
+        >
+          <Plus className="h-5 w-5" strokeWidth={2.4} />
+        </Link>
+      }
     >
       {/* Search */}
       <div className="num-pill flex min-h-12 w-full items-center gap-2 px-3.5 py-1">

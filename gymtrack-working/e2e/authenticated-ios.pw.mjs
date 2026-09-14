@@ -1503,6 +1503,102 @@ test("coach tracking refreshes when switching trainees and keeps profile actions
   await expect(page.getByRole("button", { name: "פתיחת פרופיל המשתמש" })).toHaveCount(0);
 });
 
+test("mobile work headers keep actions below workspace switches in black night", async ({ page }) => {
+  await installFixture(page);
+
+  const assertHeaderLayout = async (title) => {
+    const workspaceRow = page.locator('[data-app-workspace-row="true"]');
+    const heading = page.locator('[data-app-topbar-heading="true"]');
+    const headingAction = page.locator('[data-app-heading-actions="true"]');
+    const titleHeading = page.getByRole("heading", { name: title, exact: true });
+
+    await expect(workspaceRow).toBeVisible();
+    await expect(titleHeading).toBeVisible();
+    await expect(headingAction.locator("a, button").first()).toBeVisible();
+
+    const layout = await page.evaluate(() => {
+      const getRect = (selector) => {
+        const element = document.querySelector(selector);
+        if (!(element instanceof HTMLElement)) return null;
+        const rect = element.getBoundingClientRect();
+        return { top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left };
+      };
+      const workspace = getRect('[data-app-workspace-row="true"]');
+      const heading = getRect('[data-app-topbar-heading="true"]');
+      const action = getRect('[data-app-heading-actions="true"]');
+      const title = getRect('[data-app-topbar-heading="true"] h1');
+      if (!workspace || !heading || !action || !title) return null;
+      const overlaps = (first, second) =>
+        first.left < second.right &&
+        first.right > second.left &&
+        first.top < second.bottom &&
+        first.bottom > second.top;
+      return {
+        workspace,
+        heading,
+        action,
+        title,
+        actionOverlapsWorkspace: overlaps(action, workspace),
+        titleOverlapsWorkspace: overlaps(title, workspace),
+      };
+    });
+
+    expect(layout).not.toBeNull();
+    expect(layout.heading.top).toBeGreaterThanOrEqual(layout.workspace.bottom - 1);
+    expect(layout.title.top).toBeGreaterThanOrEqual(layout.workspace.bottom - 1);
+    expect(layout.action.top).toBeGreaterThanOrEqual(layout.workspace.bottom - 1);
+    expect(layout.titleOverlapsWorkspace).toBe(false);
+    expect(layout.actionOverlapsWorkspace).toBe(false);
+  };
+
+  const assertNoLargeWhiteSurface = async () => {
+    const largeWhiteSurfaceCount = await page.evaluate(() => {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      return Array.from(
+        document.querySelectorAll(
+          '[class~="bg-white"], [class~="bg-white/15"], [class~="bg-white/25"], [class~="bg-white/50"], [class~="bg-white/60"], [class~="bg-white/70"], [class~="bg-white/75"], [class~="bg-white/80"], [class~="bg-white/85"], [class~="bg-white/90"], [class~="bg-white/95"]',
+        ),
+      ).filter((element) => {
+        const rect = element.getBoundingClientRect();
+        const area = Math.max(0, rect.width) * Math.max(0, rect.height);
+        const background = window.getComputedStyle(element).backgroundColor;
+        const isOpaqueWhite = /rgba?\(255,\s*255,\s*255(?:,\s*1)?\)/.test(background);
+        return (
+          isOpaqueWhite &&
+          area > viewportWidth * Math.min(220, viewportHeight * 0.35)
+        );
+      }).length;
+    });
+    expect(largeWhiteSurfaceCount).toBe(0);
+  };
+
+  const enableBlackNight = async () => {
+    await page.getByRole("button", { name: "בחירת פלטת צבעים" }).click();
+    await page.locator('[aria-label="פלטת צבעים"]').getByRole("button", { name: /^שחור/ }).click();
+    await page.getByRole("button", { name: "סגור בחירת פלטה" }).click();
+    await page.getByRole("button", { name: "מעבר לתצוגת לילה" }).click();
+    await expect(page.locator("html")).toHaveClass(/night-mode/);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "black");
+  };
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/exercises");
+  await expect(page.getByRole("heading", { name: "תרגילים", exact: true })).toBeVisible({
+    timeout: 20_000,
+  });
+  await enableBlackNight();
+  await assertHeaderLayout("תרגילים");
+  await assertNoLargeWhiteSurface();
+
+  await page.goto("/coach/tracking");
+  await expect(page.getByRole("heading", { name: "מעקב", exact: true })).toBeVisible({
+    timeout: 20_000,
+  });
+  await assertHeaderLayout("מעקב");
+  await assertNoLargeWhiteSurface();
+});
+
 test("authenticated iPhone coach workspace and active workout remain usable", async ({ page }) => {
   await installFixture(page);
 

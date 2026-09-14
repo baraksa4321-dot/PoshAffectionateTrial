@@ -190,6 +190,7 @@ export function AppShell({
   const isHomeRoute = location.pathname === "/" || location.pathname === "/coach";
   const showWorkspaceSwitcher = Boolean(user && isCoach);
   const showHomeOnlyHeaderControls = isHomeRoute;
+  const actionInUtility = pageClassName.includes("nutrition-page");
   const homeHeaderDate = new Date();
   const homeHeaderName = store.userProfile?.fullName?.trim().split(/\s+/)[0] || "";
   const defaultHomeHeaderAccessory =
@@ -208,6 +209,8 @@ export function AppShell({
       </div>
     ) : null;
   const resolvedHeaderAccessory = headerAccessory ?? defaultHomeHeaderAccessory;
+  const headingAccessory = !isHomeRoute ? headerAccessory : null;
+  const utilityAccessory = isHomeRoute ? resolvedHeaderAccessory : null;
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const topbarRef = useRef<HTMLElement>(null);
@@ -1014,6 +1017,7 @@ export function AppShell({
       <header
         ref={topbarRef}
         className="app-topbar shrink-0 sticky top-0 z-30 border-b border-border/70 bg-background/90 shadow-[0_8px_24px_oklch(0.2_0.03_35_/_0.035)] backdrop-blur-xl"
+        data-app-topbar="true"
         style={{ paddingTop: "max(0.35rem, env(safe-area-inset-top))" }}
       >
         <div
@@ -1086,10 +1090,7 @@ export function AppShell({
               </button>
             ) : null}
           </div>
-          {resolvedHeaderAccessory ||
-          showWorkspaceSwitcher ||
-          user ||
-          (!hideHeading && (title || action)) ? (
+          {utilityAccessory || showWorkspaceSwitcher || user ? (
             <div
               className={`app-topbar__utility-row ${
                 user ? "app-home-utility-row" : ""
@@ -1098,48 +1099,13 @@ export function AppShell({
               } ${
                 compactHeader ? "mb-1 pb-0.5" : "mb-1.5 pb-0.5"
               }`}
+              data-app-workspace-row="true"
             >
-              <div className="app-topbar__content min-w-0 flex-1">
-                {((!hideHeading && (title || !user)) || action) ? (
-                  <div className="app-topbar__heading flex min-w-0 flex-1 items-start gap-3">
-                    <div className="min-w-0 flex-1 text-start">
-                      {!hideHeading ? (
-                        <>
-                          {kicker ? <p className="app-shell-kicker">{kicker}</p> : null}
-                          {title ? (
-                            <h1
-                              className={`min-w-0 break-words font-display font-extrabold leading-snug tracking-tight text-ink ${
-                                compactHeader
-                                  ? "text-[clamp(15px,4vw,18px)]"
-                                  : "text-[clamp(16px,4.5vw,20px)]"
-                              }`}
-                            >
-                              {headerTitle}
-                            </h1>
-                          ) : null}
-                        </>
-                      ) : null}
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2 pt-0.5">
-                      {!user ? (
-                        <button
-                          onClick={() => setShowAuthModal(true)}
-                          className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[12px] font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-                        >
-                          <LogIn className="h-3.5 w-3.5" />
-                          <span>התחברות</span>
-                        </button>
-                      ) : null}
-                      {action}
-                    </div>
-                  </div>
-                ) : null}
-                {resolvedHeaderAccessory ? (
-                  <div className="app-topbar__accessory min-w-0 overflow-visible">
-                    {resolvedHeaderAccessory}
-                  </div>
-                ) : null}
-              </div>
+              {utilityAccessory ? (
+                <div className="app-topbar__accessory min-w-0 flex-1 overflow-visible">
+                  {utilityAccessory}
+                </div>
+              ) : null}
               {user ? (
                 <button
                   type="button"
@@ -1155,6 +1121,9 @@ export function AppShell({
                     <Moon className="h-3.5 w-3.5" aria-hidden="true" />
                   )}
                 </button>
+              ) : null}
+              {actionInUtility && action ? (
+                <div className="app-topbar__utility-action">{action}</div>
               ) : null}
               {showWorkspaceSwitcher ? (
                 <div
@@ -1201,6 +1170,46 @@ export function AppShell({
                   </Link>
                 </div>
               ) : null}
+            </div>
+          ) : null}
+          {((!hideHeading && (title || !user)) || (action && !actionInUtility) || headingAccessory) ? (
+            <div className="app-topbar__heading flex items-start gap-3" data-app-topbar-heading="true">
+              <div className="min-w-0 flex-1 text-start">
+                {!hideHeading ? (
+                  <>
+                    {kicker ? <p className="app-shell-kicker">{kicker}</p> : null}
+                    {title ? (
+                      <h1
+                        className={`min-w-0 break-words font-display font-extrabold leading-snug tracking-tight text-ink ${
+                          compactHeader
+                            ? "text-[clamp(15px,4vw,18px)]"
+                            : "text-[clamp(16px,4.5vw,20px)]"
+                        }`}
+                      >
+                        {headerTitle}
+                      </h1>
+                    ) : null}
+                  </>
+                ) : null}
+              </div>
+              <div
+                className="app-topbar__heading-actions flex shrink-0 items-center gap-2 pt-0.5"
+                data-app-heading-actions="true"
+              >
+                {headingAccessory ? (
+                  <div className="app-topbar__heading-accessory">{headingAccessory}</div>
+                ) : null}
+                {!user ? (
+                  <button
+                    onClick={() => setShowAuthModal(true)}
+                    className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[12px] font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                  >
+                    <LogIn className="h-3.5 w-3.5" />
+                    <span>התחברות</span>
+                  </button>
+                ) : null}
+                {!actionInUtility ? action : null}
+              </div>
             </div>
           ) : null}
         </div>
