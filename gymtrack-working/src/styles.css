@@ -9155,3 +9155,33 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
     flex: 0 0 2.25rem;
   }
 }
+
+/* Final mobile viewport gutter. This intentionally comes last so the
+ * responsive shell rules above cannot shrink the home canvas back to the
+ * edge on iOS. */
+@media (max-width: 639px) {
+  .app-shell--compact-rhythm.dashboard-editorial-shell > .app-topbar > .app-topbar__inner,
+  .app-shell--compact-rhythm.dashboard-editorial-shell > .app-main {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    padding-inline: 1rem !important;
+  }
+
+  .app-shell--compact-rhythm.dashboard-editorial-shell > .app-main > .home-card-stack,
+  .app-shell--compact-rhythm.dashboard-editorial-shell .home-feature-grid {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .app-shell--compact-rhythm > nav {
+    padding-inline: 0.75rem;
+  }
+
+  .app-shell--compact-rhythm > nav > .app-bottom-nav {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 34rem;
+  }
+}
