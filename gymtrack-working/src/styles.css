@@ -1018,6 +1018,10 @@ html:not(.night-mode) .nav-shell {
 
   #root {
     min-height: 100lvh;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
   }
 
   input,
@@ -1175,11 +1179,15 @@ html:not(.night-mode) .nav-shell {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
   gap: 0.55rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .dashboard-editorial-shell .home-feature-item {
   display: flex;
   min-width: 0;
+  max-width: 100%;
   align-self: stretch;
   aspect-ratio: 1.18 / 1;
 }
@@ -6950,6 +6958,21 @@ body {
     padding-inline: 0.9rem;
   }
 
+  .dashboard-editorial-shell .app-topbar__brand-row,
+  .dashboard-editorial-shell .app-topbar__utility-row,
+  .dashboard-editorial-shell .app-main,
+  .dashboard-editorial-shell .home-card-stack,
+  .dashboard-editorial-shell .home-feature-section {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-editorial-shell .dashboard-header-summary {
+    min-width: 0;
+    max-width: calc(100% - 2.5rem);
+  }
+
   .dashboard-editorial-shell .home-primary-card > .ink-card,
   .dashboard-editorial-shell .home-secondary-card {
     padding: 0.9rem !important;
@@ -6972,8 +6995,9 @@ body {
 .dashboard-header-summary {
   display: flex;
   min-width: 0;
-  width: min(100%, 12.5rem);
-  min-width: 10.5rem;
+  width: auto;
+  max-width: 12.5rem;
+  flex: 1 1 auto;
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
