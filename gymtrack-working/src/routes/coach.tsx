@@ -45,6 +45,7 @@ import {
   saveWorkoutInProgram,
   deleteWorkout,
   duplicateWorkoutDay,
+  approveChallenge,
   searchFoods,
   todayKey,
   uid,
@@ -1751,6 +1752,9 @@ export function CoachDashboardPage({
   const gender = store.userProfile?.gender;
   const isOwner = role === "owner";
   const isCoach = role === "coach" || isOwner;
+  const pendingChallenges = isOwner
+    ? store.challenges.filter((challenge) => !challenge.isBuiltIn && challenge.isPublished === false)
+    : [];
 
   const [clients, setClients] = useState<CoachClientRow[]>([]);
   const [allProfiles, setAllProfiles] = useState<ProfileRow[]>([]);
@@ -1798,6 +1802,8 @@ export function CoachDashboardPage({
   >({});
   const [approvalUserId, setApprovalUserId] = useState<string | null>(null);
   const [approvalNotice, setApprovalNotice] = useState("");
+  const [approvingChallengeId, setApprovingChallengeId] = useState<string | null>(null);
+  const [challengeApprovalError, setChallengeApprovalError] = useState("");
   const [selectedOwnerProfileId, setSelectedOwnerProfileId] = useState<string | null>(null);
   const [selectedOwnerProfileDetails, setSelectedOwnerProfileDetails] =
     useState<ClientDetails | null>(null);

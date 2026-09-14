@@ -988,6 +988,7 @@ export function AppShell({
             : `app-shell app-shell--compact-rhythm flex h-[100lvh] min-h-0 w-full flex-col overflow-hidden bg-background text-foreground ${pageClassName}`
       }
       data-management-view={managementView ? "true" : undefined}
+      data-owner-dashboard={isOwner && isDashboardShell && location.pathname === "/" ? "true" : undefined}
       data-compact-header={compactHeader ? "true" : undefined}
       dir="rtl"
     >
@@ -1046,7 +1047,9 @@ export function AppShell({
                     preload="intent"
                     onClick={() => setWorkspace("personal")}
                     aria-current={activeMode === "personal" ? "page" : undefined}
-                    className={`press min-w-20 rounded-full px-3 ${
+                    className={`press rounded-full ${
+                      isOwner && isDashboardShell ? "min-w-[4.5rem] px-2" : "min-w-20 px-3"
+                    } ${
                       compactWorkspaceControls ? "py-0.5 text-[9px]" : "py-1.5 text-[11px]"
                     } text-center font-bold transition-colors ${
                       activeMode === "personal"
@@ -1062,7 +1065,9 @@ export function AppShell({
                     onClick={() => setWorkspace("management")}
                     data-testid="link-nav-coach"
                     aria-current={activeMode === "management" ? "page" : undefined}
-                    className={`press min-w-20 rounded-full px-3 ${
+                    className={`press rounded-full ${
+                      isOwner && isDashboardShell ? "min-w-[4.5rem] px-2" : "min-w-20 px-3"
+                    } ${
                       compactWorkspaceControls ? "py-0.5 text-[9px]" : "py-1.5 text-[11px]"
                     } text-center font-bold transition-colors ${
                       activeMode === "management"

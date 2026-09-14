@@ -8863,6 +8863,11 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   height: 2.1rem !important;
 }
 
+[data-owner-dashboard="true"] .app-topbar__brand-row img {
+  width: 8rem !important;
+  height: 2.25rem !important;
+}
+
 .dashboard-editorial-shell .app-topbar__utility-row {
   margin-bottom: 0.45rem !important;
   padding-bottom: 0.25rem !important;
