@@ -9303,8 +9303,7 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   min-width: 0;
 }
 
-.app-auth-shell .app-home-night-mode,
-.app-auth-shell .app-header-sync {
+.app-auth-shell .app-home-night-mode {
   width: 1.85rem;
   height: 1.85rem;
 }
