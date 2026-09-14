@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const COACH_ID = "ios-smoke-coach";
+const OWNER_ID = "ios-smoke-owner";
 const CLIENT_ID = "ios-smoke-client";
 const OTHER_CLIENT_ID = "ios-smoke-other-client";
 const WORKOUT_ID = "ios-smoke-workout";
@@ -428,8 +429,25 @@ const coachProfile = {
   planned_menu: [],
 };
 
+const ownerProfile = {
+  id: OWNER_ID,
+  email: "ios-smoke-owner@example.test",
+  full_name: "בעלים בדיקה",
+  role: "owner",
+  approval_status: "approved",
+  weight_kg: 62,
+  height_cm: 168,
+  age_years: 31,
+  workouts_per_week: 4,
+  gender: "female",
+  show_calories: true,
+  today_routine_enabled: true,
+  planned_menu: [],
+};
+
 function authSession(role = "coach") {
-  const profile = role === "trainee" ? clientProfile : coachProfile;
+  const profile =
+    role === "trainee" ? clientProfile : role === "owner" ? ownerProfile : coachProfile;
   return {
     access_token: "ios-smoke-access-token",
     refresh_token: "ios-smoke-refresh-token",
@@ -465,7 +483,8 @@ async function installFixture(
   } = {},
 ) {
   const isTrainee = role === "trainee";
-  const userId = isTrainee ? CLIENT_ID : COACH_ID;
+  const isOwner = role === "owner";
+  const userId = isTrainee ? CLIENT_ID : isOwner ? OWNER_ID : COACH_ID;
   const fixtureClientProfile = {
     ...clientProfile,
     show_calories: showCalories,
@@ -487,7 +506,18 @@ async function installFixture(
           showCalories,
         },
       }
-    : gymData;
+    : isOwner
+      ? {
+          ...gymData,
+          userProfile: {
+            ...gymData.userProfile,
+            fullName: ownerProfile.full_name,
+            role: "owner",
+            approvalStatus: "approved",
+            showCalories,
+          },
+        }
+      : gymData;
   const resolvedCacheValue = fullCacheValue ?? defaultCacheValue;
   await page.addInitScript(
     ({
@@ -498,6 +528,7 @@ async function installFixture(
       clientProfile,
       otherClientProfile,
       coachProfile,
+      ownerProfile,
       program,
       otherProgram,
       workouts,
@@ -528,6 +559,37 @@ async function installFixture(
         planned_menu: clientProfile.planned_menu,
       };
       let hasSavedPlannedMenu = false;
+      const remoteChallengesKey = "ios-smoke.remote-challenges";
+      const remoteSessionsKey = "ios-smoke.remote-workout-sessions";
+      const initialRemoteChallenge = {
+        ...challenge,
+        duration_label: challenge.durationLabel,
+        owner_id: coachMessage.coach_id,
+        is_published: challenge.isPublished,
+        updated_at: "2026-08-20T00:00:00.000Z",
+      };
+      const readStoredRows = (key, fallback) => {
+        try {
+          const stored = window.localStorage.getItem(key);
+          return stored ? JSON.parse(stored) : fallback;
+        } catch {
+          return fallback;
+        }
+      };
+      let remoteChallenges = readStoredRows(remoteChallengesKey, [initialRemoteChallenge]);
+      let remoteSessions = readStoredRows(remoteSessionsKey, []);
+      if (!window.localStorage.getItem(remoteChallengesKey)) {
+        window.localStorage.setItem(remoteChallengesKey, JSON.stringify(remoteChallenges));
+      }
+      if (!window.localStorage.getItem(remoteSessionsKey)) {
+        window.localStorage.setItem(remoteSessionsKey, JSON.stringify(remoteSessions));
+      }
+      const persistRemoteChallenges = () => {
+        window.localStorage.setItem(remoteChallengesKey, JSON.stringify(remoteChallenges));
+      };
+      const persistRemoteSessions = () => {
+        window.localStorage.setItem(remoteSessionsKey, JSON.stringify(remoteSessions));
+      };
       window.__iosSmokeGetPlannedMenu = () => persistedClientProfile.planned_menu;
       Object.defineProperty(window.navigator, "onLine", {
         configurable: true,
@@ -617,6 +679,31 @@ async function installFixture(
         ) {
           window.__iosSmokeFullCacheWriteCount += 1;
         }
+        if (this === window.localStorage && key === cacheKey) {
+          try {
+            const cached = JSON.parse(value);
+            const ownedChallenges = (cached.challenges ?? [])
+              .filter((row) => !row.isBuiltIn && row.ownerId === userId)
+              .map((row) => ({
+                ...row,
+                duration_label: row.durationLabel,
+                owner_id: row.ownerId,
+                is_published: row.isPublished,
+                updated_at: row.updatedAt,
+              }));
+            if (ownedChallenges.length > 0) {
+              remoteChallenges = [
+                ...remoteChallenges.filter(
+                  (existing) => !ownedChallenges.some((row) => row.id === existing.id),
+                ),
+                ...ownedChallenges,
+              ];
+              persistRemoteChallenges();
+            }
+          } catch {
+            /* ignore malformed cache writes in the smoke fixture */
+          }
+        }
         return originalSetItem.call(this, key, value);
       };
       window.sessionStorage.setItem("gymtrack.workspace", "management");
@@ -655,6 +742,8 @@ async function installFixture(
         window.localStorage.setItem(selectedTraineeFailureKey, "true");
         shouldFailSelectedTraineeData = true;
       };
+      window.__iosSmokeVideoUploadStarted = false;
+      window.__iosSmokeVideoUploadCompleted = false;
       let coachMessageReads = 0;
       window.__iosSmokeCoachMessageReads = () => coachMessageReads;
       let broadcastReads = 0;
@@ -664,20 +753,47 @@ async function installFixture(
       };
       window.fetch = async (input, init) => {
         const url = typeof input === "string" ? input : input.url;
+        const requestMethod = (
+          init?.method ?? (typeof input === "string" ? "GET" : input.method) ?? "GET"
+        ).toUpperCase();
+        const readRequestBody = async () =>
+          init?.body ?? (typeof input === "string" ? undefined : await input.clone().text());
         if (url.includes("/auth/v1/user")) {
           return new Response(JSON.stringify(session.user), {
             status: 200,
             headers: { "content-type": "application/json" },
           });
         }
+        if (url.includes("/storage/v1/")) {
+          if (url.includes("/object/sign/")) {
+            return new Response(
+              JSON.stringify({
+                signedURL: "/storage/v1/object/sign/workout-videos/ios-smoke-video",
+              }),
+              {
+                status: 200,
+                headers: { "content-type": "application/json" },
+              },
+            );
+          }
+          if (url.includes("/object/")) {
+            window.__iosSmokeVideoUploadStarted = true;
+            await new Promise((resolve) => setTimeout(resolve, 1_500));
+            window.__iosSmokeVideoUploadCompleted = true;
+            return new Response(JSON.stringify({ Key: "ios-smoke-video" }), {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            });
+          }
+        }
         if (url.includes("/rest/v1/")) {
           const parsed = new URL(url);
           const path = parsed.pathname.replace(/^.*\/rest\/v1\//, "");
           if (
             path === "rpc/save_user_planned_menu" &&
-            (init?.method ?? "GET").toUpperCase() === "POST"
+            requestMethod === "POST"
           ) {
-            const payload = JSON.parse(init.body);
+            const payload = JSON.parse((await readRequestBody()) ?? "{}");
             persistedClientProfile = {
               ...persistedClientProfile,
               planned_menu: payload.next_planned_menu,
@@ -688,8 +804,8 @@ async function installFixture(
               headers: { "content-type": "application/json" },
             });
           }
-          if (path === "coach_messages" && (init?.method ?? "GET").toUpperCase() === "POST") {
-            const payload = JSON.parse(init.body);
+          if (path === "coach_messages" && requestMethod === "POST") {
+            const payload = JSON.parse((await readRequestBody()) ?? "{}");
             remoteCoachMessages = [
               ...remoteCoachMessages,
               {
@@ -701,6 +817,47 @@ async function installFixture(
             ];
             persistRemoteCoachMessages();
             return new Response(JSON.stringify([]), {
+              status: 201,
+              headers: { "content-type": "application/json" },
+            });
+          }
+          if (path === "challenges" && requestMethod === "POST") {
+            const payload = JSON.parse((await readRequestBody()) ?? "{}");
+            const rows = Array.isArray(payload) ? payload : [payload];
+            remoteChallenges = [
+              ...remoteChallenges.filter((existing) => !rows.some((row) => row.id === existing.id)),
+              ...rows,
+            ];
+            persistRemoteChallenges();
+            return new Response(JSON.stringify(rows), {
+              status: 201,
+              headers: { "content-type": "application/json" },
+            });
+          }
+          if (path === "challenges" && requestMethod === "PATCH") {
+            const challengeId = parsed.searchParams.get("id")?.replace(/^eq\./, "");
+            const payload = JSON.parse((await readRequestBody()) ?? "{}");
+            remoteChallenges = remoteChallenges.map((existing) =>
+              existing.id === challengeId ? { ...existing, ...payload } : existing,
+            );
+            persistRemoteChallenges();
+            return new Response(
+              JSON.stringify(remoteChallenges.filter((row) => row.id === challengeId)),
+              {
+                status: 200,
+                headers: { "content-type": "application/json" },
+              },
+            );
+          }
+          if (path === "workout_sessions" && requestMethod === "POST") {
+            const payload = JSON.parse((await readRequestBody()) ?? "{}");
+            const rows = Array.isArray(payload) ? payload : [payload];
+            remoteSessions = [
+              ...remoteSessions.filter((existing) => !rows.some((row) => row.id === existing.id)),
+              ...rows,
+            ];
+            persistRemoteSessions();
+            return new Response(JSON.stringify(rows), {
               status: 201,
               headers: { "content-type": "application/json" },
             });
@@ -760,7 +917,9 @@ async function installFixture(
                 ? persistedClientProfile
                 : requestedId === otherClientProfile.id || url.includes(otherClientProfile.id)
                   ? otherClientProfile
-                  : coachProfile;
+                  : requestedId === ownerProfile.id || url.includes(ownerProfile.id)
+                    ? ownerProfile
+                    : coachProfile;
             body = parsed.searchParams.get("select") === "planned_menu" ? profile : [profile];
           } else if (path === "programs") {
             const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
@@ -817,21 +976,25 @@ async function installFixture(
           } else if (path === "workout_sessions") {
             const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
             body =
-              requestedUserId === otherClientProfile.id
-                ? []
-                : [
-                    {
-                      id: "ios-smoke-session",
-                      user_id: clientProfile.id,
-                      workout_id: workouts[0].id,
-                      workout_name: workouts[0].name,
-                      program_name: program.name,
-                      date: "2026-08-25T07:00:00.000Z",
-                      duration_sec: 1800,
-                      entries: [],
-                      notes: "",
-                    },
-                  ];
+              remoteSessions.length > 0
+                ? remoteSessions.filter(
+                    (session) => !requestedUserId || session.user_id === requestedUserId,
+                  )
+                : requestedUserId === otherClientProfile.id
+                  ? []
+                  : [
+                      {
+                        id: "ios-smoke-session",
+                        user_id: clientProfile.id,
+                        workout_id: workouts[0].id,
+                        workout_name: workouts[0].name,
+                        program_name: program.name,
+                        date: "2026-08-25T07:00:00.000Z",
+                        duration_sec: 1800,
+                        entries: [],
+                        notes: "",
+                      },
+                    ];
           } else if (path === "cardio_logs") {
             const requestedUserId = parsed.searchParams.get("user_id")?.replace(/^eq\./, "");
             body =
@@ -923,7 +1086,7 @@ async function installFixture(
                     },
                   ];
           } else if (path === "coach_messages") {
-            if ((init?.method ?? "GET").toUpperCase() === "GET") coachMessageReads += 1;
+            if (requestMethod === "GET") coachMessageReads += 1;
             const requestedClientId = parsed.searchParams.get("client_id")?.replace(/^eq\./, "");
             body = remoteCoachMessages
               .filter(
@@ -933,19 +1096,13 @@ async function installFixture(
               )
               .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
           } else if (path === "broadcast_announcements") {
-            if ((init?.method ?? "GET").toUpperCase() === "GET") broadcastReads += 1;
+            if (requestMethod === "GET") broadcastReads += 1;
             body = [remoteBroadcastAnnouncement];
           } else if (path === "challenges") {
-            body = [
-              {
-                ...challenge,
-                duration_label: challenge.durationLabel,
-                owner_id: coachMessage.coach_id,
-                updated_at: "2026-08-20T00:00:00.000Z",
-              },
-            ];
+            remoteChallenges = readStoredRows(remoteChallengesKey, remoteChallenges);
+            body = remoteChallenges;
           }
-          if ((init?.method ?? "GET").toUpperCase() === "GET") {
+          if (requestMethod === "GET") {
             window.__iosSmokeRemoteGetCount += 1;
             if (expectedInitialPullPaths.has(path)) {
               initialPullPaths.add(path);
@@ -976,6 +1133,7 @@ async function installFixture(
       clientProfile: fixtureClientProfile,
       otherClientProfile,
       coachProfile,
+      ownerProfile,
       program,
       otherProgram,
       workouts,
@@ -1985,4 +2143,190 @@ test("active workout values survive leaving and reopening the session", async ({
   await expect
     .poll(() => page.evaluate((key) => localStorage.getItem(key), ACTIVE_SESSION_FEEDBACK_KEY))
     .toBeNull();
+});
+
+test("authenticated roles approve challenges and keep a video workout readable", async ({
+  page,
+}) => {
+  const challengeTitle = "אתגר עשן מאושר";
+  await installFixture(page, { role: "coach", online: true });
+  await page.goto("/workouts");
+  await expect(page.getByRole("button", { name: "פתיחת אתגרים" })).toBeVisible();
+  await page.getByRole("button", { name: "פתיחת אתגרים" }).click();
+  await page.getByRole("button", { name: "יצירת אתגר חדש" }).click();
+  await page.getByPlaceholder("למשל: ריצה ראשונה של 5 ק״מ").fill(challengeTitle);
+  await page.getByRole("button", { name: "הוספת תרגיל", exact: true }).click();
+  await page.getByRole("button", { name: "שמירת אתגר", exact: true }).click();
+  await expect(page.getByText(challengeTitle, { exact: true })).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate((title) => {
+        const cache = JSON.parse(
+          localStorage.getItem("gymtrack.v1.user.ios-smoke-coach") ?? "{}",
+        );
+        return cache.challenges?.some(
+          (row) => row.title === title && row.isPublished === false,
+        );
+      }, challengeTitle),
+    )
+    .toBe(true);
+  await page.getByRole("button", { name: "חזרה לכל האתגרים" }).click();
+  await page.getByRole("button", { name: "סגירת אתגרים" }).click();
+  await page.evaluate((title) => {
+    const cache = JSON.parse(localStorage.getItem("gymtrack.v1.user.ios-smoke-coach") ?? "{}");
+    const challenge = cache.challenges?.find((row) => row.title === title);
+    if (!challenge) throw new Error("Saved challenge was not found in the coach cache");
+    const rows = JSON.parse(localStorage.getItem("ios-smoke.remote-challenges") ?? "[]");
+    localStorage.setItem(
+      "ios-smoke.remote-challenges",
+      JSON.stringify([
+        ...rows.filter((row) => row.id !== challenge.id),
+        {
+          ...challenge,
+          duration_label: challenge.durationLabel,
+          owner_id: challenge.ownerId,
+          is_published: challenge.isPublished,
+          updated_at: challenge.updatedAt,
+        },
+      ]),
+    );
+  }, challengeTitle);
+  await expect
+    .poll(() =>
+      page.evaluate((title) => {
+        const rows = JSON.parse(localStorage.getItem("ios-smoke.remote-challenges") ?? "[]");
+        return rows.some((row) => row.title === title && row.is_published === false);
+      }, challengeTitle),
+      { timeout: 30_000 },
+    )
+    .toBe(true);
+
+  const sharedChallenges = await page.evaluate(() =>
+    localStorage.getItem("ios-smoke.remote-challenges"),
+  );
+  const sharedChallenge = JSON.parse(sharedChallenges ?? "[]").find(
+    (row) => row.title === challengeTitle,
+  );
+  const ownerCacheValue = {
+    ...gymData,
+    userProfile: {
+      ...gymData.userProfile,
+      fullName: ownerProfile.full_name,
+      role: "owner",
+      approvalStatus: "approved",
+    },
+    challenges: sharedChallenge
+      ? [
+          ...gymData.challenges.filter((row) => row.id !== sharedChallenge.id),
+          {
+            ...sharedChallenge,
+            durationLabel: sharedChallenge.duration_label,
+            ownerId: sharedChallenge.owner_id,
+            isPublished: sharedChallenge.is_published,
+            updatedAt: sharedChallenge.updated_at,
+            isBuiltIn: false,
+          },
+        ]
+      : gymData.challenges,
+  };
+  const ownerPage = await page.context().newPage();
+  await installFixture(ownerPage, {
+    role: "owner",
+    online: true,
+    fullCacheValue: ownerCacheValue,
+  });
+  await ownerPage.goto("/");
+  await ownerPage.evaluate((rows) => {
+    if (!rows) return;
+    localStorage.setItem("ios-smoke.remote-challenges", rows);
+    const remoteChallenge = JSON.parse(rows).find(
+      (row) => row.title === "אתגר עשן מאושר",
+    );
+    if (!remoteChallenge) return;
+    const cacheKey = "gymtrack.v1.user.ios-smoke-owner";
+    const cache = JSON.parse(localStorage.getItem(cacheKey) ?? "{}");
+    cache.challenges = [
+      ...(cache.challenges ?? []).filter((row) => row.id !== remoteChallenge.id),
+      {
+        ...remoteChallenge,
+        durationLabel: remoteChallenge.duration_label,
+        ownerId: remoteChallenge.owner_id,
+        isPublished: remoteChallenge.is_published,
+        updatedAt: remoteChallenge.updated_at,
+        isBuiltIn: false,
+      },
+    ];
+    localStorage.setItem(cacheKey, JSON.stringify(cache));
+  }, sharedChallenges);
+  await ownerPage.reload();
+  const approvals = ownerPage.getByRole("button", { name: "אישורים" });
+  await expect(approvals).toContainText("אתגרים ממתינים לאישור");
+  await approvals.click();
+  await expect(ownerPage.getByText(challengeTitle, { exact: true })).toBeVisible();
+  await ownerPage
+    .getByRole("button", { name: "אישור והצגה למתאמנים" })
+    .click();
+  await expect(ownerPage.getByText("אין אתגרים שממתינים לאישור.", { exact: true })).toBeVisible();
+  await expect
+    .poll(() =>
+      ownerPage.evaluate((title) => {
+        const rows = JSON.parse(localStorage.getItem("ios-smoke.remote-challenges") ?? "[]");
+        return rows.some((row) => row.title === title && row.is_published === true);
+      }, challengeTitle),
+    )
+    .toBe(true);
+
+  const traineePage = await page.context().newPage();
+  await installFixture(traineePage, { role: "trainee", online: true });
+  await traineePage.goto("/workouts");
+  await traineePage.getByRole("button", { name: "פתיחת אתגרים" }).click();
+  await expect(traineePage.getByText(challengeTitle, { exact: true })).toBeVisible();
+  await expect(traineePage.getByRole("button", { name: "יצירת אתגר חדש" })).toHaveCount(0);
+  await traineePage.getByText(challengeTitle, { exact: true }).click();
+  await expect(traineePage.getByRole("button", { name: "עריכת אתגר" })).toHaveCount(0);
+
+  await traineePage.goto(`/session/${WORKOUT_ID}`);
+  await expect(traineePage.getByText("התקדמות אימון", { exact: true })).toBeVisible();
+  await traineePage
+    .locator('input[type="file"][accept="video/*"]')
+    .first()
+    .setInputFiles("gymtrack-working/public/loading/tinted/user-character-01.mp4");
+  await expect
+    .poll(() => traineePage.evaluate(() => window.__iosSmokeVideoUploadStarted))
+    .toBe(true);
+
+  await traineePage.getByRole("button", { name: "סיים ושמור אימון" }).click();
+  await traineePage.getByRole("button", { name: "אישור ושמירת אימון" }).click();
+  await expect(traineePage.getByText("האימון נשמר חלקית", { exact: true })).toBeVisible();
+  await expect
+    .poll(() =>
+      traineePage.evaluate(() => {
+        const rows = JSON.parse(localStorage.getItem("ios-smoke.remote-workout-sessions") ?? "[]");
+        return rows.some((row) => row.workout_id === "ios-smoke-workout");
+      }),
+    )
+    .toBe(true);
+  await expect(traineePage.evaluate(() => window.__iosSmokeVideoUploadCompleted)).toBe(false);
+
+  await expect
+    .poll(() => traineePage.evaluate(() => window.__iosSmokeVideoUploadCompleted))
+    .toBe(true);
+  await expect
+    .poll(() =>
+      traineePage.evaluate(() => {
+        const rows = JSON.parse(localStorage.getItem("ios-smoke.remote-workout-sessions") ?? "[]");
+        return rows.some(
+          (row) =>
+            row.workout_id === "ios-smoke-workout" &&
+            row.entries?.some((entry) => entry.video_path),
+        );
+      }),
+    )
+    .toBe(true);
+
+  await traineePage.reload();
+  await expect(traineePage.getByText("התקדמות אימון", { exact: true })).toBeVisible();
+  await traineePage.goto("/");
+  await expect(traineePage.getByText("פעילות השבוע", { exact: true })).toBeVisible();
+  await expect(traineePage.getByText(/1 אימונים בוצעו השבוע/)).toBeVisible();
 });

@@ -48,6 +48,7 @@ import {
   useGym,
   useAuthUser,
   personalRecords,
+  approveChallenge,
 } from "@/lib/gym-store";
 import { markVideoFeedbackSeen } from "@/lib/video-feedback";
 import type { VideoFeedback } from "@/lib/gym-types";
@@ -159,6 +160,10 @@ function Dashboard() {
     reminderPreferences,
   } = useGym();
   const authUser = useAuthUser();
+  const pendingChallenges = userProfile?.role === "owner"
+    ? challenges.filter((challenge) => !challenge.isBuiltIn && challenge.isPublished === false)
+    : [];
+
   const now = new Date();
   const weekDays = getCurrentWeekDates(now);
   const weekStartKey = weekDays[0]?.date ?? todayKey(now);
@@ -181,6 +186,9 @@ function Dashboard() {
   const [showChecklistModal, setShowChecklistModal] = useState(false);
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [showVideoFeedbackModal, setShowVideoFeedbackModal] = useState(false);
+  const [showChallengeApprovals, setShowChallengeApprovals] = useState(false);
+  const [approvingChallengeId, setApprovingChallengeId] = useState<string | null>(null);
+  const [challengeApprovalError, setChallengeApprovalError] = useState("");
   const [markingFeedbackId, setMarkingFeedbackId] = useState<string | null>(null);
   const [locallySeenFeedbackIds, setLocallySeenFeedbackIds] = useState<Set<string>>(
     () => new Set(),
@@ -626,6 +634,35 @@ function Dashboard() {
         </div>
       }
     >
+      {userProfile?.role === "owner" ? (
+        <section className="mb-3 text-start">
+          <button
+            type="button"
+            onClick={() => {
+              setChallengeApprovalError("");
+              setShowChallengeApprovals(true);
+            }}
+            className="surface-card flex w-full items-center gap-3 border-primary/20 bg-primary/5 p-3 text-start"
+          >
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+              <CheckCheck className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-extrabold text-ink">אישורים</span>
+              <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                {pendingChallenges.length
+                  ? `${pendingChallenges.length} אתגרים ממתינים לאישור`
+                  : "אין כרגע אתגרים ממתינים"}
+              </span>
+            </span>
+            {pendingChallenges.length ? (
+              <span className="grid h-7 min-w-7 place-items-center rounded-full bg-primary px-2 text-xs font-extrabold text-primary-foreground">
+                {pendingChallenges.length}
+              </span>
+            ) : null}
+          </button>
+        </section>
+      ) : null}
       <div className="home-card-stack">
         {/* Coach Message Banner */}
         {latestCoachMsg && (
@@ -1445,6 +1482,79 @@ function Dashboard() {
           </div>
         </Overlay>
       )}
+
+      {showChallengeApprovals ? (
+        <Overlay
+          open={showChallengeApprovals}
+          onClose={() => setShowChallengeApprovals(false)}
+          ariaLabel="אישורי אתגרים"
+        >
+          <div
+            className="w-full max-w-md space-y-4 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-border/70 pb-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                  ניהול תוכן
+                </p>
+                <h2 className="mt-1 font-display text-lg font-extrabold text-ink">אישורים</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowChallengeApprovals(false)}
+                aria-label="סגירת אישורים"
+                className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-secondary"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {challengeApprovalError ? (
+              <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-destructive">
+                {challengeApprovalError}
+              </p>
+            ) : null}
+            {pendingChallenges.length === 0 ? (
+              <p className="rounded-2xl bg-primary/5 px-3 py-4 text-center text-sm font-bold text-muted-foreground">
+                אין אתגרים שממתינים לאישור.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {pendingChallenges.map((challenge) => (
+                  <div key={challenge.id} className="rounded-2xl border border-border/60 bg-background p-3">
+                    <div className="flex items-start gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-extrabold text-ink">{challenge.title}</p>
+                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                          {challenge.description || "ללא תיאור"} · {challenge.sessions.length} אימונים
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-1 text-[9px] font-bold text-amber-700">
+                        ממתין
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={approvingChallengeId === challenge.id}
+                      onClick={() => {
+                        setApprovingChallengeId(challenge.id);
+                        setChallengeApprovalError("");
+                        void approveChallenge(challenge.id).then((result) => {
+                          if (!result.success) setChallengeApprovalError(result.error);
+                          setApprovingChallengeId(null);
+                        });
+                      }}
+                      className="mt-3 w-full rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground disabled:opacity-60"
+                    >
+                      {approvingChallengeId === challenge.id ? "מאשר..." : "אישור והצגה למתאמנים"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Overlay>
+      ) : null}
 
     </AppShell>
   );
