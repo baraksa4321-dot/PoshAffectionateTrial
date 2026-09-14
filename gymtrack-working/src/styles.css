@@ -9356,6 +9356,10 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   top: 50%;
   right: 25%;
   z-index: 1;
+  padding: 0.15rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface) !important;
   transform: translateY(-50%);
 }
 
