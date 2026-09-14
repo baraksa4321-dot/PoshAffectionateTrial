@@ -1422,12 +1422,14 @@ function Session() {
       ...(discomfortNotes.trim() ? { discomfortNotes: discomfortNotes.trim() } : {}),
     };
     saveSession(finishedSessionRef.current);
-    const syncResult = await flushCloudSync();
-    if (!syncResult.success && !syncResult.deferred) {
-      setIsFinishing(false);
-      setFinishError(syncResult.error ?? "שמירת האימון נכשלה. נסי שוב.");
-      return;
-    }
+    // saveSession already made the local history durable and queued the cloud
+    // sync. Do not block completion on a slow Supabase request; the store
+    // keeps retrying in the background and exposes only actionable failures.
+    void flushCloudSync().then((syncResult) => {
+      if (!syncResult.success && !syncResult.deferred) {
+        console.warn("[Workout Finish Background Sync Warning]:", syncResult.error);
+      }
+    });
     completedSaveRef.current = true;
     clearSavedSession();
     setShowFeedbackModal(false);
