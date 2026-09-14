@@ -1712,6 +1712,7 @@ export function CoachDashboardPage({
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [showClientWorkspace, setShowClientWorkspace] = useState(false);
   const [showClientProfile, setShowClientProfile] = useState(false);
+  const profileOpenRequestRef = useRef(false);
   const [openEditor, setOpenEditor] = useState<"programs" | "nutrition" | null>(null);
   const [clientDetails, setClientDetails] = useState<ClientDetails | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
@@ -2166,7 +2167,11 @@ export function CoachDashboardPage({
     if (draftOwnerRef.current === selectedClientId) return;
     draftOwnerRef.current = selectedClientId;
     plannedMenuOwnerRef.current = null;
-    setShowClientProfile(false);
+    if (profileOpenRequestRef.current) {
+      profileOpenRequestRef.current = false;
+    } else {
+      setShowClientProfile(false);
+    }
     measurementDraftDirtyRef.current = false;
     profileDraftDirtyRef.current = false;
     plannedMealsDraftDirtyRef.current = false;
@@ -3449,6 +3454,20 @@ export function CoachDashboardPage({
   };
 
   const openOwnerProfile = async (profile: ProfileRow) => {
+    if (profile.role === "client") {
+      profileOpenRequestRef.current = true;
+      setOwnerHomeTab("overview");
+      setSelectedOwnerProfileId(null);
+      setSelectedOwnerProfileDetails(null);
+      setSelectedClientId(profile.id);
+      setClientDetails(null);
+      setClientDetailsError("");
+      setLoadingDetails(true);
+      setShowClientWorkspace(false);
+      setShowClientProfile(true);
+      setOpenEditor(null);
+      return;
+    }
     setOwnerHomeTab("profiles");
     setSelectedOwnerProfileId(profile.id);
     setSelectedOwnerProfileDetails(null);
@@ -3461,7 +3480,7 @@ export function CoachDashboardPage({
       ...current,
       [profile.id]: additionalCoachId ?? "",
     }));
-    if (profile.role === "client" || profile.role === "coach" || profile.role === "owner") {
+    if (profile.role === "coach" || profile.role === "owner") {
       const details = await pullClientDataForCoach(profile.id);
       if (!details.error) setSelectedOwnerProfileDetails(details);
     }
@@ -4811,6 +4830,15 @@ export function CoachDashboardPage({
           },
         }))
     : [];
+  const coachProfileRows: ProfileRow[] = clients.map((client) => ({
+    id: client.client_id,
+    email: client.profiles?.email ?? null,
+    full_name: client.profiles?.full_name ?? null,
+    role: "client",
+    profile_exists: true,
+    weight_kg: client.profiles?.weight_kg ?? null,
+  }));
+  const profileDirectory = isOwner ? allProfiles : coachProfileRows;
   const selectableClients = isOwner
     ? [...(selfClientRow ? [selfClientRow] : []), ...ownerWorkspaceRows]
     : selfClientRow
@@ -5095,7 +5123,7 @@ export function CoachDashboardPage({
   };
   const ownerUserSearchLower = ownerUserSearch.trim().toLocaleLowerCase();
   const filteredOwnerProfiles = ownerUserSearchLower
-    ? allProfiles.filter((profile) =>
+    ? profileDirectory.filter((profile) =>
         [profile.full_name, profile.email]
           .filter(Boolean)
           .some((value) => value!.toLocaleLowerCase().includes(ownerUserSearchLower)),
@@ -5105,7 +5133,7 @@ export function CoachDashboardPage({
     ownerHomeTab === "profiles"
       ? ownerUserSearchLower
         ? filteredOwnerProfiles
-        : allProfiles
+        : profileDirectory
       : filteredOwnerProfiles;
   const menuFoodResults = searchFoods(store.foods, menuFoodQuery).slice(0, 24);
   const selectedMenuFood = store.foods.find((food) => food.id === menuFoodId);
@@ -5417,8 +5445,15 @@ export function CoachDashboardPage({
         </section>
        ) : null}
 
-      {!clientsOnly && !trackingLanding && !workspacePage && isOwner ? (
-        <div className="mb-3 grid grid-cols-3 gap-1.5 sm:gap-2" aria-label="כלי ניהול מהירים">
+      {!clientsOnly && !trackingLanding && !workspacePage && isCoach ? (
+        <div
+          className={`mb-3 grid gap-1.5 sm:gap-2 ${
+            isOwner ? "grid-cols-3" : "grid-cols-1"
+          }`}
+          aria-label="כלי ניהול מהירים"
+        >
+          {isOwner ? (
+            <>
           <button
             type="button"
             onClick={() =>
@@ -5459,6 +5494,8 @@ export function CoachDashboardPage({
               </span>
             ) : null}
           </button>
+            </>
+          ) : null}
           <button
             type="button"
             onClick={() =>
@@ -5915,7 +5952,7 @@ export function CoachDashboardPage({
           </div>
         ) : null}
         {/* Owner Management Section */}
-        {isOwner && !clientsOnly ? (
+        {isCoach && !clientsOnly ? (
           <Overlay
             open={ownerHomeTab === "profiles"}
             onClose={() => {
@@ -5950,7 +5987,7 @@ export function CoachDashboardPage({
               </div>
 
             <div className="space-y-2 pt-1">
-              {pendingApprovals.length > 0 ? (
+              {isOwner && pendingApprovals.length > 0 ? (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-bold text-amber-950">אישור מתאמנים חדשים</p>
@@ -6077,7 +6114,9 @@ export function CoachDashboardPage({
                   ) : null}
                 </div>
               ) : null}
-              <p className="text-xs text-purple-900 font-semibold">משתמשים והרשאות תפקיד:</p>
+              <p className="text-xs text-purple-900 font-semibold">
+                {isOwner ? "משתמשים והרשאות תפקיד:" : "מתאמנים משויכים:"}
+              </p>
               <div className="num-pill flex min-h-10 w-full items-center gap-2 px-3 py-1">
                 <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <input
@@ -6399,37 +6438,39 @@ export function CoachDashboardPage({
                         </span>
                       </div>
 
-                      <div className="flex w-full shrink-0 items-center gap-1.5 sm:w-auto">
-                        {renderOwnerCalorieToggle(p, true)}
-                        <select
-                          aria-label={`שינוי תפקיד עבור ${profileDisplayName(p)}`}
-                          value={p.role || ""}
-                          disabled={
-                            isCurrentUser ||
-                            p.profile_exists === false ||
-                            !canChangeRole ||
-                            isChanging
-                          }
-                          onChange={(event) => {
-                            const nextRole = event.target.value;
-                            if (
-                              nextRole === "owner" ||
-                              nextRole === "coach" ||
-                              nextRole === "client"
-                            ) {
-                              void handleOwnerChangeRole(p.id, nextRole);
+                      {isOwner ? (
+                        <div className="flex w-full shrink-0 items-center gap-1.5 sm:w-auto">
+                          {renderOwnerCalorieToggle(p, true)}
+                          <select
+                            aria-label={`שינוי תפקיד עבור ${profileDisplayName(p)}`}
+                            value={p.role || ""}
+                            disabled={
+                              isCurrentUser ||
+                              p.profile_exists === false ||
+                              !canChangeRole ||
+                              isChanging
                             }
-                          }}
-                          className="min-w-0 flex-1 rounded-lg border border-purple-200 bg-white px-2 py-1 text-[11px] font-bold text-purple-900 outline-none focus:border-purple-500 disabled:cursor-not-allowed disabled:opacity-60 sm:max-w-28"
-                        >
-                          <option value="" disabled>
-                            לא ידוע
-                          </option>
-                          <option value="owner">בעלים</option>
-                          <option value="coach">מאמן</option>
-                          <option value="client">מתאמן</option>
-                        </select>
-                      </div>
+                            onChange={(event) => {
+                              const nextRole = event.target.value;
+                              if (
+                                nextRole === "owner" ||
+                                nextRole === "coach" ||
+                                nextRole === "client"
+                              ) {
+                                void handleOwnerChangeRole(p.id, nextRole);
+                              }
+                            }}
+                            className="min-w-0 flex-1 rounded-lg border border-purple-200 bg-white px-2 py-1 text-[11px] font-bold text-purple-900 outline-none focus:border-purple-500 disabled:cursor-not-allowed disabled:opacity-60 sm:max-w-28"
+                          >
+                            <option value="" disabled>
+                              לא ידוע
+                            </option>
+                            <option value="owner">בעלים</option>
+                            <option value="coach">מאמן</option>
+                            <option value="client">מתאמן</option>
+                          </select>
+                        </div>
+                      ) : null}
                     </div>
                   );
                    })}
@@ -6645,20 +6686,6 @@ export function CoachDashboardPage({
                     </span>
                   </h3>
                   <div className="flex shrink-0 items-center gap-1.5">
-                    {!trackingLanding ? (
-                      <button
-                        type="button"
-                        onClick={() => setShowClientProfile(true)}
-                        aria-label="פתיחת פרופיל המשתמש"
-                        disabled={!clientDetails || loadingDetails}
-                        className={`flex items-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10 ${
-                          clientsOnly ? "h-8" : "h-9"
-                        } disabled:cursor-not-allowed disabled:opacity-50`}
-                      >
-                        <UserCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                        פרופיל
-                      </button>
-                    ) : null}
                     <button
                       type="button"
                       onClick={() => {

@@ -100,13 +100,12 @@ describe("Supabase auth lifecycle contracts", () => {
     expect(dateOfBirthRepairMigration).toContain("NOTIFY pgrst, 'reload schema'");
   });
 
-  test("tracking uses a drawn palette heart and keeps profile on the home workspace", () => {
+  test("tracking uses a drawn palette heart and keeps profile access on the home directory", () => {
     expect(coachRoute).toContain('<Heart className="h-3.5 w-3.5 fill-current"');
     expect(coachRoute).toContain("לשים לב");
     expect(coachRoute).not.toContain("לשים ❤️");
-    expect(coachRoute).toMatch(
-      /\{!trackingLanding \? \([\s\S]*?aria-label="פתיחת פרופיל המשתמש"/,
-    );
+    expect(coachRoute).toContain('title="פרופילים"');
+    expect(coachRoute).not.toContain('aria-label="פתיחת פרופיל המשתמש"');
   });
 
   test("app fields stay within their card or flex container", () => {

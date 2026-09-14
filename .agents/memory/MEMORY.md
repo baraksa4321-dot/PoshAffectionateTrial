@@ -77,3 +77,4 @@
 - [Video feedback](video-feedback.md) — Keep coach comments on specific performance videos in a dedicated RLS-protected realtime record with trainee read state.
 - [Portal anchor visibility](portal-anchor-visibility.md) — Keep workout editor portal anchors visible; WebKit can fail when an empty anchor is hidden before portal content mounts.
 - [Quiet persistence UI](quiet-persistence-ui.md) — Hide routine saved/pending sync captions across features; keep only actionable errors and conflicts visible.
+- [Profile directory entry point](profile-directory-entry-point.md) — Open trainee profiles from the home Profiles directory; keep profile actions out of the Programs workspace header.
