@@ -141,7 +141,6 @@ function Library() {
       );
       return {
         name,
-        count: linkedExercises.length,
         image: linkedExercises
           .map((exercise) => exercise.equipmentImages?.[name]?.trim())
           .find(Boolean),
@@ -163,7 +162,6 @@ function Library() {
       );
       return {
         name,
-        count: linkedExercises.length,
         image: linkedExercises
           .map((exercise) => exercise.cableGripImages?.[name]?.trim())
           .find(Boolean),
@@ -502,14 +500,6 @@ function Library() {
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="font-display text-[15px] font-semibold text-ink">{row.name}</p>
-                  <p className="mt-1 text-[11.5px] text-muted-foreground">
-                    מופיע ב־{row.count} {row.count === 1 ? "תרגיל" : "תרגילים"}
-                  </p>
-                  {!row.image ? (
-                    <p className="mt-1 text-[10.5px] text-muted-foreground">
-                      הוסיפי תמונה מתוך עריכת תרגיל שמשתמש באפשרות הזו.
-                    </p>
-                  ) : null}
                 </div>
                 <button
                   type="button"
