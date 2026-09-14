@@ -1146,7 +1146,7 @@ function WorkoutWeeklyReportWeek({
 
   return (
     <section
-      className="mt-3 space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.035] p-3"
+      className="space-y-3"
       aria-label={`דוח שבועי עבור ${workout.name}`}
     >
       <div className="flex items-start justify-between gap-2 border-b border-primary/15 pb-2">
@@ -1372,7 +1372,7 @@ function WorkoutDailyReport({
 
   return (
     <section
-      className="mt-3 space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.035] p-3"
+      className="space-y-3"
       aria-label={`היסטוריית אימונים והערות עבור ${workout.name}`}
       data-testid="coach-workout-daily-report"
     >
@@ -6672,10 +6672,10 @@ export function CoachDashboardPage({
               className={`w-full ${editingDayId ? "workout-builder-workspace min-h-full flex flex-col" : ""} ${
                 clientsOnly ? "space-y-1.5" : trackingLanding ? "space-y-1" : "space-y-4"
               } bg-background ${
-                workspacePage || openEditor
+                editingDayId || workspacePage || openEditor
                   ? "min-w-0 max-w-full overflow-x-hidden pb-10"
                   : `${isOwner ? "max-w-5xl" : "max-w-2xl"} rounded-3xl shadow-2xl`
-              } ${workspacePage || openEditor ? "" : "p-4 sm:p-6"}`}
+              } ${editingDayId || workspacePage || openEditor ? "" : "p-4 sm:p-6"}`}
             >
               {!editingDayId ? (
                 <div
@@ -7535,7 +7535,7 @@ export function CoachDashboardPage({
                                         <div
                                           className={`coach-workout-surface workout-builder-frame relative w-full ${
                                             editingDayId
-                                              ? "workout-builder-surface rounded-none border-0 p-4 shadow-none ring-0 sm:p-6"
+                                              ? "workout-builder-surface rounded-none border-0 px-4 py-4 shadow-none ring-0 sm:px-6"
                                               : "overflow-hidden min-h-[calc(100dvh-12rem)] rounded-[1.5rem] border border-primary/25 bg-background p-4 shadow-sm ring-1 ring-primary/10 sm:p-6"
                                           }`}
                                         >
@@ -9427,22 +9427,20 @@ export function CoachDashboardPage({
                                                   {dayItem.name}
                                                 </h3>
                                               </div>
-                                              <div className="overflow-hidden rounded-2xl border border-primary/15 bg-primary/[0.025]">
-                                                <WorkoutDailyReport
-                                                  workout={dayItem}
-                                                  history={clientDetails?.history ?? []}
-                                                  clientId={selectedClientId ?? undefined}
-                                                  videoFeedbacks={clientDetails?.videoFeedbacks ?? []}
-                                                  exercises={Array.from(
-                                                    new Map(
-                                                      [
-                                                        ...store.exercises,
-                                                        ...(clientDetails?.exercises ?? []),
-                                                      ].map((exercise) => [exercise.id, exercise]),
-                                                    ).values(),
-                                                  )}
-                                                />
-                                              </div>
+                                              <WorkoutDailyReport
+                                                workout={dayItem}
+                                                history={clientDetails?.history ?? []}
+                                                clientId={selectedClientId ?? undefined}
+                                                videoFeedbacks={clientDetails?.videoFeedbacks ?? []}
+                                                exercises={Array.from(
+                                                  new Map(
+                                                    [
+                                                      ...store.exercises,
+                                                      ...(clientDetails?.exercises ?? []),
+                                                    ].map((exercise) => [exercise.id, exercise]),
+                                                  ).values(),
+                                                )}
+                                              />
                                             </section>
                                           ) : null}
                                         </div>

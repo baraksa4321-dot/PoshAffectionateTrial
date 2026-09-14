@@ -4973,13 +4973,15 @@ html[data-keyboard-open] .nav-shell {
 
 .workout-report-bookmark {
   position: absolute;
+  z-index: 5;
   top: 1rem;
   right: 0;
-  min-height: 5.25rem;
-  width: 1.75rem;
+  min-height: 7rem;
+  width: 2.75rem;
   border-left: 0;
   border-radius: 0.75rem 0 0 0.75rem;
   transform: none;
+  font-size: 0.7rem;
 }
 
 .workout-report-bookmark:hover,
@@ -5001,33 +5003,30 @@ html[data-keyboard-open] .nav-shell {
 
 .workout-report-bookmark span {
   writing-mode: vertical-rl;
-  font-size: 0.62rem;
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.04em;
 }
 
 .workout-report-panel {
   position: absolute;
-  z-index: 1;
-  inset-block: 1rem;
-  inset-inline: 0 1.75rem;
+  z-index: 3;
+  inset-block: 0;
+  inset-inline: 0 2.75rem;
   box-sizing: border-box;
   overflow-y: auto;
-  max-height: calc(100% - 2rem);
-  border-radius: inherit;
-  border: 1px solid color-mix(in oklch, var(--primary) 35%, var(--border));
+  max-height: 100%;
+  border-radius: 0;
+  border: 0;
   background: var(--background);
-  padding: 1rem;
-  box-shadow:
-    0 14px 34px rgb(var(--shadow-color) / 14%),
-    0 2px 8px rgb(var(--shadow-color) / 8%);
+  padding: 1rem 1rem 5rem;
+  box-shadow: -10px 0 28px rgb(var(--shadow-color) / 10%);
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 
 .workout-report-bookmark-open ~ .workout-report-panel {
-  inset-inline: 1.75rem 0;
-  border-radius: 1.25rem;
+  inset-inline: 2.75rem 0;
 }
 
 /* The inline coach editor has one page scroll root. Keep the report tab
@@ -5037,6 +5036,7 @@ html[data-keyboard-open] .nav-shell {
     position: fixed;
     top: calc(var(--app-topbar-height, 0px) + 0.75rem);
     right: 0;
+    width: 2.75rem;
   }
 
   .overlay-inline-panel .workout-report-bookmark-open {
@@ -5049,6 +5049,7 @@ html[data-keyboard-open] .nav-shell {
   flex: 1 1 auto;
   min-height: calc(100lvh - 5rem);
   height: auto;
+  padding-inline: 1rem;
   border-radius: 0;
   background:
     linear-gradient(
