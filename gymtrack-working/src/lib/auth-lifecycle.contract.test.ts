@@ -91,6 +91,8 @@ describe("Supabase auth lifecycle contracts", () => {
   test("management Programs opens the combined coach plan workspace", () => {
     expect(appShell).toContain('to: "/coach/clients"');
     expect(appShell).toContain('label: "תוכניות"');
+    expect(appShell).toContain('to="/coach"');
+    expect(appShell).toContain('preload="render"');
   });
 
   test("coach program and tracking entry points stay on separate routes", () => {

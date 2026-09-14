@@ -1056,7 +1056,7 @@ export function AppShell({
                   </Link>
                   <Link
                     to="/coach"
-                    preload="intent"
+                    preload="render"
                     onClick={() => setWorkspace("management")}
                     data-testid="link-nav-coach"
                     aria-current={activeMode === "management" ? "page" : undefined}
@@ -1868,7 +1868,7 @@ export function AppShell({
               <Link
                 key={to}
                 to={to}
-                preload="intent"
+                preload={to === "/coach" ? "render" : "intent"}
                 activeOptions={{ exact: to === "/" || to === "/coach" }}
                 data-testid={`link-nav-${id}`}
                 className="app-nav-link press group relative flex min-h-[3.1rem] flex-1 flex-col items-center justify-center gap-0.5 py-1 text-muted-foreground transition-colors data-[status=active]:text-primary hover:text-ink"
