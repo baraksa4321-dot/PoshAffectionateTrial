@@ -525,11 +525,6 @@ function DayBuilder() {
       )}
 
       <div className="mt-6 space-y-3">
-        {autoSaveState !== "idle" ? (
-          <p className="text-center text-[11px] font-semibold text-muted-foreground">
-            {autoSaveState === "saving" ? "שומר אוטומטית..." : "השינויים נשמרו אוטומטית"}
-          </p>
-        ) : null}
         {!isNew ? (
           <button
             type="button"

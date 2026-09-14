@@ -1827,7 +1827,7 @@ export async function flushCloudSync(): Promise<{
       return {
         success: true,
         deferred: true,
-        error: "השמירה בענן מתעכבת; האימון נשמר במכשיר ויסונכרן בהמשך",
+        error: "הסנכרון מתעכב; אפשר לנסות שוב מאוחר יותר",
       };
     }
   }
@@ -1839,10 +1839,10 @@ export async function flushCloudSync(): Promise<{
 
   const error =
     syncStatus === "offline"
-      ? "אין חיבור כרגע; האימון נשמר במכשיר ויסונכרן כשהחיבור יחזור"
+      ? "אין חיבור כרגע"
       : syncErrorMessage
-        ? `השינויים נשמרו במכשיר; הסנכרון לענן נכשל: ${syncErrorMessage}`
-        : "השינויים נשמרו במכשיר; הסנכרון לענן עדיין ממתין לניסיון נוסף";
+        ? `הסנכרון נכשל: ${syncErrorMessage}`
+        : "הסנכרון עדיין לא הושלם";
   return syncStatus === "offline" || isNetworkFailure(error)
     ? { success: true, deferred: true, error }
     : { success: false, error };

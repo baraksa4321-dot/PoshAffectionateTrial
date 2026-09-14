@@ -125,6 +125,12 @@ type CoachClientRow = {
 type DashboardClientFilter = "clients" | "needsPlan" | "quiet";
 type OwnerHomeTab = "overview" | "checkins" | "profiles";
 
+function isFailureNotice(message: string) {
+  return /נכש|שגיאה|לא ניתן|יש להשלים|יש להזין|לא התקבל|לא נמצאו|לא נמצא|נדחתה|דחייה|נדרש|לא תקין/i.test(
+    message,
+  );
+}
+
 type ExerciseBuilderReturnContext = {
   returnUrl: string;
   clientId: string | null;
@@ -5333,7 +5339,7 @@ export function CoachDashboardPage({
                 </p>
               </div>
             </div>
-            {broadcastNotice ? (
+            {broadcastNotice && isFailureNotice(broadcastNotice) ? (
               <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-2 text-xs font-bold text-emerald-800">
                 {broadcastNotice}
               </p>
@@ -6064,7 +6070,7 @@ export function CoachDashboardPage({
                       </div>
                     ))}
                   </div>
-                  {approvalNotice ? (
+                  {approvalNotice && isFailureNotice(approvalNotice) ? (
                     <p className="mt-2 rounded-lg bg-white p-2 text-[11px] font-semibold text-amber-950">
                       {approvalNotice}
                     </p>
@@ -6329,7 +6335,9 @@ export function CoachDashboardPage({
                             עדיין לא נשמרו מדידות גוף.
                           </p>
                         ) : null}
-                        {selectedOwnerProfileId === selectedProfile.id && ownerCalorieNotice ? (
+                        {selectedOwnerProfileId === selectedProfile.id &&
+                        ownerCalorieNotice &&
+                        isFailureNotice(ownerCalorieNotice) ? (
                           <p className="mt-2 rounded-lg bg-purple-50 p-2 text-[11px] font-semibold text-purple-900">
                             {ownerCalorieNotice}
                           </p>
@@ -6432,7 +6440,7 @@ export function CoachDashboardPage({
                   {ownerCalorieNotice}
                 </p>
               ) : null}
-              {roleChangeNotice ? (
+              {roleChangeNotice && isFailureNotice(roleChangeNotice) ? (
                 <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-2 text-xs font-semibold text-emerald-700">
                   {roleChangeNotice}
                 </p>
@@ -8546,7 +8554,7 @@ export function CoachDashboardPage({
                                                     ) : null}
                                                   </div>
                                                 ) : null}
-                                                {exerciseBuilderNotice ? (
+                                                {exerciseBuilderNotice && isFailureNotice(exerciseBuilderNotice) ? (
                                                   <p className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-[10px] font-semibold text-ink">
                                                     {exerciseBuilderNotice}
                                                   </p>
@@ -9934,7 +9942,7 @@ export function CoachDashboardPage({
                         + {genderText(gender, "הוסיפי ארוחה", "הוסף ארוחה")}
                       </button>
                     </div>
-                    {menuNotice ? (
+                    {menuNotice && isFailureNotice(menuNotice) ? (
                       <p
                         className={`rounded-lg border p-2 text-[11px] font-semibold ${
                           menuNotice.includes("נכשל")
@@ -10143,7 +10151,7 @@ export function CoachDashboardPage({
                           <Save className="h-3.5 w-3.5" />
                           שמור נתוני מחשבון
                         </button>
-                        {profileNotice ? (
+                        {profileNotice && isFailureNotice(profileNotice) ? (
                           <p className="mt-2 text-[10px] font-semibold text-ink">{profileNotice}</p>
                         ) : null}
                       </div>
@@ -10560,7 +10568,7 @@ export function CoachDashboardPage({
                   <Save className="h-3.5 w-3.5" />
                   שמירת פרטי המשתמש
                 </button>
-                {profileNotice ? (
+                {profileNotice && isFailureNotice(profileNotice) ? (
                   <p
                     role="status"
                     className="rounded-xl bg-emerald-50 p-2 text-xs font-semibold text-emerald-800"
@@ -10591,7 +10599,7 @@ export function CoachDashboardPage({
                     {msgSendError}
                   </p>
                 ) : null}
-                {msgSendNotice ? (
+                {msgSendNotice && isFailureNotice(msgSendNotice) ? (
                   <p
                     role="status"
                     className="rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs font-bold text-emerald-700"
@@ -10900,7 +10908,7 @@ export function CoachDashboardPage({
                     </button>
                   </>
                 ) : null}
-                {measurementNotice ? (
+                {measurementNotice && isFailureNotice(measurementNotice) ? (
                   <p className="rounded-xl bg-emerald-50 p-2 text-xs font-semibold text-emerald-800">
                     {measurementNotice}
                   </p>

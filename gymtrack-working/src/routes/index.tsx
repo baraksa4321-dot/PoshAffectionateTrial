@@ -885,7 +885,7 @@ function Dashboard() {
         </div>
 
         {/* Check-In Success Banner */}
-        {checkInSuccessMsg && (
+        {checkInSuccessMsg && checkInSuccessMsg.startsWith("יש למלא") && (
           <div
             {...homeCardProps("checklist")}
             className="surface-card mt-3 rounded-2xl border border-primary/25 bg-primary/5 p-3.5 text-start text-xs font-bold text-primary"

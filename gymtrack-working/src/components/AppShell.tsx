@@ -214,21 +214,10 @@ export function AppShell({
         : cloudSyncStatus === "syncing" || cloudSyncStatus === "pending"
           ? "text-primary"
           : "text-primary";
-  const syncTitle =
-    cloudSyncStatus === "offline"
-      ? "אין חיבור לאינטרנט — השינויים נשמרים במכשיר"
-      : cloudSyncStatus === "syncing"
-        ? "מסנכרנים את השינויים לענן"
-        : cloudSyncStatus === "pending"
-          ? "שינויים ממתינים לסנכרון"
-          : cloudSyncStatus === "conflict"
-            ? "נמצאה התנגשות — נדרשת בחירה לפני סנכרון"
-          : cloudSyncStatus === "error"
-            ? "השינויים נשמרו במכשיר — הסנכרון דורש תשומת לב"
-            : "הנתונים מסונכרנים";
+  const syncTitle = "פתיחת מצב סנכרון";
   const readableSyncError =
     /permission denied|row-level security|42501/i.test(cloudSyncError)
-      ? "השרת דחה את השינוי בגלל הרשאה. הנתונים המקומיים נשמרו, אבל צריך לתקן את הרשאת הסנכרון."
+      ? "השרת דחה את השינוי בגלל הרשאה. יש לתקן את הרשאת הסנכרון."
       : cloudSyncError;
 
   useEffect(() => {
@@ -1231,15 +1220,6 @@ export function AppShell({
               </button>
             </div>
 
-            <div className="flex items-center gap-3 rounded-2xl border border-border bg-background px-3 py-3">
-              <SyncIcon className={`h-5 w-5 ${syncIconClass}`} aria-hidden="true" />
-              <div className="min-w-0">
-                <p className="text-sm font-extrabold text-ink">{syncTitle}</p>
-                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                  העריכות נשמרות קודם במכשיר. רענון מרוחק לא יחליף עריכה מקומית ממתינה.
-                </p>
-              </div>
-            </div>
             {cloudSyncStatus === "error" && readableSyncError ? (
               <div className="rounded-2xl border border-destructive/20 bg-destructive/5 px-3 py-2.5 text-xs leading-relaxed text-destructive">
                 <p className="font-bold">סיבת הכשל</p>
@@ -1291,16 +1271,7 @@ export function AppShell({
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="rounded-2xl bg-primary/10 px-3 py-2.5 text-xs font-semibold text-primary">
-                אין התנגשויות פתוחות.
-              </p>
-            )}
-
-            <p className="text-[11px] leading-relaxed text-muted-foreground">
-              במצב offline אפשר להמשיך לעבוד. ניסיון חוזר יופעל כשהחיבור יחזור, ובמקרה של
-              שגיאה הנתונים המקומיים יישארו זמינים.
-            </p>
+            ) : null}
           </div>
         </Overlay>
       ) : null}

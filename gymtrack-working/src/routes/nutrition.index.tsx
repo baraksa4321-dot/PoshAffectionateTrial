@@ -960,7 +960,7 @@ function NutritionLog() {
               <SecondaryButton className="mt-2 w-full" onClick={saveSelectedRecipe}>
                 שמרי בספרייה האישית
               </SecondaryButton>
-              {recipeNotice ? (
+              {recipeNotice && /לא ניתן|שגיאה|נכשל/.test(recipeNotice) ? (
                 <p className="mt-2 text-center text-[11px] font-semibold text-primary">
                   {recipeNotice}
                 </p>

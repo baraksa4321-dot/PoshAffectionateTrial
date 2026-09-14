@@ -1564,11 +1564,6 @@ function Session() {
           </div>
         </div>
       </div>
-      {bodyweightNotice ? (
-        <p className="mt-2 rounded-lg bg-emerald-50 px-2.5 py-2 text-[11px] font-semibold text-emerald-800">
-          {bodyweightNotice}
-        </p>
-      ) : null}
       <div className="mt-3 space-y-3">
         {entries.map((entry, ei) => {
           const item = workout.items[ei];
@@ -1813,11 +1808,6 @@ function Session() {
                     preload="metadata"
                     aria-label={`סרטון ביצוע ${entry.exerciseName}`}
                   />
-                ) : null}
-                {videoUploadsInFlight > 0 && entry.videoUrl?.startsWith("blob:") ? (
-                  <p className="mt-2 text-[10px] font-semibold text-primary">
-                    הסרטון נשמר במכשיר וממשיך לעלות לענן…
-                  </p>
                 ) : null}
                 {videoUploadError && videoUploadErrorExerciseIndex === ei ? (
                   <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-rose-50 px-2 py-1.5">
