@@ -956,14 +956,20 @@ function VideoFeedbackInbox({
                       className="h-full w-full rounded-xl bg-black object-contain"
                     />
                   </div>
-                  <VideoFeedbackThread
-                    clientId={video.clientId}
-                    sessionId={video.sessionId}
-                    workoutId={video.workoutId}
-                    entry={video.entry}
-                    title={video.entry.exerciseName || "תרגיל"}
-                    videoFeedbacks={video.videoFeedbacks}
-                  />
+                  {video.entry.videoPath ? (
+                    <VideoFeedbackThread
+                      clientId={video.clientId}
+                      sessionId={video.sessionId}
+                      workoutId={video.workoutId}
+                      entry={video.entry}
+                      title={video.entry.exerciseName || "תרגיל"}
+                      videoFeedbacks={video.videoFeedbacks}
+                    />
+                  ) : (
+                    <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[10px] font-semibold text-amber-900">
+                      הסרטון זמין לצפייה, אבל חסר נתיב האחסון לשליחת משוב עליו.
+                    </p>
+                  )}
                 </article>
               ))}
             </div>
@@ -2852,12 +2858,7 @@ export function CoachDashboardPage({
       for (const session of details.history) {
         const workout = workoutsById.get(session.workoutId);
         for (const [entryIndex, entry] of session.entries.entries()) {
-          if (
-            !entry.videoPath ||
-            !entry.videoUrl ||
-            entry.videoUrl.startsWith("blob:") ||
-            !isSafeHttpUrl(entry.videoUrl)
-          ) {
+          if (!entry.videoUrl || entry.videoUrl.startsWith("blob:") || !isSafeHttpUrl(entry.videoUrl)) {
             continue;
           }
           records.push({
@@ -2885,12 +2886,16 @@ export function CoachDashboardPage({
     const records: CoachDemoVideo[] = [];
     for (const { client, details } of overviewRows) {
       const clientName = profileDisplayName(client.profiles);
-      const exercisesById = new Map(details.exercises.map((exercise) => [exercise.id, exercise]));
+      // A trainee pull only contains the trainee's custom exercises. Planned
+      // items normally point to the coach's shared/built-in exercise catalog,
+      // so resolve both sources before looking for demo video URLs.
+      const exerciseCatalog = [...store.exercises, ...details.exercises];
+      const exercisesById = new Map(exerciseCatalog.map((exercise) => [exercise.id, exercise]));
       for (const workout of details.workouts) {
         for (const item of workout.items) {
           const exercise =
             exercisesById.get(item.exerciseId) ??
-            details.exercises.find(
+            exerciseCatalog.find(
               (candidate) =>
                 candidate.name.trim().toLocaleLowerCase() ===
                 (item.exerciseName ?? "").trim().toLocaleLowerCase(),
@@ -2908,7 +2913,7 @@ export function CoachDashboardPage({
       }
     }
     return records;
-  }, [overviewRows]);
+  }, [overviewRows, store.exercises]);
 
   useEffect(() => {
     if (!clientId) return;
