@@ -51,6 +51,8 @@ import {
   useGym,
 } from "../lib/gym-store";
 import {
+  appendProgramDayToLocalCoachData,
+  insertProgramDayForCoach,
   pullClientDataForCoach,
   type RealtimeConnectionStatus,
   updateProgramDayWeekday,
@@ -3960,38 +3962,46 @@ export function CoachDashboardPage({
     setManagementError("");
 
     const dayId = uid();
+    const newWorkout: Workout = {
+      id: dayId,
+      name: newDayName.trim(),
+      notes: "",
+      items: [],
+      weekday: newDayWeekday,
+    };
     if (isSelfSelected) {
-      const day: Workout = {
-        id: dayId,
-        name: newDayName.trim(),
-        notes: "",
-        items: [],
-        weekday: newDayWeekday,
-      };
-      saveWorkoutInProgram(editingProgramId, day);
+      saveWorkoutInProgram(editingProgramId, newWorkout);
       setNewDayName("");
       setEditingDayId(dayId);
       return;
     }
 
-    const { error } = await supabase
-      .from("program_days")
-      .insert(
-        clientProgramDayInsertPayload(
-          dayId,
-          editingProgramId,
-          selectedClientId,
-          newDayName.trim(),
-          (clientDetails?.workouts?.length || 0) + 1,
-          newDayWeekday,
-        ),
-      );
+    const result = await insertProgramDayForCoach(
+      clientProgramDayInsertPayload(
+        dayId,
+        editingProgramId,
+        selectedClientId,
+        newWorkout.name,
+        (clientDetails?.workouts?.length || 0) + 1,
+        newDayWeekday,
+      ),
+    );
 
-    if (error) {
-      setManagementError(`שמירת יום האימון נכשלה: ${error.message}`);
+    if (result.error) {
+      setManagementError(
+        `שמירת יום האימון נכשלה: ${errorMessage(result.error, "שגיאה בשמירת יום האימון")}`,
+      );
       return;
     }
     setNewDayName("");
+    if (result.usedLegacySchema) {
+      setClientDetails((current) =>
+        current
+          ? appendProgramDayToLocalCoachData(current, editingProgramId, newWorkout)
+          : current,
+      );
+      return;
+    }
     pullClientDataForCoach(selectedClientId).then(applyClientDetails);
   };
 

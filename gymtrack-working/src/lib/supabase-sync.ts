@@ -407,6 +407,24 @@ function isSchemaCompatibilityError(error: unknown, tableName: string): boolean 
 const legacyProgramDaysSelect =
   "id, program_id, user_id, name, items, sort_order, updated_at";
 
+export async function insertProgramDayForCoach(
+  payload: Record<string, unknown>,
+): Promise<{ error: unknown; usedLegacySchema: boolean }> {
+  const result = await supabase.from("program_days").insert(payload);
+
+  if (!result.error || !isMissingColumnInSchema(result.error, "program_days", "weekday")) {
+    return { error: result.error, usedLegacySchema: false };
+  }
+
+  const { weekday: _weekday, ...legacyPayload } = payload;
+  // The weekday migration is additive. Older linked projects can still create
+  // the day, but the selected weekday must stay in the coach's local state
+  // until the connected project has the new column.
+  console.warn("[Program days insert] weekday column is missing; using legacy columns");
+  const legacyResult = await supabase.from("program_days").insert(legacyPayload);
+  return { error: legacyResult.error, usedLegacySchema: true };
+}
+
 export async function updateProgramDayWeekday(
   dayId: string,
   userId: string,
@@ -432,6 +450,25 @@ export async function updateProgramDayWeekday(
     .eq("id", dayId)
     .eq("user_id", userId);
   return { error: legacyResult.error, usedLegacySchema: true };
+}
+
+export function appendProgramDayToLocalCoachData<
+  T extends Pick<CoachClientData, "programs" | "workouts">,
+>(data: T, programId: string, workout: Workout): T {
+  return {
+    ...data,
+    workouts: [...data.workouts.filter((item) => item.id !== workout.id), workout],
+    programs: data.programs.map((program) =>
+      program.id === programId
+        ? {
+            ...program,
+            dayIds: program.dayIds.includes(workout.id)
+              ? program.dayIds
+              : [...program.dayIds, workout.id],
+          }
+        : program,
+    ),
+  };
 }
 
 async function selectProgramDaysForUser(userId: string) {

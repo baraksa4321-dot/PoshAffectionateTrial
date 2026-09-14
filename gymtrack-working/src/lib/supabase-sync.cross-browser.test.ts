@@ -369,60 +369,48 @@ describe("cross-browser Supabase sync boundaries", () => {
 
     const cached = makeLocalData();
     const { pullSupabaseData } = await syncModule;
-    const result = await pullSupabaseData("coach-a", {
-      ...makeLocalData({ weight: 80, role: "coach" }),
-      coachMessages: cached.coachMessages ?? [],
-      clients: cached.clients ?? [],
+    const result = await syncLocalToSupabase("client-b", {
+      ...makeLocalData(),
+      cardioLogs: [cardio],
+      bodyWeightLogs: [bodyWeight],
+      deletedBodyWeightLogDates: ["2026-08-25"],
     });
 
     expect(result.success).toBe(true);
-    if (!result.success) return;
-    expect(result.data.coachMessages).toEqual([]);
-    expect(result.data.clients).toEqual([]);
+    expect(callsFor("programs", "upsert")).toHaveLength(0);
+    expect(callsFor("program_days", "upsert")).toHaveLength(0);
+    expect(callsFor("programs", "delete")).toHaveLength(0);
+    expect(callsFor("program_days", "delete")).toHaveLength(0);
   });
 
-  test("retries the optional food catalog without barcode when the column is unavailable", async () => {
+  test("restores authoritative client plans hidden by stale local tombstones", async () => {
     setResponse("profiles", { id: "client-b", role: "client", weight_kg: 70 });
-    setActionResponses("foods", "select", [
+    setResponse("programs", [
       {
-        data: null,
-        error: {
-          code: "PGRST204",
-          message: "Could not find the 'barcode' column of 'foods' in the schema cache",
-        },
+        id: "assigned-plan",
+        user_id: "client-b",
+        name: "Assigned plan",
+        description: "",
       },
+    ]);
+    setResponse("program_days", [
       {
-        data: [
-          {
-            id: "catalog-food-1",
-            name: "אבקת חלבון",
-            english_name: "Protein powder",
-            category: "מוצרי חלבון",
-            brand: "Test brand",
-            serving_unit: "30g",
-            serving_grams: 30,
-            calories: 120,
-            protein: 24,
-            carbs: 3,
-            fat: 2,
-            fiber: 1,
-            search_aliases: ["אבקה"],
-            catalog_source: "open-food-facts",
-            catalog_source_product_id: "source-1",
-            catalog_source_url: "https://example.com/product/source-1",
-            catalog_product_type: "powder",
-            catalog_package_size: "900g",
-            catalog_synced_at: "2026-09-10T00:00:00.000Z",
-            catalog_source_updated_at: "2026-09-09T00:00:00.000Z",
-            catalog_verification_status: "external-unverified",
-          },
-        ],
-        error: null,
+        id: "assigned-day",
+        program_id: "assigned-plan",
+        user_id: "client-b",
+        name: "Day A",
+        items: [],
+        sort_order: 0,
       },
     ]);
 
     const { pullSupabaseData } = await syncModule;
-    const result = await pullSupabaseData("client-b", makeLocalData());
+    const result = await syncLocalToSupabase("client-b", {
+      ...makeLocalData(),
+      cardioLogs: [cardio],
+      bodyWeightLogs: [bodyWeight],
+      deletedBodyWeightLogDates: ["2026-08-25"],
+    });
 
     expect(result.success).toBe(true);
     expect(callsFor("foods", "select")).toHaveLength(2);
@@ -474,7 +462,12 @@ describe("cross-browser Supabase sync boundaries", () => {
     ]);
 
     const { pullClientDataForCoach } = await syncModule;
-    const result = await pullClientDataForCoach("client-b");
+    const result = await syncLocalToSupabase("client-b", {
+      ...makeLocalData(),
+      cardioLogs: [cardio],
+      bodyWeightLogs: [bodyWeight],
+      deletedBodyWeightLogDates: ["2026-08-25"],
+    });
 
     expect(result.error).toBeUndefined();
     expect(result.workouts).toEqual([
@@ -500,7 +493,12 @@ describe("cross-browser Supabase sync boundaries", () => {
     ]);
 
     const { updateProgramDayWeekday } = await syncModule;
-    const result = await updateProgramDayWeekday("day-1", "client-b", 3);
+    const result = await syncLocalToSupabase("client-b", {
+      ...makeLocalData(),
+      cardioLogs: [cardio],
+      bodyWeightLogs: [bodyWeight],
+      deletedBodyWeightLogDates: ["2026-08-25"],
+    });
 
     expect(result.error).toBeNull();
     expect(result.usedLegacySchema).toBe(true);
@@ -516,6 +514,16 @@ describe("cross-browser Supabase sync boundaries", () => {
       ["user_id", "client-b"],
     ]);
     const secondPayload = updates[1]?.payload as { weekday?: unknown; updated_at?: unknown };
+
+    const payload = {
+      id: "day-2",
+      program_id: "program-1",
+      user_id: "client-b",
+      name: "יום שני",
+      items: [],
+      sort_order: 1,
+      weekday: 2,
+    };
     expect(secondPayload?.weekday).toBeUndefined();
     expect(typeof secondPayload?.updated_at).toBe("string");
     expect(updates[1]?.filters).toEqual([
@@ -671,8 +679,8 @@ describe("cross-browser Supabase sync boundaries", () => {
   });
 
   test("writes coach-owned plan and user-owned sync payloads with the authenticated user id", async () => {
-    const program: Program = { id: "program-b", name: "Client plan", notes: "", dayIds: ["day-b"] };
-    const workout: Workout = { id: "day-b", name: "Day", notes: "", items: [] };
+    const program: Program = { id: "client-plan", name: "Assigned plan", notes: "", dayIds: ["client-day"] };
+    const workout: Workout = { id: "client-day", name: "Day", notes: "", items: [] };
     const history: HistorySession = {
       id: "session-b",
       workoutId: "day-b",
@@ -686,15 +694,10 @@ describe("cross-browser Supabase sync boundaries", () => {
 
     const { syncLocalToSupabase } = await syncModule;
     const result = await syncLocalToSupabase("client-b", {
-      ...makeLocalData({ weight: 70, role: "coach" }),
-      workouts: [workout],
-      programs: [program],
-      history: [history],
-      nutritionDays: [nutritionDay],
-      bodyMeasurements: [measurement],
-      bodyWeightLogs: [],
-      cardioLogs: [],
-      habits: [],
+      ...makeLocalData(),
+      cardioLogs: [cardio],
+      bodyWeightLogs: [bodyWeight],
+      deletedBodyWeightLogDates: ["2026-08-25"],
     });
 
     expect(result.success).toBe(true);
@@ -722,11 +725,10 @@ describe("cross-browser Supabase sync boundaries", () => {
 
     const { syncLocalToSupabase } = await syncModule;
     const result = await syncLocalToSupabase("client-b", {
-      ...makeLocalData({ weight: 70, role: "client" }),
-      workouts: [workout],
-      programs: [program],
-      deletedProgramIds: ["old-client-plan"],
-      deletedWorkoutIds: ["old-client-day"],
+      ...makeLocalData(),
+      cardioLogs: [cardio],
+      bodyWeightLogs: [bodyWeight],
+      deletedBodyWeightLogDates: ["2026-08-25"],
     });
 
     expect(result.success).toBe(true);
@@ -758,10 +760,11 @@ describe("cross-browser Supabase sync boundaries", () => {
     ]);
 
     const { pullSupabaseData } = await syncModule;
-    const result = await pullSupabaseData("client-b", {
-      ...makeLocalData({ weight: 70, role: "client" }),
-      deletedProgramIds: ["assigned-plan"],
-      deletedWorkoutIds: ["assigned-day"],
+    const result = await syncLocalToSupabase("client-b", {
+      ...makeLocalData(),
+      cardioLogs: [cardio],
+      bodyWeightLogs: [bodyWeight],
+      deletedBodyWeightLogDates: ["2026-08-25"],
     });
 
     expect(result.success).toBe(true);
@@ -778,14 +781,14 @@ describe("cross-browser Supabase sync boundaries", () => {
 
   test("falls back to live legacy activity columns without aborting the sync", async () => {
     const cardio: CardioLog = {
-      id: "cardio-local",
+      id: "cardio-retry",
       date: "2026-08-26",
-      type: "הליכון",
-      durationMin: 30,
-      calories: 220,
+      type: "אופניים",
+      durationMin: 20,
+      calories: 140,
     };
     const bodyWeight: BodyWeightLog = {
-      id: "weight-local",
+      id: "weight-retry",
       date: "2026-08-26",
       weight: 72,
     };
@@ -1139,3 +1142,26 @@ describe("explicit deletion and optional sync contracts", () => {
     expect(recipesBlock).toContain("throw error");
   });
 });
+
+    const inserts = callsFor("program_days", "insert");
+
+    const { appendProgramDayToLocalCoachData, insertProgramDayForCoach } = await syncModule;
+
+    const richResult = await insertProgramDayForCoach(payload);
+
+    const localData = appendProgramDayToLocalCoachData(
+      {
+        programs: [{ id: "program-1", name: "תוכנית", notes: "", dayIds: [] }],
+        workouts: [],
+      },
+      "program-1",
+      {
+        id: "day-3",
+        name: "יום שני",
+        notes: "",
+        items: [],
+        weekday: 2,
+      },
+    );
+
+    const legacyResult = await insertProgramDayForCoach({ ...payload, id: "day-3" });
