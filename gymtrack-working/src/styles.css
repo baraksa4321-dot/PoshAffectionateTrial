@@ -9321,7 +9321,26 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 }
 
 .app-auth-shell .app-topbar__heading {
-  margin-top: -0.45rem;
+  margin-top: -0.8rem;
+}
+
+.app-auth-shell .app-topbar__utility-action {
+  position: absolute;
+  top: 50%;
+  right: 25%;
+  z-index: 1;
+  transform: translateY(-50%);
+}
+
+.app-auth-shell .app-topbar__utility-action a[aria-label="ספריית מאכלים"] {
+  width: 2.15rem !important;
+  height: 2.15rem !important;
+  border-radius: 0.8rem !important;
+}
+
+.app-auth-shell .app-topbar__utility-action a[aria-label="ספריית מאכלים"] svg {
+  width: 1rem !important;
+  height: 1rem !important;
 }
 
 @media (max-width: 639px) {

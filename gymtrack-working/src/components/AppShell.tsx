@@ -189,6 +189,7 @@ export function AppShell({
   const isHomeRoute = location.pathname === "/" || location.pathname === "/coach";
   const showWorkspaceSwitcher = Boolean(user && isCoach);
   const showHomeOnlyHeaderControls = isHomeRoute;
+  const actionInUtility = compactHeader && pageClassName.includes("nutrition-page");
   const homeHeaderDate = new Date();
   const homeHeaderName = store.userProfile?.fullName?.trim().split(/\s+/)[0] || "";
   const defaultHomeHeaderAccessory =
@@ -1116,6 +1117,9 @@ export function AppShell({
                   )}
                 </button>
               ) : null}
+              {actionInUtility && action ? (
+                <div className="app-topbar__utility-action">{action}</div>
+              ) : null}
               {showWorkspaceSwitcher ? (
                 <div
                   className="app-workspace-switcher absolute left-0 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-full border border-border bg-surface-2 p-0.5"
@@ -1193,7 +1197,7 @@ export function AppShell({
                     <span>התחברות</span>
                   </button>
                 ) : null}
-                {action}
+                {!actionInUtility ? action : null}
               </div>
             </div>
           ) : null}
