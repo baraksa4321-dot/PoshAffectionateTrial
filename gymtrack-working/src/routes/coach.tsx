@@ -3454,7 +3454,7 @@ export function CoachDashboardPage({
   };
 
   const openOwnerProfile = async (profile: ProfileRow) => {
-    if (profile.role === "client") {
+    if (profile.profile_exists !== false) {
       profileOpenRequestRef.current = true;
       setOwnerHomeTab("overview");
       setSelectedOwnerProfileId(null);
@@ -4855,6 +4855,13 @@ export function CoachDashboardPage({
   });
   const clientPickerRoute = clientsOnly && workspacePage && !clientId;
   const selectedClientInfo = selectableClients.find((c) => c.client_id === selectedClientId);
+  const selectedDirectoryProfile = profileDirectory.find(
+    (profile) => profile.id === selectedClientId,
+  );
+  const selectedProfileDisplaySource = selectedClientInfo?.profiles ?? {
+    full_name: selectedDirectoryProfile?.full_name ?? null,
+    email: selectedDirectoryProfile?.email ?? null,
+  };
   const latestProgram = clientDetails?.programs?.[clientDetails.programs.length - 1];
   const latestNutritionDay = [...(clientDetails?.nutritionDays ?? [])].sort((a, b) =>
     b.date.localeCompare(a.date),
@@ -6179,7 +6186,7 @@ export function CoachDashboardPage({
                             סגירה
                           </button>
                         </div>
-                        <div className="mt-3 grid grid-cols-1 gap-2 text-[11px] sm:grid-cols-2">
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
                           <div className="rounded-xl bg-purple-50 p-2">
                             <span className="block text-muted-foreground">תפקיד</span>
                             <strong className="text-purple-950">
@@ -10462,7 +10469,7 @@ export function CoachDashboardPage({
                   <h2 className="mt-1 truncate font-display text-lg font-extrabold text-ink">
                     {isSelfSelected
                       ? selfDisplayName
-                      : profileDisplayName(selectedClientInfo?.profiles)}
+                      : profileDisplayName(selectedProfileDisplaySource)}
                   </h2>
                   <p className="mt-1 text-[11px] text-muted-foreground">
                     הודעות, היסטוריית פעילות, צ׳ק־אין ומדידות חודשיות במקום אחד
@@ -10495,10 +10502,69 @@ export function CoachDashboardPage({
                 <p className="rounded-xl bg-white/70 px-3 py-2 text-[11px] text-muted-foreground">
                   אימייל החשבון:{" "}
                   <strong className="break-all text-ink">
-                    {selectedClientInfo?.profiles?.email ?? "לא זמין"}
+                    {selectedClientInfo?.profiles?.email ?? selectedDirectoryProfile?.email ?? "לא זמין"}
                   </strong>
                   <span className="ms-1">(שינוי אימייל מתבצע דרך אבטחת החשבון)</span>
                 </p>
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="rounded-xl bg-white/80 p-2.5">
+                    <span className="block text-muted-foreground">תפקיד</span>
+                    <strong className="mt-1 block text-ink">
+                      {selectedDirectoryProfile?.role === "owner"
+                        ? "בעלים"
+                        : selectedDirectoryProfile?.role === "coach"
+                          ? "מאמן"
+                          : "מתאמן"}
+                    </strong>
+                  </div>
+                  <div className="rounded-xl bg-white/80 p-2.5">
+                    <span className="block text-muted-foreground">סטטוס</span>
+                    <strong className="mt-1 block text-ink">
+                      {selectedDirectoryProfile?.approval_status === "pending"
+                        ? "ממתין לאישור"
+                        : selectedDirectoryProfile?.approval_status === "rejected"
+                          ? "נדחה"
+                          : "מאושר"}
+                    </strong>
+                  </div>
+                  <div className="rounded-xl bg-white/80 p-2.5">
+                    <span className="block text-muted-foreground">משקל</span>
+                    <strong className="mt-1 block text-ink">
+                      {selectedDirectoryProfile?.weight_kg ??
+                        clientDetails.profile?.weight ??
+                        "לא הוזן"}
+                      {selectedDirectoryProfile?.weight_kg || clientDetails.profile?.weight
+                        ? " ק״ג"
+                        : ""}
+                    </strong>
+                  </div>
+                  <div className="rounded-xl bg-white/80 p-2.5">
+                    <span className="block text-muted-foreground">גובה</span>
+                    <strong className="mt-1 block text-ink">
+                      {selectedDirectoryProfile?.height_cm ??
+                        clientDetails.profile?.height ??
+                        "לא הוזן"}
+                      {selectedDirectoryProfile?.height_cm || clientDetails.profile?.height
+                        ? " ס״מ"
+                        : ""}
+                    </strong>
+                  </div>
+                  <div className="col-span-2 rounded-xl bg-white/80 p-2.5">
+                    <span className="block text-muted-foreground">גיל מחושב</span>
+                    <strong className="mt-1 block text-ink">
+                      {calculateAge(
+                        selectedDirectoryProfile?.date_of_birth ??
+                          clientDetails.profile?.dateOfBirth,
+                      ) ?? "לא הוזן"}
+                      {calculateAge(
+                        selectedDirectoryProfile?.date_of_birth ??
+                          clientDetails.profile?.dateOfBirth,
+                      ) !== undefined
+                        ? " שנים"
+                        : ""}
+                    </strong>
+                  </div>
+                </div>
                 <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
                   שם מלא
                   <input
@@ -10509,7 +10575,7 @@ export function CoachDashboardPage({
                     placeholder="שם פרטי ושם משפחה"
                   />
                 </label>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div className="grid grid-cols-2 gap-2">
                   <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
                     מין
                     <select
@@ -10562,7 +10628,7 @@ export function CoachDashboardPage({
                       className="h-10 w-full min-w-0 rounded-xl border border-border bg-white px-3 text-sm text-ink"
                     />
                   </label>
-                  <label className="grid gap-1 text-[11px] font-bold text-muted-foreground sm:col-span-2">
+                  <label className="col-span-2 grid gap-1 text-[11px] font-bold text-muted-foreground">
                     אימונים בשבוע
                     <FreeTextInput
                       min="0"

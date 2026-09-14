@@ -7,6 +7,8 @@ The home-screen `פרופילים` directory is the canonical entry point for op
 
 The owner home actions stay separate: `אישורים` contains only client profiles with pending owner approval, `צ׳ק־אין` contains only clients with actionable attention reasons, and `פרופילים` contains the profile directory.
 
+Opening any complete profile from the directory, including a coach profile, should use the full profile view rather than the compact role-management card. Profile summaries such as role, status, weight, height, and calculated age should use compact metric tiles on mobile.
+
 **Why:** The user wants the trainee profile to be a focused destination reached from the home directory, matching the supplied mobile reference screens.
 
 **How to apply:** Keep `פרופילים` available on coach and owner home screens; show owners all profiles and coaches their assigned trainees. Clicking a trainee should open the full profile view, while the Programs/Tracking workspace should keep only workspace navigation and close controls.
