@@ -189,9 +189,7 @@ export function AppShell({
   const isHomeRoute = location.pathname === "/" || location.pathname === "/coach";
   const showWorkspaceSwitcher = Boolean(user && isCoach);
   const showHomeOnlyHeaderControls = isHomeRoute;
-  const actionInUtility =
-    pageClassName.includes("nutrition-page") ||
-    pageClassName.includes("nutrition-foods-page");
+  const actionInUtility = pageClassName.includes("nutrition-page");
   const homeHeaderDate = new Date();
   const homeHeaderName = store.userProfile?.fullName?.trim().split(/\s+/)[0] || "";
   const defaultHomeHeaderAccessory =

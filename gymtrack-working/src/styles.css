@@ -9401,6 +9401,11 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   height: 1rem !important;
 }
 
+.nutrition-foods-page .app-topbar__heading {
+  margin-top: 0.15rem !important;
+  transform: none !important;
+}
+
 .nutrition-food-card {
   align-items: stretch;
 }
