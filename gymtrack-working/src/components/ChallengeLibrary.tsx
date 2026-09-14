@@ -20,6 +20,7 @@ import {
   addChallengeToProgram,
   enrollInChallenge,
   saveChallenge,
+  uid,
   useGym,
 } from "@/lib/gym-store";
 import { cloneChallenge } from "@/lib/challenge-library";
@@ -32,16 +33,31 @@ const accentClasses: Record<Challenge["accent"], string> = {
   sand: "bg-amber-50 text-amber-700",
 };
 
-export function ChallengeLibrary({ compact = false }: { compact?: boolean }) {
-  const { challenges, exercises, programs, userProfile } = useGym();
+type ChallengeLibraryProps = {
+  compact?: boolean;
+  availablePrograms?: Program[];
+  onAssignToProgram?: (
+    challenge: Challenge,
+    programId: string,
+    weekdays: number[],
+  ) => Promise<boolean | void> | boolean | void;
+};
+
+export function ChallengeLibrary({
+  compact = false,
+  availablePrograms,
+  onAssignToProgram,
+}: ChallengeLibraryProps) {
+  const { challenges, exercises, programs: localPrograms, userProfile } = useGym();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Challenge | null>(null);
   const [selectedProgramId, setSelectedProgramId] = useState("");
-  const [selectedWeekday, setSelectedWeekday] = useState(0);
+  const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([0]);
   const isCoach = userProfile?.role === "coach" || userProfile?.role === "owner";
   const selected = challenges.find((challenge) => challenge.id === selectedId) ?? null;
+  const programs = availablePrograms ?? localPrograms;
   const editableExercises = useMemo(
     () => exercises.filter((exercise) => exercise.id !== "ex-ohp" || isCoach),
     [exercises, isCoach],
@@ -63,10 +79,18 @@ export function ChallengeLibrary({ compact = false }: { compact?: boolean }) {
   const addToProgram = (challenge: Challenge) => {
     const programId = selectedProgramId || programs[0]?.id;
     if (!programId) return;
-    const workout = addChallengeToProgram(challenge.id, programId, selectedWeekday);
-    if (!workout) return;
-    close();
-    void navigate({ to: "/programs/$programId", params: { programId } });
+    const assign = async () => {
+      if (onAssignToProgram) {
+        const result = await onAssignToProgram(challenge, programId, selectedWeekdays);
+        if (result === false) return;
+      } else {
+        const workouts = addChallengeToProgram(challenge.id, programId, selectedWeekdays);
+        if (!workouts?.length) return;
+        void navigate({ to: "/programs/$programId", params: { programId } });
+      }
+      close();
+    };
+    void assign();
   };
 
   const startEditing = (challenge?: Challenge) => {
@@ -148,9 +172,15 @@ export function ChallengeLibrary({ compact = false }: { compact?: boolean }) {
               onStart={() => begin(selected)}
               programs={programs}
               selectedProgramId={selectedProgramId || programs[0]?.id || ""}
-              selectedWeekday={selectedWeekday}
+               selectedWeekdays={selectedWeekdays}
               onProgramChange={setSelectedProgramId}
-              onWeekdayChange={setSelectedWeekday}
+               onWeekdayChange={(sessionIndex, weekday) =>
+                 setSelectedWeekdays((current) => {
+                   const next = [...current];
+                   next[sessionIndex] = weekday;
+                   return next;
+                 })
+               }
               onAddToProgram={() => addToProgram(selected)}
               onEdit={() => startEditing(selected)}
             />
@@ -161,7 +191,10 @@ export function ChallengeLibrary({ compact = false }: { compact?: boolean }) {
                   <button
                     key={challenge.id}
                     type="button"
-                    onClick={() => setSelectedId(challenge.id)}
+                    onClick={() => {
+                      setSelectedId(challenge.id);
+                      setSelectedWeekdays(challenge.sessions.map((_, index) => index % 7));
+                    }}
                     className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background p-3 text-start transition-colors hover:border-primary/40 hover:bg-primary/5"
                   >
                     <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${accentClasses[challenge.accent]}`}>
@@ -198,7 +231,7 @@ function ChallengeDetail({
   onStart,
   programs,
   selectedProgramId,
-  selectedWeekday,
+  selectedWeekdays,
   onProgramChange,
   onWeekdayChange,
   onAddToProgram,
@@ -210,9 +243,9 @@ function ChallengeDetail({
   onStart: () => void;
   programs: Program[];
   selectedProgramId: string;
-  selectedWeekday: number;
+  selectedWeekdays: number[];
   onProgramChange: (programId: string) => void;
-  onWeekdayChange: (weekday: number) => void;
+  onWeekdayChange: (sessionIndex: number, weekday: number) => void;
   onAddToProgram: () => void;
   onEdit: () => void;
 }) {
