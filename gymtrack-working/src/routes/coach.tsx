@@ -344,6 +344,14 @@ type CoachPerformanceVideo = {
   videoFeedbacks: VideoFeedback[];
 };
 
+type CoachDemoVideo = {
+  id: string;
+  clientName: string;
+  workoutName: string;
+  exerciseName: string;
+  source: string;
+};
+
 type AttentionReason =
   "workout-missing" | "nutrition-missing" | "checkin-late" | "difficulty" | "unanswered-message";
 type AttentionDataStatus = "stable" | "needs-attention" | "insufficient";
@@ -847,7 +855,13 @@ function VideoFeedbackThread({
   );
 }
 
-function VideoFeedbackInbox({ videos }: { videos: CoachPerformanceVideo[] }) {
+function VideoFeedbackInbox({
+  videos,
+  demoVideos,
+}: {
+  videos: CoachPerformanceVideo[];
+  demoVideos: CoachDemoVideo[];
+}) {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const visibleVideos = normalizedQuery
@@ -857,6 +871,14 @@ function VideoFeedbackInbox({ videos }: { videos: CoachPerformanceVideo[] }) {
           .includes(normalizedQuery),
       )
     : videos;
+  const visibleDemoVideos = normalizedQuery
+    ? demoVideos.filter((video) =>
+        `${video.clientName} ${video.workoutName} ${video.exerciseName}`
+          .toLocaleLowerCase()
+          .includes(normalizedQuery),
+      )
+    : demoVideos;
+  const totalVideos = videos.length + demoVideos.length;
 
   return (
     <section className="surface-card max-h-[min(82vh,52rem)] space-y-3 overflow-y-auto rounded-3xl border border-primary/20 bg-primary/[0.025] p-3 sm:p-5">
@@ -870,15 +892,15 @@ function VideoFeedbackInbox({ videos }: { videos: CoachPerformanceVideo[] }) {
             סרטוני מתאמנים ומשובים
           </h2>
           <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-            כל סרטוני הביצוע הזמינים מרוכזים כאן, כדי שאפשר יהיה לעבור עליהם ולשלוח משוב בלי לפתוח כל דוח בנפרד.
+            כל סרטוני הביצוע וההדגמה הזמינים מרוכזים כאן. אפשר לשלוח משוב על סרטוני ביצוע בלי לפתוח כל דוח בנפרד.
           </p>
         </div>
         <span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-          {videos.length} סרטונים
+          {totalVideos} סרטונים
         </span>
       </div>
 
-      {videos.length > 0 ? (
+      {totalVideos > 0 ? (
         <label className="num-pill flex min-h-9 items-center gap-2 px-3 py-1">
           <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <span className="sr-only">חיפוש סרטונים</span>
@@ -893,50 +915,89 @@ function VideoFeedbackInbox({ videos }: { videos: CoachPerformanceVideo[] }) {
         </label>
       ) : null}
 
-      {visibleVideos.length === 0 ? (
+      {visibleVideos.length === 0 && visibleDemoVideos.length === 0 ? (
         <div className="rounded-2xl border border-border/60 bg-background p-5 text-center text-xs font-semibold text-muted-foreground">
-          {videos.length === 0
-            ? "עדיין אין סרטוני ביצוע זמינים למשוב."
+          {totalVideos === 0
+            ? "עדיין אין סרטונים זמינים."
             : "לא נמצאו סרטונים לפי החיפוש."}
         </div>
       ) : (
-        <div className="space-y-2.5">
-          {visibleVideos.map((video) => (
-            <article
-              key={video.id}
-              className="rounded-2xl border border-border/70 bg-background p-2.5 sm:p-3"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <h3 className="truncate text-sm font-extrabold text-ink">{video.clientName}</h3>
-                  <p className="mt-0.5 truncate text-[11px] font-semibold text-primary">
-                    {video.workoutName} · {video.entry.exerciseName || "תרגיל"}
-                  </p>
-                </div>
-                <time
-                  dateTime={video.sessionDate}
-                  className="shrink-0 text-[10px] text-muted-foreground"
+        <div className="space-y-4">
+          {visibleVideos.length > 0 ? (
+            <div className="space-y-2.5">
+              <p className="px-1 text-[10px] font-bold tracking-[0.14em] text-primary uppercase">
+                סרטוני ביצוע · משוב למתאמנים
+              </p>
+              {visibleVideos.map((video) => (
+                <article
+                  key={video.id}
+                  className="rounded-2xl border border-border/70 bg-background p-2.5 sm:p-3"
                 >
-                  {new Date(video.sessionDate).toLocaleDateString("he-IL")}
-                </time>
-              </div>
-              <WorkoutVideoPlayer
-                source={video.entry.videoUrl ?? ""}
-                title={`סרטון ביצוע של ${video.clientName} · ${
-                  video.entry.exerciseName || "תרגיל"
-                }`}
-                className="mt-2 max-h-72 w-full rounded-xl bg-black object-contain"
-              />
-              <VideoFeedbackThread
-                clientId={video.clientId}
-                sessionId={video.sessionId}
-                workoutId={video.workoutId}
-                entry={video.entry}
-                title={video.entry.exerciseName || "תרגיל"}
-                videoFeedbacks={video.videoFeedbacks}
-              />
-            </article>
-          ))}
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-extrabold text-ink">{video.clientName}</h3>
+                      <p className="mt-0.5 truncate text-[11px] font-semibold text-primary">
+                        {video.workoutName} · {video.entry.exerciseName || "תרגיל"}
+                      </p>
+                    </div>
+                    <time
+                      dateTime={video.sessionDate}
+                      className="shrink-0 text-[10px] text-muted-foreground"
+                    >
+                      {new Date(video.sessionDate).toLocaleDateString("he-IL")}
+                    </time>
+                  </div>
+                  <div className="mt-2 aspect-video overflow-hidden rounded-xl bg-black">
+                    <WorkoutVideoPlayer
+                      source={video.entry.videoUrl ?? ""}
+                      title={`סרטון ביצוע של ${video.clientName} · ${
+                        video.entry.exerciseName || "תרגיל"
+                      }`}
+                      className="h-full w-full rounded-xl bg-black object-contain"
+                    />
+                  </div>
+                  <VideoFeedbackThread
+                    clientId={video.clientId}
+                    sessionId={video.sessionId}
+                    workoutId={video.workoutId}
+                    entry={video.entry}
+                    title={video.entry.exerciseName || "תרגיל"}
+                    videoFeedbacks={video.videoFeedbacks}
+                  />
+                </article>
+              ))}
+            </div>
+          ) : null}
+          {visibleDemoVideos.length > 0 ? (
+            <div className="space-y-2.5">
+              <p className="px-1 text-[10px] font-bold tracking-[0.14em] text-primary uppercase">
+                סרטוני הדגמה שנוספו לתוכניות
+              </p>
+              {visibleDemoVideos.map((video) => (
+                <article
+                  key={video.id}
+                  className="rounded-2xl border border-primary/15 bg-background p-2.5 sm:p-3"
+                >
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-extrabold text-ink">{video.clientName}</h3>
+                    <p className="mt-0.5 truncate text-[11px] font-semibold text-primary">
+                      {video.workoutName} · {video.exerciseName}
+                    </p>
+                  </div>
+                  <div className="mt-2 aspect-video overflow-hidden rounded-xl bg-black">
+                    <WorkoutVideoPlayer
+                      source={video.source}
+                      title={`סרטון הדגמה עבור ${video.exerciseName}`}
+                      className="h-full w-full rounded-xl bg-black object-contain"
+                    />
+                  </div>
+                  <p className="mt-2 rounded-lg bg-primary/5 px-2.5 py-1.5 text-[10px] font-semibold text-primary">
+                    זהו סרטון הדגמה של התרגיל. משוב נשלח על סרטוני ביצוע שהמתאמן העלה.
+                  </p>
+                </article>
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
     </section>
@@ -2795,7 +2856,7 @@ export function CoachDashboardPage({
             !entry.videoPath ||
             !entry.videoUrl ||
             entry.videoUrl.startsWith("blob:") ||
-            !isSignedWorkoutPerformanceVideo(entry.videoUrl)
+            !isSafeHttpUrl(entry.videoUrl)
           ) {
             continue;
           }
@@ -2818,6 +2879,35 @@ export function CoachDashboardPage({
       if (dateOrder !== 0) return dateOrder;
       return a.clientName.localeCompare(b.clientName, "he");
     });
+  }, [overviewRows]);
+
+  const coachDemoVideoRecords = useMemo<CoachDemoVideo[]>(() => {
+    const records: CoachDemoVideo[] = [];
+    for (const { client, details } of overviewRows) {
+      const clientName = profileDisplayName(client.profiles);
+      const exercisesById = new Map(details.exercises.map((exercise) => [exercise.id, exercise]));
+      for (const workout of details.workouts) {
+        for (const item of workout.items) {
+          const exercise =
+            exercisesById.get(item.exerciseId) ??
+            details.exercises.find(
+              (candidate) =>
+                candidate.name.trim().toLocaleLowerCase() ===
+                (item.exerciseName ?? "").trim().toLocaleLowerCase(),
+            );
+          for (const [sourceIndex, source] of exerciseDemoVideoSources(exercise).entries()) {
+            records.push({
+              id: `${client.client_id}-${workout.id}-${item.exerciseId}-${sourceIndex}-${source}`,
+              clientName,
+              workoutName: workout.name || "אימון",
+              exerciseName: item.exerciseName || exercise?.name || "תרגיל",
+              source,
+            });
+          }
+        }
+      }
+    }
+    return records;
   }, [overviewRows]);
 
   useEffect(() => {
@@ -5686,9 +5776,9 @@ export function CoachDashboardPage({
             >
               <MessageSquare className="h-3 w-3" aria-hidden="true" />
               משובים
-              {performanceVideoRecords.length > 0 ? (
+              {performanceVideoRecords.length + coachDemoVideoRecords.length > 0 ? (
                 <span className="rounded-full bg-primary/15 px-1 py-0.5 text-[8px] leading-none">
-                  {performanceVideoRecords.length}
+                  {performanceVideoRecords.length + coachDemoVideoRecords.length}
                 </span>
               ) : null}
             </button>
@@ -5992,7 +6082,7 @@ export function CoachDashboardPage({
           ariaLabel="משובי וידאו למתאמנים"
           panelClassName="max-w-3xl p-0"
         >
-          <VideoFeedbackInbox videos={performanceVideoRecords} />
+          <VideoFeedbackInbox videos={performanceVideoRecords} demoVideos={coachDemoVideoRecords} />
         </Overlay>
       ) : null}
 

@@ -277,7 +277,7 @@ export function Overlay({
               : isTop
               ? "max-h-[calc(100lvh-2rem)] max-w-lg rounded-3xl"
               : "max-h-[calc(100lvh-2rem)] max-w-lg rounded-3xl"
-        } overflow-y-auto overscroll-contain bg-card shadow-2xl ${panelClassName}`}
+        } overflow-x-hidden overflow-y-auto overscroll-contain bg-card shadow-2xl ${panelClassName}`}
         onClick={(event) => event.stopPropagation()}
       >
         {children}

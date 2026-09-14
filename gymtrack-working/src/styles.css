@@ -983,7 +983,10 @@ html:not(.night-mode) .nav-shell {
     text-size-adjust: 100%;
     direction: rtl;
     lang: he;
-    scroll-behavior: smooth;
+    /* Smooth document scrolling makes iOS replay old scroll positions while
+       overlays, video metadata, or the keyboard change layout. Keep
+       intentional animated scrolling local to the action that requests it. */
+    scroll-behavior: auto;
     overflow-x: clip;
     overflow-y: auto;
     min-height: 100%;
@@ -4768,11 +4771,37 @@ html:not([data-loading-account="animation"]) .loading-plain-content {
 .page-scroll-container {
   min-height: 0;
   flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: contain;
   scroll-padding-top: calc(var(--app-topbar-height, 5rem) + 1rem);
   scroll-padding-bottom: calc(9rem + env(safe-area-inset-bottom));
+}
+
+/* Keep mobile cards and sheets inside the visual viewport. In particular,
+   `overflow-x: hidden` can create a second scroll container in iOS; clipping
+   is enough for decorative bleed and does not compete with vertical scrolling. */
+.app-shell,
+.app-topbar__inner,
+.app-main {
+  min-width: 0;
+}
+
+.app-main {
+  overflow-x: clip;
+}
+
+.overlay-panel {
+  min-width: 0;
+  max-width: calc(100vw - 2rem);
+}
+
+@media (max-width: 639px) {
+  .overlay-panel {
+    max-width: calc(100% - 0.5rem);
+  }
 }
 
 /* Personal workout pages need enough scroll tail to expose the cardio card
