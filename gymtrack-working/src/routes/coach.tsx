@@ -5205,71 +5205,6 @@ export function CoachDashboardPage({
               </span>
             ) : null}
           </button>
-        ) : !clientsOnly && isOwner ? (
-          <div className="flex min-w-0 flex-nowrap items-center justify-end gap-1">
-            <button
-              type="button"
-              onClick={() => setOwnerHomeTab((current) => (current === "profiles" ? "overview" : "profiles"))}
-              aria-pressed={ownerHomeTab === "profiles"}
-              aria-label="פתיחת אישורי הרשמה"
-              title="אישורי הרשמה"
-              className={`bodyweight-header-toggle press inline-flex items-center gap-0.5 rounded-full border px-1.5 py-1 text-[8px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                ownerHomeTab === "profiles"
-                  ? "border-primary/40 bg-primary/15 text-primary ring-1 ring-primary/20"
-                  : "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
-              }`}
-            >
-              <UserCheck className="h-3 w-3" aria-hidden="true" />
-              אישורים
-              {pendingApprovals.length > 0 ? (
-                <span className="rounded-full bg-primary/15 px-1 py-0.5 text-[7px] leading-none">
-                  {pendingApprovals.length}
-                </span>
-              ) : null}
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                setOwnerHomeTab((current) => (current === "checkins" ? "overview" : "checkins"))
-              }
-              aria-pressed={ownerHomeTab === "checkins"}
-              aria-label="פתיחת כרטיס הצ׳ק־אין"
-              title="צ׳ק־אין"
-              className={`bodyweight-header-toggle press inline-flex items-center gap-0.5 rounded-full border px-1.5 py-1 text-[8px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                ownerHomeTab === "checkins"
-                  ? "border-primary/40 bg-primary/15 text-primary ring-1 ring-primary/20"
-                  : "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
-              }`}
-            >
-              <Activity className="h-3 w-3" aria-hidden="true" />
-              צ׳ק־אין
-              {attentionOpenCount > 0 ? (
-                <span className="rounded-full bg-primary/15 px-1 py-0.5 text-[7px] leading-none">
-                  {attentionOpenCount}
-                </span>
-              ) : null}
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                setOwnerHomeTab((current) => (current === "profiles" ? "overview" : "profiles"))
-              }
-              aria-pressed={ownerHomeTab === "profiles"}
-              aria-label="פתיחת כרטיס הפרופילים"
-              title="פרופילים"
-              className={`bodyweight-header-toggle press inline-flex items-center gap-0.5 rounded-full border px-1.5 py-1 text-[8px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                ownerHomeTab === "profiles"
-                  ? "border-primary/40 bg-primary/15 text-primary ring-1 ring-primary/20"
-                  : "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
-              }`}
-            >
-              <Users className="h-3 w-3" aria-hidden="true" />
-              פרופילים
-              <span className="rounded-full bg-primary/15 px-1 py-0.5 text-[7px] leading-none">
-                {allProfiles.length}
-              </span>
-            </button>
-          </div>
         ) : undefined
       }
       compactHeader
@@ -5474,6 +5409,69 @@ export function CoachDashboardPage({
           </section>
 
         </section>
+       ) : null}
+
+      {isOwner ? (
+        <div className="mb-3 grid grid-cols-3 gap-1.5 sm:gap-2" aria-label="כלי ניהול מהירים">
+          <button
+            type="button"
+            onClick={() =>
+              setOwnerHomeTab((current) => (current === "profiles" ? "overview" : "profiles"))
+            }
+            aria-pressed={ownerHomeTab === "profiles"}
+            aria-label="פתיחת אישורי הרשמה"
+            title="אישורי הרשמה"
+            className={`surface-card flex min-w-0 items-center justify-center gap-1 border-primary/25 bg-primary/5 px-1.5 py-2 text-[9px] font-bold text-primary transition-colors hover:border-primary/50 hover:bg-primary/10 ${
+              ownerHomeTab === "profiles" ? "ring-2 ring-primary/25" : ""
+            }`}
+          >
+            <UserCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="truncate">אישורים</span>
+            {pendingApprovals.length > 0 ? (
+              <span className="rounded-full bg-primary/15 px-1 py-0.5 text-[8px] leading-none">
+                {pendingApprovals.length}
+              </span>
+            ) : null}
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              setOwnerHomeTab((current) => (current === "checkins" ? "overview" : "checkins"))
+            }
+            aria-pressed={ownerHomeTab === "checkins"}
+            aria-label="פתיחת כרטיס הצ׳ק־אין"
+            title="צ׳ק־אין"
+            className={`surface-card flex min-w-0 items-center justify-center gap-1 border-primary/25 bg-primary/5 px-1.5 py-2 text-[9px] font-bold text-primary transition-colors hover:border-primary/50 hover:bg-primary/10 ${
+              ownerHomeTab === "checkins" ? "ring-2 ring-primary/25" : ""
+            }`}
+          >
+            <Activity className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="truncate">צ׳ק־אין</span>
+            {attentionOpenCount > 0 ? (
+              <span className="rounded-full bg-primary/15 px-1 py-0.5 text-[8px] leading-none">
+                {attentionOpenCount}
+              </span>
+            ) : null}
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              setOwnerHomeTab((current) => (current === "profiles" ? "overview" : "profiles"))
+            }
+            aria-pressed={ownerHomeTab === "profiles"}
+            aria-label="פתיחת כרטיס הפרופילים"
+            title="פרופילים"
+            className={`surface-card flex min-w-0 items-center justify-center gap-1 border-primary/25 bg-primary/5 px-1.5 py-2 text-[9px] font-bold text-primary transition-colors hover:border-primary/50 hover:bg-primary/10 ${
+              ownerHomeTab === "profiles" ? "ring-2 ring-primary/25" : ""
+            }`}
+          >
+            <Users className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="truncate">פרופילים</span>
+            <span className="rounded-full bg-primary/15 px-1 py-0.5 text-[8px] leading-none">
+              {allProfiles.length}
+            </span>
+          </button>
+        </div>
       ) : null}
 
       {trackingLanding ? (

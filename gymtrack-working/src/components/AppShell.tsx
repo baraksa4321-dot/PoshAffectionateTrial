@@ -173,7 +173,9 @@ export function AppShell({
   const navigate = useNavigate();
   const router = useRouter();
   const isManagementRoute = isManagementPath(location.pathname);
-  const showWorkspaceSwitcher = Boolean(user && isCoach && location.pathname === "/");
+  const showWorkspaceSwitcher = Boolean(
+    user && isCoach && (location.pathname === "/" || location.pathname === "/coach"),
+  );
   const showHomeOnlyHeaderControls =
     location.pathname === "/" || location.pathname === "/coach";
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);

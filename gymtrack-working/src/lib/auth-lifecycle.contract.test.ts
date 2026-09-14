@@ -80,8 +80,10 @@ describe("Supabase auth lifecycle contracts", () => {
     expect(roleHardening).toContain("role = (SELECT p.role FROM public.profiles p");
   });
 
-  test("management users can switch back to personal mode from every management route", () => {
-    expect(appShell).toContain("const showWorkspaceSwitcher = Boolean(user && isCoach);");
+  test("management users can switch modes from the two home routes", () => {
+    expect(appShell).toContain(
+      'user && isCoach && (location.pathname === "/" || location.pathname === "/coach")',
+    );
     expect(appShell).toContain("{headerAccessory || showWorkspaceSwitcher ? (");
     expect(appShell).toContain("{showWorkspaceSwitcher ? (");
   });
