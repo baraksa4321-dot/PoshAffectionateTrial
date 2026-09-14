@@ -135,7 +135,7 @@ const ACTIVE_SESSION_FEEDBACK_KEY = (userId: string, id: string, weekKey: string
 const ACTIVE_REST_TIMER_KEY = (userId: string, id: string, weekKey: string) =>
   `gymtrack.active_rest_timer.${userId}.${id}.${weekKey}`;
 const MAX_PERFORMANCE_VIDEO_DURATION_SECONDS = 5 * 60;
-const MAX_PERFORMANCE_VIDEO_BYTES = 50 * 1024 * 1024;
+const MAX_PERFORMANCE_VIDEO_BYTES = 1024 * 1024 * 1024;
 
 type PersistedRestTimer = {
   rest: number;
@@ -1213,7 +1213,7 @@ function Session() {
     }
     if (file.size > MAX_PERFORMANCE_VIDEO_BYTES) {
       setVideoUploadErrorExerciseIndex(exerciseIndex);
-      setVideoUploadError("הסרטון גדול מדי. הגודל המרבי הוא 50MB.");
+      setVideoUploadError("הסרטון גדול מדי. הגודל המרבי הוא 1GB.");
       return;
     }
     if (!sessionOwnerId) {

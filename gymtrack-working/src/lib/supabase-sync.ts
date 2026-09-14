@@ -570,6 +570,7 @@ function servingGramsFromLabel(servingSize: string) {
 
 const WORKOUT_VIDEO_BUCKET = "workout-videos";
 const EXERCISE_IMAGE_BUCKET = "exercise-images";
+const MAX_WORKOUT_VIDEO_BYTES = 1024 * 1024 * 1024;
 
 const WORKOUT_VIDEO_SIGNED_URL_TTL_SECONDS = 10 * 60;
 function safeVideoExtension(fileName: string, contentType: string) {
@@ -658,8 +659,8 @@ export async function uploadWorkoutPerformanceVideo(
   if (!normalizedType.startsWith("video/") && !knownVideoExtension) {
     throw new Error("אפשר להעלות קובץ וידאו בלבד.");
   }
-  if (file.size > 50 * 1024 * 1024) {
-    throw new Error("הסרטון גדול מדי. הגודל המרבי הוא 50MB.");
+  if (file.size > MAX_WORKOUT_VIDEO_BYTES) {
+    throw new Error("הסרטון גדול מדי. הגודל המרבי הוא 1GB.");
   }
   const {
     data: { user },
