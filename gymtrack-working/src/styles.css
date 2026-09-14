@@ -9385,6 +9385,22 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
     0 8px 20px rgb(var(--shadow-color) / 7%);
 }
 
+.nutrition-foods-page .app-topbar__utility-action > div {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.nutrition-foods-page .app-topbar__utility-action a {
+  width: 2.2rem !important;
+  height: 2.2rem !important;
+  border-radius: 0.8rem !important;
+}
+
+.nutrition-foods-page .app-topbar__utility-action a svg {
+  width: 1rem !important;
+  height: 1rem !important;
+}
+
 .nutrition-food-card {
   align-items: stretch;
 }
