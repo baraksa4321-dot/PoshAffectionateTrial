@@ -5250,6 +5250,7 @@ export function CoachDashboardPage({
         ) : undefined
       }
       compactHeader
+      pageClassName={editingDayId ? "coach-builder-page" : ""}
     >
       {!clientsOnly ? (
         <section className="mb-3 space-y-3 text-start">

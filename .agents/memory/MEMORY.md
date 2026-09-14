@@ -78,3 +78,4 @@
 - [Portal anchor visibility](portal-anchor-visibility.md) — Keep workout editor portal anchors visible; WebKit can fail when an empty anchor is hidden before portal content mounts.
 - [Quiet persistence UI](quiet-persistence-ui.md) — Hide routine saved/pending sync captions across features; keep only actionable errors and conflicts visible.
 - [Profile directory entry point](profile-directory-entry-point.md) — Open trainee profiles from the home Profiles directory; keep profile actions out of the Programs workspace header.
+- [Targeted density rhythm](targeted-density-rhythm.md) — Compact spacing belongs to the coach builder/report state, not the shared app shell or personal home dashboard.

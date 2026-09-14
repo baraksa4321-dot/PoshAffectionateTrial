@@ -8832,164 +8832,179 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   }
 }
 
-/* Global density pass
- * Keep the app chrome and information rhythm shallow on short mobile
- * viewports. Touch controls keep their usable inline sizing; only the
- * surrounding bars, wrappers, and repeated gaps are reduced.
+/* Targeted density pass
+ * Keep the personal home screen on its approved spacious rhythm. The compact
+ * treatment belongs only to the coach's workout workspace and its report,
+ * where the title, controls, and exercise rows otherwise consume the viewport.
  */
-.app-shell--compact-rhythm .app-topbar__inner {
-  padding-top: 0.04rem !important;
-  padding-bottom: 0.12rem !important;
+.dashboard-editorial-shell .app-topbar__inner {
+  padding-top: 0.45rem !important;
+  padding-bottom: 0.55rem !important;
 }
 
-.app-shell--compact-rhythm .app-topbar__brand-row {
-  min-height: 1.3rem !important;
-  margin-bottom: 0 !important;
-  padding-bottom: 0 !important;
+.dashboard-editorial-shell .app-topbar__brand-row {
+  min-height: 2.45rem !important;
+  margin-bottom: 0.25rem !important;
+  padding-bottom: 0.4rem !important;
 }
 
-.app-shell--compact-rhythm .app-topbar__brand-row img {
-  height: 1.28rem !important;
+.dashboard-editorial-shell .app-topbar__brand-row img {
+  width: 7.4rem !important;
+  height: 2.1rem !important;
 }
 
-.app-shell--compact-rhythm .app-topbar__brand-row button {
-  width: 1.35rem;
-  height: 1.35rem;
+.dashboard-editorial-shell .app-topbar__utility-row {
+  margin-bottom: 0.45rem !important;
+  padding-bottom: 0.25rem !important;
 }
 
-.app-shell--compact-rhythm .app-topbar__utility-row {
-  min-height: 0 !important;
-  margin-bottom: 0 !important;
-  padding-bottom: 0 !important;
-  row-gap: 0.18rem !important;
+.dashboard-editorial-shell .app-main {
+  padding-top: 1rem !important;
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom)) !important;
 }
 
-.app-shell--compact-rhythm .app-topbar__heading {
-  gap: 0.3rem !important;
+.dashboard-editorial-shell main > .home-card-stack {
+  gap: 0.8rem;
 }
 
-.app-shell--compact-rhythm .app-topbar h1 {
-  line-height: 1.05 !important;
-}
-
-.app-shell--compact-rhythm .app-shell-kicker {
-  margin-bottom: 0.08rem !important;
-  line-height: 1.05 !important;
-}
-
-.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell) .app-main {
-  padding-top: 0.08rem !important;
-  padding-bottom: calc(4.7rem + env(safe-area-inset-bottom)) !important;
-}
-
-.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
-  .surface-card.p-4 {
-  padding: 0.7rem !important;
-}
-
-.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
-  .surface-card.p-5 {
-  padding: 0.82rem !important;
-}
-
-.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
-  .surface-card.p-6 {
-  padding: 0.95rem !important;
-}
-
-.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
-  .space-y-3
-  > :not(:first-child) {
-  margin-top: 0.45rem !important;
-}
-
-.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
-  .space-y-4
-  > :not(:first-child) {
-  margin-top: 0.55rem !important;
-}
-
-.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
-  .space-y-5
-  > :not(:first-child) {
-  margin-top: 0.65rem !important;
-}
-
-.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
-  .space-y-6
-  > :not(:first-child) {
-  margin-top: 0.78rem !important;
-}
-
-.app-shell--compact-rhythm .app-shell > nav > .app-bottom-nav,
-.app-shell--compact-rhythm > nav > .app-bottom-nav {
-  margin-bottom: 0.22rem;
-  padding-top: 0.2rem;
-  padding-bottom: max(0.2rem, env(safe-area-inset-bottom));
-}
-
-.app-shell--compact-rhythm > nav > .app-bottom-nav .app-nav-link {
-  min-height: 2.75rem;
-  border-radius: 0.85rem;
-}
-
-.app-shell--compact-rhythm > nav > .app-bottom-nav .app-nav-link > svg {
-  width: 1rem;
-  height: 1rem;
-  padding: 0.28rem;
-}
-
-.dashboard-editorial-shell .home-card-stack {
-  gap: 0.5rem;
+.dashboard-editorial-shell .home-feature-grid {
+  gap: 0.65rem;
 }
 
 .dashboard-editorial-shell .home-card-stack > :not(:first-child),
 .dashboard-editorial-shell .dashboard-module {
-  margin-top: 0.58rem !important;
+  margin-top: 0 !important;
 }
 
-.dashboard-editorial-shell .home-feature-grid {
-  gap: 0.5rem;
-}
-
-.workout-builder-header {
-  padding-block: 0.15rem 0.55rem;
-}
-
-.workout-builder-exercise-row {
-  padding-block: 0.58rem;
-}
-
+/* The report is a real drawer, so its own content can be denser without
+ * changing the builder or the rest of the application. */
 .workout-report-panel {
-  padding: 0.65rem 0.75rem calc(4.75rem + env(safe-area-inset-bottom));
+  padding: 0.55rem 0.7rem calc(4.25rem + env(safe-area-inset-bottom));
 }
 
 .workout-report-drawer-header {
+  gap: 0.5rem;
+  padding-bottom: 0.55rem;
+}
+
+.workout-report-panel [data-testid="coach-workout-daily-report"] {
+  gap: 0.55rem;
+}
+
+.workout-report-panel [data-testid="coach-workout-daily-report"] > div:first-child {
+  gap: 0.55rem;
   padding-bottom: 0.5rem;
 }
 
-.workout-report-panel .space-y-3 > :not(:first-child) {
-  margin-top: 0.48rem !important;
+.workout-report-panel [data-testid="coach-workout-daily-report"] > div:first-child .illustrated-mark {
+  width: 2.25rem;
+  height: 2.25rem;
 }
 
-@media (max-width: 639px) {
-  .app-shell--compact-rhythm .app-topbar__inner {
-    padding-top: 0.02rem !important;
-    padding-bottom: 0.08rem !important;
+.workout-report-panel [data-testid="coach-workout-daily-report"] > div:nth-child(2) {
+  padding: 0.35rem;
+}
+
+.workout-report-panel [data-testid="coach-workout-daily-report"] > div:nth-child(3) {
+  padding: 0.6rem 0.7rem;
+}
+
+.workout-report-panel [data-testid="coach-workout-daily-report"] > div:nth-child(4) {
+  gap: 0.35rem;
+}
+
+.workout-report-panel [data-testid="coach-workout-daily-report"] > div:nth-child(4) > div {
+  padding: 0.5rem 0.65rem;
+}
+
+.workout-report-panel .space-y-3 > :not(:first-child) {
+  margin-top: 0.55rem !important;
+}
+
+/* The builder needs to show the name, weekday, actions, and the first exercise
+ * in one glance. Reduce wrappers and rows, but leave its h-9 controls intact. */
+.workout-builder-surface {
+  padding-inline: 0.75rem;
+}
+
+.workout-builder-header {
+  gap: 0.55rem !important;
+  padding-block: 0.15rem 0.6rem;
+}
+
+.workout-builder-header .workout-builder-name,
+.workout-builder-header select {
+  margin-top: 0.25rem;
+  padding-block: 0.4rem;
+}
+
+.workout-builder-header .workout-builder-name {
+  font-size: 0.95rem;
+}
+
+.workout-builder-header label {
+  margin-top: 0.45rem;
+}
+
+.workout-builder-header > div:last-child {
+  gap: 0.35rem;
+}
+
+.workout-builder-exercise-list {
+  margin-top: 0.15rem;
+  padding-top: 0;
+}
+
+.workout-builder-exercise-row {
+  padding-block: 0.62rem;
+}
+
+.coach-builder-page .app-topbar__inner {
+  padding-top: 0.08rem !important;
+  padding-bottom: 0.2rem !important;
+}
+
+.coach-builder-page .app-topbar__brand-row {
+  min-height: 1.8rem !important;
+  margin-bottom: 0.08rem !important;
+  padding-bottom: 0.08rem !important;
+}
+
+.coach-builder-page .app-topbar__brand-row img {
+  height: 1.55rem !important;
+}
+
+.coach-builder-page .app-topbar__utility-row {
+  min-height: 1.85rem !important;
+  margin-bottom: 0.08rem !important;
+  padding-bottom: 0.08rem !important;
+}
+
+.coach-builder-page .app-topbar__heading {
+  gap: 0.35rem !important;
+}
+
+.coach-builder-page .app-main {
+  padding-top: 0 !important;
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)) !important;
+}
+
+@media (max-width: 767px) {
+  .workout-builder-surface {
+    padding-inline: 0.7rem;
   }
 
-  .app-shell--compact-rhythm .app-topbar__brand-row img {
-    height: 1.18rem !important;
+  .workout-builder-header > div:last-child {
+    justify-content: stretch;
   }
 
-  .app-shell--compact-rhythm .app-topbar__brand-row button {
-    width: 1.3rem;
-    height: 1.3rem;
+  .workout-builder-header > div:last-child > button {
+    min-width: 0;
+    flex: 1 1 auto;
+    padding-inline: 0.55rem;
   }
 
-  .app-shell--compact-rhythm > nav > .app-bottom-nav {
-    width: calc(100% - 0.65rem);
-    margin-bottom: 0.12rem;
-    padding-inline: 0.25rem;
+  .workout-builder-header > div:last-child > .workout-builder-close-button {
+    flex: 0 0 2.25rem;
   }
 }
