@@ -1137,7 +1137,9 @@ test("coach BMR editor restores date of birth and keeps age read-only", async ({
   expect(manualAgeInputs).toBe(0);
 });
 
-test("coach tracking keeps the trainee profile button on the coach home only", async ({ page }) => {
+test("coach tracking refreshes when switching trainees and keeps profile actions on coach home only", async ({
+  page,
+}) => {
   await installFixture(page);
 
   await page.goto("/coach/tracking");
@@ -1158,18 +1160,40 @@ test("coach tracking keeps the trainee profile button on the coach home only", a
   await expect(page.getByText("דוח המעקב:", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "פתיחת פרופיל המשתמש" })).toHaveCount(0);
 
-  await page.goto("/coach/clients");
-  await expect(page.getByRole("heading", { name: "עריכה", exact: true })).toBeVisible({
+  const firstWorkout = page.getByRole("button", { name: /אימון בדיקה ארוך/ });
+  await expect(firstWorkout).toContainText("8 תרגילים");
+  await firstWorkout.click();
+  await expect(page.getByText("תרגיל בדיקה 1", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "פתיחת פרופיל המשתמש" })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "חזרה לרשימת האימונים" }).click();
+  await expect(firstWorkout).toBeVisible();
+  await page.getByRole("button", { name: "סגירת תכנית המתאמן" }).click();
+  await expect(page).toHaveURL(/\/coach\/tracking$/);
+  await expect(page.getByRole("heading", { name: "מעקב", exact: true })).toBeVisible({
     timeout: 20_000,
   });
-  await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("בדיקה");
-  await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
+  await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("אחרת");
+  await expect(page.getByText("מתאמנת אחרת", { exact: true })).toBeVisible();
+  await page.getByText("מתאמנת אחרת", { exact: true }).click();
+  await expect(page).toHaveURL(/\/coach\/tracking\/ios-smoke-other-client$/);
   await expect(page.locator('[data-coach-workspace="true"]')).toHaveAttribute(
     "data-coach-details-state",
     "ready",
     { timeout: 20_000 },
   );
-  await expect(page.getByRole("button", { name: "פתיחת פרופיל המשתמש" })).toBeVisible();
+  const secondReportHeading = page.getByRole("heading", { name: /דוח המעקב:/ });
+  await expect(secondReportHeading).toContainText("מתאמנת אחרת");
+  await expect(page.getByRole("button", { name: /אימון של מתאמנת אחרת/ })).toContainText(
+    "0 תרגילים",
+  );
+  await expect(page.getByRole("button", { name: /אימון בדיקה ארוך/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "פתיחת פרופיל המשתמש" })).toHaveCount(0);
+
+  await page.getByRole("button", { name: /אימון של מתאמנת אחרת/ }).click();
+  await expect(page.getByText("אימון של מתאמנת אחרת", { exact: true })).toBeVisible();
+  await expect(page.getByText("תרגיל בדיקה 1", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "פתיחת פרופיל המשתמש" })).toHaveCount(0);
 });
 
 test("authenticated iPhone coach workspace and active workout remain usable", async ({ page }) => {
