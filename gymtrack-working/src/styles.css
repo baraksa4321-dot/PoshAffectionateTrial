@@ -831,11 +831,20 @@ html.night-mode #root {
 }
 
 html.night-mode .bg-white,
+html.night-mode .bg-white\/15,
+html.night-mode .bg-white\/25,
+html.night-mode .bg-white\/50,
 html.night-mode .bg-white\/60,
 html.night-mode .bg-white\/70,
+html.night-mode .bg-white\/75,
 html.night-mode .bg-white\/80,
+html.night-mode .bg-white\/85,
 html.night-mode .bg-white\/90 {
   background-color: var(--surface) !important;
+  color: var(--ink) !important;
+}
+html.night-mode .bg-white\/95 {
+  background-color: var(--surface-2) !important;
   color: var(--ink) !important;
 }
 html.night-mode .text-white {
@@ -9364,6 +9373,18 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   margin-top: -1.1rem;
   transform: translateY(-0.45rem);
   gap: 0.3rem !important;
+}
+
+/*
+ * Route headers keep the same two-row flow as the daytime shell:
+ * workspace controls first, then the route title and its action. The
+ * negative offset above is only useful for the home greeting layout; on
+ * library and coach routes it makes the title and action occupy the utility
+ * row and overlap the workspace switcher.
+ */
+.app-auth-shell:not([data-home-shell="true"]) .app-topbar__heading {
+  margin-top: 0;
+  transform: none;
 }
 
 .app-auth-shell .app-topbar h1 {
