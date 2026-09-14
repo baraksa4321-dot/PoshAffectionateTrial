@@ -6,6 +6,8 @@ const here = fileURLToPath(new URL(".", import.meta.url));
 const read = (relativePath: string) => readFileSync(`${here}/${relativePath}`, "utf8");
 
 const appShell = read("../components/AppShell.tsx");
+const router = read("../router.tsx");
+const rootRoute = read("../routes/__root.tsx");
 const gymStore = read("./gym-store.ts");
 const supabaseSync = read("./supabase-sync.ts");
 const coachRoute = read("../routes/coach.tsx");
@@ -82,9 +84,10 @@ describe("Supabase auth lifecycle contracts", () => {
 
   test("management users can switch modes from the two home routes", () => {
     expect(appShell).toContain(
-      'user && isCoach && (location.pathname === "/" || location.pathname === "/coach")',
+      'const isHomeRoute = location.pathname === "/" || location.pathname === "/coach";',
     );
-    expect(appShell).toContain("{headerAccessory || showWorkspaceSwitcher ? (");
+    expect(appShell).toContain("const showWorkspaceSwitcher = Boolean(user && isCoach);");
+    expect(appShell).toContain("{resolvedHeaderAccessory || showWorkspaceSwitcher || user ? (");
     expect(appShell).toContain("{showWorkspaceSwitcher ? (");
   });
 
@@ -107,9 +110,7 @@ describe("Supabase auth lifecycle contracts", () => {
   });
 
   test("the DOB repair migration is idempotent and refreshes PostgREST", () => {
-    expect(dateOfBirthRepairMigration).toContain(
-      "ADD COLUMN IF NOT EXISTS date_of_birth DATE",
-    );
+    expect(dateOfBirthRepairMigration).toContain("ADD COLUMN IF NOT EXISTS date_of_birth DATE");
     expect(dateOfBirthRepairMigration).toContain("NOTIFY pgrst, 'reload schema'");
   });
 
@@ -125,5 +126,26 @@ describe("Supabase auth lifecycle contracts", () => {
     expect(styles).toContain("box-sizing: border-box;");
     expect(styles).toContain("min-width: 0;");
     expect(styles).toContain("max-width: 100%;");
+  });
+
+  test("route transitions keep the old screen until the new route is ready", () => {
+    expect(router).toContain("defaultViewTransition: true");
+    expect(router).toContain("router.startViewTransition = (update) =>");
+    expect(router).toContain('viewDocument.visibilityState !== "visible"');
+    expect(router).toContain("transition.finished.catch");
+    expect(router).toContain("if (!updateStarted) void update()");
+    expect(styles).toContain("::view-transition-old(root)");
+    expect(styles).toContain("::view-transition-new(root)");
+    expect(styles).toContain("transform: translate3d(104%, 0, 0)");
+    expect(styles).toContain("transform: translate3d(-104%, 0, 0)");
+  });
+
+  test("returning from iOS background keeps the current route interactive", () => {
+    expect(rootRoute).toContain('window.addEventListener("pageshow", handlePageShow)');
+    expect(rootRoute).toContain(
+      'document.addEventListener("visibilitychange", handleVisibilityChange)',
+    );
+    expect(router).toContain('viewDocument.visibilityState !== "visible"');
+    expect(router).toContain("void update()");
   });
 });

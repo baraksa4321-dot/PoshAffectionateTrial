@@ -1239,6 +1239,102 @@ test("iPhone loading video is ready and advances before and after hydration", as
   }
 });
 
+test("iPhone route changes keep both screens available through the shared transition", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const transitionLog = [];
+    window.__MY_ROUTINE_ROUTE_TRANSITIONS__ = transitionLog;
+    const nativeStartViewTransition =
+      typeof document.startViewTransition === "function"
+        ? document.startViewTransition.bind(document)
+        : null;
+
+    document.startViewTransition = (update) => {
+      const before = document.body.innerText;
+      transitionLog.push({ phase: "started", before });
+
+      if (!nativeStartViewTransition) {
+        const updateCallbackDone = Promise.resolve().then(update);
+        const finished = updateCallbackDone.then(() => {
+          transitionLog.push({
+            phase: "finished",
+            before,
+            after: document.body.innerText,
+          });
+        });
+        return {
+          ready: Promise.resolve(),
+          updateCallbackDone,
+          finished,
+          skipTransition() {},
+        };
+      }
+
+      const transition = nativeStartViewTransition(update);
+      void Promise.resolve(transition.finished)
+        .then(() => {
+          transitionLog.push({
+            phase: "finished",
+            before,
+            after: document.body.innerText,
+          });
+        })
+        .catch(() => undefined);
+      return transition;
+    };
+  });
+  await installFixture(page, { role: "trainee", online: false });
+
+  await page.goto("/");
+  await expect(page.getByTestId("link-nav-home")).toBeVisible();
+
+  await page.getByTestId("link-nav-nutrition").click();
+  await expect(page).toHaveURL(/\/nutrition$/);
+  await expect(page.getByRole("link", { name: "ספריית מאכלים" })).toBeVisible();
+
+  await page.getByRole("link", { name: "ספריית מאכלים" }).click();
+  await expect(page).toHaveURL(/\/nutrition\/foods$/);
+  await expect(page.getByRole("heading", { name: "ספריית מאכלים", exact: true })).toBeVisible();
+
+  await page.getByRole("link", { name: "חזרה ליומן" }).click();
+  await expect(page).toHaveURL(/\/nutrition$/);
+  await expect(page.getByRole("link", { name: "ספריית מאכלים" })).toBeVisible();
+
+  await page.getByTestId("link-nav-workouts").click();
+  await expect(page).toHaveURL(/\/workouts$/);
+  await expect(page.getByRole("heading", { name: "האימונים שלי", exact: true })).toBeVisible();
+
+  await page.getByTestId("link-nav-home").click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByTestId("link-nav-nutrition")).toBeVisible();
+
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            window.__MY_ROUTINE_ROUTE_TRANSITIONS__?.filter(
+              (entry) => entry.phase === "finished",
+            ).length ?? 0,
+        ),
+      { timeout: 5_000 },
+    )
+    .toBeGreaterThanOrEqual(5);
+
+  const transitionSummary = await page.evaluate(() => {
+    const log = window.__MY_ROUTINE_ROUTE_TRANSITIONS__ ?? [];
+    return {
+      started: log.filter((entry) => entry.phase === "started"),
+      finished: log.filter((entry) => entry.phase === "finished"),
+    };
+  });
+  expect(transitionSummary.started.length).toBeGreaterThanOrEqual(5);
+  expect(transitionSummary.finished).toHaveLength(transitionSummary.started.length);
+  expect(transitionSummary.started.every((entry) => entry.before.trim().length > 0)).toBe(true);
+  expect(transitionSummary.finished.every((entry) => entry.after.trim().length > 0)).toBe(true);
+});
+
 test("signup collects a bounded date of birth", async ({ page }) => {
   await page.goto("/");
 
