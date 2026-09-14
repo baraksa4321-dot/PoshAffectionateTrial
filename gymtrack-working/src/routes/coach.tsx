@@ -5899,7 +5899,7 @@ export function CoachDashboardPage({
         </section>
       ) : null}
 
-      <div className="mt-5 space-y-5 text-start">
+      <div className={`${clientsOnly ? "mt-0" : "mt-5"} space-y-5 text-start`}>
         {managementError ? (
           <div
             role="alert"
