@@ -1200,7 +1200,7 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
   await installFixture(page);
 
   await page.goto("/");
-  const coachNav = page.getByTestId("link-nav-coach");
+  const coachNav = page.getByTestId("link-nav-programs");
   await expect(coachNav).toBeVisible({ timeout: 20_000 });
   await coachNav.click();
   await expect(page).toHaveURL(/\/coach\/clients/);
@@ -1411,7 +1411,7 @@ test("household portions stay correct across coach save and trainee replacement"
   await installFixture(page, { online: true });
 
   await page.goto("/");
-  await page.getByTestId("link-nav-coach").click();
+  await page.getByTestId("link-nav-programs").click();
   await expect(page).toHaveURL(/\/coach\/clients/);
   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת");
   await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
@@ -1672,7 +1672,7 @@ test("coach profile resets measurements, activity, and messages when switching t
   await installFixture(page);
 
   await page.goto("/");
-  await page.getByTestId("link-nav-coach").click();
+  await page.getByTestId("link-nav-programs").click();
   await expect(page).toHaveURL(/\/coach\/clients/);
   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת");
 
@@ -1722,7 +1722,7 @@ test("coach profile retry recovers after a temporary trainee data failure", asyn
   await installFixture(page, { failSelectedTraineeDataOnce: true });
 
   await page.goto("/");
-  await page.getByTestId("link-nav-coach").click();
+  await page.getByTestId("link-nav-programs").click();
   await expect(page).toHaveURL(/\/coach\/clients/);
   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("מתאמנת בדיקה");
   await page.evaluate(() => window.__iosSmokeArmSelectedTraineeDataFailure());
@@ -1777,7 +1777,7 @@ test("trainee sees the message sent from the coach profile after reconnecting", 
   await installFixture(page);
 
   await page.goto("/");
-  await page.getByTestId("link-nav-coach").click();
+  await page.getByTestId("link-nav-programs").click();
   await expect(page).toHaveURL(/\/coach\/clients/);
   await page.getByRole("textbox", { name: "חיפוש לפי שם או אימייל" }).fill("בדיקה");
   await page.getByText("מתאמנת בדיקה", { exact: true }).first().click();
