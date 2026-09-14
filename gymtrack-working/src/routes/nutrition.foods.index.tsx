@@ -83,6 +83,7 @@ function FoodLibrary() {
       kicker="תזונה"
       title="ספריית מאכלים"
       subtitle={`${foods.length} מוצרים זמינים`}
+      pageClassName="nutrition-foods-page"
       action={
         <div className="flex gap-2">
           <Link
@@ -103,7 +104,8 @@ function FoodLibrary() {
         </div>
       }
     >
-      <div className="num-pill flex min-h-12 w-full items-center gap-2 px-3.5 py-1">
+      <div className="nutrition-food-library-card">
+        <div className="num-pill flex min-h-12 w-full items-center gap-2 px-3.5 py-1">
         <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
         <input
           value={query}
@@ -116,7 +118,7 @@ function FoodLibrary() {
           className="min-w-0 flex-1 bg-transparent text-[14px] leading-5 outline-none placeholder:text-muted-foreground"
         />
         <Barcode className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-      </div>
+        </div>
       <label className="mt-2 flex min-h-9 w-full items-center gap-2 text-[11px] font-semibold text-muted-foreground">
         <Barcode className="h-3.5 w-3.5 text-primary" />
         <span className="sr-only">חיפוש ברקוד</span>
@@ -275,27 +277,28 @@ function FoodLibrary() {
         })}
       </div>
 
-      {filtered.length === 0 ? (
-        <EmptyState
-          icon={Apple}
-          title="לא נמצאו מאכלים"
-          description={genderText(
-            gender,
-            "לחצי על + כדי ליצור מאכל חדש.",
-            "לחץ על + כדי ליצור מאכל חדש.",
-          )}
-          action={
-            <Link
-              to="/nutrition/foods/$foodId"
-              params={{ foodId: "new" }}
-              className="press inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-[13.5px] font-semibold text-primary-foreground"
-            >
-              <Plus className="h-4 w-4" strokeWidth={2.4} />
-              מאכל חדש
-            </Link>
-          }
-        />
-      ) : null}
+        {filtered.length === 0 ? (
+          <EmptyState
+            icon={Apple}
+            title="לא נמצאו מאכלים"
+            description={genderText(
+              gender,
+              "לחצי על + כדי ליצור מאכל חדש.",
+              "לחץ על + כדי ליצור מאכל חדש.",
+            )}
+            action={
+              <Link
+                to="/nutrition/foods/$foodId"
+                params={{ foodId: "new" }}
+                className="press inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-[13.5px] font-semibold text-primary-foreground"
+              >
+                <Plus className="h-4 w-4" strokeWidth={2.4} />
+                מאכל חדש
+              </Link>
+            }
+          />
+        ) : null}
+      </div>
     </AppShell>
   );
 }

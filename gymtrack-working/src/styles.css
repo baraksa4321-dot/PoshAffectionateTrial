@@ -9370,6 +9370,17 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   height: 1rem !important;
 }
 
+.nutrition-foods-page .nutrition-food-library-card {
+  margin-top: 0.35rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 1.35rem;
+  background: var(--surface) !important;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 72%),
+    0 8px 20px rgb(var(--shadow-color) / 7%);
+}
+
 @media (max-width: 639px) {
   .app-auth-shell .app-topbar__inner {
     padding-inline: 1rem !important;
