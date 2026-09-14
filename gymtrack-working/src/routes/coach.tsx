@@ -5193,13 +5193,14 @@ export function CoachDashboardPage({
             type="button"
             onClick={() => setAttentionQueueOpen(true)}
             aria-label="פתיחת תור תשומת הלב"
-            className="bodyweight-header-toggle press inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-1 text-[9px] font-bold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="bodyweight-header-toggle press relative inline-flex min-w-[5.8rem] items-center justify-center rounded-full border border-primary/30 bg-primary/5 px-7 py-1 text-[9px] font-bold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
-            <Activity className="h-3.5 w-3.5" aria-hidden="true" />
-            <Heart className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
             לשים לב
+            <span className="pointer-events-none absolute end-2" aria-hidden="true">
+              <Heart className="h-3.5 w-3.5 fill-current" />
+            </span>
             {attentionOpenCount > 0 ? (
-              <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[8px] leading-none">
+              <span className="absolute start-2 rounded-full bg-primary/15 px-1.5 py-0.5 text-[8px] leading-none">
                 {attentionOpenCount}
               </span>
             ) : null}

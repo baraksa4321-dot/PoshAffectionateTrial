@@ -74,3 +74,4 @@
 - [Rest timer background limits](rest-timer-background.md) — Native local notifications are reliable; Web/PWA background sound needs a system-push or media-session strategy.
 - [Rest timer set ownership](rest-timer-set-ownership.md) — Undoing the set that started rest must stop and collapse that timer so it cannot block workout controls.
 - [Video feedback](video-feedback.md) — Keep coach comments on specific performance videos in a dedicated RLS-protected realtime record with trainee read state.
+- [Portal anchor visibility](portal-anchor-visibility.md) — Keep workout editor portal anchors visible; WebKit can fail when an empty anchor is hidden before portal content mounts.

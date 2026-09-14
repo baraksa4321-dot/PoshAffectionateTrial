@@ -8737,3 +8737,74 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
     margin-top: 0.2rem;
   }
 }
+
+/* Final compact app chrome.
+ * Keep the brand and controls available, but make the shared top area shallow
+ * on every route so the first useful card gets the viewport space. */
+.app-topbar__inner {
+  padding-top: 0.2rem !important;
+  padding-bottom: 0.28rem !important;
+}
+
+.app-topbar__brand-row {
+  min-height: 1.75rem !important;
+  margin-bottom: 0.08rem !important;
+  padding-bottom: 0.1rem !important;
+}
+
+.app-topbar__brand-row img {
+  width: auto !important;
+  height: 1.7rem !important;
+}
+
+.app-topbar__brand-row button {
+  width: 1.65rem;
+  height: 1.65rem;
+}
+
+.app-topbar__utility-row {
+  margin-bottom: 0.12rem !important;
+  padding-bottom: 0.12rem !important;
+}
+
+.app-topbar__heading {
+  gap: 0.45rem !important;
+}
+
+.app-topbar h1 {
+  line-height: 1.1 !important;
+}
+
+.app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell) .app-main {
+  padding-top: 0.3rem !important;
+}
+
+[data-coach-attention-queue-anchor="true"]:empty {
+  display: none;
+}
+
+@media (max-width: 639px) {
+  .app-topbar__inner {
+    padding-top: 0.14rem !important;
+    padding-bottom: 0.2rem !important;
+  }
+
+  .app-topbar__brand-row {
+    min-height: 1.55rem !important;
+    padding-bottom: 0.06rem !important;
+  }
+
+  .app-topbar__brand-row img {
+    height: 1.5rem !important;
+  }
+
+  .app-topbar__brand-row button {
+    width: 1.45rem;
+    height: 1.45rem;
+  }
+
+  .app-topbar__utility-row {
+    margin-bottom: 0.08rem !important;
+    padding-bottom: 0.08rem !important;
+  }
+}
