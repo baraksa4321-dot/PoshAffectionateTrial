@@ -336,3 +336,45 @@ mtime_ms = 1789294880140
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:629484c3-bab3-4ee2-b0c1-889a1ae62755/f4f3f46d-5f04-4804-8a39-24b3f3b28501/13e2e446-fad8-4c59-a8bf-613ce84dce66"
 storage_version_token = "1789294886361505"
 content_type = "text/csv"
+
+[[outputs]]
+id = "z8ZFyJa70HIruA3Gr1gRA"
+uri = "file://deliverables/GymTrack-current-code-2026-09-14.zip"
+type = "unspecified"
+title = "GymTrack current code ZIP"
+description = "Portable GymTrack/My Routine source bundle with the latest app code, Supabase migrations, Edge Functions, tests, release scripts, and configuration. Excludes node_modules, build outputs, secrets, large loading media, and native generated bundles."
+logical_id = "3ef68771-adb0-44b0-ae24-d21f65e40b77"
+content_hash = "sha256:ac9fa78ee4e41a1283cc0e1c2a2ad2cea0c14f55f0bbca4b35181e8060056eb6"
+size = 1302020
+mtime_ms = 1789353525244
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:629484c3-bab3-4ee2-b0c1-889a1ae62755/3ef68771-adb0-44b0-ae24-d21f65e40b77/2fdcd8e4-5061-4a33-9b5c-d3e640c88473"
+storage_version_token = "1789353535840549"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "uBP8ZyFjx-HFCPiQ_TwHk"
+uri = "file://deliverables/GYMTRACK_UPDATE_PROMPT.md"
+type = "text"
+title = "GymTrack update prompt"
+description = "Hebrew copy-paste prompt for updating an older Replit project from the ZIP while preserving its own secrets, users, data, native folders, and newer changes."
+logical_id = "0774c948-e0e5-4df6-a47a-fdab7387f7ca"
+content_hash = "sha256:6b13676f58e959e950673b0b65031d25d199dfee70425f1e37c3ba1f84b01ab0"
+size = 12438
+mtime_ms = 1789353509295
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:629484c3-bab3-4ee2-b0c1-889a1ae62755/0774c948-e0e5-4df6-a47a-fdab7387f7ca/d29d4b6e-f37d-4635-a108-2d541216e776"
+storage_version_token = "1789353537210999"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "YdnwWcmWrj0DkFQKX0G6S"
+uri = "file://deliverables/GymTrack-current-code-2026-09-14.zip.sha256"
+type = "unspecified"
+title = "GymTrack ZIP checksum"
+description = "SHA-256 checksum for verifying the downloaded source archive."
+logical_id = "98447f3c-6878-49a5-bdaf-e701dd148696"
+content_hash = "sha256:a03317e0a75ce9407a81e10ad819ffedda3bdd81bc4ced747d5954a52f82f8c4"
+size = 139
+mtime_ms = 1789353525248
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:629484c3-bab3-4ee2-b0c1-889a1ae62755/98447f3c-6878-49a5-bdaf-e701dd148696/b2eb4df8-a832-4ebd-9532-15e5f82edfe1"
+storage_version_token = "1789353538533183"
+content_type = "application/octet-stream"
