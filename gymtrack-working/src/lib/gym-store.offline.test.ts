@@ -1,7 +1,7 @@
 // The standalone package is executed by Bun; its runtime matcher types are
 // supplied by Bun rather than the browser TypeScript environment.
 import { beforeEach, describe, expect, mock, test } from "bun:test";
-import type { CoachMessage, GymData } from "./gym-types";
+import type { CoachMessage, GymData, HistorySession } from "./gym-types";
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -100,6 +100,7 @@ mock.module("./supabase", () => ({
 }));
 
 mock.module("./supabase-sync", () => ({
+  approveChallengeInSupabase: async () => undefined,
   pullSupabaseData: async (userId: string, localState: Record<string, unknown>) => {
     pullCalls.push({ userId, localState });
     return pullImplementation(userId, localState);
@@ -711,6 +712,97 @@ describe("offline store lifecycle", () => {
       expect.objectContaining({ label: "Bring water" }),
     ]);
     await eventually(() => reloadedStore.getGymStoreSyncStatus() === "synced");
+  });
+
+  test("keeps a completed workout in local history while cloud sync is slow", async () => {
+    Object.assign(navigator, { onLine: true });
+    pullImplementation = async (_userId, localState) => ({ success: true, data: localState });
+    const store = await loadStore("slow-completion-sync");
+    await eventually(() => store.getGymStoreSyncStatus() === "synced");
+
+    const sync = deferred<{ success: true }>();
+    syncImplementation = async () => sync.promise;
+    const session: HistorySession = {
+      id: "slow-completion",
+      workoutId: "workout-slow",
+      workoutName: "אימון איטי",
+      date: "2026-09-14T09:00:00.000Z",
+      durationSec: 900,
+      entries: [],
+    };
+
+    store.saveSession(session);
+    expect(store.getGymStoreSnapshot().history[0]).toEqual(session);
+    expect(JSON.parse(storage.get("gymtrack.v1.user.user-a") ?? "{}").history).toEqual([session]);
+
+    await eventually(() => syncCalls.length === 1);
+    const flushPromise = store.flushCloudSync();
+    const flushStillPending = await Promise.race([
+      flushPromise.then(() => false),
+      new Promise<boolean>((resolve) => setTimeout(() => resolve(true), 25)),
+    ]);
+    expect(flushStillPending).toBe(true);
+    expect(store.getGymStoreSnapshot().history[0]?.id).toBe("slow-completion");
+
+    sync.resolve({ success: true });
+    await expect(flushPromise).resolves.toMatchObject({ success: true });
+    await eventually(() => store.getGymStoreSyncStatus() === "synced");
+    expect(storage.has("gymtrack.v1.pending.user-a")).toBe(false);
+  });
+
+  test("keeps a completed workout after offline save and uploads it after reconnect", async () => {
+    storage.set("gymtrack.v1.user.user-a", JSON.stringify(cachedClientData));
+    const store = await loadStore("offline-completion");
+    authenticate();
+    await eventually(() => store.getGymStoreSyncStatus() === "offline");
+
+    const session: HistorySession = {
+      id: "offline-completion",
+      workoutId: "workout-offline",
+      workoutName: "אימון ללא רשת",
+      date: "2026-09-14T10:00:00.000Z",
+      durationSec: 600,
+      entries: [],
+    };
+    store.saveSession(session);
+
+    expect(store.getGymStoreSnapshot().history[0]).toEqual(session);
+    expect(JSON.parse(storage.get("gymtrack.v1.user.user-a") ?? "{}").history).toEqual([session]);
+    expect(syncCalls).toHaveLength(0);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    emit("online");
+    await eventually(() => syncCalls.length === 1);
+    await eventually(() => store.getGymStoreSyncStatus() === "synced");
+    expect(syncCalls[0]?.localData["history"]).toEqual([session]);
+    expect(store.getGymStoreSnapshot().history[0]?.id).toBe("offline-completion");
+    expect(storage.has("gymtrack.v1.pending.user-a")).toBe(false);
+  });
+
+  test("keeps a completed workout and exposes a repairable sync error after a permanent failure", async () => {
+    Object.assign(navigator, { onLine: true });
+    pullImplementation = async (_userId, localState) => ({ success: true, data: localState });
+    const store = await loadStore("permanent-completion-sync-failure");
+    await eventually(() => store.getGymStoreSyncStatus() === "synced");
+    syncImplementation = async () => ({ success: false, error: "permission denied" });
+
+    const session: HistorySession = {
+      id: "failed-completion",
+      workoutId: "workout-failed",
+      workoutName: "אימון עם שגיאת סנכרון",
+      date: "2026-09-14T11:00:00.000Z",
+      durationSec: 720,
+      entries: [],
+    };
+    store.saveSession(session);
+
+    await eventually(() => store.getGymStoreSyncStatus() === "error");
+    expect(store.getGymStoreSnapshot().history[0]).toEqual(session);
+    expect(storage.has("gymtrack.v1.pending.user-a")).toBe(true);
+    const retryResult = await store.flushCloudSync();
+    expect(retryResult.success).toBe(false);
+    expect(retryResult.error).toContain("permission denied");
+    expect(store.getGymStoreSnapshot().history[0]?.id).toBe("failed-completion");
   });
 
   test("keeps challenge enrollment and generated workout after offline reload", async () => {
