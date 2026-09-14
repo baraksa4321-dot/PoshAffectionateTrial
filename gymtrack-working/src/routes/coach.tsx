@@ -1639,6 +1639,16 @@ function errorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+function isMissingProgramDayWeekday(error: unknown): boolean {
+  const message =
+    error instanceof Error
+      ? error.message
+      : error && typeof error === "object" && "message" in error
+        ? String(error.message)
+        : String(error ?? "");
+  return /program_days/i.test(message) && /weekday/i.test(message) && /schema cache/i.test(message);
+}
+
 function duplicateWorkoutItems(items: WorkoutItem[]): WorkoutItem[] {
   return items.map((item) => ({
     ...item,
@@ -1649,11 +1659,13 @@ function duplicateWorkoutItems(items: WorkoutItem[]): WorkoutItem[] {
     ...(item.workingSets
       ? { workingSets: item.workingSets.map((workingSet) => ({ ...workingSet, id: uid() })) }
       : {}),
-    ...(item.dropSet
+    ...(item.dropSetConfig
       ? {
-          dropSet: {
-            ...item.dropSet,
-            levels: item.dropSet.levels?.map((level) => ({ ...level })),
+          dropSetConfig: {
+            ...item.dropSetConfig,
+            ...(item.dropSetConfig.levels
+              ? { levels: item.dropSetConfig.levels.map((level) => ({ ...level })) }
+              : {}),
           },
         }
       : {}),
@@ -3871,7 +3883,13 @@ export function CoachDashboardPage({
       if (programError) throw programError;
 
       if (duplicateDays.length > 0) {
-        const { error: daysError } = await supabase.from("program_days").insert(duplicateDays);
+        let { error: daysError } = await supabase.from("program_days").insert(duplicateDays);
+        if (daysError && isMissingProgramDayWeekday(daysError)) {
+          const legacyDuplicateDays = duplicateDays.map(({ weekday: _weekday, ...day }) => day);
+          ({ error: daysError } = await supabase
+            .from("program_days")
+            .insert(legacyDuplicateDays));
+        }
         if (daysError) {
           await supabase
             .from("program_days")

@@ -2505,7 +2505,31 @@ export function duplicateProgram(id: string): Program | undefined {
     const copy: Workout = {
       ...day,
       id: uid(),
-      items: day.items.map((i) => ({ ...i, id: uid() })),
+      items: day.items.map((item) => ({
+        ...item,
+        id: uid(),
+        ...(item.warmups
+          ? { warmups: item.warmups.map((warmup) => ({ ...warmup, id: uid() })) }
+          : {}),
+        ...(item.workingSets
+          ? {
+              workingSets: item.workingSets.map((workingSet) => ({
+                ...workingSet,
+                id: uid(),
+              })),
+            }
+          : {}),
+        ...(item.dropSetConfig
+          ? {
+              dropSetConfig: {
+                ...item.dropSetConfig,
+                ...(item.dropSetConfig.levels
+                  ? { levels: item.dropSetConfig.levels.map((level) => ({ ...level })) }
+                  : {}),
+              },
+            }
+          : {}),
+      })),
     };
     newDays.push(copy);
     return copy.id;
