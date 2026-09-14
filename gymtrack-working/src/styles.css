@@ -9272,18 +9272,18 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 
 .app-auth-shell .app-topbar__inner {
   max-width: 42rem;
-  padding: 0.45rem 1rem 0.55rem !important;
+  padding: 0.35rem 1rem 0.4rem !important;
 }
 
 .app-auth-shell .app-topbar__brand-row {
   min-height: 2.45rem !important;
-  margin-bottom: 0.25rem !important;
-  padding-bottom: 0.4rem !important;
+  margin-bottom: 0.1rem !important;
+  padding-bottom: 0.25rem !important;
 }
 
 .app-auth-shell .app-topbar__brand-row img {
-  height: 2.1rem;
-  width: auto;
+  height: 2.35rem !important;
+  width: auto !important;
 }
 
 .app-auth-shell .app-home-account-controls {
@@ -9293,10 +9293,11 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 
 .app-auth-shell .app-topbar__utility-row {
   min-height: 2rem;
-  margin-bottom: 0.1rem !important;
+  margin-bottom: 0 !important;
   padding-bottom: 0 !important;
   flex-wrap: nowrap !important;
   justify-content: flex-start !important;
+  gap: 0.45rem !important;
 }
 
 .app-auth-shell .app-home-night-mode {
@@ -9323,6 +9324,23 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 .app-auth-shell .app-topbar__heading {
   margin-top: -1.1rem;
   transform: translateY(-0.45rem);
+  gap: 0.3rem !important;
+}
+
+.app-auth-shell .app-topbar h1 {
+  font-size: clamp(1.08rem, 4.8vw, 1.35rem) !important;
+  line-height: 1.05 !important;
+}
+
+.app-auth-shell .app-shell-kicker {
+  margin-bottom: 0.1rem !important;
+  font-size: 0.62rem !important;
+  line-height: 1 !important;
+}
+
+.app-auth-shell .app-home-account-controls {
+  gap: 0.35rem;
+  padding-block: 0.2rem;
 }
 
 .app-auth-shell .app-topbar__utility-action {
@@ -9350,7 +9368,7 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   }
 
   .app-auth-shell .app-topbar__brand-row img {
-    height: 1.85rem;
+    height: 2.35rem !important;
   }
 
   .app-auth-shell .app-home-account-controls {
