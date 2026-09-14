@@ -1102,7 +1102,7 @@ export function AppShell({
                   {resolvedHeaderAccessory}
                 </div>
               ) : null}
-              {user ? (
+              {user && showHomeOnlyHeaderControls ? (
                 <button
                   type="button"
                   onClick={toggleNightMode}
@@ -1189,6 +1189,22 @@ export function AppShell({
                 ) : null}
               </div>
               <div className="flex shrink-0 items-center gap-2 pt-0.5">
+                {user && !showHomeOnlyHeaderControls ? (
+                  <button
+                    type="button"
+                    onClick={toggleNightMode}
+                    aria-pressed={isNightMode}
+                    aria-label={isNightMode ? "מעבר לתצוגת יום" : "מעבר לתצוגת לילה"}
+                    title={isNightMode ? "תצוגת יום" : "תצוגת לילה"}
+                    className="app-route-night-mode grid h-7 w-7 shrink-0 place-items-center rounded-full border border-border/70 bg-surface text-muted-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {isNightMode ? (
+                      <Sun className="h-3.5 w-3.5" aria-hidden="true" />
+                    ) : (
+                      <Moon className="h-3.5 w-3.5" aria-hidden="true" />
+                    )}
+                  </button>
+                ) : null}
                 {!user ? (
                   <button
                     onClick={() => setShowAuthModal(true)}

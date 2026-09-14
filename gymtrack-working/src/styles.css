@@ -9357,6 +9357,11 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   height: 1.85rem;
 }
 
+.app-auth-shell .app-route-night-mode {
+  width: 1.85rem;
+  height: 1.85rem;
+}
+
 .app-auth-shell .app-workspace-switcher {
   top: 50% !important;
   gap: 0.15rem;
