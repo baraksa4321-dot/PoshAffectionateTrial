@@ -103,22 +103,39 @@ export function ChallengeLibrary({
     setEditing(next);
   };
 
-  const updateFirstSession = (patch: Partial<Challenge["sessions"][number]>) => {
-    setEditing((current) =>
-      current
-        ? { ...current, sessions: current.sessions.map((session, index) => (index === 0 ? { ...session, ...patch } : session)) }
-        : current,
-    );
-  };
-
-  const updateItem = (itemId: string, patch: Partial<WorkoutItem>) => {
+  const updateSession = (
+    sessionIndex: number,
+    patch: Partial<Challenge["sessions"][number]>,
+  ) => {
     setEditing((current) =>
       current
         ? {
             ...current,
-            sessions: current.sessions.map((session, sessionIndex) =>
-              sessionIndex === 0
-                ? { ...session, items: session.items.map((item) => (item.id === itemId ? { ...item, ...patch } : item)) }
+            sessions: current.sessions.map((session, index) =>
+              index === sessionIndex ? { ...session, ...patch } : session,
+            ),
+          }
+        : current,
+    );
+  };
+
+  const updateItem = (
+    sessionIndex: number,
+    itemId: string,
+    patch: Partial<WorkoutItem>,
+  ) => {
+    setEditing((current) =>
+      current
+        ? {
+            ...current,
+            sessions: current.sessions.map((session, index) =>
+              index === sessionIndex
+                ? {
+                    ...session,
+                    items: session.items.map((item) =>
+                      item.id === itemId ? { ...item, ...patch } : item,
+                    ),
+                  }
                 : session,
             ),
           }
@@ -151,11 +168,11 @@ export function ChallengeLibrary({
           </div>
 
           {editing ? (
-            <ChallengeEditor
+             <ChallengeEditorMulti
               challenge={editing}
               exercises={editableExercises}
               onChange={setEditing}
-              onUpdateSession={updateFirstSession}
+               onUpdateSession={updateSession}
               onUpdateItem={updateItem}
               onCancel={() => setEditing(null)}
               onSave={() => {
@@ -316,12 +333,14 @@ function ChallengeDetail({
         </PrimaryButton>
         {isCoach && programs.length > 0 ? (
           <div className="w-full rounded-2xl border border-border/60 bg-background p-3">
-            <p className="text-[11px] font-bold text-ink">הוספה לתוכנית</p>
-            <div className="mt-2 grid grid-cols-2 gap-2">
+             <p className="text-[11px] font-bold text-ink">
+               הוספת {challenge.sessions.length} אימוני האתגר לתוכנית
+             </p>
+             <div className="mt-2">
               <select
                 value={selectedProgramId}
                 onChange={(event) => onProgramChange(event.target.value)}
-                className="min-w-0 rounded-xl border border-border/60 bg-surface px-2 py-2 text-xs font-bold text-ink"
+                 className="w-full rounded-xl border border-border/60 bg-surface px-2 py-2 text-xs font-bold text-ink"
               >
                 {programs.map((program) => (
                   <option key={program.id} value={program.id}>
@@ -329,17 +348,31 @@ function ChallengeDetail({
                   </option>
                 ))}
               </select>
-              <select
-                value={selectedWeekday}
-                onChange={(event) => onWeekdayChange(Number(event.target.value))}
-                className="min-w-0 rounded-xl border border-border/60 bg-surface px-2 py-2 text-xs font-bold text-ink"
-              >
-                {weekdays.map((day, index) => (
-                  <option key={day} value={index}>
-                    יום {day}
-                  </option>
-                ))}
-              </select>
+               <div className="mt-2 space-y-2">
+                 {challenge.sessions.map((session, index) => (
+                   <label
+                     key={session.id}
+                     className="flex items-center justify-between gap-2 rounded-xl bg-secondary/50 px-2.5 py-2 text-[11px] font-bold text-ink"
+                   >
+                     <span className="min-w-0 truncate">
+                       {session.name || `אימון ${index + 1}`}
+                     </span>
+                     <select
+                       value={selectedWeekdays[index] ?? index % 7}
+                       onChange={(event) =>
+                         onWeekdayChange(index, Number(event.target.value))
+                       }
+                       className="shrink-0 rounded-lg border border-border/60 bg-surface px-2 py-1.5 text-[11px] font-bold text-ink"
+                     >
+                       {weekdays.map((day, weekday) => (
+                         <option key={day} value={weekday}>
+                           יום {day}
+                         </option>
+                       ))}
+                     </select>
+                   </label>
+                 ))}
+               </div>
             </div>
             <button
               type="button"
@@ -422,6 +455,243 @@ function ChallengeEditor({
       </div>
       <div className="mt-4 flex gap-2">
         <PrimaryButton onClick={onSave} disabled={!challenge.title.trim() || !session.items.length}>שמירת אתגר</PrimaryButton>
+        <SecondaryButton onClick={onCancel}>ביטול</SecondaryButton>
+      </div>
+    </>
+  );
+}
+
+function ChallengeEditorMulti({
+  challenge,
+  exercises,
+  onChange,
+  onUpdateSession,
+  onUpdateItem,
+  onCancel,
+  onSave,
+}: {
+  challenge: Challenge;
+  exercises: ReturnType<typeof useGym>["exercises"];
+  onChange: (challenge: Challenge) => void;
+  onUpdateSession: (
+    sessionIndex: number,
+    patch: Partial<Challenge["sessions"][number]>,
+  ) => void;
+  onUpdateItem: (
+    sessionIndex: number,
+    itemId: string,
+    patch: Partial<WorkoutItem>,
+  ) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  const [exerciseId, setExerciseId] = useState(exercises[0]?.id ?? "");
+  const sessions = challenge.sessions.slice(0, 5);
+  const canSave =
+    challenge.title.trim().length > 0 &&
+    sessions.length >= 1 &&
+    sessions.every((session) => session.items.length > 0);
+
+  return (
+    <>
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-extrabold text-ink">בניית אתגר</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            מטרה אחת, 1–5 אימונים בשבוע
+          </p>
+        </div>
+        <button type="button" onClick={onCancel} className="text-xs font-bold text-primary">
+          ביטול
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-[11px] font-bold text-muted-foreground">
+          המטרה העילאית של האתגר
+          <input
+            value={challenge.title}
+            onChange={(event) => onChange({ ...challenge, title: event.target.value })}
+            placeholder="למשל: ריצה ראשונה של 5 ק״מ"
+            className="mt-1 w-full rounded-2xl border border-border/60 bg-background px-3 py-2.5 text-sm font-bold text-ink outline-none focus:border-primary"
+          />
+        </label>
+        <label className="block text-[11px] font-bold text-muted-foreground">
+          תיאור והדרך למטרה
+          <textarea
+            value={challenge.description}
+            onChange={(event) => onChange({ ...challenge, description: event.target.value })}
+            placeholder="מה המתאמן צריך להשיג בסוף האתגר?"
+            rows={2}
+            className="mt-1 w-full resize-none rounded-2xl border border-border/60 bg-background px-3 py-2.5 text-xs font-semibold text-ink outline-none focus:border-primary"
+          />
+        </label>
+        <input
+          value={challenge.durationLabel}
+          onChange={(event) => onChange({ ...challenge, durationLabel: event.target.value })}
+          placeholder="משך האתגר, למשל: 6 שבועות"
+          className="w-full rounded-2xl border border-border/60 bg-background px-3 py-2.5 text-xs font-bold text-ink outline-none focus:border-primary"
+        />
+
+        <div className="space-y-2 pt-1">
+          {sessions.map((session, sessionIndex) => (
+            <section
+              key={session.id}
+              className="rounded-2xl border border-border/60 bg-background p-3"
+            >
+              <div className="flex items-center gap-2">
+                <input
+                  value={session.name}
+                  onChange={(event) =>
+                    onUpdateSession(sessionIndex, { name: event.target.value })
+                  }
+                  placeholder={`שם אימון ${sessionIndex + 1}`}
+                  className="min-w-0 flex-1 rounded-xl border border-border/60 bg-surface px-2.5 py-2 text-xs font-extrabold text-ink outline-none focus:border-primary"
+                />
+                {sessions.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onChange({
+                        ...challenge,
+                        sessions: challenge.sessions.filter(
+                          (_, index) => index !== sessionIndex,
+                        ),
+                      })
+                    }
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-destructive/20 text-destructive"
+                    aria-label={`מחיקת אימון ${sessionIndex + 1}`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="mt-2 space-y-2">
+                {session.items.map((item) => (
+                  <div key={item.id} className="rounded-xl border border-border/50 bg-surface p-2.5">
+                    <div className="flex items-center gap-2">
+                      <p className="min-w-0 flex-1 truncate text-xs font-extrabold text-ink">
+                        {item.exerciseName ??
+                          exercises.find((exercise) => exercise.id === item.exerciseId)?.name ??
+                          "תרגיל"}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onUpdateSession(sessionIndex, {
+                            items: session.items.filter((candidate) => candidate.id !== item.id),
+                          })
+                        }
+                        className="text-[10px] font-bold text-destructive"
+                      >
+                        הסרה
+                      </button>
+                    </div>
+                    <div className="mt-2 grid grid-cols-3 gap-1.5">
+                      <label className="text-[10px] font-bold text-muted-foreground">
+                        סטים
+                        <input
+                          type="number"
+                          min={1}
+                          value={item.sets}
+                          onChange={(event) =>
+                            onUpdateItem(sessionIndex, item.id, {
+                              sets: Math.max(1, Number(event.target.value) || 1),
+                            })
+                          }
+                          className="mt-1 w-full rounded-lg border border-border/60 bg-background px-2 py-1.5 text-xs font-bold text-ink"
+                        />
+                      </label>
+                      <label className="text-[10px] font-bold text-muted-foreground">
+                        חזרות
+                        <input
+                          type="number"
+                          min={1}
+                          value={item.reps}
+                          onChange={(event) =>
+                            onUpdateItem(sessionIndex, item.id, {
+                              reps: Math.max(1, Number(event.target.value) || 1),
+                            })
+                          }
+                          className="mt-1 w-full rounded-lg border border-border/60 bg-background px-2 py-1.5 text-xs font-bold text-ink"
+                        />
+                      </label>
+                      <label className="text-[10px] font-bold text-muted-foreground">
+                        מנוחה
+                        <input
+                          type="number"
+                          min={0}
+                          value={item.rest}
+                          onChange={(event) =>
+                            onUpdateItem(sessionIndex, item.id, {
+                              rest: Math.max(0, Number(event.target.value) || 0),
+                            })
+                          }
+                          className="mt-1 w-full rounded-lg border border-border/60 bg-background px-2 py-1.5 text-xs font-bold text-ink"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                ))}
+                <div className="flex gap-2">
+                  <select
+                    value={exerciseId}
+                    onChange={(event) => setExerciseId(event.target.value)}
+                    className="min-w-0 flex-1 rounded-xl border border-border/60 bg-surface px-2.5 py-2 text-xs text-ink"
+                  >
+                    {exercises.map((exercise) => (
+                      <option key={exercise.id} value={exercise.id}>
+                        {exercise.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!exerciseId) return;
+                      onUpdateSession(sessionIndex, {
+                        items: [...session.items, emptyItem(exerciseId)],
+                      });
+                    }}
+                    className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-primary/10 px-3 text-xs font-bold text-primary"
+                  >
+                    <Plus className="h-4 w-4" /> הוספת תרגיל
+                  </button>
+                </div>
+              </div>
+            </section>
+          ))}
+        </div>
+
+        {sessions.length < 5 ? (
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                ...challenge,
+                sessions: [
+                  ...challenge.sessions,
+                  {
+                    id: `challenge-session-${uid()}`,
+                    name: `אימון ${challenge.sessions.length + 1}`,
+                    notes: "",
+                    items: [],
+                  },
+                ],
+              })
+            }
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/40 px-3 py-2.5 text-xs font-bold text-primary"
+          >
+            <Plus className="h-4 w-4" /> הוספת אימון לאתגר
+          </button>
+        ) : null}
+      </div>
+
+      <div className="mt-4 flex gap-2">
+        <PrimaryButton onClick={onSave} disabled={!canSave}>
+          שמירת אתגר
+        </PrimaryButton>
         <SecondaryButton onClick={onCancel}>ביטול</SecondaryButton>
       </div>
     </>

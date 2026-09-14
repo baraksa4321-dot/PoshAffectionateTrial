@@ -96,6 +96,7 @@ import type {
   BodyMeasurement,
   BroadcastAnnouncement,
   CoachMessage,
+  Challenge,
   Exercise,
   HistoryEntry,
   HistorySession,
@@ -3864,6 +3865,81 @@ export function CoachDashboardPage({
     applyClientDetails(refreshedClientData);
   };
 
+  const handleAssignChallengeToClient = async (
+    challenge: Challenge,
+    programId: string,
+    weekdays: number[],
+  ): Promise<boolean> => {
+    if (!isCoach || !selectedClientId) return false;
+    const program = clientDetails?.programs.find((item) => item.id === programId);
+    if (!program) {
+      setManagementError("לא נמצאה תוכנית שאליה אפשר להוסיף את האתגר.");
+      return false;
+    }
+
+    const sessions = challenge.sessions.slice(0, 5);
+    const challengeWorkouts: Workout[] = sessions.map((session, index) => ({
+      id: uid(),
+      name: `${challenge.title} · ${session.name || `אימון ${index + 1}`}`,
+      notes: session.notes,
+      items: duplicateWorkoutItems(session.items),
+      weekday: Math.max(0, Math.min(6, Math.round(weekdays[index] ?? index % 7))),
+    }));
+
+    if (isSelfSelected) {
+      for (const workout of challengeWorkouts) {
+        saveWorkoutInProgram(programId, workout);
+      }
+      setEditingProgramId(programId);
+      setEditingDayId(challengeWorkouts[0]?.id ?? null);
+      return true;
+    }
+
+    let usedLegacySchema = false;
+    for (const [index, workout] of challengeWorkouts.entries()) {
+      const result = await insertProgramDayForCoach({
+        ...clientProgramDayInsertPayload(
+          workout.id,
+          programId,
+          selectedClientId,
+          workout.name,
+          program.dayIds.length + index + 1,
+          workout.weekday,
+        ),
+        items: workout.items,
+      });
+      if (result.error) {
+        setManagementError(
+          `הוספת האתגר נכשלה: ${errorMessage(result.error, "שגיאה בהוספת האתגר")}`,
+        );
+        return false;
+      }
+      usedLegacySchema ||= result.usedLegacySchema;
+    }
+
+    if (usedLegacySchema) {
+      let nextClientDetails = clientDetails;
+      for (const workout of challengeWorkouts) {
+        nextClientDetails = nextClientDetails
+          ? appendProgramDayToLocalCoachData(nextClientDetails, programId, workout)
+          : nextClientDetails;
+      }
+      if (nextClientDetails) {
+        setClientDetails(nextClientDetails);
+        if (authUser?.id) {
+          writeCoachClientCache(authUser.id, selectedClientId, nextClientDetails);
+        }
+      }
+    } else {
+      const refreshedClientData = await pullClientDataForCoach(selectedClientId);
+      applyClientDetails(refreshedClientData);
+    }
+
+    setEditingProgramId(programId);
+    setEditingDayId(challengeWorkouts[0]?.id ?? null);
+    return true;
+  };
+
   const handleDuplicateClientWorkoutDay = async (program: Program, day: Workout) => {
     if (!isCoach || !selectedClientId) return;
     setManagementError("");
@@ -7579,6 +7655,11 @@ export function CoachDashboardPage({
                                   <Edit2 className="h-3 w-3" />
                                   <span>{isProgActive ? "סגירה" : "עריכה"}</span>
                                 </button>
+                                <ChallengeLibrary
+                                  compact
+                                  availablePrograms={clientDetails?.programs ?? []}
+                                  onAssignToProgram={handleAssignChallengeToClient}
+                                />
                               </div>
                             </div>
 
@@ -7782,7 +7863,6 @@ export function CoachDashboardPage({
                                                 <Activity className="h-3.5 w-3.5" aria-hidden="true" />
                                                 דוח אימון
                                               </button>
-                                              <ChallengeLibrary compact />
                                               <button
                                                 type="button"
                                                 onClick={() => {

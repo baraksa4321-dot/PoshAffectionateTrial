@@ -2244,28 +2244,39 @@ function createChallengeWorkout(challenge: Challenge, source: Workout): Workout 
 export function addChallengeToProgram(
   challengeId: string,
   programId: string,
-  weekday: number,
-) {
+  weekdays: number | number[],
+): Workout[] | undefined {
   if (!canManageAssignedPlans()) return;
   const challenge = data.challenges.find((item) => item.id === challengeId);
   const program = data.programs.find((item) => item.id === programId);
-  const session = challenge?.sessions[0];
-  if (!challenge || !program || !session) return;
+  if (!challenge || !program || challenge.sessions.length === 0) return;
 
-  const workout = {
+  const selectedWeekdays = Array.isArray(weekdays) ? weekdays : [weekdays];
+  const workouts = challenge.sessions.slice(0, 5).map((session, index) => ({
     ...createChallengeWorkout(challenge, session),
-    weekday: Math.max(0, Math.min(6, Math.round(weekday))),
-  };
+    weekday: Math.max(
+      0,
+      Math.min(6, Math.round(selectedWeekdays[index] ?? index % 7)),
+    ),
+  }));
   set({
     ...data,
-    workouts: [...data.workouts, workout],
+    workouts: [...data.workouts, ...workouts],
     programs: data.programs.map((item) =>
-      item.id === programId && !item.dayIds.includes(workout.id)
-        ? { ...item, dayIds: [...item.dayIds, workout.id] }
+      item.id === programId
+        ? {
+            ...item,
+            dayIds: [
+              ...item.dayIds,
+              ...workouts
+                .map((workout) => workout.id)
+                .filter((workoutId) => !item.dayIds.includes(workoutId)),
+            ],
+          }
         : item,
     ),
   });
-  return workout;
+  return workouts;
 }
 
 /**
