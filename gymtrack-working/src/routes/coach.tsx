@@ -1735,7 +1735,6 @@ function WorkoutDailyReport({
               plannedWeight,
               item.equipment,
               item.cableGrip,
-              item.rest ? `מנוחה ${item.rest} שניות` : undefined,
               item.tempo ? `קצב ${item.tempo}` : undefined,
               item.rir !== null && item.rir !== undefined ? `RIR ${item.rir}` : undefined,
               item.rpe !== null && item.rpe !== undefined ? `RPE ${item.rpe}` : undefined,
