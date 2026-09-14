@@ -1725,7 +1725,7 @@ export function AppShell({
                       value={dateOfBirth}
                       onChange={(event) => setDateOfBirth(event.target.value)}
                       autoComplete="bday"
-                      className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
+                      className="auth-date-input block w-full min-w-0 max-w-full rounded-sm border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                     <p className="mt-1 text-[10px] text-muted-foreground">
                       הגיל יחושב אוטומטית וישתנה ביום ההולדת.

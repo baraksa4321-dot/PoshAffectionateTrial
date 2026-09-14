@@ -21,10 +21,8 @@ import {
 import "../styles.css";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "../components/AppShell";
-import { BrandLogo } from "../components/BrandLogo";
 import { LoadingSpinner } from "../components/ui-app/LoadingSpinner";
 import {
-  completeUserProfileName,
   retryProfileHydration,
   useAuthUser,
   useAuthStatus,
@@ -114,72 +112,6 @@ async function resetAuthSessionAndReload() {
     // auth client retry with an empty in-memory session.
   }
   window.location.reload();
-}
-
-function CompleteProfileName() {
-  const { userProfile } = useGym();
-  const [fullName, setFullName] = useState(userProfile?.fullName ?? "");
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!saving) setFullName(userProfile?.fullName ?? "");
-  }, [saving, userProfile?.fullName]);
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSaving(true);
-    setError("");
-    const result = await completeUserProfileName(fullName);
-    if (!result.success) {
-      setError(result.error);
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4" dir="rtl">
-      <div className="w-full max-w-sm rounded-3xl border border-border/60 bg-white px-6 py-7 text-center shadow-sm">
-        <div className="flex justify-center">
-          <BrandLogo compact />
-        </div>
-        <h1 className="mt-6 text-xl font-bold text-foreground">נשמח להכיר אותך</h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          לפני שממשיכים, {genderText(userProfile?.gender, "כתבי", "כתוב")} את השם המלא שיוצג
-          באפליקציה ובמסכי המאמן.
-        </p>
-        {error ? (
-          <p className="mt-4 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm font-semibold text-destructive">
-            {error}
-          </p>
-        ) : null}
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4 text-start">
-          <label className="block text-sm font-bold text-foreground" htmlFor="required-full-name">
-            שם מלא
-          </label>
-          <input
-            id="required-full-name"
-            type="text"
-            required
-            minLength={2}
-            autoFocus
-            autoComplete="name"
-            value={fullName}
-            onChange={(event) => setFullName(event.target.value)}
-            placeholder="לדוגמה: ישראל ישראלי"
-            className="w-full rounded-xl border border-border bg-background px-3 py-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-          />
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
-          >
-            {saving ? genderText(userProfile?.gender, "שומרת...", "שומר...") : "שמירת השם והמשך"}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
 }
 
 function NotFoundComponent() {
@@ -1281,10 +1213,6 @@ function RootContent() {
     !hasProfileHydrationError &&
     authStatus === "authenticated" &&
     (profileHydrationStatus === "loading" || userProfile?.role === undefined);
-  const needsFullName =
-    authStatus === "authenticated" &&
-    profileHydrationStatus === "ready" &&
-    !userProfile?.fullName?.trim();
   const accountApprovalStatus = userProfile?.approvalStatus;
   const isAccountLocked =
     authStatus === "authenticated" &&
@@ -1783,8 +1711,6 @@ function RootContent() {
             </div>
           </div>
         </div>
-      ) : needsFullName ? (
-        <CompleteProfileName />
       ) : authStatus === "unauthenticated" ? (
         <AppShell
           title={genderText(userProfile?.gender, "ברוכה הבאה", "ברוך הבא")}
