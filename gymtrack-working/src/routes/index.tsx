@@ -977,7 +977,7 @@ function Dashboard() {
               משובים
               {unreadVideoFeedbackCount > 0 ? (
                 <span
-                  className="absolute -end-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-extrabold leading-none text-primary-foreground shadow-sm"
+                  className="absolute end-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-extrabold leading-none text-primary-foreground shadow-sm"
                   aria-hidden="true"
                 >
                   {unreadVideoFeedbackCount > 99 ? "99+" : unreadVideoFeedbackCount}
