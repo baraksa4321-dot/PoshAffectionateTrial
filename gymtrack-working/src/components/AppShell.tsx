@@ -188,15 +188,13 @@ export function AppShell({
   const isManagementRoute = isManagementPath(location.pathname);
   const isDashboardShell = pageClassName.split(/\s+/).includes("dashboard-editorial-shell");
   const compactWorkspaceControls = compactHeader || isDashboardShell;
-  const showWorkspaceSwitcher = Boolean(
-    user && isCoach && (location.pathname === "/" || location.pathname === "/coach"),
-  );
-  const showHomeOnlyHeaderControls =
-    location.pathname === "/" || location.pathname === "/coach";
+  const isHomeRoute = location.pathname === "/" || location.pathname === "/coach";
+  const showWorkspaceSwitcher = Boolean(user && isCoach);
+  const showHomeOnlyHeaderControls = isHomeRoute;
   const homeHeaderDate = new Date();
   const homeHeaderName = store.userProfile?.fullName?.trim().split(/\s+/)[0] || "";
   const defaultHomeHeaderAccessory =
-    showWorkspaceSwitcher && !headerAccessory ? (
+    showWorkspaceSwitcher && isHomeRoute && !headerAccessory ? (
       <div
         className="dashboard-header-summary"
         aria-label={`${formatHeaderDate(homeHeaderDate)} ${headerGreeting(
@@ -1016,10 +1014,12 @@ export function AppShell({
         className={
         authOnly
             ? `app-shell app-shell--compact-rhythm fixed inset-0 z-[100] min-h-[100lvh] w-full overflow-auto bg-background text-foreground ${pageClassName}`
-            : `app-shell app-shell--compact-rhythm flex h-[100lvh] min-h-0 w-full flex-col overflow-hidden bg-background text-foreground ${pageClassName}`
+            : `app-shell app-shell--compact-rhythm ${
+                user ? "app-auth-shell" : ""
+              } flex h-[100lvh] min-h-0 w-full flex-col overflow-hidden bg-background text-foreground ${pageClassName}`
       }
       data-management-view={managementView ? "true" : undefined}
-      data-home-shell={showWorkspaceSwitcher ? "true" : undefined}
+      data-home-shell={isHomeRoute && showWorkspaceSwitcher ? "true" : undefined}
       data-compact-header={compactHeader ? "true" : undefined}
       dir="rtl"
     >
@@ -1035,7 +1035,7 @@ export function AppShell({
         >
           <div
             className={`app-topbar__brand-row ${
-              showHomeOnlyHeaderControls ? "app-home-brand-row" : ""
+              user ? "app-home-brand-row" : ""
             } relative flex items-center justify-between gap-3 border-b border-border/50 ${
               compactHeader ? "mb-1 pb-0.5" : "mb-1.5 pb-0.5"
             }`}
@@ -1043,7 +1043,7 @@ export function AppShell({
             <div className="shrink-0">
               <BrandLogo />
             </div>
-            {user && showHomeOnlyHeaderControls ? (
+            {user ? (
               <div className="app-home-account-controls flex min-w-0 max-w-[11rem] shrink items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2 py-1 text-[10px] font-bold text-ink shadow-sm">
                 <button
                   type="button"
@@ -1081,7 +1081,7 @@ export function AppShell({
                 </button>
               </div>
             ) : null}
-            {!user || !showHomeOnlyHeaderControls ? (
+            {!user ? (
               <button
               type="button"
               onClick={toggleNightMode}
@@ -1098,10 +1098,10 @@ export function AppShell({
               </button>
             ) : null}
           </div>
-          {resolvedHeaderAccessory || showWorkspaceSwitcher ? (
+          {resolvedHeaderAccessory || showWorkspaceSwitcher || user ? (
             <div
               className={`app-topbar__utility-row ${
-                showHomeOnlyHeaderControls ? "app-home-utility-row" : ""
+                user ? "app-home-utility-row" : ""
               } relative flex items-center justify-end gap-2 ${
                 showWorkspaceSwitcher ? "min-h-[2.25rem] pl-[11rem]" : ""
               } ${
@@ -1113,7 +1113,7 @@ export function AppShell({
                   {resolvedHeaderAccessory}
                 </div>
               ) : null}
-              {user && showHomeOnlyHeaderControls ? (
+              {user ? (
                 <button
                   type="button"
                   onClick={toggleNightMode}
@@ -1127,6 +1127,22 @@ export function AppShell({
                   ) : (
                     <Moon className="h-3.5 w-3.5" aria-hidden="true" />
                   )}
+                </button>
+              ) : null}
+              {user ? (
+                <button
+                  type="button"
+                  onClick={() => setShowSyncModal(true)}
+                  aria-label={syncTitle}
+                  title={syncTitle}
+                  className="app-header-sync grid h-7 w-7 shrink-0 place-items-center rounded-full border border-border/70 bg-surface text-muted-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <SyncIcon
+                    className={`h-3.5 w-3.5 ${syncIconClass} ${
+                      cloudSyncStatus === "syncing" ? "animate-pulse" : ""
+                    }`}
+                    aria-hidden="true"
+                  />
                 </button>
               ) : null}
               {showWorkspaceSwitcher ? (
@@ -1204,21 +1220,6 @@ export function AppShell({
                   >
                     <LogIn className="h-3.5 w-3.5" />
                     <span>התחברות</span>
-                  </button>
-                ) : !showHomeOnlyHeaderControls ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowSyncModal(true)}
-                    aria-label={syncTitle}
-                    title={syncTitle}
-                    className="grid h-8 w-8 place-items-center rounded-full border border-border/70 bg-surface text-muted-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <SyncIcon
-                      className={`h-4 w-4 ${syncIconClass} ${
-                        cloudSyncStatus === "syncing" ? "animate-pulse" : ""
-                      }`}
-                      aria-hidden="true"
-                    />
                   </button>
                 ) : null}
                 {action}
