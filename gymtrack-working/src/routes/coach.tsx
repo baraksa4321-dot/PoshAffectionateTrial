@@ -34,6 +34,7 @@ import { createPortal } from "react-dom";
 import { AppShell } from "../components/AppShell";
 import { ChallengeLibrary } from "../components/ChallengeLibrary";
 import { FreeTextInput } from "../components/FreeTextInput";
+import { ProgressPhotosPanel } from "../components/ProgressPhotosPanel";
 import { Overlay } from "../components/ui-app/Overlay";
 import {
   emptyExercise,
@@ -11490,6 +11491,8 @@ export function CoachDashboardPage({
                   </p>
                 ) : null}
               </section>
+
+              <ProgressPhotosPanel profileId={selectedClientId} canEdit={isCoach} />
 
               <section
                 data-testid="coach-client-message-profile"

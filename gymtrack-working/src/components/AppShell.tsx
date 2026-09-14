@@ -52,6 +52,7 @@ import {
 import { Overlay } from "./ui-app/Overlay";
 import { BrandLogo } from "./BrandLogo";
 import { FreeTextInput } from "./FreeTextInput";
+import { ProgressPhotosPanel } from "./ProgressPhotosPanel";
 import { genderText } from "../lib/gender-copy";
 import { usePersistentDraft, usePersistentFormDrafts } from "../lib/form-drafts";
 import { LOADING_GENDER_EVENT, LOADING_GENDER_STORAGE_KEY } from "../lib/loading-copy";
@@ -1481,6 +1482,8 @@ export function AppShell({
                   />
                 </label>
               </section>
+
+              {user?.id ? <ProgressPhotosPanel profileId={user.id} canEdit /> : null}
 
               <section className="space-y-3 rounded-2xl border border-border bg-background p-3">
                 <div>
