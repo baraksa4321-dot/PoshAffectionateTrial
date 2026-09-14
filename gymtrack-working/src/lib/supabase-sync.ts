@@ -407,6 +407,33 @@ function isSchemaCompatibilityError(error: unknown, tableName: string): boolean 
 const legacyProgramDaysSelect =
   "id, program_id, user_id, name, items, sort_order, updated_at";
 
+export async function updateProgramDayWeekday(
+  dayId: string,
+  userId: string,
+  weekday: number,
+): Promise<{ error: unknown; usedLegacySchema: boolean }> {
+  const result = await supabase
+    .from("program_days")
+    .update({ weekday, updated_at: new Date().toISOString() })
+    .eq("id", dayId)
+    .eq("user_id", userId);
+
+  if (!result.error || !isMissingColumnInSchema(result.error, "program_days", "weekday")) {
+    return { error: result.error, usedLegacySchema: false };
+  }
+
+  // The weekday migration is additive. If the connected project's schema cache
+  // is still on the legacy shape, save the timestamp and keep the selected
+  // weekday in the coach workspace instead of failing the editor.
+  console.warn("[Program days update] weekday column is missing; using legacy columns");
+  const legacyResult = await supabase
+    .from("program_days")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", dayId)
+    .eq("user_id", userId);
+  return { error: legacyResult.error, usedLegacySchema: true };
+}
+
 async function selectProgramDaysForUser(userId: string) {
   const result = await supabase.from("program_days").select("*").eq("user_id", userId);
   if (!result.error || !isMissingColumnInSchema(result.error, "program_days", "weekday")) {

@@ -487,6 +487,43 @@ describe("cross-browser Supabase sync boundaries", () => {
     expect(callsFor("program_days", "select")).toHaveLength(2);
   });
 
+  test("retries a weekday update without the missing column", async () => {
+    setActionResponses("program_days", "update", [
+      {
+        data: null,
+        error: {
+          code: "PGRST204",
+          message: "Could not find the 'weekday' column of 'program_days' in the schema cache",
+        },
+      },
+      { data: null, error: null },
+    ]);
+
+    const { updateProgramDayWeekday } = await syncModule;
+    const result = await updateProgramDayWeekday("day-1", "client-b", 3);
+
+    expect(result.error).toBeNull();
+    expect(result.usedLegacySchema).toBe(true);
+    const updates = queryCalls.filter(
+      (call) => call.table === "program_days" && call.action === "update",
+    );
+    expect(updates).toHaveLength(2);
+    const firstPayload = updates[0]?.payload as { weekday?: unknown; updated_at?: unknown };
+    expect(firstPayload?.weekday).toBe(3);
+    expect(typeof firstPayload?.updated_at).toBe("string");
+    expect(updates[0]?.filters).toEqual([
+      ["id", "day-1"],
+      ["user_id", "client-b"],
+    ]);
+    const secondPayload = updates[1]?.payload as { weekday?: unknown; updated_at?: unknown };
+    expect(secondPayload?.weekday).toBeUndefined();
+    expect(typeof secondPayload?.updated_at).toBe("string");
+    expect(updates[1]?.filters).toEqual([
+      ["id", "day-1"],
+      ["user_id", "client-b"],
+    ]);
+  });
+
   test("keeps coach and client data queries scoped to the requested client", async () => {
     setResponse("profiles", { id: "client-b", role: "client", weight_kg: 70 });
     setResponse("custom_exercises", [

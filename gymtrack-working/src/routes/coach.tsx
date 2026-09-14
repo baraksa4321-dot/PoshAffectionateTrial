@@ -51,6 +51,7 @@ import {
 import {
   pullClientDataForCoach,
   type RealtimeConnectionStatus,
+  updateProgramDayWeekday,
   subscribeToCoachClientChanges,
   subscribeToCoachManagementChanges,
 } from "../lib/supabase-sync";
@@ -3894,13 +3895,31 @@ export function CoachDashboardPage({
       saveWorkout({ ...day, weekday });
       return;
     }
-    const { error } = await supabase
-      .from("program_days")
-      .update({ weekday, updated_at: new Date().toISOString() })
-      .eq("id", day.id)
-      .eq("user_id", selectedClientId);
-    if (error) {
-      setManagementError(`עדכון יום האימון נכשל: ${error.message}`);
+    const result = await updateProgramDayWeekday(day.id, selectedClientId, weekday);
+    if (result.error) {
+      const message =
+        result.error instanceof Error
+          ? result.error.message
+          : typeof result.error === "object" &&
+              result.error !== null &&
+              "message" in result.error &&
+              typeof result.error.message === "string"
+            ? result.error.message
+            : String(result.error);
+      setManagementError(`עדכון יום האימון נכשל: ${message}`);
+      return;
+    }
+    if (result.usedLegacySchema) {
+      setClientDetails((current) =>
+        current
+          ? {
+              ...current,
+              workouts: current.workouts.map((workout) =>
+                workout.id === day.id ? { ...workout, weekday } : workout,
+              ),
+            }
+          : current,
+      );
       return;
     }
     pullClientDataForCoach(selectedClientId).then(applyClientDetails);
