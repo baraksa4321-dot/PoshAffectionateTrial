@@ -1034,7 +1034,9 @@ export function AppShell({
           }`}
         >
           <div
-            className={`app-topbar__brand-row relative flex items-center justify-between gap-3 border-b border-border/50 ${
+            className={`app-topbar__brand-row ${
+              showHomeOnlyHeaderControls ? "app-home-brand-row" : ""
+            } relative flex items-center justify-between gap-3 border-b border-border/50 ${
               compactHeader ? "mb-1 pb-0.5" : "mb-1.5 pb-0.5"
             }`}
           >
@@ -1042,7 +1044,7 @@ export function AppShell({
               <BrandLogo />
             </div>
             {user && showHomeOnlyHeaderControls ? (
-              <div className="app-home-account-controls absolute left-1/2 top-1/2 flex min-w-0 max-w-[11rem] -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2 py-1 text-[10px] font-bold text-ink shadow-sm">
+              <div className="app-home-account-controls flex min-w-0 max-w-[11rem] shrink items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2 py-1 text-[10px] font-bold text-ink shadow-sm">
                 <button
                   type="button"
                   onClick={openProfileModal}
@@ -1079,25 +1081,29 @@ export function AppShell({
                 </button>
               </div>
             ) : null}
-            <button
+            {!user || !showHomeOnlyHeaderControls ? (
+              <button
               type="button"
               onClick={toggleNightMode}
               aria-pressed={isNightMode}
               aria-label={isNightMode ? "מעבר לתצוגת יום" : "מעבר לתצוגת לילה"}
               title={isNightMode ? "תצוגת יום" : "תצוגת לילה"}
               className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-border/70 bg-surface text-muted-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {isNightMode ? (
-                <Sun className="h-3.5 w-3.5" aria-hidden="true" />
-              ) : (
-                <Moon className="h-3.5 w-3.5" aria-hidden="true" />
-              )}
-            </button>
+              >
+                {isNightMode ? (
+                  <Sun className="h-3.5 w-3.5" aria-hidden="true" />
+                ) : (
+                  <Moon className="h-3.5 w-3.5" aria-hidden="true" />
+                )}
+              </button>
+            ) : null}
           </div>
           {resolvedHeaderAccessory || showWorkspaceSwitcher ? (
             <div
-              className={`app-topbar__utility-row relative flex items-center justify-end gap-2 ${
-                showWorkspaceSwitcher ? "min-h-[2.25rem]" : ""
+              className={`app-topbar__utility-row ${
+                showHomeOnlyHeaderControls ? "app-home-utility-row" : ""
+              } relative flex items-center justify-end gap-2 ${
+                showWorkspaceSwitcher ? "min-h-[2.25rem] pl-[11rem]" : ""
               } ${
                 compactHeader ? "mb-1 pb-0.5" : "mb-1.5 pb-0.5"
               }`}
@@ -1106,6 +1112,22 @@ export function AppShell({
                 <div className="app-topbar__accessory min-w-0 flex-1 overflow-visible">
                   {resolvedHeaderAccessory}
                 </div>
+              ) : null}
+              {user && showHomeOnlyHeaderControls ? (
+                <button
+                  type="button"
+                  onClick={toggleNightMode}
+                  aria-pressed={isNightMode}
+                  aria-label={isNightMode ? "מעבר לתצוגת יום" : "מעבר לתצוגת לילה"}
+                  title={isNightMode ? "תצוגת יום" : "תצוגת לילה"}
+                  className="app-home-night-mode grid h-7 w-7 shrink-0 place-items-center rounded-full border border-border/70 bg-surface text-muted-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {isNightMode ? (
+                    <Sun className="h-3.5 w-3.5" aria-hidden="true" />
+                  ) : (
+                    <Moon className="h-3.5 w-3.5" aria-hidden="true" />
+                  )}
+                </button>
               ) : null}
               {showWorkspaceSwitcher ? (
                 <div
