@@ -6929,7 +6929,7 @@ body {
 
 .dashboard-editorial-shell .app-topbar__accessory {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .dashboard-header-summary {
@@ -6943,17 +6943,17 @@ body {
 }
 
 .dashboard-header-summary__date {
-  color: var(--muted-foreground);
-  font-size: 0.64rem;
-  font-weight: 700;
+  color: color-mix(in srgb, var(--muted-foreground) 82%, transparent);
+  font-size: 0.59rem;
+  font-weight: 600;
   line-height: 1;
 }
 
 .dashboard-header-summary__title {
-  color: var(--ink);
+  color: color-mix(in srgb, var(--ink) 78%, var(--muted-foreground));
   font-family: var(--font-display);
-  font-size: clamp(1rem, 4.4vw, 1.3rem);
-  font-weight: 800;
+  font-size: clamp(0.94rem, 4vw, 1.15rem);
+  font-weight: 700;
   line-height: 1.05;
   white-space: nowrap;
 }
