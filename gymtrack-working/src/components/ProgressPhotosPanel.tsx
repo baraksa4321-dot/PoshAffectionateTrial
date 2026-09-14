@@ -94,7 +94,7 @@ export function ProgressPhotosPanel({
       </div>
 
       {canEdit ? (
-        <div className="grid grid-cols-[1fr_auto] items-end gap-2">
+        <div className="grid items-end gap-2 sm:grid-cols-[1fr_auto]">
           <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
             תאריך התמונה
             <span className="relative">
@@ -111,7 +111,7 @@ export function ProgressPhotosPanel({
             type="button"
             disabled={busy}
             onClick={() => inputRef.current?.click()}
-            className="flex h-10 items-center gap-1 rounded-xl bg-primary px-3 text-xs font-bold text-primary-foreground disabled:cursor-wait disabled:opacity-60"
+            className="flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-primary px-3 text-xs font-bold text-primary-foreground disabled:cursor-wait disabled:opacity-60 sm:w-auto"
           >
             {busy ? (
               <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
