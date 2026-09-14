@@ -9476,24 +9476,6 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
     0 8px 20px rgb(var(--shadow-color) / 7%);
 }
 
-.app-auth-shell.nutrition-foods-page .app-topbar__utility-row {
-  min-height: 4.5rem !important;
-  align-items: flex-start !important;
-}
-
-.app-auth-shell.nutrition-foods-page .app-topbar__heading > div:last-child {
-  position: absolute;
-  top: 2.55rem;
-  left: 0;
-  z-index: 2;
-}
-
-.app-auth-shell.nutrition-foods-page .app-workspace-switcher,
-.app-auth-shell.nutrition-foods-page .app-home-night-mode,
-.app-auth-shell.nutrition-foods-page .app-route-night-mode {
-  top: 1rem !important;
-}
-
 .nutrition-foods-page .app-topbar__utility-action > div {
   display: flex;
   gap: 0.25rem;
