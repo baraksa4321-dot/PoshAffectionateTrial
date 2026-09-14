@@ -9383,7 +9383,10 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 
 .nutrition-page .app-topbar__utility-action a[aria-label="ספריית מאכלים"] {
   border-radius: 0 !important;
-  background: transparent !important;
+  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border)) !important;
+  background: var(--secondary) !important;
+  color: var(--primary) !important;
+  box-shadow: 0 3px 8px rgb(var(--shadow-color) / 8%);
 }
 
 .nutrition-foods-page .nutrition-food-library-card {
@@ -9419,7 +9422,17 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 }
 
 .nutrition-food-card {
+  display: flex;
+  flex-direction: column;
   align-items: stretch;
+  gap: 0.55rem;
+}
+
+.nutrition-food-card__top {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .nutrition-food-card__link {
@@ -9431,6 +9444,7 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 
 .nutrition-food-values {
   display: grid;
+  width: 100%;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.35rem;
   direction: rtl;

@@ -224,79 +224,81 @@ function FoodLibrary() {
       <div className="space-y-2">
         {filtered.map((food) => {
           return (
-            <div key={food.id} className="nutrition-food-card surface-card flex items-center gap-2 p-3.5">
-              <Link
-                to="/nutrition/foods/$foodId"
-                params={{ foodId: food.id }}
-                className="press nutrition-food-card__link min-w-0 flex-1"
-              >
-                <div className="nutrition-food-card__main flex items-center gap-3">
-                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-sage-soft text-primary">
-                    <Apple className="h-4 w-4" strokeWidth={1.8} />
-                  </div>
-                  <div className="min-w-0 flex-1 text-start">
-                    <p className="truncate font-display text-[14.5px] font-semibold text-ink">
-                      {food.name}
-                    </p>
-                    <p className="mt-0.5 truncate text-[11.5px] text-muted-foreground">
-                      {food.brand ? `${food.brand} · ` : ""}
-                      {food.servingSize}
-                    </p>
-                  </div>
-                </div>
-                <div
-                  className="nutrition-food-values"
-                  aria-label={`ערכים תזונתיים עבור ${food.name}`}
+            <div key={food.id} className="nutrition-food-card surface-card p-3.5">
+              <div className="nutrition-food-card__top">
+                <Link
+                  to="/nutrition/foods/$foodId"
+                  params={{ foodId: food.id }}
+                  className="press nutrition-food-card__link min-w-0 flex-1"
                 >
-                  {showCalories ? (
-                    <div className="nutrition-food-value">
-                      <span>קלוריות</span>
-                      <strong>{food.calories}</strong>
+                  <div className="nutrition-food-card__main flex items-center gap-3">
+                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-sage-soft text-primary">
+                      <Apple className="h-4 w-4" strokeWidth={1.8} />
                     </div>
-                  ) : null}
-                  <div className="nutrition-food-value">
-                    <span>חלבון</span>
-                    <strong>{food.protein}g</strong>
+                    <div className="min-w-0 flex-1 text-start">
+                      <p className="truncate font-display text-[14.5px] font-semibold text-ink">
+                        {food.name}
+                      </p>
+                      <p className="mt-0.5 truncate text-[11.5px] text-muted-foreground">
+                        {food.brand ? `${food.brand} · ` : ""}
+                        {food.servingSize}
+                      </p>
+                    </div>
                   </div>
-                  <div className="nutrition-food-value">
-                    <span>פחמימות</span>
-                    <strong>{food.carbs}g</strong>
-                  </div>
-                  <div className="nutrition-food-value">
-                    <span>שומן</span>
-                    <strong>{food.fat}g</strong>
-                  </div>
-                  <div className="nutrition-food-value">
-                    <span>סיבים</span>
-                    <strong>{food.fiber ?? 0}g</strong>
-                  </div>
-                </div>
-                {food.catalog?.barcode ? (
-                  <p className="nutrition-food-barcode text-[10px] text-muted-foreground">
-                    ברקוד: {food.catalog.barcode}
-                  </p>
-                ) : null}
-              </Link>
-              <button
-                type="button"
-                onClick={() => toggleFavoriteFood(food.id)}
-                aria-label={
-                  favoriteIds.has(food.id)
-                    ? `הסר ${food.name} מהמועדפים`
-                    : genderText(
-                        gender,
-                        `הוסיפי ${food.name} למועדפים`,
-                        `הוסף ${food.name} למועדפים`,
-                      )
-                }
-                className={`press grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
-                  favoriteIds.has(food.id)
-                    ? "bg-primary/10 text-primary"
-                    : "bg-secondary text-muted-foreground"
-                }`}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => toggleFavoriteFood(food.id)}
+                  aria-label={
+                    favoriteIds.has(food.id)
+                      ? `הסר ${food.name} מהמועדפים`
+                      : genderText(
+                          gender,
+                          `הוסיפי ${food.name} למועדפים`,
+                          `הוסף ${food.name} למועדפים`,
+                        )
+                  }
+                  className={`press grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
+                    favoriteIds.has(food.id)
+                      ? "bg-primary/10 text-primary"
+                      : "bg-secondary text-muted-foreground"
+                  }`}
+                >
+                  <Heart className={`h-4 w-4 ${favoriteIds.has(food.id) ? "fill-current" : ""}`} />
+                </button>
+              </div>
+              <div
+                className="nutrition-food-values"
+                aria-label={`ערכים תזונתיים עבור ${food.name}`}
               >
-                <Heart className={`h-4 w-4 ${favoriteIds.has(food.id) ? "fill-current" : ""}`} />
-              </button>
+                {showCalories ? (
+                  <div className="nutrition-food-value">
+                    <span>קלוריות</span>
+                    <strong>{food.calories}</strong>
+                  </div>
+                ) : null}
+                <div className="nutrition-food-value">
+                  <span>חלבון</span>
+                  <strong>{food.protein}g</strong>
+                </div>
+                <div className="nutrition-food-value">
+                  <span>פחמימות</span>
+                  <strong>{food.carbs}g</strong>
+                </div>
+                <div className="nutrition-food-value">
+                  <span>שומן</span>
+                  <strong>{food.fat}g</strong>
+                </div>
+                <div className="nutrition-food-value">
+                  <span>סיבים</span>
+                  <strong>{food.fiber ?? 0}g</strong>
+                </div>
+              </div>
+              {food.catalog?.barcode ? (
+                <p className="nutrition-food-barcode text-[10px] text-muted-foreground">
+                  ברקוד: {food.catalog.barcode}
+                </p>
+              ) : null}
             </div>
           );
         })}
