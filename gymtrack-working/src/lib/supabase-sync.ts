@@ -579,12 +579,14 @@ function safeVideoExtension(fileName: string, contentType: string) {
     ?.toLowerCase()
     .replace(/[^a-z0-9]/g, "");
   if (fromName && fromName.length <= 8) return fromName;
-  const fromType = contentType
-    .split("/")
-    .pop()
-    ?.toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
-  return fromType && fromType.length <= 8 ? fromType : "mp4";
+  const extensionByType: Record<string, string> = {
+    "video/mp4": "mp4",
+    "video/webm": "webm",
+    "video/quicktime": "mov",
+    "video/x-m4v": "m4v",
+    "video/ogg": "ogv",
+  };
+  return extensionByType[contentType.toLowerCase()] ?? "mp4";
 }
 
 function safeImageExtension(fileName: string, contentType: string) {
@@ -650,6 +652,15 @@ export async function uploadWorkoutPerformanceVideo(
   file: File,
   metadata: { workoutId: string; exerciseId: string },
 ): Promise<UploadedWorkoutVideo> {
+  const normalizedType = file.type.trim().toLowerCase();
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const knownVideoExtension = ["mp4", "mov", "m4v", "webm", "ogv", "ogg"].includes(extension);
+  if (!normalizedType.startsWith("video/") && !knownVideoExtension) {
+    throw new Error("אפשר להעלות קובץ וידאו בלבד.");
+  }
+  if (file.size > 50 * 1024 * 1024) {
+    throw new Error("הסרטון גדול מדי. הגודל המרבי הוא 50MB.");
+  }
   const {
     data: { user },
     error: userError,
@@ -662,10 +673,10 @@ export async function uploadWorkoutPerformanceVideo(
     typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const extension = safeVideoExtension(file.name, file.type);
-  const path = `${user.id}/${metadata.workoutId}/${metadata.exerciseId}/${objectId}.${extension}`;
+  const safeExtension = safeVideoExtension(file.name, normalizedType);
+  const path = `${user.id}/${metadata.workoutId}/${metadata.exerciseId}/${objectId}.${safeExtension}`;
   const { error } = await supabase.storage.from(WORKOUT_VIDEO_BUCKET).upload(path, file, {
-    contentType: file.type || "video/mp4",
+    contentType: normalizedType || "video/mp4",
     upsert: false,
   });
   if (error) throw new Error(`העלאת סרטון נכשלה: ${error.message}`);
@@ -677,6 +688,20 @@ export async function uploadWorkoutPerformanceVideo(
     throw new Error(`העלאת הסרטון הסתיימה בלי כתובת צפייה: ${signedUrlError?.message ?? "missing signed URL"}`);
   }
   return { path, signedUrl: data.signedUrl };
+}
+
+export async function approveChallengeInSupabase(challengeId: string): Promise<void> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("לא ניתן לאשר אתגר בלי חשבון מחובר.");
+
+  const { error } = await supabase
+    .from("challenges")
+    .update({ is_published: true, updated_at: new Date().toISOString() })
+    .eq("id", challengeId);
+  if (error) throw new Error(`אישור האתגר נכשל: ${error.message}`);
 }
 
 export async function syncLocalToSupabase(

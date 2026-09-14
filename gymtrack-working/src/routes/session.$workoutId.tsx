@@ -135,6 +135,7 @@ const ACTIVE_SESSION_FEEDBACK_KEY = (userId: string, id: string, weekKey: string
 const ACTIVE_REST_TIMER_KEY = (userId: string, id: string, weekKey: string) =>
   `gymtrack.active_rest_timer.${userId}.${id}.${weekKey}`;
 const MAX_PERFORMANCE_VIDEO_DURATION_SECONDS = 5 * 60;
+const MAX_PERFORMANCE_VIDEO_BYTES = 50 * 1024 * 1024;
 
 type PersistedRestTimer = {
   rest: number;
@@ -1196,9 +1197,24 @@ function Session() {
 
   const selectPerformanceVideo = async (exerciseIndex: number, file: File | undefined) => {
     if (!file) return;
-    if (!file.type.startsWith("video/")) {
+    const fileType = file.type.trim().toLowerCase();
+    const fileExtension = file.name.split(".").pop()?.toLowerCase() ?? "";
+    const knownVideoExtension = ["mp4", "mov", "m4v", "webm", "ogv", "ogg"].includes(
+      fileExtension,
+    );
+    if (!fileType.startsWith("video/") && !knownVideoExtension) {
       setVideoUploadErrorExerciseIndex(exerciseIndex);
       setVideoUploadError("אפשר להעלות קובץ וידאו בלבד.");
+      return;
+    }
+    if (file.size > MAX_PERFORMANCE_VIDEO_BYTES) {
+      setVideoUploadErrorExerciseIndex(exerciseIndex);
+      setVideoUploadError("הסרטון גדול מדי. הגודל המרבי הוא 50MB.");
+      return;
+    }
+    if (!sessionOwnerId) {
+      setVideoUploadErrorExerciseIndex(exerciseIndex);
+      setVideoUploadError("לא ניתן להעלות סרטון לפני שהחשבון נטען.");
       return;
     }
     setVideoUploadError("");
@@ -1221,7 +1237,6 @@ function Session() {
     );
     entriesRef.current = entriesWithLocalVideo;
     setEntries(entriesWithLocalVideo);
-    if (!sessionOwnerId) return;
     void saveWorkoutVideoDraft(sessionOwnerId, workout.id, exerciseIndex, file).catch((error: unknown) => {
       setVideoUploadErrorExerciseIndex(exerciseIndex);
       setVideoUploadError(
@@ -1346,7 +1361,7 @@ function Session() {
     };
     saveSession(finishedSessionRef.current);
     const syncResult = await flushCloudSync();
-    if (!syncResult.success) {
+    if (!syncResult.success && !syncResult.deferred) {
       setIsFinishing(false);
       setFinishError(syncResult.error ?? "שמירת האימון נכשלה. נסי שוב.");
       return;
@@ -1832,7 +1847,7 @@ function Session() {
         })}
       </div>
 
-      <div className="mt-6">
+      <div className="session-finish-action mt-6">
         <PrimaryButton
           onClick={() => {
             setFinishError("");

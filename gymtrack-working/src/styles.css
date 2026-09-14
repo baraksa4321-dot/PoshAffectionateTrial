@@ -5779,6 +5779,16 @@ body {
   box-shadow: 0 5px 14px color-mix(in srgb, var(--primary) 26%, transparent);
 }
 
+/* The fixed mobile navigation must not cover the final workout action. Keep
+ * the session route's scroll tail larger than the nav plus the iOS inset. */
+.session-compact .app-main {
+  padding-bottom: calc(7.25rem + env(safe-area-inset-bottom)) !important;
+}
+
+.session-compact .session-finish-action {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
 @media (max-width: 767px) {
   .session-compact .app-main {
     padding-inline: 0.75rem;

@@ -2,7 +2,12 @@ import { useSyncExternalStore } from "react";
 import { assertValidFoodNutrition, assertValidMealFood } from "./nutrition-integrity";
 import { ISRAELI_PROTEIN_PRODUCTS } from "./protein-product-catalog";
 import { supabase } from "./supabase";
-import { pullSupabaseData, syncLocalToSupabase, type SyncStatus } from "./supabase-sync";
+import {
+  approveChallengeInSupabase,
+  pullSupabaseData,
+  syncLocalToSupabase,
+  type SyncStatus,
+} from "./supabase-sync";
 import { clearWorkoutDraftsForUser } from "./workout-video-drafts";
 import { normalizeFixedPlannedMenu, plannedMealOptionGroupId } from "./nutrition-planning";
 import { mealFoodNutritionMultiplier } from "./food-portions";
@@ -2167,12 +2172,14 @@ export function saveWorkout(w: Workout) {
 
 export function saveChallenge(challenge: Challenge) {
   if (!canManageAssignedPlans()) return;
+  const isOwner = data.userProfile?.role === "owner";
   const normalized: Challenge = {
     ...challenge,
     title: challenge.title.trim(),
     description: challenge.description.trim(),
     isBuiltIn: false,
-    isPublished: challenge.isPublished ?? true,
+    // Any coach edit is a new moderation event. Owners may publish directly.
+    isPublished: isOwner ? challenge.isPublished ?? true : false,
     updatedAt: new Date().toISOString(),
     ...(currentUser?.id ? { ownerId: currentUser.id } : challenge.ownerId ? { ownerId: challenge.ownerId } : {}),
   };
@@ -2185,6 +2192,33 @@ export function saveChallenge(challenge: Challenge) {
       ? data.challenges.map((item) => (item.id === normalized.id ? normalized : item))
       : [...data.challenges, normalized],
   });
+}
+
+export async function approveChallenge(
+  id: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  if (data.userProfile?.role !== "owner") {
+    return { success: false, error: "רק בעלים יכולים לאשר אתגר." };
+  }
+  const challenge = data.challenges.find((item) => item.id === id && !item.isBuiltIn);
+  if (!challenge) return { success: false, error: "האתגר לא נמצא." };
+
+  try {
+    await approveChallengeInSupabase(id);
+  } catch (error: unknown) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "אישור האתגר נכשל.",
+    };
+  }
+
+  set({
+    ...data,
+    challenges: data.challenges.map((item) =>
+      item.id === id ? { ...item, isPublished: true, updatedAt: new Date().toISOString() } : item,
+    ),
+  });
+  return { success: true };
 }
 
 export function deleteChallenge(id: string) {
@@ -2205,6 +2239,7 @@ export function duplicateChallenge(id: string): Challenge | undefined {
     id: `challenge-${uid()}`,
     title: `${source.title} — גרסה אישית`,
     isBuiltIn: false,
+    isPublished: false,
     sessions: source.sessions.map((session) => ({
       ...session,
       id: `challenge-session-${uid()}`,

@@ -177,6 +177,7 @@ export type Challenge = {
   sessions: Workout[];
   ownerId?: string;
   isBuiltIn?: boolean;
+  /** Coach-created challenges remain hidden from trainees until an owner publishes them. */
   isPublished?: boolean;
   updatedAt?: string;
 };

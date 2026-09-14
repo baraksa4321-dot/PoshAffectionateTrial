@@ -56,7 +56,17 @@ export function ChallengeLibrary({
   const [selectedProgramId, setSelectedProgramId] = useState("");
   const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([0]);
   const isCoach = userProfile?.role === "coach" || userProfile?.role === "owner";
-  const selected = challenges.find((challenge) => challenge.id === selectedId) ?? null;
+  const visibleChallenges = useMemo(
+    () =>
+      challenges.filter(
+        (challenge) =>
+          challenge.isBuiltIn ||
+          challenge.isPublished !== false ||
+          isCoach,
+      ),
+    [challenges, isCoach],
+  );
+  const selected = visibleChallenges.find((challenge) => challenge.id === selectedId) ?? null;
   const programs = availablePrograms ?? localPrograms;
   const editableExercises = useMemo(
     () => exercises.filter((exercise) => exercise.id !== "ex-ohp" || isCoach),
@@ -204,7 +214,7 @@ export function ChallengeLibrary({
           ) : (
             <>
               <div className="grid gap-2">
-                {challenges.map((challenge) => (
+                {visibleChallenges.map((challenge) => (
                   <button
                     key={challenge.id}
                     type="button"
@@ -223,6 +233,11 @@ export function ChallengeLibrary({
                         {challenge.category} · {challenge.durationLabel}
                       </span>
                     </span>
+                    {isCoach && challenge.isPublished === false ? (
+                      <span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-1 text-[9px] font-bold text-amber-700">
+                        ממתין לאישור
+                      </span>
+                    ) : null}
                     <ChevronLeft className="h-4 w-4 shrink-0 text-primary" />
                   </button>
                 ))}
