@@ -616,6 +616,15 @@ function Dashboard() {
       subtitle="היום שלך לא צריך יותר מקצב אחד טוב להתחיל ממנו."
       kicker={formatNumericDate(now)}
       pageClassName="dashboard-editorial-shell"
+      hideHeading
+      headerAccessory={
+        <div className="dashboard-header-summary" aria-label={`${formatNumericDate(now)} ${greetingForHour(now.getHours(), greetingName)}`}>
+          <p className="dashboard-header-summary__date">{formatNumericDate(now)}</p>
+          <p className="dashboard-header-summary__title">
+            {greetingForHour(now.getHours(), greetingName)}
+          </p>
+        </div>
+      }
     >
       <div className="home-card-stack">
         {/* Coach Message Banner */}

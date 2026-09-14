@@ -142,6 +142,7 @@ export function AppShell({
   kicker,
   action,
   headerAccessory,
+  hideHeading = false,
   authOnly = false,
   compactHeader = false,
   pageClassName = "",
@@ -152,6 +153,7 @@ export function AppShell({
   kicker?: string | undefined;
   action?: ReactNode | undefined;
   headerAccessory?: ReactNode | undefined;
+  hideHeading?: boolean | undefined;
   authOnly?: boolean | undefined;
   compactHeader?: boolean | undefined;
   pageClassName?: string | undefined;
@@ -1034,7 +1036,7 @@ export function AppShell({
               }`}
             >
               {headerAccessory ? (
-                <div className="app-topbar__actions min-w-0 flex-1 overflow-visible">
+                <div className="app-topbar__accessory min-w-0 flex-1 overflow-visible">
                   {headerAccessory}
                 </div>
               ) : (
@@ -1083,7 +1085,7 @@ export function AppShell({
               ) : null}
             </div>
           ) : null}
-          {title || action || (user && showHomeOnlyHeaderControls) || !user ? (
+          {!hideHeading && (title || action || (user && showHomeOnlyHeaderControls) || !user) ? (
             <div className="app-topbar__heading flex items-start gap-3">
               <div className="min-w-0 flex-1 text-start">
                 {kicker ? <p className="app-shell-kicker">{kicker}</p> : null}

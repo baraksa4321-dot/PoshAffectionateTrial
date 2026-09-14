@@ -6923,6 +6923,46 @@ body {
   border-bottom-color: transparent !important;
 }
 
+.dashboard-editorial-shell .app-topbar__utility-row {
+  border-bottom-color: transparent !important;
+}
+
+.dashboard-editorial-shell .app-topbar__accessory {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.dashboard-header-summary {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.05rem;
+  text-align: right;
+}
+
+.dashboard-header-summary__date {
+  color: var(--muted-foreground);
+  font-size: 0.64rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.dashboard-header-summary__title {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 4.4vw, 1.3rem);
+  font-weight: 800;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+.dashboard-editorial-shell .app-topbar__brand-row img {
+  height: 2.35rem !important;
+  width: auto !important;
+}
+
 @media (min-width: 640px) {
   .app-shell > nav > .app-bottom-nav {
     margin-bottom: 0;
