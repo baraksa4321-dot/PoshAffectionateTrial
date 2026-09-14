@@ -11,4 +11,10 @@ The preferred direction is a polished mobile fitness app, not a website: use a w
 
 Large coach client content such as the trainee profile should also render inline on route-based client pages. Reserve overlays for short actions such as pickers, confirmations, and compact utility prompts.
 
+The authenticated mobile topbar follows the supplied reference: keep the brand/account row separate, then place the workspace switcher on the left, the day/night control in the center, and the route or greeting text on the right in one shared row. This geometry applies in day and night modes, every palette, and every user role.
+
+**Why:** The user provided exact day/night references and wants the same native mobile chrome rather than route-specific header offsets.
+
+**How to apply:** Keep the shared topbar content in one row; do not solve new header issues by adding a second title row or route-specific negative transforms. Let surfaces, borders, and text colors derive from the active palette.
+
 Dark Brown must remain visually distinct from Light Brown in night mode; lift its accent only enough for contrast, and derive active navigation/focus states from the selected palette rather than fixed pink values.

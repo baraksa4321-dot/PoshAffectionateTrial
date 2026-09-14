@@ -190,7 +190,6 @@ export function AppShell({
   const isHomeRoute = location.pathname === "/" || location.pathname === "/coach";
   const showWorkspaceSwitcher = Boolean(user && isCoach);
   const showHomeOnlyHeaderControls = isHomeRoute;
-  const actionInUtility = pageClassName.includes("nutrition-page");
   const homeHeaderDate = new Date();
   const homeHeaderName = store.userProfile?.fullName?.trim().split(/\s+/)[0] || "";
   const defaultHomeHeaderAccessory =
@@ -1087,7 +1086,10 @@ export function AppShell({
               </button>
             ) : null}
           </div>
-          {resolvedHeaderAccessory || showWorkspaceSwitcher || user ? (
+          {resolvedHeaderAccessory ||
+          showWorkspaceSwitcher ||
+          user ||
+          (!hideHeading && (title || action)) ? (
             <div
               className={`app-topbar__utility-row ${
                 user ? "app-home-utility-row" : ""
@@ -1097,19 +1099,55 @@ export function AppShell({
                 compactHeader ? "mb-1 pb-0.5" : "mb-1.5 pb-0.5"
               }`}
             >
-              {resolvedHeaderAccessory ? (
-                <div className="app-topbar__accessory min-w-0 flex-1 overflow-visible">
-                  {resolvedHeaderAccessory}
-                </div>
-              ) : null}
-              {user && showHomeOnlyHeaderControls ? (
+              <div className="app-topbar__content min-w-0 flex-1">
+                {((!hideHeading && (title || !user)) || action) ? (
+                  <div className="app-topbar__heading flex min-w-0 flex-1 items-start gap-3">
+                    <div className="min-w-0 flex-1 text-start">
+                      {!hideHeading ? (
+                        <>
+                          {kicker ? <p className="app-shell-kicker">{kicker}</p> : null}
+                          {title ? (
+                            <h1
+                              className={`min-w-0 break-words font-display font-extrabold leading-snug tracking-tight text-ink ${
+                                compactHeader
+                                  ? "text-[clamp(15px,4vw,18px)]"
+                                  : "text-[clamp(16px,4.5vw,20px)]"
+                              }`}
+                            >
+                              {headerTitle}
+                            </h1>
+                          ) : null}
+                        </>
+                      ) : null}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2 pt-0.5">
+                      {!user ? (
+                        <button
+                          onClick={() => setShowAuthModal(true)}
+                          className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[12px] font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                        >
+                          <LogIn className="h-3.5 w-3.5" />
+                          <span>התחברות</span>
+                        </button>
+                      ) : null}
+                      {action}
+                    </div>
+                  </div>
+                ) : null}
+                {resolvedHeaderAccessory ? (
+                  <div className="app-topbar__accessory min-w-0 overflow-visible">
+                    {resolvedHeaderAccessory}
+                  </div>
+                ) : null}
+              </div>
+              {user ? (
                 <button
                   type="button"
                   onClick={toggleNightMode}
                   aria-pressed={isNightMode}
                   aria-label={isNightMode ? "מעבר לתצוגת יום" : "מעבר לתצוגת לילה"}
                   title={isNightMode ? "תצוגת יום" : "תצוגת לילה"}
-                  className="app-home-night-mode grid h-7 w-7 shrink-0 place-items-center rounded-full border border-border/70 bg-surface text-muted-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className={`${showHomeOnlyHeaderControls ? "app-home-night-mode" : "app-route-night-mode"} grid h-7 w-7 shrink-0 place-items-center rounded-full border border-border/70 bg-surface text-muted-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
                 >
                   {isNightMode ? (
                     <Sun className="h-3.5 w-3.5" aria-hidden="true" />
@@ -1117,9 +1155,6 @@ export function AppShell({
                     <Moon className="h-3.5 w-3.5" aria-hidden="true" />
                   )}
                 </button>
-              ) : null}
-              {actionInUtility && action ? (
-                <div className="app-topbar__utility-action">{action}</div>
               ) : null}
               {showWorkspaceSwitcher ? (
                 <div
@@ -1166,56 +1201,6 @@ export function AppShell({
                   </Link>
                 </div>
               ) : null}
-            </div>
-          ) : null}
-          {((!hideHeading && (title || !user)) || action) ? (
-            <div className="app-topbar__heading flex items-start gap-3">
-              <div className="min-w-0 flex-1 text-start">
-                {!hideHeading ? (
-                  <>
-                    {kicker ? <p className="app-shell-kicker">{kicker}</p> : null}
-                    {title ? (
-                      <h1
-                        className={`min-w-0 break-words font-display font-extrabold leading-snug tracking-tight text-ink ${
-                          compactHeader
-                            ? "text-[clamp(15px,4vw,18px)]"
-                            : "text-[clamp(16px,4.5vw,20px)]"
-                        }`}
-                      >
-                        {headerTitle}
-                      </h1>
-                    ) : null}
-                  </>
-                ) : null}
-              </div>
-              <div className="flex shrink-0 items-center gap-2 pt-0.5">
-                {user && !showHomeOnlyHeaderControls ? (
-                  <button
-                    type="button"
-                    onClick={toggleNightMode}
-                    aria-pressed={isNightMode}
-                    aria-label={isNightMode ? "מעבר לתצוגת יום" : "מעבר לתצוגת לילה"}
-                    title={isNightMode ? "תצוגת יום" : "תצוגת לילה"}
-                    className="app-route-night-mode grid h-7 w-7 shrink-0 place-items-center rounded-full border border-border/70 bg-surface text-muted-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    {isNightMode ? (
-                      <Sun className="h-3.5 w-3.5" aria-hidden="true" />
-                    ) : (
-                      <Moon className="h-3.5 w-3.5" aria-hidden="true" />
-                    )}
-                  </button>
-                ) : null}
-                {!user ? (
-                  <button
-                    onClick={() => setShowAuthModal(true)}
-                    className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[12px] font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-                  >
-                    <LogIn className="h-3.5 w-3.5" />
-                    <span>התחברות</span>
-                  </button>
-                ) : null}
-                {!actionInUtility ? action : null}
-              </div>
             </div>
           ) : null}
         </div>
