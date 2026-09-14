@@ -65,6 +65,19 @@ import {
 const WORKSPACE_KEY = "gymtrack.workspace";
 const FULL_NAME_REQUIRED_ERROR = "יש להזין שם פרטי ושם משפחה כדי ליצור חשבון.";
 
+function formatHeaderDate(date: Date) {
+  return date.toLocaleDateString("he-IL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function headerGreeting(hour: number, name: string) {
+  const greeting = hour >= 18 ? "ערב טוב" : hour >= 12 ? "צהריים טובים" : "בוקר טוב";
+  return name ? `${greeting}, ${name}.` : "היום שלי";
+}
+
 type ProfileDraft = {
   fullName: string;
   weight: string;
@@ -180,6 +193,24 @@ export function AppShell({
   );
   const showHomeOnlyHeaderControls =
     location.pathname === "/" || location.pathname === "/coach";
+  const homeHeaderDate = new Date();
+  const homeHeaderName = store.userProfile?.fullName?.trim().split(/\s+/)[0] || "";
+  const defaultHomeHeaderAccessory =
+    showWorkspaceSwitcher && !headerAccessory ? (
+      <div
+        className="dashboard-header-summary"
+        aria-label={`${formatHeaderDate(homeHeaderDate)} ${headerGreeting(
+          homeHeaderDate.getHours(),
+          homeHeaderName,
+        )}`}
+      >
+        <p className="dashboard-header-summary__date">{formatHeaderDate(homeHeaderDate)}</p>
+        <p className="dashboard-header-summary__title">
+          {headerGreeting(homeHeaderDate.getHours(), homeHeaderName)}
+        </p>
+      </div>
+    ) : null;
+  const resolvedHeaderAccessory = headerAccessory ?? defaultHomeHeaderAccessory;
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const topbarRef = useRef<HTMLElement>(null);
@@ -1011,7 +1042,7 @@ export function AppShell({
               <BrandLogo />
             </div>
             {user && showHomeOnlyHeaderControls ? (
-              <div className="app-home-account-controls flex min-w-0 max-w-[11rem] shrink items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2 py-1 text-[10px] font-bold text-ink shadow-sm">
+              <div className="app-home-account-controls absolute left-1/2 top-1/2 flex min-w-0 max-w-[11rem] -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2 py-1 text-[10px] font-bold text-ink shadow-sm">
                 <button
                   type="button"
                   onClick={openProfileModal}
@@ -1063,7 +1094,7 @@ export function AppShell({
               )}
             </button>
           </div>
-          {headerAccessory || showWorkspaceSwitcher ? (
+          {resolvedHeaderAccessory || showWorkspaceSwitcher ? (
             <div
               className={`app-topbar__utility-row relative flex items-center justify-end gap-2 border-b border-border/50 ${
                 showWorkspaceSwitcher ? "min-h-[2.25rem]" : ""
@@ -1071,9 +1102,9 @@ export function AppShell({
                 compactHeader ? "mb-1 pb-0.5" : "mb-1.5 pb-0.5"
               }`}
             >
-              {headerAccessory ? (
+              {resolvedHeaderAccessory ? (
                 <div className="app-topbar__accessory min-w-0 flex-1 overflow-visible">
-                  {headerAccessory}
+                  {resolvedHeaderAccessory}
                 </div>
               ) : null}
               {showWorkspaceSwitcher ? (
