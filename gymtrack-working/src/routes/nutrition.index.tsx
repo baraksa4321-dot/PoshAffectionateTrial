@@ -642,6 +642,15 @@ function NutritionLog() {
       subtitle={formatDayLabel(date)}
       compactHeader
       pageClassName="nutrition-page"
+      action={
+        <Link
+          to="/nutrition/foods"
+          aria-label="ספריית מאכלים"
+          className="press grid h-11 w-11 place-items-center rounded-2xl text-muted-foreground transition-colors hover:text-primary"
+        >
+          <BookOpen className="h-5 w-5" />
+        </Link>
+      }
     >
       {/* Date selector */}
       <div className="nutrition-date-selector surface-card flex items-center justify-between gap-1.5 p-1.5">
@@ -666,40 +675,6 @@ function NutritionLog() {
           <ChevronLeft className="h-5 w-5" />
         </button>
       </div>
-
-      <section
-        className="nutrition-library-entry-card surface-card mt-2 flex items-center justify-between gap-3 border border-border/70 px-3.5 py-3"
-        aria-labelledby="nutrition-library-entry-title"
-      >
-        <div className="min-w-0 text-start">
-          <h2
-            id="nutrition-library-entry-title"
-            className="font-display text-[15px] font-extrabold leading-tight text-ink"
-          >
-            מאגר מזונות
-          </h2>
-          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-            חיפוש והוספת מאכלים
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <Link
-            to="/nutrition/foods/$foodId"
-            params={{ foodId: "new" }}
-            aria-label={genderText(gender, "הוסיפי מאכל", "הוסף מאכל")}
-            className="press grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4" strokeWidth={2.5} />
-          </Link>
-          <Link
-            to="/nutrition/foods"
-            aria-label="פתיחת מאגר המזונות"
-            className="press grid h-9 w-9 place-items-center rounded-xl bg-secondary text-ink transition-colors hover:bg-secondary/80"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          </Link>
-        </div>
-      </section>
 
       {/* Compact shortcuts stay immediately above the planned menu. */}
       <div className="order-0 mt-2 grid grid-cols-3 gap-1.5">
