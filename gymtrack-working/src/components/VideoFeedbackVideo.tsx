@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { HistoryEntry, VideoFeedback } from "@/lib/gym-types";
 import { signWorkoutPerformanceVideo } from "@/lib/supabase-sync";
 import { isSafeVideoSource } from "@/lib/url-security";
@@ -19,14 +19,17 @@ export function VideoFeedbackVideo({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [didRefresh, setDidRefresh] = useState(false);
+  const refreshInFlightRef = useRef(false);
 
   useEffect(() => {
     let active = true;
+    refreshInFlightRef.current = false;
     setHasError(false);
     setDidRefresh(false);
 
     if (historyUrl) {
       setSource(historyUrl);
+      setIsRefreshing(false);
       return () => {
         active = false;
       };
@@ -34,22 +37,27 @@ export function VideoFeedbackVideo({
 
     setSource("");
     if (!feedback.videoPath) {
+      setIsRefreshing(false);
       return () => {
         active = false;
       };
     }
 
+    refreshInFlightRef.current = true;
     setIsRefreshing(true);
     void signWorkoutPerformanceVideo(feedback.videoPath)
       .then((signedUrl) => {
         if (active && isSafeVideoSource(signedUrl)) {
           setSource(signedUrl);
+        } else if (active) {
+          setHasError(true);
         }
       })
       .catch(() => {
         if (active) setHasError(true);
       })
       .finally(() => {
+        refreshInFlightRef.current = false;
         if (active) setIsRefreshing(false);
       });
 
@@ -59,20 +67,28 @@ export function VideoFeedbackVideo({
   }, [feedback.videoPath, historyUrl]);
 
   const handleVideoError = () => {
-    if (!feedback.videoPath || didRefresh || isRefreshing) {
+    if (!feedback.videoPath || didRefresh || refreshInFlightRef.current || isRefreshing) {
       setHasError(true);
       return;
     }
 
     setDidRefresh(true);
+    refreshInFlightRef.current = true;
     setIsRefreshing(true);
     setHasError(false);
     void signWorkoutPerformanceVideo(feedback.videoPath)
       .then((signedUrl) => {
-        if (isSafeVideoSource(signedUrl)) setSource(signedUrl);
+        if (isSafeVideoSource(signedUrl)) {
+          setSource(signedUrl);
+        } else {
+          setHasError(true);
+        }
       })
       .catch(() => setHasError(true))
-      .finally(() => setIsRefreshing(false));
+      .finally(() => {
+        refreshInFlightRef.current = false;
+        setIsRefreshing(false);
+      });
   };
 
   if (isRefreshing) {

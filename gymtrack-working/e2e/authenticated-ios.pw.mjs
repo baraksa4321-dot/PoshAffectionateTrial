@@ -384,6 +384,57 @@ const gymData = {
   },
 };
 
+const videoFeedbackHistory = {
+  id: "ios-smoke-feedback-session",
+  workoutId: WORKOUT_ID,
+  workoutName: workout.name,
+  programName: program.name,
+  date: "2026-08-25T07:00:00.000Z",
+  durationSec: 1_800,
+  entries: [
+    {
+      exerciseId: exercises[0].id,
+      exerciseName: exercises[0].name,
+      videoPath: "ios-smoke-video",
+      videoUrl:
+        "https://ios-smoke.supabase.co/storage/v1/object/sign/workout-videos/ios-smoke-video?token=expired",
+      sets: [],
+      notes: "",
+    },
+  ],
+  notes: "",
+};
+
+const videoFeedback = {
+  id: "ios-smoke-video-feedback",
+  clientId: CLIENT_ID,
+  coachId: COACH_ID,
+  sessionId: videoFeedbackHistory.id,
+  workoutId: WORKOUT_ID,
+  exerciseId: exercises[0].id,
+  exerciseName: exercises[0].name,
+  videoPath: "ios-smoke-video",
+  message: "הערה על ביצוע התרגיל",
+  createdAt: "2026-08-25T08:00:00.000Z",
+};
+
+const traineeVideoFeedbackCache = {
+  ...gymData,
+  history: [videoFeedbackHistory],
+  videoFeedbacks: [videoFeedback],
+  userProfile: {
+    ...gymData.userProfile,
+    fullName: clientProfile.full_name,
+    role: "client",
+    approvalStatus: "approved",
+    coachId: COACH_ID,
+    weight: clientProfile.weight_kg,
+    height: clientProfile.height_cm,
+    age: clientProfile.age_years,
+    showCalories: true,
+  },
+};
+
 const reopenFullCacheValue = {
   ...gymData,
   foods: Array.from({ length: 2_000 }, (_, index) => ({
@@ -2514,4 +2565,63 @@ test("iPhone trainee video survives upload, expired signed URL, and history reop
     ),
   ).toBeVisible();
   await expect(page.getByText(/העלאת סרטון ביצוע נכשלה/)).toHaveCount(0);
+});
+
+test("iPhone trainee video feedback refreshes an expired signed URL on the home screen", async ({
+  page,
+}) => {
+  test.skip(
+    test.info().project.name !== "webkit-iphone",
+    "The signed-video feedback regression is specific to the iPhone WebKit profile.",
+  );
+
+  await installFixture(page, {
+    role: "trainee",
+    online: false,
+    fullCacheValue: traineeVideoFeedbackCache,
+  });
+
+  let feedbackVideoRequests = 0;
+  await page.route(
+    "**/storage/v1/object/sign/workout-videos/ios-smoke-video**",
+    async (route) => {
+      feedbackVideoRequests += 1;
+      if (feedbackVideoRequests === 1) {
+        await route.fulfill({
+          status: 403,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "signed URL expired" }),
+        });
+        return;
+      }
+      await route.fulfill({
+        path: "gymtrack-working/public/loading/tinted/user-character-01.mp4",
+        contentType: "video/mp4",
+      });
+    },
+  );
+
+  await page.goto("/");
+  await expect(page.getByText("פעילות השבוע", { exact: true })).toBeVisible();
+  await page.evaluate(async () => {
+    await fetch("/storage/v1/object/sign/workout-videos/ios-smoke-video");
+  });
+  await page.getByTestId("video-feedback-home-button").click();
+  await expect(page.getByRole("heading", { name: "משובים על סרטוני התרגילים" })).toBeVisible();
+
+  const feedbackVideo = page.locator('video[aria-label*="סרטון ביצוע"]').first();
+  await expect(feedbackVideo).toBeVisible();
+  await expect
+    .poll(() => feedbackVideo.getAttribute("src"))
+    .toMatch(/token=fresh/);
+  await expect.poll(() => feedbackVideoRequests).toBeGreaterThanOrEqual(2);
+  await expect
+    .poll(() => feedbackVideo.evaluate((video) => video.readyState >= 2))
+    .toBe(true);
+
+  await feedbackVideo.evaluate((video) => video.dispatchEvent(new Event("error")));
+  await expect(
+    page.getByText("הסרטון נשמר, אבל כרגע לא ניתן לטעון אותו לצפייה.", { exact: true }),
+  ).toBeVisible();
+  await expect(feedbackVideo).toHaveCount(0);
 });
