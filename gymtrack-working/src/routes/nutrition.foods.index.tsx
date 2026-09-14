@@ -224,13 +224,13 @@ function FoodLibrary() {
       <div className="space-y-2">
         {filtered.map((food) => {
           return (
-            <div key={food.id} className="surface-card flex items-center gap-2 p-3.5">
+            <div key={food.id} className="nutrition-food-card surface-card flex items-center gap-2 p-3.5">
               <Link
                 to="/nutrition/foods/$foodId"
                 params={{ foodId: food.id }}
-                className="press min-w-0 flex-1"
+                className="press nutrition-food-card__link min-w-0 flex-1"
               >
-                <div className="flex items-center gap-3">
+                <div className="nutrition-food-card__main flex items-center gap-3">
                   <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-sage-soft text-primary">
                     <Apple className="h-4 w-4" strokeWidth={1.8} />
                   </div>
@@ -238,19 +238,44 @@ function FoodLibrary() {
                     <p className="truncate font-display text-[14.5px] font-semibold text-ink">
                       {food.name}
                     </p>
-                    <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+                    <p className="mt-0.5 truncate text-[11.5px] text-muted-foreground">
                       {food.brand ? `${food.brand} · ` : ""}
                       {food.servingSize}
-                      {showCalories ? ` · ${food.calories} קלוריות` : ""} · חלבון {food.protein}g ·
-                      פחמימות {food.carbs}g · שומן {food.fat}g · סיבים {food.fiber ?? 0}g
                     </p>
-                    {food.catalog?.barcode ? (
-                      <p className="mt-0.5 text-[10px] text-muted-foreground">
-                        ברקוד: {food.catalog.barcode}
-                      </p>
-                    ) : null}
                   </div>
                 </div>
+                <div
+                  className="nutrition-food-values"
+                  aria-label={`ערכים תזונתיים עבור ${food.name}`}
+                >
+                  {showCalories ? (
+                    <div className="nutrition-food-value">
+                      <span>קלוריות</span>
+                      <strong>{food.calories}</strong>
+                    </div>
+                  ) : null}
+                  <div className="nutrition-food-value">
+                    <span>חלבון</span>
+                    <strong>{food.protein}g</strong>
+                  </div>
+                  <div className="nutrition-food-value">
+                    <span>פחמימות</span>
+                    <strong>{food.carbs}g</strong>
+                  </div>
+                  <div className="nutrition-food-value">
+                    <span>שומן</span>
+                    <strong>{food.fat}g</strong>
+                  </div>
+                  <div className="nutrition-food-value">
+                    <span>סיבים</span>
+                    <strong>{food.fiber ?? 0}g</strong>
+                  </div>
+                </div>
+                {food.catalog?.barcode ? (
+                  <p className="nutrition-food-barcode text-[10px] text-muted-foreground">
+                    ברקוד: {food.catalog.barcode}
+                  </p>
+                ) : null}
               </Link>
               <button
                 type="button"
