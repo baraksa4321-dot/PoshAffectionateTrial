@@ -9299,6 +9299,14 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   justify-content: flex-start !important;
 }
 
+.app-auth-shell .app-home-night-mode {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+}
+
 .app-auth-shell .app-topbar__accessory {
   min-width: 0;
 }
