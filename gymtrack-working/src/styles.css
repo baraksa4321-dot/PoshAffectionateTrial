@@ -6936,7 +6936,7 @@ body {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: center;
   gap: 0.05rem;
   text-align: right;
