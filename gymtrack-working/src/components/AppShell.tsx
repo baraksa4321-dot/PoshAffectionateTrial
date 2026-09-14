@@ -1033,7 +1033,7 @@ export function AppShell({
           </div>
           {headerAccessory || showWorkspaceSwitcher ? (
             <div
-              className={`app-topbar__utility-row flex items-center justify-between gap-2 border-b border-border/50 ${
+              className={`app-topbar__utility-row relative flex items-center justify-end gap-2 border-b border-border/50 ${
                 compactHeader ? "mb-1 pb-0.5" : "mb-1.5 pb-0.5"
               }`}
             >
@@ -1041,12 +1041,10 @@ export function AppShell({
                 <div className="app-topbar__accessory min-w-0 flex-1 overflow-visible">
                   {headerAccessory}
                 </div>
-              ) : (
-                <span />
-              )}
+              ) : null}
               {showWorkspaceSwitcher ? (
                 <div
-                  className="flex items-center gap-2 rounded-full border border-border bg-surface-2 p-0.5"
+                  className="absolute left-0 top-1/2 flex -translate-y-1/2 items-center gap-2 rounded-full border border-border bg-surface-2 p-0.5"
                   role="group"
                   aria-label="בחירת מצב עבודה"
                 >
@@ -1066,7 +1064,7 @@ export function AppShell({
                     אישי
                   </Link>
                   <Link
-                    to="/coach/clients"
+                    to="/coach"
                     preload="intent"
                     onClick={() => setWorkspace("management")}
                     data-testid="link-nav-coach"
