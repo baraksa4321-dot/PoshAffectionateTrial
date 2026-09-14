@@ -5185,9 +5185,7 @@ export function CoachDashboardPage({
   const clientCount = allProfiles.filter((profile) => profile.role === "client").length;
   const ownerCount = allProfiles.filter((profile) => profile.role === "owner").length;
   const pendingApprovals = allProfiles.filter(
-    (profile) =>
-      (profile.role === "client" && profile.approval_status === "pending") ||
-      (profile.profile_exists === false && Boolean(profile.email_confirmed_at)),
+    (profile) => profile.role === "client" && profile.approval_status === "pending",
   );
   const visibleAttentionItems =
     attentionView === "open" ? attentionItems.filter((item) => !item.reviewed) : attentionItems;
@@ -5969,11 +5967,15 @@ export function CoachDashboardPage({
               <div className="flex items-center justify-between gap-3 border-b border-purple-200/60 pb-2">
                 <div className="flex items-center gap-2">
                   <Crown className="h-5 w-5 text-purple-700" />
-                  <h3 className="text-sm font-bold text-purple-950">פרופילים</h3>
+                  <h3 className="text-sm font-bold text-purple-950">
+                    {ownerHomeTab === "approvals" ? "אישורים" : "פרופילים"}
+                  </h3>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-full">
-                    {allProfiles.length} משתמשים במערכת
+                     {ownerHomeTab === "approvals"
+                       ? `${pendingApprovals.length} ממתינים`
+                       : `${profileDirectory.length} משתמשים במערכת`}
                   </span>
                   <button
                     type="button"
@@ -6117,7 +6119,14 @@ export function CoachDashboardPage({
                   ) : null}
                 </div>
               ) : null}
-              <p className="text-xs text-purple-900 font-semibold">
+              {ownerHomeTab === "approvals" && pendingApprovals.length === 0 ? (
+                <p className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center text-xs font-semibold text-emerald-800">
+                  אין כרגע מתאמנים שממתינים לאישור בעלים.
+                </p>
+              ) : null}
+              {ownerHomeTab === "profiles" ? (
+                <>
+              <p className="text-xs font-semibold text-purple-900">
                 {isOwner ? "משתמשים והרשאות תפקיד:" : "מתאמנים משויכים:"}
               </p>
               <div className="num-pill flex min-h-10 w-full items-center gap-2 px-3 py-1">
@@ -6493,6 +6502,8 @@ export function CoachDashboardPage({
                 <p className="text-[11px] text-purple-800">
                   ניתן לשנות תפקידים של משתמשים אחרים בלבד; שינוי התפקיד עובר דרך RPC מאובטח.
                 </p>
+              ) : null}
+                </>
               ) : null}
             </div>
             </div>
