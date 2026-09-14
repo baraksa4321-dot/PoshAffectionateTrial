@@ -9053,13 +9053,18 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 
 @media (max-width: 767px) {
   /*
-   * The mobile nav is fixed outside the builder surface. Keep the drawer's
-   * viewport above it instead of allowing the final report cards to scroll
-   * underneath the nav where iOS cannot expose them reliably.
+   * The mobile nav is fixed outside the builder surface. A report is a
+   * focused drawer, so remove that competing hit target while it is open
+   * instead of allowing the final cards to scroll underneath it.
    */
+  .app-shell:has(.workout-report-panel[data-open="true"]) > nav {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
   .workout-report-panel {
-    bottom: calc(5.75rem + env(safe-area-inset-bottom));
-    padding-bottom: 1.5rem;
+    bottom: 0;
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
   }
 }
 
