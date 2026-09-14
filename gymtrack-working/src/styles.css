@@ -9382,7 +9382,11 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 }
 
 .nutrition-page .app-topbar__utility-action a[aria-label="ספריית מאכלים"] {
-  border-radius: 0 !important;
+  width: 2.4rem !important;
+  height: 2.4rem !important;
+  display: grid !important;
+  place-items: center;
+  border-radius: 999px !important;
   border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border)) !important;
   background: var(--secondary) !important;
   color: var(--primary) !important;
@@ -9408,7 +9412,7 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 .nutrition-foods-page .app-topbar__utility-action a {
   width: 2.2rem !important;
   height: 2.2rem !important;
-  border-radius: 0.8rem !important;
+  border-radius: 999px !important;
 }
 
 .nutrition-foods-page .app-topbar__utility-action a svg {
@@ -9470,7 +9474,7 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   max-width: 100%;
   overflow: hidden;
   padding-inline: 0.1rem;
-  font-size: clamp(0.42rem, 1.7vw, 0.55rem);
+  font-size: clamp(0.48rem, 1.95vw, 0.62rem);
   font-weight: 700;
   line-height: 1.05;
   text-overflow: ellipsis;
@@ -9479,7 +9483,7 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 
 .nutrition-food-value strong {
   color: var(--ink);
-  font-size: clamp(0.62rem, 2.4vw, 0.82rem);
+  font-size: clamp(0.68rem, 2.65vw, 0.9rem);
   font-weight: 800;
   line-height: 1;
 }
