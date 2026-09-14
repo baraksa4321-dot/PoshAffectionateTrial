@@ -7247,16 +7247,10 @@ html:not(.night-mode) .dashboard-editorial-shell .dashboard-module .surface-card
 }
 
 html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(1),
+html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(2),
+html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(3),
 html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--check-in .surface-card:first-of-type {
   background: color-mix(in srgb, var(--primary) 12%, var(--surface)) !important;
-}
-
-html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(2) {
-  background: color-mix(in srgb, var(--accent) 18%, var(--surface)) !important;
-}
-
-html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(3) {
-  background: color-mix(in srgb, var(--secondary) 24%, var(--surface)) !important;
 }
 
 html:not(.night-mode) .dashboard-editorial-shell .dashboard-module--check-in .surface-card:last-child {
@@ -7880,17 +7874,14 @@ html.night-mode .dashboard-editorial-shell .dashboard-module .surface-card {
 }
 
 html.night-mode .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(1),
+html.night-mode .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(2),
+html.night-mode .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(3),
 html.night-mode .dashboard-editorial-shell .dashboard-module--check-in .surface-card:first-of-type {
-  background: color-mix(in srgb, var(--night-rose) 13%, var(--surface-2)) !important;
+  background: color-mix(in srgb, var(--night-sage) 11%, var(--surface-2)) !important;
 }
 
-html.night-mode .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(2),
 html.night-mode .dashboard-editorial-shell .dashboard-module--check-in .surface-card:last-child {
   background: color-mix(in srgb, var(--night-accent) 10%, var(--surface-2)) !important;
-}
-
-html.night-mode .dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(3) {
-  background: color-mix(in srgb, var(--night-sage) 11%, var(--surface-2)) !important;
 }
 
 html.night-mode .dashboard-editorial-shell .dashboard-notice {
@@ -8785,6 +8776,24 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 }
 
 @media (max-width: 639px) {
+  .app-topbar__utility-row {
+    flex-wrap: wrap;
+    justify-content: center !important;
+    row-gap: 0.35rem !important;
+  }
+
+  .app-topbar__actions {
+    order: 2;
+    flex: 1 1 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .app-topbar__utility-row > [role="group"] {
+    order: 1;
+    margin-inline: auto;
+  }
+
   .app-topbar__inner {
     padding-top: 0.14rem !important;
     padding-bottom: 0.2rem !important;

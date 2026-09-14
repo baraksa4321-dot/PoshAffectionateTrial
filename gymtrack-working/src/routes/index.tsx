@@ -617,7 +617,7 @@ function Dashboard() {
       kicker={formatNumericDate(now)}
       pageClassName="dashboard-editorial-shell"
       headerAccessory={
-        <div className="flex items-center gap-1.5">
+        <div className="dashboard-header-actions flex items-center justify-center gap-1.5">
           <button
             type="button"
             onClick={() => setShowChecklistModal(true)}
