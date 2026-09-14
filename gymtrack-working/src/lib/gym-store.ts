@@ -582,6 +582,7 @@ let profileHydrationError = "";
 let authResolved = false;
 let hydrationGeneration = 0;
 let syncStatus: SyncStatus = "idle";
+let syncErrorMessage = "";
 let hasPendingCloudChanges = false;
 let syncInFlight: { userId: string; promise: Promise<void> } | null = null;
 let syncRetryTimer: ReturnType<typeof setTimeout> | null = null;
@@ -1297,6 +1298,7 @@ function load() {
     window.addEventListener("offline", () => {
       if (!currentUser) return;
       syncStatus = "offline";
+      syncErrorMessage = "";
       notifyListeners();
     });
     window.addEventListener("online", () => {
@@ -1480,6 +1482,7 @@ function load() {
         profileHydrationStatus = "loading";
         profileHydrationError = "";
         syncStatus = "idle";
+        syncErrorMessage = "";
         hasPendingCloudChanges = false;
         syncRetryAttempts = 0;
         if (syncRetryTimer) {
@@ -1541,6 +1544,7 @@ function startUserHydration(
       profileHydrationStatus = "error";
       profileHydrationError = error instanceof Error ? error.message : "טעינת פרטי החשבון נכשלה";
       syncStatus = "error";
+      syncErrorMessage = profileHydrationError;
       notifyListeners();
     })
     .finally(() => {
@@ -1570,6 +1574,7 @@ async function handleUserLogin(
     profileHydrationError = "";
     hasPendingCloudChanges = pendingAtPullStart;
     syncStatus = browserIsOffline() ? "offline" : hasPendingCloudChanges ? "pending" : "synced";
+      syncErrorMessage = "";
     notifyListeners();
     if (cacheKind === "boot") {
       // Yield once so React can paint the account shell before parsing the
@@ -1596,6 +1601,7 @@ async function handleUserLogin(
     profileHydrationStatus = "error";
     profileHydrationError = "אין חיבור לאינטרנט ואין נתונים שמורים עבור החשבון הזה במכשיר.";
     syncStatus = "offline";
+    syncErrorMessage = "";
     notifyListeners();
     return;
   }
@@ -1636,6 +1642,7 @@ async function handleUserLogin(
       profileHydrationError = "";
       hasPendingCloudChanges = hasPersistedPendingChanges(userId);
       syncStatus = "offline";
+      syncErrorMessage = "";
       notifyListeners();
       return;
     }
@@ -1646,11 +1653,13 @@ async function handleUserLogin(
       profileHydrationStatus = "error";
       profileHydrationError = pulled.error;
       syncStatus = "error";
+      syncErrorMessage = pulled.error;
       notifyListeners();
       return;
     }
     profileHydrationStatus = "error";
     profileHydrationError = pulled.error;
+    syncErrorMessage = pulled.error;
     notifyListeners();
     return;
   }
@@ -1689,6 +1698,7 @@ async function handleUserLogin(
   }
   profileHydrationStatus = "ready";
   profileHydrationError = "";
+  syncErrorMessage = "";
   if (dataRevision !== revisionAtPullStart || pendingAtPullStart) {
     hasPendingCloudChanges = true;
     syncStatus = "pending";
@@ -1725,11 +1735,13 @@ function queueCloudSync() {
   if (!user || !hasPendingCloudChanges) return;
   if ((data.syncConflicts ?? []).some((conflict) => conflict.status === "unresolved")) {
     syncStatus = "conflict";
+    syncErrorMessage = "";
     notifyListeners();
     return;
   }
   if (browserIsOffline()) {
     syncStatus = "offline";
+    syncErrorMessage = "";
     notifyListeners();
     return;
   }
@@ -1740,6 +1752,7 @@ function queueCloudSync() {
   const revisionAtStart = dataRevision;
   const dataAtStart = data;
   syncStatus = "syncing";
+  syncErrorMessage = "";
   notifyListeners();
 
   const promise = (async () => {
@@ -1751,6 +1764,7 @@ function queueCloudSync() {
       if (dataRevision === revisionAtStart) {
         hasPendingCloudChanges = false;
         syncStatus = "synced";
+        syncErrorMessage = "";
         try {
           window.localStorage.removeItem(userPendingKey(userId));
         } catch {
@@ -1764,6 +1778,7 @@ function queueCloudSync() {
 
     hasPendingCloudChanges = true;
     syncStatus = isNetworkFailure(result.error) ? "offline" : "error";
+    syncErrorMessage = result.error || "Cloud sync failed";
     console.warn("[Background Supabase Sync Warning]:", result.error);
     if (isRetryableSyncFailure(result.error)) scheduleCloudRetry(userId);
   })().finally(() => {
@@ -1825,7 +1840,9 @@ export async function flushCloudSync(): Promise<{
   const error =
     syncStatus === "offline"
       ? "אין חיבור כרגע; האימון נשמר במכשיר ויסונכרן כשהחיבור יחזור"
-      : "השינויים נשמרו במכשיר; הסנכרון לענן עדיין ממתין לניסיון נוסף";
+      : syncErrorMessage
+        ? `השינויים נשמרו במכשיר; הסנכרון לענן נכשל: ${syncErrorMessage}`
+        : "השינויים נשמרו במכשיר; הסנכרון לענן עדיין ממתין לניסיון נוסף";
   return syncStatus === "offline" || isNetworkFailure(error)
     ? { success: true, deferred: true, error }
     : { success: false, error };
@@ -1937,6 +1954,14 @@ export function useCloudSyncStatus() {
   );
 }
 
+export function useCloudSyncError() {
+  return useSyncExternalStore(
+    subscribe,
+    () => syncErrorMessage,
+    () => "",
+  );
+}
+
 export function useSyncConflicts() {
   return useSyncExternalStore(
     subscribe,
@@ -1959,6 +1984,7 @@ export function resolveSyncConflict(conflictId: string, choice: "keep-local" | "
     syncStatus = nextConflicts.some((candidate) => candidate.status === "unresolved")
       ? "conflict"
       : "synced";
+    syncErrorMessage = "";
     persistCacheOnly();
     if (typeof window !== "undefined" && currentUser?.id) {
       try {
@@ -1975,6 +2001,7 @@ export function resolveSyncConflict(conflictId: string, choice: "keep-local" | "
   syncStatus = nextConflicts.some((candidate) => candidate.status === "unresolved")
     ? "conflict"
     : "pending";
+  syncErrorMessage = "";
   persist();
   notifyListeners();
   return true;
@@ -2006,6 +2033,7 @@ export function clearCurrentUserLocalCache() {
   data = seed();
   hasPendingCloudChanges = false;
   syncStatus = "idle";
+  syncErrorMessage = "";
   notifyListeners();
 }
 

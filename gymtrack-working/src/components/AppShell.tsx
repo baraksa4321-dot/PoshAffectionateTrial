@@ -13,6 +13,7 @@ import {
   Sun,
   User,
   X,
+  RefreshCw,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -25,7 +26,9 @@ import {
   resolveSyncConflict,
   useSyncConflicts,
   useAuthUser,
+  useCloudSyncError,
   useCloudSyncStatus,
+  flushCloudSync,
   useGym,
 } from "../lib/gym-store";
 import {
@@ -158,6 +161,7 @@ export function AppShell({
   const user = useAuthUser();
   usePersistentFormDrafts(user?.id ?? "guest");
   const cloudSyncStatus = useCloudSyncStatus();
+  const cloudSyncError = useCloudSyncError();
   const syncConflicts = useSyncConflicts().filter((conflict) => conflict.status === "unresolved");
   const role = store.userProfile?.role;
   const isOwner = role === "owner";
@@ -218,6 +222,10 @@ export function AppShell({
           : cloudSyncStatus === "error"
             ? "השינויים נשמרו במכשיר — הסנכרון דורש תשומת לב"
             : "הנתונים מסונכרנים";
+  const readableSyncError =
+    /permission denied|row-level security|42501/i.test(cloudSyncError)
+      ? "השרת דחה את השינוי בגלל הרשאה. הנתונים המקומיים נשמרו, אבל צריך לתקן את הרשאת הסנכרון."
+      : cloudSyncError;
 
   useEffect(() => {
     if (!isManagementRoute) return;
@@ -1225,6 +1233,23 @@ export function AppShell({
                 </p>
               </div>
             </div>
+            {cloudSyncStatus === "error" && readableSyncError ? (
+              <div className="rounded-2xl border border-destructive/20 bg-destructive/5 px-3 py-2.5 text-xs leading-relaxed text-destructive">
+                <p className="font-bold">סיבת הכשל</p>
+                <p className="mt-1 break-words">{readableSyncError}</p>
+              </div>
+            ) : null}
+
+            {cloudSyncStatus === "error" || cloudSyncStatus === "pending" ? (
+              <button
+                type="button"
+                onClick={() => void flushCloudSync()}
+                className="press inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/25 bg-primary/5 px-3 py-2.5 text-xs font-bold text-primary transition-colors hover:bg-primary/10"
+              >
+                <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+                לנסות לסנכרן עכשיו
+              </button>
+            ) : null}
 
             {syncConflicts.length > 0 ? (
               <div className="space-y-3">

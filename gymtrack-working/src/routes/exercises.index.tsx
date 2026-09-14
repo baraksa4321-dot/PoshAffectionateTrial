@@ -491,7 +491,7 @@ function Library() {
                     src={row.image}
                     alt=""
                     loading="lazy"
-                    className="h-16 w-16 shrink-0 rounded-2xl border border-border/40 bg-secondary p-1 object-contain"
+                    className="h-16 w-16 shrink-0 rounded-2xl border border-border/40 bg-secondary object-cover"
                   />
                 ) : (
                   <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-sage-soft text-primary">
@@ -605,7 +605,7 @@ function Library() {
                   <img
                     src={optionImageDraft.trim()}
                     alt={`תצוגה מקדימה עבור ${optionNameDraft || optionEditor.name}`}
-                    className="mt-3 h-40 w-full rounded-2xl border border-border/50 bg-secondary p-2 object-contain"
+                    className="mt-3 h-40 w-full rounded-2xl border border-border/50 bg-secondary object-cover"
                   />
                 ) : null}
               </div>
