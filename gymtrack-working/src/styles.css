@@ -8863,7 +8863,7 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   height: 2.1rem !important;
 }
 
-[data-owner-home="true"] .app-topbar__brand-row img {
+[data-home-shell="true"] .app-topbar__brand-row img {
   width: 8rem !important;
   height: 2.25rem !important;
 }
@@ -8875,6 +8875,11 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 
 .app-home-account-controls {
   z-index: 1;
+}
+
+.app-home-account-controls > button {
+  width: auto !important;
+  height: auto !important;
 }
 
 .app-home-account-controls button[aria-label="פתיחת הפרופיל האישי"] {
