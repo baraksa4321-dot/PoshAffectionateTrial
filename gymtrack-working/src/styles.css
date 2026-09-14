@@ -8873,6 +8873,14 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   padding-bottom: 0.25rem !important;
 }
 
+.app-home-account-controls {
+  z-index: 1;
+}
+
+.app-home-account-controls button[aria-label="פתיחת הפרופיל האישי"] {
+  max-width: 5.9rem;
+}
+
 .dashboard-editorial-shell .app-main {
   padding-top: 1rem !important;
   padding-bottom: calc(6.5rem + env(safe-area-inset-bottom)) !important;

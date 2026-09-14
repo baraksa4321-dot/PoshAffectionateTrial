@@ -1038,7 +1038,7 @@ export function AppShell({
               ) : null}
               {showWorkspaceSwitcher ? (
                 <div
-                  className="absolute left-0 top-1/2 flex -translate-y-1/2 items-center gap-2 rounded-full border border-border bg-surface-2 p-0.5"
+                  className="app-workspace-switcher absolute left-0 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-full border border-border bg-surface-2 p-0.5"
                   role="group"
                   aria-label="בחירת מצב עבודה"
                 >
@@ -1048,7 +1048,7 @@ export function AppShell({
                     onClick={() => setWorkspace("personal")}
                     aria-current={activeMode === "personal" ? "page" : undefined}
                     className={`press rounded-full ${
-                      isOwner && isDashboardShell ? "min-w-[4.5rem] px-2" : "min-w-20 px-3"
+                      isOwner && showWorkspaceSwitcher ? "min-w-[3.8rem] px-1.5" : "min-w-20 px-3"
                     } ${
                       compactWorkspaceControls ? "py-0.5 text-[9px]" : "py-1.5 text-[11px]"
                     } text-center font-bold transition-colors ${
@@ -1066,7 +1066,7 @@ export function AppShell({
                     data-testid="link-nav-coach"
                     aria-current={activeMode === "management" ? "page" : undefined}
                     className={`press rounded-full ${
-                      isOwner && isDashboardShell ? "min-w-[4.5rem] px-2" : "min-w-20 px-3"
+                      isOwner && showWorkspaceSwitcher ? "min-w-[3.8rem] px-1.5" : "min-w-20 px-3"
                     } ${
                       compactWorkspaceControls ? "py-0.5 text-[9px]" : "py-1.5 text-[11px]"
                     } text-center font-bold transition-colors ${
@@ -1082,7 +1082,7 @@ export function AppShell({
                 </div>
               ) : null}
               {user && showHomeOnlyHeaderControls && showWorkspaceSwitcher ? (
-                <div className="app-home-account-controls flex max-w-[9.5rem] items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2 py-1 text-[10px] font-bold text-ink shadow-sm">
+                <div className="app-home-account-controls absolute right-0 top-1/2 flex max-w-[8.75rem] -translate-y-1/2 items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2 py-1 text-[10px] font-bold text-ink shadow-sm">
                   <button
                     type="button"
                     onClick={() => setShowSyncModal(true)}
@@ -1215,7 +1215,7 @@ export function AppShell({
                     <LogIn className="h-3.5 w-3.5" />
                     <span>התחברות</span>
                   </button>
-                ) : (
+                ) : !showWorkspaceSwitcher ? (
                   <button
                     type="button"
                     onClick={() => setShowSyncModal(true)}
@@ -1230,7 +1230,7 @@ export function AppShell({
                       aria-hidden="true"
                     />
                   </button>
-                )}
+                ) : null}
                 {action}
               </div>
             </div>
