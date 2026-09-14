@@ -6774,21 +6774,12 @@ body {
     0 6px 16px rgb(var(--shadow-color) / 5%);
 }
 
-.dashboard-editorial-shell .dashboard-module--activity .surface-card,
+.dashboard-editorial-shell .dashboard-module--activity .surface-card {
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface)) !important;
+}
+
 .dashboard-editorial-shell .dashboard-module--measurements .surface-card {
   background: #fffdfb !important;
-}
-
-.dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(1) {
-  background: #faebe6 !important;
-}
-
-.dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(2) {
-  background: #f4eee5 !important;
-}
-
-.dashboard-editorial-shell .dashboard-module--activity .surface-card:nth-child(3) {
-  background: #edf2ec !important;
 }
 
 .dashboard-editorial-shell .dashboard-module--check-in .surface-card:first-of-type {
@@ -6926,6 +6917,10 @@ body {
   .dashboard-editorial-shell .home-secondary-card {
     padding: 0.9rem !important;
   }
+}
+
+.dashboard-editorial-shell .dashboard-module--activity {
+  border-bottom-color: transparent !important;
 }
 
 @media (min-width: 640px) {

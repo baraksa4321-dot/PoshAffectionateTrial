@@ -616,53 +616,6 @@ function Dashboard() {
       subtitle="היום שלך לא צריך יותר מקצב אחד טוב להתחיל ממנו."
       kicker={formatNumericDate(now)}
       pageClassName="dashboard-editorial-shell"
-      headerAccessory={
-        <div className="dashboard-header-actions flex items-center justify-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setShowChecklistModal(true)}
-            aria-label="פתיחת צ׳קליסט לאימון"
-            title="צ׳קליסט לאימון"
-            className="bodyweight-header-toggle press inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-1 text-[9px] font-medium text-primary transition-colors hover:bg-primary/10"
-          >
-            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-            צ׳קליסט
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowWeighInModal(true)}
-            aria-label="פתיחת שקילה שבועית"
-            title="שקילה שבועית"
-            className="bodyweight-header-toggle press inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-1 text-[9px] font-medium text-primary transition-colors hover:bg-primary/10"
-          >
-            <Scale className="h-3.5 w-3.5" aria-hidden="true" />
-            שקילה
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowVideoFeedbackModal(true)}
-            aria-label={
-              unreadVideoFeedbackCount > 0
-                ? `${unreadVideoFeedbackCount} משובים חדשים`
-                : "פתיחת משובים"
-            }
-            title="משובים מהמאמן"
-            data-testid="video-feedback-home-button"
-            className="bodyweight-header-toggle press relative inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-1 text-[9px] font-medium text-primary transition-colors hover:bg-primary/10"
-          >
-            <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
-            משובים
-            {unreadVideoFeedbackCount > 0 ? (
-              <span
-                className="absolute -end-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-extrabold leading-none text-primary-foreground shadow-sm"
-                aria-hidden="true"
-              >
-                {unreadVideoFeedbackCount > 99 ? "99+" : unreadVideoFeedbackCount}
-              </span>
-            ) : null}
-          </button>
-        </div>
-      }
     >
       <div className="home-card-stack">
         {/* Coach Message Banner */}
@@ -961,6 +914,51 @@ function Dashboard() {
               icon={Dumbbell}
               tone="sage"
             />
+          </div>
+          <div className="dashboard-quick-actions mt-3 grid grid-cols-3 gap-2.5">
+            <button
+              type="button"
+              onClick={() => setShowChecklistModal(true)}
+              aria-label="פתיחת צ׳קליסט לאימון"
+              title="צ׳קליסט לאימון"
+              className="bodyweight-header-toggle press inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2 py-1.5 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+              צ׳קליסט
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowWeighInModal(true)}
+              aria-label="פתיחת שקילה שבועית"
+              title="שקילה שבועית"
+              className="bodyweight-header-toggle press inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2 py-1.5 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10"
+            >
+              <Scale className="h-3.5 w-3.5" aria-hidden="true" />
+              שקילה
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowVideoFeedbackModal(true)}
+              aria-label={
+                unreadVideoFeedbackCount > 0
+                  ? `${unreadVideoFeedbackCount} משובים חדשים`
+                  : "פתיחת משובים"
+              }
+              title="משובים מהמאמן"
+              data-testid="video-feedback-home-button"
+              className="bodyweight-header-toggle press relative inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2 py-1.5 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10"
+            >
+              <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
+              משובים
+              {unreadVideoFeedbackCount > 0 ? (
+                <span
+                  className="absolute -end-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-extrabold leading-none text-primary-foreground shadow-sm"
+                  aria-hidden="true"
+                >
+                  {unreadVideoFeedbackCount > 99 ? "99+" : unreadVideoFeedbackCount}
+                </span>
+              ) : null}
+            </button>
           </div>
         </section>
 
