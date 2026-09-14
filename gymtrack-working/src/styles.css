@@ -9319,6 +9319,14 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 
 .app-auth-shell .app-workspace-switcher {
   top: 50% !important;
+  gap: 0.15rem;
+  padding: 0.2rem;
+}
+
+.app-auth-shell .app-workspace-switcher > a {
+  min-width: 4.1rem !important;
+  padding: 0.35rem 0.7rem !important;
+  font-size: 0.65rem !important;
 }
 
 .app-auth-shell .app-topbar__heading {
