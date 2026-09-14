@@ -1278,6 +1278,15 @@ html:not(.night-mode) .nav-shell {
   background: color-mix(in srgb, var(--background) 84%, var(--surface-2));
 }
 
+/* Native iOS date controls can keep an intrinsic width larger than their
+ * containing card unless the control is explicitly shrinkable. */
+.auth-date-input {
+  box-sizing: border-box;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  inline-size: 100%;
+}
+
 .auth-editorial-shell .auth-editorial-panel form button[type="submit"],
 .auth-editorial-shell .auth-editorial-panel > div button {
   border-radius: 0.75rem;

@@ -21,6 +21,7 @@ import {
 import "../styles.css";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "../components/AppShell";
+import { BrandLogo } from "../components/BrandLogo";
 import { LoadingSpinner } from "../components/ui-app/LoadingSpinner";
 import {
   retryProfileHydration,
