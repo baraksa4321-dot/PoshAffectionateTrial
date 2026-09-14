@@ -332,6 +332,18 @@ type ClientFeedbackRow = {
 
 type ClientDetails = Awaited<ReturnType<typeof pullClientDataForCoach>>;
 
+type CoachPerformanceVideo = {
+  id: string;
+  clientId: string;
+  clientName: string;
+  sessionId: string;
+  sessionDate: string;
+  workoutId: string;
+  workoutName: string;
+  entry: HistoryEntry;
+  videoFeedbacks: VideoFeedback[];
+};
+
 type AttentionReason =
   "workout-missing" | "nutrition-missing" | "checkin-late" | "difficulty" | "unanswered-message";
 type AttentionDataStatus = "stable" | "needs-attention" | "insufficient";
@@ -832,6 +844,102 @@ function VideoFeedbackThread({
         {sending ? "שולח..." : "שליחת משוב למתאמן"}
       </button>
     </div>
+  );
+}
+
+function VideoFeedbackInbox({ videos }: { videos: CoachPerformanceVideo[] }) {
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const visibleVideos = normalizedQuery
+    ? videos.filter((video) =>
+        `${video.clientName} ${video.workoutName} ${video.entry.exerciseName}`
+          .toLocaleLowerCase()
+          .includes(normalizedQuery),
+      )
+    : videos;
+
+  return (
+    <section className="surface-card max-h-[min(82vh,52rem)] space-y-3 overflow-y-auto rounded-3xl border border-primary/20 bg-primary/[0.025] p-3 sm:p-5">
+      <div className="flex items-start justify-between gap-3 border-b border-primary/15 pb-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+            Performance video feedback
+          </p>
+          <h2 className="mt-1 flex items-center gap-1.5 text-base font-extrabold text-ink">
+            <Video className="h-4 w-4 text-primary" />
+            סרטוני מתאמנים ומשובים
+          </h2>
+          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+            כל סרטוני הביצוע הזמינים מרוכזים כאן, כדי שאפשר יהיה לעבור עליהם ולשלוח משוב בלי לפתוח כל דוח בנפרד.
+          </p>
+        </div>
+        <span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+          {videos.length} סרטונים
+        </span>
+      </div>
+
+      {videos.length > 0 ? (
+        <label className="num-pill flex min-h-9 items-center gap-2 px-3 py-1">
+          <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="sr-only">חיפוש סרטונים</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="חיפוש לפי מתאמן, אימון או תרגיל..."
+            aria-label="חיפוש סרטונים לפי מתאמן, אימון או תרגיל"
+            className="min-w-0 flex-1 bg-transparent text-xs text-ink outline-none placeholder:text-muted-foreground"
+          />
+        </label>
+      ) : null}
+
+      {visibleVideos.length === 0 ? (
+        <div className="rounded-2xl border border-border/60 bg-background p-5 text-center text-xs font-semibold text-muted-foreground">
+          {videos.length === 0
+            ? "עדיין אין סרטוני ביצוע זמינים למשוב."
+            : "לא נמצאו סרטונים לפי החיפוש."}
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          {visibleVideos.map((video) => (
+            <article
+              key={video.id}
+              className="rounded-2xl border border-border/70 bg-background p-2.5 sm:p-3"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h3 className="truncate text-sm font-extrabold text-ink">{video.clientName}</h3>
+                  <p className="mt-0.5 truncate text-[11px] font-semibold text-primary">
+                    {video.workoutName} · {video.entry.exerciseName || "תרגיל"}
+                  </p>
+                </div>
+                <time
+                  dateTime={video.sessionDate}
+                  className="shrink-0 text-[10px] text-muted-foreground"
+                >
+                  {new Date(video.sessionDate).toLocaleDateString("he-IL")}
+                </time>
+              </div>
+              <WorkoutVideoPlayer
+                source={video.entry.videoUrl ?? ""}
+                title={`סרטון ביצוע של ${video.clientName} · ${
+                  video.entry.exerciseName || "תרגיל"
+                }`}
+                className="mt-2 max-h-72 w-full rounded-xl bg-black object-contain"
+              />
+              <VideoFeedbackThread
+                clientId={video.clientId}
+                sessionId={video.sessionId}
+                workoutId={video.workoutId}
+                entry={video.entry}
+                title={video.entry.exerciseName || "תרגיל"}
+                videoFeedbacks={video.videoFeedbacks}
+              />
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -2163,6 +2271,7 @@ export function CoachDashboardPage({
   const [attentionView, setAttentionView] = useState<"open" | "all">("open");
   const [expandedAttentionClientId, setExpandedAttentionClientId] = useState<string | null>(null);
   const [attentionQueueOpen, setAttentionQueueOpen] = useState(false);
+  const [videoFeedbackOpen, setVideoFeedbackOpen] = useState(false);
   const [clientRefreshInFlight, setClientRefreshInFlight] = useState(false);
   const focusedNutritionScrollTargetRef = useRef<string | null>(null);
   const draftOwnerRef = useRef<string | null>(null);
@@ -2673,6 +2782,43 @@ export function CoachDashboardPage({
         return (b.lastActivity ?? "").localeCompare(a.lastActivity ?? "");
       });
   }, [attentionMeta, clientFeedback, overviewRows]);
+
+  const performanceVideoRecords = useMemo<CoachPerformanceVideo[]>(() => {
+    const records: CoachPerformanceVideo[] = [];
+    for (const { client, details } of overviewRows) {
+      const clientName = profileDisplayName(client.profiles);
+      const workoutsById = new Map(details.workouts.map((workout) => [workout.id, workout]));
+      for (const session of details.history) {
+        const workout = workoutsById.get(session.workoutId);
+        for (const [entryIndex, entry] of session.entries.entries()) {
+          if (
+            !entry.videoPath ||
+            !entry.videoUrl ||
+            entry.videoUrl.startsWith("blob:") ||
+            !isSignedWorkoutPerformanceVideo(entry.videoUrl)
+          ) {
+            continue;
+          }
+          records.push({
+            id: `${client.client_id}-${session.id}-${entry.exerciseId}-${entryIndex}`,
+            clientId: client.client_id,
+            clientName,
+            sessionId: session.id,
+            sessionDate: session.date,
+            workoutId: session.workoutId || workout?.id || "",
+            workoutName: session.workoutName || workout?.name || "אימון",
+            entry,
+            videoFeedbacks: details.videoFeedbacks ?? [],
+          });
+        }
+      }
+    }
+    return records.sort((a, b) => {
+      const dateOrder = new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime();
+      if (dateOrder !== 0) return dateOrder;
+      return a.clientName.localeCompare(b.clientName, "he");
+    });
+  }, [overviewRows]);
 
   useEffect(() => {
     if (!clientId) return;
@@ -5531,22 +5677,38 @@ export function CoachDashboardPage({
       }
       headerAccessory={
         trackingLanding ? (
-          <button
-            type="button"
-            onClick={() => setAttentionQueueOpen(true)}
-            aria-label="פתיחת תור תשומת הלב"
-            className="bodyweight-header-toggle press relative inline-flex min-w-[5.8rem] items-center justify-center rounded-full border border-primary/30 bg-primary/5 px-7 py-1 text-[9px] font-bold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            לשים לב
-            <span className="pointer-events-none absolute end-2" aria-hidden="true">
-              <Heart className="h-3.5 w-3.5 fill-current" />
-            </span>
-            {attentionOpenCount > 0 ? (
-              <span className="absolute start-2 rounded-full bg-primary/15 px-1.5 py-0.5 text-[8px] leading-none">
-                {attentionOpenCount}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setVideoFeedbackOpen(true)}
+              aria-label="פתיחת משובי הווידאו"
+              className="inline-flex min-w-[4.1rem] items-center justify-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-1 text-[9px] font-bold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <MessageSquare className="h-3 w-3" aria-hidden="true" />
+              משובים
+              {performanceVideoRecords.length > 0 ? (
+                <span className="rounded-full bg-primary/15 px-1 py-0.5 text-[8px] leading-none">
+                  {performanceVideoRecords.length}
+                </span>
+              ) : null}
+            </button>
+            <button
+              type="button"
+              onClick={() => setAttentionQueueOpen(true)}
+              aria-label="פתיחת תור תשומת הלב"
+              className="bodyweight-header-toggle press relative inline-flex min-w-[5.8rem] items-center justify-center rounded-full border border-primary/30 bg-primary/5 px-7 py-1 text-[9px] font-bold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              לשים לב
+              <span className="pointer-events-none absolute end-2" aria-hidden="true">
+                <Heart className="h-3.5 w-3.5 fill-current" />
               </span>
-            ) : null}
-          </button>
+              {attentionOpenCount > 0 ? (
+                <span className="absolute start-2 rounded-full bg-primary/15 px-1.5 py-0.5 text-[8px] leading-none">
+                  {attentionOpenCount}
+                </span>
+              ) : null}
+            </button>
+          </div>
         ) : undefined
       }
       compactHeader
@@ -5821,6 +5983,17 @@ export function CoachDashboardPage({
             <span className="truncate">פרופילים</span>
           </button>
         </div>
+      ) : null}
+
+      {trackingLanding ? (
+        <Overlay
+          open={videoFeedbackOpen}
+          onClose={() => setVideoFeedbackOpen(false)}
+          ariaLabel="משובי וידאו למתאמנים"
+          panelClassName="max-w-3xl p-0"
+        >
+          <VideoFeedbackInbox videos={performanceVideoRecords} />
+        </Overlay>
       ) : null}
 
       {trackingLanding ? (

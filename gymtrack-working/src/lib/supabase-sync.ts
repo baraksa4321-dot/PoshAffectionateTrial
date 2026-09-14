@@ -353,6 +353,8 @@ export function subscribeToCoachManagementChanges(
       { table: "profiles" },
       { table: "coach_clients" },
       { table: "client_feedback" },
+      { table: "workout_sessions" },
+      { table: "video_feedback" },
       { table: "broadcast_announcements" },
     ],
     onChange,
