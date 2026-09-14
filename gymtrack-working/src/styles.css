@@ -8779,6 +8779,7 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   padding-top: 0.3rem !important;
 }
 
+.coach-workout-surface-slot:empty,
 [data-coach-attention-queue-anchor="true"]:empty {
   display: none;
 }
