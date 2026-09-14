@@ -647,7 +647,7 @@ function NutritionLog() {
           <Link
             to="/nutrition/foods"
             aria-label="ספריית מאכלים"
-            className="press grid h-11 w-11 place-items-center rounded-2xl bg-secondary"
+            className="press grid h-11 w-11 place-items-center text-muted-foreground transition-colors hover:text-primary"
           >
             <BookOpen className="h-5 w-5" />
           </Link>

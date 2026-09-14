@@ -9374,6 +9374,18 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   height: 1rem !important;
 }
 
+.nutrition-page .app-topbar__utility-action {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.nutrition-page .app-topbar__utility-action a[aria-label="ספריית מאכלים"] {
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
 .nutrition-foods-page .nutrition-food-library-card {
   margin-top: 0.35rem;
   padding: 0.75rem;
