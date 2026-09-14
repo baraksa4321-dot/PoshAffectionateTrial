@@ -10576,7 +10576,7 @@ export function CoachDashboardPage({
                   />
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
+                  <label className="grid min-w-0 gap-1 text-[11px] font-bold text-muted-foreground">
                     מין
                     <select
                       value={profileGender}
@@ -10585,21 +10585,21 @@ export function CoachDashboardPage({
                         setProfileGender(value);
                         setBmrGender(value);
                       }}
-                      className="h-10 w-full min-w-0 rounded-xl border border-border bg-white px-3 text-sm text-ink outline-none focus:border-primary"
+                      className="h-10 w-full min-w-0 max-w-full rounded-xl border border-border bg-white px-3 text-sm text-ink outline-none focus:border-primary"
                     >
                       <option value="">לא צוין</option>
                       <option value="female">נקבה</option>
                       <option value="male">זכר</option>
                     </select>
                   </label>
-                  <label className="grid gap-1 text-[11px] font-bold text-muted-foreground">
+                  <label className="grid min-w-0 gap-1 text-[11px] font-bold text-muted-foreground">
                     תאריך לידה
                     <input
                       type="date"
                       {...dateOfBirthInputBounds()}
                       value={profileDateOfBirth}
                       onChange={(event) => setProfileDateOfBirth(event.target.value)}
-                      className="h-10 w-full min-w-0 rounded-xl border border-border bg-white px-3 text-sm text-ink outline-none focus:border-primary"
+                      className="h-10 w-full min-w-0 max-w-full appearance-none rounded-xl border border-border bg-white px-3 text-sm text-ink outline-none focus:border-primary"
                     />
                     <span className="text-[10px] font-medium text-muted-foreground">
                       {calculateAge(profileDateOfBirth) === undefined
