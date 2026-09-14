@@ -123,7 +123,7 @@ type CoachClientRow = {
 };
 
 type DashboardClientFilter = "clients" | "needsPlan" | "quiet";
-type OwnerHomeTab = "overview" | "checkins" | "profiles";
+type OwnerHomeTab = "overview" | "approvals" | "checkins" | "profiles";
 
 function isFailureNotice(message: string) {
   return /נכש|שגיאה|לא ניתן|יש להשלים|יש להזין|לא התקבל|לא נמצאו|לא נמצא|נדחתה|דחייה|נדרש|לא תקין/i.test(
@@ -5194,6 +5194,9 @@ export function CoachDashboardPage({
   const attentionOpenCount = attentionItems.filter(
     (item) => item.status === "needs-attention" && !item.reviewed,
   ).length;
+  const checkinAttentionItems = attentionItems.filter(
+    (item) => item.status === "needs-attention",
+  );
   const openClientFromOverview = (clientId: string) => {
     if (!trackingLanding && authUser?.id === clientId && !isOwner) {
       // A coach can build their own plan from the client list, but the
@@ -5457,13 +5460,13 @@ export function CoachDashboardPage({
           <button
             type="button"
             onClick={() =>
-              setOwnerHomeTab((current) => (current === "profiles" ? "overview" : "profiles"))
+              setOwnerHomeTab((current) => (current === "approvals" ? "overview" : "approvals"))
             }
-            aria-pressed={ownerHomeTab === "profiles"}
+            aria-pressed={ownerHomeTab === "approvals"}
             aria-label="פתיחת אישורי הרשמה"
             title="אישורי הרשמה"
             className={`surface-card flex min-w-0 items-center justify-center gap-1 border-primary/25 bg-primary/5 px-1.5 py-2 text-[9px] font-bold text-primary transition-colors hover:border-primary/50 hover:bg-primary/10 ${
-              ownerHomeTab === "profiles" ? "ring-2 ring-primary/25" : ""
+              ownerHomeTab === "approvals" ? "ring-2 ring-primary/25" : ""
             }`}
           >
             <UserCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -5859,13 +5862,13 @@ export function CoachDashboardPage({
                     </button>
                   </div>
                 </div>
-                {attentionItems.length === 0 ? (
+            {checkinAttentionItems.length === 0 ? (
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center text-xs font-semibold text-emerald-800">
-                    עדיין אין מספיק נתוני פעילות להצגת צ׳ק־אין.
+                אין כרגע חריגים שדורשים טיפול.
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {attentionItems.map((item) => {
+                    {checkinAttentionItems.map((item) => {
                       const itemProfile = allProfiles.find((profile) => profile.id === item.clientId);
                       const statusLabel =
                         item.status === "needs-attention"
@@ -5954,7 +5957,7 @@ export function CoachDashboardPage({
         {/* Owner Management Section */}
         {isCoach && !clientsOnly ? (
           <Overlay
-            open={ownerHomeTab === "profiles"}
+            open={ownerHomeTab === "profiles" || ownerHomeTab === "approvals"}
             onClose={() => {
               setOwnerHomeTab("overview");
               setSelectedOwnerProfileId(null);
