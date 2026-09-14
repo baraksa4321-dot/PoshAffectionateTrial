@@ -681,13 +681,31 @@ export async function uploadWorkoutPerformanceVideo(
   });
   if (error) throw new Error(`העלאת סרטון נכשלה: ${error.message}`);
 
-  const { data, error: signedUrlError } = await supabase.storage
-    .from(WORKOUT_VIDEO_BUCKET)
-    .createSignedUrl(path, WORKOUT_VIDEO_SIGNED_URL_TTL_SECONDS);
-  if (signedUrlError || !data?.signedUrl) {
-    throw new Error(`העלאת הסרטון הסתיימה בלי כתובת צפייה: ${signedUrlError?.message ?? "missing signed URL"}`);
+  return {
+    path,
+    signedUrl: await signWorkoutPerformanceVideo(path),
+  };
+}
+
+/**
+ * Create a fresh short-lived URL for an already-uploaded performance video.
+ * Signed URLs can expire while a trainee stays on the workout or history
+ * screen, so playback can refresh the URL without uploading the file again.
+ */
+export async function signWorkoutPerformanceVideo(path: string): Promise<string> {
+  const normalizedPath = path.trim();
+  if (!normalizedPath || normalizedPath.startsWith("blob:")) {
+    throw new Error("לא ניתן ליצור כתובת צפייה לסרטון חסר.");
   }
-  return { path, signedUrl: data.signedUrl };
+  const { data, error } = await supabase.storage
+    .from(WORKOUT_VIDEO_BUCKET)
+    .createSignedUrl(normalizedPath, WORKOUT_VIDEO_SIGNED_URL_TTL_SECONDS);
+  if (error || !data?.signedUrl) {
+    throw new Error(
+      `יצירת כתובת הצפייה לסרטון נכשלה: ${error?.message ?? "missing signed URL"}`,
+    );
+  }
+  return data.signedUrl;
 }
 
 export async function approveChallengeInSupabase(challengeId: string): Promise<void> {
@@ -2554,13 +2572,11 @@ async function signWorkoutVideoEntries(entries: HistoryEntry[]): Promise<History
     entries.map(async (entry) => {
       const path = entry.videoPath ?? workoutVideoStoragePath(entry.videoUrl);
       if (!path) return entry;
-      const { data, error } = await supabase.storage
-        .from(WORKOUT_VIDEO_BUCKET)
-        .createSignedUrl(path, WORKOUT_VIDEO_SIGNED_URL_TTL_SECONDS);
-      if (error || !data?.signedUrl) {
-        throw new Error(`Workout video signing failed: ${error?.message ?? "missing signed URL"}`);
-      }
-      return { ...entry, videoPath: path, videoUrl: data.signedUrl };
+      return {
+        ...entry,
+        videoPath: path,
+        videoUrl: await signWorkoutPerformanceVideo(path),
+      };
     }),
   );
 }

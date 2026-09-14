@@ -226,6 +226,9 @@ function videoDuration(file: File): Promise<number | null> {
 
 function videoUploadErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : "";
+  if (/כתובת הצפייה|signed url|signing|missing signed url/i.test(message)) {
+    return "הסרטון הועלה, אבל לא ניתן ליצור לו כתובת צפייה. האימון נשמר, ואפשר לנסות שוב.";
+  }
   if (/413|too large|maximum|exceed|payload|size limit|file size/i.test(message)) {
     return "העלאת הסרטון נכשלה. האימון נשמר, ואפשר לנסות שוב מאוחר יותר.";
   }
@@ -630,6 +633,7 @@ function Session() {
   const entriesRef = useRef(entries);
   const videoFilesRef = useRef(new Map<number, File>());
   const videoUploadVersionsRef = useRef(new Map<number, number>());
+  const videoPlaybackRefreshesRef = useRef(new Map<number, string>());
   const restoredVideoDraftWorkoutIdRef = useRef<string | null>(null);
   const completedSaveRef = useRef(false);
   useEffect(() => {
@@ -1231,6 +1235,7 @@ function Session() {
     videoUploadVersionsRef.current.set(exerciseIndex, uploadVersion);
     if (previousUrl?.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
     videoFilesRef.current.set(exerciseIndex, file);
+    videoPlaybackRefreshesRef.current.delete(exerciseIndex);
     setVideoUploadsInFlight((count) => count + 1);
     const entriesWithLocalVideo = entriesRef.current.map((entry, index) =>
       index === exerciseIndex ? { ...entry, videoUrl: nextUrl } : entry,
@@ -1284,6 +1289,63 @@ function Session() {
         setVideoUploadsInFlight((count) => Math.max(0, count - 1));
       });
     void uploadTask;
+  };
+
+  const handlePerformanceVideoError = (exerciseIndex: number) => {
+    const entry = entriesRef.current[exerciseIndex];
+    const path = entry?.videoPath;
+    const currentUrl = entry?.videoUrl;
+    if (!path || !currentUrl || currentUrl.startsWith("blob:")) {
+      setVideoUploadErrorExerciseIndex(exerciseIndex);
+      setVideoUploadError("הסרטון נבחר, אבל הדפדפן לא הצליח לנגן אותו.");
+      return;
+    }
+
+    // A signed URL may have expired while the workout stayed open. Refresh it
+    // once automatically; if playback still fails, report a codec/browser
+    // problem instead of incorrectly reporting an upload failure.
+    if (videoPlaybackRefreshesRef.current.get(exerciseIndex) === path) {
+      setVideoUploadErrorExerciseIndex(exerciseIndex);
+      setVideoUploadError(
+        "הסרטון נשמר, אבל הדפדפן לא הצליח לנגן את הפורמט הזה. נסי MP4 מסוג H.264.",
+      );
+      return;
+    }
+    videoPlaybackRefreshesRef.current.set(exerciseIndex, path);
+    void import("@/lib/supabase-sync")
+      .then(({ signWorkoutPerformanceVideo }) => signWorkoutPerformanceVideo(path))
+      .then((signedUrl) => {
+        const refreshedEntries = entriesRef.current.map((currentEntry, index) =>
+          index === exerciseIndex && currentEntry.videoPath === path
+            ? { ...currentEntry, videoUrl: signedUrl }
+            : currentEntry,
+        );
+        entriesRef.current = refreshedEntries;
+        setEntries(refreshedEntries);
+        const finishedSession = finishedSessionRef.current;
+        if (finishedSession) {
+          const updatedSession: HistorySession = {
+            ...finishedSession,
+            entries: finishedSession.entries.map((currentEntry, index) =>
+              index === exerciseIndex && currentEntry.videoPath === path
+                ? { ...currentEntry, videoUrl: signedUrl }
+                : currentEntry,
+            ),
+          };
+          finishedSessionRef.current = updatedSession;
+          saveSession(updatedSession);
+        }
+        setVideoUploadError("");
+        setVideoUploadErrorExerciseIndex(null);
+      })
+      .catch((error: unknown) => {
+        setVideoUploadErrorExerciseIndex(exerciseIndex);
+        setVideoUploadError(
+          error instanceof Error
+            ? `הסרטון נשמר, אבל לא ניתן לטעון אותו מחדש: ${error.message}`
+            : "הסרטון נשמר, אבל לא ניתן לטעון אותו מחדש.",
+        );
+      });
   };
 
   const retryPerformanceVideo = (exerciseIndex: number) => {
@@ -1827,6 +1889,7 @@ function Session() {
                     playsInline
                     preload="metadata"
                     aria-label={`סרטון ביצוע ${entry.exerciseName}`}
+                    onError={() => handlePerformanceVideoError(ei)}
                   />
                 ) : null}
                 {videoUploadError && videoUploadErrorExerciseIndex === ei ? (
