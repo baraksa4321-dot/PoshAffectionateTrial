@@ -2494,7 +2494,7 @@ export function deleteProgram(id: string) {
   });
 }
 
-export function duplicateProgram(id: string) {
+export function duplicateProgram(id: string): Program | undefined {
   if (!canManageAssignedPlans()) return;
   const program = data.programs.find((p) => p.id === id);
   if (!program) return;
@@ -2510,14 +2510,18 @@ export function duplicateProgram(id: string) {
     newDays.push(copy);
     return copy.id;
   });
+  const duplicate: Program = {
+    id: uid(),
+    name: `${program.name} (עותק)`,
+    notes: program.notes,
+    dayIds,
+  };
   set({
     ...data,
     workouts: [...data.workouts, ...newDays],
-    programs: [
-      ...data.programs,
-      { id: uid(), name: `${program.name} (עותק)`, notes: program.notes, dayIds },
-    ],
+    programs: [...data.programs, duplicate],
   });
+  return duplicate;
 }
 
 export function programDays(d: GymData, programId: string): Workout[] {

@@ -5,6 +5,7 @@ import {
   ClipboardList,
   ChevronLeft,
   ChevronRight,
+  Copy,
   Crown,
   Dumbbell,
   Edit2,
@@ -42,6 +43,7 @@ import {
   saveWorkout,
   saveWorkoutInProgram,
   deleteProgram,
+  duplicateProgram,
   searchFoods,
   todayKey,
   uid,
@@ -1635,6 +1637,27 @@ function errorMessage(error: unknown, fallback: string): string {
     return error.message;
   }
   return fallback;
+}
+
+function duplicateWorkoutItems(items: WorkoutItem[]): WorkoutItem[] {
+  return items.map((item) => ({
+    ...item,
+    id: uid(),
+    ...(item.warmups
+      ? { warmups: item.warmups.map((warmup) => ({ ...warmup, id: uid() })) }
+      : {}),
+    ...(item.workingSets
+      ? { workingSets: item.workingSets.map((workingSet) => ({ ...workingSet, id: uid() })) }
+      : {}),
+    ...(item.dropSet
+      ? {
+          dropSet: {
+            ...item.dropSet,
+            levels: item.dropSet.levels?.map((level) => ({ ...level })),
+          },
+        }
+      : {}),
+  }));
 }
 
 function normalizeProfileIdentity(value?: string | null): string {
@@ -3806,8 +3829,75 @@ export function CoachDashboardPage({
     applyClientDetails(refreshedClientData);
   };
 
+  const handleDuplicateClientProgram = async (program: Program) => {
+    if (!isCoach || !selectedClientId) return;
+    setManagementError("");
+
+    if (isSelfSelected) {
+      const duplicate = duplicateProgram(program.id);
+      if (duplicate) setEditingProgramId(duplicate.id);
+      return;
+    }
+
+    const duplicateProgramId = uid();
+    const sourceDays = (clientDetails?.workouts ?? []).filter((workout) =>
+      program.dayIds.includes(workout.id),
+    );
+    const duplicateDays = sourceDays.map((day, index) => {
+      const dayId = uid();
+      return {
+        ...clientProgramDayInsertPayload(
+          dayId,
+          duplicateProgramId,
+          selectedClientId,
+          day.name,
+          index,
+          day.weekday,
+        ),
+        items: duplicateWorkoutItems(day.items),
+      };
+    });
+
+    try {
+      const { error: programError } = await supabase
+        .from("programs")
+        .insert(
+          clientProgramInsertPayload(
+            duplicateProgramId,
+            selectedClientId,
+            `${program.name} (עותק)`,
+          ),
+        );
+      if (programError) throw programError;
+
+      if (duplicateDays.length > 0) {
+        const { error: daysError } = await supabase.from("program_days").insert(duplicateDays);
+        if (daysError) {
+          await supabase
+            .from("program_days")
+            .delete()
+            .eq("program_id", duplicateProgramId)
+            .eq("user_id", selectedClientId);
+          await supabase
+            .from("programs")
+            .delete()
+            .eq("id", duplicateProgramId)
+            .eq("user_id", selectedClientId);
+          throw daysError;
+        }
+      }
+
+      const refreshedClientData = await pullClientDataForCoach(selectedClientId);
+      applyClientDetails(refreshedClientData);
+      setEditingProgramId(duplicateProgramId);
+    } catch (error: unknown) {
+      setManagementError(`שכפול התוכנית נכשל: ${errorMessage(error, "שגיאה בשכפול התוכנית")}`);
+    }
+  };
+
   const handleDeleteClientProgram = async (program: Program) => {
     if (!isCoach || !selectedClientId) return;
+    if (!window.confirm(`למחוק את התוכנית "${program.name}" וכל ימי האימון שבה?`)) return;
     setManagementError("");
 
     if (isSelfSelected) {
@@ -7452,17 +7542,21 @@ export function CoachDashboardPage({
                                 </button>
                                 <button
                                   type="button"
+                                  onClick={() => void handleDuplicateClientProgram(prog)}
+                                  className="grid h-7 w-7 place-items-center rounded-full border border-primary/25 bg-primary/5 text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                                  aria-label={`שכפל את התוכנית ${prog.name}`}
+                                  title="שכפול התוכנית"
+                                >
+                                  <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                                </button>
+                                <button
+                                  type="button"
                                   onClick={() => void handleDeleteClientProgram(prog)}
-                                  className={`inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 font-bold text-destructive hover:bg-destructive/15 ${
-                                    clientsOnly
-                                      ? "px-2 py-1 text-[10px]"
-                                      : "px-3 py-1.5 text-[11px]"
-                                  }`}
+                                  className="grid h-7 w-7 place-items-center rounded-full border border-destructive/30 bg-destructive/10 text-destructive transition-colors hover:bg-destructive/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/30"
                                   aria-label={`מחק את התוכנית ${prog.name}`}
                                   title="מחיקת התוכנית וכל ימי האימון שבה"
                                 >
-                                  <Trash2 className="h-3 w-3" />
-                                  <span>מחק</span>
+                                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                                 </button>
                               </div>
                             </div>
