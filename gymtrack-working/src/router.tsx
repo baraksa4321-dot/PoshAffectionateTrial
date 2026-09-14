@@ -19,10 +19,10 @@ export const getRouter = () => {
     defaultPreload: "intent",
     defaultPreloadStaleTime: 60_000,
     defaultPendingMs: 120,
-    // Keep native view transitions off. Safari can reject a transition while
-    // the document is hidden (for example when returning from the app switcher),
-    // which surfaces as an unhandled InvalidStateError.
-    defaultViewTransition: false,
+    // Keep the previous route visible until the next route is ready, then use
+    // the shared slide transition. This is the route-level equivalent of the
+    // coach report drawer's transform/transition pair.
+    defaultViewTransition: true,
   });
 
   return router;
