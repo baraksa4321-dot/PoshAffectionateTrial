@@ -8910,6 +8910,19 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   min-width: 0;
 }
 
+.dashboard-editorial-shell .app-home-utility-row {
+  align-items: center !important;
+}
+
+.dashboard-editorial-shell .app-home-utility-row > .app-topbar__accessory,
+.dashboard-editorial-shell .app-home-utility-row > .app-home-night-mode {
+  transform: translateY(0.15rem);
+}
+
+.dashboard-editorial-shell .app-home-utility-row > .app-workspace-switcher {
+  top: calc(50% + 0.15rem);
+}
+
 .dashboard-editorial-shell .app-main {
   padding-top: 1rem !important;
   padding-bottom: calc(6.5rem + env(safe-area-inset-bottom)) !important;
