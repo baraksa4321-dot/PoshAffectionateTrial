@@ -988,7 +988,7 @@ export function AppShell({
             : `app-shell app-shell--compact-rhythm flex h-[100lvh] min-h-0 w-full flex-col overflow-hidden bg-background text-foreground ${pageClassName}`
       }
       data-management-view={managementView ? "true" : undefined}
-      data-owner-dashboard={isOwner && isDashboardShell && location.pathname === "/" ? "true" : undefined}
+      data-owner-home={isOwner && showWorkspaceSwitcher ? "true" : undefined}
       data-compact-header={compactHeader ? "true" : undefined}
       dir="rtl"
     >
@@ -1081,6 +1081,56 @@ export function AppShell({
                   </Link>
                 </div>
               ) : null}
+              {user && showHomeOnlyHeaderControls && showWorkspaceSwitcher ? (
+                <div className="app-home-account-controls flex max-w-[9.5rem] items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2 py-1 text-[10px] font-bold text-ink shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setShowSyncModal(true)}
+                    aria-label={syncTitle}
+                    title={syncTitle}
+                    className="cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <SyncIcon
+                      className={`h-3 w-3 ${syncIconClass} ${
+                        cloudSyncStatus === "syncing" ? "animate-pulse" : ""
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openProfileModal}
+                    aria-label="פתיחת הפרופיל האישי"
+                    className="flex min-w-0 flex-1 cursor-pointer flex-col truncate text-start leading-tight transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <span className="truncate text-[10px]">{store.userProfile?.fullName || "החשבון שלי"}</span>
+                    {user.email ? (
+                      <span className="truncate text-[7px] font-medium text-muted-foreground">
+                        {user.email}
+                      </span>
+                    ) : null}
+                  </button>
+                  <div className="mx-0.5 h-3 w-px bg-border/80" />
+                  <button
+                    type="button"
+                    onClick={() => setShowThemeModal(true)}
+                    title="בחירת פלטה"
+                    aria-label="בחירת פלטת צבעים"
+                    className="cursor-pointer text-muted-foreground transition-colors hover:text-primary"
+                  >
+                    <div className="h-3 w-3 rounded-sm border border-primary/20 bg-primary" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    title="התנתק"
+                    aria-label="התנתק"
+                    className="cursor-pointer text-muted-foreground transition-colors hover:text-destructive"
+                  >
+                    <LogOut className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : null}
             </div>
           ) : null}
           {(title || action || (user && showHomeOnlyHeaderControls) || !user) ? (
@@ -1104,7 +1154,7 @@ export function AppShell({
                 ) : null}
               </div>
               <div className="flex shrink-0 items-center gap-2 pt-0.5">
-                {user && showHomeOnlyHeaderControls ? (
+                {user && showHomeOnlyHeaderControls && !showWorkspaceSwitcher ? (
                   <div className="flex items-center gap-2 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-[12px] font-bold text-ink shadow-sm">
                     <button
                       type="button"
