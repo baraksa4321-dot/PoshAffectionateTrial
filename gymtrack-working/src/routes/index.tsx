@@ -29,6 +29,7 @@ import {
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import { AppShell } from "@/components/AppShell";
 import { FreeTextInput } from "@/components/FreeTextInput";
+import { VideoFeedbackVideo } from "@/components/VideoFeedbackVideo";
 import { Overlay } from "@/components/ui-app/Overlay";
 import {
   Card,
@@ -139,6 +140,27 @@ function progressEntryForExercise(
     session.entries.find((entry) => entry.exerciseId === exerciseId) ??
     session.entries.find((entry) => entry.exerciseName.trim() === exerciseName.trim())
   );
+}
+
+function historyEntryForVideoFeedback(
+  feedback: VideoFeedback,
+  history: import("@/lib/gym-types").HistorySession[],
+) {
+  const session = history.find((candidate) => candidate.id === feedback.sessionId);
+  if (!session) return { session: undefined, entry: undefined };
+  const entry =
+    session.entries.find(
+      (candidate) =>
+        candidate.videoPath === feedback.videoPath &&
+        candidate.exerciseId === feedback.exerciseId,
+    ) ??
+    session.entries.find((candidate) => candidate.exerciseId === feedback.exerciseId) ??
+    session.entries.find(
+      (candidate) =>
+        candidate.exerciseName.trim().toLocaleLowerCase() ===
+        feedback.exerciseName.trim().toLocaleLowerCase(),
+    );
+  return { session, entry };
 }
 
 function Dashboard() {
@@ -505,12 +527,7 @@ function Dashboard() {
   const latestCoachMsg = getLatestVisibleCoachMessage(coachMessages, dismissedMessageIds);
   const videoFeedbackRows = (videoFeedbacks ?? [])
     .map((feedback: VideoFeedback) => {
-      const session = history.find((candidate) => candidate.id === feedback.sessionId);
-      const entry = session?.entries.find(
-        (candidate) =>
-          candidate.videoPath === feedback.videoPath &&
-          candidate.exerciseId === feedback.exerciseId,
-      );
+      const { session, entry } = historyEntryForVideoFeedback(feedback, history);
       return { feedback, session, entry };
     })
     .sort(
@@ -1288,16 +1305,7 @@ function Dashboard() {
                           <Eye className="h-4 w-4 shrink-0 text-emerald-600" aria-label="נקרא" />
                         )}
                       </div>
-                      {entry?.videoUrl ? (
-                        <video
-                          src={entry.videoUrl}
-                          controls
-                          playsInline
-                          preload="metadata"
-                          className="mt-2 max-h-56 w-full rounded-xl bg-black object-contain"
-                          aria-label={`סרטון ${entry.exerciseName || feedback.exerciseName}`}
-                        />
-                      ) : null}
+                      <VideoFeedbackVideo feedback={feedback} entry={entry} />
                       <p className="mt-2 rounded-xl bg-secondary/55 p-2.5 text-xs font-semibold leading-relaxed text-ink">
                         {feedback.message}
                       </p>

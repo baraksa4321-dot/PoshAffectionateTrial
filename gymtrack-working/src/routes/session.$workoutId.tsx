@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { VideoFeedbackVideo } from "@/components/VideoFeedbackVideo";
 import { canonicalizeExerciseRecords, exerciseDisplayName } from "@/lib/exercise-library";
 import { Stepper } from "@/components/Stepper";
 import { ConfirmSheet } from "@/components/ui-app/ConfirmSheet";
@@ -53,6 +54,7 @@ import type {
   HistoryEntry,
   HistorySession,
   LoggedSet,
+  VideoFeedback,
   WorkoutItem,
 } from "@/lib/gym-types";
 import { genderText } from "@/lib/gender-copy";
@@ -357,6 +359,27 @@ function findExerciseForItem(item: WorkoutItem | undefined, exercises: Exercise[
   });
 }
 
+function historyEntryForVideoFeedback(
+  feedback: VideoFeedback,
+  history: HistorySession[],
+) {
+  const session = history.find((candidate) => candidate.id === feedback.sessionId);
+  if (!session) return { session: undefined, entry: undefined };
+  const entry =
+    session.entries.find(
+      (candidate) =>
+        candidate.videoPath === feedback.videoPath &&
+        candidate.exerciseId === feedback.exerciseId,
+    ) ??
+    session.entries.find((candidate) => candidate.exerciseId === feedback.exerciseId) ??
+    session.entries.find(
+      (candidate) =>
+        candidate.exerciseName.trim().toLocaleLowerCase() ===
+        feedback.exerciseName.trim().toLocaleLowerCase(),
+    );
+  return { session, entry };
+}
+
 type SmartTimerPosition = {
   exerciseIndex: number;
   setNumber: number;
@@ -367,7 +390,7 @@ function Session() {
   const navigate = useNavigate();
   const authUser = useAuthUser();
   const sessionOwnerId = authUser?.id ?? "";
-  const { workouts, exercises, history, programs, userProfile } = useGym();
+  const { workouts, exercises, history, programs, userProfile, videoFeedbacks } = useGym();
   const gender = userProfile?.gender;
   const [weekKey, setWeekKey] = useState(() => currentWeekKey());
   useEffect(() => {
@@ -382,6 +405,20 @@ function Session() {
   const workout = workouts.find((w) => w.id === workoutId);
   const currentProgram = programs.find((program) => program.dayIds.includes(workoutId));
   const [cardExercise, setCardExercise] = useState<Exercise | null>(null);
+  const cardExerciseFeedbacks = useMemo(() => {
+    if (!cardExercise) return [];
+    const exerciseName = cardExercise.name.trim().toLocaleLowerCase();
+    return (videoFeedbacks ?? [])
+      .filter(
+        (feedback) =>
+          feedback.exerciseId === cardExercise.id ||
+          feedback.exerciseName.trim().toLocaleLowerCase() === exerciseName,
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+  }, [cardExercise, videoFeedbacks]);
   const [bodyweightNotice, setBodyweightNotice] = useState("");
   const [isBodyweightMode, setIsBodyweightMode] = useState(() =>
     Boolean(workout?.name.endsWith("· משקל גוף")),
@@ -2208,6 +2245,41 @@ function Session() {
                 </>
               );
             })()}
+              {cardExerciseFeedbacks.length > 0 ? (
+                <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-bold text-primary">משוב מהמאמן על התרגיל</p>
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                      {cardExerciseFeedbacks.length} משובים
+                    </span>
+                  </div>
+                  {cardExerciseFeedbacks.map((feedback) => {
+                    const { session, entry } = historyEntryForVideoFeedback(feedback, history);
+                    return (
+                      <div
+                        key={feedback.id}
+                        className="rounded-xl border border-primary/15 bg-white/85 p-2.5"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-[10px] font-semibold text-muted-foreground">
+                            {session?.workoutName || "אימון"} ·{" "}
+                            {new Date(feedback.createdAt).toLocaleDateString("he-IL")}
+                          </p>
+                          {!feedback.seenAt ? (
+                            <span className="rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
+                              חדש
+                            </span>
+                          ) : null}
+                        </div>
+                        <VideoFeedbackVideo feedback={feedback} entry={entry} />
+                        <p className="mt-2 text-[11px] font-semibold leading-relaxed text-ink">
+                          {feedback.message}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
           </div>
         </Overlay>
       ) : null}
