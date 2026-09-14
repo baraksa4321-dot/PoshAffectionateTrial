@@ -1704,6 +1704,7 @@ function WorkoutDailyReport({
               item.targetWeight ?? item.weight
                 ? `${item.targetWeight ?? item.weight} ק״ג`
                 : "משקל לפי ביצוע";
+            const demoVideoSources = exerciseDemoVideoSources(exercise);
             const plannedDetails = [
               `${item.sets} סטים × ${plannedReps} חזרות`,
               plannedWeight,
@@ -1849,7 +1850,7 @@ function WorkoutDailyReport({
                   );
                 })}
 
-                {exercise ? (
+                {demoVideoSources.length > 0 ? (
                   <div className="border-t border-current/10 px-2.5 pb-3">
                     <p className="mb-1.5 text-start text-[10px] font-bold text-primary">
                       סרטון הדגמה של התרגיל

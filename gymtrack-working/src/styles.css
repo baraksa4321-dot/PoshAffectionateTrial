@@ -9033,7 +9033,7 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 /* The report is a real drawer, so its own content can be denser without
  * changing the builder or the rest of the application. */
 .workout-report-panel {
-  height: 100%;
+  height: auto;
   padding: 0.55rem 0.7rem calc(8.5rem + env(safe-area-inset-bottom));
 }
 
@@ -9049,6 +9049,18 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 .workout-report-panel [data-testid="coach-workout-daily-report"] > div:first-child {
   gap: 0.55rem;
   padding-bottom: 0.5rem;
+}
+
+@media (max-width: 767px) {
+  /*
+   * The mobile nav is fixed outside the builder surface. Keep the drawer's
+   * viewport above it instead of allowing the final report cards to scroll
+   * underneath the nav where iOS cannot expose them reliably.
+   */
+  .workout-report-panel {
+    bottom: calc(5.75rem + env(safe-area-inset-bottom));
+    padding-bottom: 1.5rem;
+  }
 }
 
 .workout-report-panel [data-testid="coach-workout-daily-report"] > div:first-child .illustrated-mark {
