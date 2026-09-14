@@ -7,4 +7,4 @@ Explicit workout weekdays use a Sunday-first value from 0 through 6. Weekly comp
 
 **Why:** Older plans were created before weekday scheduling existed. Treating every missing weekday as a new random assignment would change their behavior and could hide workouts after a partial migration.
 
-**How to apply:** Use the explicit weekday when any workout has one. Only a fully legacy plan may fall back to its stable list order; an unassigned workout in a mixed plan should remain unassigned until a coach selects a weekday. Never let last week's local draft or feedback become the new week's active state.
+**How to apply:** Use the explicit weekday when any workout has one. Only a fully legacy plan may fall back to its stable list order; an unassigned workout in a mixed plan should remain unassigned until a coach selects a weekday. If an older Supabase schema cannot store `weekday`, preserve the coach's explicit assignment in the per-coach client cache until the migration is available. Never let last week's local draft or feedback become the new week's active state.

@@ -42,8 +42,8 @@ import {
   saveExercise,
   saveWorkout,
   saveWorkoutInProgram,
-  deleteProgram,
-  duplicateProgram,
+  deleteWorkout,
+  duplicateWorkoutDay,
   searchFoods,
   todayKey,
   uid,
@@ -379,6 +379,28 @@ function writeCoachClientCache(coachId: string, clientId: string, details: Clien
   } catch {
     // A large history or a constrained private-mode quota must not block refresh.
   }
+}
+
+function mergeCachedWorkoutWeekdays(
+  details: ClientDetails,
+  cachedDetails: ClientDetails | null,
+): ClientDetails {
+  if (!cachedDetails?.workouts?.length) return details;
+  const cachedWeekdays = new Map(
+    cachedDetails.workouts
+      .filter((workout) => workout.weekday !== undefined)
+      .map((workout) => [workout.id, workout.weekday]),
+  );
+  if (cachedWeekdays.size === 0) return details;
+  return {
+    ...details,
+    workouts: details.workouts.map((workout) => {
+      const cachedWeekday = cachedWeekdays.get(workout.id);
+      return workout.weekday === undefined && cachedWeekday !== undefined
+        ? { ...workout, weekday: cachedWeekday }
+        : workout;
+    }),
+  };
 }
 
 function attentionDateKey(value: string | undefined | null) {
@@ -1641,16 +1663,6 @@ function errorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-function isMissingProgramDayWeekday(error: unknown): boolean {
-  const message =
-    error instanceof Error
-      ? error.message
-      : error && typeof error === "object" && "message" in error
-        ? String(error.message)
-        : String(error ?? "");
-  return /program_days/i.test(message) && /weekday/i.test(message) && /schema cache/i.test(message);
-}
-
 function duplicateWorkoutItems(items: WorkoutItem[]): WorkoutItem[] {
   return items.map((item) => ({
     ...item,
@@ -2181,9 +2193,14 @@ export function CoachDashboardPage({
   editorRefreshLockRef.current = editorRefreshBlocked;
   const applySelectedClientRefreshResult = useCallback(
     (result: ClientDetails) => {
-      applyClientDetails(result, { preserveOnError: true });
-      if (!result.error && authUser?.id && selectedClientId) {
-        writeCoachClientCache(authUser.id, selectedClientId, result);
+      const cachedDetails =
+        authUser?.id && selectedClientId
+          ? readCoachClientCache(authUser.id, selectedClientId)
+          : null;
+      const mergedResult = mergeCachedWorkoutWeekdays(result, cachedDetails);
+      applyClientDetails(mergedResult, { preserveOnError: true });
+      if (!mergedResult.error && authUser?.id && selectedClientId) {
+        writeCoachClientCache(authUser.id, selectedClientId, mergedResult);
       }
       setClientRefreshInFlight(false);
     },
@@ -2782,9 +2799,13 @@ export function CoachDashboardPage({
           setClientRefreshInFlight(false);
           return;
         }
-        applyClientDetails(res);
-        if (!res.error && authUser?.id) {
-          writeCoachClientCache(authUser.id, selectedClientId, res);
+        const mergedResult = mergeCachedWorkoutWeekdays(
+          res,
+          authUser?.id ? readCoachClientCache(authUser.id, selectedClientId) : null,
+        );
+        applyClientDetails(mergedResult);
+        if (!mergedResult.error && authUser?.id) {
+          writeCoachClientCache(authUser.id, selectedClientId, mergedResult);
         }
         setLoadingDetails(false);
         setClientRefreshInFlight(false);
@@ -3843,114 +3864,85 @@ export function CoachDashboardPage({
     applyClientDetails(refreshedClientData);
   };
 
-  const handleDuplicateClientProgram = async (program: Program) => {
+  const handleDuplicateClientWorkoutDay = async (program: Program, day: Workout) => {
     if (!isCoach || !selectedClientId) return;
     setManagementError("");
 
     if (isSelfSelected) {
-      const duplicate = duplicateProgram(program.id);
-      if (duplicate) setEditingProgramId(duplicate.id);
+      const duplicate = duplicateWorkoutDay(program.id, day.id);
+      if (duplicate) setEditingDayId(duplicate.id);
       return;
     }
 
-    const duplicateProgramId = uid();
-    const sourceDays = (clientDetails?.workouts ?? []).filter((workout) =>
-      program.dayIds.includes(workout.id),
-    );
-    const duplicateDays = sourceDays.map((day, index) => {
-      const dayId = uid();
-      return {
-        ...clientProgramDayInsertPayload(
-          dayId,
-          duplicateProgramId,
-          selectedClientId,
-          day.name,
-          index,
-          day.weekday,
-        ),
-        items: duplicateWorkoutItems(day.items),
-      };
+    const duplicateDayId = uid();
+    const sourceIndex = program.dayIds.indexOf(day.id);
+    const duplicateDay: Workout = {
+      ...day,
+      id: duplicateDayId,
+      name: day.name,
+      items: duplicateWorkoutItems(day.items),
+    };
+    const result = await insertProgramDayForCoach({
+      ...clientProgramDayInsertPayload(
+        duplicateDayId,
+        program.id,
+        selectedClientId,
+        duplicateDay.name,
+        sourceIndex >= 0 ? sourceIndex + 1 : program.dayIds.length,
+        day.weekday,
+      ),
+      items: duplicateDay.items,
     });
 
-    try {
-      const { error: programError } = await supabase
-        .from("programs")
-        .insert(
-          clientProgramInsertPayload(
-            duplicateProgramId,
-            selectedClientId,
-            `${program.name} (עותק)`,
-          ),
-        );
-      if (programError) throw programError;
-
-      if (duplicateDays.length > 0) {
-        let { error: daysError } = await supabase.from("program_days").insert(duplicateDays);
-        if (daysError && isMissingProgramDayWeekday(daysError)) {
-          const legacyDuplicateDays = duplicateDays.map(({ weekday: _weekday, ...day }) => day);
-          ({ error: daysError } = await supabase
-            .from("program_days")
-            .insert(legacyDuplicateDays));
-        }
-        if (daysError) {
-          await supabase
-            .from("program_days")
-            .delete()
-            .eq("program_id", duplicateProgramId)
-            .eq("user_id", selectedClientId);
-          await supabase
-            .from("programs")
-            .delete()
-            .eq("id", duplicateProgramId)
-            .eq("user_id", selectedClientId);
-          throw daysError;
-        }
-      }
-
-      const refreshedClientData = await pullClientDataForCoach(selectedClientId);
-      applyClientDetails(refreshedClientData);
-      setEditingProgramId(duplicateProgramId);
-    } catch (error: unknown) {
-      setManagementError(`שכפול התוכנית נכשל: ${errorMessage(error, "שגיאה בשכפול התוכנית")}`);
-    }
-  };
-
-  const handleDeleteClientProgram = async (program: Program) => {
-    if (!isCoach || !selectedClientId) return;
-    if (!window.confirm(`למחוק את התוכנית "${program.name}" וכל ימי האימון שבה?`)) return;
-    setManagementError("");
-
-    if (isSelfSelected) {
-      deleteProgram(program.id);
-      setEditingProgramId((current) => (current === program.id ? null : current));
-      setEditingDayId(null);
+    if (result.error) {
+      setManagementError(
+        `שכפול יום האימון נכשל: ${errorMessage(result.error, "שגיאה בשכפול יום האימון")}`,
+      );
       return;
     }
 
-    const { error: daysError } = await supabase
-      .from("program_days")
-      .delete()
-      .eq("program_id", program.id)
-      .eq("user_id", selectedClientId);
+    if (result.usedLegacySchema) {
+      const nextClientDetails = clientDetails
+        ? appendProgramDayToLocalCoachData(clientDetails, program.id, duplicateDay)
+        : null;
+      if (nextClientDetails) {
+        setClientDetails(nextClientDetails);
+        if (authUser?.id) {
+          writeCoachClientCache(authUser.id, selectedClientId, nextClientDetails);
+        }
+      }
+    } else {
+      const refreshedClientData = await pullClientDataForCoach(selectedClientId);
+      applyClientDetails(refreshedClientData);
+    }
+    setEditingProgramId(program.id);
+    setEditingDayId(duplicateDayId);
+  };
 
-    if (daysError) {
-      setManagementError(`מחיקת ימי האימון נכשלה: ${daysError.message}`);
+  const handleDeleteClientWorkoutDay = async (program: Program, day: Workout) => {
+    if (!isCoach || !selectedClientId) return;
+    if (!window.confirm(`למחוק את יום האימון "${day.name}" וכל התרגילים שבו?`)) return;
+    setManagementError("");
+
+    if (isSelfSelected) {
+      deleteWorkout(day.id);
+      setEditingDayId((current) => (current === day.id ? null : current));
       return;
     }
 
     const { error } = await supabase
-      .from("programs")
+      .from("program_days")
       .delete()
-      .eq("id", program.id)
+      .eq("id", day.id)
+      .eq("program_id", program.id)
       .eq("user_id", selectedClientId);
 
     if (error) {
-      setManagementError(`מחיקת התוכנית נכשלה: ${error.message}`);
+      setManagementError(`מחיקת יום האימון נכשלה: ${error.message}`);
       return;
     }
 
-    setEditingProgramId((current) => (current === program.id ? null : current));
-    setEditingDayId(null);
+    setEditingDayId((current) => (current === day.id ? null : current));
     const refreshedDetails = await pullClientDataForCoach(selectedClientId);
     applyClientDetails(refreshedDetails);
   };
@@ -3995,14 +3987,20 @@ export function CoachDashboardPage({
     }
     setNewDayName("");
     if (result.usedLegacySchema) {
-      setClientDetails((current) =>
-        current
-          ? appendProgramDayToLocalCoachData(current, editingProgramId, newWorkout)
-          : current,
-      );
-      return;
+      const nextClientDetails = clientDetails
+        ? appendProgramDayToLocalCoachData(clientDetails, editingProgramId, newWorkout)
+        : null;
+      if (nextClientDetails) {
+        setClientDetails(nextClientDetails);
+        if (authUser?.id) {
+          writeCoachClientCache(authUser.id, selectedClientId, nextClientDetails);
+        }
+      }
+    } else {
+      const refreshedDetails = await pullClientDataForCoach(selectedClientId);
+      applyClientDetails(refreshedDetails);
     }
-    pullClientDataForCoach(selectedClientId).then(applyClientDetails);
+    setEditingDayId(dayId);
   };
 
   const handleChangeWorkoutDayWeekday = async (day: Workout, value: string) => {
@@ -4027,20 +4025,26 @@ export function CoachDashboardPage({
       setManagementError(`עדכון יום האימון נכשל: ${message}`);
       return;
     }
+    const nextClientDetails = clientDetails
+      ? {
+          ...clientDetails,
+          workouts: clientDetails.workouts.map((workout) =>
+            workout.id === day.id ? { ...workout, weekday } : workout,
+          ),
+        }
+      : null;
+    if (nextClientDetails) {
+      setClientDetails(nextClientDetails);
+      if (authUser?.id) {
+        writeCoachClientCache(authUser.id, selectedClientId, nextClientDetails);
+      }
+    }
     if (result.usedLegacySchema) {
-      setClientDetails((current) =>
-        current
-          ? {
-              ...current,
-              workouts: current.workouts.map((workout) =>
-                workout.id === day.id ? { ...workout, weekday } : workout,
-              ),
-            }
-          : current,
-      );
       return;
     }
-    pullClientDataForCoach(selectedClientId).then(applyClientDetails);
+    pullClientDataForCoach(selectedClientId).then((refreshedDetails) =>
+      applyClientDetails(mergeCachedWorkoutWeekdays(refreshedDetails, nextClientDetails)),
+    );
   };
 
   const handleRenameWorkoutDay = async (day: Workout, name: string) => {
@@ -7500,9 +7504,16 @@ export function CoachDashboardPage({
                     <div className={clientsOnly ? "space-y-1 pt-0.5" : "space-y-3 pt-2"}>
                       {(clientDetails?.programs ?? []).map((prog: Program) => {
                         const isProgActive = editingProgramId === prog.id;
-                        const progDays = clientDetails?.workouts?.filter((w: Workout) =>
-                          prog.dayIds?.includes(w.id),
-                        );
+                        const progDays = (prog.dayIds ?? [])
+                          .map((dayId) =>
+                            clientDetails?.workouts?.find((workout) => workout.id === dayId),
+                          )
+                          .filter((day): day is Workout => Boolean(day))
+                          .sort((a, b) => {
+                            const weekdayA = a.weekday ?? WEEKDAY_LABELS.length;
+                            const weekdayB = b.weekday ?? WEEKDAY_LABELS.length;
+                            return weekdayA - weekdayB;
+                          });
 
                         return (
                           <div
@@ -7568,24 +7579,6 @@ export function CoachDashboardPage({
                                   <Edit2 className="h-3 w-3" />
                                   <span>{isProgActive ? "סגירה" : "עריכה"}</span>
                                 </button>
-                                <button
-                                  type="button"
-                                  onClick={() => void handleDuplicateClientProgram(prog)}
-                                  className="grid h-7 w-7 place-items-center rounded-full border border-primary/25 bg-primary/5 text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-                                  aria-label={`שכפל את התוכנית ${prog.name}`}
-                                  title="שכפול התוכנית"
-                                >
-                                  <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => void handleDeleteClientProgram(prog)}
-                                  className="grid h-7 w-7 place-items-center rounded-full border border-destructive/30 bg-destructive/10 text-destructive transition-colors hover:bg-destructive/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/30"
-                                  aria-label={`מחק את התוכנית ${prog.name}`}
-                                  title="מחיקת התוכנית וכל ימי האימון שבה"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                                </button>
                               </div>
                             </div>
 
@@ -7595,11 +7588,6 @@ export function CoachDashboardPage({
                                   clientsOnly ? "space-y-1.5 p-2" : "space-y-3 p-3.5"
                                 }`}
                               >
-                                {isProgActive && !editingDayId ? (
-                                  <div className="flex items-center justify-end">
-                                    <ChallengeLibrary compact />
-                                  </div>
-                                ) : null}
                                 {isProgActive && !editingDayId ? (
                                   <form onSubmit={handleAddProgramDay} className="flex gap-2">
                                     <input
@@ -7641,9 +7629,8 @@ export function CoachDashboardPage({
 
                                     if (!editingDayId) {
                                       return (
-                                        <button
+                                        <div
                                           key={dayItem.id}
-                                          type="button"
                                           onClick={() => {
                                             setEditingDayId(dayItem.id);
                                             setOpenWorkoutReportId(null);
@@ -7651,6 +7638,15 @@ export function CoachDashboardPage({
                                             setEditingItemId(null);
                                             setSelectedExId("");
                                           }}
+                                          onKeyDown={(event) => {
+                                            if (event.target !== event.currentTarget) return;
+                                            if (event.key === "Enter" || event.key === " ") {
+                                              event.preventDefault();
+                                              event.currentTarget.click();
+                                            }
+                                          }}
+                                          role="button"
+                                          tabIndex={0}
                                           aria-label={`בניית אימון ${dayItem.name}`}
                                           className="flex w-full items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background p-3.5 text-start shadow-sm transition-all hover:border-primary/45 hover:bg-primary/[0.03]"
                                         >
@@ -7665,10 +7661,36 @@ export function CoachDashboardPage({
                                                  : `יום ${WEEKDAY_LABELS[dayItem.weekday]}`}
                                             </span>
                                           </span>
-                                          <span className="shrink-0 rounded-xl bg-primary/10 px-3 py-2 text-[11px] font-extrabold text-primary">
-                                            בניית אימון
-                                          </span>
-                                        </button>
+                                          <div className="flex shrink-0 items-center gap-1.5">
+                                            <button
+                                              type="button"
+                                              onClick={(event) => {
+                                                event.stopPropagation();
+                                                void handleDuplicateClientWorkoutDay(prog, dayItem);
+                                              }}
+                                              className="grid h-8 w-8 place-items-center rounded-full border border-primary/25 bg-primary/5 text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                                              aria-label={`שכפל את יום האימון ${dayItem.name}`}
+                                              title="שכפול יום האימון"
+                                            >
+                                              <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={(event) => {
+                                                event.stopPropagation();
+                                                void handleDeleteClientWorkoutDay(prog, dayItem);
+                                              }}
+                                              className="grid h-8 w-8 place-items-center rounded-full border border-destructive/30 bg-destructive/10 text-destructive transition-colors hover:bg-destructive/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/30"
+                                              aria-label={`מחק את יום האימון ${dayItem.name}`}
+                                              title="מחיקת יום האימון וכל התרגילים שבו"
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                            </button>
+                                            <span className="rounded-xl bg-primary/10 px-3 py-2 text-[11px] font-extrabold text-primary">
+                                              בניית אימון
+                                            </span>
+                                          </div>
+                                        </div>
                                       );
                                     }
                                     if (!isDayActive) return null;
@@ -7760,6 +7782,7 @@ export function CoachDashboardPage({
                                                 <Activity className="h-3.5 w-3.5" aria-hidden="true" />
                                                 דוח אימון
                                               </button>
+                                              <ChallengeLibrary compact />
                                               <button
                                                 type="button"
                                                 onClick={() => {

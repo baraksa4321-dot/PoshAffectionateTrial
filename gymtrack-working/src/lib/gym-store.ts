@@ -2353,7 +2353,7 @@ export function deleteWorkout(id: string) {
   });
 }
 
-export function duplicateWorkoutDay(programId: string, dayId: string) {
+export function duplicateWorkoutDay(programId: string, dayId: string): Workout | undefined {
   if (!canManageAssignedPlans()) return;
   const day = data.workouts.find((w) => w.id === dayId);
   const program = data.programs.find((p) => p.id === programId);
@@ -2361,17 +2361,42 @@ export function duplicateWorkoutDay(programId: string, dayId: string) {
   const copy: Workout = {
     ...day,
     id: uid(),
-    name: `${day.name} (עותק)`,
-    items: day.items.map((i) => ({ ...i, id: uid() })),
+    name: day.name,
+    items: day.items.map((item) => ({
+      ...item,
+      id: uid(),
+      ...(item.warmups
+        ? { warmups: item.warmups.map((warmup) => ({ ...warmup, id: uid() })) }
+        : {}),
+      ...(item.workingSets
+        ? {
+            workingSets: item.workingSets.map((workingSet) => ({
+              ...workingSet,
+              id: uid(),
+            })),
+          }
+        : {}),
+      ...(item.dropSetConfig
+        ? {
+            dropSetConfig: {
+              ...item.dropSetConfig,
+              ...(item.dropSetConfig.levels
+                ? { levels: item.dropSetConfig.levels.map((level) => ({ ...level })) }
+                : {}),
+            },
+          }
+        : {}),
+    })),
   };
   const index = program.dayIds.indexOf(dayId);
   const dayIds = [...program.dayIds];
-  dayIds.splice(index + 1, 0, copy.id);
+  dayIds.splice(index >= 0 ? index + 1 : dayIds.length, 0, copy.id);
   set({
     ...data,
     workouts: [...data.workouts, copy],
     programs: data.programs.map((p) => (p.id === programId ? { ...p, dayIds } : p)),
   });
+  return copy;
 }
 
 export function reorderProgramDays(programId: string, dayIds: string[]) {
@@ -2536,7 +2561,7 @@ export function duplicateProgram(id: string): Program | undefined {
   });
   const duplicate: Program = {
     id: uid(),
-    name: `${program.name} (עותק)`,
+    name: program.name,
     notes: program.notes,
     dayIds,
   };

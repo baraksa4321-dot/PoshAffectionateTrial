@@ -328,7 +328,7 @@ function SortableDayCard({
   };
   const navigate = useNavigate();
   const goStart = () => navigate({ to: "/session/$workoutId", params: { workoutId: day.id } });
-  const onDuplicate = () => duplicateWorkoutDay(day.id, programId);
+  const onDuplicate = () => duplicateWorkoutDay(programId, day.id);
 
   return (
     <article ref={setNodeRef} style={style} className="surface-card overflow-hidden p-3">
