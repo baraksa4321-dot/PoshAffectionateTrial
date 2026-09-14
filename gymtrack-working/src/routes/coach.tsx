@@ -5412,7 +5412,7 @@ export function CoachDashboardPage({
        ) : null}
 
       {isOwner ? (
-        <div className="mb-3 grid grid-cols-3 gap-1.5 sm:gap-2" aria-label="כלי ניהול מהירים">
+        <div className="mb-3 grid grid-cols-2 gap-1.5 sm:gap-2" aria-label="כלי ניהול מהירים">
           <button
             type="button"
             onClick={() =>
@@ -5452,24 +5452,6 @@ export function CoachDashboardPage({
                 {attentionOpenCount}
               </span>
             ) : null}
-          </button>
-          <button
-            type="button"
-            onClick={() =>
-              setOwnerHomeTab((current) => (current === "profiles" ? "overview" : "profiles"))
-            }
-            aria-pressed={ownerHomeTab === "profiles"}
-            aria-label="פתיחת כרטיס הפרופילים"
-            title="פרופילים"
-            className={`surface-card flex min-w-0 items-center justify-center gap-1 border-primary/25 bg-primary/5 px-1.5 py-2 text-[9px] font-bold text-primary transition-colors hover:border-primary/50 hover:bg-primary/10 ${
-              ownerHomeTab === "profiles" ? "ring-2 ring-primary/25" : ""
-            }`}
-          >
-            <Users className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span className="truncate">פרופילים</span>
-            <span className="rounded-full bg-primary/15 px-1 py-0.5 text-[8px] leading-none">
-              {allProfiles.length}
-            </span>
           </button>
         </div>
       ) : null}

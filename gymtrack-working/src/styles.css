@@ -4776,7 +4776,7 @@ html:not([data-loading-account="animation"]) .loading-plain-content {
 /* Personal workout pages need enough scroll tail to expose the cardio card
  * above the floating navigation, including the iOS home-indicator inset. */
 .workouts-page .app-main {
-  padding-bottom: calc(9rem + env(safe-area-inset-bottom)) !important;
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)) !important;
 }
 
 /* iOS may otherwise move the scroll anchor when keyboard clearance changes
@@ -4799,6 +4799,22 @@ html[data-keyboard-open] [data-coach-workspace="true"] {
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   scroll-padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+}
+
+/* Inline coach workspaces live inside the app's page scroller. Let the page
+   own the vertical scroll instead of clipping the workspace at a second
+   viewport-sized boundary. Fullscreen portal workspaces keep their dedicated
+   scroll container below. */
+.overlay-inline-panel [data-coach-workspace="true"] {
+  max-height: none;
+  overflow-y: visible;
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+}
+
+.overlay-inline-panel .workout-builder-workspace,
+.overlay-inline-panel .workout-builder-surface,
+.overlay-inline-panel .workout-builder-workspace > .coach-workout-surface-slot {
+  min-height: 0;
 }
 
 input:not([type="hidden"]):not([type="file"]),
@@ -5012,6 +5028,21 @@ html[data-keyboard-open] .nav-shell {
 .workout-report-bookmark-open ~ .workout-report-panel {
   inset-inline: 1.75rem 0;
   border-radius: 1.25rem;
+}
+
+/* The inline coach editor has one page scroll root. Keep the report tab
+   available while its workout content moves underneath it on small screens. */
+@media (max-width: 767px) {
+  .overlay-inline-panel .workout-report-bookmark {
+    position: fixed;
+    top: calc(var(--app-topbar-height, 0px) + 0.75rem);
+    right: 0;
+  }
+
+  .overlay-inline-panel .workout-report-bookmark-open {
+    left: 0;
+    right: auto;
+  }
 }
 
 .workout-builder-surface {
@@ -8752,7 +8783,7 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   .app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell)
     .app-main {
     padding-inline: 0.85rem;
-    padding-bottom: calc(4.4rem + env(safe-area-inset-bottom)) !important;
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)) !important;
   }
 
   .app-shell--compact-rhythm.dashboard-editorial-shell:not(.session-compact):not(
@@ -8802,7 +8833,7 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 }
 
 .app-shell--compact-rhythm:not(.session-compact):not(.auth-editorial-shell) .app-main {
-  padding-top: 0.3rem !important;
+  padding-top: 0.2rem !important;
 }
 
 .coach-workout-surface-slot:empty,
