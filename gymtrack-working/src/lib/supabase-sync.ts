@@ -647,7 +647,7 @@ type UploadedWorkoutVideo = {
   signedUrl: string;
 };
 
-const WORKOUT_VIDEO_UPLOAD_ATTEMPTS = 3;
+const WORKOUT_VIDEO_UPLOAD_ATTEMPTS = 5;
 
 function isRetryableWorkoutVideoError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error ?? "");
@@ -658,7 +658,8 @@ function isRetryableWorkoutVideoError(error: unknown): boolean {
 
 function waitBeforeWorkoutVideoRetry(attempt: number): Promise<void> {
   return new Promise((resolve) => {
-    setTimeout(resolve, 450 * attempt);
+    const delayMs = Math.min(8_000, 1_000 * 2 ** (attempt - 1));
+    setTimeout(resolve, delayMs);
   });
 }
 
