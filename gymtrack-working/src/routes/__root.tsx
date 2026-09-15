@@ -1184,6 +1184,10 @@ function NavigationProgress() {
 
 function RootContent() {
   const { queryClient } = Route.useRouteContext();
+  const currentPath = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+  const isPasswordResetRoute = currentPath === "/reset-password";
   const authStatus = useAuthStatus();
   const authUser = useAuthUser();
   const { userProfile } = useGym();
@@ -1578,7 +1582,9 @@ function RootContent() {
           </a>
         </div>
       </div>
-      {loadingRecoveryTimedOut ? (
+      {isPasswordResetRoute ? (
+        <Outlet />
+      ) : loadingRecoveryTimedOut ? (
         <div
           className="flex min-h-[100dvh] items-center justify-center bg-background px-4"
           dir="rtl"

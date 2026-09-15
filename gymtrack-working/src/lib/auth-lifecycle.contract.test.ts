@@ -41,6 +41,12 @@ describe("Supabase auth lifecycle contracts", () => {
     );
   });
 
+  test("password recovery can render before the authenticated shell is ready", () => {
+    expect(rootRoute).toContain('const isPasswordResetRoute = currentPath === "/reset-password";');
+    expect(rootRoute).toContain("{isPasswordResetRoute ? (");
+    expect(rootRoute).toContain("<Outlet />");
+  });
+
   test("the pending-email path gives users a retryable verification state", () => {
     expect(appShell).toMatch(/data\?\.user && !data\?\.session/);
     expect(appShell).toMatch(/setPendingVerificationEmail\(normalizedEmail\)/);
