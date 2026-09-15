@@ -19,6 +19,7 @@ let serverEntryPromise: Promise<ServerEntry> | undefined;
 let scanAuthClient: SupabaseClient | undefined;
 const MAX_MEAL_IMAGE_BYTES = 8 * 1024 * 1024;
 const MAX_SCAN_REQUEST_BYTES = 12 * 1024 * 1024;
+const MAX_WORKOUT_VIDEO_PLAYBACK_BYTES = 45 * 1024 * 1024;
 const GEMINI_TIMEOUT_MS = 60_000;
 const SCAN_RATE_LIMIT = 10;
 const SCAN_RATE_WINDOW_MS = 60_000;
@@ -260,23 +261,39 @@ async function transcodeWorkoutVideo(request: Request): Promise<Response> {
       "0:v:0",
       "-map",
       "0:a:0?",
+      "-vf",
+      "scale=1280:720:force_original_aspect_ratio=decrease:force_divisible_by=2",
       "-c:v",
       "libx264",
       "-preset",
       "veryfast",
-      "-crf",
-      "23",
+      "-b:v",
+      "650k",
+      "-maxrate",
+      "800k",
+      "-bufsize",
+      "1600k",
       "-pix_fmt",
       "yuv420p",
       "-c:a",
       "aac",
       "-b:a",
-      "128k",
+      "64k",
       "-movflags",
       "+faststart",
       outputFile,
     ]);
     const outputBytes = await readFile(outputFile);
+    if (outputBytes.byteLength > MAX_WORKOUT_VIDEO_PLAYBACK_BYTES) {
+      return jsonResponse(
+        {
+          status: "failed",
+          sourcePath,
+          error: "גרסת הצפייה עדיין גדולה מדי לאחר ההמרה.",
+        },
+        200,
+      );
+    }
     const playbackPath = `${sourceParts[0]}/${sourceParts[1]}/${sourceParts[2]}/playback-${crypto.randomUUID()}.mp4`;
     const { error: uploadError } = await storage.storage
       .from("workout-videos")

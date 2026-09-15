@@ -7,4 +7,4 @@ The original workout video upload and the optional browser-playback conversion c
 
 **Why:** HEVC/MOV conversion happens after the source reaches private Storage; a short client timeout can abort a valid upload while the server is still converting it, creating a misleading “upload failed” message.
 
-**How to apply:** Use a size-aware upper bound for the combined request, retain the source path when conversion fails, and surface conversion status separately from upload status.
+**How to apply:** Use a size-aware upper bound for the combined request, retain the source path when conversion fails, keep playback output under the same storage target as the source, and surface conversion status separately from upload status.
