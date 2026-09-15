@@ -3919,14 +3919,14 @@ export function CoachDashboardPage({
       initialNutritionFoodId ?? "",
     ].join("|");
     if (hydratedBuilderRouteKeyRef.current === builderRouteKey) return;
-    hydratedBuilderRouteKeyRef.current = builderRouteKey;
 
     const requestedProgram = initialProgramId
       ? clientDetails.programs.find((program) => program.id === initialProgramId)
       : undefined;
+    if (initialProgramId && !requestedProgram) return;
+
     const latestProgram = requestedProgram ?? clientDetails.programs.at(-1);
     if (latestProgram) {
-      setEditingProgramId(latestProgram.id);
       const requestedDay = initialDayId
         ? clientDetails.workouts.find((workout) => workout.id === initialDayId) ??
           (initialDayName
@@ -3943,8 +3943,9 @@ export function CoachDashboardPage({
                 initialDayName.trim().toLocaleLowerCase(),
             )
           : undefined;
+      if ((initialDayId || initialDayName) && !requestedDay) return;
+
       const firstWorkoutDay = requestedDay;
-      setEditingDayId(firstWorkoutDay?.id ?? null);
       const requestedItem = initialExerciseId
         ? firstWorkoutDay?.items.find((item) => item.exerciseId === initialExerciseId) ??
           (initialExerciseName
@@ -3961,8 +3962,15 @@ export function CoachDashboardPage({
                 initialExerciseName.trim().toLocaleLowerCase(),
             )
           : undefined;
+      if ((initialExerciseId || initialExerciseName) && !requestedItem) return;
+
+      hydratedBuilderRouteKeyRef.current = builderRouteKey;
+      setEditingProgramId(latestProgram.id);
+      setEditingDayId(firstWorkoutDay?.id ?? null);
       hydrateWorkoutItemEditor(requestedItem);
     } else {
+      if (initialProgramId || initialDayId || initialDayName) return;
+      hydratedBuilderRouteKeyRef.current = builderRouteKey;
       setEditingProgramId(null);
       setEditingDayId(null);
       setEditingItemId(null);

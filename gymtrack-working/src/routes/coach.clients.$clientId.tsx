@@ -1,11 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { CoachDashboardPage } from "./coach";
+import { Outlet, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/coach/clients/$clientId")({
-  component: CoachClientWorkspaceRoute,
+  component: CoachClientWorkspaceLayout,
 });
 
-function CoachClientWorkspaceRoute() {
-  const { clientId } = Route.useParams();
-  return <CoachDashboardPage clientsOnly workspacePage clientId={clientId} />;
+function CoachClientWorkspaceLayout() {
+  return <Outlet />;
 }
