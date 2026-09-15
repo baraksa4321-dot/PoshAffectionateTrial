@@ -2575,10 +2575,20 @@ async function signWorkoutVideoEntries(entries: HistoryEntry[]): Promise<History
     entries.map(async (entry) => {
       const path = entry.videoPath ?? workoutVideoStoragePath(entry.videoUrl);
       if (!path) return entry;
+      let signedUrl = "";
+      try {
+        signedUrl = await signWorkoutPerformanceVideo(path);
+      } catch (error) {
+        // One missing or expired Storage object must not hide the rest of the
+        // completed workout from the coach. Keep the path so the UI can still
+        // identify the video and offer feedback, while the player reports the
+        // individual playback failure.
+        console.warn("[Workout Video Sign Warning]:", error);
+      }
       return {
         ...entry,
         videoPath: path,
-        videoUrl: await signWorkoutPerformanceVideo(path),
+        videoUrl: signedUrl,
       };
     }),
   );
