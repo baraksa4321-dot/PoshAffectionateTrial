@@ -87,7 +87,7 @@ describe("Supabase auth lifecycle contracts", () => {
       'const isHomeRoute = location.pathname === "/" || location.pathname === "/coach";',
     );
     expect(appShell).toContain("const showWorkspaceSwitcher = Boolean(user && isCoach);");
-    expect(appShell).toContain("{resolvedHeaderAccessory || showWorkspaceSwitcher || user ? (");
+    expect(appShell).toContain("{utilityAccessory || showWorkspaceSwitcher || user ? (");
     expect(appShell).toContain("{showWorkspaceSwitcher ? (");
   });
 

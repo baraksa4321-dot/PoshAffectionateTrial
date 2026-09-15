@@ -8951,6 +8951,28 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   }
 }
 
+/* At 320px the route title and its controls cannot share a reliable row.
+ * Give the heading controls their own full-width row so every action keeps its
+ * touch target and never competes with the workspace switcher above it. */
+@media (max-width: 374px) {
+  .app-topbar__heading {
+    flex-wrap: wrap;
+    row-gap: 0.35rem !important;
+  }
+
+  .app-topbar__heading-content,
+  .app-topbar__heading-actions {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .app-topbar__heading-actions {
+    min-width: 0;
+    justify-content: flex-end;
+  }
+}
+
 /* Targeted density pass
  * Keep the personal home screen on its approved spacious rhythm. The compact
  * treatment belongs only to the coach's workout workspace and its report,

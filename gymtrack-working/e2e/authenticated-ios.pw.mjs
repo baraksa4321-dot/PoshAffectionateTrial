@@ -1514,7 +1514,12 @@ test("mobile work headers keep actions below workspace switches in black night",
 
     await expect(workspaceRow).toBeVisible();
     await expect(titleHeading).toBeVisible();
-    await expect(headingAction.locator("a, button").first()).toBeVisible();
+    const actions = headingAction.locator("a, button");
+    const actionCount = await actions.count();
+    expect(actionCount).toBeGreaterThan(0);
+    for (let index = 0; index < actionCount; index += 1) {
+      await expect(actions.nth(index)).toBeVisible();
+    }
 
     const layout = await page.evaluate(() => {
       const getRect = (selector) => {
@@ -1527,6 +1532,11 @@ test("mobile work headers keep actions below workspace switches in black night",
       const heading = getRect('[data-app-topbar-heading="true"]');
       const action = getRect('[data-app-heading-actions="true"]');
       const title = getRect('[data-app-topbar-heading="true"] h1');
+      const actionElements = Array.from(
+        document.querySelectorAll(
+          '[data-app-heading-actions="true"] a, [data-app-heading-actions="true"] button',
+        ),
+      );
       if (!workspace || !heading || !action || !title) return null;
       const overlaps = (first, second) =>
         first.left < second.right &&
@@ -1538,6 +1548,18 @@ test("mobile work headers keep actions below workspace switches in black night",
         heading,
         action,
         title,
+        viewportWidth: window.innerWidth,
+        actionElements: actionElements.map((element) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height,
+          };
+        }),
         actionOverlapsWorkspace: overlaps(action, workspace),
         titleOverlapsWorkspace: overlaps(title, workspace),
       };
@@ -1549,6 +1571,14 @@ test("mobile work headers keep actions below workspace switches in black night",
     expect(layout.action.top).toBeGreaterThanOrEqual(layout.workspace.bottom - 1);
     expect(layout.titleOverlapsWorkspace).toBe(false);
     expect(layout.actionOverlapsWorkspace).toBe(false);
+    expect(layout.actionElements.length).toBeGreaterThan(0);
+    for (const actionElement of layout.actionElements) {
+      expect(actionElement.width).toBeGreaterThan(0);
+      expect(actionElement.height).toBeGreaterThan(0);
+      expect(actionElement.left).toBeGreaterThanOrEqual(0);
+      expect(actionElement.right).toBeLessThanOrEqual(layout.viewportWidth);
+      expect(actionElement.top).toBeGreaterThanOrEqual(layout.workspace.bottom - 1);
+    }
   };
 
   const assertNoLargeWhiteSurface = async () => {
@@ -1582,7 +1612,7 @@ test("mobile work headers keep actions below workspace switches in black night",
     await expect(page.locator("html")).toHaveAttribute("data-theme", "black");
   };
 
-  await page.setViewportSize({ width: 375, height: 812 });
+  await page.setViewportSize({ width: 320, height: 812 });
   await page.goto("/exercises");
   await expect(page.getByRole("heading", { name: "תרגילים", exact: true })).toBeVisible({
     timeout: 20_000,

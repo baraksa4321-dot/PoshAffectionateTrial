@@ -1173,8 +1173,11 @@ export function AppShell({
             </div>
           ) : null}
           {((!hideHeading && (title || !user)) || (action && !actionInUtility) || headingAccessory) ? (
-            <div className="app-topbar__heading flex items-start gap-3" data-app-topbar-heading="true">
-              <div className="min-w-0 flex-1 text-start">
+            <div
+              className="app-topbar__heading flex items-start gap-3"
+              data-app-topbar-heading="true"
+            >
+              <div className="app-topbar__heading-content min-w-0 flex-1 text-start">
                 {!hideHeading ? (
                   <>
                     {kicker ? <p className="app-shell-kicker">{kicker}</p> : null}
