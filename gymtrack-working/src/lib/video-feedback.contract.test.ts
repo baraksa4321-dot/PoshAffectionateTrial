@@ -21,6 +21,8 @@ describe("video feedback contracts", () => {
     expect(coachRoute).toContain("שליחת משוב למתאמן");
     expect(sync).toContain('from("video_feedback")');
     expect(coachRoute).toContain("videoPlaybackPath: entry.videoPlaybackPath");
+    expect(coachRoute).toContain("workoutVideoStoragePath(entry.videoUrl)");
+    expect(sync).toContain("export function workoutVideoStoragePath");
     expect(videoFeedbackSource()).toContain("video_playback_path");
   });
 

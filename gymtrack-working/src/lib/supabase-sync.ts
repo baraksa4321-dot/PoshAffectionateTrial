@@ -2931,7 +2931,7 @@ async function signWorkoutVideosInHistory(history: HistorySession[]): Promise<Hi
   );
 }
 
-function workoutVideoStoragePath(value: unknown): string | undefined {
+export function workoutVideoStoragePath(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   if (!trimmed || trimmed.startsWith("blob:")) return undefined;

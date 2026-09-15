@@ -62,6 +62,7 @@ import {
   subscribeToCoachClientChanges,
   subscribeToCoachManagementChanges,
   signWorkoutPerformanceVideo,
+  workoutVideoStoragePath,
 } from "../lib/supabase-sync";
 import { supabase } from "../lib/supabase";
 import { notifyRemotePush } from "../lib/notification-service";
@@ -866,6 +867,65 @@ type WorkoutReviewRecord = {
   entry: HistoryEntry;
 };
 
+const COACH_SENT_FEEDBACK_HIDE_DELAY_MS = 60_000;
+
+function feedbackListsMatch(first: VideoFeedback[], second: VideoFeedback[]) {
+  return (
+    first.length === second.length &&
+    first.every((feedback, index) => {
+      const other = second[index];
+      return (
+        feedback.id === other?.id &&
+        feedback.message === other.message &&
+        feedback.createdAt === other.createdAt &&
+        feedback.seenAt === other.seenAt
+      );
+    })
+  );
+}
+
+function useCoachVideoFeedbackList(videoFeedbacks: VideoFeedback[]) {
+  const [localFeedbacks, setLocalFeedbacks] = useState(videoFeedbacks);
+  const [hiddenFeedbackIds, setHiddenFeedbackIds] = useState<Set<string>>(() => new Set());
+  const hideTimersRef = useRef<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    setLocalFeedbacks((current) => {
+      const incomingIds = new Set(videoFeedbacks.map((feedback) => feedback.id));
+      const locallyCreated = current.filter((feedback) => !incomingIds.has(feedback.id));
+      const merged = [...locallyCreated, ...videoFeedbacks];
+      return feedbackListsMatch(current, merged) ? current : merged;
+    });
+  }, [videoFeedbacks]);
+
+  useEffect(
+    () => () => {
+      hideTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+      hideTimersRef.current.clear();
+    },
+    [],
+  );
+
+  const addLocalFeedback = (feedback: VideoFeedback) => {
+    setLocalFeedbacks((current) => [feedback, ...current.filter((item) => item.id !== feedback.id)]);
+    const timerId = window.setTimeout(() => {
+      setHiddenFeedbackIds((current) => {
+        const next = new Set(current);
+        next.add(feedback.id);
+        return next;
+      });
+      hideTimersRef.current.delete(feedback.id);
+    }, COACH_SENT_FEEDBACK_HIDE_DELAY_MS);
+    hideTimersRef.current.set(feedback.id, timerId);
+  };
+
+  return {
+    localFeedbacks,
+    visibleFeedbacks: localFeedbacks.filter((feedback) => !hiddenFeedbackIds.has(feedback.id)),
+    addLocalFeedback,
+  };
+}
+
 function VideoFeedbackThread({
   clientId,
   sessionId,
@@ -884,15 +944,14 @@ function VideoFeedbackThread({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const [localFeedbacks, setLocalFeedbacks] = useState(videoFeedbacks);
-  const feedbacks = localFeedbacks.filter(
+  const { visibleFeedbacks, addLocalFeedback } = useCoachVideoFeedbackList(videoFeedbacks);
+  const feedbacks = visibleFeedbacks.filter(
     (feedback) =>
       feedback.sessionId === sessionId &&
       feedback.exerciseId === entry.exerciseId &&
-      feedback.videoPath === entry.videoPath,
+      feedback.videoPath === entry.videoPath &&
+      true,
   );
-
-  useEffect(() => setLocalFeedbacks(videoFeedbacks), [videoFeedbacks]);
 
   return (
     <div className="mt-2 rounded-xl border border-primary/20 bg-primary/[0.035] p-2.5">
@@ -945,7 +1004,7 @@ function VideoFeedbackThread({
                 : {}),
               message: draft,
             });
-            setLocalFeedbacks((current) => [created, ...current]);
+             addLocalFeedback(created);
             setDraft("");
           } catch (feedbackError: unknown) {
             setError(errorMessage(feedbackError, "שליחת המשוב נכשלה."));
@@ -964,9 +1023,11 @@ function VideoFeedbackThread({
 function VideoFeedbackInbox({
   videos,
   demoVideos,
+  onClose,
 }: {
   videos: CoachPerformanceVideo[];
   demoVideos: CoachDemoVideo[];
+  onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -1001,9 +1062,19 @@ function VideoFeedbackInbox({
             כל סרטוני הביצוע וההדגמה הזמינים מרוכזים כאן. אפשר לשלוח משוב על סרטוני ביצוע בלי לפתוח כל דוח בנפרד.
           </p>
         </div>
-        <span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-          {totalVideos} סרטונים
-        </span>
+        <div className="flex shrink-0 items-start gap-1.5">
+          <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+            {totalVideos} סרטונים
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="סגירת סרטוני המתאמנים והמשובים"
+            className="grid h-7 w-7 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
       {totalVideos > 0 ? (
@@ -1144,9 +1215,7 @@ function WorkoutReviewExerciseCard({
   const [feedbackDraft, setFeedbackDraft] = useState("");
   const [sendingFeedback, setSendingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState("");
-  const [localFeedbacks, setLocalFeedbacks] = useState<VideoFeedback[]>(videoFeedbacks);
-
-  useEffect(() => setLocalFeedbacks(videoFeedbacks), [videoFeedbacks]);
+  const { visibleFeedbacks, addLocalFeedback } = useCoachVideoFeedbackList(videoFeedbacks);
 
   return (
     <article
@@ -1283,7 +1352,7 @@ function WorkoutReviewExerciseCard({
                         <MessageSquare className="h-3.5 w-3.5" /> משוב למתאמן
                       </p>
                       <span className="text-[10px] text-muted-foreground">
-                        {localFeedbacks.filter(
+                         {visibleFeedbacks.filter(
                           (feedback) =>
                             feedback.sessionId === sessionId &&
                             feedback.exerciseId === entry.exerciseId &&
@@ -1293,7 +1362,7 @@ function WorkoutReviewExerciseCard({
                       </span>
                     </div>
                     <div className="mt-2 space-y-1.5">
-                      {localFeedbacks
+                     {visibleFeedbacks
                         .filter(
                           (feedback) =>
                             feedback.sessionId === sessionId &&
@@ -1347,7 +1416,7 @@ function WorkoutReviewExerciseCard({
                               : {}),
                             message: feedbackDraft,
                           });
-                          setLocalFeedbacks((current) => [created, ...current]);
+                          addLocalFeedback(created);
                           setFeedbackDraft("");
                         } catch (error: unknown) {
                           setFeedbackError(errorMessage(error, "שליחת המשוב נכשלה."));
@@ -3099,12 +3168,17 @@ export function CoachDashboardPage({
       for (const session of details.history) {
         const workout = workoutsById.get(session.workoutId);
         for (const [entryIndex, entry] of session.entries.entries()) {
+          const storedVideoPath = entry.videoPath ?? workoutVideoStoragePath(entry.videoUrl);
           if (
             (!entry.videoUrl || entry.videoUrl.startsWith("blob:") || !isSafeHttpUrl(entry.videoUrl)) &&
-            !entry.videoPath
+            !storedVideoPath
           ) {
             continue;
           }
+          const normalizedEntry =
+            storedVideoPath && !entry.videoPath
+              ? { ...entry, videoPath: storedVideoPath }
+              : entry;
           records.push({
             id: `${client.client_id}-${session.id}-${entry.exerciseId}-${entryIndex}`,
             clientId: client.client_id,
@@ -3113,7 +3187,7 @@ export function CoachDashboardPage({
             sessionDate: session.date,
             workoutId: session.workoutId || workout?.id || "",
             workoutName: session.workoutName || workout?.name || "אימון",
-            entry,
+            entry: normalizedEntry,
             videoFeedbacks: details.videoFeedbacks ?? [],
           });
         }
@@ -6340,7 +6414,11 @@ export function CoachDashboardPage({
           ariaLabel="משובי וידאו למתאמנים"
           panelClassName="max-w-3xl p-0"
         >
-          <VideoFeedbackInbox videos={performanceVideoRecords} demoVideos={coachDemoVideoRecords} />
+          <VideoFeedbackInbox
+            videos={performanceVideoRecords}
+            demoVideos={coachDemoVideoRecords}
+            onClose={() => setVideoFeedbackOpen(false)}
+          />
         </Overlay>
       ) : null}
 
