@@ -5020,6 +5020,7 @@ html[data-keyboard-open] .nav-shell {
   box-sizing: border-box;
   overflow-y: auto;
   min-height: 0;
+  height: 100%;
   max-height: 100%;
   scrollbar-gutter: stable;
   touch-action: pan-y;
@@ -7871,15 +7872,19 @@ html.night-mode [class*="border-border/"] {
 }
 
 .overlay-root[data-overlay-variant="full"] [data-coach-workspace="true"] {
-  min-height: 100%;
+  min-height: 0;
+  height: 100%;
   max-height: none;
+  flex: 1 1 auto;
 }
 
 .overlay-root[data-overlay-variant="full"] .workout-builder-workspace,
 .overlay-root[data-overlay-variant="full"] .workout-builder-workspace
   > .coach-workout-surface-slot,
 .overlay-root[data-overlay-variant="full"] .workout-builder-surface {
-  min-height: 100%;
+  min-height: 0;
+  height: 100%;
+  flex: 1 1 auto;
 }
 
 /* -------------------------------------------------------------------------
