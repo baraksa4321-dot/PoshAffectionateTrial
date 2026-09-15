@@ -103,10 +103,12 @@ describe("Supabase auth lifecycle contracts", () => {
     expect(coachRoute).toContain('{trackingLanding ? "פתח דוח" : "פתח תוכניות"}');
     expect(coachRoute).toContain('"/coach/tracking/$clientId"');
     expect(coachRoute).toMatch(
-      /openTrackedPlan\(selectedTrackingWorkout\.id,\s*item\.exerciseId\)/,
+      /openTrackedPlan\(\s*selectedTrackingWorkout\.id,\s*item\.exerciseId/,
     );
-    expect(coachRoute).toContain("dayId: workoutId");
+    expect(coachRoute).toContain("dayId: resolvedWorkoutId");
+    expect(coachRoute).toContain("dayName");
     expect(coachRoute).toContain("exerciseId");
+    expect(coachRoute).toContain("exerciseName");
   });
 
   test("the DOB repair migration is idempotent and refreshes PostgREST", () => {

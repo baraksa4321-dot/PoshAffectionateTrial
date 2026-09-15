@@ -2254,7 +2254,9 @@ export function CoachDashboardPage({
   workspaceMode = "all",
   initialProgramId,
   initialDayId,
+  initialDayName,
   initialExerciseId,
+  initialExerciseName,
   initialNutritionDate,
   initialNutritionMealId,
   initialNutritionFoodId,
@@ -2266,7 +2268,9 @@ export function CoachDashboardPage({
   workspaceMode?: "all" | "programs" | "nutrition";
   initialProgramId?: string;
   initialDayId?: string;
+  initialDayName?: string;
   initialExerciseId?: string;
+  initialExerciseName?: string;
   initialNutritionDate?: string;
   initialNutritionMealId?: string;
   initialNutritionFoodId?: string;
@@ -3907,7 +3911,9 @@ export function CoachDashboardPage({
       selectedClientId ?? "",
       initialProgramId ?? "",
       initialDayId ?? "",
+      initialDayName ?? "",
       initialExerciseId ?? "",
+      initialExerciseName ?? "",
       initialNutritionDate ?? "",
       initialNutritionMealId ?? "",
       initialNutritionFoodId ?? "",
@@ -3922,13 +3928,39 @@ export function CoachDashboardPage({
     if (latestProgram) {
       setEditingProgramId(latestProgram.id);
       const requestedDay = initialDayId
-        ? clientDetails.workouts.find((workout) => workout.id === initialDayId)
-        : undefined;
+        ? clientDetails.workouts.find((workout) => workout.id === initialDayId) ??
+          (initialDayName
+            ? clientDetails.workouts.find(
+                (workout) =>
+                  workout.name.trim().toLocaleLowerCase() ===
+                  initialDayName.trim().toLocaleLowerCase(),
+              )
+            : undefined)
+        : initialDayName
+          ? clientDetails.workouts.find(
+              (workout) =>
+                workout.name.trim().toLocaleLowerCase() ===
+                initialDayName.trim().toLocaleLowerCase(),
+            )
+          : undefined;
       const firstWorkoutDay = requestedDay;
       setEditingDayId(firstWorkoutDay?.id ?? null);
       const requestedItem = initialExerciseId
-        ? firstWorkoutDay?.items.find((item) => item.exerciseId === initialExerciseId)
-        : undefined;
+        ? firstWorkoutDay?.items.find((item) => item.exerciseId === initialExerciseId) ??
+          (initialExerciseName
+            ? firstWorkoutDay?.items.find(
+                (item) =>
+                  item.exerciseName?.trim().toLocaleLowerCase() ===
+                  initialExerciseName.trim().toLocaleLowerCase(),
+              )
+            : undefined)
+        : initialExerciseName
+          ? firstWorkoutDay?.items.find(
+              (item) =>
+                item.exerciseName?.trim().toLocaleLowerCase() ===
+                initialExerciseName.trim().toLocaleLowerCase(),
+            )
+          : undefined;
       hydrateWorkoutItemEditor(requestedItem);
     } else {
       setEditingProgramId(null);
@@ -3949,7 +3981,9 @@ export function CoachDashboardPage({
   }, [
     clientDetails,
     initialDayId,
+    initialDayName,
     initialExerciseId,
+    initialExerciseName,
     initialNutritionDate,
     initialNutritionFoodId,
     initialNutritionMealId,
@@ -5822,13 +5856,45 @@ export function CoachDashboardPage({
   const trackingNutritionDay = clientDetails?.nutritionDays.find(
     (day) => day.date === trackingDate,
   );
-  const openTrackedPlan = (workoutId: string, exerciseId?: string) => {
+  const openTrackedPlan = (
+    workoutId: string,
+    exerciseId?: string,
+    workoutName?: string,
+    exerciseName?: string,
+  ) => {
     const targetClientId = selectedClientId ?? clientId;
     if (!targetClientId || !clientDetails) return;
-    const workout = clientDetails.workouts.find((item) => item.id === workoutId);
-    const program = clientDetails.programs.find((item) => item.dayIds.includes(workoutId));
+    const normalizedWorkoutName = workoutName?.trim().toLocaleLowerCase();
+    const workout =
+      clientDetails.workouts.find((item) => item.id === workoutId) ??
+      (normalizedWorkoutName
+        ? clientDetails.workouts.find(
+            (item) => item.name.trim().toLocaleLowerCase() === normalizedWorkoutName,
+          )
+        : undefined);
+    const resolvedWorkoutId = workout?.id ?? workoutId;
+    const program =
+      clientDetails.programs.find((item) => item.dayIds.includes(resolvedWorkoutId)) ??
+      (normalizedWorkoutName
+        ? clientDetails.programs.find((item) =>
+            item.dayIds.some(
+              (dayId) =>
+                clientDetails.workouts
+                  .find((candidate) => candidate.id === dayId)
+                  ?.name.trim()
+                  .toLocaleLowerCase() === normalizedWorkoutName,
+            ),
+          )
+        : undefined);
     const requestedItem = exerciseId
-      ? workout?.items.find((item) => item.exerciseId === exerciseId)
+      ? workout?.items.find((item) => item.exerciseId === exerciseId) ??
+        (exerciseName
+          ? workout?.items.find(
+              (item) =>
+                item.exerciseName?.trim().toLocaleLowerCase() ===
+                exerciseName.trim().toLocaleLowerCase(),
+            )
+          : undefined)
       : undefined;
 
     // Hydrate the builder immediately as well as through the destination
@@ -5838,7 +5904,7 @@ export function CoachDashboardPage({
     setActiveWorkspaceTab("programs");
     setOpenEditor("programs");
     setEditingProgramId(program?.id ?? clientDetails.programs.at(-1)?.id ?? null);
-    setEditingDayId(workout?.id ?? workoutId);
+    setEditingDayId(resolvedWorkoutId);
     setShowCardioForm(false);
     setFocusedExerciseId(requestedItem?.exerciseId ?? exerciseId ?? null);
     hydrateWorkoutItemEditor(requestedItem);
@@ -5847,9 +5913,11 @@ export function CoachDashboardPage({
       to: "/coach/clients/$clientId/program",
       params: { clientId: targetClientId },
       search: {
-        dayId: workoutId,
+        dayId: resolvedWorkoutId,
+        ...(workout?.name ? { dayName: workout.name } : workoutName ? { dayName: workoutName } : {}),
         ...(program ? { programId: program.id } : {}),
         ...(exerciseId ? { exerciseId } : {}),
+        ...(exerciseName ? { exerciseName } : {}),
       },
     });
   };
@@ -8131,6 +8199,8 @@ export function CoachDashboardPage({
                                       openTrackedPlan(
                                         selectedTrackingWorkout.id,
                                         item.exerciseId,
+                                        selectedTrackingWorkout.name,
+                                        item.exerciseName,
                                       );
                                     }}
                                     onKeyDown={(event) => {
@@ -8153,6 +8223,8 @@ export function CoachDashboardPage({
                                         openTrackedPlan(
                                           selectedTrackingWorkout.id,
                                           item.exerciseId,
+                                          selectedTrackingWorkout.name,
+                                          item.exerciseName,
                                         )
                                       }
                                     />
@@ -10643,7 +10715,14 @@ export function CoachDashboardPage({
                                               history={clientDetails?.history ?? []}
                                               clientId={selectedClientId ?? undefined}
                                               onOpenPlan={(exerciseId) =>
-                                                openTrackedPlan(dayItem.id, exerciseId)
+                                                openTrackedPlan(
+                                                  dayItem.id,
+                                                  exerciseId,
+                                                  dayItem.name,
+                                                  dayItem.items.find(
+                                                    (item) => item.exerciseId === exerciseId,
+                                                  )?.exerciseName,
+                                                )
                                               }
                                               videoFeedbacks={clientDetails?.videoFeedbacks ?? []}
                                               exercises={Array.from(
