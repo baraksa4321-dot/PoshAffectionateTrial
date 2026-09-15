@@ -65,10 +65,7 @@ import {
 } from "@/lib/notification-service";
 import { reconcileRestTimer } from "@/lib/rest-timer";
 import { isSafeVideoSource } from "@/lib/url-security";
-import {
-  videoTranscodeFailureMessage,
-  videoTranscodeStatusLabel,
-} from "@/lib/video-transcoding";
+import { videoTranscodeStatusLabel } from "@/lib/video-transcoding";
 import {
   completedSetForReopenedWorkout,
   getCurrentWeekWorkoutSession,
@@ -247,7 +244,20 @@ function videoUploadErrorMessage(error: unknown) {
   return message || "העלאת סרטון הביצוע נכשלה";
 }
 
-const PERFORMANCE_VIDEO_UPLOAD_TIMEOUT_MS = 90_000;
+const PERFORMANCE_VIDEO_UPLOAD_MIN_TIMEOUT_MS = 8 * 60_000;
+const PERFORMANCE_VIDEO_UPLOAD_MAX_TIMEOUT_MS = 30 * 60_000;
+
+function performanceVideoUploadTimeoutMs(fileSizeBytes: number) {
+  // The browser request includes both the original upload and, for iPhone
+  // HEVC/MOV files, the server-side browser playback conversion. A fixed
+  // 90-second limit made longer but valid videos fail after they had already
+  // reached Storage.
+  const estimatedUploadMs = Math.ceil(fileSizeBytes / (512 * 1024)) * 1000;
+  return Math.min(
+    PERFORMANCE_VIDEO_UPLOAD_MAX_TIMEOUT_MS,
+    Math.max(PERFORMANCE_VIDEO_UPLOAD_MIN_TIMEOUT_MS, estimatedUploadMs + 5 * 60_000),
+  );
+}
 
 function videoPlaybackErrorMessage(code?: number) {
   if (code === 2) {
@@ -1371,7 +1381,7 @@ function Session() {
     const upload = videoUploadQueueRef.current.then(async () => {
       const timeoutId = window.setTimeout(
         () => controller.abort(),
-        PERFORMANCE_VIDEO_UPLOAD_TIMEOUT_MS,
+        performanceVideoUploadTimeoutMs(file.size),
       );
       try {
         const { uploadWorkoutPerformanceVideo } = await import("@/lib/supabase-sync");
@@ -1452,10 +1462,6 @@ function Session() {
           finishedSessionRef.current = updatedSession;
           saveSession(updatedSession);
           void flushCloudSync();
-        }
-        if (transcodeStatus === "failed") {
-          setVideoUploadErrorExerciseIndex(exerciseIndex);
-          setVideoUploadError(videoTranscodeFailureMessage(transcodeError));
         }
         URL.revokeObjectURL(nextUrl);
         return true;
@@ -2174,6 +2180,11 @@ function Session() {
                 {entry.videoTranscodeStatus === "processing" ? (
                   <p className="mt-2 rounded-xl bg-primary/5 px-2.5 py-1.5 text-[11px] font-semibold text-primary">
                     {videoTranscodeStatusLabel("processing")}
+                  </p>
+                ) : null}
+                {entry.videoTranscodeStatus === "failed" ? (
+                  <p className="mt-2 rounded-xl bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-900">
+                    הסרטון הועלה ונשמר, אבל הכנת גרסת הצפייה לדפדפן נכשלה.
                   </p>
                 ) : null}
                 {entry.videoUrl?.startsWith("blob:") &&
