@@ -9373,6 +9373,11 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   gap: 0.45rem !important;
 }
 
+.app-auth-shell .app-home-utility-row {
+  min-height: 2.35rem !important;
+  margin-bottom: 0.15rem !important;
+}
+
 .app-auth-shell .app-topbar__content {
   min-width: 0;
   display: flex;
