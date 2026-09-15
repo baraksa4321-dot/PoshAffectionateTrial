@@ -573,6 +573,7 @@ function servingGramsFromLabel(servingSize: string) {
 const WORKOUT_VIDEO_BUCKET = "workout-videos";
 const EXERCISE_IMAGE_BUCKET = "exercise-images";
 const MAX_WORKOUT_VIDEO_BYTES = 1024 * 1024 * 1024;
+const MAX_EXERCISE_VIDEO_BYTES = 250 * 1024 * 1024;
 
 const WORKOUT_VIDEO_SIGNED_URL_TTL_SECONDS = 10 * 60;
 function safeVideoExtension(fileName: string, contentType: string) {
@@ -590,6 +591,21 @@ function safeVideoExtension(fileName: string, contentType: string) {
     "video/ogg": "ogv",
   };
   return extensionByType[contentType.toLowerCase()] ?? "mp4";
+}
+
+function safeVideoContentType(fileName: string, contentType: string) {
+  if (contentType.startsWith("video/")) return contentType;
+  const extension = fileName.split(".").pop()?.toLowerCase();
+  return (
+    {
+      mov: "video/quicktime",
+      m4v: "video/x-m4v",
+      webm: "video/webm",
+      ogv: "video/ogg",
+      ogg: "video/ogg",
+      mp4: "video/mp4",
+    }[extension ?? ""] ?? "video/mp4"
+  );
 }
 
 function safeImageExtension(fileName: string, contentType: string) {
@@ -639,6 +655,60 @@ export async function uploadExerciseLibraryImage(
 
   const { data } = supabase.storage.from(EXERCISE_IMAGE_BUCKET).getPublicUrl(path);
   if (!data?.publicUrl) throw new Error("העלאת התמונה הסתיימה בלי כתובת צפייה.");
+  return data.publicUrl;
+}
+
+export async function uploadExerciseLibraryVideo(
+  file: File,
+  metadata: { gender: "male" | "female" },
+): Promise<string> {
+  const normalizedType = safeVideoContentType(file.name, file.type.trim().toLowerCase());
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const knownVideoExtension = ["mp4", "mov", "m4v", "webm", "ogv", "ogg"].includes(extension);
+  if (!file.type.trim().toLowerCase().startsWith("video/") && !knownVideoExtension) {
+    throw new Error("אפשר להעלות קובץ וידאו בלבד.");
+  }
+  if (file.size > MAX_EXERCISE_VIDEO_BYTES) {
+    throw new Error("הסרטון גדול מדי. הגודל המרבי הוא 250MB.");
+  }
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    throw new Error("לא ניתן להעלות סרטון בלי חשבון מחובר.");
+  }
+
+  const objectId =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const path = `${user.id}/exercise-library/videos/${metadata.gender}/${objectId}.${safeVideoExtension(
+    file.name,
+    normalizedType,
+  )}`;
+  const controller = new AbortController();
+  try {
+    await uploadWorkoutPerformanceVideoAttempt(
+      file,
+      path,
+      normalizedType,
+      controller.signal,
+      undefined,
+      undefined,
+      EXERCISE_IMAGE_BUCKET,
+    );
+  } catch (error) {
+    throw new Error(
+      `העלאת סרטון ההדגמה נכשלה: ${
+        error instanceof Error ? error.message : "שגיאה לא ידועה"
+      }`,
+    );
+  }
+
+  const { data } = supabase.storage.from(EXERCISE_IMAGE_BUCKET).getPublicUrl(path);
+  if (!data?.publicUrl) throw new Error("העלאת הסרטון הסתיימה בלי כתובת צפייה.");
   return data.publicUrl;
 }
 
@@ -784,9 +854,10 @@ async function uploadWorkoutPerformanceVideoAttempt(
   signal?: AbortSignal,
   checkpoint?: WorkoutVideoUploadCheckpoint,
   onCheckpoint?: (checkpoint: WorkoutVideoUploadCheckpoint) => void | Promise<void>,
+  bucket = WORKOUT_VIDEO_BUCKET,
 ): Promise<void> {
   if (!signal) {
-    const { error } = await supabase.storage.from(WORKOUT_VIDEO_BUCKET).upload(path, file, {
+    const { error } = await supabase.storage.from(bucket).upload(path, file, {
       contentType: normalizedType || "video/mp4",
       upsert: false,
     });
@@ -818,6 +889,7 @@ async function uploadWorkoutPerformanceVideoAttempt(
       normalizedType,
       headers,
       signal,
+      bucket,
     );
     await onCheckpoint?.(current);
   } else {
@@ -899,6 +971,7 @@ async function createWorkoutVideoUploadSession(
   normalizedType: string,
   headers: Record<string, string>,
   signal: AbortSignal,
+  bucket = WORKOUT_VIDEO_BUCKET,
 ): Promise<WorkoutVideoUploadCheckpoint> {
   const response = await fetch(endpoint, {
     method: "POST",
@@ -907,7 +980,7 @@ async function createWorkoutVideoUploadSession(
       "Tus-Resumable": "1.0.0",
       "Upload-Length": String(file.size),
       "Upload-Metadata": [
-        `bucketName ${base64Metadata(WORKOUT_VIDEO_BUCKET)}`,
+        `bucketName ${base64Metadata(bucket)}`,
         `objectName ${base64Metadata(path)}`,
         `contentType ${base64Metadata(normalizedType || "video/mp4")}`,
         `cacheControl ${base64Metadata("3600")}`,

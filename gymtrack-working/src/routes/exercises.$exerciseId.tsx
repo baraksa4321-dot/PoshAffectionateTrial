@@ -37,7 +37,7 @@ import {
 } from "@/lib/exercise-library";
 import { genderText } from "@/lib/gender-copy";
 import { isSafeHttpUrl, isSafeVideoSource } from "@/lib/url-security";
-import { uploadExerciseLibraryImage } from "@/lib/supabase-sync";
+import { uploadExerciseLibraryImage, uploadExerciseLibraryVideo } from "@/lib/supabase-sync";
 
 export const Route = createFileRoute("/exercises/$exerciseId")({
   head: () => ({
@@ -345,6 +345,9 @@ function ExerciseDetail() {
   );
   const [alternativeQuery, setAlternativeQuery] = useState("");
   const [videoUploadError, setVideoUploadError] = useState("");
+  const [uploadingVideoField, setUploadingVideoField] = useState<
+    "videoMaleUrl" | "videoFemaleUrl" | null
+  >(null);
   const [saveError, setSaveError] = useState("");
   const [savingExercise, setSavingExercise] = useState(false);
 
@@ -401,7 +404,7 @@ function ExerciseDetail() {
       };
     });
 
-  const set = (patch: Partial<Exercise>) => setDraft({ ...draft, ...patch });
+  const set = (patch: Partial<Exercise>) => setDraft((current) => ({ ...current, ...patch }));
   const selectedAlternativeIds = draft.approvedSubstitutes ?? [];
   const alternativeOptions = exercises.filter(
     (exercise) =>
@@ -437,21 +440,29 @@ function ExerciseDetail() {
     });
   };
 
-  const addGenderVideo = (file: File | undefined, field: "videoMaleUrl" | "videoFemaleUrl") => {
-    if (!file || !file.type.startsWith("video/")) return;
+  const addGenderVideo = async (
+    file: File | undefined,
+    field: "videoMaleUrl" | "videoFemaleUrl",
+  ) => {
+    if (!file || uploadingVideoField) return;
     setVideoUploadError("");
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(new Error("video-read-failed"));
-      reader.readAsDataURL(file);
-    })
-      .then((url) => set({ [field]: url }))
-      .catch(() => setVideoUploadError("לא ניתן לקרוא את הסרטון שנבחר."));
+    setUploadingVideoField(field);
+    try {
+      const url = await uploadExerciseLibraryVideo(file, {
+        gender: field === "videoMaleUrl" ? "male" : "female",
+      });
+      set({ [field]: url });
+    } catch (error) {
+      setVideoUploadError(
+        error instanceof Error ? error.message : "העלאת סרטון ההדגמה נכשלה.",
+      );
+    } finally {
+      setUploadingVideoField(null);
+    }
   };
 
   const onSave = async () => {
-    if (!canManageLibrary || savingExercise) return;
+    if (!canManageLibrary || savingExercise || uploadingVideoField) return;
     setSaveError("");
     setSavingExercise(true);
     const isOther = draft.muscleGroup === "אחר" || (draft.muscleGroups ?? []).includes("אחר");
@@ -758,12 +769,18 @@ function ExerciseDetail() {
                     <input
                       type="file"
                       accept="video/*"
+                      disabled={uploadingVideoField !== null}
                       onChange={(event) => {
-                        addGenderVideo(event.target.files?.[0], videoField);
+                        void addGenderVideo(event.target.files?.[0], videoField);
                         event.currentTarget.value = "";
                       }}
-                      className="w-full text-[11px] file:me-2 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-primary-foreground"
+                      className="w-full text-[11px] file:me-2 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-primary-foreground disabled:opacity-60"
                     />
+                    {uploadingVideoField === videoField ? (
+                      <p className="mt-2 text-[11px] font-semibold text-primary">
+                        מעלה את סרטון ההדגמה...
+                      </p>
+                    ) : null}
                     {source && isSafeVideoSource(source) ? (
                       <div className="relative mt-2">
                         <video
