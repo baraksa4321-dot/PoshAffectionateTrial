@@ -64,6 +64,18 @@ import {
 const WORKSPACE_KEY = "gymtrack.workspace";
 const FULL_NAME_REQUIRED_ERROR = "יש להזין שם פרטי ושם משפחה כדי ליצור חשבון.";
 
+function getAuthRedirectOrigin() {
+  if (typeof window === "undefined") return undefined;
+
+  const configuredDevDomain = import.meta.env["VITE_REPLIT_DEV_DOMAIN"]?.trim();
+  const isReplitDevHost = window.location.hostname.endsWith(".replit.dev");
+  if (configuredDevDomain && isReplitDevHost) {
+    return `https://${configuredDevDomain}`;
+  }
+
+  return window.location.origin;
+}
+
 function formatHeaderDate(date: Date) {
   return date.toLocaleDateString("he-IL", {
     day: "2-digit",
@@ -708,7 +720,7 @@ export function AppShell({
     const normalizedEmail = email.trim().toLowerCase();
 
     try {
-      const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
+      const redirectTo = getAuthRedirectOrigin();
       if (isSignUp) {
         const normalizedFullName = fullName.trim().replace(/\s+/g, " ");
         if (normalizedFullName.split(" ").filter(Boolean).length < 2) {
@@ -811,7 +823,7 @@ export function AppShell({
     setSuccessMsg("");
 
     try {
-      const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
+      const redirectTo = getAuthRedirectOrigin();
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: targetEmail,
@@ -844,8 +856,8 @@ export function AppShell({
     setErrorMsg("");
     setSuccessMsg("");
     try {
-      const redirectTo =
-        typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
+      const redirectOrigin = getAuthRedirectOrigin();
+      const redirectTo = redirectOrigin ? `${redirectOrigin}/reset-password` : undefined;
       const { error } = await supabase.auth.resetPasswordForEmail(
         normalizedEmail,
         redirectTo ? { redirectTo } : {},

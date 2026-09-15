@@ -35,10 +35,16 @@ describe("Supabase auth lifecycle contracts", () => {
     expect(appShell).toContain('type: "signup"');
     expect(appShell).toContain("auth.resend({");
     expect(appShell).toContain("resetPasswordForEmail(");
-    expect(appShell).toContain("window.location.origin}/reset-password");
+    expect(appShell).toContain('const redirectTo = redirectOrigin ? `${redirectOrigin}/reset-password`');
     expect(appShell).not.toContain(
       "window.location.origin}/reset-password` : undefined;\n      if (isSignUp)",
     );
+  });
+
+  test("Replit auth links use the current preview domain instead of a stale preview origin", () => {
+    expect(appShell).toContain('import.meta.env["VITE_REPLIT_DEV_DOMAIN"]');
+    expect(appShell).toContain('window.location.hostname.endsWith(".replit.dev")');
+    expect(appShell).toContain("https://${configuredDevDomain}");
   });
 
   test("password recovery can render before the authenticated shell is ready", () => {

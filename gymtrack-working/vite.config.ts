@@ -6,8 +6,15 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+const replitDevDomain = process.env.REPLIT_DEV_DOMAIN?.trim();
+
 export default defineConfig({
   vite: {
+    define: replitDevDomain
+      ? {
+          "import.meta.env.VITE_REPLIT_DEV_DOMAIN": JSON.stringify(replitDevDomain),
+        }
+      : {},
     server: {
       host: "0.0.0.0",
       port: 5000,
