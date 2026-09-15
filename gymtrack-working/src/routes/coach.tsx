@@ -8095,9 +8095,20 @@ export function CoachDashboardPage({
                                     key={item.id}
                                     role="button"
                                     tabIndex={0}
-                                    onClick={() =>
-                                      openTrackedPlan(selectedTrackingWorkout.id, item.exerciseId)
-                                    }
+                                    onClick={(event) => {
+                                      const target = event.target as HTMLElement;
+                                      if (
+                                        target.closest(
+                                          "button, a, input, textarea, select, video, iframe",
+                                        )
+                                      ) {
+                                        return;
+                                      }
+                                      openTrackedPlan(
+                                        selectedTrackingWorkout.id,
+                                        item.exerciseId,
+                                      );
+                                    }}
                                     onKeyDown={(event) => {
                                       if (event.key === "Enter" || event.key === " ") {
                                         event.preventDefault();
@@ -8114,6 +8125,12 @@ export function CoachDashboardPage({
                                       exercise={exercise}
                                       replacementEntry={replacementEntry}
                                       records={actualRecords}
+                                      onOpenPlan={() =>
+                                        openTrackedPlan(
+                                          selectedTrackingWorkout.id,
+                                          item.exerciseId,
+                                        )
+                                      }
                                     />
                                   </div>
                                 ),
