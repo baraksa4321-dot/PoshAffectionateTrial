@@ -17,10 +17,7 @@ import {
   Heart,
   X,
   Check,
-  CalendarDays,
   Clock3,
-  ChevronDown,
-  BarChart3,
   RotateCcw,
   Video,
   Eye,
@@ -48,7 +45,6 @@ import {
   toggleChecklistItem,
   useGym,
   useAuthUser,
-  personalRecords,
 } from "@/lib/gym-store";
 import { markVideoFeedbackSeen } from "@/lib/video-feedback";
 import type { VideoFeedback } from "@/lib/gym-types";
@@ -113,11 +109,6 @@ function greetingForHour(hour: number, name: string) {
   return name ? `${greeting}, ${name}.` : "היום שלי";
 }
 
-function formatDayDate(date: string) {
-  const parsed = new Date(`${date}T12:00:00`);
-  return parsed.toLocaleDateString("he-IL", { day: "numeric", month: "short" });
-}
-
 function sessionStats(session: import("@/lib/gym-types").HistorySession | undefined) {
   const entries = session?.entries ?? [];
   const sets = entries.flatMap((entry) => entry.sets).filter((set) => !set.warmup);
@@ -129,17 +120,6 @@ function sessionStats(session: import("@/lib/gym-types").HistorySession | undefi
     volume,
     durationSec: session?.durationSec ?? 0,
   };
-}
-
-function progressEntryForExercise(
-  session: import("@/lib/gym-types").HistorySession,
-  exerciseId: string,
-  exerciseName: string,
-) {
-  return (
-    session.entries.find((entry) => entry.exerciseId === exerciseId) ??
-    session.entries.find((entry) => entry.exerciseName.trim() === exerciseName.trim())
-  );
 }
 
 function historyEntryForVideoFeedback(
@@ -200,14 +180,11 @@ function Dashboard() {
   const [checkInSuccessMsg, setCheckInSuccessMsg] = useState("");
   const [checklistInput, setChecklistInput] = useState("");
   const [showChecklistModal, setShowChecklistModal] = useState(false);
-  const [showProgressModal, setShowProgressModal] = useState(false);
   const [showVideoFeedbackModal, setShowVideoFeedbackModal] = useState(false);
   const [markingFeedbackId, setMarkingFeedbackId] = useState<string | null>(null);
   const [locallySeenFeedbackIds, setLocallySeenFeedbackIds] = useState<Set<string>>(
     () => new Set(),
   );
-  const [progressRange, setProgressRange] = useState<7 | 30 | 90>(30);
-  const [progressExerciseId, setProgressExerciseId] = useState("");
   const [homeCardOrder, setHomeCardOrder] = useState<HomeCardId[]>(() => {
     if (typeof window === "undefined") return DEFAULT_HOME_CARD_ORDER;
     try {
@@ -226,12 +203,6 @@ function Dashboard() {
   const holdTimer = useRef<number | null>(null);
   const holdStart = useRef({ x: 0, y: 0 });
   const suppressHomeClick = useRef(false);
-
-  useEffect(() => {
-    if (progressExerciseId || !exercises.length) return;
-    const firstWorkoutExercise = workouts[0]?.items[0]?.exerciseId;
-    setProgressExerciseId(firstWorkoutExercise ?? exercises[0]?.id ?? "");
-  }, [exercises, progressExerciseId, workouts]);
 
   useEffect(() => {
     window.localStorage.setItem(HOME_CARD_ORDER_KEY, JSON.stringify(homeCardOrder));
@@ -476,41 +447,6 @@ function Dashboard() {
   }, [authUser?.id, reminderPreferences?.enabled, workoutReminderPayload]);
   const primaryWorkout = todayScheduledWorkout?.workout;
   const primaryIsBodyweightWorkout = Boolean(primaryWorkout?.name.includes("משקל גוף"));
-  const selectedProgressExercise =
-    exercises.find((exercise) => exercise.id === progressExerciseId) ??
-    exercises.find((exercise) => exercise.id === primaryWorkout?.items[0]?.exerciseId);
-  const progressCutoff = new Date(now);
-  progressCutoff.setDate(progressCutoff.getDate() - (progressRange - 1));
-  progressCutoff.setHours(0, 0, 0, 0);
-  const progressSessions = history
-    .filter((session) => new Date(session.date) >= progressCutoff)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  const progressPoints = selectedProgressExercise
-    ? progressSessions
-        .map((session) => {
-          const entry = progressEntryForExercise(
-            session,
-            selectedProgressExercise.id,
-            selectedProgressExercise.name,
-          );
-          if (!entry) return null;
-          const sets = entry.sets.filter((set) => !set.warmup && set.done);
-          if (!sets.length) return null;
-          return {
-            date: session.date,
-            volume: sets.reduce((sum, set) => sum + set.weight * set.reps, 0),
-            maxWeight: Math.max(...sets.map((set) => set.weight)),
-            reps: Math.max(...sets.map((set) => set.reps)),
-          };
-        })
-        .filter((point): point is NonNullable<typeof point> => Boolean(point))
-    : [];
-  const progressFirst = progressPoints[0];
-  const progressLast = progressPoints[progressPoints.length - 1];
-  const progressRecords = selectedProgressExercise
-    ? personalRecords(history, selectedProgressExercise.id)
-    : null;
-
   const [dismissedMessageIds, setDismissedMessageIds] = useState<string[]>([]);
   const [dismissingMessageId, setDismissingMessageId] = useState<string | null>(null);
   const [dismissMessageError, setDismissMessageError] = useState("");
@@ -916,15 +852,6 @@ function Dashboard() {
         <section {...homeCardProps("activity")} className="dashboard-module dashboard-module--activity mt-5">
           <div className="flex items-start justify-between gap-3">
             <SectionHeader title="פעילות השבוע" subtitle={`${thisWeek.length} אימונים בוצעו השבוע`} />
-            <button
-              type="button"
-              onClick={() => setShowProgressModal(true)}
-              className="press inline-flex shrink-0 items-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2.5 py-2 text-[10px] font-bold text-primary"
-              aria-label="פתיחת מגמות והיסטוריית תרגיל"
-            >
-              <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
-              מגמות
-            </button>
           </div>
           <div className="grid grid-cols-3 gap-2.5">
             <StatTile label="אימונים" value={String(thisWeek.length)} icon={Flame} tone="sage" />
@@ -1082,138 +1009,6 @@ function Dashboard() {
                 </p>
               ) : null}
             </div>
-          </div>
-        </Overlay>
-      ) : null}
-
-      {showProgressModal ? (
-        <Overlay
-          open={showProgressModal}
-          onClose={() => setShowProgressModal(false)}
-          ariaLabel="מגמות והיסטוריית תרגיל"
-        >
-          <div
-            className="w-full max-w-lg space-y-4 rounded-3xl border border-border bg-surface p-5 text-start shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
-              <div>
-                <p className="text-[10px] font-bold tracking-[0.14em] text-primary uppercase">Progress</p>
-                <h2 className="mt-1 font-display text-xl font-extrabold text-ink">מגמות והיסטוריית תרגיל</h2>
-                <p className="mt-1 text-xs text-muted-foreground">נתונים מהביצועים שנשמרו, בלי להסיק מסקנות רפואיות.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowProgressModal(false)}
-                className="press grid h-8 w-8 place-items-center rounded-xl text-muted-foreground hover:bg-secondary"
-                aria-label="סגירת מגמות"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <label className="block text-xs font-bold text-muted-foreground">
-              תרגיל
-              <span className="relative mt-1 block">
-                <select
-                  value={selectedProgressExercise?.id ?? ""}
-                  onChange={(event) => setProgressExerciseId(event.target.value)}
-                  aria-label="בחירת תרגיל למגמה"
-                  className="w-full appearance-none rounded-xl border border-border bg-background p-3 pe-9 text-sm font-bold text-ink outline-none focus:border-primary"
-                >
-                  {exercises.map((exercise) => (
-                    <option key={exercise.id} value={exercise.id}>
-                      {exercise.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-muted-foreground" />
-              </span>
-            </label>
-            <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-secondary/60 p-1">
-              {([7, 30, 90] as const).map((days) => (
-                <button
-                  key={days}
-                  type="button"
-                  onClick={() => setProgressRange(days)}
-                  className={`press rounded-xl px-2 py-2 text-xs font-bold ${
-                    progressRange === days ? "bg-background text-primary shadow-sm" : "text-muted-foreground"
-                  }`}
-                >
-                  {days === 7 ? "שבוע" : days === 30 ? "חודש" : "3 חודשים"}
-                </button>
-              ))}
-            </div>
-            {progressPoints.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border p-5 text-center">
-                <BarChart3 className="mx-auto h-7 w-7 text-primary/60" />
-                <p className="mt-2 text-sm font-bold text-ink">אין מספיק נתונים לטווח הזה</p>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  שמרי עוד ביצוע אחד של התרגיל כדי להתחיל לראות מגמה אמיתית.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-3 gap-2">
-                  <StatTile
-                    label="נפח אחרון"
-                    value={`${Math.round(progressLast?.volume ?? 0)} ק״ג`}
-                    icon={TrendingUp}
-                    tone="sage"
-                  />
-                  <StatTile
-                    label="משקל מרבי"
-                    value={`${progressRecords?.heaviest ?? progressLast?.maxWeight ?? 0} ק״ג`}
-                    icon={Dumbbell}
-                    tone="rose"
-                  />
-                  <StatTile
-                    label="ביצועים"
-                    value={`${progressPoints.length}`}
-                    icon={CalendarDays}
-                    tone="cream"
-                  />
-                </div>
-                <div className="space-y-2">
-                  {progressPoints.slice(-6).map((point) => {
-                    const maxVolume = Math.max(...progressPoints.map((item) => item.volume), 1);
-                    return (
-                      <div key={`${point.date}-${point.volume}`} className="rounded-2xl bg-secondary/45 p-3">
-                        <div className="flex items-center justify-between gap-3 text-[11px]">
-                          <span className="font-bold text-ink">{formatDayDate(point.date.slice(0, 10))}</span>
-                          <span className="text-muted-foreground">
-                            {Math.round(point.volume)} ק״ג · עד {point.maxWeight} ק״ג · {point.reps} חזרות
-                          </span>
-                        </div>
-                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-background">
-                          <div
-                            className="h-full rounded-full bg-primary transition-all"
-                            style={{ width: `${Math.max(8, Math.round((point.volume / maxVolume) * 100))}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3 text-xs">
-                  <p className="font-bold text-primary">מה אפשר לעשות מכאן?</p>
-                  <p className="mt-1 leading-relaxed text-ink">
-                    {progressFirst && progressLast && progressLast.volume > progressFirst.volume
-                      ? "הנפח במגמת עלייה בטווח שנבחר. שמרי על ביצוע נשלט ובדקי את היעד הבא באימון."
-                      : "המשיכי לתעד באותו תרגיל ובאותו טווח. יותר נתונים יעזרו לך ולמאמן לזהות שינוי אמיתי."}
-                  </p>
-                  {primaryWorkout ? (
-                    <button
-                      type="button"
-                      onClick={() => startWorkout(primaryWorkout.id)}
-                      className="press mt-3 inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground"
-                    >
-                      <Play className="h-3.5 w-3.5 fill-current" />
-                      לאימון הבא
-                    </button>
-                  ) : null}
-                </div>
-              </>
-            )}
           </div>
         </Overlay>
       ) : null}

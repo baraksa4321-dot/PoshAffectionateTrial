@@ -1,11 +1,14 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, CheckCircle2, Dumbbell } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, BarChart3, CheckCircle2, Dumbbell } from "lucide-react";
+import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { CardioTracker } from "@/components/CardioTracker";
 import { ChallengeLibrary } from "@/components/ChallengeLibrary";
 import { MusicAtmosphereButton } from "@/components/MusicAtmosphereButton";
+import { ProgressTrendsModal } from "@/components/ProgressTrendsModal";
 import { EmptyState } from "@/components/ui-app/primitives";
 import { useGym } from "@/lib/gym-store";
+import type { Workout } from "@/lib/gym-types";
 import { getCurrentWeekDates, localDateKey } from "@/lib/workout-session";
 
 export const Route = createFileRoute("/workouts/")({
@@ -19,11 +22,13 @@ export const Route = createFileRoute("/workouts/")({
 });
 
 function Workouts() {
-  const { workouts, cardioLogs, challengeEnrollments, challenges, userProfile } = useGym();
+  const { workouts, exercises, history, cardioLogs, challengeEnrollments, challenges, userProfile } = useGym();
+  const navigate = useNavigate();
   const weekDays = getCurrentWeekDates();
   const weekStartDate = weekDays[0]?.date ?? "";
   const weekEndDate = weekDays[weekDays.length - 1]?.date ?? weekStartDate;
   const gender = userProfile?.gender;
+  const [progressWorkout, setProgressWorkout] = useState<Workout | null>(null);
   const activeEnrollments = (challengeEnrollments ?? []).filter((enrollment) => enrollment.active);
   const activeChallengeWorkoutIds = new Set(activeEnrollments.flatMap((enrollment) => enrollment.workoutIds));
   const activeChallengeNames = activeEnrollments
@@ -79,33 +84,43 @@ function Workouts() {
                   : undefined
                 : weekDays[workout.weekday];
               return (
-                <Link
-                  key={workout.id}
-                  to="/session/$workoutId"
-                  params={{ workoutId: workout.id }}
-                  className="surface-card press flex items-center gap-3 border-border/70 bg-background p-3 text-start"
-                >
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                    <Dumbbell className="h-5 w-5" aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-primary">
-                        {day?.label ?? "ללא יום קבוע"}
-                      </span>
-                      {day?.isToday ? (
-                        <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">
-                          היום
-                        </span>
-                      ) : null}
+                <div key={workout.id} className="surface-card flex items-center gap-2 border-border/70 bg-background p-3 text-start">
+                  <Link
+                    to="/session/$workoutId"
+                    params={{ workoutId: workout.id }}
+                    className="press flex min-w-0 flex-1 items-center gap-3"
+                  >
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                      <Dumbbell className="h-5 w-5" aria-hidden="true" />
                     </div>
-                    <p className="mt-1 truncate text-[14px] font-bold text-ink">{workout.name}</p>
-                    <p className="mt-0.5 text-[10px] text-muted-foreground">
-                      {workout.items.length} תרגילים
-                    </p>
-                  </div>
-                  <ArrowLeft className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                </Link>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-primary">
+                          {day?.label ?? "ללא יום קבוע"}
+                        </span>
+                        {day?.isToday ? (
+                          <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">
+                            היום
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 truncate text-[14px] font-bold text-ink">{workout.name}</p>
+                      <p className="mt-0.5 text-[10px] text-muted-foreground">
+                        {workout.items.length} תרגילים
+                      </p>
+                    </div>
+                    <ArrowLeft className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setProgressWorkout(workout)}
+                    className="press inline-flex shrink-0 items-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2 py-2 text-[10px] font-bold text-primary"
+                    aria-label={`פתיחת מגמות עבור ${workout.name}`}
+                  >
+                    <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
+                    מגמות
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -159,6 +174,17 @@ function Workouts() {
           />
         ) : null}
       </section>
+      <ProgressTrendsModal
+        open={progressWorkout !== null}
+        workout={progressWorkout}
+        exercises={exercises}
+        history={history}
+        onClose={() => setProgressWorkout(null)}
+        onStartWorkout={(workoutId) => {
+          setProgressWorkout(null);
+          void navigate({ to: "/session/$workoutId", params: { workoutId } });
+        }}
+      />
     </AppShell>
   );
 }
