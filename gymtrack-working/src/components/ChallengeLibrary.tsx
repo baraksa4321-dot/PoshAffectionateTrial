@@ -35,6 +35,7 @@ const accentClasses: Record<Challenge["accent"], string> = {
 
 type ChallengeLibraryProps = {
   compact?: boolean;
+  canCreate?: boolean;
   availablePrograms?: Program[];
   onAssignToProgram?: (
     challenge: Challenge,
@@ -45,6 +46,7 @@ type ChallengeLibraryProps = {
 
 export function ChallengeLibrary({
   compact = false,
+  canCreate = false,
   availablePrograms,
   onAssignToProgram,
 }: ChallengeLibraryProps) {
@@ -242,7 +244,7 @@ export function ChallengeLibrary({
                   </button>
                 ))}
               </div>
-              {isCoach ? (
+              {canCreate ? (
                 <button type="button" onClick={() => startEditing()} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/40 px-3 py-3 text-xs font-bold text-primary hover:bg-primary/5">
                   <Plus className="h-4 w-4" />
                   יצירת אתגר חדש

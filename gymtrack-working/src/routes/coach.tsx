@@ -8658,6 +8658,7 @@ export function CoachDashboardPage({
                                 </button>
                                 <ChallengeLibrary
                                   compact
+                                  canCreate
                                   availablePrograms={clientDetails?.programs ?? []}
                                   onAssignToProgram={handleAssignChallengeToClient}
                                 />
