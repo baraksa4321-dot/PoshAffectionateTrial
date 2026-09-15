@@ -5972,6 +5972,7 @@ export function CoachDashboardPage({
       compactHeader
       pageClassName={[
         trackingLanding ? "tracking-page" : "",
+        clientsOnly && !trackingLanding ? "coach-management-page" : "",
         editingDayId ? "coach-builder-page" : "",
       ]
         .filter(Boolean)
