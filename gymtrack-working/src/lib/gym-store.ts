@@ -1191,6 +1191,10 @@ function loadReferenceLibraries() {
   return referenceLibrariesPromise;
 }
 
+export function ensureReferenceLibrariesLoaded() {
+  return loadReferenceLibraries();
+}
+
 /** Ensure older saved data still works cleanly. */
 function migrate(d: Partial<GymData>, includeReferenceLibraries = true): GymData {
   const workouts = d.workouts ?? [];
@@ -1667,6 +1671,17 @@ async function handleUserLogin(
     syncErrorMessage = pulled.error;
     notifyListeners();
     return;
+  }
+  if (referenceLibrariesPromise) {
+    await referenceLibrariesPromise;
+    pulled.data = {
+      ...pulled.data,
+      foods: mergeSeedFoods(pulled.data.foods ?? [], pulled.data.deletedFoodIds ?? []),
+      exercises: mergeSeedExercises(
+        pulled.data.exercises ?? [],
+        pulled.data.deletedExerciseIds ?? [],
+      ),
+    };
   }
   const concurrentConflict =
     (dataRevision !== revisionAtPullStart || pendingAtPullStart) &&

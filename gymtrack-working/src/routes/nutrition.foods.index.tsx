@@ -1,9 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Apple, ArrowRight, Barcode, Heart, Plus, Search, SlidersHorizontal } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState, SectionHeader } from "@/components/ui-app/primitives";
-import { searchFoods, toggleFavoriteFood, useGym } from "@/lib/gym-store";
+import {
+  ensureReferenceLibrariesLoaded,
+  searchFoods,
+  toggleFavoriteFood,
+  useGym,
+} from "@/lib/gym-store";
 import { genderText } from "@/lib/gender-copy";
 
 export const Route = createFileRoute("/nutrition/foods/")({
@@ -23,6 +28,23 @@ function FoodLibrary() {
   const [productType, setProductType] = useState("הכל");
   const [brand, setBrand] = useState("הכל");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [libraryStatus, setLibraryStatus] = useState<"loading" | "ready" | "error">("loading");
+
+  useEffect(() => {
+    let active = true;
+    void ensureReferenceLibrariesLoaded()
+      .then(() => {
+        if (active) setLibraryStatus("ready");
+      })
+      .catch((error: unknown) => {
+        console.error("[Food library load failed]:", error);
+        if (active) setLibraryStatus("error");
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const categories = useMemo(
     () =>
       Array.from(
@@ -82,7 +104,13 @@ function FoodLibrary() {
     <AppShell
       kicker="תזונה"
       title="ספריית מאכלים"
-      subtitle={`${foods.length} מוצרים זמינים`}
+      subtitle={
+        libraryStatus === "ready"
+          ? `${foods.length} מוצרים זמינים`
+          : libraryStatus === "error"
+            ? "לא ניתן לטעון את מאגר המזונות"
+            : "טוען את מאגר המזונות..."
+      }
       pageClassName="nutrition-foods-page"
       action={
         <div className="flex gap-2">
@@ -217,11 +245,22 @@ function FoodLibrary() {
 
       <SectionHeader
         className="mt-5"
-        title={`${filtered.length} תוצאות`}
+        title={libraryStatus === "ready" ? `${filtered.length} תוצאות` : "מאגר המזונות נטען"}
         subtitle="ערכים לפי מנת הייחוס של כל מאכל"
       />
 
-      <div className="space-y-2">
+      {libraryStatus === "error" ? (
+        <EmptyState
+          icon={Apple}
+          title="לא ניתן לטעון את מאגר המזונות"
+          description="נסי לרענן את האפליקציה ולפתוח שוב את ספריית המאכלים."
+        />
+      ) : libraryStatus === "loading" ? (
+        <div className="rounded-3xl border border-dashed border-border bg-background px-5 py-10 text-center">
+          <p className="text-sm font-semibold text-muted-foreground">טוען את 845 המאכלים...</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
         {filtered.map((food) => {
           return (
             <div key={food.id} className="nutrition-food-card surface-card p-3.5">
@@ -302,9 +341,10 @@ function FoodLibrary() {
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
 
-        {filtered.length === 0 ? (
+        {libraryStatus === "ready" && filtered.length === 0 ? (
           <EmptyState
             icon={Apple}
             title="לא נמצאו מאכלים"
