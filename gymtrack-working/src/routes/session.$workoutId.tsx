@@ -1358,8 +1358,9 @@ function Session() {
     // A signed URL may have expired while the workout stayed open. Refresh it
     // once automatically; if playback still fails, report a codec/browser
     // problem instead of incorrectly reporting an upload failure.
+    setVideoUploadErrorExerciseIndex(exerciseIndex);
+    setVideoUploadError("הסרטון לא נטען. מנסה שוב את אותו הסרטון...");
     if (videoPlaybackRefreshesRef.current.get(exerciseIndex) === path) {
-      setVideoUploadErrorExerciseIndex(exerciseIndex);
       setVideoUploadError(
         "הסרטון נשמר, אבל הדפדפן לא הצליח לנגן את הפורמט הזה. נסי MP4 מסוג H.264.",
       );
@@ -1971,12 +1972,12 @@ function Session() {
                   />
                 ) : null}
                 {videoUploadError && videoUploadErrorExerciseIndex === ei ? (
-                  <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-rose-50 px-2 py-1.5">
+                  <div className="mt-2 flex flex-col items-stretch gap-2 rounded-lg bg-rose-50 px-2 py-1.5">
                     <p className="text-[10px] font-semibold text-destructive">{videoUploadError}</p>
                     <button
                       type="button"
                       onClick={() => retryPerformanceVideo(ei)}
-                      className="shrink-0 rounded-md bg-white px-2 py-1 text-[10px] font-bold text-primary"
+                      className="self-start rounded-md bg-white px-3 py-1.5 text-[10px] font-bold text-primary"
                     >
                       נסי שוב את אותו הסרטון
                     </button>

@@ -5883,6 +5883,19 @@ body {
     padding-inline: 0.75rem;
   }
 
+  .session-compact .app-topbar__inner {
+    padding-bottom: 0.25rem;
+  }
+
+  .session-compact .app-topbar__heading {
+    padding-top: 0.1rem;
+    padding-bottom: 0.2rem;
+  }
+
+  .session-compact .app-shell-kicker {
+    margin-bottom: 0.1rem;
+  }
+
   .session-compact .workout-progress-sticky {
     margin-inline: -0.05rem;
   }
