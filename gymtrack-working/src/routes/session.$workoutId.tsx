@@ -472,6 +472,7 @@ function Session() {
   const [savedSummary, setSavedSummary] = useState<HistorySession | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
   const [finishError, setFinishError] = useState("");
+  const [videoUploadsInFlight, setVideoUploadsInFlight] = useState(0);
   const [videoUploadError, setVideoUploadError] = useState("");
   const [videoUploadErrorExerciseIndex, setVideoUploadErrorExerciseIndex] = useState<number | null>(
     null,
@@ -1302,6 +1303,7 @@ function Session() {
     if (previousUrl?.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
     videoFilesRef.current.set(exerciseIndex, file);
     videoPlaybackRefreshesRef.current.delete(exerciseIndex);
+    setVideoUploadsInFlight((count) => count + 1);
     const entriesWithLocalVideo = entriesRef.current.map((entry, index) =>
       index === exerciseIndex ? { ...entry, videoUrl: nextUrl } : entry,
     );
@@ -1382,6 +1384,7 @@ function Session() {
         return false;
       })
       .finally(() => {
+        setVideoUploadsInFlight((count) => Math.max(0, count - 1));
         if (videoUploadVersionsRef.current.get(exerciseIndex) === uploadVersion) {
           videoUploadTasksRef.current.delete(exerciseIndex);
         }
@@ -2235,6 +2238,11 @@ function Session() {
             {finishError ? (
               <p className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800">
                 {finishError}
+              </p>
+            ) : null}
+            {videoUploadsInFlight > 0 ? (
+              <p className="rounded-xl bg-primary/5 px-3 py-2 text-xs font-semibold text-primary">
+                הסרטונים ממשיכים לעלות ברקע. אפשר לסיים את האימון והם יצורפו אליו אוטומטית.
               </p>
             ) : null}
             <button

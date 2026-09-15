@@ -435,6 +435,22 @@ const traineeVideoFeedbackCache = {
   },
 };
 
+const videoRetryEntries = workoutItems.map((item, index) => ({
+  exerciseId: item.exerciseId,
+  exerciseName: item.exerciseName,
+  notes: "",
+  sets: Array.from({ length: item.sets }, () => ({
+    reps: item.reps,
+    weight: item.weight,
+    done: false,
+  })),
+  ...(index === 0
+    ? { videoUrl: "/task-12-valid-video.mp4" }
+    : index === 1
+      ? { videoUrl: "/task-12-invalid-video.mp4" }
+      : {}),
+}));
+
 const reopenFullCacheValue = {
   ...gymData,
   foods: Array.from({ length: 2_000 }, (_, index) => ({
@@ -2692,6 +2708,91 @@ test("iPhone trainee video survives upload, expired signed URL, and history reop
   ).toBeVisible();
   await expect(page.getByText(/העלאת סרטון ביצוע נכשלה/)).toHaveCount(0);
 });
+
+for (const [gender, retryLabel] of [
+  ["female", "נסי שוב"],
+  ["male", "נסה שוב"],
+]) {
+  test(`mobile workout video retry is limited to the failed card (${gender})`, async ({ page }) => {
+    test.skip(
+      test.info().project.name !== "chromium-375",
+      "This is the mobile viewport coverage; full WebKit media coverage is a separate release task.",
+    );
+
+    await installFixture(page, {
+      role: "trainee",
+      online: false,
+      fullCacheValue: {
+        ...gymData,
+        userProfile: {
+          ...gymData.userProfile,
+          fullName: gender === "female" ? "מתאמנת בדיקה" : "מתאמן בדיקה",
+          role: "client",
+          approvalStatus: "approved",
+          coachId: COACH_ID,
+          weight: clientProfile.weight_kg,
+          height: clientProfile.height_cm,
+          age: clientProfile.age_years,
+          gender,
+          showCalories: true,
+        },
+      },
+    });
+    await page.route("**/task-12-valid-video.mp4", async (route) => {
+      await route.fulfill({
+        path: "gymtrack-working/public/loading/tinted/user-character-01.mp4",
+        contentType: "video/mp4",
+      });
+    });
+    await page.route("**/task-12-invalid-video.mp4", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "video/mp4",
+        body: "not a playable video",
+      });
+    });
+    await page.addInitScript((entries) => {
+      const weekStart = new Date();
+      weekStart.setHours(0, 0, 0, 0);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      const weekKey = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}-${String(
+        weekStart.getDate(),
+      ).padStart(2, "0")}`;
+      window.localStorage.setItem(
+        `gymtrack.active_session.ios-smoke-client.ios-smoke-workout.${weekKey}`,
+        JSON.stringify(entries),
+      );
+    }, videoRetryEntries);
+
+    await page.goto(`/session/${WORKOUT_ID}`);
+    await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible({
+      timeout: 15_000,
+    });
+    const cards = page.locator("article");
+    const healthyCard = cards.nth(0);
+    const failedCard = cards.nth(1);
+    await expect(healthyCard.locator('video[aria-label^="סרטון ביצוע"]')).toBeVisible();
+    await expect(failedCard.locator('video[aria-label^="סרטון ביצוע"]')).toBeVisible();
+    await expect
+      .poll(() =>
+        healthyCard
+          .locator('video[aria-label^="סרטון ביצוע"]')
+          .evaluate((video) => video.readyState >= 2),
+      )
+      .toBe(true);
+
+    await expect(healthyCard.getByRole("button", { name: /נסי שוב|נסה שוב/ })).toHaveCount(0);
+    await expect(
+      failedCard.getByRole("button", { name: retryLabel, exact: true }),
+    ).toBeVisible();
+    await expect(
+      failedCard.getByRole("button", {
+        name: gender === "female" ? "נסה שוב" : "נסי שוב",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+  });
+}
 
 test("iPhone trainee video feedback refreshes an expired signed URL on the home screen", async ({
   page,
