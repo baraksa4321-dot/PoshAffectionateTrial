@@ -1219,7 +1219,7 @@ function WorkoutReviewExerciseCard({
                     הסרטון עדיין בתהליך העלאה ולא זמין לצפייה כאן.
                   </p>
                 ) : null}
-                {videoUrl && clientId && sessionId && entry.videoPath ? (
+                {hasPerformanceVideo && clientId && sessionId && entry.videoPath ? (
                   <div className="mt-2 rounded-xl border border-primary/20 bg-primary/[0.035] p-2.5">
                     <div className="flex items-center justify-between gap-2">
                       <p className="flex items-center gap-1 text-[11px] font-bold text-primary">
@@ -1833,9 +1833,10 @@ function WorkoutDailyReport({
                   const entryNote = entry.feedback?.notes?.trim() || entry.notes?.trim();
                   const performanceVideoUrl = entry.videoUrl;
                   const hasVideo =
-                    Boolean(performanceVideoUrl) &&
-                    isSafeVideoSource(performanceVideoUrl) &&
-                    !performanceVideoUrl.startsWith("blob:");
+                    Boolean(entry.videoPath) ||
+                    (Boolean(performanceVideoUrl) &&
+                      isSafeVideoSource(performanceVideoUrl) &&
+                      !performanceVideoUrl.startsWith("blob:"));
 
                   return (
                     <div

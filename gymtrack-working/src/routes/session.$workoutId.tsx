@@ -674,6 +674,7 @@ function Session() {
   const entriesRef = useRef(entries);
   const videoFilesRef = useRef(new Map<number, File>());
   const videoUploadVersionsRef = useRef(new Map<number, number>());
+  const videoUploadTasksRef = useRef(new Map<number, Promise<boolean>>());
   const videoPlaybackRefreshesRef = useRef(new Map<number, string>());
   const restoredVideoDraftWorkoutIdRef = useRef<string | null>(null);
   const completedSaveRef = useRef(false);
@@ -1271,7 +1272,7 @@ function Session() {
       return;
     }
     const nextUrl = URL.createObjectURL(file);
-    const previousUrl = entries[exerciseIndex]?.videoUrl;
+    const previousUrl = entriesRef.current[exerciseIndex]?.videoUrl;
     const uploadVersion = (videoUploadVersionsRef.current.get(exerciseIndex) ?? 0) + 1;
     videoUploadVersionsRef.current.set(exerciseIndex, uploadVersion);
     if (previousUrl?.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
@@ -1292,7 +1293,7 @@ function Session() {
     const upload = import("@/lib/supabase-sync").then(({ uploadWorkoutPerformanceVideo }) =>
       uploadWorkoutPerformanceVideo(file, {
         workoutId: workout.id,
-        exerciseId: entries[exerciseIndex]?.exerciseId ?? String(exerciseIndex),
+        exerciseId: entriesRef.current[exerciseIndex]?.exerciseId ?? String(exerciseIndex),
       }),
     );
     const uploadTask = upload
@@ -1336,7 +1337,11 @@ function Session() {
       })
       .finally(() => {
         setVideoUploadsInFlight((count) => Math.max(0, count - 1));
+        if (videoUploadVersionsRef.current.get(exerciseIndex) === uploadVersion) {
+          videoUploadTasksRef.current.delete(exerciseIndex);
+        }
       });
+    videoUploadTasksRef.current.set(exerciseIndex, uploadTask);
     void uploadTask;
   };
 
@@ -1420,6 +1425,17 @@ function Session() {
     if (isFinishing) return;
     setIsFinishing(true);
     setFinishError("");
+    const activeVideoUploads = [...videoUploadTasksRef.current.values()];
+    if (activeVideoUploads.length > 0) {
+      setFinishError("ממתינה לסיום העלאת הסרטונים לפני שמירת האימון...");
+      const uploadResults = await Promise.all(activeVideoUploads);
+      if (uploadResults.some((result) => !result)) {
+        setIsFinishing(false);
+        setFinishError("לפחות סרטון אחד לא הועלה. יש לנסות שוב לפני שמירת האימון.");
+        return;
+      }
+      setFinishError("");
+    }
     const currentEntries = entriesRef.current;
     const allSetsCompleted =
       currentEntries.length > 0 &&
@@ -2139,7 +2155,7 @@ function Session() {
             ) : null}
             {videoUploadsInFlight > 0 ? (
               <p className="rounded-xl bg-primary/5 px-3 py-2 text-xs font-semibold text-primary">
-                האימון יישמר עכשיו. הסרטון ימשיך לעלות לענן ברקע.
+                יש להמתין לסיום העלאת הסרטונים לפני שמירת האימון.
               </p>
             ) : null}
             <button
