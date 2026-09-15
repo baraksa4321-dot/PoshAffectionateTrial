@@ -964,6 +964,8 @@ export async function uploadWorkoutPerformanceVideo(
   }
 
   const safeExtension = safeVideoExtension(file.name, normalizedType);
+  const locallyCompressedMp4 =
+    normalizedType.startsWith("video/mp4") && file.name.toLowerCase().endsWith("-720p.mp4");
   let lastError: unknown = new Error("העלאת סרטון נכשלה.");
   for (let attempt = 1; attempt <= WORKOUT_VIDEO_UPLOAD_ATTEMPTS; attempt += 1) {
     if (options.signal?.aborted) {
@@ -995,6 +997,14 @@ export async function uploadWorkoutPerformanceVideo(
       } catch (transcodeError) {
         // Keep the original upload usable and visible when the optional
         // conversion service is temporarily unavailable.
+        if (locallyCompressedMp4) {
+          return {
+            path,
+            signedUrl: signedSourceUrl,
+            playbackPath: path,
+            transcodeStatus: "not-needed" as const,
+          };
+        }
         return {
           path,
           signedUrl: signedSourceUrl,
@@ -1006,6 +1016,14 @@ export async function uploadWorkoutPerformanceVideo(
       }
 
       if (transcode.status === "failed" || !transcode.playbackPath) {
+        if (locallyCompressedMp4) {
+          return {
+            path,
+            signedUrl: signedSourceUrl,
+            playbackPath: path,
+            transcodeStatus: "not-needed" as const,
+          };
+        }
         return {
           path,
           signedUrl: signedSourceUrl,
