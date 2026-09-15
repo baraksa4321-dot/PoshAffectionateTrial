@@ -885,6 +885,7 @@ function feedbackListsMatch(first: VideoFeedback[], second: VideoFeedback[]) {
 }
 
 function useCoachVideoFeedbackList(videoFeedbacks: VideoFeedback[]) {
+  const authUser = useAuthUser();
   const [localFeedbacks, setLocalFeedbacks] = useState(videoFeedbacks);
   const [hiddenFeedbackIds, setHiddenFeedbackIds] = useState<Set<string>>(() => new Set());
   const hideTimersRef = useRef<Map<string, number>>(new Map());
@@ -898,6 +899,44 @@ function useCoachVideoFeedbackList(videoFeedbacks: VideoFeedback[]) {
     });
   }, [videoFeedbacks]);
 
+  const hideFeedback = useCallback((feedbackId: string) => {
+    setHiddenFeedbackIds((current) => {
+      if (current.has(feedbackId)) return current;
+      const next = new Set(current);
+      next.add(feedbackId);
+      return next;
+    });
+    const timerId = hideTimersRef.current.get(feedbackId);
+    if (timerId !== undefined) {
+      window.clearTimeout(timerId);
+      hideTimersRef.current.delete(feedbackId);
+    }
+  }, []);
+
+  const scheduleFeedbackHide = useCallback(
+    (feedback: VideoFeedback) => {
+      if (hideTimersRef.current.has(feedback.id)) return;
+      const createdAt = new Date(feedback.createdAt).getTime();
+      const remainingMs = Number.isFinite(createdAt)
+        ? COACH_SENT_FEEDBACK_HIDE_DELAY_MS - (Date.now() - createdAt)
+        : COACH_SENT_FEEDBACK_HIDE_DELAY_MS;
+      if (remainingMs <= 0) {
+        hideFeedback(feedback.id);
+        return;
+      }
+      const timerId = window.setTimeout(() => hideFeedback(feedback.id), remainingMs);
+      hideTimersRef.current.set(feedback.id, timerId);
+    },
+    [hideFeedback],
+  );
+
+  useEffect(() => {
+    if (!authUser?.id) return;
+    videoFeedbacks.forEach((feedback) => {
+      if (feedback.coachId === authUser.id) scheduleFeedbackHide(feedback);
+    });
+  }, [authUser?.id, scheduleFeedbackHide, videoFeedbacks]);
+
   useEffect(
     () => () => {
       hideTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
@@ -908,19 +947,10 @@ function useCoachVideoFeedbackList(videoFeedbacks: VideoFeedback[]) {
 
   const addLocalFeedback = (feedback: VideoFeedback) => {
     setLocalFeedbacks((current) => [feedback, ...current.filter((item) => item.id !== feedback.id)]);
-    const timerId = window.setTimeout(() => {
-      setHiddenFeedbackIds((current) => {
-        const next = new Set(current);
-        next.add(feedback.id);
-        return next;
-      });
-      hideTimersRef.current.delete(feedback.id);
-    }, COACH_SENT_FEEDBACK_HIDE_DELAY_MS);
-    hideTimersRef.current.set(feedback.id, timerId);
+    scheduleFeedbackHide(feedback);
   };
 
   return {
-    localFeedbacks,
     visibleFeedbacks: localFeedbacks.filter((feedback) => !hiddenFeedbackIds.has(feedback.id)),
     addLocalFeedback,
   };
@@ -949,8 +979,7 @@ function VideoFeedbackThread({
     (feedback) =>
       feedback.sessionId === sessionId &&
       feedback.exerciseId === entry.exerciseId &&
-      feedback.videoPath === entry.videoPath &&
-      true,
+      feedback.videoPath === entry.videoPath,
   );
 
   return (
@@ -1004,7 +1033,7 @@ function VideoFeedbackThread({
                 : {}),
               message: draft,
             });
-             addLocalFeedback(created);
+            addLocalFeedback(created);
             setDraft("");
           } catch (feedbackError: unknown) {
             setError(errorMessage(feedbackError, "שליחת המשוב נכשלה."));
