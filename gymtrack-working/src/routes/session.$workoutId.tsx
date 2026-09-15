@@ -465,6 +465,9 @@ function Session() {
   const [videoUploadErrorExerciseIndex, setVideoUploadErrorExerciseIndex] = useState<number | null>(
     null,
   );
+  const [videoPlaybackErrorIndexes, setVideoPlaybackErrorIndexes] = useState<Set<number>>(
+    () => new Set(),
+  );
   const videoUploadErrorExerciseIndexRef = useRef<number | null>(null);
   useEffect(() => {
     videoUploadErrorExerciseIndexRef.current = videoUploadErrorExerciseIndex;
@@ -1268,6 +1271,12 @@ function Session() {
     }
     setVideoUploadError("");
     setVideoUploadErrorExerciseIndex(null);
+    setVideoPlaybackErrorIndexes((current) => {
+      if (!current.has(exerciseIndex)) return current;
+      const next = new Set(current);
+      next.delete(exerciseIndex);
+      return next;
+    });
     const duration = await videoDuration(file);
     if (duration !== null && duration > MAX_PERFORMANCE_VIDEO_DURATION_SECONDS) {
       setVideoUploadErrorExerciseIndex(exerciseIndex);
@@ -1349,6 +1358,12 @@ function Session() {
   };
 
   const handlePerformanceVideoError = (exerciseIndex: number) => {
+    setVideoPlaybackErrorIndexes((current) => {
+      if (current.has(exerciseIndex)) return current;
+      const next = new Set(current);
+      next.add(exerciseIndex);
+      return next;
+    });
     const entry = entriesRef.current[exerciseIndex];
     const path = entry?.videoPath;
     const currentUrl = entry?.videoUrl;
@@ -1718,7 +1733,7 @@ function Session() {
       </div>
       <div className="session-exercise-list mt-3 space-y-3">
         {entries.map((entry, ei) => {
-          const hasVideo = Boolean(entry.videoUrl || entry.videoPath);
+          const hasPlaybackError = videoPlaybackErrorIndexes.has(ei);
           const item = workout.items[ei];
           const supersetLabel = labels[ei];
           const fullExercise =
@@ -1903,21 +1918,25 @@ function Session() {
                     איך היה התרגיל?
                   </p>
                     <div className="flex shrink-0 items-center gap-1.5">
-                      {hasVideo ? (
+                      {hasPlaybackError ? (
                         <button
                           type="button"
                           onClick={() => retryPerformanceVideo(ei)}
                           className="inline-flex items-center rounded-lg border border-primary/20 bg-primary/5 px-2 py-1 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10"
                         >
-                          נסי שוב
+                          {genderText(gender, "נסי שוב", "נסה שוב")}
                         </button>
                       ) : null}
                       <label
                         className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-primary/20 bg-primary/5 px-2 py-1 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10"
-                        aria-label={hasVideo ? "החלפת סרטון תרגיל" : "הוספת סרטון תרגיל"}
+                        aria-label={
+                          entry.videoUrl || entry.videoPath
+                            ? "החלפת סרטון תרגיל"
+                            : "הוספת סרטון תרגיל"
+                        }
                       >
                         <ImagePlus className="h-3 w-3" />
-                        <span>{hasVideo ? "החלפה" : "סרטון"}</span>
+                        <span>{entry.videoUrl || entry.videoPath ? "החלפה" : "סרטון"}</span>
                         <input
                           type="file"
                           accept="video/*"
@@ -1976,20 +1995,30 @@ function Session() {
                     playsInline
                     preload="metadata"
                     aria-label={`סרטון ביצוע ${entry.exerciseName}`}
-                    onLoadedData={() => videoPlaybackRefreshesRef.current.delete(ei)}
+                    onLoadedData={() => {
+                      videoPlaybackRefreshesRef.current.delete(ei);
+                      setVideoPlaybackErrorIndexes((current) => {
+                        if (!current.has(ei)) return current;
+                        const next = new Set(current);
+                        next.delete(ei);
+                        return next;
+                      });
+                    }}
                     onError={() => handlePerformanceVideoError(ei)}
                   />
                 ) : null}
                 {videoUploadError && videoUploadErrorExerciseIndex === ei ? (
                   <div className="mt-2 flex flex-col items-stretch gap-2 rounded-lg bg-rose-50 px-2 py-1.5">
                     <p className="text-[10px] font-semibold text-destructive">{videoUploadError}</p>
-                    <button
-                      type="button"
-                      onClick={() => retryPerformanceVideo(ei)}
-                      className="self-start rounded-md bg-white px-3 py-1.5 text-[10px] font-bold text-primary"
-                    >
-                      נסי שוב את אותו הסרטון
-                    </button>
+                    {hasPlaybackError ? (
+                      <button
+                        type="button"
+                        onClick={() => retryPerformanceVideo(ei)}
+                        className="self-start rounded-md bg-white px-3 py-1.5 text-[10px] font-bold text-primary"
+                      >
+                        {genderText(gender, "נסי שוב את אותו הסרטון", "נסה שוב את אותו הסרטון")}
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
