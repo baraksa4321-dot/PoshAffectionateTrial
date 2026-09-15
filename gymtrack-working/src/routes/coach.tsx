@@ -6688,7 +6688,7 @@ export function CoachDashboardPage({
                     תור תשומת לב למאמן
                   </h3>
                   <p className="mt-0.5 hidden text-[10px] leading-relaxed text-muted-foreground sm:block">
-                    סיבות ברורות לפעולה, מגמה של 4 שבועות ומצב אמינות הנתונים לכל מתאמן.
+                    סיבות ברורות לפעולה ומצב אמינות הנתונים לכל מתאמן.
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5">

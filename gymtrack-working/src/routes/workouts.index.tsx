@@ -1,14 +1,11 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, BarChart3, CheckCircle2, Dumbbell } from "lucide-react";
-import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowLeft, CheckCircle2, Dumbbell } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CardioTracker } from "@/components/CardioTracker";
 import { ChallengeLibrary } from "@/components/ChallengeLibrary";
 import { MusicAtmosphereButton } from "@/components/MusicAtmosphereButton";
-import { ProgressTrendsModal } from "@/components/ProgressTrendsModal";
 import { EmptyState } from "@/components/ui-app/primitives";
 import { useGym } from "@/lib/gym-store";
-import type { Workout } from "@/lib/gym-types";
 import { getCurrentWeekDates, localDateKey } from "@/lib/workout-session";
 
 export const Route = createFileRoute("/workouts/")({
@@ -22,13 +19,11 @@ export const Route = createFileRoute("/workouts/")({
 });
 
 function Workouts() {
-  const { workouts, exercises, history, cardioLogs, challengeEnrollments, challenges, userProfile } = useGym();
-  const navigate = useNavigate();
+  const { workouts, cardioLogs, challengeEnrollments, challenges, userProfile } = useGym();
   const weekDays = getCurrentWeekDates();
   const weekStartDate = weekDays[0]?.date ?? "";
   const weekEndDate = weekDays[weekDays.length - 1]?.date ?? weekStartDate;
   const gender = userProfile?.gender;
-  const [progressWorkout, setProgressWorkout] = useState<Workout | null>(null);
   const activeEnrollments = (challengeEnrollments ?? []).filter((enrollment) => enrollment.active);
   const activeChallengeWorkoutIds = new Set(activeEnrollments.flatMap((enrollment) => enrollment.workoutIds));
   const activeChallengeNames = activeEnrollments
@@ -111,15 +106,6 @@ function Workouts() {
                     </div>
                     <ArrowLeft className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                   </Link>
-                  <button
-                    type="button"
-                    onClick={() => setProgressWorkout(workout)}
-                    className="press inline-flex shrink-0 items-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2 py-2 text-[10px] font-bold text-primary"
-                    aria-label={`פתיחת מגמות עבור ${workout.name}`}
-                  >
-                    <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
-                    מגמות
-                  </button>
                 </div>
               );
             })}
@@ -174,17 +160,6 @@ function Workouts() {
           />
         ) : null}
       </section>
-      <ProgressTrendsModal
-        open={progressWorkout !== null}
-        workout={progressWorkout}
-        exercises={exercises}
-        history={history}
-        onClose={() => setProgressWorkout(null)}
-        onStartWorkout={(workoutId) => {
-          setProgressWorkout(null);
-          void navigate({ to: "/session/$workoutId", params: { workoutId } });
-        }}
-      />
     </AppShell>
   );
 }
