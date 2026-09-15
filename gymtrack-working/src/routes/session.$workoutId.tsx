@@ -695,6 +695,9 @@ function Session() {
   const videoUploadStatesRef = useRef(
     new Map<number, { version: number; status: "uploading" | "failed" }>(),
   );
+  const videoUploadControllersRef = useRef(
+    new Map<number, { version: number; controller: AbortController }>(),
+  );
   const videoUploadTasksRef = useRef(new Map<number, Promise<boolean>>());
   const videoUploadQueueRef = useRef(Promise.resolve());
   const videoPlaybackRefreshesRef = useRef(new Map<number, string>());
@@ -1285,6 +1288,14 @@ function Session() {
       setVideoUploadError("לא ניתן להעלות סרטון לפני שהחשבון נטען.");
       return;
     }
+    // A manual retry must not wait behind an older request that is stuck in
+    // the serial queue. Invalidate its version before aborting so its
+    // rejection cannot overwrite the replacement upload's state.
+    const supersededVersion = (videoUploadVersionsRef.current.get(exerciseIndex) ?? 0) + 1;
+    videoUploadVersionsRef.current.set(exerciseIndex, supersededVersion);
+    videoUploadControllersRef.current.get(exerciseIndex)?.controller.abort();
+    videoUploadControllersRef.current.delete(exerciseIndex);
+    videoUploadStatesRef.current.delete(exerciseIndex);
     setVideoUploadError("");
     setVideoUploadErrorExerciseIndex(null);
     setVideoPlaybackErrorIndexes((current) => {
@@ -1307,6 +1318,11 @@ function Session() {
       version: uploadVersion,
       status: "uploading",
     });
+    const controller = new AbortController();
+    videoUploadControllersRef.current.set(exerciseIndex, {
+      version: uploadVersion,
+      controller,
+    });
     if (previousUrl?.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
     videoFilesRef.current.set(exerciseIndex, file);
     videoPlaybackRefreshesRef.current.delete(exerciseIndex);
@@ -1325,7 +1341,6 @@ function Session() {
     // iOS Safari is more reliable when performance videos upload one at a
     // time. Keep the workout completion path independent from this queue.
     const upload = videoUploadQueueRef.current.then(async () => {
-      const controller = new AbortController();
       const timeoutId = window.setTimeout(
         () => controller.abort(),
         PERFORMANCE_VIDEO_UPLOAD_TIMEOUT_MS,
@@ -1399,6 +1414,9 @@ function Session() {
         setVideoUploadsInFlight((count) => Math.max(0, count - 1));
         if (videoUploadVersionsRef.current.get(exerciseIndex) === uploadVersion) {
           videoUploadTasksRef.current.delete(exerciseIndex);
+          if (videoUploadControllersRef.current.get(exerciseIndex)?.version === uploadVersion) {
+            videoUploadControllersRef.current.delete(exerciseIndex);
+          }
         }
       });
     videoUploadTasksRef.current.set(exerciseIndex, uploadTask);

@@ -1111,15 +1111,16 @@ describe("cross-browser Supabase sync boundaries", () => {
         { workoutId: "day-b", exerciseId: "ex-stalled" },
         { signal: controller.signal },
       );
-      controller.abort();
-
-      await expect(upload).rejects.toThrow("video upload timed out");
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
       expect(storageCalls).toContainEqual(
         expect.objectContaining({
           bucket: "workout-videos",
           action: "createSignedUploadUrl",
         }),
       );
+      controller.abort();
+
+      await expect(upload).rejects.toThrow("video upload timed out");
     } finally {
       globalThis.fetch = originalFetch;
     }

@@ -75,3 +75,11 @@ blob URL remains in the entry until the trainee retries or replaces it.
 
 **How to apply:** Track upload status by exercise and version, clear it on success, mark it failed
 in the upload catch path, and gate the blob playback message on the active status.
+
+Manual retry must abort the current upload for that exercise before enqueueing its replacement.
+
+**Why:** Retrying while the old request is stuck otherwise places the replacement behind the same
+blocked queue item, so the trainee sees the same local-blob error again.
+
+**How to apply:** Invalidate the old version first, abort its controller, then create the new
+version and controller; stale rejection handlers must not overwrite the replacement state.
