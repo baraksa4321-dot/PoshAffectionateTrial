@@ -9,15 +9,15 @@ Use a dedicated video-feedback record for comments attached to a specific upload
 
 **How to apply:** Keep the table optional during staged schema rollout, include it in both trainee and selected-coach realtime subscriptions, and preserve the local unread state until the server confirms `seen_at`.
 
-Completion must wait for all active performance-video uploads before navigating away or writing
-the final workout snapshot. Otherwise a fast completion can persist only the videos that finished
-first, leaving the coach with an incomplete feedback list.
+Workout completion should not block on active performance-video uploads. Save the workout
+immediately, keep the upload promises running, and merge each successful upload into the saved
+session when it finishes.
 
-**Why:** Uploads were previously allowed to continue in the background after the completion save,
-so a multi-video workout could reach the coach with only a subset of its videos.
+**Why:** Trainees prefer to finish the workout while mobile uploads continue; blocking completion
+leaves them stuck on a progress state and does not improve recovery from a transient failure.
 
-**How to apply:** Track each active upload promise, await them from the completion action, and
-stop with an actionable error when any upload fails.
+**How to apply:** Keep the finished session in a stable ref, update and persist its matching entry
+when an upload resolves, and leave the same-video retry action available when an upload fails.
 
 Playback failures after a successful upload should retry the existing Storage path and refresh its
 signed URL before asking the trainee to select the file again.
