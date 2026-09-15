@@ -1349,9 +1349,14 @@ function Session() {
     const entry = entriesRef.current[exerciseIndex];
     const path = entry?.videoPath;
     const currentUrl = entry?.videoUrl;
-    if (!path || !currentUrl || currentUrl.startsWith("blob:")) {
+    if (!path) {
       setVideoUploadErrorExerciseIndex(exerciseIndex);
       setVideoUploadError("הסרטון נבחר, אבל הדפדפן לא הצליח לנגן אותו.");
+      return;
+    }
+    if (currentUrl?.startsWith("blob:")) {
+      setVideoUploadErrorExerciseIndex(exerciseIndex);
+      setVideoUploadError("הסרטון עדיין עולה. נסי שוב בעוד רגע.");
       return;
     }
 
@@ -1721,6 +1726,7 @@ function Session() {
       </div>
       <div className="session-exercise-list mt-3 space-y-3">
         {entries.map((entry, ei) => {
+          const hasVideo = Boolean(entry.videoUrl || entry.videoPath);
           const item = workout.items[ei];
           const supersetLabel = labels[ei];
           const fullExercise =
@@ -1900,26 +1906,37 @@ function Session() {
               </div>
 
               <div className="mt-3 rounded-2xl border border-border/60 bg-background p-3">
-                <div className="mb-2 flex items-start justify-between gap-2">
+                  <div className="mb-2 flex items-start justify-between gap-2">
                   <p className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
                     איך היה התרגיל?
                   </p>
-                  <label
-                    className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-primary/20 bg-primary/5 px-2 py-1 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10"
-                    aria-label={entry.videoUrl ? "החלפת סרטון תרגיל" : "הוספת סרטון תרגיל"}
-                  >
-                    <ImagePlus className="h-3 w-3" />
-                    <span>{entry.videoUrl ? "החלפה" : "סרטון"}</span>
-                    <input
-                      type="file"
-                      accept="video/*"
-                      className="sr-only"
-                      onChange={(event) => {
-                        void selectPerformanceVideo(ei, event.target.files?.[0]);
-                        event.currentTarget.value = "";
-                      }}
-                    />
-                  </label>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {hasVideo ? (
+                        <button
+                          type="button"
+                          onClick={() => retryPerformanceVideo(ei)}
+                          className="inline-flex items-center rounded-lg border border-primary/20 bg-primary/5 px-2 py-1 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10"
+                        >
+                          נסי שוב
+                        </button>
+                      ) : null}
+                      <label
+                        className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-primary/20 bg-primary/5 px-2 py-1 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10"
+                        aria-label={hasVideo ? "החלפת סרטון תרגיל" : "הוספת סרטון תרגיל"}
+                      >
+                        <ImagePlus className="h-3 w-3" />
+                        <span>{hasVideo ? "החלפה" : "סרטון"}</span>
+                        <input
+                          type="file"
+                          accept="video/*"
+                          className="sr-only"
+                          onChange={(event) => {
+                            void selectPerformanceVideo(ei, event.target.files?.[0]);
+                            event.currentTarget.value = "";
+                          }}
+                        />
+                      </label>
+                    </div>
                 </div>
                 <div className="grid grid-cols-3 gap-1.5">
                   {(
