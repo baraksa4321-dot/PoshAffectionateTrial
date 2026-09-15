@@ -243,6 +243,16 @@ function videoUploadErrorMessage(error: unknown) {
   return message || "העלאת סרטון הביצוע נכשלה";
 }
 
+function videoPlaybackErrorMessage(code?: number) {
+  if (code === 2) {
+    return "הסרטון נשמר, אבל החיבור לא הצליח לטעון אותו. נסי שוב.";
+  }
+  if (code === 3 || code === 4) {
+    return "הסרטון נשמר, אבל הדפדפן לא הצליח לפענח את הפורמט. מומלץ MP4 מסוג H.264.";
+  }
+  return "הסרטון נשמר, אבל הדפדפן לא הצליח לנגן אותו. נסי שוב.";
+}
+
 type ExerciseFeedbackDraft = {
   rating?: "easy" | "appropriate" | "difficult";
   notes: string;
@@ -1363,7 +1373,7 @@ function Session() {
     void uploadTask;
   };
 
-  const handlePerformanceVideoError = (exerciseIndex: number) => {
+  const handlePerformanceVideoError = (exerciseIndex: number, mediaErrorCode?: number) => {
     setVideoPlaybackErrorIndexes((current) => {
       if (current.has(exerciseIndex)) return current;
       const next = new Set(current);
@@ -1390,9 +1400,7 @@ function Session() {
     setVideoUploadErrorExerciseIndex(exerciseIndex);
     setVideoUploadError("הסרטון לא נטען. מנסה שוב את אותו הסרטון...");
     if (videoPlaybackRefreshesRef.current.get(exerciseIndex) === path) {
-      setVideoUploadError(
-        "הסרטון נשמר, אבל הדפדפן לא הצליח לנגן את הפורמט הזה. נסי MP4 מסוג H.264.",
-      );
+      setVideoUploadError(videoPlaybackErrorMessage(mediaErrorCode));
       return;
     }
     videoPlaybackRefreshesRef.current.set(exerciseIndex, path);
@@ -1995,6 +2003,7 @@ function Session() {
                 />
                 {entry.videoUrl ? (
                   <video
+                    key={`${entry.videoPath ?? ""}:${entry.videoUrl}`}
                     className="mt-2 max-h-52 w-full rounded-xl bg-black object-contain"
                     src={entry.videoUrl}
                     controls
@@ -2010,7 +2019,9 @@ function Session() {
                         return next;
                       });
                     }}
-                    onError={() => handlePerformanceVideoError(ei)}
+                    onError={(event) =>
+                      handlePerformanceVideoError(ei, event.currentTarget.error?.code)
+                    }
                   />
                 ) : null}
                 {videoUploadError && videoUploadErrorExerciseIndex === ei ? (
