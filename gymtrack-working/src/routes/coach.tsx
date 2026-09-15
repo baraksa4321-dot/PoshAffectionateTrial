@@ -86,6 +86,7 @@ import {
 import { loadCoachMessages, sendCoachMessage } from "../lib/coach-messages";
 import { createVideoFeedback } from "../lib/video-feedback";
 import { isSafeHttpUrl, isSafeVideoSource } from "../lib/url-security";
+import { videoTranscodeFailureMessage, videoTranscodeStatusLabel } from "../lib/video-transcoding";
 import {
   getNextWorkoutReportWeekOffset,
   getWorkoutReportSessionForDate,
@@ -646,11 +647,17 @@ function exerciseDemoVideoSources(exercise: Exercise | undefined): string[] {
 function WorkoutVideoPlayer({
   source,
   videoPath,
+  videoPlaybackPath,
+  videoTranscodeStatus,
+  videoTranscodeError,
   title,
   className,
 }: {
   source: string;
   videoPath?: string | undefined;
+  videoPlaybackPath?: string | undefined;
+  videoTranscodeStatus?: HistoryEntry["videoTranscodeStatus"];
+  videoTranscodeError?: string | undefined;
   title: string;
   className?: string | undefined;
 }) {
@@ -659,6 +666,7 @@ function WorkoutVideoPlayer({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [didRefresh, setDidRefresh] = useState(false);
   const embedUrl = youtubeEmbedUrl(playbackSource);
+  const playbackPath = videoPlaybackPath ?? videoPath;
 
   useEffect(() => {
     let cancelled = false;
@@ -666,10 +674,10 @@ function WorkoutVideoPlayer({
     setPlaybackSource(source);
     setIsRefreshing(false);
     setDidRefresh(false);
-    if (!isSafeVideoSource(source) && videoPath) {
+    if (!isSafeVideoSource(source) && playbackPath) {
       setIsRefreshing(true);
       setDidRefresh(true);
-      void signWorkoutPerformanceVideo(videoPath)
+      void signWorkoutPerformanceVideo(playbackPath)
         .then((freshUrl) => {
           if (!cancelled) setPlaybackSource(freshUrl);
         })
@@ -683,10 +691,10 @@ function WorkoutVideoPlayer({
     return () => {
       cancelled = true;
     };
-  }, [source, videoPath]);
+  }, [source, playbackPath]);
 
   const handleVideoError = async () => {
-    if (!videoPath || didRefresh || isRefreshing) {
+    if (!playbackPath || didRefresh || isRefreshing) {
       setHasError(true);
       return;
     }
@@ -694,7 +702,7 @@ function WorkoutVideoPlayer({
     setIsRefreshing(true);
     setDidRefresh(true);
     try {
-      const freshUrl = await signWorkoutPerformanceVideo(videoPath);
+      const freshUrl = await signWorkoutPerformanceVideo(playbackPath);
       setPlaybackSource(freshUrl);
       setHasError(false);
     } catch {
@@ -704,72 +712,112 @@ function WorkoutVideoPlayer({
     }
   };
 
+  const statusText =
+    videoTranscodeStatus === "failed"
+      ? videoTranscodeFailureMessage(videoTranscodeError)
+      : videoTranscodeStatusLabel(videoTranscodeStatus);
+
   if (!isSafeVideoSource(playbackSource)) {
     if (isRefreshing) {
       return (
-        <div className={className ?? "rounded-lg bg-black p-3 text-center text-[11px] text-white"}>
+        <div className="space-y-1.5">
+          {statusText ? (
+            <p className="rounded-lg bg-amber-50 px-2 py-1.5 text-[10px] font-semibold text-amber-900">
+              {statusText}
+            </p>
+          ) : null}
+          <div className={className ?? "rounded-lg bg-black p-3 text-center text-[11px] text-white"}>
           טוען את הסרטון...
+          </div>
         </div>
       );
     }
     return (
-      <div className={className ?? "rounded-lg bg-black p-3 text-center text-[11px] text-white"}>
-        הסרטון אינו זמין להצגה.
+      <div className="space-y-1.5">
+        {statusText ? (
+          <p className="rounded-lg bg-amber-50 px-2 py-1.5 text-[10px] font-semibold text-amber-900">
+            {statusText}
+          </p>
+        ) : null}
+        <div className={className ?? "rounded-lg bg-black p-3 text-center text-[11px] text-white"}>
+          הסרטון אינו זמין להצגה.
+        </div>
       </div>
     );
   }
 
   if (hasError) {
     return (
-      <div className="space-y-1.5 rounded-lg bg-black p-3 text-center text-[11px] text-white">
-        <p>לא ניתן להציג את הסרטון בתוך האפליקציה.</p>
-        <a
-          href={playbackSource}
-          target="_blank"
-          rel="noreferrer"
-          className="font-bold text-white underline underline-offset-2"
-        >
-          פתיחת הסרטון בחלון חדש
-        </a>
+      <div className="space-y-1.5">
+        {statusText ? (
+          <p className="rounded-lg bg-amber-50 px-2 py-1.5 text-[10px] font-semibold text-amber-900">
+            {statusText}
+          </p>
+        ) : null}
+        <div className="space-y-1.5 rounded-lg bg-black p-3 text-center text-[11px] text-white">
+          <p>לא ניתן להציג את הסרטון בתוך האפליקציה.</p>
+          <a
+            href={playbackSource}
+            target="_blank"
+            rel="noreferrer"
+            className="font-bold text-white underline underline-offset-2"
+          >
+            פתיחת הסרטון בחלון חדש
+          </a>
+        </div>
       </div>
     );
   }
 
   if (embedUrl) {
     return (
-      <div className={className}>
-        <iframe
-          src={embedUrl}
-          title={title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-          loading="lazy"
-          referrerPolicy="strict-origin-when-cross-origin"
-          className="aspect-video w-full"
-        />
-        <a
-          href={source}
-          target="_blank"
-          rel="noreferrer"
-          className="block bg-black px-2 py-1.5 text-center text-[10px] font-bold text-white underline underline-offset-2"
-        >
-          פתיחת הסרטון ב־YouTube
-        </a>
+      <div className="space-y-1.5">
+        {statusText ? (
+          <p className="rounded-lg bg-amber-50 px-2 py-1.5 text-[10px] font-semibold text-amber-900">
+            {statusText}
+          </p>
+        ) : null}
+        <div className={className}>
+          <iframe
+            src={embedUrl}
+            title={title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="strict-origin-when-cross-origin"
+            className="aspect-video w-full"
+          />
+          <a
+            href={source}
+            target="_blank"
+            rel="noreferrer"
+            className="block bg-black px-2 py-1.5 text-center text-[10px] font-bold text-white underline underline-offset-2"
+          >
+            פתיחת הסרטון ב־YouTube
+          </a>
+        </div>
       </div>
     );
   }
 
   return (
-    <video
-      key={playbackSource}
-      src={playbackSource}
-      controls
-      playsInline
-      preload="metadata"
-      onError={() => void handleVideoError()}
-      className={className ?? "max-h-64 w-full object-contain"}
-      aria-label={title}
-    />
+    <div className="space-y-1.5">
+      {statusText ? (
+        <p className="rounded-lg bg-amber-50 px-2 py-1.5 text-[10px] font-semibold text-amber-900">
+          {statusText}
+        </p>
+      ) : null}
+      <video
+        key={playbackSource}
+        src={playbackSource}
+        controls
+        playsInline
+        preload="metadata"
+        onError={() => void handleVideoError()}
+        className={className ?? "max-h-64 w-full object-contain"}
+        aria-label={title}
+      />
+    </div>
   );
 }
 
@@ -892,6 +940,9 @@ function VideoFeedbackThread({
               exerciseId: entry.exerciseId,
               exerciseName: title,
               videoPath: entry.videoPath ?? "",
+              ...(entry.videoPlaybackPath
+                ? { videoPlaybackPath: entry.videoPlaybackPath }
+                : {}),
               message: draft,
             });
             setLocalFeedbacks((current) => [created, ...current]);
@@ -1006,6 +1057,9 @@ function VideoFeedbackInbox({
                     <WorkoutVideoPlayer
                       source={video.entry.videoUrl ?? ""}
                       videoPath={video.entry.videoPath}
+                      videoPlaybackPath={video.entry.videoPlaybackPath}
+                      videoTranscodeStatus={video.entry.videoTranscodeStatus}
+                      videoTranscodeError={video.entry.videoTranscodeError}
                       title={`סרטון ביצוע של ${video.clientName} · ${
                         video.entry.exerciseName || "תרגיל"
                       }`}
@@ -1210,6 +1264,9 @@ function WorkoutReviewExerciseCard({
                     <WorkoutVideoPlayer
                       source={videoUrl ?? ""}
                       videoPath={entry.videoPath}
+                      videoPlaybackPath={entry.videoPlaybackPath}
+                      videoTranscodeStatus={entry.videoTranscodeStatus}
+                      videoTranscodeError={entry.videoTranscodeError}
                       title={`סרטון ביצוע עבור ${title}`}
                       className="max-h-64 w-full rounded-lg bg-black object-contain"
                     />
@@ -1285,6 +1342,9 @@ function WorkoutReviewExerciseCard({
                             exerciseId: entry.exerciseId,
                             exerciseName: title,
                             videoPath: entry.videoPath ?? "",
+                            ...(entry.videoPlaybackPath
+                              ? { videoPlaybackPath: entry.videoPlaybackPath }
+                              : {}),
                             message: feedbackDraft,
                           });
                           setLocalFeedbacks((current) => [created, ...current]);
@@ -1857,6 +1917,9 @@ function WorkoutDailyReport({
                           <WorkoutVideoPlayer
                             source={performanceVideoUrl ?? ""}
                             videoPath={entry.videoPath}
+                            videoPlaybackPath={entry.videoPlaybackPath}
+                            videoTranscodeStatus={entry.videoTranscodeStatus}
+                            videoTranscodeError={entry.videoTranscodeError}
                             title={`סרטון ביצוע עבור ${exerciseName}`}
                             className="max-h-60 w-full rounded-lg bg-black object-contain"
                           />
@@ -1956,6 +2019,9 @@ function WorkoutDailyReport({
                     <WorkoutVideoPlayer
                       source={additionalVideoUrl ?? ""}
                       videoPath={entry.videoPath}
+                      videoPlaybackPath={entry.videoPlaybackPath}
+                      videoTranscodeStatus={entry.videoTranscodeStatus}
+                      videoTranscodeError={entry.videoTranscodeError}
                       title={`סרטון ביצוע עבור ${entry.exerciseName || "תרגיל"}`}
                       className="max-h-60 w-full rounded-lg bg-black object-contain"
                     />

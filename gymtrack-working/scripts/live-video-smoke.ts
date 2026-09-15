@@ -7,6 +7,7 @@ type SmokeClient = SupabaseClient;
 type SmokeConfig = {
   url: string;
   anonKey: string;
+  appUrl: string;
   coachEmail: string;
   coachPassword: string;
   traineeEmail: string;
@@ -51,6 +52,11 @@ function loadConfig(): SmokeConfig {
   return {
     url: requiredEnv("VITE_SUPABASE_URL"),
     anonKey: requiredEnv("VITE_SUPABASE_ANON_KEY"),
+    appUrl:
+      process.env.GYMTRACK_APP_URL?.trim() ||
+      (process.env.REPLIT_DEV_DOMAIN
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+        : `http://127.0.0.1:${process.env.PORT ?? "5000"}`),
     coachEmail: requiredEnv("GYMTRACK_SMOKE_COACH_EMAIL"),
     coachPassword: requiredEnv("GYMTRACK_SMOKE_COACH_PASSWORD"),
     traineeEmail: requiredEnv("GYMTRACK_SMOKE_TRAINEE_EMAIL"),
@@ -161,7 +167,13 @@ async function readHistory(
   return (data ?? []) as HistoryRow[];
 }
 
-function assertThreeVideos(rows: HistoryRow[], sessionId: string, paths: string[], label: string) {
+function assertThreeVideos(
+  rows: HistoryRow[],
+  sessionId: string,
+  paths: string[],
+  label: string,
+  playbackPaths?: string[],
+) {
   const session = rows.find((row) => row.id === sessionId);
   assertCondition(session, `${label} did not include the completed workout.`);
   assertCondition(
@@ -178,6 +190,15 @@ function assertThreeVideos(rows: HistoryRow[], sessionId: string, paths: string[
     new Set(session.entries.map((entry) => entry.exercise_id ?? entry.exerciseId)).size === 3,
     `${label} collapsed the videos onto one exercise.`,
   );
+  if (playbackPaths) {
+    const returnedPlaybackPaths = session.entries.map(
+      (entry) => entry.video_playback_path ?? entry.videoPlaybackPath,
+    );
+    assertCondition(
+      playbackPaths.every((path) => returnedPlaybackPaths.includes(path)),
+      `${label} did not preserve the browser playback paths.`,
+    );
+  }
 }
 
 async function readVideo(responseUrl: string): Promise<Response> {
@@ -187,6 +208,43 @@ async function readVideo(responseUrl: string): Promise<Response> {
 async function assertVideoReadable(url: string, label: string) {
   const response = await readVideo(url);
   assertCondition(response.ok, `${label} could not read the signed video (${response.status}).`);
+}
+
+async function transcodeForSmoke(
+  client: SmokeClient,
+  appUrl: string,
+  sourcePath: string,
+): Promise<string> {
+  const {
+    data: { session },
+    error: sessionError,
+  } = await client.auth.getSession();
+  if (sessionError || !session?.access_token) {
+    throw new Error("The trainee session did not expose an access token for transcoding.");
+  }
+  const response = await fetch(`${appUrl.replace(/\/+$/, "")}/transcode-workout-video`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${session.access_token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ sourcePath }),
+  });
+  const payload = (await response.json()) as {
+    status?: string;
+    sourcePath?: string;
+    playbackPath?: string;
+    error?: string;
+  };
+  assertCondition(
+    response.ok && payload.status === "ready" && payload.playbackPath,
+    `The iPhone conversion failed (${payload.error ?? `HTTP ${response.status}`}).`,
+  );
+  assertCondition(
+    payload.sourcePath === sourcePath && payload.playbackPath !== sourcePath,
+    "The conversion did not preserve separate source and playback paths.",
+  );
+  return payload.playbackPath;
 }
 
 async function removeObjects(client: SmokeClient, paths: string[]) {
@@ -226,6 +284,7 @@ async function run(config: SmokeConfig) {
   const exerciseIds = [`${runId}-squat`, `${runId}-press`, `${runId}-row`];
   const exerciseNames = ["Smoke squat", "Smoke press", "Smoke row"];
   const videoPaths: string[] = [];
+  const playbackPaths: string[] = [];
   let sessionCreated = false;
 
   try {
@@ -253,13 +312,22 @@ async function run(config: SmokeConfig) {
       new URL("../public/loading/tinted/user-character-01.mp4", import.meta.url),
     );
     assertCondition(fixture.byteLength > 0, "The video fixture is empty.");
-    const videoBody = new Blob([fixture], { type: "video/mp4" });
-
     for (const [index, exerciseId] of exerciseIds.entries()) {
-      const path = `${trainee.id}/${workoutId}/${exerciseId}/${randomUUID()}.mp4`;
+      // A MOV container is enough to exercise the iPhone path; ffprobe on the
+      // application server still decides whether a real re-encode is needed.
+      const isIphoneSource = index === 0;
+      const path = `${trainee.id}/${workoutId}/${exerciseId}/${randomUUID()}.${
+        isIphoneSource ? "mov" : "mp4"
+      }`;
+      const videoBody = new Blob([fixture], {
+        type: isIphoneSource ? "video/quicktime" : "video/mp4",
+      });
       const { error } = await traineeClient.storage
         .from(WORKOUT_VIDEO_BUCKET)
-        .upload(path, videoBody, { contentType: "video/mp4", upsert: false });
+        .upload(path, videoBody, {
+          contentType: isIphoneSource ? "video/quicktime" : "video/mp4",
+          upsert: false,
+        });
       if (error) {
         throw new Error(
           `Trainee could not upload performance video ${index + 1} (${errorCode(error) ?? "upload"}).`,
@@ -269,6 +337,9 @@ async function run(config: SmokeConfig) {
     }
     assertCondition(videoPaths.length === 3, "The smoke did not upload three performance videos.");
     console.log("PASS: trainee uploaded three videos for three different exercises.");
+    playbackPaths.push(await transcodeForSmoke(traineeClient, config.appUrl, videoPaths[0]));
+    playbackPaths.push(videoPaths[1], videoPaths[2]);
+    console.log("PASS: iPhone MOV was converted to a separate browser playback object.");
 
     const now = new Date().toISOString();
     const entries = exerciseIds.map((exerciseId, index) => ({
@@ -276,6 +347,9 @@ async function run(config: SmokeConfig) {
       exerciseName: exerciseNames[index],
       sets: [{ weight: 20 + index, reps: 8, done: true }],
       videoUrl: videoPaths[index],
+      videoPath: videoPaths[index],
+      videoPlaybackPath: playbackPaths[index],
+      ...(index === 0 ? { videoTranscodeStatus: "ready" } : { videoTranscodeStatus: "not-needed" }),
     }));
     const { error: insertError } = await traineeClient.from("workout_sessions").insert({
       id: sessionId,
@@ -296,12 +370,12 @@ async function run(config: SmokeConfig) {
     console.log("PASS: completed workout persisted after upload and close.");
 
     const traineeRows = await readHistory(traineeClient, trainee.id, workoutId);
-    assertThreeVideos(traineeRows, sessionId, videoPaths, "Trainee history");
+    assertThreeVideos(traineeRows, sessionId, videoPaths, "Trainee history", playbackPaths);
 
     const coachRows = await readHistory(coachClient, trainee.id, workoutId);
-    assertThreeVideos(coachRows, sessionId, videoPaths, "Coach daily report");
+    assertThreeVideos(coachRows, sessionId, videoPaths, "Coach daily report", playbackPaths);
     const trackingRows = await readHistory(coachClient, trainee.id, workoutId, now.slice(0, 10));
-    assertThreeVideos(trackingRows, sessionId, videoPaths, "Coach tracking screen");
+    assertThreeVideos(trackingRows, sessionId, videoPaths, "Coach tracking screen", playbackPaths);
     console.log(
       "PASS: assigned coach read all three videos in the daily report and tracking query.",
     );
@@ -314,7 +388,7 @@ async function run(config: SmokeConfig) {
     console.log("PASS: unrelated coach received no workout row.");
 
     const coachSignedUrls: string[] = [];
-    for (const [index, path] of videoPaths.entries()) {
+    for (const [index, path] of playbackPaths.entries()) {
       const { data, error } = await coachClient.storage
         .from(WORKOUT_VIDEO_BUCKET)
         .createSignedUrl(path, 60);
@@ -327,10 +401,14 @@ async function run(config: SmokeConfig) {
       await assertVideoReadable(data.signedUrl, `Assigned coach video ${index + 1}`);
     }
     console.log("PASS: assigned coach could open all three signed video URLs.");
+    assertCondition(
+      playbackPaths[0] !== videoPaths[0],
+      "The coach report did not receive the converted playback path.",
+    );
 
     const unrelatedAttempt = await unrelatedCoachClient.storage
       .from(WORKOUT_VIDEO_BUCKET)
-      .createSignedUrl(videoPaths[0], 60);
+      .createSignedUrl(playbackPaths[0], 60);
     if (!unrelatedAttempt.error && unrelatedAttempt.data?.signedUrl) {
       const response = await readVideo(unrelatedAttempt.data.signedUrl);
       assertCondition(!response.ok, "The unrelated coach could download a trainee video.");
@@ -338,7 +416,7 @@ async function run(config: SmokeConfig) {
     console.log("PASS: storage RLS blocked the unrelated coach from trainee videos.");
 
     const expiringUrls = await Promise.all(
-      videoPaths.map(async (path) => {
+      playbackPaths.map(async (path) => {
         const { data, error } = await traineeClient.storage
           .from(WORKOUT_VIDEO_BUCKET)
           .createSignedUrl(path, 1);
@@ -359,7 +437,7 @@ async function run(config: SmokeConfig) {
       );
     }
     const refreshedUrls = await Promise.all(
-      videoPaths.map(async (path) => {
+      playbackPaths.map(async (path) => {
         const { data, error } = await coachClient.storage
           .from(WORKOUT_VIDEO_BUCKET)
           .createSignedUrl(path, 60);
@@ -385,7 +463,13 @@ async function run(config: SmokeConfig) {
       );
     }
     const refreshedCoachRows = await readHistory(coachClient, trainee.id, workoutId);
-    assertThreeVideos(refreshedCoachRows, sessionId, videoPaths, "Coach report after refresh");
+    assertThreeVideos(
+      refreshedCoachRows,
+      sessionId,
+      videoPaths,
+      "Coach report after refresh",
+      playbackPaths,
+    );
     console.log("PASS: coach history still contained all three videos after a fresh read.");
   } finally {
     const cleanupErrors: string[] = [];
@@ -398,7 +482,7 @@ async function run(config: SmokeConfig) {
       if (error) cleanupErrors.push(`workout deletion (${errorCode(error) ?? "delete"})`);
     }
     try {
-      await removeObjects(traineeClient, videoPaths);
+      await removeObjects(traineeClient, Array.from(new Set([...videoPaths, ...playbackPaths])));
     } catch (error) {
       cleanupErrors.push(error instanceof Error ? error.message : "video deletion");
     }

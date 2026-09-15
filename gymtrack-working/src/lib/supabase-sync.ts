@@ -645,7 +645,54 @@ export async function uploadExerciseLibraryImage(
 type UploadedWorkoutVideo = {
   path: string;
   signedUrl: string;
+  playbackPath?: string;
+  transcodeStatus: "not-needed" | "processing" | "ready" | "failed";
+  transcodeError?: string;
 };
+
+type WorkoutVideoTranscodeResponse = {
+  status: "not-needed" | "ready" | "failed";
+  sourcePath: string;
+  playbackPath?: string;
+  error?: string;
+};
+
+async function requestWorkoutVideoTranscode(
+  sourcePath: string,
+  signal?: AbortSignal,
+): Promise<WorkoutVideoTranscodeResponse> {
+  const {
+    data: { session },
+  } = await awaitWorkoutVideoRequest(supabase.auth.getSession(), signal);
+  if (!session?.access_token) throw new Error("לא ניתן להכין גרסת צפייה בלי חשבון מחובר.");
+
+  const response = await fetch("/transcode-workout-video", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${session.access_token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ sourcePath }),
+    ...(signal ? { signal } : {}),
+  });
+  let payload: WorkoutVideoTranscodeResponse | { error?: string } = {};
+  try {
+    payload = (await response.json()) as WorkoutVideoTranscodeResponse | { error?: string };
+  } catch {
+    // Keep the HTTP status as the useful failure detail.
+  }
+  if (!response.ok) {
+    throw new Error(
+      typeof payload.error === "string" && payload.error.trim()
+        ? payload.error
+        : `שירות ההמרה החזיר שגיאה (${response.status}).`,
+    );
+  }
+  if (!("status" in payload) || !payload.sourcePath) {
+    throw new Error("שירות ההמרה החזיר תשובה לא תקינה.");
+  }
+  return payload;
+}
 
 const WORKOUT_VIDEO_UPLOAD_ATTEMPTS = 5;
 
@@ -807,12 +854,51 @@ export async function uploadWorkoutPerformanceVideo(
       await uploadWorkoutPerformanceVideoAttempt(file, path, normalizedType, options.signal);
       if (options.signal?.aborted) throw new Error("video upload timed out");
 
+      const signedSourceUrl = await awaitWorkoutVideoRequest(
+        signWorkoutPerformanceVideo(path),
+        options.signal,
+      );
+      let transcode: WorkoutVideoTranscodeResponse;
+      try {
+        // The server probes every uploaded source and only re-encodes an
+        // unsupported container/codec. This also catches MP4 files whose
+        // MIME type hides an iPhone HEVC stream.
+        transcode = await requestWorkoutVideoTranscode(path, options.signal);
+      } catch (transcodeError) {
+        // Keep the original upload usable and visible when the optional
+        // conversion service is temporarily unavailable.
+        return {
+          path,
+          signedUrl: signedSourceUrl,
+          transcodeStatus: "failed" as const,
+          ...(transcodeError instanceof Error
+            ? { transcodeError: transcodeError.message }
+            : { transcodeError: "שירות ההמרה אינו זמין כרגע." }),
+        };
+      }
+
+      if (transcode.status === "failed" || !transcode.playbackPath) {
+        return {
+          path,
+          signedUrl: signedSourceUrl,
+          transcodeStatus: "failed" as const,
+          ...(transcode.error ? { transcodeError: transcode.error } : {}),
+        };
+      }
+
+      const playbackPath = transcode.playbackPath;
+      const signedPlaybackUrl =
+        playbackPath === path
+          ? signedSourceUrl
+          : await awaitWorkoutVideoRequest(
+              signWorkoutPerformanceVideo(playbackPath),
+              options.signal,
+            );
       return {
         path,
-        signedUrl: await awaitWorkoutVideoRequest(
-          signWorkoutPerformanceVideo(path),
-          options.signal,
-        ),
+        signedUrl: signedPlaybackUrl,
+        playbackPath,
+        transcodeStatus: transcode.status,
       };
     } catch (error) {
       lastError = error;
@@ -2711,21 +2797,30 @@ function workoutVideoStoragePath(value: unknown): string | undefined {
 async function signWorkoutVideoEntries(entries: HistoryEntry[]): Promise<HistoryEntry[]> {
   return Promise.all(
     entries.map(async (entry) => {
-      const path = entry.videoPath ?? workoutVideoStoragePath(entry.videoUrl);
-      if (!path) return entry;
+      const sourcePath = entry.videoPath ?? workoutVideoStoragePath(entry.videoUrl);
+      if (!sourcePath) return entry;
+      const playbackPath = entry.videoPlaybackPath ?? sourcePath;
       let signedUrl = "";
       try {
-        signedUrl = await signWorkoutPerformanceVideo(path);
+        signedUrl = await signWorkoutPerformanceVideo(playbackPath);
       } catch (error) {
         // One missing or expired Storage object must not hide the rest of the
         // completed workout from the coach. Keep the path so the UI can still
         // identify the video and offer feedback, while the player reports the
         // individual playback failure.
         console.warn("[Workout Video Sign Warning]:", error);
+        if (playbackPath !== sourcePath) {
+          try {
+            signedUrl = await signWorkoutPerformanceVideo(sourcePath);
+          } catch {
+            // Preserve the empty URL so the player can show its unavailable state.
+          }
+        }
       }
       return {
         ...entry,
-        videoPath: path,
+        videoPath: sourcePath,
+        videoPlaybackPath: playbackPath,
         videoUrl: signedUrl,
       };
     }),

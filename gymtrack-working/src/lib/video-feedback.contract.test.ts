@@ -11,6 +11,8 @@ const sync = read("./supabase-sync.ts");
 const notificationService = read("./notification-service.ts");
 const migration = read("../../supabase/migrations/59_video_feedback.sql");
 const reminderMigration = read("../../supabase/migrations/62_video_feedback_reminders.sql");
+const playbackMigration = read("../../supabase/migrations/65_video_feedback_playback_path.sql");
+const server = read("../server.ts");
 
 describe("video feedback contracts", () => {
   test("coach feedback is attached to the uploaded video and client", () => {
@@ -18,6 +20,17 @@ describe("video feedback contracts", () => {
     expect(coachRoute).toContain("videoPath: entry.videoPath");
     expect(coachRoute).toContain("שליחת משוב למתאמן");
     expect(sync).toContain('from("video_feedback")');
+    expect(coachRoute).toContain("videoPlaybackPath: entry.videoPlaybackPath");
+    expect(videoFeedbackSource()).toContain("video_playback_path");
+  });
+
+  test("unsupported iPhone sources get a separate browser playback path", () => {
+    expect(sync).toContain('fetch("/transcode-workout-video"');
+    expect(sync).toContain("videoPlaybackPath: playbackPath");
+    expect(server).toContain('url.pathname === "/transcode-workout-video"');
+    expect(server).toContain('"libx264"');
+    expect(server).toContain('"video/mp4"');
+    expect(server).toContain("status: \"failed\"");
   });
 
   test("the trainee home exposes unread feedback and a seen action", () => {
@@ -35,6 +48,7 @@ describe("video feedback contracts", () => {
     expect(migration).toContain("GRANT UPDATE (seen_at) ON public.video_feedback TO authenticated");
     expect(migration).toContain("public.is_coach_of(client_id)");
     expect(migration).toContain("ALTER PUBLICATION supabase_realtime ADD TABLE public.video_feedback");
+    expect(playbackMigration).toContain("video_playback_path TEXT");
   });
 
   test("unread feedback schedules one durable five-day reminder and cancels it when seen", () => {
@@ -46,3 +60,7 @@ describe("video feedback contracts", () => {
     expect(reminderMigration).toContain("cancel_video_feedback_reminder");
   });
 });
+
+function videoFeedbackSource() {
+  return read("./video-feedback.ts");
+}

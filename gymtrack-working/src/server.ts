@@ -1,6 +1,13 @@
 import "./lib/error-capture";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { spawn } from "node:child_process";
+import { createWriteStream } from "node:fs";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, join } from "node:path";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 
@@ -63,6 +70,12 @@ function requestIp(request: Request) {
   );
 }
 
+function bearerToken(request: Request): string | undefined {
+  const authorization = request.headers.get("authorization") ?? "";
+  const tokenMatch = authorization.match(/^Bearer\s+(.+)$/i);
+  return tokenMatch?.[1]?.trim() || undefined;
+}
+
 function scanRateLimited(keys: string[], now = Date.now()) {
   const cutoff = now - SCAN_RATE_WINDOW_MS;
   let limited = false;
@@ -84,9 +97,8 @@ function scanRateLimited(keys: string[], now = Date.now()) {
 }
 
 async function authenticatedScanUser(request: Request) {
-  const authorization = request.headers.get("authorization") ?? "";
-  const tokenMatch = authorization.match(/^Bearer\s+(.+)$/i);
-  if (!tokenMatch?.[1]) return { error: "unauthorized" as const };
+  const token = bearerToken(request);
+  if (!token) return { error: "unauthorized" as const };
 
   const supabaseUrl = process.env["VITE_SUPABASE_URL"];
   const supabaseAnonKey = process.env["VITE_SUPABASE_ANON_KEY"];
@@ -95,10 +107,205 @@ async function authenticatedScanUser(request: Request) {
   scanAuthClient ??= createClient(supabaseUrl, supabaseAnonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data, error } = await scanAuthClient.auth.getUser(tokenMatch[1]);
+  const { data, error } = await scanAuthClient.auth.getUser(token);
   if (error || !data.user) return { error: "unauthorized" as const };
 
   return { userId: data.user.id, ip: requestIp(request) };
+}
+
+function requestSupabaseClient(request: Request): SupabaseClient | null {
+  const token = bearerToken(request);
+  const supabaseUrl = process.env["VITE_SUPABASE_URL"];
+  const supabaseAnonKey = process.env["VITE_SUPABASE_ANON_KEY"];
+  if (!token || !supabaseUrl || !supabaseAnonKey) return null;
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+}
+
+async function runVideoTool(
+  command: "ffprobe" | "ffmpeg",
+  args: string[],
+  timeoutMs = 5 * 60_000,
+): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGKILL");
+    }, timeoutMs);
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
+    child.on("close", (code) => {
+      clearTimeout(timeout);
+      if (timedOut) {
+        reject(new Error("המרת הסרטון ארכה יותר מדי זמן."));
+      } else if (code !== 0) {
+        reject(new Error(stderr.slice(-800) || `ffmpeg exited with code ${code ?? "unknown"}`));
+      } else {
+        resolve({ stdout, stderr });
+      }
+    });
+  });
+}
+
+function videoPathParts(value: unknown): [string, string, string, string] | null {
+  if (typeof value !== "string") return null;
+  const parts = value.trim().split("/");
+  if (
+    parts.length !== 4 ||
+    parts.some((part) => !/^[A-Za-z0-9._-]+$/.test(part)) ||
+    parts[0] === "." ||
+    parts[0] === ".."
+  ) {
+    return null;
+  }
+  return parts as [string, string, string, string];
+}
+
+async function transcodeWorkoutVideo(request: Request): Promise<Response> {
+  if (request.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
+  const auth = await authenticatedScanUser(request);
+  if (auth.error === "unauthorized") return jsonResponse({ error: "יש להתחבר כדי להמיר סרטון." }, 401);
+  if (auth.error === "server-config") {
+    return jsonResponse({ error: "חיבור אחסון הווידאו עדיין לא הוגדר." }, 503);
+  }
+
+  let payload: { sourcePath?: unknown };
+  try {
+    payload = (await request.json()) as { sourcePath?: unknown };
+  } catch {
+    return jsonResponse({ error: "בקשת ההמרה אינה תקינה." }, 400);
+  }
+  const sourceParts = videoPathParts(payload.sourcePath);
+  if (!sourceParts || sourceParts[0] !== auth.userId) {
+    return jsonResponse({ error: "אין הרשאה להמיר את הסרטון הזה." }, 403);
+  }
+  const sourcePath = sourceParts.join("/");
+  const storage = requestSupabaseClient(request);
+  if (!storage) return jsonResponse({ error: "חיבור אחסון הווידאו עדיין לא הוגדר." }, 503);
+
+  let temporaryDirectory = "";
+  try {
+    const { data: signedSource, error: signError } = await storage.storage
+      .from("workout-videos")
+      .createSignedUrl(sourcePath, 10 * 60);
+    if (signError || !signedSource?.signedUrl) {
+      return jsonResponse({ error: "לא ניתן לקרוא את סרטון המקור." }, 404);
+    }
+    const sourceResponse = await fetch(signedSource.signedUrl);
+    if (!sourceResponse.ok || !sourceResponse.body) {
+      return jsonResponse({ error: "לא ניתן להוריד את סרטון המקור להמרה." }, 502);
+    }
+
+    temporaryDirectory = await mkdtemp(join(tmpdir(), "gymtrack-video-"));
+    const sourceFile = join(temporaryDirectory, basename(sourcePath));
+    const outputFile = join(temporaryDirectory, "playback.mp4");
+    await pipeline(
+      Readable.fromWeb(sourceResponse.body as any),
+      createWriteStream(sourceFile),
+    );
+
+    let probe: {
+      streams?: Array<{ codec_name?: string; codec_type?: string }>;
+      format?: { format_name?: string };
+    };
+    try {
+      const result = await runVideoTool("ffprobe", [
+        "-v",
+        "error",
+        "-show_entries",
+        "stream=codec_name,codec_type",
+        "-show_entries",
+        "format=format_name",
+        "-of",
+        "json",
+        sourceFile,
+      ]);
+      probe = JSON.parse(result.stdout) as typeof probe;
+    } catch (error) {
+      return jsonResponse(
+        { status: "failed", sourcePath, error: "לא ניתן לזהות את פורמט סרטון המקור." },
+        200,
+      );
+    }
+
+    const videoCodec = probe.streams?.find((stream) => stream.codec_type === "video")?.codec_name;
+    const audioCodec = probe.streams?.find((stream) => stream.codec_type === "audio")?.codec_name;
+    const formatNames = probe.format?.format_name?.split(",") ?? [];
+    const isMp4Container = formatNames.includes("mp4") && !sourcePath.toLowerCase().endsWith(".mov");
+    const isBrowserCompatible =
+      videoCodec === "h264" && (!audioCodec || audioCodec === "aac") && isMp4Container;
+    if (isBrowserCompatible) {
+      return jsonResponse({ status: "not-needed", sourcePath, playbackPath: sourcePath }, 200);
+    }
+
+    await runVideoTool("ffmpeg", [
+      "-y",
+      "-i",
+      sourceFile,
+      "-map",
+      "0:v:0",
+      "-map",
+      "0:a:0?",
+      "-c:v",
+      "libx264",
+      "-preset",
+      "veryfast",
+      "-crf",
+      "23",
+      "-pix_fmt",
+      "yuv420p",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "128k",
+      "-movflags",
+      "+faststart",
+      outputFile,
+    ]);
+    const outputBytes = await readFile(outputFile);
+    const playbackPath = `${sourceParts[0]}/${sourceParts[1]}/${sourceParts[2]}/playback-${crypto.randomUUID()}.mp4`;
+    const { error: uploadError } = await storage.storage
+      .from("workout-videos")
+      .upload(playbackPath, new Blob([outputBytes], { type: "video/mp4" }), {
+        contentType: "video/mp4",
+        upsert: false,
+      });
+    if (uploadError) {
+      return jsonResponse(
+        { status: "failed", sourcePath, error: "גרסת הצפייה נוצרה, אבל לא נשמרה באחסון." },
+        200,
+      );
+    }
+    return jsonResponse({ status: "ready", sourcePath, playbackPath }, 200);
+  } catch (error) {
+    console.error("Workout video transcoding failed", error);
+    return jsonResponse(
+      {
+        status: "failed",
+        sourcePath,
+        error: error instanceof Error ? error.message : "שירות ההמרה אינו זמין כרגע.",
+      },
+      200,
+    );
+  } finally {
+    if (temporaryDirectory) {
+      await rm(temporaryDirectory, { recursive: true, force: true }).catch(() => undefined);
+    }
+  }
 }
 
 async function readBodyWithLimit(request: Request, maxBytes: number) {
@@ -675,6 +882,9 @@ export default {
       }
       if (url.pathname === "/nutrition-lookup-barcode") {
         return await lookupFoodByBarcode(request);
+      }
+      if (url.pathname === "/transcode-workout-video") {
+        return await transcodeWorkoutVideo(request);
       }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);

@@ -14,7 +14,13 @@ export function VideoFeedbackVideo({
   entry,
   className = "mt-2 max-h-56 w-full rounded-xl bg-black object-contain",
 }: VideoFeedbackVideoProps) {
-  const historyUrl = entry?.videoUrl && isSafeVideoSource(entry.videoUrl) ? entry.videoUrl : "";
+  const feedbackPlaybackPath = feedback.videoPlaybackPath ?? feedback.videoPath;
+  const historyUrl =
+    entry?.videoUrl &&
+    isSafeVideoSource(entry.videoUrl) &&
+    (!entry.videoPlaybackPath || entry.videoPlaybackPath === feedbackPlaybackPath)
+      ? entry.videoUrl
+      : "";
   const [source, setSource] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -36,7 +42,7 @@ export function VideoFeedbackVideo({
     }
 
     setSource("");
-    if (!feedback.videoPath) {
+    if (!feedbackPlaybackPath) {
       setIsRefreshing(false);
       return () => {
         active = false;
@@ -45,7 +51,7 @@ export function VideoFeedbackVideo({
 
     refreshInFlightRef.current = true;
     setIsRefreshing(true);
-    void signWorkoutPerformanceVideo(feedback.videoPath)
+    void signWorkoutPerformanceVideo(feedbackPlaybackPath)
       .then((signedUrl) => {
         if (active && isSafeVideoSource(signedUrl)) {
           setSource(signedUrl);
@@ -64,10 +70,10 @@ export function VideoFeedbackVideo({
     return () => {
       active = false;
     };
-  }, [feedback.videoPath, historyUrl]);
+  }, [feedbackPlaybackPath, historyUrl]);
 
   const handleVideoError = () => {
-    if (!feedback.videoPath || didRefresh || refreshInFlightRef.current || isRefreshing) {
+    if (!feedbackPlaybackPath || didRefresh || refreshInFlightRef.current || isRefreshing) {
       setHasError(true);
       return;
     }
@@ -76,7 +82,7 @@ export function VideoFeedbackVideo({
     refreshInFlightRef.current = true;
     setIsRefreshing(true);
     setHasError(false);
-    void signWorkoutPerformanceVideo(feedback.videoPath)
+    void signWorkoutPerformanceVideo(feedbackPlaybackPath)
       .then((signedUrl) => {
         if (isSafeVideoSource(signedUrl)) {
           setSource(signedUrl);

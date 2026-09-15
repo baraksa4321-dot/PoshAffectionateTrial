@@ -229,6 +229,10 @@ export type HistoryEntry = {
   videoUrl?: string;
   /** Private workout-video object path used to refresh the signed playback URL. */
   videoPath?: string;
+  /** Optional H.264/MP4 object path generated for browsers that cannot decode the source. */
+  videoPlaybackPath?: string;
+  videoTranscodeStatus?: "not-needed" | "processing" | "ready" | "failed";
+  videoTranscodeError?: string;
   sets: LoggedSet[];
   notes: string;
   targetSets?: number;
@@ -263,6 +267,7 @@ export type VideoFeedback = {
   exerciseId: string;
   exerciseName: string;
   videoPath: string;
+  videoPlaybackPath?: string;
   message: string;
   createdAt: string;
   seenAt?: string;

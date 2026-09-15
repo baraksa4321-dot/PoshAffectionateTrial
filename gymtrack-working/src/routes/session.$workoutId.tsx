@@ -66,6 +66,10 @@ import {
 import { reconcileRestTimer } from "@/lib/rest-timer";
 import { isSafeVideoSource } from "@/lib/url-security";
 import {
+  videoTranscodeFailureMessage,
+  videoTranscodeStatusLabel,
+} from "@/lib/video-transcoding";
+import {
   completedSetForReopenedWorkout,
   getCurrentWeekWorkoutSession,
   getWeekStart,
@@ -1334,9 +1338,21 @@ function Session() {
     videoFilesRef.current.set(exerciseIndex, file);
     videoPlaybackRefreshesRef.current.delete(exerciseIndex);
     setVideoUploadsInFlight((count) => count + 1);
-    const entriesWithLocalVideo = entriesRef.current.map((entry, index) =>
-      index === exerciseIndex ? { ...entry, videoUrl: nextUrl } : entry,
-    );
+    const entriesWithLocalVideo = entriesRef.current.map((entry, index) => {
+      if (index !== exerciseIndex) return entry;
+      const {
+        videoPath: _oldPath,
+        videoPlaybackPath: _oldPlaybackPath,
+        videoTranscodeStatus: _oldStatus,
+        videoTranscodeError: _oldError,
+        ...entryWithoutVideo
+      } = entry;
+      return {
+        ...entryWithoutVideo,
+        videoUrl: nextUrl,
+        videoTranscodeStatus: "processing" as const,
+      };
+    });
     entriesRef.current = entriesWithLocalVideo;
     setEntries(entriesWithLocalVideo);
     void saveWorkoutVideoDraft(sessionOwnerId, workout.id, exerciseIndex, file).catch(() => {
@@ -1379,15 +1395,28 @@ function Session() {
       () => undefined,
     );
     const uploadTask = upload
-      .then(({ signedUrl, path }) => {
+      .then(({ signedUrl, path, playbackPath, transcodeStatus, transcodeError }) => {
         if (videoUploadVersionsRef.current.get(exerciseIndex) !== uploadVersion) return true;
         videoUploadStatesRef.current.delete(exerciseIndex);
         const entriesWithUploadedVideo = entriesRef.current.map((entry, index) => {
           if (index !== exerciseIndex || entry.videoUrl !== nextUrl) return entry;
-          return { ...entry, videoPath: path, videoUrl: signedUrl };
+          return {
+            ...entry,
+            videoPath: path,
+            ...(playbackPath ? { videoPlaybackPath: playbackPath } : {}),
+            videoUrl: signedUrl,
+            videoTranscodeStatus: transcodeStatus,
+            ...(transcodeError ? { videoTranscodeError: transcodeError } : {}),
+          };
         });
         entriesRef.current = entriesWithUploadedVideo;
         setEntries(entriesWithUploadedVideo);
+        setVideoDraftWarnings((current) => {
+          if (!(exerciseIndex in current)) return current;
+          const next = { ...current };
+          delete next[exerciseIndex];
+          return next;
+        });
         // A browser may reject the local preview before the upload finishes
         // (for example for an iPhone HEVC recording). Once the object is
         // uploaded, that transient preview error must not be presented as an
@@ -1396,12 +1425,6 @@ function Session() {
           setVideoUploadError("");
           setVideoUploadErrorExerciseIndex(null);
         }
-        setVideoDraftWarnings((current) => {
-          if (!(exerciseIndex in current)) return current;
-          const next = { ...current };
-          delete next[exerciseIndex];
-          return next;
-        });
         setVideoPlaybackErrorIndexes((current) => {
           if (!current.has(exerciseIndex)) return current;
           const next = new Set(current);
@@ -1414,12 +1437,25 @@ function Session() {
           const updatedSession: HistorySession = {
             ...finishedSession,
             entries: finishedSession.entries.map((entry, index) =>
-              index === exerciseIndex ? { ...entry, videoPath: path, videoUrl: signedUrl } : entry,
+              index === exerciseIndex
+                ? {
+                    ...entry,
+                    videoPath: path,
+                    ...(playbackPath ? { videoPlaybackPath: playbackPath } : {}),
+                    videoUrl: signedUrl,
+                    videoTranscodeStatus: transcodeStatus,
+                    ...(transcodeError ? { videoTranscodeError: transcodeError } : {}),
+                  }
+                : entry,
             ),
           };
           finishedSessionRef.current = updatedSession;
           saveSession(updatedSession);
           void flushCloudSync();
+        }
+        if (transcodeStatus === "failed") {
+          setVideoUploadErrorExerciseIndex(exerciseIndex);
+          setVideoUploadError(videoTranscodeFailureMessage(transcodeError));
         }
         URL.revokeObjectURL(nextUrl);
         return true;
@@ -1456,6 +1492,7 @@ function Session() {
   const handlePerformanceVideoError = (exerciseIndex: number, mediaErrorCode?: number) => {
     const entry = entriesRef.current[exerciseIndex];
     const path = entry?.videoPath;
+    const playbackPath = entry?.videoPlaybackPath ?? path;
     const currentUrl = entry?.videoUrl;
     const uploadState = videoUploadStatesRef.current.get(exerciseIndex);
     // iOS Safari can reject a local blob preview while the upload itself is
@@ -1493,13 +1530,13 @@ function Session() {
     // problem instead of incorrectly reporting an upload failure.
     setVideoUploadErrorExerciseIndex(exerciseIndex);
     setVideoUploadError("הסרטון לא נטען. מנסה שוב את אותו הסרטון...");
-    if (videoPlaybackRefreshesRef.current.get(exerciseIndex) === path) {
+    if (videoPlaybackRefreshesRef.current.get(exerciseIndex) === (playbackPath ?? path)) {
       setVideoUploadError(videoPlaybackErrorMessage(mediaErrorCode));
       return;
     }
-    videoPlaybackRefreshesRef.current.set(exerciseIndex, path);
+    videoPlaybackRefreshesRef.current.set(exerciseIndex, playbackPath ?? path);
     void import("@/lib/supabase-sync")
-      .then(({ signWorkoutPerformanceVideo }) => signWorkoutPerformanceVideo(path))
+      .then(({ signWorkoutPerformanceVideo }) => signWorkoutPerformanceVideo(playbackPath ?? path))
       .then((signedUrl) => {
         const refreshedEntries = entriesRef.current.map((currentEntry, index) =>
           index === exerciseIndex && currentEntry.videoPath === path
@@ -2124,6 +2161,11 @@ function Session() {
                       handlePerformanceVideoError(ei, event.currentTarget.error?.code)
                     }
                   />
+                ) : null}
+                {entry.videoTranscodeStatus === "processing" ? (
+                  <p className="mt-2 rounded-xl bg-primary/5 px-2.5 py-1.5 text-[11px] font-semibold text-primary">
+                    {videoTranscodeStatusLabel("processing")}
+                  </p>
                 ) : null}
                 {entry.videoUrl?.startsWith("blob:") &&
                 videoUploadsInFlight > 0 &&

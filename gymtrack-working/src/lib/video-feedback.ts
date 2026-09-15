@@ -13,11 +13,15 @@ export function videoFeedbackFromRow(row: Record<string, unknown>): VideoFeedbac
     exerciseId: String(row["exercise_id"] ?? ""),
     exerciseName: String(row["exercise_name"] ?? "תרגיל"),
     videoPath: String(row["video_path"] ?? ""),
+    ...(typeof row["video_playback_path"] === "string" && row["video_playback_path"]
+      ? { videoPlaybackPath: row["video_playback_path"] }
+      : {}),
     message: String(row["message"] ?? ""),
     createdAt: String(row["created_at"] ?? "1970-01-01T00:00:00.000Z"),
     ...(typeof seenAt === "string" ? { seenAt } : {}),
   };
 }
+
 
 export async function createVideoFeedback(input: {
   clientId: string;
@@ -26,6 +30,7 @@ export async function createVideoFeedback(input: {
   exerciseId: string;
   exerciseName: string;
   videoPath: string;
+  videoPlaybackPath?: string;
   message: string;
 }): Promise<VideoFeedback> {
   const {
@@ -43,10 +48,11 @@ export async function createVideoFeedback(input: {
       coach_id: user.id,
       client_id: input.clientId,
       session_id: input.sessionId,
-    ...(input.workoutId ? { workout_id: input.workoutId } : {}),
+      ...(input.workoutId ? { workout_id: input.workoutId } : {}),
       exercise_id: input.exerciseId,
       exercise_name: input.exerciseName,
       video_path: input.videoPath,
+      ...(input.videoPlaybackPath ? { video_playback_path: input.videoPlaybackPath } : {}),
       message,
     })
     .select("*")
