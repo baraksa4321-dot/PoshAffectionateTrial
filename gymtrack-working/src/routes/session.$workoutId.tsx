@@ -477,6 +477,7 @@ function Session() {
   const [videoUploadErrorExerciseIndex, setVideoUploadErrorExerciseIndex] = useState<number | null>(
     null,
   );
+  const [videoDraftWarnings, setVideoDraftWarnings] = useState<Record<number, string>>({});
   const [videoPlaybackErrorIndexes, setVideoPlaybackErrorIndexes] = useState<Set<number>>(
     () => new Set(),
   );
@@ -1298,6 +1299,12 @@ function Session() {
     videoUploadStatesRef.current.delete(exerciseIndex);
     setVideoUploadError("");
     setVideoUploadErrorExerciseIndex(null);
+    setVideoDraftWarnings((current) => {
+      if (!(exerciseIndex in current)) return current;
+      const next = { ...current };
+      delete next[exerciseIndex];
+      return next;
+    });
     setVideoPlaybackErrorIndexes((current) => {
       if (!current.has(exerciseIndex)) return current;
       const next = new Set(current);
@@ -1332,11 +1339,16 @@ function Session() {
     );
     entriesRef.current = entriesWithLocalVideo;
     setEntries(entriesWithLocalVideo);
-    void saveWorkoutVideoDraft(sessionOwnerId, workout.id, exerciseIndex, file).catch((error: unknown) => {
-      setVideoUploadErrorExerciseIndex(exerciseIndex);
-      setVideoUploadError(
-        error instanceof Error ? error.message : "לא ניתן לשמור את הסרטון במכשיר",
-      );
+    void saveWorkoutVideoDraft(sessionOwnerId, workout.id, exerciseIndex, file).catch(() => {
+      // Local draft persistence is a recovery aid, not the upload itself.
+      // iOS can reject a large IndexedDB write while the signed Storage
+      // upload is still healthy, so keep the upload running and explain the
+      // reduced recovery guarantee without offering a misleading retry.
+      setVideoDraftWarnings((current) => ({
+        ...current,
+        [exerciseIndex]:
+          "הסרטון ממשיך לעלות, אבל לא נשמר עותק מקומי לשחזור. השאירי את המסך פתוח עד לסיום ההעלאה.",
+      }));
     });
     // iOS Safari is more reliable when performance videos upload one at a
     // time. Keep the workout completion path independent from this queue.
@@ -1384,6 +1396,12 @@ function Session() {
           setVideoUploadError("");
           setVideoUploadErrorExerciseIndex(null);
         }
+        setVideoDraftWarnings((current) => {
+          if (!(exerciseIndex in current)) return current;
+          const next = { ...current };
+          delete next[exerciseIndex];
+          return next;
+        });
         setVideoPlaybackErrorIndexes((current) => {
           if (!current.has(exerciseIndex)) return current;
           const next = new Set(current);
@@ -1411,6 +1429,12 @@ function Session() {
         videoUploadStatesRef.current.set(exerciseIndex, {
           version: uploadVersion,
           status: "failed",
+        });
+        setVideoDraftWarnings((current) => {
+          if (!(exerciseIndex in current)) return current;
+          const next = { ...current };
+          delete next[exerciseIndex];
+          return next;
         });
         setVideoUploadErrorExerciseIndex(exerciseIndex);
         setVideoUploadError(videoUploadErrorMessage(error));
@@ -2107,6 +2131,11 @@ function Session() {
                 !(videoUploadErrorExerciseIndex === ei && videoUploadError) ? (
                   <p className="mt-2 rounded-xl bg-primary/5 px-2.5 py-1.5 text-[11px] font-semibold text-primary">
                     הסרטון נבחר ומועלה ברקע. לאחר סיום ההעלאה הוא ייטען מחדש לצפייה.
+                  </p>
+                ) : null}
+                {videoDraftWarnings[ei] ? (
+                  <p className="mt-2 rounded-xl bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-900">
+                    {videoDraftWarnings[ei]}
                   </p>
                 ) : null}
                 {videoUploadError && videoUploadErrorExerciseIndex === ei ? (

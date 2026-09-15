@@ -76,6 +76,15 @@ blob URL remains in the entry until the trainee retries or replaces it.
 **How to apply:** Track upload status by exercise and version, clear it on success, mark it failed
 in the upload catch path, and gate the blob playback message on the active status.
 
+IndexedDB draft persistence is best-effort recovery, not part of the upload result. Treat quota or
+Safari structured-clone failures as a warning while the signed Storage upload continues.
+
+**Why:** Mobile Safari can reject a large local draft even when the network upload is healthy;
+surfacing that rejection as an upload failure makes a recoverable video look lost.
+
+**How to apply:** Store a Blob-compatible value, keep the upload queue independent from the draft
+write, and clear the warning once the remote upload is linked to the session.
+
 After workout completion, any automatic summary navigation must wait for the current upload tasks
 to settle; completion itself should still be immediate.
 
