@@ -842,6 +842,16 @@ async function installFixture(
         if (url.includes("/storage/v1/")) {
           if (url.includes("/upload/resumable")) {
             if (requestMethod === "POST") {
+              if (window.__iosSmokeFailNextExerciseVideoUpload === true) {
+                window.__iosSmokeFailNextExerciseVideoUpload = false;
+                return new Response(
+                  JSON.stringify({ message: "exercise video upload failed" }),
+                  {
+                    status: 500,
+                    headers: { "content-type": "application/json" },
+                  },
+                );
+              }
               resumableVideoLength = Number(init?.headers?.["Upload-Length"] ?? 0);
               window.localStorage.setItem(
                 "ios-smoke.video-upload-length",
@@ -871,7 +881,7 @@ async function installFixture(
                 window.localStorage.setItem("ios-smoke.pause-video-upload-consumed", "true");
                 await new Promise(() => {});
               }
-              const chunkSize = init?.body instanceof Blob ? init.body.size : 0;
+              const chunkSize = Number(init?.body?.size ?? 0);
               await new Promise((resolve) => setTimeout(resolve, 250));
               resumableVideoOffset += chunkSize;
               window.localStorage.setItem(
@@ -1697,6 +1707,67 @@ test("mobile work headers keep actions below workspace switches in black night",
   });
   await assertHeaderLayout("מעקב");
   await assertNoLargeWhiteSurface();
+});
+
+test("iPhone coach exercise videos show MOV upload progress, URL, and failures", async ({ page }) => {
+  await installFixture(page);
+  await page.route("**/storage/v1/object/public/exercise-images/**", async (route) => {
+    await route.fulfill({
+      path: "public/loading/tinted/user-character-01.mp4",
+      contentType: "video/mp4",
+    });
+  });
+
+  await page.goto(`/exercises/${exercises[0].id}`);
+  await expect(page.getByRole("heading", { name: new RegExp(exercises[0].name) })).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.getByRole("button", { name: "ערוך", exact: true }).click();
+
+  const maleCard = page.getByText("סרטון הדגמה לגבר", { exact: true }).locator("..");
+  const maleVideoInput = maleCard.locator('input[type="file"][accept="video/*"]');
+  await maleVideoInput.setInputFiles({
+    name: "iphone-demo.MOV",
+    mimeType: "video/quicktime",
+    buffer: Buffer.from("mock quicktime video"),
+  });
+  await expect(maleCard.getByRole("status")).toContainText("מעלה את סרטון ההדגמה...");
+  const maleVideoSrcHandle = await page.waitForFunction(() => {
+    for (const video of document.querySelectorAll("video")) {
+      const src = video.getAttribute("src");
+      if (src?.includes("/storage/v1/object/public/exercise-images/")) return src;
+    }
+    return null;
+  });
+  const maleVideoSrc = await maleVideoSrcHandle.jsonValue();
+  expect(maleVideoSrc).toMatch(/\/storage\/v1\/object\/public\/exercise-images\/.+\.mov$/);
+
+  await page.close();
+  const failurePage = await page.context().newPage();
+  await installFixture(failurePage);
+  await failurePage.route("**/storage/v1/object/public/exercise-images/**", async (route) => {
+    await route.fulfill({
+      path: "public/loading/tinted/user-character-01.mp4",
+      contentType: "video/mp4",
+    });
+  });
+  await failurePage.goto(`/exercises/${exercises[0].id}`);
+  await expect(failurePage.getByRole("heading", { name: new RegExp(exercises[0].name) })).toBeVisible({
+    timeout: 20_000,
+  });
+  await failurePage.getByRole("button", { name: "ערוך", exact: true }).click();
+
+  const femaleCard = failurePage.getByText("סרטון הדגמה לאישה", { exact: true }).locator("..");
+  await failurePage.evaluate(() => {
+    window.__iosSmokeFailNextExerciseVideoUpload = true;
+  });
+  await femaleCard.locator('input[type="file"][accept="video/*"]').setInputFiles({
+    name: "iphone-demo-failure.MOV",
+    mimeType: "video/quicktime",
+    buffer: Buffer.from("mock quicktime video"),
+  });
+  await expect(femaleCard.getByRole("alert")).toContainText("העלאת סרטון ההדגמה נכשלה");
+  await expect(femaleCard.getByText("לא נבחר סרטון", { exact: true })).toHaveCount(0);
 });
 
 test("authenticated iPhone coach workspace and active workout remain usable", async ({ page }) => {

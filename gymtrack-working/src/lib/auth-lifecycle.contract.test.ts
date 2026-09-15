@@ -103,7 +103,7 @@ describe("Supabase auth lifecycle contracts", () => {
     expect(coachRoute).toContain('{trackingLanding ? "פתח דוח" : "פתח תוכניות"}');
     expect(coachRoute).toContain('"/coach/tracking/$clientId"');
     expect(coachRoute).toMatch(
-      /openTrackedPlan\(\s*selectedTrackingWorkout\.id,\s*item\.exerciseId/,
+      /openTrackedPlan\(\s*dayItem\.id,\s*exerciseId,/,
     );
     expect(coachRoute).toContain("dayId: resolvedWorkoutId");
     expect(coachRoute).toContain("dayName");

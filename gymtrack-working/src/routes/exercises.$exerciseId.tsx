@@ -345,6 +345,9 @@ function ExerciseDetail() {
   );
   const [alternativeQuery, setAlternativeQuery] = useState("");
   const [videoUploadError, setVideoUploadError] = useState("");
+  const [videoUploadErrorField, setVideoUploadErrorField] = useState<
+    "videoMaleUrl" | "videoFemaleUrl" | null
+  >(null);
   const [uploadingVideoField, setUploadingVideoField] = useState<
     "videoMaleUrl" | "videoFemaleUrl" | null
   >(null);
@@ -446,16 +449,19 @@ function ExerciseDetail() {
   ) => {
     if (!file || uploadingVideoField) return;
     setVideoUploadError("");
+    setVideoUploadErrorField(null);
     setUploadingVideoField(field);
     try {
       const url = await uploadExerciseLibraryVideo(file, {
         gender: field === "videoMaleUrl" ? "male" : "female",
       });
       set({ [field]: url });
+      setVideoUploadErrorField(null);
     } catch (error) {
       setVideoUploadError(
         error instanceof Error ? error.message : "העלאת סרטון ההדגמה נכשלה.",
       );
+      setVideoUploadErrorField(field);
     } finally {
       setUploadingVideoField(null);
     }
@@ -777,11 +783,22 @@ function ExerciseDetail() {
                       className="w-full text-[11px] file:me-2 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-primary-foreground disabled:opacity-60"
                     />
                     {uploadingVideoField === videoField ? (
-                      <p className="mt-2 text-[11px] font-semibold text-primary">
+                      <p
+                        className="mt-2 text-[11px] font-semibold text-primary"
+                        role="status"
+                        aria-live="polite"
+                      >
                         מעלה את סרטון ההדגמה...
                       </p>
                     ) : null}
-                    {source && isSafeVideoSource(source) ? (
+                    {videoUploadErrorField === videoField && videoUploadError ? (
+                      <p
+                        className="mt-2 text-[11px] font-semibold text-destructive"
+                        role="alert"
+                      >
+                        {videoUploadError}
+                      </p>
+                    ) : source && isSafeVideoSource(source) ? (
                       <div className="relative mt-2">
                         <video
                           src={source}
@@ -812,9 +829,6 @@ function ExerciseDetail() {
                 "בחר סרטון נפרד לכל מגדר. אם אין סרטון מותאם, אפשר להשאיר את השדה ריק.",
               )}
               </p>
-              {videoUploadError ? (
-                <p className="mt-2 text-[11px] font-semibold text-destructive">{videoUploadError}</p>
-              ) : null}
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {(draft.videoUrls?.length
                 ? draft.videoUrls
