@@ -778,12 +778,17 @@ export function AppShell({
       const { error: themeSaveError } = await supabase.auth.updateUser({
         data: {
           theme,
-          gender,
+          ...(gender ? { gender } : {}),
           ...(isSignUp ? { full_name: fullName.trim().replace(/\s+/g, " ") } : {}),
           ...(isSignUp ? { date_of_birth: dateOfBirth } : {}),
         },
       });
-      if (themeSaveError) throw themeSaveError;
+      // Authentication has already succeeded. Metadata persistence is
+      // secondary and must not turn a valid login into a misleading auth
+      // error on a slow or temporarily offline device.
+      if (themeSaveError) {
+        console.warn("[Auth] Could not save presentation metadata:", themeSaveError);
+      }
       setShowAuthModal(false);
       setEmail("");
       setFullName("");
@@ -846,7 +851,9 @@ export function AppShell({
         redirectTo ? { redirectTo } : {},
       );
       if (error) throw error;
-      setSuccessMsg("אם קיים חשבון עם כתובת זו, נשלח אליו קישור לאיפוס סיסמה.");
+      setSuccessMsg(
+        "בקשת האיפוס התקבלה. בדקי את תיבת הדואר, ספאם וקידומי מכירות; אם ההודעה לא מגיעה תוך כמה דקות, נסי שוב עם כתובת האימייל המדויקת של החשבון.",
+      );
     } catch (err: unknown) {
       setErrorMsg(errorMessage(err, "שגיאה בשליחת קישור איפוס הסיסמה"));
     } finally {
