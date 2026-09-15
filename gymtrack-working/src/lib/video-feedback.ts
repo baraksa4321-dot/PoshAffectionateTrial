@@ -22,6 +22,15 @@ export function videoFeedbackFromRow(row: Record<string, unknown>): VideoFeedbac
   };
 }
 
+function isMissingPlaybackPathColumn(error: { code?: unknown; message?: unknown } | null) {
+  const code = typeof error?.code === "string" ? error.code : "";
+  const message = typeof error?.message === "string" ? error.message : "";
+  return (
+    code === "PGRST204" &&
+    /video_playback_path/i.test(message)
+  ) || /video_playback_path.*schema cache|column .*video_playback_path.*does not exist/i.test(message);
+}
+
 
 export async function createVideoFeedback(input: {
   clientId: string;
@@ -42,21 +51,33 @@ export async function createVideoFeedback(input: {
   if (!message) throw new Error("יש לכתוב משוב לפני השליחה.");
   if (!input.videoPath.trim()) throw new Error("לא נמצא סרטון שאליו אפשר לקשר את המשוב.");
 
-  const { data, error } = await supabase
+  const basePayload = {
+    coach_id: user.id,
+    client_id: input.clientId,
+    session_id: input.sessionId,
+    ...(input.workoutId ? { workout_id: input.workoutId } : {}),
+    exercise_id: input.exerciseId,
+    exercise_name: input.exerciseName,
+    video_path: input.videoPath,
+    message,
+  };
+  let { data, error } = await supabase
     .from("video_feedback")
     .insert({
-      coach_id: user.id,
-      client_id: input.clientId,
-      session_id: input.sessionId,
-      ...(input.workoutId ? { workout_id: input.workoutId } : {}),
-      exercise_id: input.exerciseId,
-      exercise_name: input.exerciseName,
-      video_path: input.videoPath,
+      ...basePayload,
       ...(input.videoPlaybackPath ? { video_playback_path: input.videoPlaybackPath } : {}),
-      message,
     })
     .select("*")
     .single();
+  if (error && input.videoPlaybackPath && isMissingPlaybackPathColumn(error)) {
+    // Migration 65 is additive and may briefly lag behind the deployed client.
+    // The source path is still sufficient to preserve the feedback flow.
+    ({ data, error } = await supabase
+      .from("video_feedback")
+      .insert(basePayload)
+      .select("*")
+      .single());
+  }
   if (error || !data) {
     throw new Error(error?.message ?? "שליחת המשוב נכשלה.");
   }
