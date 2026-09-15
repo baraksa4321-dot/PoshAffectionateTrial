@@ -2128,14 +2128,17 @@ function Session() {
                 {entry.videoUrl?.startsWith("blob:") &&
                 videoUploadsInFlight > 0 &&
                 hasPlaybackError &&
-                !(videoUploadErrorExerciseIndex === ei && videoUploadError) ? (
+                !(videoUploadErrorExerciseIndex === ei && videoUploadError) &&
+                !videoDraftWarnings[ei] ? (
                   <p className="mt-2 rounded-xl bg-primary/5 px-2.5 py-1.5 text-[11px] font-semibold text-primary">
                     הסרטון נבחר ומועלה ברקע. לאחר סיום ההעלאה הוא ייטען מחדש לצפייה.
                   </p>
                 ) : null}
                 {videoDraftWarnings[ei] ? (
                   <p className="mt-2 rounded-xl bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-900">
-                    {videoDraftWarnings[ei]}
+                    {hasPlaybackError
+                      ? "הסרטון עדיין עולה, ולכן אין כרגע תצוגה מקדימה. עותק השחזור המקומי לא נשמר; השאירי את המסך פתוח עד לסיום ההעלאה."
+                      : videoDraftWarnings[ei]}
                   </p>
                 ) : null}
                 {videoUploadError && videoUploadErrorExerciseIndex === ei ? (
