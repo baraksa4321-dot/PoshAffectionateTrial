@@ -77,6 +77,7 @@
 - [Rest timer set ownership](rest-timer-set-ownership.md) — Undoing the set that started rest must stop and collapse that timer so it cannot block workout controls.
 - [Video feedback](video-feedback.md) — Keep coach comments on specific performance videos in a dedicated RLS-protected realtime record with trainee read state.
 - [Video upload and transcode timeouts](video-upload-transcode-timeouts.md) — A combined source upload and browser-playback conversion needs a size-aware timeout; conversion failure must not masquerade as upload failure.
+- [Large video upload protocol](large-video-upload-protocol.md) — Use Supabase direct-host TUS chunks for workout videos above 6MB; single multipart requests are fragile for iPhone files.
 - [Portal anchor visibility](portal-anchor-visibility.md) — Keep workout editor portal anchors visible; WebKit can fail when an empty anchor is hidden before portal content mounts.
 - [Quiet persistence UI](quiet-persistence-ui.md) — Hide routine saved/pending sync captions across features; keep only actionable errors and conflicts visible.
 - [Profile directory entry point](profile-directory-entry-point.md) — Open trainee profiles from the home Profiles directory; keep profile actions out of the Programs workspace header.

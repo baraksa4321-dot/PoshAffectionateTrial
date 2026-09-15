@@ -233,7 +233,7 @@ function videoUploadErrorMessage(error: unknown) {
     return "הסרטון הועלה, אבל לא ניתן ליצור לו כתובת צפייה. האימון נשמר, ואפשר לנסות שוב.";
   }
   if (/413|too large|maximum|exceed|payload|size limit|file size/i.test(message)) {
-    return "העלאת הסרטון נכשלה. האימון נשמר, ואפשר לנסות שוב מאוחר יותר.";
+    return "השרת דחה את הסרטון בגלל הגודל. מגבלת הסרטון כרגע היא 1GB. האימון נשמר.";
   }
   if (/timeout|timed out|זמן רב מדי/i.test(message)) {
     return "העלאת הסרטון מתעכבת. האימון נשמר, ואפשר לנסות שוב מאוחר יותר.";

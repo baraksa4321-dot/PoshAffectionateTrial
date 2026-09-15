@@ -573,6 +573,8 @@ function servingGramsFromLabel(servingSize: string) {
 const WORKOUT_VIDEO_BUCKET = "workout-videos";
 const EXERCISE_IMAGE_BUCKET = "exercise-images";
 const MAX_WORKOUT_VIDEO_BYTES = 1024 * 1024 * 1024;
+const RESUMABLE_VIDEO_THRESHOLD_BYTES = 6 * 1024 * 1024;
+const RESUMABLE_VIDEO_CHUNK_BYTES = 6 * 1024 * 1024;
 
 const WORKOUT_VIDEO_SIGNED_URL_TTL_SECONDS = 10 * 60;
 function safeVideoExtension(fileName: string, contentType: string) {
@@ -812,6 +814,128 @@ async function uploadWorkoutPerformanceVideoAttempt(
   throw new Error(`העלאת סרטון נכשלה: ${detail}`);
 }
 
+function resumableStorageEndpoint() {
+  const configuredUrl = String(import.meta.env["VITE_SUPABASE_URL"] ?? "")
+    .replace(/\/rest\/v1\/?$/, "")
+    .replace(/\/+$/, "");
+  if (!configuredUrl) throw new Error("חיבור אחסון הווידאו עדיין לא הוגדר.");
+  const url = new URL(configuredUrl);
+  if (url.hostname.endsWith(".supabase.co")) {
+    url.hostname = url.hostname.replace(/\.supabase\.co$/, ".storage.supabase.co");
+  }
+  return `${url.origin}/storage/v1/upload/resumable`;
+}
+
+function encodeTusMetadata(value: string) {
+  return typeof btoa === "function"
+    ? btoa(value)
+    : Buffer.from(value, "utf8").toString("base64");
+}
+
+async function readStorageError(response: Response) {
+  let detail = `HTTP ${response.status}`;
+  try {
+    const body = await response.text();
+    if (body.trim()) detail = body.slice(0, 300);
+  } catch {
+    // Keep the HTTP status when the endpoint does not return a readable body.
+  }
+  return detail;
+}
+
+async function uploadWorkoutPerformanceVideoResumable(
+  file: File,
+  path: string,
+  normalizedType: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  const {
+    data: { session },
+    error: sessionError,
+  } = await awaitWorkoutVideoRequest(supabase.auth.getSession(), signal);
+  if (sessionError || !session?.access_token) {
+    throw new Error("לא ניתן להעלות סרטון בלי חשבון מחובר");
+  }
+
+  const endpoint = resumableStorageEndpoint();
+  const metadata = [
+    `bucketName ${encodeTusMetadata(WORKOUT_VIDEO_BUCKET)}`,
+    `objectName ${encodeTusMetadata(path)}`,
+    `contentType ${encodeTusMetadata(normalizedType || "video/mp4")}`,
+    `cacheControl ${encodeTusMetadata("3600")}`,
+  ].join(",");
+  const createResponse = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${session.access_token}`,
+      "tus-resumable": "1.0.0",
+      "upload-length": String(file.size),
+      "upload-metadata": metadata,
+      "x-upsert": "false",
+    },
+    ...(signal ? { signal } : {}),
+  });
+  if (!createResponse.ok) {
+    throw new Error(`העלאת סרטון נכשלה: ${await readStorageError(createResponse)}`);
+  }
+  const locationHeader = createResponse.headers.get("location");
+  if (!locationHeader) throw new Error("העלאת סרטון נכשלה: חסרה כתובת העלאה מחולקת.");
+  const uploadUrl = new URL(locationHeader, endpoint).toString();
+
+  let offset = 0;
+  while (offset < file.size) {
+    if (signal?.aborted) throw new Error("video upload timed out");
+    const chunk = file.slice(offset, Math.min(offset + RESUMABLE_VIDEO_CHUNK_BYTES, file.size));
+    let chunkUploaded = false;
+
+    for (let attempt = 1; attempt <= 5 && !chunkUploaded; attempt += 1) {
+      try {
+        const response = await fetch(uploadUrl, {
+          method: "PATCH",
+          headers: {
+            authorization: `Bearer ${session.access_token}`,
+            "tus-resumable": "1.0.0",
+            "upload-offset": String(offset),
+            "content-type": "application/offset+octet-stream",
+          },
+          body: chunk,
+          ...(signal ? { signal } : {}),
+        });
+        if (response.ok) {
+          const nextOffset = Number(response.headers.get("upload-offset"));
+          offset = Number.isFinite(nextOffset) && nextOffset > offset
+            ? nextOffset
+            : offset + chunk.size;
+          chunkUploaded = true;
+          continue;
+        }
+        if (response.status === 409) {
+          const headResponse = await fetch(uploadUrl, {
+            method: "HEAD",
+            headers: {
+              authorization: `Bearer ${session.access_token}`,
+              "tus-resumable": "1.0.0",
+            },
+            ...(signal ? { signal } : {}),
+          });
+          const serverOffset = Number(headResponse.headers.get("upload-offset"));
+          if (headResponse.ok && Number.isFinite(serverOffset) && serverOffset > offset) {
+            offset = serverOffset;
+            chunkUploaded = true;
+            continue;
+          }
+        }
+        throw new Error(`העלאת סרטון נכשלה: ${await readStorageError(response)}`);
+      } catch (error) {
+        if (signal?.aborted) throw new Error("video upload timed out");
+        if (attempt === 5) throw error;
+        await waitBeforeWorkoutVideoRetryWithAbort(attempt, signal);
+      }
+    }
+    if (!chunkUploaded) throw new Error("העלאת סרטון נכשלה: לא ניתן היה להעלות את החלק הבא.");
+  }
+}
+
 /**
  * Upload a trainee performance video before it is written into a workout
  * session. The database receives only the object path; the signed URL is
@@ -851,7 +975,11 @@ export async function uploadWorkoutPerformanceVideo(
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const path = `${user.id}/${metadata.workoutId}/${metadata.exerciseId}/${objectId}.${safeExtension}`;
     try {
-      await uploadWorkoutPerformanceVideoAttempt(file, path, normalizedType, options.signal);
+      if (file.size >= RESUMABLE_VIDEO_THRESHOLD_BYTES) {
+        await uploadWorkoutPerformanceVideoResumable(file, path, normalizedType, options.signal);
+      } else {
+        await uploadWorkoutPerformanceVideoAttempt(file, path, normalizedType, options.signal);
+      }
       if (options.signal?.aborted) throw new Error("video upload timed out");
 
       const signedSourceUrl = await awaitWorkoutVideoRequest(
