@@ -9492,6 +9492,10 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   box-shadow: 0 3px 8px rgb(var(--shadow-color) / 8%);
 }
 
+.app-auth-shell.nutrition-page .app-topbar__heading {
+  transform: translateY(-0.4rem) !important;
+}
+
 .nutrition-foods-page .nutrition-food-library-card {
   margin-top: 0.35rem;
   padding: 0.75rem;
