@@ -81,3 +81,6 @@ run_live_stage "the guarded live coach-to-trainee sync smoke check" \
 
 run_live_stage "the guarded live activity RLS smoke check" \
   pnpm --dir gymtrack-working run smoke:live-activity
+
+run_live_stage "the guarded live workout-video persistence smoke check" \
+  pnpm --dir gymtrack-working run smoke:live-video
