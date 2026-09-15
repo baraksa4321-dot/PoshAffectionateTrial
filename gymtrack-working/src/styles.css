@@ -9508,6 +9508,40 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   transform: none !important;
 }
 
+@media (max-width: 639px) {
+  /* Tracking actions need their own bar below the route title on phones.
+   * Keeping them in the title row lets the long Hebrew title and the two
+   * action pills compete for the same width and visually overlap. */
+  .app-auth-shell.tracking-page .app-topbar__heading {
+    flex-wrap: wrap;
+    row-gap: 0.3rem !important;
+  }
+
+  .app-auth-shell.tracking-page .app-topbar__heading-content,
+  .app-auth-shell.tracking-page .app-topbar__heading-actions {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .app-auth-shell.tracking-page .app-topbar__heading-actions {
+    min-width: 0;
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.1rem;
+    border-top: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+    justify-content: flex-start;
+  }
+
+  .app-auth-shell.tracking-page .app-topbar__heading-accessory {
+    width: 100%;
+  }
+
+  .app-auth-shell.tracking-page .app-topbar__heading-accessory > div {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
 .nutrition-foods-page .nutrition-food-library-card {
   margin-top: 0.35rem;
   padding: 0.75rem;
