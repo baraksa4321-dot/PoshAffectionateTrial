@@ -67,6 +67,10 @@ import { reconcileRestTimer } from "@/lib/rest-timer";
 import { isSafeVideoSource } from "@/lib/url-security";
 import { videoTranscodeStatusLabel } from "@/lib/video-transcoding";
 import {
+  compressWorkoutVideo,
+  WorkoutVideoCompressionError,
+} from "@/lib/video-compression";
+import {
   completedSetForReopenedWorkout,
   getCurrentWeekWorkoutSession,
   getWeekStart,
@@ -138,7 +142,8 @@ const ACTIVE_SESSION_FEEDBACK_KEY = (userId: string, id: string, weekKey: string
 const ACTIVE_REST_TIMER_KEY = (userId: string, id: string, weekKey: string) =>
   `gymtrack.active_rest_timer.${userId}.${id}.${weekKey}`;
 const MAX_PERFORMANCE_VIDEO_DURATION_SECONDS = 5 * 60;
-const MAX_PERFORMANCE_VIDEO_BYTES = 1024 * 1024 * 1024;
+const MAX_PERFORMANCE_SOURCE_VIDEO_BYTES = 2 * 1024 * 1024 * 1024;
+const VIDEO_COMPRESSION_TARGET_BYTES = 45 * 1024 * 1024;
 
 type PersistedRestTimer = {
   rest: number;
@@ -233,8 +238,9 @@ function videoUploadErrorMessage(error: unknown) {
     return "הסרטון הועלה, אבל לא ניתן ליצור לו כתובת צפייה. האימון נשמר, ואפשר לנסות שוב.";
   }
   if (/413|too large|maximum|exceed|payload|size limit|file size/i.test(message)) {
-    return "השרת דחה את הסרטון בגלל הגודל. מגבלת הסרטון כרגע היא 1GB. האימון נשמר.";
+    return "השרת דחה את הסרטון בגלל מגבלת הקובץ של החשבון. האימון נשמר.";
   }
+  if (error instanceof WorkoutVideoCompressionError) return error.message;
   if (/timeout|timed out|זמן רב מדי/i.test(message)) {
     return "העלאת הסרטון מתעכבת. האימון נשמר, ואפשר לנסות שוב מאוחר יותר.";
   }
@@ -487,6 +493,9 @@ function Session() {
   const [isFinishing, setIsFinishing] = useState(false);
   const [finishError, setFinishError] = useState("");
   const [videoUploadsInFlight, setVideoUploadsInFlight] = useState(0);
+  const [videoCompressionIndexes, setVideoCompressionIndexes] = useState<Set<number>>(
+    () => new Set(),
+  );
   const [videoUploadError, setVideoUploadError] = useState("");
   const [videoUploadErrorExerciseIndex, setVideoUploadErrorExerciseIndex] = useState<number | null>(
     null,
@@ -1293,9 +1302,9 @@ function Session() {
       setVideoUploadError("אפשר להעלות קובץ וידאו בלבד.");
       return;
     }
-    if (file.size > MAX_PERFORMANCE_VIDEO_BYTES) {
+    if (file.size > MAX_PERFORMANCE_SOURCE_VIDEO_BYTES) {
       setVideoUploadErrorExerciseIndex(exerciseIndex);
-      setVideoUploadError("הסרטון גדול מדי. הגודל המרבי הוא 1GB.");
+      setVideoUploadError("הסרטון גדול מדי לעיבוד בטלפון. הגודל המרבי הוא 2GB.");
       return;
     }
     if (!sessionOwnerId) {
@@ -1331,7 +1340,30 @@ function Session() {
       setVideoUploadError("אפשר להעלות סרטון באורך של עד 5 דקות.");
       return;
     }
-    const nextUrl = URL.createObjectURL(file);
+    let uploadFile = file;
+    const shouldCompress = file.size > VIDEO_COMPRESSION_TARGET_BYTES;
+    if (shouldCompress) {
+      setVideoCompressionIndexes((current) => {
+        const next = new Set(current);
+        next.add(exerciseIndex);
+        return next;
+      });
+      try {
+        uploadFile = await compressWorkoutVideo(file);
+      } catch (error) {
+        setVideoUploadErrorExerciseIndex(exerciseIndex);
+        setVideoUploadError(videoUploadErrorMessage(error));
+        return;
+      } finally {
+        setVideoCompressionIndexes((current) => {
+          if (!current.has(exerciseIndex)) return current;
+          const next = new Set(current);
+          next.delete(exerciseIndex);
+          return next;
+        });
+      }
+    }
+    const nextUrl = URL.createObjectURL(uploadFile);
     const previousUrl = entriesRef.current[exerciseIndex]?.videoUrl;
     const uploadVersion = (videoUploadVersionsRef.current.get(exerciseIndex) ?? 0) + 1;
     videoUploadVersionsRef.current.set(exerciseIndex, uploadVersion);
@@ -1345,7 +1377,7 @@ function Session() {
       controller,
     });
     if (previousUrl?.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
-    videoFilesRef.current.set(exerciseIndex, file);
+    videoFilesRef.current.set(exerciseIndex, uploadFile);
     videoPlaybackRefreshesRef.current.delete(exerciseIndex);
     setVideoUploadsInFlight((count) => count + 1);
     const entriesWithLocalVideo = entriesRef.current.map((entry, index) => {
@@ -1381,12 +1413,12 @@ function Session() {
     const upload = videoUploadQueueRef.current.then(async () => {
       const timeoutId = window.setTimeout(
         () => controller.abort(),
-        performanceVideoUploadTimeoutMs(file.size),
+        performanceVideoUploadTimeoutMs(uploadFile.size),
       );
       try {
         const { uploadWorkoutPerformanceVideo } = await import("@/lib/supabase-sync");
         return await uploadWorkoutPerformanceVideo(
-          file,
+          uploadFile,
           {
             workoutId: workout.id,
             exerciseId: entriesRef.current[exerciseIndex]?.exerciseId ?? String(exerciseIndex),
@@ -2116,6 +2148,11 @@ function Session() {
                       </label>
                     </div>
                 </div>
+                {videoCompressionIndexes.has(ei) ? (
+                  <p className="mt-2 rounded-xl bg-primary/5 px-2.5 py-1.5 text-[11px] font-semibold text-primary">
+                    מכינה גרסת 720p קטנה יותר להעלאה מאובטחת…
+                  </p>
+                ) : null}
                 <div className="grid grid-cols-3 gap-1.5">
                   {(
                     [
