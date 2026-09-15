@@ -5970,7 +5970,12 @@ export function CoachDashboardPage({
         ) : undefined
       }
       compactHeader
-      pageClassName={editingDayId ? "coach-builder-page" : ""}
+      pageClassName={[
+        trackingLanding ? "tracking-page" : "",
+        editingDayId ? "coach-builder-page" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       {!clientsOnly ? (
         <section className="mb-3 space-y-3 text-start">
