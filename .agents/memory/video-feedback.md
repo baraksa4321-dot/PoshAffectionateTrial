@@ -27,3 +27,12 @@ file selection creates an unnecessary recovery path and can make a valid video a
 
 **How to apply:** Keep the stored video path as the stable identity, refresh the signed URL on
 playback error, and make the visible retry action reuse that path when no local file remains.
+
+Transient mobile upload errors such as `Load failed` should be retried automatically before
+surfacing an error to the trainee.
+
+**Why:** Mobile Safari can lose a fetch during an otherwise valid Storage upload; treating the
+first network failure as permanent makes a recoverable upload look like data loss.
+
+**How to apply:** Retry only network-like failures with a small bounded backoff, while preserving
+the manual same-video retry for failures that remain after the automatic attempts.
