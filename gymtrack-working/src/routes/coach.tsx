@@ -5947,7 +5947,10 @@ export function CoachDashboardPage({
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => setVideoFeedbackOpen(true)}
+              onClick={() => {
+                setVideoFeedbackOpen(true);
+                void loadOverviewRows();
+              }}
               aria-label="פתיחת משובי הווידאו"
               className="inline-flex min-w-[4.1rem] items-center justify-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-1 text-[9px] font-bold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >

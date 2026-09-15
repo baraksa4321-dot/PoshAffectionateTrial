@@ -36,3 +36,12 @@ first network failure as permanent makes a recoverable upload look like data los
 
 **How to apply:** Retry only network-like failures with a small bounded backoff, while preserving
 the manual same-video retry for failures that remain after the automatic attempts.
+
+Performance videos from a mobile workout should upload through a per-session serial queue rather
+than all starting at once.
+
+**Why:** Concurrent iPhone uploads can produce intermittent `Load failed` responses, leaving a
+multi-video workout with only the first few objects linked to its session.
+
+**How to apply:** Queue uploads without blocking workout completion, continue the queue after an
+individual failure, and merge each successful object into the finished session.

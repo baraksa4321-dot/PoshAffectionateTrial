@@ -680,6 +680,7 @@ function Session() {
   const videoFilesRef = useRef(new Map<number, File>());
   const videoUploadVersionsRef = useRef(new Map<number, number>());
   const videoUploadTasksRef = useRef(new Map<number, Promise<boolean>>());
+  const videoUploadQueueRef = useRef(Promise.resolve());
   const videoPlaybackRefreshesRef = useRef(new Map<number, string>());
   const restoredVideoDraftWorkoutIdRef = useRef<string | null>(null);
   const completedSaveRef = useRef(false);
@@ -1300,11 +1301,19 @@ function Session() {
         error instanceof Error ? error.message : "לא ניתן לשמור את הסרטון במכשיר",
       );
     });
-    const upload = import("@/lib/supabase-sync").then(({ uploadWorkoutPerformanceVideo }) =>
-      uploadWorkoutPerformanceVideo(file, {
-        workoutId: workout.id,
-        exerciseId: entriesRef.current[exerciseIndex]?.exerciseId ?? String(exerciseIndex),
-      }),
+    // iOS Safari is more reliable when performance videos upload one at a
+    // time. Keep the workout completion path independent from this queue.
+    const upload = videoUploadQueueRef.current.then(() =>
+      import("@/lib/supabase-sync").then(({ uploadWorkoutPerformanceVideo }) =>
+        uploadWorkoutPerformanceVideo(file, {
+          workoutId: workout.id,
+          exerciseId: entriesRef.current[exerciseIndex]?.exerciseId ?? String(exerciseIndex),
+        }),
+      ),
+    );
+    videoUploadQueueRef.current = upload.then(
+      () => undefined,
+      () => undefined,
     );
     const uploadTask = upload
       .then(({ signedUrl, path }) => {
