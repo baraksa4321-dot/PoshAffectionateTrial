@@ -256,6 +256,7 @@ function Library() {
       kicker="ספרייה"
       title="תרגילים"
       subtitle={`${catalogExercises.length} תנועות בספרייה`}
+      pageClassName="exercises-page"
       action={
         <Link
           to="/exercises/$exerciseId"
