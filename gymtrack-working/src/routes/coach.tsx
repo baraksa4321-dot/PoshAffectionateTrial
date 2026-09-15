@@ -1149,6 +1149,7 @@ function WorkoutReviewExerciseCard({
               isSafeVideoSource(entry.videoUrl)
                 ? entry.videoUrl
                 : undefined;
+            const hasPerformanceVideo = Boolean(videoUrl || entry.videoPath);
             return (
               <div
                 key={`${sessionId ?? "record"}-${date ?? "date"}-${entry.exerciseId}-${recordIndex}`}
@@ -1201,13 +1202,13 @@ function WorkoutReviewExerciseCard({
                     ) : null}
                   </div>
                 ) : null}
-                {videoUrl ? (
+                {hasPerformanceVideo ? (
                   <div className="mt-2 rounded-xl border border-primary/20 bg-primary/5 p-2">
                     <p className="mb-1.5 flex items-center gap-1 text-[11px] font-bold text-primary">
                       <Video className="h-3.5 w-3.5" /> סרטון ביצוע
                     </p>
                     <WorkoutVideoPlayer
-                      source={videoUrl ?? ""}
+                      source={entry.videoUrl ?? ""}
                       videoPath={entry.videoPath}
                       title={`סרטון ביצוע עבור ${title}`}
                       className="max-h-64 w-full rounded-lg bg-black object-contain"
@@ -1359,7 +1360,7 @@ function WorkoutWeeklyReportWeek({
   const exerciseRows = reviewItems.map((item) => {
     const entries = sessions.flatMap((session) =>
       session.entries
-        .filter((entry) => entry.exerciseId === item.exerciseId)
+        .filter((entry) => historyEntryMatchesWorkoutItem(entry, item))
         .map((entry) => ({ date: reportSessionDateKey(session.date), entry })),
     );
     const replacementEntry = findReplacementEntry(
@@ -1373,10 +1374,12 @@ function WorkoutWeeklyReportWeek({
       exercise: findReportExercise(item, exercises),
     };
   });
-  const plannedExerciseIds = new Set(reviewItems.map((item) => item.exerciseId));
   const additionalEntries = sessions.flatMap((session) =>
     session.entries
-      .filter((entry) => !plannedExerciseIds.has(entry.exerciseId))
+      .filter(
+        (entry) =>
+          !reviewItems.some((item) => historyEntryMatchesWorkoutItem(entry, item)),
+      )
       .map((entry) => ({ date: reportSessionDateKey(session.date), entry })),
   );
   const completedDays = weekDays.filter((day) => day.sessions.length > 0).length;
@@ -1401,7 +1404,7 @@ function WorkoutWeeklyReportWeek({
   const hasVideos = exerciseRows.some(
     ({ exercise, entries }) =>
       exerciseDemoVideoSources(exercise).length > 0 ||
-      entries.some(({ entry }) => Boolean(entry.videoUrl)),
+      entries.some(({ entry }) => Boolean(entry.videoUrl || entry.videoPath)),
   );
 
   return (
@@ -1595,7 +1598,7 @@ function WorkoutDailyReport({
   const exerciseRows = workout.items.map((item) => {
     const entries = sessions.flatMap((session) =>
       session.entries
-        .filter((entry) => entry.exerciseId === item.exerciseId)
+        .filter((entry) => historyEntryMatchesWorkoutItem(entry, item))
         .map((entry) => ({ entry, sessionId: session.id })),
     );
     const replacementEntry = findReplacementEntry(
@@ -1609,10 +1612,12 @@ function WorkoutDailyReport({
       exercise: findReportExercise(item, exercises),
     };
   });
-  const plannedExerciseIds = new Set(workout.items.map((item) => item.exerciseId));
   const additionalEntries = sessions.flatMap((session) =>
     session.entries
-      .filter((entry) => !plannedExerciseIds.has(entry.exerciseId))
+      .filter(
+        (entry) =>
+          !workout.items.some((item) => historyEntryMatchesWorkoutItem(entry, item)),
+      )
       .map((entry, index) => ({ entry, sessionId: session.id, index })),
   );
   const completedSets = sessions.reduce(
@@ -3021,7 +3026,10 @@ export function CoachDashboardPage({
       for (const session of details.history) {
         const workout = workoutsById.get(session.workoutId);
         for (const [entryIndex, entry] of session.entries.entries()) {
-          if (!entry.videoUrl || entry.videoUrl.startsWith("blob:") || !isSafeHttpUrl(entry.videoUrl)) {
+          if (
+            (!entry.videoUrl || entry.videoUrl.startsWith("blob:") || !isSafeHttpUrl(entry.videoUrl)) &&
+            !entry.videoPath
+          ) {
             continue;
           }
           records.push({
@@ -7464,6 +7472,7 @@ export function CoachDashboardPage({
           >
             <div
               data-coach-workspace="true"
+              data-coach-workspace-mode={trackingLanding ? "tracking" : "management"}
               data-coach-details-state={
                 loadingDetails ? "loading" : clientDetails ? "ready" : "error"
               }

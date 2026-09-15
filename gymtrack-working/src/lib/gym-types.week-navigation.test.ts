@@ -198,6 +198,16 @@ describe("workout report week navigation", () => {
     ).toBe("later");
   });
 
+  test("matches a saved execution by workout name when its id changed", () => {
+    expect(
+      getWorkoutReportSessions(
+        [session("renamed-id", "2026-08-26T12:00:00.000Z", "old-workout-id")],
+        workout,
+        ["2026-08-23", "2026-08-24", "2026-08-25", "2026-08-26", "2026-08-27", "2026-08-28", "2026-08-29"],
+      ).map(({ id }) => id),
+    ).toEqual(["renamed-id"]);
+  });
+
   test("keeps only one copy of an exercise in a workout plan", () => {
     const item = (id: string, exerciseId: string): Workout["items"][number] => ({
       id,

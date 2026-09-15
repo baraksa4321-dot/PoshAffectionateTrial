@@ -4857,6 +4857,16 @@ html[data-keyboard-open] [data-coach-workspace="true"] {
   scroll-padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
 }
 
+/* The tracking report is rendered inline in the page on mobile. Keep one
+   vertical scroll owner so iOS does not bounce the nested workspace back to
+   the top when the report content grows or refreshes. */
+[data-coach-workspace-mode="tracking"] {
+  max-height: none;
+  overflow-y: visible;
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+  scroll-padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+}
+
 /* Inline coach workspaces live inside the app's page scroller. Let the page
    own the vertical scroll instead of clipping the workspace at a second
    viewport-sized boundary. Fullscreen portal workspaces keep their dedicated

@@ -695,11 +695,16 @@ export function getWorkoutReportSessions(
 ): HistorySession[] {
   const weekStart = weekDates[0]!;
   const weekEnd = weekDates[weekDates.length - 1]!;
+  const hasExactWorkoutMatch = history.some((session) => session.workoutId === workout.id);
   return dedupeHistorySessions(
     history.filter(
       (session) =>
         (session.workoutId === workout.id ||
-          (!session.workoutId && session.workoutName === workout.name)) &&
+          (!hasExactWorkoutMatch &&
+            session.workoutName?.trim() &&
+            workout.name?.trim() &&
+            session.workoutName.trim().toLocaleLowerCase("he") ===
+              workout.name.trim().toLocaleLowerCase("he"))) &&
         reportSessionDateKey(session.date) >= weekStart &&
         reportSessionDateKey(session.date) <= weekEnd,
     ),
