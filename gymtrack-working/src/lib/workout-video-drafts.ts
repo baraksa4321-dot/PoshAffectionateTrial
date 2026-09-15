@@ -51,7 +51,9 @@ export async function saveWorkoutVideoDraft(
         userId,
         workoutId,
         exerciseIndex,
-        file,
+        // Safari is more reliable when IndexedDB receives a Blob rather than
+        // the File object returned by an input element.
+        file: file.slice(0, file.size, file.type),
         fileName: file.name,
         contentType: file.type,
       } satisfies StoredVideoDraft);
