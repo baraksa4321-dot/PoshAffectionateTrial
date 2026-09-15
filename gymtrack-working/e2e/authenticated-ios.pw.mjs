@@ -1317,7 +1317,7 @@ function assertKeyboardVisible(locator) {
   );
 }
 
-test("iPhone loading video is ready and advances before and after hydration", async ({ page }) => {
+test("iPhone loading screen is ready before and after hydration", async ({ page }) => {
   test.skip(
     test.info().project.name !== "webkit-iphone",
     "The loading-media regression is specific to the iPhone WebKit profile.",
@@ -1332,42 +1332,13 @@ test("iPhone loading video is ready and advances before and after hydration", as
   );
 
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  const loadingVideo = page.locator(".loading-simple-video");
-  await expect(loadingVideo).toHaveCount(1);
+  const loadingScreen = page.locator('[data-loading-mode="plain"]');
+  await expect(loadingScreen).toHaveCount(1);
+  await expect(page.getByRole("status", { name: "טוען" })).toBeVisible();
   expect(await page.evaluate(() => Boolean(window.__MY_ROUTINE_BOOTED__))).toBe(false);
-
-  const readVideoState = () =>
-    loadingVideo.evaluate((video) => ({
-      currentTime: video.currentTime,
-      duration: video.duration,
-      readyState: video.readyState,
-    }));
-  const assertVideoAdvances = async () => {
-    await expect.poll(async () => (await readVideoState()).readyState).toBeGreaterThanOrEqual(2);
-    const first = await readVideoState();
-    await page.waitForTimeout(250);
-    const second = await readVideoState();
-    expect(second.readyState).toBeGreaterThanOrEqual(2);
-
-    const elapsed =
-      Number.isFinite(second.duration) && second.currentTime < first.currentTime
-        ? second.duration - first.currentTime + second.currentTime
-        : second.currentTime - first.currentTime;
-    expect(elapsed).toBeGreaterThan(0.05);
-  };
-
-  // The watchdog owns this server-rendered shell while the app module is
-  // intentionally held back. This catches a loaded-but-frozen first frame.
-  await assertVideoAdvances();
 
   releaseHydration();
   await expect.poll(() => page.evaluate(() => Boolean(window.__MY_ROUTINE_BOOTED__))).toBe(true);
-
-  // A fast unauthenticated hydration may remove the splash immediately. When
-  // WebKit keeps it visible long enough, verify the React-owned node too.
-  if (await loadingVideo.count()) {
-    await assertVideoAdvances();
-  }
 });
 
 test("iPhone route changes keep both screens available through the shared transition", async ({
@@ -1578,7 +1549,7 @@ test("coach tracking refreshes when switching trainees and keeps profile actions
   await expect(page.getByRole("button", { name: "פתיחת פרופיל המשתמש" })).toHaveCount(0);
 
   await page.getByRole("button", { name: /אימון של מתאמנת אחרת/ }).click();
-  await expect(page.getByText("אימון של מתאמנת אחרת", { exact: true })).toBeVisible();
+  await expect(page.locator("strong").filter({ hasText: "אימון של מתאמנת אחרת" })).toBeVisible();
   await expect(page.getByText("תרגיל בדיקה 1", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "פתיחת פרופיל המשתמש" })).toHaveCount(0);
 });
@@ -1586,7 +1557,7 @@ test("coach tracking refreshes when switching trainees and keeps profile actions
 test("mobile work headers keep actions below workspace switches in black night", async ({ page }) => {
   await installFixture(page);
 
-  const assertHeaderLayout = async (title) => {
+  const assertHeaderLayout = async (title, { requireHeaderActions = true } = {}) => {
     const workspaceRow = page.locator('[data-app-workspace-row="true"]');
     const heading = page.locator('[data-app-topbar-heading="true"]');
     const headingAction = page.locator('[data-app-heading-actions="true"]');
@@ -1596,7 +1567,7 @@ test("mobile work headers keep actions below workspace switches in black night",
     await expect(titleHeading).toBeVisible();
     const actions = headingAction.locator("a, button");
     const actionCount = await actions.count();
-    expect(actionCount).toBeGreaterThan(0);
+    if (requireHeaderActions) expect(actionCount).toBeGreaterThan(0);
     for (let index = 0; index < actionCount; index += 1) {
       await expect(actions.nth(index)).toBeVisible();
     }
@@ -1651,7 +1622,7 @@ test("mobile work headers keep actions below workspace switches in black night",
     expect(layout.action.top).toBeGreaterThanOrEqual(layout.workspace.bottom - 1);
     expect(layout.titleOverlapsWorkspace).toBe(false);
     expect(layout.actionOverlapsWorkspace).toBe(false);
-    expect(layout.actionElements.length).toBeGreaterThan(0);
+    if (requireHeaderActions) expect(layout.actionElements.length).toBeGreaterThan(0);
     for (const actionElement of layout.actionElements) {
       expect(actionElement.width).toBeGreaterThan(0);
       expect(actionElement.height).toBeGreaterThan(0);
@@ -1698,7 +1669,8 @@ test("mobile work headers keep actions below workspace switches in black night",
     timeout: 20_000,
   });
   await enableBlackNight();
-  await assertHeaderLayout("תרגילים");
+  await assertHeaderLayout("תרגילים", { requireHeaderActions: false });
+  await expect(page.getByRole("link", { name: "הוסיפי תרגיל" })).toBeVisible();
   await assertNoLargeWhiteSurface();
 
   await page.goto("/coach/tracking");
@@ -1793,31 +1765,17 @@ test("authenticated iPhone coach workspace and active workout remain usable", as
     await expect(workspace.getByTestId("coach-client-details-loading")).toHaveCount(0);
     await expect(workspace.getByTestId("coach-client-details-error")).toHaveCount(0);
   });
-  await test.step("open trainee profile and send a message", async () => {
+  await test.step("keep profile actions on the coach home directory", async () => {
     await expect(page.getByText("שליחת הודעת חיזוק / הנחיה למתאמן", { exact: true })).toHaveCount(
       0,
     );
-    await page.getByRole("button", { name: "פתיחת פרופיל המשתמש" }).click();
-    const profileMessage = page.getByTestId("coach-client-message-profile");
-    await expect(profileMessage).toBeVisible();
-    const profileMessageText = "הודעה שנשלחה מהפרופיל";
-    await profileMessage.getByPlaceholder("כתבי הודעה למתאמן...").fill(profileMessageText);
-    await profileMessage.getByRole("button", { name: "שלח", exact: true }).click();
-    await expect(profileMessage).toContainText("הודעת החיזוק נשלחה בהצלחה למתאמן!");
-    await expect(profileMessage).toContainText(profileMessageText);
+    await expect(page.getByRole("button", { name: "פתיחת פרופיל המשתמש" })).toHaveCount(0);
   });
-  const profileInline = page.locator('[data-coach-client-profile-inline="true"]');
-  await expect(profileInline).toBeVisible();
-  await expect(page.getByRole("dialog", { name: "פרופיל המשתמש" })).toHaveCount(0);
+
   const activityHistory = page.getByTestId("coach-activity-history");
   await expect(activityHistory).toBeVisible();
-  await expect(profileInline).toContainText("63.4");
-  await expect(profileInline).toContainText("74");
-  await expect(profileInline).toContainText("8,500");
-  await expect(profileInline).toContainText("כל הכבוד על ההתמדה השבוע");
   await expect(page.getByText("מתאמנת אחרת", { exact: true })).toBeHidden();
   await expect(activityHistory).not.toContainText("נתון של מתאמנת אחרת");
-  await page.getByRole("button", { name: "סגירת פרופיל המשתמש" }).click();
 
   await expect(workspace).toHaveCSS("overflow-y", "auto");
   const workspaceCanScroll = await workspace.evaluate((element) => {
