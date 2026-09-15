@@ -243,6 +243,8 @@ function videoUploadErrorMessage(error: unknown) {
   return message || "העלאת סרטון הביצוע נכשלה";
 }
 
+const PERFORMANCE_VIDEO_UPLOAD_TIMEOUT_MS = 90_000;
+
 function videoPlaybackErrorMessage(code?: number) {
   if (code === 2) {
     return "הסרטון נשמר, אבל החיבור לא הצליח לטעון אותו. נסי שוב.";
@@ -1313,14 +1315,29 @@ function Session() {
     });
     // iOS Safari is more reliable when performance videos upload one at a
     // time. Keep the workout completion path independent from this queue.
-    const upload = videoUploadQueueRef.current.then(() =>
-      import("@/lib/supabase-sync").then(({ uploadWorkoutPerformanceVideo }) =>
-        uploadWorkoutPerformanceVideo(file, {
-          workoutId: workout.id,
-          exerciseId: entriesRef.current[exerciseIndex]?.exerciseId ?? String(exerciseIndex),
-        }),
-      ),
-    );
+    const upload = videoUploadQueueRef.current.then(async () => {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(
+        () => controller.abort(),
+        PERFORMANCE_VIDEO_UPLOAD_TIMEOUT_MS,
+      );
+      try {
+        const { uploadWorkoutPerformanceVideo } = await import("@/lib/supabase-sync");
+        return await uploadWorkoutPerformanceVideo(
+          file,
+          {
+            workoutId: workout.id,
+            exerciseId: entriesRef.current[exerciseIndex]?.exerciseId ?? String(exerciseIndex),
+          },
+          { signal: controller.signal },
+        );
+      } catch (error) {
+        if (controller.signal.aborted) throw new Error("video upload timed out");
+        throw error;
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+    });
     videoUploadQueueRef.current = upload.then(
       () => undefined,
       () => undefined,

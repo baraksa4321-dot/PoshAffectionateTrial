@@ -663,6 +663,55 @@ function waitBeforeWorkoutVideoRetry(attempt: number): Promise<void> {
   });
 }
 
+async function uploadWorkoutPerformanceVideoAttempt(
+  file: File,
+  path: string,
+  normalizedType: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  if (!signal) {
+    const { error } = await supabase.storage.from(WORKOUT_VIDEO_BUCKET).upload(path, file, {
+      contentType: normalizedType || "video/mp4",
+      upsert: false,
+    });
+    if (error) throw new Error(`העלאת סרטון נכשלה: ${error.message}`);
+    return;
+  }
+
+  // storage-js does not currently expose an AbortSignal on upload(). Use a
+  // signed upload URL for the browser path so a stalled request can actually
+  // be cancelled before the serial queue advances to the next video.
+  const { data: signedUpload, error: signedUploadError } = await supabase.storage
+    .from(WORKOUT_VIDEO_BUCKET)
+    .createSignedUploadUrl(path, { upsert: false });
+  if (signedUploadError || !signedUpload?.signedUrl) {
+    throw new Error(
+      `יצירת כתובת העלאה לסרטון נכשלה: ${signedUploadError?.message ?? "missing signed upload URL"}`,
+    );
+  }
+
+  const body = new FormData();
+  body.append("cacheControl", "3600");
+  body.append("", file);
+  const response = await fetch(signedUpload.signedUrl, {
+    method: "PUT",
+    headers: { "x-upsert": "false" },
+    body,
+    signal,
+  });
+  if (response.ok) return;
+
+  let detail = `HTTP ${response.status}`;
+  try {
+    const payload = (await response.json()) as { message?: unknown; error?: unknown };
+    const message = payload.message ?? payload.error;
+    if (typeof message === "string" && message.trim()) detail = message;
+  } catch {
+    // Keep the HTTP status when the storage endpoint does not return JSON.
+  }
+  throw new Error(`העלאת סרטון נכשלה: ${detail}`);
+}
+
 /**
  * Upload a trainee performance video before it is written into a workout
  * session. The database receives only the object path; the signed URL is
@@ -671,6 +720,7 @@ function waitBeforeWorkoutVideoRetry(attempt: number): Promise<void> {
 export async function uploadWorkoutPerformanceVideo(
   file: File,
   metadata: { workoutId: string; exerciseId: string },
+  options: { signal?: AbortSignal } = {},
 ): Promise<UploadedWorkoutVideo> {
   const normalizedType = file.type.trim().toLowerCase();
   const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
@@ -692,17 +742,17 @@ export async function uploadWorkoutPerformanceVideo(
   const safeExtension = safeVideoExtension(file.name, normalizedType);
   let lastError: unknown = new Error("העלאת סרטון נכשלה.");
   for (let attempt = 1; attempt <= WORKOUT_VIDEO_UPLOAD_ATTEMPTS; attempt += 1) {
+    if (options.signal?.aborted) {
+      throw new Error("video upload timed out");
+    }
     const objectId =
       typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const path = `${user.id}/${metadata.workoutId}/${metadata.exerciseId}/${objectId}.${safeExtension}`;
     try {
-      const { error } = await supabase.storage.from(WORKOUT_VIDEO_BUCKET).upload(path, file, {
-        contentType: normalizedType || "video/mp4",
-        upsert: false,
-      });
-      if (error) throw new Error(`העלאת סרטון נכשלה: ${error.message}`);
+      await uploadWorkoutPerformanceVideoAttempt(file, path, normalizedType, options.signal);
+      if (options.signal?.aborted) throw new Error("video upload timed out");
 
       return {
         path,
@@ -710,6 +760,9 @@ export async function uploadWorkoutPerformanceVideo(
       };
     } catch (error) {
       lastError = error;
+      if (options.signal?.aborted) {
+        throw new Error("video upload timed out");
+      }
       if (!isRetryableWorkoutVideoError(error) || attempt === WORKOUT_VIDEO_UPLOAD_ATTEMPTS) {
         throw error;
       }

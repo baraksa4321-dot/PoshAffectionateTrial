@@ -54,3 +54,14 @@ as a permanent playback failure misleads the trainee and can trigger unnecessary
 
 **How to apply:** Check the local blob state before requiring a stored path, keep the upload running,
 and reserve permanent playback messaging for a stored source that fails after URL refresh.
+
+The Supabase Storage client does not expose an abort signal on its regular browser upload method.
+For a serial video queue that must recover from a stalled request, use a signed upload URL with an
+AbortController in the browser path; otherwise a timeout only changes UI state while the old request
+can still occupy the connection.
+
+**Why:** Releasing the queue after a Promise.race timeout can start overlapping uploads if the
+underlying Storage request is still active, recreating the intermittent iPhone failures.
+
+**How to apply:** Start the timeout when the queued item begins, abort the signed PUT on expiry,
+then let the queue's rejection handler advance to the next item.
