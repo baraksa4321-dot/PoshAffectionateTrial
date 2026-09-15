@@ -38,6 +38,7 @@ import {
 import { genderText } from "@/lib/gender-copy";
 import { isSafeHttpUrl, isSafeVideoSource } from "@/lib/url-security";
 import { uploadExerciseLibraryImage, uploadExerciseLibraryVideo } from "@/lib/supabase-sync";
+import { compressWorkoutVideo, WorkoutVideoCompressionError } from "@/lib/video-compression";
 
 export const Route = createFileRoute("/exercises/$exerciseId")({
   head: () => ({
@@ -351,6 +352,9 @@ function ExerciseDetail() {
   const [uploadingVideoField, setUploadingVideoField] = useState<
     "videoMaleUrl" | "videoFemaleUrl" | null
   >(null);
+  const [compressingVideoField, setCompressingVideoField] = useState<
+    "videoMaleUrl" | "videoFemaleUrl" | null
+  >(null);
   const [saveError, setSaveError] = useState("");
   const [savingExercise, setSavingExercise] = useState(false);
 
@@ -452,17 +456,31 @@ function ExerciseDetail() {
     setVideoUploadErrorField(null);
     setUploadingVideoField(field);
     try {
-      const url = await uploadExerciseLibraryVideo(file, {
+      // Supabase may reject the resumable session itself when the source is
+      // larger than the project's effective file limit. Re-encode large
+      // iPhone videos locally before they reach Storage, just like
+      // performance videos in an active workout.
+      let uploadFile = file;
+      if (file.size > 45 * 1024 * 1024) {
+        setCompressingVideoField(field);
+        uploadFile = await compressWorkoutVideo(file);
+      }
+      const url = await uploadExerciseLibraryVideo(uploadFile, {
         gender: field === "videoMaleUrl" ? "male" : "female",
       });
       set({ [field]: url });
       setVideoUploadErrorField(null);
     } catch (error) {
       setVideoUploadError(
-        error instanceof Error ? error.message : "העלאת סרטון ההדגמה נכשלה.",
+        error instanceof WorkoutVideoCompressionError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : "העלאת סרטון ההדגמה נכשלה.",
       );
       setVideoUploadErrorField(field);
     } finally {
+      setCompressingVideoField(null);
       setUploadingVideoField(null);
     }
   };
@@ -775,14 +793,22 @@ function ExerciseDetail() {
                     <input
                       type="file"
                       accept="video/*"
-                      disabled={uploadingVideoField !== null}
+                      disabled={uploadingVideoField !== null || compressingVideoField !== null}
                       onChange={(event) => {
                         void addGenderVideo(event.target.files?.[0], videoField);
                         event.currentTarget.value = "";
                       }}
                       className="w-full text-[11px] file:me-2 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-primary-foreground disabled:opacity-60"
                     />
-                    {uploadingVideoField === videoField ? (
+                    {compressingVideoField === videoField ? (
+                      <p
+                        className="mt-2 text-[11px] font-semibold text-primary"
+                        role="status"
+                        aria-live="polite"
+                      >
+                        מכינה גרסת 720p קטנה יותר להעלאה מאובטחת...
+                      </p>
+                    ) : uploadingVideoField === videoField ? (
                       <p
                         className="mt-2 text-[11px] font-semibold text-primary"
                         role="status"

@@ -779,7 +779,10 @@ async function requestWorkoutVideoTranscode(
 }
 
 const WORKOUT_VIDEO_UPLOAD_ATTEMPTS = 5;
-const WORKOUT_VIDEO_UPLOAD_CHUNK_SIZE = 8 * 1024 * 1024;
+// Keep each PATCH below the effective proxy limit used by some mobile
+// networks and hosted Storage deployments. The resumable protocol still
+// handles the complete file; only the individual request is smaller.
+const WORKOUT_VIDEO_UPLOAD_CHUNK_SIZE = 6 * 1024 * 1024;
 
 function isRetryableWorkoutVideoError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error ?? "");
