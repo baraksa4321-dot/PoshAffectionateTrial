@@ -646,6 +646,22 @@ type UploadedWorkoutVideo = {
   path: string;
   signedUrl: string;
 };
+
+const WORKOUT_VIDEO_UPLOAD_ATTEMPTS = 3;
+
+function isRetryableWorkoutVideoError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return /load failed|failed to fetch|networkerror|network request failed|timeout|timed out|502|503|504/i.test(
+    message,
+  );
+}
+
+function waitBeforeWorkoutVideoRetry(attempt: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, 450 * attempt);
+  });
+}
+
 /**
  * Upload a trainee performance video before it is written into a workout
  * session. The database receives only the object path; the signed URL is
@@ -672,22 +688,34 @@ export async function uploadWorkoutPerformanceVideo(
     throw new Error("לא ניתן להעלות סרטון בלי חשבון מחובר");
   }
 
-  const objectId =
-    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const safeExtension = safeVideoExtension(file.name, normalizedType);
-  const path = `${user.id}/${metadata.workoutId}/${metadata.exerciseId}/${objectId}.${safeExtension}`;
-  const { error } = await supabase.storage.from(WORKOUT_VIDEO_BUCKET).upload(path, file, {
-    contentType: normalizedType || "video/mp4",
-    upsert: false,
-  });
-  if (error) throw new Error(`העלאת סרטון נכשלה: ${error.message}`);
+  let lastError: unknown = new Error("העלאת סרטון נכשלה.");
+  for (let attempt = 1; attempt <= WORKOUT_VIDEO_UPLOAD_ATTEMPTS; attempt += 1) {
+    const objectId =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const path = `${user.id}/${metadata.workoutId}/${metadata.exerciseId}/${objectId}.${safeExtension}`;
+    try {
+      const { error } = await supabase.storage.from(WORKOUT_VIDEO_BUCKET).upload(path, file, {
+        contentType: normalizedType || "video/mp4",
+        upsert: false,
+      });
+      if (error) throw new Error(`העלאת סרטון נכשלה: ${error.message}`);
 
-  return {
-    path,
-    signedUrl: await signWorkoutPerformanceVideo(path),
-  };
+      return {
+        path,
+        signedUrl: await signWorkoutPerformanceVideo(path),
+      };
+    } catch (error) {
+      lastError = error;
+      if (!isRetryableWorkoutVideoError(error) || attempt === WORKOUT_VIDEO_UPLOAD_ATTEMPTS) {
+        throw error;
+      }
+      await waitBeforeWorkoutVideoRetry(attempt);
+    }
+  }
+  throw lastError;
 }
 
 /**

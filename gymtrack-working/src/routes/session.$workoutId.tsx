@@ -237,6 +237,9 @@ function videoUploadErrorMessage(error: unknown) {
   if (/timeout|timed out|זמן רב מדי/i.test(message)) {
     return "העלאת הסרטון מתעכבת. האימון נשמר, ואפשר לנסות שוב מאוחר יותר.";
   }
+  if (/load failed|failed to fetch|networkerror|network request failed/i.test(message)) {
+    return "העלאת הסרטון נכשלה בגלל חיבור רשת זמני. האימון נשמר, ואפשר לנסות שוב.";
+  }
   return message || "העלאת סרטון הביצוע נכשלה";
 }
 
