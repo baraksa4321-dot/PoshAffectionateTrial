@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Dumbbell } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Dumbbell } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CardioTracker } from "@/components/CardioTracker";
 import { ChallengeLibrary } from "@/components/ChallengeLibrary";
 import { MusicAtmosphereButton } from "@/components/MusicAtmosphereButton";
 import { EmptyState } from "@/components/ui-app/primitives";
 import { useGym } from "@/lib/gym-store";
-import { getCurrentWeekDates } from "@/lib/workout-session";
+import { getCurrentWeekDates, localDateKey } from "@/lib/workout-session";
 
 export const Route = createFileRoute("/workouts/")({
   head: () => ({
@@ -19,8 +19,10 @@ export const Route = createFileRoute("/workouts/")({
 });
 
 function Workouts() {
-  const { workouts, challengeEnrollments, challenges, userProfile } = useGym();
+  const { workouts, cardioLogs, challengeEnrollments, challenges, userProfile } = useGym();
   const weekDays = getCurrentWeekDates();
+  const weekStartDate = weekDays[0]?.date ?? "";
+  const weekEndDate = weekDays[weekDays.length - 1]?.date ?? weekStartDate;
   const gender = userProfile?.gender;
   const activeEnrollments = (challengeEnrollments ?? []).filter((enrollment) => enrollment.active);
   const activeChallengeWorkoutIds = new Set(activeEnrollments.flatMap((enrollment) => enrollment.workoutIds));
@@ -37,6 +39,15 @@ function Workouts() {
     return a.weekday - b.weekday;
   });
   const isLegacyWeekdaySchedule = weeklyWorkouts.every((workout) => workout.weekday === undefined);
+  const completedCardioLogs = (cardioLogs ?? [])
+    .filter((log) => {
+      const date = localDateKey(`${log.date}T12:00:00`);
+      return (
+        date >= weekStartDate &&
+        date <= weekEndDate
+      );
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <AppShell
@@ -98,7 +109,43 @@ function Workouts() {
               );
             })}
           </div>
-        ) : (
+        ) : null}
+        {completedCardioLogs.length > 0 ? (
+          <div className="mt-3 space-y-2">
+            <p className="px-1 text-[10px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
+              אימונים שבוצעו השבוע
+            </p>
+            {completedCardioLogs.map((log) => (
+              <div
+                key={log.id}
+                className="surface-card flex items-center gap-3 border-primary/20 bg-primary/5 p-3 text-start"
+              >
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
+                  <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-primary">בוצע</span>
+                    <span className="text-[10px] font-semibold text-muted-foreground">
+                      {log.date === weekDays.find((day) => day.isToday)?.date
+                        ? "היום"
+                        : log.date}
+                    </span>
+                  </div>
+                  <p className="mt-1 truncate text-[14px] font-bold text-ink">
+                    אירובי · {log.type}
+                  </p>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">
+                    {log.durationMin} דקות
+                    {log.distanceKm ? ` · ${log.distanceKm} ק״מ` : ""}
+                    {log.calories > 0 ? ` · ${log.calories} קלוריות` : ""}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {weeklyWorkouts.length === 0 && completedCardioLogs.length === 0 ? (
           <EmptyState
             icon={Dumbbell}
             title="עדיין אין אימונים"
@@ -110,7 +157,7 @@ function Workouts() {
                   : "האימונים שלך יופיעו כאן לאחר שהמאמן יוסיף אותם."
             }
           />
-        )}
+        ) : null}
       </section>
     </AppShell>
   );

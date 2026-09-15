@@ -14,6 +14,11 @@ import { CARDIO_TYPES, type CardioLog } from "@/lib/gym-types";
 
 const DEFAULT_CARDIO_TYPE = CARDIO_TYPES[0] ?? "הליכה";
 
+function numericInputValue(value: string) {
+  const parsed = Number(value.trim().replace(",", "."));
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
+
 function cardioFieldVisibility(type: string) {
   const isTreadmill = type.includes("הליכון") || type.includes("Treadmill");
   const isRunning = type.includes("ריצה");
@@ -41,14 +46,17 @@ export function CardioTracker() {
   const [cardioError, setCardioError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const cardioDurationValue = Number(cardioDuration) || 0;
-  const cardioSpeedValue = Number(cardioSpeed) || 0;
-  const cardioInclineValue = Number(cardioIncline) || 0;
+  const cardioDurationValue = numericInputValue(cardioDuration);
+  const cardioSpeedValue = numericInputValue(cardioSpeed);
+  const cardioInclineValue = numericInputValue(cardioIncline);
   const cardioFields = cardioFieldVisibility(cardioType);
+  const profileWeight = Number(userProfile?.weight);
+  const calorieWeight =
+    Number.isFinite(profileWeight) && profileWeight > 0 ? profileWeight : 65;
   const cardioCalories = calculateCardioCalories(
     cardioType,
     cardioDurationValue,
-    userProfile?.weight ?? 0,
+    calorieWeight,
     cardioSpeedValue,
     cardioInclineValue,
   );
@@ -74,7 +82,9 @@ export function CardioTracker() {
       durationMin: cardioDurationValue,
       ...(cardioSpeedValue > 0 ? { speed: cardioSpeedValue } : {}),
       ...(cardioInclineValue > 0 ? { incline: cardioInclineValue } : {}),
-      ...(Number(cardioDistance) > 0 ? { distanceKm: Number(cardioDistance) } : {}),
+      ...(numericInputValue(cardioDistance) > 0
+        ? { distanceKm: numericInputValue(cardioDistance) }
+        : {}),
       calories: cardioCalories,
     };
 
