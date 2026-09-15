@@ -5909,6 +5909,23 @@ export function CoachDashboardPage({
     setFocusedExerciseId(requestedItem?.exerciseId ?? exerciseId ?? null);
     hydrateWorkoutItemEditor(requestedItem);
 
+    try {
+      window.sessionStorage.setItem(
+        "gymtrack-coach-plan-deep-link",
+        JSON.stringify({
+          clientId: targetClientId,
+          ...(program ? { programId: program.id } : {}),
+          dayId: resolvedWorkoutId,
+          ...(workout?.name ? { dayName: workout.name } : workoutName ? { dayName: workoutName } : {}),
+          ...(exerciseId ? { exerciseId } : {}),
+          ...(exerciseName ? { exerciseName } : {}),
+          createdAt: Date.now(),
+        }),
+      );
+    } catch {
+      // The in-memory state above still opens the editor when storage is unavailable.
+    }
+
     navigate({
       to: "/coach/clients/$clientId/program",
       params: { clientId: targetClientId },
