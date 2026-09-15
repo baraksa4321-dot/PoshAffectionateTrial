@@ -2089,6 +2089,15 @@ function Session() {
                       >
                         <ImagePlus className="h-3 w-3" />
                         <span>{entry.videoUrl || entry.videoPath ? "החלפה" : "סרטון"}</span>
+                        {entry.videoPath ? (
+                          <span
+                            title="הסרטון הועלה"
+                            aria-label="הסרטון הועלה"
+                            className="grid h-3.5 w-3.5 place-items-center rounded-full bg-emerald-500 text-white"
+                          >
+                            <Check className="h-2.5 w-2.5" strokeWidth={3} />
+                          </span>
+                        ) : null}
                         <input
                           type="file"
                           accept="video/*"
