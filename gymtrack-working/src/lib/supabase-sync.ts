@@ -663,6 +663,58 @@ function waitBeforeWorkoutVideoRetry(attempt: number): Promise<void> {
   });
 }
 
+function awaitWorkoutVideoRequest<T>(
+  request: Promise<T>,
+  signal: AbortSignal | undefined,
+): Promise<T> {
+  if (!signal) return request;
+  if (signal.aborted) return Promise.reject(new Error("video upload timed out"));
+
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => {
+      cleanup();
+      reject(new Error("video upload timed out"));
+    };
+    const cleanup = () => signal.removeEventListener("abort", onAbort);
+    signal.addEventListener("abort", onAbort, { once: true });
+    request.then(
+      (value) => {
+        cleanup();
+        resolve(value);
+      },
+      (error: unknown) => {
+        cleanup();
+        reject(error);
+      },
+    );
+  });
+}
+
+function waitBeforeWorkoutVideoRetryWithAbort(
+  attempt: number,
+  signal: AbortSignal | undefined,
+): Promise<void> {
+  const delayMs = Math.min(8_000, 1_000 * 2 ** (attempt - 1));
+  if (!signal) return waitBeforeWorkoutVideoRetry(attempt);
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, delayMs);
+    const onAbort = () => {
+      clearTimeout(timeoutId);
+      signal.removeEventListener("abort", onAbort);
+      reject(new Error("video upload timed out"));
+    };
+    if (signal.aborted) {
+      clearTimeout(timeoutId);
+      reject(new Error("video upload timed out"));
+      return;
+    }
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
 async function uploadWorkoutPerformanceVideoAttempt(
   file: File,
   path: string,
@@ -681,9 +733,10 @@ async function uploadWorkoutPerformanceVideoAttempt(
   // storage-js does not currently expose an AbortSignal on upload(). Use a
   // signed upload URL for the browser path so a stalled request can actually
   // be cancelled before the serial queue advances to the next video.
-  const { data: signedUpload, error: signedUploadError } = await supabase.storage
-    .from(WORKOUT_VIDEO_BUCKET)
-    .createSignedUploadUrl(path, { upsert: false });
+  const { data: signedUpload, error: signedUploadError } = await awaitWorkoutVideoRequest(
+    supabase.storage.from(WORKOUT_VIDEO_BUCKET).createSignedUploadUrl(path, { upsert: false }),
+    signal,
+  );
   if (signedUploadError || !signedUpload?.signedUrl) {
     throw new Error(
       `יצירת כתובת העלאה לסרטון נכשלה: ${signedUploadError?.message ?? "missing signed upload URL"}`,
@@ -734,7 +787,7 @@ export async function uploadWorkoutPerformanceVideo(
   const {
     data: { user },
     error: userError,
-  } = await supabase.auth.getUser();
+  } = await awaitWorkoutVideoRequest(supabase.auth.getUser(), options.signal);
   if (userError || !user) {
     throw new Error("לא ניתן להעלות סרטון בלי חשבון מחובר");
   }
@@ -756,7 +809,10 @@ export async function uploadWorkoutPerformanceVideo(
 
       return {
         path,
-        signedUrl: await signWorkoutPerformanceVideo(path),
+        signedUrl: await awaitWorkoutVideoRequest(
+          signWorkoutPerformanceVideo(path),
+          options.signal,
+        ),
       };
     } catch (error) {
       lastError = error;
@@ -766,7 +822,7 @@ export async function uploadWorkoutPerformanceVideo(
       if (!isRetryableWorkoutVideoError(error) || attempt === WORKOUT_VIDEO_UPLOAD_ATTEMPTS) {
         throw error;
       }
-      await waitBeforeWorkoutVideoRetry(attempt);
+      await waitBeforeWorkoutVideoRetryWithAbort(attempt, options.signal);
     }
   }
   throw lastError;

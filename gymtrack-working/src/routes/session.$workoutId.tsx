@@ -692,6 +692,9 @@ function Session() {
   const entriesRef = useRef(entries);
   const videoFilesRef = useRef(new Map<number, File>());
   const videoUploadVersionsRef = useRef(new Map<number, number>());
+  const videoUploadStatesRef = useRef(
+    new Map<number, { version: number; status: "uploading" | "failed" }>(),
+  );
   const videoUploadTasksRef = useRef(new Map<number, Promise<boolean>>());
   const videoUploadQueueRef = useRef(Promise.resolve());
   const videoPlaybackRefreshesRef = useRef(new Map<number, string>());
@@ -1300,6 +1303,10 @@ function Session() {
     const previousUrl = entriesRef.current[exerciseIndex]?.videoUrl;
     const uploadVersion = (videoUploadVersionsRef.current.get(exerciseIndex) ?? 0) + 1;
     videoUploadVersionsRef.current.set(exerciseIndex, uploadVersion);
+    videoUploadStatesRef.current.set(exerciseIndex, {
+      version: uploadVersion,
+      status: "uploading",
+    });
     if (previousUrl?.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
     videoFilesRef.current.set(exerciseIndex, file);
     videoPlaybackRefreshesRef.current.delete(exerciseIndex);
@@ -1347,6 +1354,7 @@ function Session() {
     const uploadTask = upload
       .then(({ signedUrl, path }) => {
         if (videoUploadVersionsRef.current.get(exerciseIndex) !== uploadVersion) return true;
+        videoUploadStatesRef.current.delete(exerciseIndex);
         const entriesWithUploadedVideo = entriesRef.current.map((entry, index) => {
           if (index !== exerciseIndex || entry.videoUrl !== nextUrl) return entry;
           return { ...entry, videoPath: path, videoUrl: signedUrl };
@@ -1379,6 +1387,10 @@ function Session() {
       })
       .catch((error: unknown) => {
         if (videoUploadVersionsRef.current.get(exerciseIndex) !== uploadVersion) return false;
+        videoUploadStatesRef.current.set(exerciseIndex, {
+          version: uploadVersion,
+          status: "failed",
+        });
         setVideoUploadErrorExerciseIndex(exerciseIndex);
         setVideoUploadError(videoUploadErrorMessage(error));
         return false;
@@ -1404,6 +1416,13 @@ function Session() {
     const path = entry?.videoPath;
     const currentUrl = entry?.videoUrl;
     if (currentUrl?.startsWith("blob:")) {
+      const uploadState = videoUploadStatesRef.current.get(exerciseIndex);
+      if (uploadState?.status !== "uploading") {
+        if (videoUploadErrorExerciseIndexRef.current === exerciseIndex && videoUploadError) return;
+        setVideoUploadErrorExerciseIndex(exerciseIndex);
+        setVideoUploadError("העלאת הסרטון נכשלה. אפשר לנסות שוב.");
+        return;
+      }
       setVideoUploadErrorExerciseIndex(exerciseIndex);
       setVideoUploadError("הסרטון עדיין עולה. נסי שוב בעוד רגע.");
       return;
