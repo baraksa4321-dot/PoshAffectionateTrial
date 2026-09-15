@@ -1208,7 +1208,7 @@ function WorkoutReviewExerciseCard({
                       <Video className="h-3.5 w-3.5" /> סרטון ביצוע
                     </p>
                     <WorkoutVideoPlayer
-                      source={entry.videoUrl ?? ""}
+                      source={videoUrl ?? ""}
                       videoPath={entry.videoPath}
                       title={`סרטון ביצוע עבור ${title}`}
                       className="max-h-64 w-full rounded-lg bg-black object-contain"
@@ -1911,7 +1911,15 @@ function WorkoutDailyReport({
                       entry.exerciseName.trim().toLocaleLowerCase(),
                   )
                 : undefined);
-            const additionalVideoUrl = entry.videoUrl;
+            const additionalVideoUrl =
+              entry.videoUrl &&
+              !entry.videoUrl.startsWith("blob:") &&
+              isSafeVideoSource(entry.videoUrl)
+                ? entry.videoUrl
+                : undefined;
+            const hasAdditionalPerformanceVideo = Boolean(
+              additionalVideoUrl || entry.videoPath,
+            );
             return (
               <div
                 key={`additional-${sessionId}-${entry.exerciseId}-${index}`}
@@ -1940,15 +1948,13 @@ function WorkoutDailyReport({
                     <strong>הערה:</strong> {entry.notes.trim()}
                   </p>
                 ) : null}
-                {additionalVideoUrl &&
-                isSafeVideoSource(additionalVideoUrl) &&
-                !additionalVideoUrl.startsWith("blob:") ? (
+                {hasAdditionalPerformanceVideo ? (
                   <div className="mt-2 rounded-xl border border-slate-200 bg-slate-950 p-1.5">
                     <p className="px-1.5 pb-1.5 text-start text-[10px] font-bold text-white">
                       סרטון ביצוע
                     </p>
                     <WorkoutVideoPlayer
-                      source={additionalVideoUrl}
+                      source={additionalVideoUrl ?? ""}
                       videoPath={entry.videoPath}
                       title={`סרטון ביצוע עבור ${entry.exerciseName || "תרגיל"}`}
                       className="max-h-60 w-full rounded-lg bg-black object-contain"

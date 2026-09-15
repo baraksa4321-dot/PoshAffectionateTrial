@@ -1384,6 +1384,12 @@ function Session() {
           setVideoUploadError("");
           setVideoUploadErrorExerciseIndex(null);
         }
+        setVideoPlaybackErrorIndexes((current) => {
+          if (!current.has(exerciseIndex)) return current;
+          const next = new Set(current);
+          next.delete(exerciseIndex);
+          return next;
+        });
         void removeWorkoutVideoDraft(sessionOwnerId, workout.id, exerciseIndex);
         const finishedSession = finishedSessionRef.current;
         if (finishedSession) {
@@ -1424,25 +1430,32 @@ function Session() {
   };
 
   const handlePerformanceVideoError = (exerciseIndex: number, mediaErrorCode?: number) => {
+    const entry = entriesRef.current[exerciseIndex];
+    const path = entry?.videoPath;
+    const currentUrl = entry?.videoUrl;
+    const uploadState = videoUploadStatesRef.current.get(exerciseIndex);
+    // iOS Safari can reject a local blob preview while the upload itself is
+    // healthy (most commonly with HEVC recordings). Do not turn that
+    // transient preview limitation into a red upload error or a retry state.
+    if (currentUrl?.startsWith("blob:") && uploadState?.status === "uploading") {
+      setVideoPlaybackErrorIndexes((current) => {
+        if (current.has(exerciseIndex)) return current;
+        const next = new Set(current);
+        next.add(exerciseIndex);
+        return next;
+      });
+      return;
+    }
     setVideoPlaybackErrorIndexes((current) => {
       if (current.has(exerciseIndex)) return current;
       const next = new Set(current);
       next.add(exerciseIndex);
       return next;
     });
-    const entry = entriesRef.current[exerciseIndex];
-    const path = entry?.videoPath;
-    const currentUrl = entry?.videoUrl;
     if (currentUrl?.startsWith("blob:")) {
-      const uploadState = videoUploadStatesRef.current.get(exerciseIndex);
-      if (uploadState?.status !== "uploading") {
-        if (videoUploadErrorExerciseIndexRef.current === exerciseIndex && videoUploadError) return;
-        setVideoUploadErrorExerciseIndex(exerciseIndex);
-        setVideoUploadError("העלאת הסרטון נכשלה. אפשר לנסות שוב.");
-        return;
-      }
+      if (videoUploadErrorExerciseIndexRef.current === exerciseIndex && videoUploadError) return;
       setVideoUploadErrorExerciseIndex(exerciseIndex);
-      setVideoUploadError("הסרטון עדיין עולה. נסי שוב בעוד רגע.");
+      setVideoUploadError("העלאת הסרטון נכשלה. אפשר לנסות שוב.");
       return;
     }
     if (!path) {
@@ -1598,13 +1611,20 @@ function Session() {
     if (allSetsCompleted) {
       setShowCompletionConfetti(true);
     }
-    if (summaryNavigationTimerRef.current !== null) {
-      window.clearTimeout(summaryNavigationTimerRef.current);
-    }
-    summaryNavigationTimerRef.current = window.setTimeout(() => {
-      setShowSummaryModal(false);
-       navigate({ to: "/workouts" });
-    }, 3200);
+    // Keep the summary visible while selected videos finish uploading. The
+    // workout is already saved locally and completion is not blocked, but
+    // navigating away here used to unmount the only code that could attach
+    // the uploaded paths to the finished session.
+    const pendingVideoUploads = Array.from(videoUploadTasksRef.current.values());
+    void Promise.all(pendingVideoUploads).then(() => {
+      if (summaryNavigationTimerRef.current !== null) {
+        window.clearTimeout(summaryNavigationTimerRef.current);
+      }
+      summaryNavigationTimerRef.current = window.setTimeout(() => {
+        setShowSummaryModal(false);
+        navigate({ to: "/workouts" });
+      }, 3200);
+    });
   };
 
   const progress = totalSets ? (doneSets / totalSets) * 100 : 0;
@@ -2058,7 +2078,7 @@ function Session() {
                   placeholder="כאב, אי־נוחות או הערה למאמנת..."
                   className="mt-2 min-h-14 w-full rounded-xl border border-border/60 bg-white p-2 text-[11px] text-ink outline-none focus:border-primary"
                 />
-                {entry.videoUrl ? (
+                {entry.videoUrl && !(hasPlaybackError && entry.videoUrl.startsWith("blob:")) ? (
                   <video
                     key={`${entry.videoPath ?? ""}:${entry.videoUrl}`}
                     className="mt-2 max-h-52 w-full rounded-xl bg-black object-contain"
@@ -2080,6 +2100,14 @@ function Session() {
                       handlePerformanceVideoError(ei, event.currentTarget.error?.code)
                     }
                   />
+                ) : null}
+                {entry.videoUrl?.startsWith("blob:") &&
+                videoUploadsInFlight > 0 &&
+                hasPlaybackError &&
+                !(videoUploadErrorExerciseIndex === ei && videoUploadError) ? (
+                  <p className="mt-2 rounded-xl bg-primary/5 px-2.5 py-1.5 text-[11px] font-semibold text-primary">
+                    הסרטון נבחר ומועלה ברקע. לאחר סיום ההעלאה הוא ייטען מחדש לצפייה.
+                  </p>
                 ) : null}
                 {videoUploadError && videoUploadErrorExerciseIndex === ei ? (
                   <div className="mt-2 flex flex-col items-stretch gap-2 rounded-lg bg-rose-50 px-2 py-1.5">

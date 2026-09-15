@@ -76,6 +76,15 @@ blob URL remains in the entry until the trainee retries or replaces it.
 **How to apply:** Track upload status by exercise and version, clear it on success, mark it failed
 in the upload catch path, and gate the blob playback message on the active status.
 
+After workout completion, any automatic summary navigation must wait for the current upload tasks
+to settle; completion itself should still be immediate.
+
+**Why:** Leaving the session after a short fixed delay can unmount the code that merges the final
+Storage path into the saved session, especially when iOS moves Safari into the background.
+
+**How to apply:** Capture the current upload promises when the session is saved, keep the summary
+open until they resolve, and let the existing retry state handle tasks that settle unsuccessfully.
+
 Manual retry must abort the current upload for that exercise before enqueueing its replacement.
 
 **Why:** Retrying while the old request is stuck otherwise places the replacement behind the same
