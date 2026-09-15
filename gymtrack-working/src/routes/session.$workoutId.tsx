@@ -1408,6 +1408,16 @@ function Session() {
       selectPerformanceVideo(exerciseIndex, file);
       return;
     }
+    const storedPath = entriesRef.current[exerciseIndex]?.videoPath;
+    if (storedPath) {
+      // The upload already succeeded, so retry the same Storage object instead
+      // of asking the trainee to choose the file again.
+      videoPlaybackRefreshesRef.current.delete(exerciseIndex);
+      setVideoUploadErrorExerciseIndex(exerciseIndex);
+      setVideoUploadError("מנסה לטעון מחדש את אותו הסרטון...");
+      handlePerformanceVideoError(exerciseIndex);
+      return;
+    }
     if (!sessionOwnerId) return;
     void loadWorkoutVideoDrafts(sessionOwnerId, workout.id).then((drafts) => {
       const draft = drafts.find((item) => item.exerciseIndex === exerciseIndex);
@@ -1956,6 +1966,7 @@ function Session() {
                     playsInline
                     preload="metadata"
                     aria-label={`סרטון ביצוע ${entry.exerciseName}`}
+                    onLoadedData={() => videoPlaybackRefreshesRef.current.delete(ei)}
                     onError={() => handlePerformanceVideoError(ei)}
                   />
                 ) : null}
@@ -1967,7 +1978,7 @@ function Session() {
                       onClick={() => retryPerformanceVideo(ei)}
                       className="shrink-0 rounded-md bg-white px-2 py-1 text-[10px] font-bold text-primary"
                     >
-                      נסי שוב
+                      נסי שוב את אותו הסרטון
                     </button>
                   </div>
                 ) : null}
