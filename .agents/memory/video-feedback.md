@@ -18,3 +18,12 @@ so a multi-video workout could reach the coach with only a subset of its videos.
 
 **How to apply:** Track each active upload promise, await them from the completion action, and
 stop with an actionable error when any upload fails.
+
+Playback failures after a successful upload should retry the existing Storage path and refresh its
+signed URL before asking the trainee to select the file again.
+
+**Why:** A signed URL can expire or fail independently of the uploaded object; requiring a new
+file selection creates an unnecessary recovery path and can make a valid video appear lost.
+
+**How to apply:** Keep the stored video path as the stable identity, refresh the signed URL on
+playback error, and make the visible retry action reuse that path when no local file remains.
