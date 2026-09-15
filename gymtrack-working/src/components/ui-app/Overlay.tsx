@@ -215,6 +215,7 @@ export function Overlay({
   const isBottom = variant === "bottom";
   const isTop = variant === "top";
   const isFull = variant === "full";
+  const keyboardOpen = keyboardOffset > 0;
   const panelBottomGap = isFull ? 0 : isBottom ? 16 : 32;
   const panelTopGap = safeTop ? "max(3rem, env(safe-area-inset-top))" : "0px";
   const panelMaxHeight =
@@ -254,9 +255,17 @@ export function Overlay({
               ? "items-end justify-center"
               : isTop
                 ? "items-start justify-center"
-                : "items-center justify-center"
+                : keyboardOpen
+                  ? "items-start justify-center"
+                  : "items-center justify-center"
       } ${isFull ? "bg-background p-0" : backdrop ? "bg-foreground/40 p-4" : "bg-transparent p-4"} ${className}`}
-      style={safeTop ? { paddingTop: panelTopGap } : undefined}
+      style={
+        safeTop
+          ? { paddingTop: panelTopGap }
+          : keyboardOpen && !isBottom && !isFull
+            ? { paddingTop: "max(0.5rem, env(safe-area-inset-top))" }
+            : undefined
+      }
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}

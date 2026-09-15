@@ -5887,6 +5887,9 @@ body {
 
 .session-compact .session-exercise-list {
   min-height: max-content;
+  /* Adding a local video frame must not make iOS re-anchor the page to an
+     empty area below the exercise cards while the upload is still running. */
+  overflow-anchor: none;
 }
 
 .session-compact .session-finish-action {

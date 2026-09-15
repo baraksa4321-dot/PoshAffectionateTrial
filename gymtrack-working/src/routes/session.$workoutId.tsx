@@ -2675,7 +2675,7 @@ function Session() {
             <div
               className="fixed z-[60]"
               style={{
-                bottom: "calc(5.5rem + env(safe-area-inset-bottom))",
+                bottom: "calc(7rem + env(safe-area-inset-bottom))",
                 right: "max(1rem, env(safe-area-inset-right))",
               }}
             >
