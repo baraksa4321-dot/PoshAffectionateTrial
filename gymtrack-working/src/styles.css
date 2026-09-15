@@ -9379,9 +9379,9 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
 }
 
 .app-auth-shell .app-home-utility-row .dashboard-header-summary {
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  text-align: center;
+  text-align: right;
   transform: none;
 }
 
