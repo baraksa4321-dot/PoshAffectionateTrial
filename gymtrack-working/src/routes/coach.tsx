@@ -945,10 +945,18 @@ function useCoachVideoFeedbackList(videoFeedbacks: VideoFeedback[]) {
     [],
   );
 
-  const addLocalFeedback = (feedback: VideoFeedback) => {
-    setLocalFeedbacks((current) => [feedback, ...current.filter((item) => item.id !== feedback.id)]);
-    scheduleFeedbackHide(feedback);
-  };
+  const addLocalFeedback = useCallback(
+    (feedback: VideoFeedback) => {
+      setLocalFeedbacks((current) => [
+        feedback,
+        ...current.filter((item) => item.id !== feedback.id),
+      ]);
+      // The record is already saved remotely. Hide it immediately in the
+      // coach's local view without changing what the trainee can see.
+      hideFeedback(feedback.id);
+    },
+    [hideFeedback],
+  );
 
   return {
     visibleFeedbacks: localFeedbacks.filter((feedback) => !hiddenFeedbackIds.has(feedback.id)),
