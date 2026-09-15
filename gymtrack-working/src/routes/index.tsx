@@ -874,7 +874,7 @@ function Dashboard() {
               onClick={() => setShowChecklistModal(true)}
               aria-label="פתיחת צ׳קליסט לאימון"
               title="צ׳קליסט לאימון"
-              className="bodyweight-header-toggle press inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2 py-1.5 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10"
+              className="bodyweight-header-toggle press inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2 py-1.5 text-[12px] font-bold text-primary transition-colors hover:bg-primary/10"
             >
               <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
               צ׳קליסט
@@ -884,7 +884,7 @@ function Dashboard() {
               onClick={() => setShowWeighInModal(true)}
               aria-label="פתיחת שקילה שבועית"
               title="שקילה שבועית"
-              className="bodyweight-header-toggle press inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2 py-1.5 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10"
+              className="bodyweight-header-toggle press inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2 py-1.5 text-[12px] font-bold text-primary transition-colors hover:bg-primary/10"
             >
               <Scale className="h-3.5 w-3.5" aria-hidden="true" />
               שקילה
@@ -899,7 +899,7 @@ function Dashboard() {
               }
               title="משובים מהמאמן"
               data-testid="video-feedback-home-button"
-              className="bodyweight-header-toggle press relative inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2 py-1.5 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10"
+              className="bodyweight-header-toggle press relative inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-xl border border-primary/25 bg-primary/5 px-2 py-1.5 text-[12px] font-bold text-primary transition-colors hover:bg-primary/10"
             >
               <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
               משובים
