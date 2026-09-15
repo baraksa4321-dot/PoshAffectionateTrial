@@ -9493,7 +9493,8 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   box-shadow: 0 3px 8px rgb(var(--shadow-color) / 8%);
 }
 
-.app-auth-shell.nutrition-page .app-topbar__heading {
+.app-auth-shell.nutrition-page .app-topbar__heading,
+.app-auth-shell.workouts-page .app-topbar__heading {
   margin-top: -2.25rem !important;
   transform: none !important;
 }
