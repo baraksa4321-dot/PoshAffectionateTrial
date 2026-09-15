@@ -106,6 +106,8 @@ function makeQuery(table: string) {
 }
 
 mock.module("./supabase", () => ({
+  supabaseUrl: "https://project.supabase.co",
+  supabaseAnonKey: "test-anon-key",
   supabase: {
     auth: {
       getUser: async () => ({
@@ -114,6 +116,13 @@ mock.module("./supabase", () => ({
             id: "client-b",
             email: "client-b@example.com",
             user_metadata: {},
+          },
+        },
+      }),
+      getSession: async () => ({
+        data: {
+          session: {
+            access_token: "test-access-token",
           },
         },
       }),
@@ -1095,8 +1104,10 @@ describe("cross-browser Supabase sync boundaries", () => {
   test("aborts a stalled browser video upload instead of leaving its promise pending", async () => {
     const { uploadWorkoutPerformanceVideo } = await syncModule;
     const originalFetch = globalThis.fetch;
+    let resumableUploadStarted = false;
     globalThis.fetch = ((_: RequestInfo | URL, init?: RequestInit) =>
       new Promise<Response>((_, reject) => {
+        resumableUploadStarted = true;
         init?.signal?.addEventListener(
           "abort",
           () => reject(new DOMException("The operation was aborted.", "AbortError")),
@@ -1112,12 +1123,7 @@ describe("cross-browser Supabase sync boundaries", () => {
         { signal: controller.signal },
       );
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
-      expect(storageCalls).toContainEqual(
-        expect.objectContaining({
-          bucket: "workout-videos",
-          action: "createSignedUploadUrl",
-        }),
-      );
+      expect(resumableUploadStarted).toBe(true);
       controller.abort();
 
       await expect(upload).rejects.toThrow("video upload timed out");

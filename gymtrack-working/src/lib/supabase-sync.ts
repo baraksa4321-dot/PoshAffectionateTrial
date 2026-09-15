@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { supabase, supabaseAnonKey, supabaseUrl } from "./supabase";
 import {
   type ClientLink,
   type CardioLog,
@@ -573,8 +573,6 @@ function servingGramsFromLabel(servingSize: string) {
 const WORKOUT_VIDEO_BUCKET = "workout-videos";
 const EXERCISE_IMAGE_BUCKET = "exercise-images";
 const MAX_WORKOUT_VIDEO_BYTES = 1024 * 1024 * 1024;
-const RESUMABLE_VIDEO_THRESHOLD_BYTES = 6 * 1024 * 1024;
-const RESUMABLE_VIDEO_CHUNK_BYTES = 6 * 1024 * 1024;
 
 const WORKOUT_VIDEO_SIGNED_URL_TTL_SECONDS = 10 * 60;
 function safeVideoExtension(fileName: string, contentType: string) {
@@ -652,6 +650,20 @@ type UploadedWorkoutVideo = {
   transcodeError?: string;
 };
 
+export type WorkoutVideoUploadCheckpoint = {
+  path: string;
+  uploadUrl: string;
+  offset: number;
+  size: number;
+  contentType: string;
+};
+
+export type WorkoutVideoUploadOptions = {
+  signal?: AbortSignal;
+  resume?: WorkoutVideoUploadCheckpoint;
+  onCheckpoint?: (checkpoint: WorkoutVideoUploadCheckpoint) => void | Promise<void>;
+};
+
 type WorkoutVideoTranscodeResponse = {
   status: "not-needed" | "ready" | "failed";
   sourcePath: string;
@@ -697,6 +709,7 @@ async function requestWorkoutVideoTranscode(
 }
 
 const WORKOUT_VIDEO_UPLOAD_ATTEMPTS = 5;
+const WORKOUT_VIDEO_UPLOAD_CHUNK_SIZE = 8 * 1024 * 1024;
 
 function isRetryableWorkoutVideoError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error ?? "");
@@ -769,6 +782,8 @@ async function uploadWorkoutPerformanceVideoAttempt(
   path: string,
   normalizedType: string,
   signal?: AbortSignal,
+  checkpoint?: WorkoutVideoUploadCheckpoint,
+  onCheckpoint?: (checkpoint: WorkoutVideoUploadCheckpoint) => void | Promise<void>,
 ): Promise<void> {
   if (!signal) {
     const { error } = await supabase.storage.from(WORKOUT_VIDEO_BUCKET).upload(path, file, {
@@ -779,161 +794,159 @@ async function uploadWorkoutPerformanceVideoAttempt(
     return;
   }
 
-  // storage-js does not currently expose an AbortSignal on upload(). Use a
-  // signed upload URL for the browser path so a stalled request can actually
-  // be cancelled before the serial queue advances to the next video.
-  const { data: signedUpload, error: signedUploadError } = await awaitWorkoutVideoRequest(
-    supabase.storage.from(WORKOUT_VIDEO_BUCKET).createSignedUploadUrl(path, { upsert: false }),
-    signal,
-  );
-  if (signedUploadError || !signedUpload?.signedUrl) {
-    throw new Error(
-      `יצירת כתובת העלאה לסרטון נכשלה: ${signedUploadError?.message ?? "missing signed upload URL"}`,
+  const {
+    data: { session },
+  } = await awaitWorkoutVideoRequest(supabase.auth.getSession(), signal);
+  if (!session?.access_token) throw new Error("לא ניתן להעלות סרטון בלי חשבון מחובר");
+
+  const headers = {
+    Authorization: `Bearer ${session.access_token}`,
+    apikey: supabaseAnonKey,
+  };
+  const endpoint = workoutVideoResumableEndpoint();
+  let current = checkpoint;
+  if (
+    !current ||
+    current.path !== path ||
+    current.size !== file.size ||
+    current.contentType !== normalizedType
+  ) {
+    current = await createWorkoutVideoUploadSession(
+      endpoint,
+      path,
+      file,
+      normalizedType,
+      headers,
+      signal,
     );
+    await onCheckpoint?.(current);
+  } else {
+    const offset = await readWorkoutVideoUploadOffset(current.uploadUrl, headers, signal);
+    current = { ...current, offset };
+    await onCheckpoint?.(current);
   }
 
-  const body = new FormData();
-  body.append("cacheControl", "3600");
-  body.append("", file);
-  const response = await fetch(signedUpload.signedUrl, {
-    method: "PUT",
-    headers: { "x-upsert": "false" },
-    body,
-    signal,
-  });
-  if (response.ok) return;
+  while (current.offset < file.size) {
+    if (signal.aborted) throw new Error("video upload timed out");
+    const chunkStart = current.offset;
+    const chunkEnd = Math.min(file.size, chunkStart + WORKOUT_VIDEO_UPLOAD_CHUNK_SIZE);
+    let uploaded = false;
+    let lastError: unknown = new Error("העלאת סרטון נכשלה.");
 
-  let detail = `HTTP ${response.status}`;
-  try {
-    const payload = (await response.json()) as { message?: unknown; error?: unknown };
-    const message = payload.message ?? payload.error;
-    if (typeof message === "string" && message.trim()) detail = message;
-  } catch {
-    // Keep the HTTP status when the storage endpoint does not return JSON.
+    for (let attempt = 1; attempt <= WORKOUT_VIDEO_UPLOAD_ATTEMPTS; attempt += 1) {
+      try {
+        const response: Response = await fetch(current.uploadUrl, {
+          method: "PATCH",
+          headers: {
+            ...headers,
+            "Tus-Resumable": "1.0.0",
+            "Upload-Offset": String(chunkStart),
+            "Content-Type": "application/offset+octet-stream",
+          },
+          body: file.slice(chunkStart, chunkEnd),
+          signal,
+        });
+        if (response.ok) {
+          const responseOffset: number = Number(response.headers.get("Upload-Offset"));
+          const offset: number =
+            Number.isFinite(responseOffset) && responseOffset >= chunkStart
+              ? Math.min(responseOffset, file.size)
+              : chunkEnd;
+          current = { ...current, offset };
+          await onCheckpoint?.(current);
+          uploaded = true;
+          break;
+        }
+        if (response.status === 409 || response.status === 412) {
+          const offset = await readWorkoutVideoUploadOffset(current.uploadUrl, headers, signal);
+          current = { ...current, offset };
+          await onCheckpoint?.(current);
+          uploaded = true;
+          break;
+        }
+        lastError = new Error(`העלאת סרטון נכשלה: HTTP ${response.status}`);
+      } catch (error) {
+        lastError = error;
+        if (signal.aborted) throw new Error("video upload timed out");
+      }
+      if (attempt < WORKOUT_VIDEO_UPLOAD_ATTEMPTS) {
+        await waitBeforeWorkoutVideoRetryWithAbort(attempt, signal);
+      }
+    }
+
+    if (!uploaded) throw lastError;
   }
-  throw new Error(`העלאת סרטון נכשלה: ${detail}`);
 }
 
-function resumableStorageEndpoint() {
-  const configuredUrl = String(import.meta.env["VITE_SUPABASE_URL"] ?? "")
-    .replace(/\/rest\/v1\/?$/, "")
-    .replace(/\/+$/, "");
-  if (!configuredUrl) throw new Error("חיבור אחסון הווידאו עדיין לא הוגדר.");
-  const url = new URL(configuredUrl);
+function workoutVideoResumableEndpoint(): string {
+  if (!supabaseUrl) throw new Error("לא ניתן להתחבר לאחסון הסרטונים.");
+  const url = new URL(supabaseUrl);
   if (url.hostname.endsWith(".supabase.co")) {
     url.hostname = url.hostname.replace(/\.supabase\.co$/, ".storage.supabase.co");
   }
   return `${url.origin}/storage/v1/upload/resumable`;
 }
 
-function encodeTusMetadata(value: string) {
-  return typeof btoa === "function"
-    ? btoa(value)
-    : Buffer.from(value, "utf8").toString("base64");
+function base64Metadata(value: string): string {
+  if (typeof btoa === "function") return btoa(value);
+  throw new Error("הדפדפן אינו תומך בהעלאת סרטונים בחלקים.");
 }
 
-async function readStorageError(response: Response) {
-  let detail = `HTTP ${response.status}`;
-  try {
-    const body = await response.text();
-    if (body.trim()) detail = body.slice(0, 300);
-  } catch {
-    // Keep the HTTP status when the endpoint does not return a readable body.
-  }
-  return detail;
-}
-
-async function uploadWorkoutPerformanceVideoResumable(
-  file: File,
+async function createWorkoutVideoUploadSession(
+  endpoint: string,
   path: string,
+  file: File,
   normalizedType: string,
-  signal?: AbortSignal,
-): Promise<void> {
-  const {
-    data: { session },
-    error: sessionError,
-  } = await awaitWorkoutVideoRequest(supabase.auth.getSession(), signal);
-  if (sessionError || !session?.access_token) {
-    throw new Error("לא ניתן להעלות סרטון בלי חשבון מחובר");
-  }
-
-  const endpoint = resumableStorageEndpoint();
-  const metadata = [
-    `bucketName ${encodeTusMetadata(WORKOUT_VIDEO_BUCKET)}`,
-    `objectName ${encodeTusMetadata(path)}`,
-    `contentType ${encodeTusMetadata(normalizedType || "video/mp4")}`,
-    `cacheControl ${encodeTusMetadata("3600")}`,
-  ].join(",");
-  const createResponse = await fetch(endpoint, {
+  headers: Record<string, string>,
+  signal: AbortSignal,
+): Promise<WorkoutVideoUploadCheckpoint> {
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
-      authorization: `Bearer ${session.access_token}`,
-      "tus-resumable": "1.0.0",
-      "upload-length": String(file.size),
-      "upload-metadata": metadata,
-      "x-upsert": "false",
+      ...headers,
+      "Tus-Resumable": "1.0.0",
+      "Upload-Length": String(file.size),
+      "Upload-Metadata": [
+        `bucketName ${base64Metadata(WORKOUT_VIDEO_BUCKET)}`,
+        `objectName ${base64Metadata(path)}`,
+        `contentType ${base64Metadata(normalizedType || "video/mp4")}`,
+        `cacheControl ${base64Metadata("3600")}`,
+      ].join(","),
     },
-    ...(signal ? { signal } : {}),
+    signal,
   });
-  if (!createResponse.ok) {
-    throw new Error(`העלאת סרטון נכשלה: ${await readStorageError(createResponse)}`);
+  if (!response.ok) {
+    throw new Error(`יצירת העלאה לסרטון נכשלה: HTTP ${response.status}`);
   }
-  const locationHeader = createResponse.headers.get("location");
-  if (!locationHeader) throw new Error("העלאת סרטון נכשלה: חסרה כתובת העלאה מחולקת.");
-  const uploadUrl = new URL(locationHeader, endpoint).toString();
+  const location = response.headers.get("Location");
+  if (!location) throw new Error("שירות האחסון לא החזיר סשן העלאה.");
+  return {
+    path,
+    uploadUrl: new URL(location, endpoint).toString(),
+    offset: Number(response.headers.get("Upload-Offset") ?? 0),
+    size: file.size,
+    contentType: normalizedType,
+  };
+}
 
-  let offset = 0;
-  while (offset < file.size) {
-    if (signal?.aborted) throw new Error("video upload timed out");
-    const chunk = file.slice(offset, Math.min(offset + RESUMABLE_VIDEO_CHUNK_BYTES, file.size));
-    let chunkUploaded = false;
-
-    for (let attempt = 1; attempt <= 5 && !chunkUploaded; attempt += 1) {
-      try {
-        const response = await fetch(uploadUrl, {
-          method: "PATCH",
-          headers: {
-            authorization: `Bearer ${session.access_token}`,
-            "tus-resumable": "1.0.0",
-            "upload-offset": String(offset),
-            "content-type": "application/offset+octet-stream",
-          },
-          body: chunk,
-          ...(signal ? { signal } : {}),
-        });
-        if (response.ok) {
-          const nextOffset = Number(response.headers.get("upload-offset"));
-          offset = Number.isFinite(nextOffset) && nextOffset > offset
-            ? nextOffset
-            : offset + chunk.size;
-          chunkUploaded = true;
-          continue;
-        }
-        if (response.status === 409) {
-          const headResponse = await fetch(uploadUrl, {
-            method: "HEAD",
-            headers: {
-              authorization: `Bearer ${session.access_token}`,
-              "tus-resumable": "1.0.0",
-            },
-            ...(signal ? { signal } : {}),
-          });
-          const serverOffset = Number(headResponse.headers.get("upload-offset"));
-          if (headResponse.ok && Number.isFinite(serverOffset) && serverOffset > offset) {
-            offset = serverOffset;
-            chunkUploaded = true;
-            continue;
-          }
-        }
-        throw new Error(`העלאת סרטון נכשלה: ${await readStorageError(response)}`);
-      } catch (error) {
-        if (signal?.aborted) throw new Error("video upload timed out");
-        if (attempt === 5) throw error;
-        await waitBeforeWorkoutVideoRetryWithAbort(attempt, signal);
-      }
-    }
-    if (!chunkUploaded) throw new Error("העלאת סרטון נכשלה: לא ניתן היה להעלות את החלק הבא.");
+async function readWorkoutVideoUploadOffset(
+  uploadUrl: string,
+  headers: Record<string, string>,
+  signal: AbortSignal,
+): Promise<number> {
+  const response = await fetch(uploadUrl, {
+    method: "HEAD",
+    headers: { ...headers, "Tus-Resumable": "1.0.0" },
+    signal,
+  });
+  if (!response.ok) {
+    throw new Error(`סשן העלאת הסרטון אינו זמין (${response.status}).`);
   }
+  const offset = Number(response.headers.get("Upload-Offset") ?? 0);
+  if (!Number.isFinite(offset) || offset < 0) {
+    throw new Error("שירות האחסון החזיר נקודת המשך לא תקינה.");
+  }
+  return offset;
 }
 
 /**
@@ -944,7 +957,7 @@ async function uploadWorkoutPerformanceVideoResumable(
 export async function uploadWorkoutPerformanceVideo(
   file: File,
   metadata: { workoutId: string; exerciseId: string },
-  options: { signal?: AbortSignal } = {},
+  options: WorkoutVideoUploadOptions = {},
 ): Promise<UploadedWorkoutVideo> {
   const normalizedType = file.type.trim().toLowerCase();
   const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
@@ -966,22 +979,32 @@ export async function uploadWorkoutPerformanceVideo(
   const safeExtension = safeVideoExtension(file.name, normalizedType);
   const locallyCompressedMp4 =
     normalizedType.startsWith("video/mp4") && file.name.toLowerCase().endsWith("-720p.mp4");
+  let checkpoint =
+    options.resume && options.resume.path.startsWith(`${user.id}/`) ? options.resume : undefined;
+  let path =
+    checkpoint?.path ??
+    `${user.id}/${metadata.workoutId}/${metadata.exerciseId}/${
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    }.${safeExtension}`;
   let lastError: unknown = new Error("העלאת סרטון נכשלה.");
   for (let attempt = 1; attempt <= WORKOUT_VIDEO_UPLOAD_ATTEMPTS; attempt += 1) {
     if (options.signal?.aborted) {
       throw new Error("video upload timed out");
     }
-    const objectId =
-      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const path = `${user.id}/${metadata.workoutId}/${metadata.exerciseId}/${objectId}.${safeExtension}`;
     try {
-      if (file.size >= RESUMABLE_VIDEO_THRESHOLD_BYTES) {
-        await uploadWorkoutPerformanceVideoResumable(file, path, normalizedType, options.signal);
-      } else {
-        await uploadWorkoutPerformanceVideoAttempt(file, path, normalizedType, options.signal);
-      }
+      await uploadWorkoutPerformanceVideoAttempt(
+        file,
+        path,
+        normalizedType,
+        options.signal,
+        checkpoint,
+        async (nextCheckpoint) => {
+          checkpoint = nextCheckpoint;
+          await options.onCheckpoint?.(nextCheckpoint);
+        },
+      );
       if (options.signal?.aborted) throw new Error("video upload timed out");
 
       const signedSourceUrl = await awaitWorkoutVideoRequest(
@@ -1016,14 +1039,6 @@ export async function uploadWorkoutPerformanceVideo(
       }
 
       if (transcode.status === "failed" || !transcode.playbackPath) {
-        if (locallyCompressedMp4) {
-          return {
-            path,
-            signedUrl: signedSourceUrl,
-            playbackPath: path,
-            transcodeStatus: "not-needed" as const,
-          };
-        }
         return {
           path,
           signedUrl: signedSourceUrl,

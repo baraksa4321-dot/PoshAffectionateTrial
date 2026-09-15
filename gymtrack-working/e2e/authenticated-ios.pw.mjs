@@ -812,6 +812,13 @@ async function installFixture(
       window.__iosSmokeVideoUploadStarted = false;
       window.__iosSmokeVideoUploadCompleted = false;
       let workoutVideoSignCount = 0;
+      const resumableVideoLocation = "/storage/v1/upload/resumable/ios-smoke-video-upload";
+      let resumableVideoLength = Number(
+        window.localStorage.getItem("ios-smoke.video-upload-length") ?? 0,
+      );
+      let resumableVideoOffset = Number(
+        window.localStorage.getItem("ios-smoke.video-upload-offset") ?? 0,
+      );
       let coachMessageReads = 0;
       window.__iosSmokeCoachMessageReads = () => coachMessageReads;
       let broadcastReads = 0;
@@ -833,6 +840,53 @@ async function installFixture(
           });
         }
         if (url.includes("/storage/v1/")) {
+          if (url.includes("/upload/resumable")) {
+            if (requestMethod === "POST") {
+              resumableVideoLength = Number(init?.headers?.["Upload-Length"] ?? 0);
+              window.localStorage.setItem(
+                "ios-smoke.video-upload-length",
+                String(resumableVideoLength),
+              );
+              window.__iosSmokeVideoUploadStarted = true;
+              return new Response(null, {
+                status: 201,
+                headers: {
+                  Location: resumableVideoLocation,
+                  "Upload-Offset": String(resumableVideoOffset),
+                },
+              });
+            }
+            if (requestMethod === "HEAD") {
+              return new Response(null, {
+                status: 200,
+                headers: { "Upload-Offset": String(resumableVideoOffset) },
+              });
+            }
+            if (requestMethod === "PATCH") {
+              const pauseAfterFirstChunk =
+                window.localStorage.getItem("ios-smoke.pause-video-upload-once") === "true" &&
+                resumableVideoOffset > 0;
+              if (pauseAfterFirstChunk) {
+                window.localStorage.removeItem("ios-smoke.pause-video-upload-once");
+                window.localStorage.setItem("ios-smoke.pause-video-upload-consumed", "true");
+                await new Promise(() => {});
+              }
+              const chunkSize = init?.body instanceof Blob ? init.body.size : 0;
+              await new Promise((resolve) => setTimeout(resolve, 250));
+              resumableVideoOffset += chunkSize;
+              window.localStorage.setItem(
+                "ios-smoke.video-upload-offset",
+                String(resumableVideoOffset),
+              );
+              if (resumableVideoOffset >= resumableVideoLength) {
+                window.__iosSmokeVideoUploadCompleted = true;
+              }
+              return new Response(null, {
+                status: 204,
+                headers: { "Upload-Offset": String(resumableVideoOffset) },
+              });
+            }
+          }
           if (url.includes("/object/sign/")) {
             const signToken = workoutVideoSignCount++ === 0 ? "expired" : "fresh";
             return new Response(
@@ -2666,7 +2720,9 @@ test("iPhone trainee video survives upload, expired signed URL, and history reop
   await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
   await page.getByRole("button", { name: "אישור ושמירת אימון" }).click();
   await expect(page.getByText("האימון נשמר חלקית", { exact: true })).toBeVisible();
-  await expect.poll(() => page.evaluate(() => window.__iosSmokeVideoUploadCompleted)).toBe(true);
+  await expect
+    .poll(() => page.evaluate(() => window.__iosSmokeVideoUploadCompleted), { timeout: 25_000 })
+    .toBe(true);
   await expect
     .poll(() =>
       page.evaluate(() => {
@@ -2707,6 +2763,51 @@ test("iPhone trainee video survives upload, expired signed URL, and history reop
     ),
   ).toBeVisible();
   await expect(page.getByText(/העלאת סרטון ביצוע נכשלה/)).toHaveCount(0);
+});
+
+test("mobile trainee resumes a video upload after a disconnected reopen", async ({ page }) => {
+  test.skip(
+    test.info().project.name !== "chromium-375",
+    "This is the mobile interruption and reopen coverage.",
+  );
+  await installFixture(page, { role: "trainee", online: true });
+  await page.addInitScript(() => {
+    if (
+      window.localStorage.getItem("ios-smoke.pause-video-upload-consumed") !== "true" &&
+      window.sessionStorage.getItem("ios-smoke.pause-video-upload-armed") !== "true"
+    ) {
+      window.localStorage.setItem("ios-smoke.pause-video-upload-once", "true");
+      window.sessionStorage.setItem("ios-smoke.pause-video-upload-armed", "true");
+    }
+  });
+
+  await page.goto(`/session/${WORKOUT_ID}`);
+  await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
+  await page
+    .locator('input[type="file"][accept="video/*"]')
+    .first()
+    .setInputFiles({
+      name: "resume-after-reopen.mp4",
+      mimeType: "video/mp4",
+      buffer: Buffer.alloc(16 * 1024 * 1024, 1),
+    });
+  await expect.poll(() => page.evaluate(() => window.__iosSmokeVideoUploadStarted)).toBe(true);
+  await expect
+    .poll(() =>
+      page.evaluate(() => Number(localStorage.getItem("ios-smoke.video-upload-offset") ?? 0)),
+    )
+    .toBe(8 * 1024 * 1024);
+  await page.waitForTimeout(500);
+
+  await page.reload();
+  await expect(page.getByText("התקדמות אימון", { exact: true })).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => window.__iosSmokeVideoUploadCompleted), { timeout: 25_000 })
+    .toBe(true);
+  await expect(
+    page.locator('[aria-label="הסרטון הועלה"]').first(),
+  ).toBeVisible();
+  await expect(page.getByText(/כתובת צפייה|העלאת סרטון ביצוע נכשלה/)).toHaveCount(0);
 });
 
 for (const [gender, retryLabel] of [

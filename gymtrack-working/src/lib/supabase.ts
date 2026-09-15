@@ -20,3 +20,5 @@ export const supabase = createClient(cleanUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
   },
 });
+
+export { cleanUrl as supabaseUrl, supabaseAnonKey };

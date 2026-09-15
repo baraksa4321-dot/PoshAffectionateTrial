@@ -82,6 +82,7 @@ import {
   loadWorkoutVideoDrafts,
   removeWorkoutVideoDraft,
   saveWorkoutVideoDraft,
+  type WorkoutVideoUploadCheckpoint,
 } from "@/lib/workout-video-drafts";
 
 export const Route = createFileRoute("/session/$workoutId")({
@@ -723,6 +724,7 @@ function Session() {
     new Map<number, { version: number; controller: AbortController }>(),
   );
   const videoUploadTasksRef = useRef(new Map<number, Promise<boolean>>());
+  const videoUploadCheckpointsRef = useRef(new Map<number, WorkoutVideoUploadCheckpoint>());
   const videoUploadQueueRef = useRef(Promise.resolve());
   const videoPlaybackRefreshesRef = useRef(new Map<number, string>());
   const restoredVideoDraftWorkoutIdRef = useRef<string | null>(null);
@@ -1158,20 +1160,23 @@ function Session() {
   }, [exerciseCatalog, exercises, approvedIds, currentItem?.exerciseId]);
 
   useEffect(() => {
-    if (!workout || restoredVideoDraftWorkoutIdRef.current === workoutId) return;
-    restoredVideoDraftWorkoutIdRef.current = workoutId;
+    if (!workout || !sessionOwnerId || restoredVideoDraftWorkoutIdRef.current === workoutId) return;
     let cancelled = false;
-    if (!sessionOwnerId) return;
     void loadWorkoutVideoDrafts(sessionOwnerId, workoutId)
       .then((drafts) => {
         if (cancelled) return;
-        drafts.forEach(({ exerciseIndex, file }) => {
+        if (restoredVideoDraftWorkoutIdRef.current === workoutId) return;
+        restoredVideoDraftWorkoutIdRef.current = workoutId;
+        drafts.forEach(({ exerciseIndex, file, upload }) => {
           const existingUrl = entriesRef.current[exerciseIndex]?.videoUrl;
           if (existingUrl && !existingUrl.startsWith("blob:")) {
             void removeWorkoutVideoDraft(sessionOwnerId, workoutId, exerciseIndex);
             return;
           }
-          selectPerformanceVideo(exerciseIndex, file);
+          if (upload) {
+            videoUploadCheckpointsRef.current.set(exerciseIndex, upload);
+          }
+          selectPerformanceVideo(exerciseIndex, file, upload);
         });
       })
       .catch((error: unknown) => {
@@ -1184,7 +1189,7 @@ function Session() {
     return () => {
       cancelled = true;
     };
-  }, [workout, workoutId]);
+  }, [sessionOwnerId, workout?.id, workoutId]);
 
   if (!workout) {
     return (
@@ -1290,7 +1295,11 @@ function Session() {
     }
   };
 
-  const selectPerformanceVideo = async (exerciseIndex: number, file: File | undefined) => {
+  const selectPerformanceVideo = async (
+    exerciseIndex: number,
+    file: File | undefined,
+    restoredCheckpoint?: WorkoutVideoUploadCheckpoint,
+  ) => {
     if (!file) return;
     const fileType = file.type.trim().toLowerCase();
     const fileExtension = file.name.split(".").pop()?.toLowerCase() ?? "";
@@ -1364,6 +1373,17 @@ function Session() {
       }
     }
     const nextUrl = URL.createObjectURL(uploadFile);
+    const previousFile = videoFilesRef.current.get(exerciseIndex);
+    const checkpoint =
+      restoredCheckpoint ??
+      (previousFile === uploadFile
+        ? videoUploadCheckpointsRef.current.get(exerciseIndex)
+        : undefined);
+    if (checkpoint) {
+      videoUploadCheckpointsRef.current.set(exerciseIndex, checkpoint);
+    } else {
+      videoUploadCheckpointsRef.current.delete(exerciseIndex);
+    }
     const previousUrl = entriesRef.current[exerciseIndex]?.videoUrl;
     const uploadVersion = (videoUploadVersionsRef.current.get(exerciseIndex) ?? 0) + 1;
     videoUploadVersionsRef.current.set(exerciseIndex, uploadVersion);
@@ -1397,7 +1417,14 @@ function Session() {
     });
     entriesRef.current = entriesWithLocalVideo;
     setEntries(entriesWithLocalVideo);
-    void saveWorkoutVideoDraft(sessionOwnerId, workout.id, exerciseIndex, file).catch(() => {
+    const draftSave = saveWorkoutVideoDraft(
+      sessionOwnerId,
+      workout.id,
+      exerciseIndex,
+      uploadFile,
+      checkpoint,
+    );
+    void draftSave.catch(() => {
       // Local draft persistence is a recovery aid, not the upload itself.
       // iOS can reject a large IndexedDB write while the signed Storage
       // upload is still healthy, so keep the upload running and explain the
@@ -1423,7 +1450,28 @@ function Session() {
             workoutId: workout.id,
             exerciseId: entriesRef.current[exerciseIndex]?.exerciseId ?? String(exerciseIndex),
           },
-          { signal: controller.signal },
+          {
+            signal: controller.signal,
+            ...(checkpoint ? { resume: checkpoint } : {}),
+            onCheckpoint: async (nextCheckpoint) => {
+              videoUploadCheckpointsRef.current.set(exerciseIndex, nextCheckpoint);
+              try {
+                await saveWorkoutVideoDraft(
+                  sessionOwnerId,
+                  workout.id,
+                  exerciseIndex,
+                  uploadFile,
+                  nextCheckpoint,
+                );
+              } catch {
+                setVideoDraftWarnings((current) => ({
+                  ...current,
+                  [exerciseIndex]:
+                    "הסרטון ממשיך לעלות, אבל לא נשמרה נקודת המשך מקומית. השאירי את המסך פתוח עד לסיום ההעלאה.",
+                }));
+              }
+            },
+          },
         );
       } catch (error) {
         if (controller.signal.aborted) throw new Error("video upload timed out");
@@ -1473,6 +1521,7 @@ function Session() {
           next.delete(exerciseIndex);
           return next;
         });
+        videoUploadCheckpointsRef.current.delete(exerciseIndex);
         void removeWorkoutVideoDraft(sessionOwnerId, workout.id, exerciseIndex);
         const finishedSession = finishedSessionRef.current;
         if (finishedSession) {
@@ -1628,7 +1677,12 @@ function Session() {
     if (!sessionOwnerId) return;
     void loadWorkoutVideoDrafts(sessionOwnerId, workout.id).then((drafts) => {
       const draft = drafts.find((item) => item.exerciseIndex === exerciseIndex);
-      if (draft) selectPerformanceVideo(exerciseIndex, draft.file);
+      if (draft) {
+        if (draft.upload) {
+          videoUploadCheckpointsRef.current.set(exerciseIndex, draft.upload);
+        }
+        selectPerformanceVideo(exerciseIndex, draft.file, draft.upload);
+      }
     });
   };
 

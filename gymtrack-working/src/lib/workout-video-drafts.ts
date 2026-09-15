@@ -9,11 +9,21 @@ type StoredVideoDraft = {
   file: Blob;
   fileName: string;
   contentType: string;
+  upload?: WorkoutVideoUploadCheckpoint;
+};
+
+export type WorkoutVideoUploadCheckpoint = {
+  path: string;
+  uploadUrl: string;
+  offset: number;
+  size: number;
+  contentType: string;
 };
 
 export type WorkoutVideoDraft = {
   exerciseIndex: number;
   file: File;
+  upload?: WorkoutVideoUploadCheckpoint;
 };
 
 function draftKey(userId: string, workoutId: string, exerciseIndex: number) {
@@ -27,9 +37,11 @@ function openDraftDatabase(): Promise<IDBDatabase> {
       return;
     }
 
-    const request = indexedDB.open(DATABASE_NAME, 1);
+    const request = indexedDB.open(DATABASE_NAME, 2);
     request.onupgradeneeded = () => {
-      request.result.createObjectStore(STORE_NAME, { keyPath: "key" });
+      if (!request.result.objectStoreNames.contains(STORE_NAME)) {
+        request.result.createObjectStore(STORE_NAME, { keyPath: "key" });
+      }
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error ?? new Error("Could not open video drafts"));
@@ -41,6 +53,7 @@ export async function saveWorkoutVideoDraft(
   workoutId: string,
   exerciseIndex: number,
   file: File,
+  upload?: WorkoutVideoUploadCheckpoint,
 ) {
   const database = await openDraftDatabase();
   try {
@@ -56,6 +69,7 @@ export async function saveWorkoutVideoDraft(
         file: file.slice(0, file.size, file.type),
         fileName: file.name,
         contentType: file.type,
+        ...(upload ? { upload } : {}),
       } satisfies StoredVideoDraft);
       transaction.oncomplete = () => resolve();
       transaction.onerror = () =>
@@ -81,6 +95,17 @@ export async function loadWorkoutVideoDrafts(
           .map((draft) => ({
             exerciseIndex: draft.exerciseIndex,
             file: new File([draft.file], draft.fileName, { type: draft.contentType }),
+            ...(draft.upload &&
+            draft.upload.path &&
+            draft.upload.uploadUrl &&
+            draft.upload.size === draft.file.size
+              ? {
+                  upload: {
+                    ...draft.upload,
+                    offset: Math.max(0, Math.min(draft.upload.offset, draft.file.size)),
+                  },
+                }
+              : {}),
           }));
         resolve(drafts);
       };
