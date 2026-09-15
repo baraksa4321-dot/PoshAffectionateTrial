@@ -6021,9 +6021,30 @@ export function CoachDashboardPage({
   const selectedSupersetPartner = canonicalExerciseOptions.find(
     (exercise) => exercise.id === supersetPartnerId,
   );
-  const selectedBuilderExercise = canonicalExerciseOptions.find(
-    (exercise) => exercise.id === selectedExId,
-  );
+  const selectedBuilderExercise = useMemo(() => {
+    const canonicalExercise = canonicalExerciseOptions.find(
+      (exercise) => exercise.id === selectedExId,
+    );
+    if (canonicalExercise) return canonicalExercise;
+
+    const editingWorkout = clientDetails?.workouts.find((workout) => workout.id === editingDayId);
+    const editingItem = editingWorkout?.items.find((item) => item.id === editingItemId);
+    if (!editingItem || editingItem.exerciseId !== selectedExId) return undefined;
+
+    return {
+      ...emptyExercise(),
+      id: editingItem.exerciseId,
+      name: editingItem.exerciseName ?? "תרגיל",
+      equipment: editingItem.equipment ?? "",
+      equipmentOptions: editingItem.equipment ? [editingItem.equipment] : [],
+    };
+  }, [
+    canonicalExerciseOptions,
+    clientDetails?.workouts,
+    editingDayId,
+    editingItemId,
+    selectedExId,
+  ]);
   const selectedBuilderEquipmentOptions = selectedBuilderExercise
     ? exerciseEquipmentOptions(selectedBuilderExercise)
     : [];
