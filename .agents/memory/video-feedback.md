@@ -65,3 +65,13 @@ underlying Storage request is still active, recreating the intermittent iPhone f
 
 **How to apply:** Start the timeout when the queued item begins, abort the signed PUT on expiry,
 then let the queue's rejection handler advance to the next item.
+
+Only show the local-blob “still uploading” message while the current upload version is actively
+pending; retain a failed state after timeout or rejection so a later media error cannot overwrite the
+actual upload failure.
+
+**Why:** The browser may emit `video.onerror` after an upload Promise has already failed, and the
+blob URL remains in the entry until the trainee retries or replaces it.
+
+**How to apply:** Track upload status by exercise and version, clear it on success, mark it failed
+in the upload catch path, and gate the blob playback message on the active status.

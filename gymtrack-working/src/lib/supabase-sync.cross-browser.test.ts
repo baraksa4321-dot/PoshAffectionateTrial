@@ -31,7 +31,7 @@ const actionResponses = new Map<string, QueryResult[]>();
 
 const storageCalls: Array<{
   bucket: string;
-  action: "upload" | "createSignedUrl";
+  action: "upload" | "createSignedUrl" | "createSignedUploadUrl";
   path: string;
   expiresIn?: number;
 }> = [];
@@ -130,6 +130,15 @@ mock.module("./supabase", () => ({
           return {
             data: {
               signedUrl: `https://project.supabase.co/storage/v1/object/sign/${bucket}/${encodeURIComponent(path)}?token=test`,
+            },
+            error: null,
+          };
+        },
+        createSignedUploadUrl: async (path: string) => {
+          storageCalls.push({ bucket, action: "createSignedUploadUrl", path });
+          return {
+            data: {
+              signedUrl: `https://project.supabase.co/storage/v1/object/upload/sign/${bucket}/${encodeURIComponent(path)}?token=test`,
             },
             error: null,
           };
@@ -1081,6 +1090,39 @@ describe("cross-browser Supabase sync boundaries", () => {
       action: "createSignedUrl",
       expiresIn: 600,
     });
+  });
+
+  test("aborts a stalled browser video upload instead of leaving its promise pending", async () => {
+    const { uploadWorkoutPerformanceVideo } = await syncModule;
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = ((_: RequestInfo | URL, init?: RequestInit) =>
+      new Promise<Response>((_, reject) => {
+        init?.signal?.addEventListener(
+          "abort",
+          () => reject(new DOMException("The operation was aborted.", "AbortError")),
+          { once: true },
+        );
+      })) as typeof fetch;
+
+    try {
+      const controller = new AbortController();
+      const upload = uploadWorkoutPerformanceVideo(
+        new File(["video"], "stalled.mp4", { type: "video/mp4" }),
+        { workoutId: "day-b", exerciseId: "ex-stalled" },
+        { signal: controller.signal },
+      );
+      controller.abort();
+
+      await expect(upload).rejects.toThrow("video upload timed out");
+      expect(storageCalls).toContainEqual(
+        expect.objectContaining({
+          bucket: "workout-videos",
+          action: "createSignedUploadUrl",
+        }),
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });
 
