@@ -11,6 +11,8 @@ Long application pages should retain one native document scroll path. When the k
 
 **How to apply:** Keep the keyboard offset as `margin-bottom` for bottom sheets, but do not subtract it again from a visual-viewport maximum height. For regular pages, leave vertical scrolling to the document and add temporary keyboard clearance. For nested sheets, scroll the closest ancestor whose content actually overflows. Re-test focused fields near the bottom of long pages and nested overlays.
 
+For an intentionally scrollable absolute drawer inside a content-sized flex workspace, a percentage height can resolve against the wrong ancestor on iOS. Give that drawer an explicit `dvh` height based on the app header and reserve bottom space for fixed navigation.
+
 Header-based `scroll-margin` is unsafe for fullscreen or portal editors: iOS can reapply that header offset after a controlled input rerender and visibly jump the page. Use zero input scroll margins there, and globally snapshot all overflowing ancestors on focus and restore them after `input` when the field remains active.
 
 **Why:** The jump can happen after typing rather than on focus, so focus-only visibility logic misses it; the resulting position often matches the old header height exactly.

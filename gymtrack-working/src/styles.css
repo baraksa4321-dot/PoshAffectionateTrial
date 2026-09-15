@@ -5024,6 +5024,7 @@ html[data-keyboard-open] .nav-shell {
   max-height: 100%;
   scrollbar-gutter: stable;
   touch-action: pan-y;
+  scroll-padding-bottom: calc(8rem + env(safe-area-inset-bottom));
   visibility: hidden;
   pointer-events: none;
   border-inline-end: 1px solid color-mix(in oklch, var(--primary) 18%, var(--border));
@@ -5058,6 +5059,19 @@ html[data-keyboard-open] .nav-shell {
   .overlay-inline-panel .workout-builder-surface {
     width: calc(100% + 2rem);
     margin-inline: -1rem;
+  }
+
+  /* The builder lives inside a flex/page-scroller whose height is
+     content-driven on iOS. A percentage height there can resolve to the
+     content height instead of creating a usable drawer scroller. Anchor the
+     report to the visible app viewport so its last cards remain reachable. */
+  .workout-report-panel {
+    height: calc(100dvh - var(--app-topbar-height, 5rem));
+    max-height: calc(100dvh - var(--app-topbar-height, 5rem));
+    padding-bottom: calc(8rem + env(safe-area-inset-bottom));
+    overflow-y: scroll;
+    overscroll-behavior-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
