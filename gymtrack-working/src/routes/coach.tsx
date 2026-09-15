@@ -1738,12 +1738,14 @@ function WorkoutDailyReport({
   history,
   exercises,
   clientId,
+  onOpenPlan,
   videoFeedbacks = [],
 }: {
   workout: Workout;
   history: HistorySession[];
   exercises: Exercise[];
   clientId?: string;
+  onOpenPlan?: ((exerciseId: string) => void) | undefined;
   videoFeedbacks?: VideoFeedback[];
 }) {
   const [reportDate, setReportDate] = useState(() => reportDateKey(new Date()));
@@ -1917,7 +1919,17 @@ function WorkoutDailyReport({
                     <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
                       תרגיל {workout.items.findIndex((candidate) => candidate.id === item.id) + 1}
                     </p>
-                    <h5 className="mt-0.5 text-sm font-extrabold text-ink">{exerciseName}</h5>
+                    {onOpenPlan ? (
+                      <button
+                        type="button"
+                        onClick={() => onOpenPlan(item.exerciseId)}
+                        className="mt-0.5 text-start text-sm font-extrabold text-ink hover:text-primary hover:underline"
+                      >
+                        {exerciseName}
+                      </button>
+                    ) : (
+                      <h5 className="mt-0.5 text-sm font-extrabold text-ink">{exerciseName}</h5>
+                    )}
                   </div>
                   <span
                     className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${
@@ -2628,6 +2640,55 @@ export function CoachDashboardPage({
   const [cardioSpeed, setCardioSpeed] = useState("");
   const [cardioIncline, setCardioIncline] = useState("");
   const [cardioNotes, setCardioNotes] = useState("");
+
+  const hydrateWorkoutItemEditor = useCallback(
+    (item?: WorkoutItem) => {
+      setEditingItemId(item?.id ?? null);
+      setShowExerciseForm(Boolean(item));
+      if (!item) return;
+
+      selectExerciseForBuilder(item.exerciseId, item.equipment, item.cableGrip);
+      setTargetWeight(item.targetWeight || item.weight);
+      setSetsCount(item.sets);
+      setRepMin(item.repMin || item.reps);
+      setRepMax(item.repMax || item.reps);
+      setRestSec(item.rest || 90);
+      setSetWeights(
+        Array.from(
+          { length: Math.max(1, item.sets) },
+          (_, index) => item.workingSets?.[index]?.weight ?? item.targetWeight ?? item.weight,
+        ),
+      );
+      setSetRepMins(
+        Array.from(
+          { length: Math.max(1, item.sets) },
+          (_, index) =>
+            item.workingSets?.[index]?.reps ?? item.repMin ?? item.reps,
+        ),
+      );
+      setSetRepMaxes(
+        Array.from(
+          { length: Math.max(1, item.sets) },
+          (_, index) =>
+            item.workingSets?.[index]?.repMax ?? item.repMax ?? item.reps,
+        ),
+      );
+      setSetRests(
+        Array.from(
+          { length: Math.max(1, item.sets) },
+          (_, index) => item.workingSets?.[index]?.rest ?? item.rest ?? 90,
+        ),
+      );
+      setSetNotes(
+        Array.from(
+          { length: Math.max(1, item.sets) },
+          (_, index) => item.workingSets?.[index]?.notes ?? "",
+        ),
+      );
+      setTechniqueNotes(item.techniqueNotes || item.notes);
+    },
+    [selectExerciseForBuilder],
+  );
 
   // Nutrition Prescription state
   const [editingNutrition, setEditingNutrition] = useState(false);
@@ -3868,59 +3929,7 @@ export function CoachDashboardPage({
       const requestedItem = initialExerciseId
         ? firstWorkoutDay?.items.find((item) => item.exerciseId === initialExerciseId)
         : undefined;
-      setEditingItemId(requestedItem?.id ?? null);
-      setShowExerciseForm(Boolean(requestedItem));
-      if (requestedItem) {
-        selectExerciseForBuilder(
-          requestedItem.exerciseId,
-          requestedItem.equipment,
-          requestedItem.cableGrip,
-        );
-        setTargetWeight(requestedItem.targetWeight || requestedItem.weight);
-        setSetsCount(requestedItem.sets);
-        setRepMin(requestedItem.repMin || requestedItem.reps);
-        setRepMax(requestedItem.repMax || requestedItem.reps);
-        setSetWeights(
-          Array.from(
-            { length: Math.max(1, requestedItem.sets) },
-            (_, index) =>
-              requestedItem.workingSets?.[index]?.weight ??
-              requestedItem.targetWeight ??
-              requestedItem.weight,
-          ),
-        );
-        setSetRepMins(
-          Array.from(
-            { length: Math.max(1, requestedItem.sets) },
-            (_, index) =>
-              requestedItem.workingSets?.[index]?.reps ??
-              requestedItem.repMin ??
-              requestedItem.reps,
-          ),
-        );
-        setSetRepMaxes(
-          Array.from(
-            { length: Math.max(1, requestedItem.sets) },
-            (_, index) =>
-              requestedItem.workingSets?.[index]?.repMax ??
-              requestedItem.repMax ??
-              requestedItem.reps,
-          ),
-        );
-        setSetRests(
-          Array.from(
-            { length: Math.max(1, requestedItem.sets) },
-            (_, index) => requestedItem.workingSets?.[index]?.rest ?? requestedItem.rest ?? 90,
-          ),
-        );
-        setSetNotes(
-          Array.from(
-            { length: Math.max(1, requestedItem.sets) },
-            (_, index) => requestedItem.workingSets?.[index]?.notes ?? "",
-          ),
-        );
-        setTechniqueNotes(requestedItem.techniqueNotes || requestedItem.notes);
-      }
+      hydrateWorkoutItemEditor(requestedItem);
     } else {
       setEditingProgramId(null);
       setEditingDayId(null);
@@ -3945,7 +3954,7 @@ export function CoachDashboardPage({
     initialNutritionFoodId,
     initialNutritionMealId,
     initialProgramId,
-    selectExerciseForBuilder,
+    hydrateWorkoutItemEditor,
     selectedClientId,
   ]);
 
@@ -5816,9 +5825,24 @@ export function CoachDashboardPage({
   const openTrackedPlan = (workoutId: string, exerciseId?: string) => {
     const targetClientId = selectedClientId ?? clientId;
     if (!targetClientId || !clientDetails) return;
+    const workout = clientDetails.workouts.find((item) => item.id === workoutId);
     const program = clientDetails.programs.find((item) => item.dayIds.includes(workoutId));
+    const requestedItem = exerciseId
+      ? workout?.items.find((item) => item.exerciseId === exerciseId)
+      : undefined;
+
+    // Hydrate the builder immediately as well as through the destination
+    // route's search params. This keeps the exact day/item selected even when
+    // the client workspace route is already mounted and the remote refresh is
+    // still settling.
     setActiveWorkspaceTab("programs");
     setOpenEditor("programs");
+    setEditingProgramId(program?.id ?? clientDetails.programs.at(-1)?.id ?? null);
+    setEditingDayId(workout?.id ?? workoutId);
+    setShowCardioForm(false);
+    setFocusedExerciseId(requestedItem?.exerciseId ?? exerciseId ?? null);
+    hydrateWorkoutItemEditor(requestedItem);
+
     navigate({
       to: "/coach/clients/$clientId/program",
       params: { clientId: targetClientId },
@@ -10618,6 +10642,9 @@ export function CoachDashboardPage({
                                               workout={dayItem}
                                               history={clientDetails?.history ?? []}
                                               clientId={selectedClientId ?? undefined}
+                                              onOpenPlan={(exerciseId) =>
+                                                openTrackedPlan(dayItem.id, exerciseId)
+                                              }
                                               videoFeedbacks={clientDetails?.videoFeedbacks ?? []}
                                               exercises={Array.from(
                                                 new Map(
