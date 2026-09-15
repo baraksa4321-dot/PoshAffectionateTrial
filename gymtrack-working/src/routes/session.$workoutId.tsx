@@ -1444,17 +1444,6 @@ function Session() {
     if (isFinishing) return;
     setIsFinishing(true);
     setFinishError("");
-    const activeVideoUploads = [...videoUploadTasksRef.current.values()];
-    if (activeVideoUploads.length > 0) {
-      setFinishError("ממתינה לסיום העלאת הסרטונים לפני שמירת האימון...");
-      const uploadResults = await Promise.all(activeVideoUploads);
-      if (uploadResults.some((result) => !result)) {
-        setIsFinishing(false);
-        setFinishError("לפחות סרטון אחד לא הועלה. יש לנסות שוב לפני שמירת האימון.");
-        return;
-      }
-      setFinishError("");
-    }
     const currentEntries = entriesRef.current;
     const allSetsCompleted =
       currentEntries.length > 0 &&
@@ -2187,7 +2176,7 @@ function Session() {
             ) : null}
             {videoUploadsInFlight > 0 ? (
               <p className="rounded-xl bg-primary/5 px-3 py-2 text-xs font-semibold text-primary">
-                יש להמתין לסיום העלאת הסרטונים לפני שמירת האימון.
+                הסרטונים ממשיכים לעלות ברקע. אפשר לסיים את האימון והם יצורפו אליו אוטומטית.
               </p>
             ) : null}
             <button
