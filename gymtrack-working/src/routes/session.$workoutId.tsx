@@ -1383,14 +1383,14 @@ function Session() {
     const entry = entriesRef.current[exerciseIndex];
     const path = entry?.videoPath;
     const currentUrl = entry?.videoUrl;
-    if (!path) {
-      setVideoUploadErrorExerciseIndex(exerciseIndex);
-      setVideoUploadError("הסרטון נבחר, אבל הדפדפן לא הצליח לנגן אותו.");
-      return;
-    }
     if (currentUrl?.startsWith("blob:")) {
       setVideoUploadErrorExerciseIndex(exerciseIndex);
       setVideoUploadError("הסרטון עדיין עולה. נסי שוב בעוד רגע.");
+      return;
+    }
+    if (!path) {
+      setVideoUploadErrorExerciseIndex(exerciseIndex);
+      setVideoUploadError("הסרטון נבחר, אבל הדפדפן לא הצליח לנגן אותו.");
       return;
     }
 

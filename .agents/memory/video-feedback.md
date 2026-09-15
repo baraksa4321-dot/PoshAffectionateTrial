@@ -45,3 +45,12 @@ multi-video workout with only the first few objects linked to its session.
 
 **How to apply:** Queue uploads without blocking workout completion, continue the queue after an
 individual failure, and merge each successful object into the finished session.
+
+Local `blob:` playback errors during an in-progress upload are not the same as a missing or
+unsupported remote video.
+
+**Why:** Browsers can reject a local preview while the upload is still valid; labeling that state
+as a permanent playback failure misleads the trainee and can trigger unnecessary replacement.
+
+**How to apply:** Check the local blob state before requiring a stored path, keep the upload running,
+and reserve permanent playback messaging for a stored source that fails after URL refresh.
