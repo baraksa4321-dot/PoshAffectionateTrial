@@ -971,6 +971,7 @@ function VideoFeedbackThread({
   entry,
   title,
   videoFeedbacks,
+  onFeedbackSent,
 }: {
   clientId: string;
   sessionId: string;
@@ -978,6 +979,7 @@ function VideoFeedbackThread({
   entry: HistoryEntry;
   title: string;
   videoFeedbacks: VideoFeedback[];
+  onFeedbackSent?: () => void;
 }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -1043,6 +1045,7 @@ function VideoFeedbackThread({
             });
             addLocalFeedback(created);
             setDraft("");
+            onFeedbackSent?.();
           } catch (feedbackError: unknown) {
             setError(errorMessage(feedbackError, "שליחת המשוב נכשלה."));
           } finally {
@@ -1067,14 +1070,16 @@ function VideoFeedbackInbox({
   onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
+  const [dismissedVideoIds, setDismissedVideoIds] = useState<Set<string>>(() => new Set());
   const normalizedQuery = query.trim().toLocaleLowerCase();
+  const pendingVideos = videos.filter((video) => !dismissedVideoIds.has(video.id));
   const visibleVideos = normalizedQuery
-    ? videos.filter((video) =>
+    ? pendingVideos.filter((video) =>
         `${video.clientName} ${video.workoutName} ${video.entry.exerciseName}`
           .toLocaleLowerCase()
           .includes(normalizedQuery),
       )
-    : videos;
+    : pendingVideos;
   const visibleDemoVideos = normalizedQuery
     ? demoVideos.filter((video) =>
         `${video.clientName} ${video.workoutName} ${video.exerciseName}`
@@ -1082,7 +1087,7 @@ function VideoFeedbackInbox({
           .includes(normalizedQuery),
       )
     : demoVideos;
-  const totalVideos = videos.length + demoVideos.length;
+  const totalVideos = pendingVideos.length + demoVideos.length;
 
   return (
     <section className="surface-card max-h-[min(82vh,52rem)] space-y-3 overflow-y-auto rounded-3xl border border-primary/20 bg-primary/[0.025] p-3 sm:p-5">
@@ -1182,6 +1187,14 @@ function VideoFeedbackInbox({
                       entry={video.entry}
                       title={video.entry.exerciseName || "תרגיל"}
                       videoFeedbacks={video.videoFeedbacks}
+                      onFeedbackSent={() => {
+                        setDismissedVideoIds((current) => {
+                          if (current.has(video.id)) return current;
+                          const next = new Set(current);
+                          next.add(video.id);
+                          return next;
+                        });
+                      }}
                     />
                   ) : (
                     <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[10px] font-semibold text-amber-900">
