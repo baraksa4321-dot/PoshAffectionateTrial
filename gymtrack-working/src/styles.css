@@ -5850,7 +5850,18 @@ body {
 /* The fixed mobile navigation must not cover the final workout action. Keep
  * the session route's scroll tail larger than the nav plus the iOS inset. */
 .session-compact .app-main {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
   padding-bottom: calc(7.25rem + env(safe-area-inset-bottom)) !important;
+}
+
+.session-compact .app-main > * {
+  flex-shrink: 0;
+}
+
+.session-compact .session-exercise-list {
+  min-height: max-content;
 }
 
 .session-compact .session-finish-action {

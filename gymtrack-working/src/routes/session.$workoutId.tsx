@@ -1692,7 +1692,7 @@ function Session() {
           </div>
         </div>
       </div>
-      <div className="mt-3 space-y-3">
+      <div className="session-exercise-list mt-3 space-y-3">
         {entries.map((entry, ei) => {
           const item = workout.items[ei];
           const supersetLabel = labels[ei];
