@@ -2286,6 +2286,8 @@ export function CoachDashboardPage({
   const store = useGym();
   const navigate = useNavigate();
   const authUser = useAuthUser();
+  const selfVideoFeedbacks = store.videoFeedbacks ?? [];
+  const selfDisplayNameForOverview = store.userProfile?.fullName?.trim() || "אני";
   const role = store.userProfile?.role;
   const gender = store.userProfile?.gender;
   const isOwner = role === "owner";
@@ -2939,18 +2941,79 @@ export function CoachDashboardPage({
   }, [isCoach]);
 
   const loadOverviewRows = useCallback(async () => {
-    if ((!trackingLanding && clientsOnly) || clients.length === 0) {
+    if ((!trackingLanding && clientsOnly) || (clients.length === 0 && !isOwner)) {
       setOverviewRows([]);
       return;
     }
+    const selfOverviewClient: CoachClientRow | null =
+      isOwner && authUser
+        ? {
+            id: `self-${authUser.id}`,
+            client_id: authUser.id,
+            created_at: "",
+            profiles: {
+              email: authUser.email ?? null,
+              full_name: selfDisplayNameForOverview,
+              weight_kg: store.userProfile?.weight ?? null,
+            },
+          }
+        : null;
+    const overviewClients = [
+      ...(selfOverviewClient && !clients.some((client) => client.client_id === authUser?.id)
+        ? [selfOverviewClient]
+        : []),
+      ...clients,
+    ].filter(
+      (client, index, all) =>
+        all.findIndex((candidate) => candidate.client_id === client.client_id) === index,
+    );
     const rows = await Promise.all(
-      clients.map(async (client) => ({
+      overviewClients.map(async (client) => ({
         client,
-        details: await pullClientDataForCoach(client.client_id),
+        details:
+          selfOverviewClient?.client_id === client.client_id
+            ? {
+                exercises: store.exercises,
+                programs: store.programs,
+                workouts: store.workouts,
+                nutritionDays: store.nutritionDays,
+                plannedMeals: store.plannedMeals ?? [],
+                nutritionTargets: store.nutritionTargets,
+                history: store.history,
+                cardioLogs: store.cardioLogs ?? [],
+                bodyWeightLogs: store.bodyWeightLogs ?? [],
+                bodyMeasurements: store.bodyMeasurements ?? [],
+                habits: store.habits ?? [],
+                coachMessages: store.coachMessages ?? [],
+                videoFeedbacks: selfVideoFeedbacks,
+                profile: store.userProfile ?? { weight: 0, role: "owner" as const },
+              }
+            : await pullClientDataForCoach(client.client_id),
       })),
     );
     setOverviewRows(rows.filter((row) => !row.details.error));
-  }, [clients, clientsOnly, trackingLanding]);
+  }, [
+    authUser,
+    clients,
+    clientsOnly,
+    isOwner,
+    selfDisplayNameForOverview,
+    selfVideoFeedbacks,
+    store.bodyMeasurements,
+    store.bodyWeightLogs,
+    store.cardioLogs,
+    store.coachMessages,
+    store.exercises,
+    store.history,
+    store.habits,
+    store.nutritionDays,
+    store.nutritionTargets,
+    store.plannedMeals,
+    store.programs,
+    store.userProfile,
+    store.workouts,
+    trackingLanding,
+  ]);
   const loadOverviewRowsRef = useRef(loadOverviewRows);
   loadOverviewRowsRef.current = loadOverviewRows;
 
@@ -3414,6 +3477,7 @@ export function CoachDashboardPage({
       bodyMeasurements: store.bodyMeasurements ?? [],
       habits: store.habits ?? [],
       coachMessages: store.coachMessages ?? [],
+      videoFeedbacks: selfVideoFeedbacks,
       profile: selfProfile,
     });
     setClientRefreshInFlight(false);
@@ -3432,6 +3496,7 @@ export function CoachDashboardPage({
     store.nutritionTargets,
     store.plannedMeals,
     store.programs,
+    selfVideoFeedbacks,
     store.userProfile,
     store.workouts,
   ]);

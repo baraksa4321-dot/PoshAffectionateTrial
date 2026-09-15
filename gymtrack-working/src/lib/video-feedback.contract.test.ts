@@ -7,6 +7,7 @@ const read = (relativePath: string) => readFileSync(`${here}/${relativePath}`, "
 
 const coachRoute = read("../routes/coach.tsx");
 const homeRoute = read("../routes/index.tsx");
+const sessionRoute = read("../routes/session.$workoutId.tsx");
 const sync = read("./supabase-sync.ts");
 const notificationService = read("./notification-service.ts");
 const migration = read("../../supabase/migrations/59_video_feedback.sql");
@@ -33,6 +34,24 @@ describe("video feedback contracts", () => {
     expect(server).toContain('"libx264"');
     expect(server).toContain('"video/mp4"');
     expect(server).toContain("status: \"failed\"");
+  });
+
+  test("workout video states stay bounded and actionable on mobile", () => {
+    expect(sessionRoute).toContain('data-testid="performance-video-frame"');
+    expect(sessionRoute).toContain('data-testid="performance-video-status"');
+    expect(sessionRoute).toContain("aspect-video min-h-24 w-full max-h-52");
+    expect(sessionRoute).toContain("isVideoUploading");
+    expect(sessionRoute).toContain("retryPerformanceVideo(ei)");
+    expect(sessionRoute).toContain("הסרטון נבחר ומועלה ברקע");
+    expect(sessionRoute).toContain("הסרטון נשמר, אבל הדפדפן לא הצליח להציג אותו");
+  });
+
+  test("owner self rows contribute history and exact video feedback metadata", () => {
+    expect(coachRoute).toContain("selfOverviewClient");
+    expect(coachRoute).toContain("!clients.some((client) => client.client_id === authUser?.id)");
+    expect(coachRoute).toContain("videoFeedbacks: selfVideoFeedbacks");
+    expect(coachRoute).toContain("feedback.videoPath === entry.videoPath");
+    expect(coachRoute).toContain("feedback.sessionId === sessionId");
   });
 
   test("the trainee home exposes unread feedback and a seen action", () => {

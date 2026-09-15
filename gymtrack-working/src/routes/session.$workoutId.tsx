@@ -1632,6 +1632,12 @@ function Session() {
         );
         entriesRef.current = refreshedEntries;
         setEntries(refreshedEntries);
+        setVideoPlaybackErrorIndexes((current) => {
+          if (!current.has(exerciseIndex)) return current;
+          const next = new Set(current);
+          next.delete(exerciseIndex);
+          return next;
+        });
         const finishedSession = finishedSessionRef.current;
         if (finishedSession) {
           const updatedSession: HistorySession = {
@@ -1978,6 +1984,30 @@ function Session() {
       <div className="session-exercise-list mt-3 space-y-3">
         {entries.map((entry, ei) => {
           const hasPlaybackError = videoPlaybackErrorIndexes.has(ei);
+          const videoSource = entry.videoUrl ?? "";
+          const isLocalVideo = videoSource.startsWith("blob:");
+          const videoUploadState = videoUploadStatesRef.current.get(ei);
+          const isVideoUploading = videoUploadState?.status === "uploading";
+          const hasVideoUploadError =
+            videoUploadErrorExerciseIndex === ei && Boolean(videoUploadError);
+          const hasVideoRecord = Boolean(
+            videoSource || entry.videoPath || entry.videoTranscodeStatus,
+          );
+          const videoStatusMessage = hasPlaybackError
+            ? isLocalVideo && isVideoUploading
+              ? "אין כרגע תצוגה מקדימה בדפדפן, אבל הסרטון ממשיך לעלות ברקע."
+              : entry.videoPath
+                ? "הסרטון נשמר, אבל הדפדפן לא הצליח להציג אותו. אפשר לנסות שוב."
+                : "הסרטון נבחר, אבל הדפדפן לא הצליח להציג אותו."
+            : hasVideoUploadError
+              ? videoUploadError
+              : !videoSource && entry.videoPath
+                ? "הסרטון נשמר, אבל כתובת הצפייה עדיין לא זמינה. אפשר לנסות שוב."
+                : entry.videoTranscodeStatus === "processing"
+                  ? videoTranscodeStatusLabel("processing")
+                  : isVideoUploading
+                    ? "הסרטון נבחר ומועלה ברקע. אפשר להמשיך באימון."
+                    : null;
           const item = workout.items[ei];
           const supersetLabel = labels[ei];
           const fullExercise =
@@ -2162,15 +2192,6 @@ function Session() {
                     איך היה התרגיל?
                   </p>
                     <div className="flex shrink-0 items-center gap-1.5">
-                      {hasPlaybackError ? (
-                        <button
-                          type="button"
-                          onClick={() => retryPerformanceVideo(ei)}
-                          className="inline-flex items-center rounded-lg border border-primary/20 bg-primary/5 px-2 py-1 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10"
-                        >
-                          {genderText(gender, "נסי שוב", "נסה שוב")}
-                        </button>
-                      ) : null}
                       <label
                         className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-primary/20 bg-primary/5 px-2 py-1 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10"
                         aria-label={
@@ -2245,46 +2266,56 @@ function Session() {
                   placeholder="כאב, אי־נוחות או הערה למאמנת..."
                   className="mt-2 min-h-14 w-full rounded-xl border border-border/60 bg-white p-2 text-[11px] text-ink outline-none focus:border-primary"
                 />
-                {entry.videoUrl && !(hasPlaybackError && entry.videoUrl.startsWith("blob:")) ? (
-                  <video
-                    key={`${entry.videoPath ?? ""}:${entry.videoUrl}`}
-                    className="mt-2 max-h-52 w-full rounded-xl bg-black object-contain"
-                    src={entry.videoUrl}
-                    controls
-                    playsInline
-                    preload="metadata"
-                    aria-label={`סרטון ביצוע ${entry.exerciseName}`}
-                    onLoadedData={() => {
-                      videoPlaybackRefreshesRef.current.delete(ei);
-                      setVideoPlaybackErrorIndexes((current) => {
-                        if (!current.has(ei)) return current;
-                        const next = new Set(current);
-                        next.delete(ei);
-                        return next;
-                      });
-                    }}
-                    onError={(event) =>
-                      handlePerformanceVideoError(ei, event.currentTarget.error?.code)
-                    }
-                  />
-                ) : null}
-                {entry.videoTranscodeStatus === "processing" ? (
-                  <p className="mt-2 rounded-xl bg-primary/5 px-2.5 py-1.5 text-[11px] font-semibold text-primary">
-                    {videoTranscodeStatusLabel("processing")}
-                  </p>
+                {hasVideoRecord ? (
+                  <div
+                    data-testid="performance-video-frame"
+                    className="relative mt-2 aspect-video min-h-24 w-full max-h-52 overflow-hidden rounded-xl bg-black"
+                  >
+                    {videoSource && !hasPlaybackError ? (
+                      <video
+                        key={`${entry.videoPath ?? ""}:${videoSource}`}
+                        className="h-full w-full rounded-xl bg-black object-contain"
+                        src={videoSource}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        aria-label={`סרטון ביצוע ${entry.exerciseName}`}
+                        onLoadedData={() => {
+                          videoPlaybackRefreshesRef.current.delete(ei);
+                          setVideoPlaybackErrorIndexes((current) => {
+                            if (!current.has(ei)) return current;
+                            const next = new Set(current);
+                            next.delete(ei);
+                            return next;
+                          });
+                        }}
+                        onError={(event) =>
+                          handlePerformanceVideoError(ei, event.currentTarget.error?.code)
+                        }
+                      />
+                    ) : (
+                      <div
+                        data-testid="performance-video-status"
+                        className="flex h-full min-h-24 flex-col items-center justify-center gap-2 px-4 text-center text-[11px] font-semibold leading-relaxed text-white"
+                      >
+                        <p>{videoStatusMessage ?? "הסרטון זמין, אבל עדיין לא ניתן להציג אותו."}</p>
+                        {(hasPlaybackError || hasVideoUploadError || (!videoSource && entry.videoPath)) &&
+                        !isVideoUploading ? (
+                          <button
+                            type="button"
+                            onClick={() => retryPerformanceVideo(ei)}
+                            className="rounded-lg bg-white px-3 py-1.5 text-[10px] font-bold text-primary"
+                          >
+                            {genderText(gender, "נסי שוב", "נסה שוב")}
+                          </button>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
                 ) : null}
                 {entry.videoTranscodeStatus === "failed" ? (
                   <p className="mt-2 rounded-xl bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-900">
                     הסרטון הועלה ונשמר, אבל הכנת גרסת הצפייה לדפדפן נכשלה.
-                  </p>
-                ) : null}
-                {entry.videoUrl?.startsWith("blob:") &&
-                videoUploadsInFlight > 0 &&
-                hasPlaybackError &&
-                !(videoUploadErrorExerciseIndex === ei && videoUploadError) &&
-                !videoDraftWarnings[ei] ? (
-                  <p className="mt-2 rounded-xl bg-primary/5 px-2.5 py-1.5 text-[11px] font-semibold text-primary">
-                    הסרטון נבחר ומועלה ברקע. לאחר סיום ההעלאה הוא ייטען מחדש לצפייה.
                   </p>
                 ) : null}
                 {videoDraftWarnings[ei] ? (
@@ -2297,7 +2328,8 @@ function Session() {
                 {videoUploadError && videoUploadErrorExerciseIndex === ei ? (
                   <div className="mt-2 flex flex-col items-stretch gap-2 rounded-lg bg-rose-50 px-2 py-1.5">
                     <p className="text-[10px] font-semibold text-destructive">{videoUploadError}</p>
-                    {hasPlaybackError ? (
+                    {((hasVideoUploadError && !hasPlaybackError) ||
+                      (hasPlaybackError && !hasVideoRecord)) ? (
                       <button
                         type="button"
                         onClick={() => retryPerformanceVideo(ei)}

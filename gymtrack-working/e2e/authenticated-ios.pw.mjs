@@ -2828,10 +2828,7 @@ test("iPhone trainee video survives upload, expired signed URL, and history reop
   await expect.poll(() => signedVideoRequests).toBeGreaterThanOrEqual(3);
   await reopenedPerformanceVideo.evaluate((video) => video.dispatchEvent(new Event("error")));
   await expect(
-    page.getByText(
-      "הסרטון נשמר, אבל הדפדפן לא הצליח לנגן את הפורמט הזה. נסי MP4 מסוג H.264.",
-      { exact: true },
-    ),
+    page.getByTestId("performance-video-status").getByText(/הסרטון נשמר/),
   ).toBeVisible();
   await expect(page.getByText(/העלאת סרטון ביצוע נכשלה/)).toHaveCount(0);
 });
@@ -2944,7 +2941,8 @@ for (const [gender, retryLabel] of [
     const healthyCard = cards.nth(0);
     const failedCard = cards.nth(1);
     await expect(healthyCard.locator('video[aria-label^="סרטון ביצוע"]')).toBeVisible();
-    await expect(failedCard.locator('video[aria-label^="סרטון ביצוע"]')).toBeVisible();
+    await expect(failedCard.locator('[data-testid="performance-video-frame"]')).toBeVisible();
+    await expect(failedCard.locator('[data-testid="performance-video-status"]')).toBeVisible();
     await expect
       .poll(() =>
         healthyCard
