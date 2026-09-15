@@ -9378,6 +9378,10 @@ html.night-mode .nutrition-macro-cell .text-muted-foreground {
   margin-bottom: 0.15rem !important;
 }
 
+.app-auth-shell .app-home-utility-row .dashboard-header-summary {
+  transform: translateY(-0.75rem);
+}
+
 .app-auth-shell .app-topbar__content {
   min-width: 0;
   display: flex;
